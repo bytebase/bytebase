@@ -52,10 +52,11 @@ type Candidate struct {
 
 // resolvedDatabase holds the result of database resolution.
 type resolvedDatabase struct {
-	resourceName string
-	dataSourceID string
-	ambiguous    bool
-	candidates   []Candidate
+	resourceName   string
+	dataSourceID   string
+	ambiguous      bool
+	candidates     []Candidate
+	dataSourceIDs  map[string]string // resourceName -> dataSourceID (populated when ambiguous)
 }
 
 // queryDatabaseDescription is the description for the query_database tool.
@@ -80,7 +81,7 @@ func (s *Server) registerQueryTool() {
 	}, s.handleQueryDatabase)
 }
 
-func (s *Server) handleQueryDatabase(ctx context.Context, _ *mcp.CallToolRequest, input QueryInput) (*mcp.CallToolResult, any, error) {
+func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolRequest, input QueryInput) (*mcp.CallToolResult, any, error) {
 	if input.Database == "" {
 		return nil, nil, errors.New("database is required")
 	}
@@ -106,7 +107,12 @@ func (s *Server) handleQueryDatabase(ctx context.Context, _ *mcp.CallToolRequest
 		return formatToolError(err), nil, nil
 	}
 	if resolved.ambiguous {
-		return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
+		picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
+		if elicitErr != nil {
+			// Elicitation unsupported or user cancelled — fall back to AMBIGUOUS_TARGET.
+			return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
+		}
+		resolved = picked
 	}
 
 	// Execute query.
@@ -209,6 +215,7 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 
 	if len(matches) > 1 {
 		candidates := make([]Candidate, 0, len(matches))
+		dsIDs := make(map[string]string, len(matches))
 		for _, db := range matches {
 			candidates = append(candidates, Candidate{
 				Database: db.Name,
@@ -216,8 +223,9 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 				Project:  extractShortName(db.Project),
 				Engine:   db.InstanceResource.Engine,
 			})
+			dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
 		}
-		return &resolvedDatabase{ambiguous: true, candidates: candidates}, nil
+		return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}, nil
 	}
 
 	// Single match.
@@ -225,6 +233,57 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 	return &resolvedDatabase{
 		resourceName: db.Name,
 		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
+	}, nil
+}
+
+// elicitDatabaseChoice prompts the user to pick from ambiguous database matches
+// using MCP elicitation. Returns an error if elicitation is unsupported, the user
+// cancels/declines, or the selection is invalid.
+func (*Server) elicitDatabaseChoice(ctx context.Context, req *mcp.CallToolRequest, resolved *resolvedDatabase) (*resolvedDatabase, error) {
+	// Build enum values and a lookup map from display label to resource name.
+	enumValues := make([]any, 0, len(resolved.candidates))
+	resourceByLabel := make(map[string]string, len(resolved.candidates))
+	for _, c := range resolved.candidates {
+		label := fmt.Sprintf("%s (%s, %s)", c.Database, c.Instance, c.Engine)
+		enumValues = append(enumValues, label)
+		resourceByLabel[label] = c.Database
+	}
+
+	result, err := req.Session.Elicit(ctx, &mcp.ElicitParams{
+		Mode:    "form",
+		Message: "Multiple databases match. Which one do you want to query?",
+		RequestedSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"database": map[string]any{
+					"type":        "string",
+					"enum":        enumValues,
+					"description": "Select the target database",
+				},
+			},
+			"required": []string{"database"},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result.Action != "accept" {
+		return nil, errors.Errorf("user %sd database selection", result.Action)
+	}
+
+	selected, ok := result.Content["database"].(string)
+	if !ok {
+		return nil, errors.New("invalid database selection")
+	}
+
+	resourceName, ok := resourceByLabel[selected]
+	if !ok {
+		return nil, errors.Errorf("unknown database selection: %s", selected)
+	}
+
+	return &resolvedDatabase{
+		resourceName: resourceName,
+		dataSourceID: resolved.dataSourceIDs[resourceName],
 	}, nil
 }
 
