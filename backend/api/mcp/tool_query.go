@@ -52,11 +52,11 @@ type Candidate struct {
 
 // resolvedDatabase holds the result of database resolution.
 type resolvedDatabase struct {
-	resourceName   string
-	dataSourceID   string
-	ambiguous      bool
-	candidates     []Candidate
-	dataSourceIDs  map[string]string // resourceName -> dataSourceID (populated when ambiguous)
+	resourceName  string
+	dataSourceID  string
+	ambiguous     bool
+	candidates    []Candidate
+	dataSourceIDs map[string]string // resourceName -> dataSourceID (populated when ambiguous)
 }
 
 // queryDatabaseDescription is the description for the query_database tool.
