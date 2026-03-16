@@ -32,7 +32,8 @@ const (
 
 // WorkSheetMessage is the message for a sheet.
 type WorkSheetMessage struct {
-	ProjectID string
+	ProjectID  string
+	ResourceID string
 	// The DatabaseUID is optional.
 	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
 	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
@@ -46,7 +47,6 @@ type WorkSheetMessage struct {
 	Visibility WorkSheetVisibility
 
 	// Output only fields
-	UID       int
 	Size      int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -60,7 +60,7 @@ type FindWorkSheetMessage struct {
 	ProjectIDs     []string
 	PrincipalEmail string
 
-	UID *int
+	ResourceID *string
 
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
@@ -70,8 +70,7 @@ type FindWorkSheetMessage struct {
 
 // PatchWorkSheetMessage is the message to patch a sheet.
 type PatchWorkSheetMessage struct {
-	ProjectID    string
-	UID          int
+	ResourceID   string
 	Title        *string
 	Statement    *string
 	Visibility   *string
@@ -108,7 +107,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
-			worksheet.id,
+			worksheet.resource_id,
 			worksheet.creator,
 			worksheet.created_at,
 			worksheet.updated_at,
@@ -121,7 +120,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 			OCTET_LENGTH(worksheet.statement),
 			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
-		LEFT JOIN worksheet_organizer ON worksheet_organizer.project = worksheet.project AND worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal = '%s'
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = '%s'
 		WHERE TRUE`, statementField, find.PrincipalEmail))
 
 	if len(find.ProjectIDs) == 1 {
@@ -134,8 +133,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 		q.And("?", filterQ)
 	}
 
-	if v := find.UID; v != nil {
-		q.And("worksheet.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("worksheet.resource_id = ?", *v)
 	}
 
 	query, args, err := q.ToSQL()
@@ -155,7 +154,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) 
 		var instanceID, databaseName sql.NullString
 		var payloadBytes []byte
 		if err := rows.Scan(
-			&sheet.UID,
+			&sheet.ResourceID,
 			&sheet.Creator,
 			&sheet.CreatedAt,
 			&sheet.UpdatedAt,
@@ -207,7 +206,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, '{}')
-		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
+		RETURNING resource_id, created_at, updated_at, OCTET_LENGTH(statement)
 	`, create.Creator, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility)
 
 	query, args, err := q.ToSQL()
@@ -216,7 +215,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&create.UID,
+		&create.ResourceID,
 		&create.CreatedAt,
 		&create.UpdatedAt,
 		&create.Size,
@@ -258,7 +257,7 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 		}
 	}
 
-	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE project = ? AND id = ?", set, patch.ProjectID, patch.UID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE resource_id = ?", set, patch.ResourceID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -268,50 +267,34 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 	return nil
 }
 
-// DeleteWorkSheet deletes an existing sheet by ID.
-func (s *Store) DeleteWorkSheet(ctx context.Context, projectID string, sheetUID int) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	q1 := qb.Q().Space(`DELETE FROM worksheet_organizer WHERE project = ? AND worksheet_id = ?`, projectID, sheetUID)
-	query1, args1, err := q1.ToSQL()
+// DeleteWorkSheet deletes an existing sheet by resource ID.
+// The worksheet_organizer rows are cascade-deleted via FK on worksheet(resource_id).
+func (s *Store) DeleteWorkSheet(ctx context.Context, resourceID string) error {
+	q := qb.Q().Space(`DELETE FROM worksheet WHERE resource_id = ?`, resourceID)
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query1, args1...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
-
-	q2 := qb.Q().Space(`DELETE FROM worksheet WHERE project = ? AND id = ?`, projectID, sheetUID)
-	query2, args2, err := q2.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query2, args2...); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 // WorksheetOrganizerMessage is the store message for worksheet organizer.
 type WorksheetOrganizerMessage struct {
-	ProjectID    string
-	WorksheetUID int
-	Principal    string
-	Payload      *storepb.WorkSheetOrganizerPayload
+	WorksheetResourceID string
+	Principal           string
+	Payload             *storepb.WorkSheetOrganizerPayload
 }
 
-func (s *Store) GetWorksheetOrganizer(ctx context.Context, projectID string, worksheetUID int, principal string) (*WorksheetOrganizerMessage, error) {
+func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetResourceID string, principal string) (*WorksheetOrganizerMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			payload
 		FROM worksheet_organizer
-		WHERE project = ? AND worksheet_id = ? AND principal = ?
-	`, projectID, worksheetUID, principal)
+		WHERE worksheet = ? AND principal = ?
+	`, worksheetResourceID, principal)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -319,10 +302,9 @@ func (s *Store) GetWorksheetOrganizer(ctx context.Context, projectID string, wor
 	}
 
 	worksheetOrganizer := WorksheetOrganizerMessage{
-		ProjectID:    projectID,
-		WorksheetUID: worksheetUID,
-		Principal:    principal,
-		Payload:      &storepb.WorkSheetOrganizerPayload{},
+		WorksheetResourceID: worksheetResourceID,
+		Principal:           principal,
+		Payload:             &storepb.WorkSheetOrganizerPayload{},
 	}
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
@@ -350,20 +332,18 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	}
 	q := qb.Q().Space(`
 	  INSERT INTO worksheet_organizer (
-			project,
-			worksheet_id,
+			worksheet,
 			principal,
 			payload
 		)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT(project, worksheet_id, principal) DO UPDATE SET
+		VALUES (?, ?, ?)
+		ON CONFLICT(worksheet, principal) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
-			project,
-			worksheet_id,
+			worksheet,
 			principal,
 			payload
-	`, patch.ProjectID, patch.WorksheetUID, patch.Principal, payloadStr)
+	`, patch.WorksheetResourceID, patch.Principal, payloadStr)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -373,8 +353,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	var worksheetOrganizer WorksheetOrganizerMessage
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&worksheetOrganizer.ProjectID,
-		&worksheetOrganizer.WorksheetUID,
+		&worksheetOrganizer.WorksheetResourceID,
 		&worksheetOrganizer.Principal,
 		&payload,
 	); err != nil {
@@ -433,7 +412,7 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			return qb.Q().Space("worksheet.creator = ?", userID), nil
 		case "starred":
 			if starred, ok := value.(bool); ok {
-				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE project = worksheet.project AND principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
+				return qb.Q().Space("worksheet.resource_id IN (SELECT worksheet FROM worksheet_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "visibility":
