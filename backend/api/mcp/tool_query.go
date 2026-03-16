@@ -103,7 +103,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, _ *mcp.CallToolRequest
 
 	resolved, err := s.resolveDatabase(resolveCtx, input)
 	if err != nil {
-		return nil, nil, err
+		return formatToolError(err), nil, nil
 	}
 	if resolved.ambiguous {
 		return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
@@ -115,7 +115,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, _ *mcp.CallToolRequest
 
 	output, err := s.executeQuery(queryCtx, resolved, input.Statement, limit)
 	if err != nil {
-		return nil, nil, err
+		return formatToolError(err), nil, nil
 	}
 
 	text := formatQueryOutput(input.Statement, resolved.resourceName, output)
@@ -325,6 +325,24 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 	sb.Write(jsonBytes)
 
 	return sb.String()
+}
+
+// formatToolError converts an error into an MCP error result.
+// If the error is a *toolError, it returns structured JSON with code/message/suggestion.
+// Otherwise, it returns the error message as plain text.
+func formatToolError(err error) *mcp.CallToolResult {
+	var te *toolError
+	if errors.As(err, &te) {
+		jsonBytes, _ := json.MarshalIndent(te, "", "  ")
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: string(jsonBytes)}},
+			IsError: true,
+		}
+	}
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}},
+		IsError: true,
+	}
 }
 
 // formatAmbiguousResult returns an MCP result for ambiguous database matches.
