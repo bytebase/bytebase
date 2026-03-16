@@ -33,10 +33,10 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 	)
 	if err != nil {
 		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.DDLSimulationFailed.Int32(),
-			Title:   "Failed to generate schema DDL",
-			Content: err.Error(),
+			Status:        storepb.Advice_ERROR,
+			Code:          code.DDLSimulationFailed.Int32(),
+			Title:         "Failed to generate schema DDL",
+			Content:       err.Error(),
 			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
@@ -57,10 +57,10 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 		// (e.g. columns without types in metadata) still load what they can.
 		if _, err := c.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
 			return &storepb.Advice{
-				Status:  storepb.Advice_ERROR,
-				Code:    code.DDLSimulationFailed.Int32(),
-				Title:   "Failed to load schema DDL",
-				Content: err.Error(),
+				Status:        storepb.Advice_ERROR,
+				Code:          code.DDLSimulationFailed.Int32(),
+				Title:         "Failed to load schema DDL",
+				Content:       err.Error(),
 				StartPosition: &storepb.Position{Line: 0},
 			}
 		}
@@ -71,10 +71,10 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 	results, execErr := c.Exec(ctx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
 		return &storepb.Advice{
-			Status:  storepb.Advice_ERROR,
-			Code:    code.DDLSimulationFailed.Int32(),
-			Title:   "DDL simulation failed",
-			Content: execErr.Error(),
+			Status:        storepb.Advice_ERROR,
+			Code:          code.DDLSimulationFailed.Int32(),
+			Title:         "DDL simulation failed",
+			Content:       execErr.Error(),
 			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
@@ -98,6 +98,7 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 
 	// Step 5: Convert catalog state back to DatabaseMetadata for downstream rules.
 	newProto := catalogToProto(c)
+	extractViewDependencies(newProto)
 	newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_POSTGRES, true)
 	d.ReplaceFrom(newMetadata)
 
@@ -165,7 +166,9 @@ func mapSQLSTATEToCode(err error) code.Code {
 
 // catalogToProto converts the omni catalog state to a storepb.DatabaseSchemaMetadata proto.
 func catalogToProto(c *catalog.Catalog) *storepb.DatabaseSchemaMetadata {
-	dbMeta := &storepb.DatabaseSchemaMetadata{}
+	dbMeta := &storepb.DatabaseSchemaMetadata{
+		Name: "postgres",
+	}
 
 	for _, s := range c.UserSchemas() {
 		schemaMeta := &storepb.SchemaMetadata{

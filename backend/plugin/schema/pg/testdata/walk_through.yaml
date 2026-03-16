@@ -1,321 +1,68 @@
 - statement: CREATE TABLE t(a int, b int);
   ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t\",\n      \
-    \    \"columns\": [\n            {\n              \"name\": \"a\",\n         \
-    \     \"position\": 1,\n              \"nullable\": true,\n              \"type\"\
-    : \"integer\"\n            },\n            {\n              \"name\": \"b\",\n\
-    \              \"position\": 2,\n              \"nullable\": true,\n         \
-    \     \"type\": \"integer\"\n            }\n          ]\n        },\n        {\n\
-    \          \"name\": \"test\",\n          \"columns\": [\n            {\n    \
-    \          \"name\": \"id\",\n              \"position\": 1,\n              \"\
-    type\": \"int\"\n            },\n            {\n              \"name\": \"name\"\
-    ,\n              \"position\": 2,\n              \"nullable\": true,\n       \
-    \       \"type\": \"varchar(20)\"\n            }\n          ]\n        }\n   \
-    \   ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n         \
-    \ \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
-    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
-    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
-    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
-    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
-    \    ]\n    }\n  ]\n}"
+  want: |-
+    {
+      "name":  "postgres",
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "b",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "test",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "name",
+                  "position":  2,
+                  "nullable":  true,
+                  "type":  "character varying(20)"
+                }
+              ]
+            }
+          ],
+          "views":  [
+            {
+              "name":  "v1",
+              "definition":  " SELECT id,\n    name\n   FROM test;",
+              "dependencyColumns":  [
+                {
+                  "schema":  "public",
+                  "table":  "test",
+                  "column":  "*"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   advice: null
-- statement: 'CREATE TABLE public.t(a int, "B" int);
-
+- statement: |-
+    CREATE TABLE public.t(a int, "B" int);
     CREATE INDEX ON t(a, "B");
-
     CREATE UNIQUE INDEX ON t(a, "B");
-
-    DROP INDEX IF EXISTS t_a_B_idx_11111;'
+    DROP INDEX IF EXISTS t_a_B_idx_11111;
   ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t\",\n      \
-    \    \"columns\": [\n            {\n              \"name\": \"a\",\n         \
-    \     \"position\": 1,\n              \"nullable\": true,\n              \"type\"\
-    : \"integer\"\n            },\n            {\n              \"name\": \"B\",\n\
-    \              \"position\": 2,\n              \"nullable\": true,\n         \
-    \     \"type\": \"integer\"\n            }\n          ],\n          \"indexes\"\
-    : [\n            {\n              \"name\": \"t_a_B_idx\",\n              \"expressions\"\
-    : [\n                \"a\",\n                \"B\"\n              ],\n       \
-    \       \"type\": \"btree\"\n            },\n            {\n              \"name\"\
-    : \"t_a_B_idx1\",\n              \"expressions\": [\n                \"a\",\n\
-    \                \"B\"\n              ],\n              \"type\": \"btree\",\n\
-    \              \"unique\": true\n            }\n          ]\n        },\n    \
-    \    {\n          \"name\": \"test\",\n          \"columns\": [\n            {\n\
-    \              \"name\": \"id\",\n              \"position\": 1,\n           \
-    \   \"type\": \"int\"\n            },\n            {\n              \"name\":\
-    \ \"name\",\n              \"position\": 2,\n              \"nullable\": true,\n\
-    \              \"type\": \"varchar(20)\"\n            }\n          ]\n       \
-    \ }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n  \
-    \        \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
-    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
-    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
-    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
-    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
-    \    ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    )"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t\",\n      \
-    \    \"columns\": [\n            {\n              \"name\": \"a\",\n         \
-    \     \"position\": 1,\n              \"type\": \"integer\"\n            },\n\
-    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
-    \              \"default\": \"1\",\n              \"type\": \"integer\"\n    \
-    \        },\n            {\n              \"name\": \"c\",\n              \"position\"\
-    : 3,\n              \"nullable\": true,\n              \"type\": \"integer\"\n\
-    \            }\n          ],\n          \"indexes\": [\n            {\n      \
-    \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
-    \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
-    \              \"isConstraint\": true\n            },\n            {\n       \
-    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
-    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
-    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
-    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
-    : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
-    \       \"isConstraint\": true\n            },\n            {\n              \"\
-    name\": \"uk_a_b\",\n              \"expressions\": [\n                \"a\",\n\
-    \                \"b\"\n              ],\n              \"type\": \"btree\",\n\
-    \              \"unique\": true,\n              \"isConstraint\": true\n     \
-    \       }\n          ]\n        },\n        {\n          \"name\": \"test\",\n\
-    \          \"columns\": [\n            {\n              \"name\": \"id\",\n  \
-    \            \"position\": 1,\n              \"type\": \"int\"\n            },\n\
-    \            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
-    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
-    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
-    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
-    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
-    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
-    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    );\nALTER TABLE t rename to t1;\nALTER TABLE t1 rename column a to a1;\nalter\
-    \ table t1 rename constraint uk_a_b to ukk_a_b;\nalter table t1 add column d int;\n\
-    alter table t1 drop column c;\nalter table t1 alter column b set data type bigint;\n\
-    alter table t1 alter column a1 set default 1;\nalter table t1 alter column b drop\
-    \ default;\nalter table t1 alter column d set not null;\nalter table t1 add constraint\
-    \ uk_d unique (d);\nalter table t1 add constraint ukk_d unique (d);\nalter table\
-    \ t1 drop constraint ukk_d;"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t1\",\n     \
-    \     \"columns\": [\n            {\n              \"name\": \"a1\",\n       \
-    \       \"position\": 1,\n              \"default\": \"1\",\n              \"\
-    type\": \"integer\"\n            },\n            {\n              \"name\": \"\
-    b\",\n              \"position\": 2,\n              \"type\": \"bigint\"\n   \
-    \         },\n            {\n              \"name\": \"d\",\n              \"\
-    position\": 4,\n              \"type\": \"integer\"\n            }\n         \
-    \ ],\n          \"indexes\": [\n            {\n              \"name\": \"t_pkey\"\
-    ,\n              \"expressions\": [\n                \"a1\"\n              ],\n\
-    \              \"type\": \"btree\",\n              \"unique\": true,\n       \
-    \       \"primary\": true,\n              \"isConstraint\": true\n           \
-    \ },\n            {\n              \"name\": \"uk_d\",\n              \"expressions\"\
-    : [\n                \"d\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"isConstraint\": true\n   \
-    \         },\n            {\n              \"name\": \"ukk_a_b\",\n          \
-    \    \"expressions\": [\n                \"a1\",\n                \"b\"\n    \
-    \          ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
-    \              \"isConstraint\": true\n            }\n          ]\n        },\n\
-    \        {\n          \"name\": \"test\",\n          \"columns\": [\n        \
-    \    {\n              \"name\": \"id\",\n              \"position\": 1,\n    \
-    \          \"type\": \"int\"\n            },\n            {\n              \"\
-    name\": \"name\",\n              \"position\": 2,\n              \"nullable\"\
-    : true,\n              \"type\": \"varchar(20)\"\n            }\n          ]\n\
-    \        }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\"\
-    ,\n          \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
-    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
-    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
-    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
-    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
-    \    ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    );\nalter index uk_a_b rename to ukk_a_b;"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t\",\n      \
-    \    \"columns\": [\n            {\n              \"name\": \"a\",\n         \
-    \     \"position\": 1,\n              \"type\": \"integer\"\n            },\n\
-    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
-    \              \"default\": \"1\",\n              \"type\": \"integer\"\n    \
-    \        },\n            {\n              \"name\": \"c\",\n              \"position\"\
-    : 3,\n              \"nullable\": true,\n              \"type\": \"integer\"\n\
-    \            }\n          ],\n          \"indexes\": [\n            {\n      \
-    \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
-    \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
-    \              \"isConstraint\": true\n            },\n            {\n       \
-    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
-    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
-    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
-    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
-    : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
-    \       \"isConstraint\": true\n            },\n            {\n              \"\
-    name\": \"ukk_a_b\",\n              \"expressions\": [\n                \"a\"\
-    ,\n                \"b\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"isConstraint\": true\n   \
-    \         }\n          ]\n        },\n        {\n          \"name\": \"test\"\
-    ,\n          \"columns\": [\n            {\n              \"name\": \"id\",\n\
-    \              \"position\": 1,\n              \"type\": \"int\"\n           \
-    \ },\n            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
-    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
-    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
-    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
-    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
-    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
-    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    );\ndrop index uk_a_b;"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"t\",\n      \
-    \    \"columns\": [\n            {\n              \"name\": \"a\",\n         \
-    \     \"position\": 1,\n              \"type\": \"integer\"\n            },\n\
-    \            {\n              \"name\": \"b\",\n              \"position\": 2,\n\
-    \              \"default\": \"1\",\n              \"type\": \"integer\"\n    \
-    \        },\n            {\n              \"name\": \"c\",\n              \"position\"\
-    : 3,\n              \"nullable\": true,\n              \"type\": \"integer\"\n\
-    \            }\n          ],\n          \"indexes\": [\n            {\n      \
-    \        \"name\": \"t_a_b_c_idx\",\n              \"expressions\": [\n      \
-    \          \"a\",\n                \"b\",\n                \"c\"\n           \
-    \   ],\n              \"type\": \"btree\",\n              \"unique\": true,\n\
-    \              \"isConstraint\": true\n            },\n            {\n       \
-    \       \"name\": \"t_c_idx\",\n              \"expressions\": [\n           \
-    \     \"c\"\n              ],\n              \"type\": \"btree\",\n          \
-    \    \"unique\": true,\n              \"isConstraint\": true\n            },\n\
-    \            {\n              \"name\": \"t_pkey\",\n              \"expressions\"\
-    : [\n                \"a\"\n              ],\n              \"type\": \"btree\"\
-    ,\n              \"unique\": true,\n              \"primary\": true,\n       \
-    \       \"isConstraint\": true\n            }\n          ]\n        },\n     \
-    \   {\n          \"name\": \"test\",\n          \"columns\": [\n            {\n\
-    \              \"name\": \"id\",\n              \"position\": 1,\n           \
-    \   \"type\": \"int\"\n            },\n            {\n              \"name\":\
-    \ \"name\",\n              \"position\": 2,\n              \"nullable\": true,\n\
-    \              \"type\": \"varchar(20)\"\n            }\n          ]\n       \
-    \ }\n      ],\n      \"views\": [\n        {\n          \"name\": \"v1\",\n  \
-    \        \"definition\": \"SELECT id, name FROM test\",\n          \"dependencyColumns\"\
-    : [\n            {\n              \"schema\": \"public\",\n              \"table\"\
-    : \"test\",\n              \"column\": \"id\"\n            },\n            {\n\
-    \              \"schema\": \"public\",\n              \"table\": \"test\",\n \
-    \             \"column\": \"name\"\n            }\n          ]\n        }\n  \
-    \    ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    );\ndrop table t;"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
-    \       \"columns\": [\n            {\n              \"name\": \"id\",\n     \
-    \         \"position\": 1,\n              \"type\": \"int\"\n            },\n\
-    \            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
-    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
-    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
-    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
-    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
-    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
-    name\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  advice: null
-- statement: "CREATE TABLE public.t(\n  a int primary key,\n  b int NOT NULL DEFAULT\
-    \ 1,\n  c int UNIQUE,\n  UNIQUE (a, b, c),\n  CONSTRAINT uk_a_b UNIQUE (a, b)\n\
-    );\ndrop schema public;"
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\"\n}"
-  advice: null
-- statement: ALTER TABLE test DROP COLUMN id;
-  ignore_case_sensitive: false
-  want: ''
-  advice:
-    status: 1
-    code: 421
-    title: 'Cannot drop column "id" in table "public"."test", it''s referenced by
-      view: "public"."v1"'
-    content: 'Cannot drop column "id" in table "public"."test", it''s referenced by
-      view: "public"."v1"'
-    startPosition:
-      line: 1
-- statement: ALTER TABLE test ALTER COLUMN id TYPE varchar(20);
-  ignore_case_sensitive: false
-  want: ''
-  advice:
-    status: 1
-    code: 421
-    title: 'Cannot alter type of column "id" in table "public"."test", it''s referenced
-      by view: "public"."v1"'
-    content: 'Cannot alter type of column "id" in table "public"."test", it''s referenced
-      by view: "public"."v1"'
-    startPosition:
-      line: 1
-- statement: DROP TABLE test;
-  ignore_case_sensitive: false
-  want: ''
-  advice:
-    status: 1
-    code: 609
-    title: 'Cannot drop table "public"."test", it''s referenced by view: "public"."v1"'
-    content: 'Cannot drop table "public"."test", it''s referenced by view: "public"."v1"'
-    startPosition:
-      line: 1
-- statement: 'DROP VIEW v1;
-
-    ALTER TABLE test DROP COLUMN id;'
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
-    \       \"columns\": [\n            {\n              \"name\": \"name\",\n   \
-    \           \"position\": 2,\n              \"nullable\": true,\n            \
-    \  \"type\": \"varchar(20)\"\n            }\n          ]\n        }\n      ]\n\
-    \    }\n  ]\n}"
-  advice: null
-- statement: 'create view v1 as select * from t;
-
-    alter view v1 rename to this_is_view_del;
-
-    drop view this_is_view_del;'
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
-    \       \"columns\": [\n            {\n              \"name\": \"id\",\n     \
-    \         \"position\": 1,\n              \"type\": \"int\"\n            },\n\
-    \            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
-  advice: null
-- statement: 'CREATE MATERIALIZED VIEW mv AS SELECT id, name FROM test;
-
-    CREATE INDEX ON mv(id);'
-  ignore_case_sensitive: false
-  want: "{\n  \"name\": \"postgres\",\n  \"schemas\": [\n    {\n      \"name\": \"\
-    public\",\n      \"tables\": [\n        {\n          \"name\": \"test\",\n   \
-    \       \"columns\": [\n            {\n              \"name\": \"id\",\n     \
-    \         \"position\": 1,\n              \"type\": \"int\"\n            },\n\
-    \            {\n              \"name\": \"name\",\n              \"position\"\
-    : 2,\n              \"nullable\": true,\n              \"type\": \"varchar(20)\"\
-    \n            }\n          ]\n        }\n      ],\n      \"views\": [\n      \
-    \  {\n          \"name\": \"v1\",\n          \"definition\": \"SELECT id, name\
-    \ FROM test\",\n          \"dependencyColumns\": [\n            {\n          \
-    \    \"schema\": \"public\",\n              \"table\": \"test\",\n           \
-    \   \"column\": \"id\"\n            },\n            {\n              \"schema\"\
-    : \"public\",\n              \"table\": \"test\",\n              \"column\": \"\
-    name\"\n            }\n          ]\n        }\n      ],\n      \"materializedViews\"\
-    : [\n        {\n          \"name\": \"mv\",\n          \"definition\": \"SELECT\
-    \ id, name FROM test\",\n          \"indexes\": [\n            {\n            \
-    \  \"name\": \"mv_id_idx\",\n              \"expressions\": [\n              \
-    \  \"id\"\n              ],\n              \"type\": \"btree\"\n            }\n\
-    \          ]\n        }\n      ]\n    }\n  ]\n}"
+  want: ""
   advice: null
