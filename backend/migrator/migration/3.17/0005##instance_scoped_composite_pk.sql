@@ -34,3 +34,11 @@ DO $$ BEGIN
             FOREIGN KEY (sync_history) REFERENCES sync_history(resource_id);
     END IF;
 END $$;
+
+-- Phase G: Drop unused id columns and sequences
+ALTER TABLE revision DROP COLUMN IF EXISTS id;
+ALTER TABLE sync_history DROP COLUMN IF EXISTS id;
+ALTER TABLE changelog DROP COLUMN IF EXISTS id;
+DROP SEQUENCE IF EXISTS revision_id_seq;
+DROP SEQUENCE IF EXISTS sync_history_id_seq;
+DROP SEQUENCE IF EXISTS changelog_id_seq;

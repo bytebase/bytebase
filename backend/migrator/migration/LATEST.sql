@@ -464,7 +464,6 @@ CREATE TABLE review_config (
 );
 
 CREATE TABLE revision (
-    id bigserial,
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     instance text NOT NULL,
     db_name text NOT NULL,
@@ -477,14 +476,11 @@ CREATE TABLE revision (
     CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
-ALTER SEQUENCE revision_id_seq RESTART WITH 101;
-
 CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at_null ON revision(instance, db_name, (payload->>'type'), version) WHERE deleted_at IS NULL;
 
 CREATE INDEX idx_revision_instance_db_name_type_version ON revision(instance, db_name, (payload->>'type'), version);
 
 CREATE TABLE sync_history (
-    id bigserial,
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
@@ -495,12 +491,9 @@ CREATE TABLE sync_history (
     CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
-ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
-
 CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
 
 CREATE TABLE changelog (
-    id bigserial,
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
@@ -511,8 +504,6 @@ CREATE TABLE changelog (
     payload jsonb NOT NULL DEFAULT '{}',
     CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
-
-ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_changelog_instance_db_name ON changelog (instance, db_name);
 
