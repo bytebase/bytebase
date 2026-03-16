@@ -82,6 +82,9 @@ const (
 	SDLDropOperation                          Code = 255
 	SDLReplaceOperation                       Code = 256
 
+	// 260 DDL simulation error code.
+	DDLSimulationFailed Code = 260
+
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
 	NamingTableConventionMismatch Code = 301
