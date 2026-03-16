@@ -47,6 +47,9 @@ type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []
 // WalkThroughContext carries optional session state into schema walk-through implementations.
 type WalkThroughContext struct {
 	SessionUser string
+	// RawSQL is the original SQL text to be executed.
+	// Used by the omni-based walkthrough for catalog.Exec().
+	RawSQL string
 }
 
 type GetDefinitionContext struct {

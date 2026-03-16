@@ -21,7 +21,7 @@ const (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughWithContext)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughOmni)
 }
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
