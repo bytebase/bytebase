@@ -408,11 +408,11 @@ CREATE TABLE worksheet (
     -- Enum: Worksheet.Visibility (proto/v1/v1/worksheet_service.proto)
     visibility text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, id)
+    PRIMARY KEY (resource_id)
 );
 
+CREATE INDEX idx_worksheet_project ON worksheet(project);
 CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
-CREATE UNIQUE INDEX idx_worksheet_unique_resource_id ON worksheet(resource_id);
 
 ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 
