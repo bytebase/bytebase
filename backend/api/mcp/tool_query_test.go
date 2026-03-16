@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// makeDatabase builds a database entry for mock responses.
-func makeDatabase(name, instanceName, project, engine, dsID, dsType string) map[string]any {
+// makeDatabase builds a database entry with an ADMIN datasource for mock responses.
+func makeDatabase(name, instanceName, project, engine, dsID string) map[string]any {
 	return map[string]any{
 		"name":    name,
 		"project": project,
@@ -21,7 +21,7 @@ func makeDatabase(name, instanceName, project, engine, dsID, dsType string) map[
 			"name":   instanceName,
 			"engine": engine,
 			"dataSources": []any{
-				map[string]any{"id": dsID, "type": dsType},
+				map[string]any{"id": dsID, "type": "ADMIN"},
 			},
 		},
 	}
@@ -70,10 +70,22 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
-		name, _ := db["name"].(string)
-		ir, _ := db["instanceResource"].(map[string]any)
-		instanceName, _ := ir["name"].(string)
-		project, _ := db["project"].(string)
+		name, ok := db["name"].(string)
+		if !ok {
+			continue
+		}
+		ir, ok := db["instanceResource"].(map[string]any)
+		if !ok {
+			continue
+		}
+		instanceName, ok := ir["name"].(string)
+		if !ok {
+			continue
+		}
+		project, ok := db["project"].(string)
+		if !ok {
+			continue
+		}
 
 		match := true
 		// Check name.matches("x") — substring match
@@ -118,8 +130,8 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 
 func TestQueryDatabase_SingleMatch(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
-		makeDatabase("instances/prod-pg/databases/orders_db", "instances/prod-pg", "projects/commerce", "POSTGRES", "ds-admin-2", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+		makeDatabase("instances/prod-pg/databases/orders_db", "instances/prod-pg", "projects/commerce", "POSTGRES", "ds-admin-2"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -132,7 +144,7 @@ func TestQueryDatabase_SingleMatch(t *testing.T) {
 
 func TestQueryDatabase_CaseInsensitiveMatch(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -144,7 +156,7 @@ func TestQueryDatabase_CaseInsensitiveMatch(t *testing.T) {
 
 func TestQueryDatabase_SubstringMatch(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -156,7 +168,7 @@ func TestQueryDatabase_SubstringMatch(t *testing.T) {
 
 func TestQueryDatabase_NotFound(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -171,7 +183,7 @@ func TestQueryDatabase_NotFound(t *testing.T) {
 
 func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -189,8 +201,8 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
-		makeDatabase("instances/staging-mysql/databases/employee_db", "instances/staging-mysql", "projects/hr-system", "MYSQL", "ds-admin-2", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+		makeDatabase("instances/staging-mysql/databases/employee_db", "instances/staging-mysql", "projects/hr-system", "MYSQL", "ds-admin-2"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -206,8 +218,8 @@ func TestQueryDatabase_Ambiguous(t *testing.T) {
 
 func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
-		makeDatabase("instances/staging/databases/employee_db", "instances/staging", "projects/hr-system", "POSTGRES", "ds-admin-2", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+		makeDatabase("instances/staging/databases/employee_db", "instances/staging", "projects/hr-system", "POSTGRES", "ds-admin-2"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -235,7 +247,7 @@ func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {
 
 func TestQueryDatabase_AdminFallback(t *testing.T) {
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -244,7 +256,6 @@ func TestQueryDatabase_AdminFallback(t *testing.T) {
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
 }
-
 
 func TestQueryDatabase_FormatAmbiguousResult(t *testing.T) {
 	candidates := []Candidate{
@@ -292,7 +303,7 @@ func TestQueryDatabase_LimitNormalization(t *testing.T) {
 	// We test the handler which calls resolveDatabase, so the database must not be found
 	// to avoid hitting the executeQuery stub. We just verify the handler doesn't panic.
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -313,8 +324,8 @@ func TestQueryDatabase_LimitNormalization(t *testing.T) {
 func TestQueryDatabase_ExactMatchPriority(t *testing.T) {
 	// When both exact and substring matches exist, exact should win.
 	databases := []map[string]any{
-		makeDatabase("instances/prod-pg/databases/employee", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-1", "ADMIN"),
-		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-2", "ADMIN"),
+		makeDatabase("instances/prod-pg/databases/employee", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-1"),
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-2"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 

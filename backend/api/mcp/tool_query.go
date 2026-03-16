@@ -228,7 +228,6 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 	}, nil
 }
 
-
 // matchExact returns databases whose short name exactly matches the input.
 func matchExact(databases []databaseEntry, name string) []databaseEntry {
 	var result []databaseEntry
