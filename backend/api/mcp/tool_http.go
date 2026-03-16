@@ -80,6 +80,20 @@ func parseError(body json.RawMessage) string {
 	return ""
 }
 
+// toolError is a structured error returned by MCP tools.
+type toolError struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Suggestion string `json:"suggestion,omitempty"`
+}
+
+func (e *toolError) Error() string {
+	if e.Suggestion != "" {
+		return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Suggestion)
+	}
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
 // Context key for storing the access token.
 type accessTokenKey struct{}
 
