@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
 // idMinValue is the minimum ID value for per-project auto-increment.
