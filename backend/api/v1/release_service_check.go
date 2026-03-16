@@ -184,7 +184,7 @@ loop:
 		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, engine, store.IsObjectCaseSensitive(instance))
 		// Batch fetch all revisions for this database
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
-			InstanceID:   &database.InstanceID,
+			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
 			Type:         common.NewP(storepb.SchemaChangeType_VERSIONED),
 			Versions:     &releaseFileVersions,
@@ -361,7 +361,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 		engine := instance.Metadata.GetEngine()
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
-			InstanceID:   &database.InstanceID,
+			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
 			Type:         common.NewP(storepb.SchemaChangeType_DECLARATIVE),
 			Limit:        common.NewP(1),

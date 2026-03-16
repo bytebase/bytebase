@@ -358,10 +358,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				return nil, errors.Errorf("instance %q not found", databaseMessage.InstanceID)
 			}
 			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
-				InstanceID:     databaseMessage.InstanceID,
-				DatabaseName:   databaseMessage.DatabaseName,
-				Status:         store.ChangelogStatusDone,
-				SyncHistoryUID: &syncHistory,
+				InstanceID:   databaseMessage.InstanceID,
+				DatabaseName: databaseMessage.DatabaseName,
+				Status:       store.ChangelogStatusDone,
+				SyncHistory:  &syncHistory,
 				Payload: &storepb.ChangelogPayload{
 					GitCommit: s.profile.GitCommit,
 				}}); err != nil {
@@ -731,6 +731,7 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
+			InstanceID: instanceID,
 			ResourceID: &changelogID,
 		})
 		if err != nil {
@@ -740,14 +741,14 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 			return nil, errors.Errorf("changelog %q not found", changelogID)
 		}
 
-		// Use SyncHistoryUID to get historical metadata
-		if changelog.SyncHistoryUID != nil {
-			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
+		// Use SyncHistory to get historical metadata
+		if changelog.SyncHistory != nil {
+			syncHistory, err := s.store.GetSyncHistory(ctx, *changelog.SyncHistory)
 			if err != nil {
 				return nil, err
 			}
 			if syncHistory == nil {
-				return nil, errors.Errorf("sync history %d not found", *changelog.SyncHistoryUID)
+				return nil, errors.Errorf("sync history %s not found", *changelog.SyncHistory)
 			}
 
 			// Get instance to determine engine and case sensitivity
@@ -811,6 +812,7 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
+			InstanceID: instanceID,
 			ResourceID: &changelogID,
 		})
 		if err != nil {
@@ -820,14 +822,14 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 			return nil, errors.Errorf("changelog %q not found", changelogID)
 		}
 
-		// Use SyncHistoryUID to get historical metadata
-		if changelog.SyncHistoryUID != nil {
-			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
+		// Use SyncHistory to get historical metadata
+		if changelog.SyncHistory != nil {
+			syncHistory, err := s.store.GetSyncHistory(ctx, *changelog.SyncHistory)
 			if err != nil {
 				return nil, err
 			}
 			if syncHistory == nil {
-				return nil, errors.Errorf("sync history %d not found", *changelog.SyncHistoryUID)
+				return nil, errors.Errorf("sync history %s not found", *changelog.SyncHistory)
 			}
 
 			// Get instance to determine engine and case sensitivity

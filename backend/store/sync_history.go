@@ -14,7 +14,7 @@ import (
 )
 
 type SyncHistory struct {
-	UID          int64
+	ResourceID   string
 	InstanceID   string
 	DatabaseName string
 	Schema       string
@@ -23,18 +23,18 @@ type SyncHistory struct {
 	CreatedAt time.Time
 }
 
-func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistory, error) {
+func (s *Store) GetSyncHistory(ctx context.Context, resourceID string) (*SyncHistory, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			created_at,
 			instance,
 			db_name,
 			metadata,
 			raw_dump
 		FROM sync_history
-		WHERE id = ?
-	`, uid)
+		WHERE resource_id = ?
+	`, resourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 
 	var m []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&h.UID,
+		&h.ResourceID,
 		&h.CreatedAt,
 		&h.InstanceID,
 		&h.DatabaseName,
@@ -67,14 +67,13 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	return &h, nil
 }
 
-// UpsertDBSchema upserts a database schema.
-func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName string, metadata *storepb.DatabaseSchemaMetadata, schema string) (int64, error) {
+func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName string, metadata *storepb.DatabaseSchemaMetadata, schema string) (string, error) {
 	// Sanitize schema to prevent storing invalid UTF-8 bytes from external databases.
 	schema = strings.ToValidUTF8(schema, "")
 
 	metadataBytes, err := protojson.Marshal(metadata)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to marshal")
+		return "", errors.Wrapf(err, "failed to marshal")
 	}
 
 	q := qb.Q().Space(`
@@ -85,18 +84,18 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 			raw_dump
 		)
 		VALUES (?, ?, ?, ?)
-		RETURNING id
+		RETURNING resource_id
 	`, instanceID, databaseName, metadataBytes, schema)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to build sql")
+		return "", errors.Wrapf(err, "failed to build sql")
 	}
 
-	var id int64
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id); err != nil {
-		return 0, errors.Wrapf(err, "failed to insert")
+	var resourceID string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&resourceID); err != nil {
+		return "", errors.Wrapf(err, "failed to insert")
 	}
 
-	return id, nil
+	return resourceID, nil
 }

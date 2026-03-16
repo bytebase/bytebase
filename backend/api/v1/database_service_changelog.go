@@ -116,7 +116,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindChangelogMessage{
-		InstanceID:   &database.InstanceID,
+		InstanceID:   database.InstanceID,
 		DatabaseName: &database.DatabaseName,
 		Limit:        &limitPlusOne,
 		Offset:       &offset.offset,
@@ -156,6 +156,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	}
 
 	find := &store.FindChangelogMessage{
+		InstanceID: instanceID,
 		ResourceID: &changelogID,
 	}
 	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
@@ -206,7 +207,7 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		PlanTitle:  c.PlanTitle,
 	}
 
-	if v := c.SyncHistoryUID; v != nil {
+	if c.SyncHistory != nil {
 		cl.Schema = c.Schema
 		cl.SchemaSize = int64(len(cl.Schema))
 	}
