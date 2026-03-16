@@ -2,7 +2,7 @@ package pg
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 
 	"github.com/bytebase/omni/pg/catalog"
 
@@ -55,7 +55,15 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 	if schemaDDL != "" {
 		// Load existing schema. Use ContinueOnError so partial schemas
 		// (e.g. columns without types in metadata) still load what they can.
-		c.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true})
+		if _, err := c.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+			return &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.DDLSimulationFailed.Int32(),
+				Title:   "Failed to load schema DDL",
+				Content: err.Error(),
+				StartPosition: &storepb.Position{Line: 0},
+			}
+		}
 	}
 
 	// Step 3: Execute user SQL with ContinueOnError so that downstream
@@ -127,14 +135,13 @@ func mapSQLSTATEToCode(err error) code.Code {
 		return code.IndexExists
 	case catalog.CodeUndefinedObject:
 		return code.IndexNotExists
-	// Note: CodeInvalidTableDefinition has same SQLSTATE as CodeDuplicatePKey, handled above.
 
 	// FK errors
 	case catalog.CodeInvalidFK, catalog.CodeForeignKeyViolation:
 		return code.TableHasFK
 
 	// PK/table definition errors
-	case catalog.CodeDuplicatePKey: // same SQLSTATE as CodeInvalidTableDefinition
+	case catalog.CodeDuplicatePKey:
 		return code.PrimaryKeyExists
 
 	// Type/expression errors
@@ -171,7 +178,7 @@ func catalogToProto(c *catalog.Catalog) *storepb.DatabaseSchemaMetadata {
 		for name := range s.Relations {
 			relNames = append(relNames, name)
 		}
-		sort.Strings(relNames)
+		slices.Sort(relNames)
 
 		for _, relName := range relNames {
 			rel := s.Relations[relName]
@@ -182,6 +189,7 @@ func catalogToProto(c *catalog.Catalog) *storepb.DatabaseSchemaMetadata {
 				schemaMeta.Views = append(schemaMeta.Views, relationToViewProto(c, rel))
 			case 'm':
 				schemaMeta.MaterializedViews = append(schemaMeta.MaterializedViews, relationToMatViewProto(c, rel))
+			default:
 			}
 		}
 
@@ -190,7 +198,7 @@ func catalogToProto(c *catalog.Catalog) *storepb.DatabaseSchemaMetadata {
 		for name := range s.Sequences {
 			seqNames = append(seqNames, name)
 		}
-		sort.Strings(seqNames)
+		slices.Sort(seqNames)
 
 		for _, seqName := range seqNames {
 			seq := s.Sequences[seqName]
@@ -240,6 +248,7 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 				colMeta.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
 			case 'd':
 				colMeta.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			default:
 			}
 		}
 		table.Columns = append(table.Columns, colMeta)
@@ -336,6 +345,7 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 				Name:       con.Name,
 				Expression: con.CheckExpr,
 			})
+		default:
 		}
 	}
 
