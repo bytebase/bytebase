@@ -5,7 +5,11 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import { type SQLEditorConnection, UNKNOWN_PROJECT_NAME, UNKNOWN_ID } from "@/types";
+import {
+  type SQLEditorConnection,
+  UNKNOWN_ID,
+  UNKNOWN_PROJECT_NAME,
+} from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
