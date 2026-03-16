@@ -64,7 +64,7 @@ func (s *RevisionService) ListRevisions(
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindRevisionMessage{
-		InstanceID:   &database.InstanceID,
+		InstanceID:   database.InstanceID,
 		DatabaseName: &database.DatabaseName,
 		Limit:        &limitPlusOne,
 		Offset:       &offset.offset,

@@ -131,7 +131,7 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 	// Check if this database has any existing changelogs
 	limit := 1
 	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
-		InstanceID:   &database.InstanceID,
+		InstanceID:   database.InstanceID,
 		DatabaseName: &database.DatabaseName,
 		Limit:        &limit,
 	})
@@ -141,16 +141,16 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 
 	// If no changelogs exist, create a baseline with the current schema
 	if len(existingChangelogs) == 0 {
-		baselineSyncHistoryUID, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+		baselineSyncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database schema for baseline")
 		}
 
 		_, err = exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-			InstanceID:     database.InstanceID,
-			DatabaseName:   database.DatabaseName,
-			Status:         store.ChangelogStatusDone,
-			SyncHistoryUID: &baselineSyncHistoryUID,
+			InstanceID:   database.InstanceID,
+			DatabaseName: database.DatabaseName,
+			Status:       store.ChangelogStatusDone,
+			SyncHistory:  &baselineSyncHistory,
 			Payload: &storepb.ChangelogPayload{
 				GitCommit: exec.profile.GitCommit,
 			},
@@ -237,10 +237,10 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 
 	// Begin migration - create pending changelog
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:     database.InstanceID,
-		DatabaseName:   database.DatabaseName,
-		Status:         store.ChangelogStatusPending,
-		SyncHistoryUID: nil,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusPending,
+		SyncHistory:  nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
 			GitCommit: exec.profile.GitCommit,
@@ -265,7 +265,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 			slog.Error("failed to sync database schema", log.BBError(err))
 		} else {
 			opts.LogDatabaseSyncEnd("")
-			update.SyncHistoryUID = &syncHistory
+			update.SyncHistory = &syncHistory
 		}
 	}
 	if migrationErr == nil {
@@ -354,10 +354,10 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 
 	// Begin migration - create pending changelog
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:     database.InstanceID,
-		DatabaseName:   database.DatabaseName,
-		Status:         store.ChangelogStatusPending,
-		SyncHistoryUID: nil,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusPending,
+		SyncHistory:  nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
 			GitCommit: exec.profile.GitCommit,
@@ -419,7 +419,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		slog.Error("failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
-		update.SyncHistoryUID = &syncHistory
+		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
 		status := store.ChangelogStatusDone
@@ -442,7 +442,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
-		InstanceID:   &task.InstanceID,
+		InstanceID:   task.InstanceID,
 		DatabaseName: task.DatabaseName,
 	})
 	if err != nil {
@@ -461,10 +461,10 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 	// Create pending changelog for the entire release
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:     database.InstanceID,
-		DatabaseName:   database.DatabaseName,
-		Status:         store.ChangelogStatusPending,
-		SyncHistoryUID: nil,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusPending,
+		SyncHistory:  nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   taskRunName,
 			GitCommit: exec.profile.GitCommit,
@@ -572,7 +572,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		slog.Error("failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
-		update.SyncHistoryUID = &syncHistory
+		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
 		status := store.ChangelogStatusDone
@@ -674,10 +674,10 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 
 	// Begin migration - create pending changelog
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:     database.InstanceID,
-		DatabaseName:   database.DatabaseName,
-		Status:         store.ChangelogStatusPending,
-		SyncHistoryUID: nil,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusPending,
+		SyncHistory:  nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
 			GitCommit: exec.profile.GitCommit,
@@ -703,7 +703,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		slog.Error("failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
-		update.SyncHistoryUID = &syncHistory
+		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
 		status := store.ChangelogStatusDone
