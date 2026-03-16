@@ -191,7 +191,14 @@ func convertToRollout(project *store.ProjectMessage, plan *store.PlanMessage, ta
 		envTasks := tasksByEnv[env]
 		// Sort tasks by ID within each stage.
 		slices.SortFunc(envTasks, func(a, b *store.TaskMessage) int {
-			return a.ID - b.ID
+			switch {
+			case a.ID < b.ID:
+				return -1
+			case a.ID > b.ID:
+				return 1
+			default:
+				return 0
+			}
 		})
 
 		// Convert tasks to v1pb.Task.

@@ -167,7 +167,6 @@ CREATE TABLE sheet_blob (
 -- plan table stores the plan for a project
 CREATE TABLE plan (
     id bigserial,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -183,7 +182,6 @@ CREATE TABLE plan (
 CREATE INDEX idx_plan_project ON plan(project);
 CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
-CREATE UNIQUE INDEX idx_plan_unique_resource_id ON plan(resource_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
@@ -222,7 +220,6 @@ CREATE TABLE plan_webhook_delivery (
 -- task table stores the task for a plan
 CREATE TABLE task (
     id serial,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint NOT NULL,
     instance text NOT NULL REFERENCES instance(resource_id),
@@ -236,14 +233,12 @@ CREATE TABLE task (
 );
 
 CREATE INDEX idx_task_plan_id_environment ON task(project, plan_id, environment);
-CREATE UNIQUE INDEX idx_task_unique_resource_id ON task(resource_id);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -264,7 +259,6 @@ CREATE TABLE task_run (
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
-CREATE UNIQUE INDEX idx_task_run_unique_resource_id ON task_run(resource_id);
 
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run(project, task_id, attempt);
 
@@ -299,7 +293,6 @@ CREATE TABLE task_run_log (
 -- issue
 CREATE TABLE issue (
     id serial,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -325,7 +318,6 @@ CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
 CREATE INDEX idx_issue_creator ON issue(creator);
 
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
-CREATE UNIQUE INDEX idx_issue_unique_resource_id ON issue(resource_id);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 

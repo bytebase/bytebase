@@ -51,7 +51,7 @@ func postCreateIssue(
 
 		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
 			slog.Error("failed to find approval template",
-				slog.String("project", issue.ProjectID), slog.Int("issue_uid", issue.UID),
+				slog.String("project", issue.ProjectID), slog.Int64("issue_uid", issue.UID),
 				slog.String("issue_title", issue.Title),
 				log.BBError(err))
 		}

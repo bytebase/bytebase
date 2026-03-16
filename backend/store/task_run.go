@@ -15,7 +15,7 @@ import (
 
 // TaskRunMessage is message for task run.
 type TaskRunMessage struct {
-	TaskUID      int
+	TaskUID      int64
 	Environment  string // Refer to the task's environment.
 	PlanUID      int64
 	Status       storepb.TaskRun_Status
@@ -23,7 +23,7 @@ type TaskRunMessage struct {
 	PayloadProto *storepb.TaskRunPayload
 
 	// Output only.
-	ID           int
+	ID           int64
 	CreatorEmail string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -34,10 +34,10 @@ type TaskRunMessage struct {
 
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
-	UID         *int
-	UIDs        *[]int
+	UID         *int64
+	UIDs        *[]int64
 	ProjectID   string
-	TaskUID     *int
+	TaskUID     *int64
 	Environment *string
 	PlanUID     *int64
 	Status      *[]storepb.TaskRun_Status
@@ -45,7 +45,7 @@ type FindTaskRunMessage struct {
 
 // TaskRunStatusPatch is the API message for patching a task run.
 type TaskRunStatusPatch struct {
-	ID        int
+	ID        int64
 	ProjectID string
 
 	// Standard fields
@@ -74,7 +74,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task.environment,
 			task_run.project
 		FROM task_run
-		LEFT JOIN task ON task.id = task_run.task_id
+		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
 		WHERE task_run.project = ?
 	`, find.ProjectID)
 
@@ -188,7 +188,7 @@ func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*Ta
 }
 
 // GetTaskRunByUID gets a task run by uid.
-func (s *Store) GetTaskRunByUID(ctx context.Context, projectID string, uid int) (*TaskRunMessage, error) {
+func (s *Store) GetTaskRunByUID(ctx context.Context, projectID string, uid int64) (*TaskRunMessage, error) {
 	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{ProjectID: projectID, UID: &uid})
 }
 
@@ -225,8 +225,8 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 
 // ClaimedTaskRun represents a claimed task run with its task UID.
 type ClaimedTaskRun struct {
-	TaskRunUID int
-	TaskUID    int
+	TaskRunUID int64
+	TaskUID    int64
 	ProjectID  string
 }
 
@@ -270,7 +270,7 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 	return claimed, nil
 }
 
-func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, taskRunID int) error {
+func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, taskRunID int64) error {
 	// Get the pipeline ID for cache invalidation
 	q := qb.Q().Space(`
 		UPDATE task_run
@@ -301,7 +301,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		return nil
 	}
 
-	var taskUIDs []int
+	var taskUIDs []int64
 	var runAts []*time.Time
 	var projects []string
 	for _, create := range creates {
@@ -330,13 +330,47 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		}
 	}
 
+	projectID := creates[0].ProjectID
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
+	if err != nil {
+		return err
+	}
+
 	// Single query that:
-	// 1. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
-	// 2. Calculates next attempt for each remaining task
-	// 3. Inserts task runs
-	// 4. Uses ON CONFLICT DO NOTHING to handle race conditions
+	// 1. Assigns per-project IDs using ROW_NUMBER() + baseID
+	// 2. Filters out tasks with existing PENDING/RUNNING/DONE task runs (idempotent)
+	// 3. Calculates next attempt for each remaining task
+	// 4. Inserts task runs
+	// 5. Uses ON CONFLICT DO NOTHING to handle race conditions
 	q := qb.Q().Space(`
+		WITH candidates AS (
+			SELECT
+				(ROW_NUMBER() OVER ()) + ? - 1 AS new_id,
+				tasks.project,
+				tasks.task_id,
+				tasks.run_at
+			FROM (
+				SELECT
+					unnest(CAST(? AS TEXT[])) AS project,
+					unnest(CAST(? AS BIGINT[])) AS task_id,
+					unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
+			) tasks
+			WHERE NOT EXISTS (
+				SELECT 1 FROM task_run
+				WHERE task_run.task_id = tasks.task_id
+				AND task_run.project = tasks.project
+				AND task_run.status IN (?, ?, ?, ?)
+			)
+		)
 		INSERT INTO task_run (
+			id,
 			creator,
 			project,
 			task_id,
@@ -346,35 +380,31 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			payload
 		)
 		SELECT
+			candidates.new_id,
 			?,
-			tasks.project,
-			tasks.task_id,
-			tasks.run_at,
-			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = tasks.task_id), 0) as attempt,
+			candidates.project,
+			candidates.task_id,
+			candidates.run_at,
+			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = candidates.task_id AND task_run.project = candidates.project), 0),
 			?,
 			?
-		FROM (
-			SELECT
-				unnest(CAST(? AS TEXT[])) AS project,
-				unnest(CAST(? AS INTEGER[])) AS task_id,
-				unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
-		) tasks
-		WHERE NOT EXISTS (
-			SELECT 1 FROM task_run
-			WHERE task_run.task_id = tasks.task_id
-			AND task_run.status IN (?, ?, ?, ?)
-		)
+		FROM candidates
 		ON CONFLICT (project, task_id, attempt) DO NOTHING
-	`, creatorPtr, storepb.TaskRun_PENDING.String(), payloadStr, projects, taskUIDs, runAts,
-		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
+	`, baseID, projects, taskUIDs, runAts,
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String(),
+		creatorPtr, storepb.TaskRun_PENDING.String(), payloadStr)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return nil
@@ -442,7 +472,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 }
 
 // BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
-func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskRunIDs []int) error {
+func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskRunIDs []int64) error {
 	if len(taskRunIDs) == 0 {
 		return nil
 	}
@@ -496,7 +526,7 @@ func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.D
 }
 
 // UpdateTaskRunPayload updates the payload column for a task run.
-func (s *Store) UpdateTaskRunPayload(ctx context.Context, projectID string, taskRunID int, payload *storepb.TaskRunPayload) error {
+func (s *Store) UpdateTaskRunPayload(ctx context.Context, projectID string, taskRunID int64, payload *storepb.TaskRunPayload) error {
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal task run payload")
@@ -546,7 +576,7 @@ func (s *Store) ListTaskRunsByStatus(ctx context.Context, statuses []storepb.Tas
 			task.environment,
 			task_run.project
 		FROM task_run
-		LEFT JOIN task ON task.id = task_run.task_id
+		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
 		WHERE task_run.status = ANY(?)
 		ORDER BY task_run.id ASC
 	`, statusStrings)

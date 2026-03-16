@@ -33,7 +33,7 @@ type DatabaseCreateExecutor struct {
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int64) (*storepb.TaskRunResult, error) {
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())

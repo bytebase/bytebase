@@ -83,7 +83,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 	issue, err := r.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{ref.ProjectID}, UID: &uid})
 	if err != nil {
 		slog.Error("failed to get issue for approval check",
-			slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
+			slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID), log.BBError(err))
 		return
 	}
 	if issue == nil {
@@ -98,7 +98,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 
 	if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, approvalSetting); err != nil {
 		slog.Error("failed to find approval template",
-			slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID),
+			slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID),
 			slog.String("issue_title", issue.Title),
 			log.BBError(err))
 		// Don't persist error - user can rerun plan check to retry
@@ -113,7 +113,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		issue, err = r.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{ref.ProjectID}, UID: &uid})
 		if err != nil {
 			slog.Error("failed to re-fetch issue after approval finding",
-				slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
+				slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID), log.BBError(err))
 			return
 		}
 		if issue == nil {
@@ -123,7 +123,7 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		approved, err := utils.CheckIssueApproved(issue)
 		if err != nil {
 			slog.Error("failed to check if issue is approved",
-				slog.String("project", ref.ProjectID), slog.Int("issue_uid", ref.UID), log.BBError(err))
+				slog.String("project", ref.ProjectID), slog.Int64("issue_uid", ref.UID), log.BBError(err))
 			return
 		}
 		if approved {

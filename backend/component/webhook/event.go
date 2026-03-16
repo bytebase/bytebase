@@ -47,7 +47,7 @@ func NewRollout(r *store.PlanMessage) *Rollout {
 }
 
 type Issue struct {
-	UID          int
+	UID          int64
 	Status       string
 	Type         string
 	Title        string

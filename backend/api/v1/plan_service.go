@@ -345,7 +345,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
 					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 						slog.Error("failed to find approval template after plan update",
-							slog.String("project", updatedIssue.ProjectID), slog.Int("issue_uid", updatedIssue.UID),
+							slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 							slog.String("issue_title", updatedIssue.Title),
 							log.BBError(err))
 						// Continue anyway - non-fatal error
@@ -502,12 +502,12 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	}
 
 	// Broadcast cancel signal to all replicas for HA.
-	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, int32(planCheckRun.UID)); err != nil {
+	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
 	}
 
 	// Update the status to canceled.
-	if err := s.store.BatchCancelPlanCheckRuns(ctx, projectID, []int{planCheckRun.UID}); err != nil {
+	if err := s.store.BatchCancelPlanCheckRuns(ctx, projectID, []int64{planCheckRun.UID}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
 	}
 

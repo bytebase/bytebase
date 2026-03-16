@@ -205,8 +205,8 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 
 	newStatus := storepb.Issue_DONE
 	if _, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}); err != nil {
-		slog.Error("failed to auto-resolve issue", slog.String("project", projectID), slog.Int("issueUID", issue.UID), log.BBError(err))
+		slog.Error("failed to auto-resolve issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), log.BBError(err))
 		return
 	}
-	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int("issueUID", issue.UID), slog.Int64("planID", planID))
+	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), slog.Int64("planID", planID))
 }
