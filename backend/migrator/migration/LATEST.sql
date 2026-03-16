@@ -395,6 +395,7 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -411,17 +412,16 @@ CREATE TABLE worksheet (
 );
 
 CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
+CREATE UNIQUE INDEX idx_worksheet_unique_resource_id ON worksheet(resource_id);
 
 ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
-    project text NOT NULL,
-    worksheet_id integer NOT NULL,
+    worksheet text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
     principal text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, worksheet_id, principal),
-    FOREIGN KEY (project, worksheet_id) REFERENCES worksheet(project, id) ON DELETE CASCADE
+    PRIMARY KEY (worksheet, principal)
 );
 
 CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal);

@@ -68,7 +68,7 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractWorksheetConnection,
-  extractWorksheetUID,
+  extractWorksheetID,
   getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
@@ -295,7 +295,7 @@ const syncURLWithConnection = () => {
             name: SQL_EDITOR_WORKSHEET_MODULE,
             params: {
               project: extractProjectResourceName(sheet.project),
-              sheet: extractWorksheetUID(sheet.name),
+              sheet: extractWorksheetID(sheet.name),
             },
             query,
           });

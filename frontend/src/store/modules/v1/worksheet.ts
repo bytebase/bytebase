@@ -23,7 +23,7 @@ import {
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
-  extractWorksheetUID,
+  extractWorksheetID,
   getSheetStatement,
   getStatementSize,
   isWorksheetWritableV1,
@@ -68,7 +68,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   // Utilities
   const setCacheEntry = (worksheet: Worksheet, view: WorksheetView) => {
-    const uid = extractWorksheetUID(worksheet.name);
+    const uid = extractWorksheetID(worksheet.name);
     if (uid === String(UNKNOWN_ID)) return;
     if (view === "FULL") {
       cacheByUID.invalidateEntity([uid, "BASIC"]);
@@ -131,7 +131,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     name: string,
     view: WorksheetView | undefined = undefined
   ) => {
-    const uid = extractWorksheetUID(name);
+    const uid = extractWorksheetID(name);
     if (!uid || uid === String(UNKNOWN_ID)) {
       return undefined;
     }
@@ -147,7 +147,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     name: string,
     silent: boolean = false
   ) => {
-    const uid = extractWorksheetUID(name);
+    const uid = extractWorksheetID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
@@ -170,7 +170,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     name: string,
     silent: boolean = false
   ) => {
-    const uid = extractWorksheetUID(name);
+    const uid = extractWorksheetID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
@@ -229,7 +229,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   const deleteWorksheetByName = async (name: string) => {
     const request = create(DeleteWorksheetRequestSchema, { name });
     await worksheetServiceClientConnect.deleteWorksheet(request);
-    const uid = extractWorksheetUID(name);
+    const uid = extractWorksheetID(name);
     cacheByUID.invalidateEntity([uid, "FULL"]);
     cacheByUID.invalidateEntity([uid, "BASIC"]);
   };

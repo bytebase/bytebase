@@ -433,24 +433,20 @@ func GetProjectResourceIDSheetSha256(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
-// GetProjectIDWorksheetUID returns the project ID and worksheet UID from a resource name.
+// GetProjectIDWorksheetID returns the project ID and worksheet ID (resource_id) from a resource name.
 // Format: projects/{project}/worksheets/{worksheet}
-func GetProjectIDWorksheetUID(name string) (string, int, error) {
+func GetProjectIDWorksheetID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, WorksheetIDPrefix)
 	if err != nil {
-		return "", 0, err
+		return "", "", err
 	}
-	worksheetUID, err := strconv.Atoi(tokens[1])
-	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to convert worksheet uid %q to int", tokens[1])
-	}
-	return tokens[0], worksheetUID, nil
+	return tokens[0], tokens[1], nil
 }
 
 // FormatWorksheet formats a worksheet resource name.
 // Format: projects/{project}/worksheets/{worksheet}
-func FormatWorksheet(projectID string, worksheetUID int) string {
-	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), WorksheetIDPrefix, worksheetUID)
+func FormatWorksheet(projectID, worksheetID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), WorksheetIDPrefix, worksheetID)
 }
 
 // GetReviewConfigID returns the review config id from a resource name.
