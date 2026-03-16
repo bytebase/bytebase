@@ -365,6 +365,6 @@ func formatAmbiguousResult(database string, candidates []Candidate) *mcp.CallToo
 }
 
 // executeQuery executes a SQL query against the resolved database.
-func (s *Server) executeQuery(_ context.Context, _ *resolvedDatabase, _ string, _ int) (*QueryOutput, error) {
+func (*Server) executeQuery(_ context.Context, _ *resolvedDatabase, _ string, _ int) (*QueryOutput, error) {
 	return nil, errors.New("not implemented")
 }

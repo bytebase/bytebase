@@ -126,7 +126,7 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 func TestQueryDatabase_Ambiguous(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ADMIN"),
-		makeDatabase("instances/staging/databases/employee_db", "instances/staging", "projects/hr-system", "POSTGRES", "ds-admin-2", "ADMIN"),
+		makeDatabase("instances/staging-mysql/databases/employee_db", "instances/staging-mysql", "projects/hr-system", "MYSQL", "ds-admin-2", "ADMIN"),
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
@@ -135,9 +135,9 @@ func TestQueryDatabase_Ambiguous(t *testing.T) {
 	require.True(t, resolved.ambiguous)
 	require.Len(t, resolved.candidates, 2)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.candidates[0].Database)
-	require.Equal(t, "prod-pg", resolved.candidates[0].Instance)
-	require.Equal(t, "instances/staging/databases/employee_db", resolved.candidates[1].Database)
-	require.Equal(t, "staging", resolved.candidates[1].Instance)
+	require.Equal(t, "POSTGRES", resolved.candidates[0].Engine)
+	require.Equal(t, "instances/staging-mysql/databases/employee_db", resolved.candidates[1].Database)
+	require.Equal(t, "MYSQL", resolved.candidates[1].Engine)
 }
 
 func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
