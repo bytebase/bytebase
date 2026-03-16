@@ -68,7 +68,7 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractWorksheetConnection,
-  extractWorksheetUID,
+  extractWorksheetID,
   getDefaultPagination,
   getSheetStatement,
   isWorksheetReadableV1,
@@ -202,7 +202,7 @@ const prepareSheet = async () => {
   }
 
   await maybeSwitchProject(`projects/${projectId}`);
-  return await switchWorksheet(`worksheets/${sheetId}`);
+  return await switchWorksheet(`projects/${projectId}/worksheets/${sheetId}`);
 };
 
 const prepareConnectionParams = async () => {
@@ -295,7 +295,7 @@ const syncURLWithConnection = () => {
             name: SQL_EDITOR_WORKSHEET_MODULE,
             params: {
               project: extractProjectResourceName(sheet.project),
-              sheet: extractWorksheetUID(sheet.name),
+              sheet: extractWorksheetID(sheet.name),
             },
             query,
           });

@@ -39,7 +39,7 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { extractWorksheetUID } from "@/utils";
+import { extractWorksheetID } from "@/utils";
 import FolderForm from "@/views/sql-editor/AsidePanel/WorksheetPane/SheetList/FolderForm.vue";
 import { useSheetContextByView } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "../context";
@@ -79,8 +79,8 @@ const doSaveSheet = async () => {
   } = pendingEdit.value.rawTab;
   const folders = folderFormRef.value?.folders ?? [];
 
-  const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
-  if (sheetId !== UNKNOWN_ID) {
+  const sheetId = extractWorksheetID(worksheet ?? "");
+  if (sheetId !== String(UNKNOWN_ID)) {
     await editorContext.maybeUpdateWorksheet({
       tabId,
       worksheet,

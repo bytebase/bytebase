@@ -292,16 +292,14 @@ const useSheetTreeByView = (
       switch (viewMode) {
         case "my":
           await sheetStore.fetchWorksheetList(
-            [
-              `project == "${project.value}"`,
-              `creator == "users/${me.value.email}"`,
-            ].join(" && ")
+            project.value,
+            `creator == "users/${me.value.email}"`
           );
           break;
         case "shared":
           await sheetStore.fetchWorksheetList(
+            project.value,
             [
-              `project == "${project.value}"`,
               `creator != "users/${me.value.email}"`,
               // TODO(ed): do we need the visibility filter?
               // If not provide it, the call will fetch all worksheet with read access.

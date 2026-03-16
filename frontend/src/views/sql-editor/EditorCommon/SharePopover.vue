@@ -103,7 +103,7 @@ import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
+import { extractProjectResourceName, extractWorksheetID } from "@/utils";
 
 type AccessOption = {
   label: string;
@@ -206,7 +206,7 @@ const sharedTabLink = computed(() => {
     name: SQL_EDITOR_WORKSHEET_MODULE,
     params: {
       project: extractProjectResourceName(props.worksheet.project),
-      sheet: extractWorksheetUID(props.worksheet.name),
+      sheet: extractWorksheetID(props.worksheet.name),
     },
   });
   return new URL(

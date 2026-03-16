@@ -83,8 +83,11 @@ func (Worksheet_Visibility) EnumDescriptor() ([]byte, []int) {
 
 type CreateWorksheetRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent resource where this worksheet will be created.
+	// Format: projects/{project}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The worksheet to create.
-	Worksheet     *Worksheet `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
+	Worksheet     *Worksheet `protobuf:"bytes,2,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -119,6 +122,13 @@ func (*CreateWorksheetRequest) Descriptor() ([]byte, []int) {
 	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *CreateWorksheetRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
 func (x *CreateWorksheetRequest) GetWorksheet() *Worksheet {
 	if x != nil {
 		return x.Worksheet
@@ -129,7 +139,7 @@ func (x *CreateWorksheetRequest) GetWorksheet() *Worksheet {
 type GetWorksheetRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the worksheet to retrieve.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -177,7 +187,7 @@ type UpdateWorksheetRequest struct {
 	// The worksheet to update.
 	//
 	// The worksheet's `name` field is used to identify the worksheet to update.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Worksheet *Worksheet `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// The list of fields to be updated.
 	// Fields are specified relative to the worksheet.
@@ -329,7 +339,7 @@ type UpdateWorksheetOrganizerRequest struct {
 	// The organizer to update.
 	//
 	// The organizer's `worksheet` field is used to identify the worksheet.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Organizer *WorksheetOrganizer `protobuf:"bytes,1,opt,name=organizer,proto3" json:"organizer,omitempty"`
 	// The list of fields to be updated.
 	// Fields are specified relative to the worksheet organizer.
@@ -397,7 +407,7 @@ func (x *UpdateWorksheetOrganizerRequest) GetAllowMissing() bool {
 type WorksheetOrganizer struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the worksheet.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Worksheet string `protobuf:"bytes,1,opt,name=worksheet,proto3" json:"worksheet,omitempty"`
 	// starred means if the worksheet is starred.
 	Starred       bool     `protobuf:"varint,2,opt,name=starred,proto3" json:"starred,omitempty"`
@@ -460,7 +470,7 @@ func (x *WorksheetOrganizer) GetFolders() []string {
 type DeleteWorksheetRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the worksheet to delete.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -505,6 +515,9 @@ func (x *DeleteWorksheetRequest) GetName() string {
 
 type SearchWorksheetsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent resource of the worksheets.
+	// Format: projects/{project}
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
@@ -512,7 +525,6 @@ type SearchWorksheetsRequest struct {
 	// - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
 	// - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
 	// - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	//
 	// For example:
 	// creator == "users/{email}"
@@ -521,8 +533,7 @@ type SearchWorksheetsRequest struct {
 	// starred == false
 	// visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
 	// visibility == "PRIVATE"
-	// project == "projects/{project resource id}"
-	Filter        string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter        string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -555,6 +566,13 @@ func (x *SearchWorksheetsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SearchWorksheetsRequest.ProtoReflect.Descriptor instead.
 func (*SearchWorksheetsRequest) Descriptor() ([]byte, []int) {
 	return file_v1_worksheet_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SearchWorksheetsRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
 }
 
 func (x *SearchWorksheetsRequest) GetFilter() string {
@@ -613,7 +631,7 @@ type Worksheet struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the worksheet resource, generated by the server.
 	// Canonical parent is project.
-	// Format: worksheets/{worksheet}
+	// Format: projects/{project}/worksheets/{worksheet}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The project resource name.
 	// Format: projects/{project}
@@ -763,9 +781,10 @@ var File_v1_worksheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"S\n" +
-	"\x16CreateWorksheetRequest\x129\n" +
-	"\tworksheet\x18\x01 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
+	"\x1av1/worksheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"p\n" +
+	"\x16CreateWorksheetRequest\x12\x1b\n" +
+	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x129\n" +
+	"\tworksheet\x18\x02 \x01(\v2\x16.bytebase.v1.WorksheetB\x03\xe0A\x02R\tworksheet\".\n" +
 	"\x13GetWorksheetRequest\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x90\x01\n" +
 	"\x16UpdateWorksheetRequest\x129\n" +
@@ -786,16 +805,17 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\astarred\x18\x02 \x01(\bR\astarred\x12\x18\n" +
 	"\afolders\x18\x03 \x03(\tR\afolders\"1\n" +
 	"\x16DeleteWorksheetRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"1\n" +
-	"\x17SearchWorksheetsRequest\x12\x16\n" +
-	"\x06filter\x18\x01 \x01(\tR\x06filter\"R\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"N\n" +
+	"\x17SearchWorksheetsRequest\x12\x1b\n" +
+	"\x06parent\x18\x01 \x01(\tB\x03\xe0A\x02R\x06parent\x12\x16\n" +
+	"\x06filter\x18\x02 \x01(\tR\x06filter\"R\n" +
 	"\x18SearchWorksheetsResponse\x126\n" +
 	"\n" +
 	"worksheets\x18\x01 \x03(\v2\x16.bytebase.v1.WorksheetR\n" +
 	"worksheets\"\xd1\x04\n" +
 	"\tWorksheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
-	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x02R\aproject\x12\x1a\n" +
+	"\aproject\x18\x02 \x01(\tB\x03\xe0A\x03R\aproject\x12\x1a\n" +
 	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12!\n" +
 	"\x05title\x18\x04 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
 	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
@@ -816,15 +836,15 @@ const file_v1_worksheet_service_proto_rawDesc = "" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPROJECT_READ\x10\x01\x12\x11\n" +
 	"\rPROJECT_WRITE\x10\x02\x12\v\n" +
-	"\aPRIVATE\x10\x032\xbe\b\n" +
-	"\x10WorksheetService\x12\x81\x01\n" +
-	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"1\xdaA\tworksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1b:\tworksheet\"\x0e/v1/worksheets\x12t\n" +
-	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=worksheets/*}\x12\x85\x01\n" +
-	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"$\x90\xea0\x02\x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/worksheets:search\x12\xa0\x01\n" +
-	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"P\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\tworksheet2!/v1/{worksheet.name=worksheets/*}\x12\xca\x01\n" +
-	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"_\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02=:\torganizer20/v1/{organizer.worksheet=worksheets/*}/organizer\x12\xbb\x01\n" +
-	"\x1dBatchUpdateWorksheetOrganizer\x121.bytebase.v1.BatchUpdateWorksheetOrganizerRequest\x1a2.bytebase.v1.BatchUpdateWorksheetOrganizerResponse\"3\x90\xea0\x02\x82\xd3\xe4\x93\x02):\x01*2$/v1/worksheets/organizer:batchUpdate\x12z\n" +
-	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"*\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=worksheets/*}B\xab\x01\n" +
+	"\aPRIVATE\x10\x032\xa3\t\n" +
+	"\x10WorksheetService\x12\x9c\x01\n" +
+	"\x0fCreateWorksheet\x12#.bytebase.v1.CreateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"L\xdaA\x10parent,worksheet\x90\xea0\x02\x82\xd3\xe4\x93\x02/:\tworksheet\"\"/v1/{parent=projects/*}/worksheets\x12\x7f\n" +
+	"\fGetWorksheet\x12 .bytebase.v1.GetWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$\x12\"/v1/{name=projects/*/worksheets/*}\x12\xa2\x01\n" +
+	"\x10SearchWorksheets\x12$.bytebase.v1.SearchWorksheetsRequest\x1a%.bytebase.v1.SearchWorksheetsResponse\"A\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{parent=projects/*}/worksheets:search\x12\xab\x01\n" +
+	"\x0fUpdateWorksheet\x12#.bytebase.v1.UpdateWorksheetRequest\x1a\x16.bytebase.v1.Worksheet\"[\xdaA\x15worksheet,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x029:\tworksheet2,/v1/{worksheet.name=projects/*/worksheets/*}\x12\xd5\x01\n" +
+	"\x18UpdateWorksheetOrganizer\x12,.bytebase.v1.UpdateWorksheetOrganizerRequest\x1a\x1f.bytebase.v1.WorksheetOrganizer\"j\xdaA\x15organizer,update_mask\x90\xea0\x02\x82\xd3\xe4\x93\x02H:\torganizer2;/v1/{organizer.worksheet=projects/*/worksheets/*}/organizer\x12\xbb\x01\n" +
+	"\x1dBatchUpdateWorksheetOrganizer\x121.bytebase.v1.BatchUpdateWorksheetOrganizerRequest\x1a2.bytebase.v1.BatchUpdateWorksheetOrganizerResponse\"3\x90\xea0\x02\x82\xd3\xe4\x93\x02):\x01*2$/v1/worksheets/organizer:batchUpdate\x12\x85\x01\n" +
+	"\x0fDeleteWorksheet\x12#.bytebase.v1.DeleteWorksheetRequest\x1a\x16.google.protobuf.Empty\"5\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02$*\"/v1/{name=projects/*/worksheets/*}B\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15WorksheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

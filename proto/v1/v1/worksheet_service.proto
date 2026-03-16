@@ -19,10 +19,10 @@ service WorksheetService {
   // Permissions required: None (authenticated users only)
   rpc CreateWorksheet(CreateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
-      post: "/v1/worksheets"
+      post: "/v1/{parent=projects/*}/worksheets"
       body: "worksheet"
     };
-    option (google.api.method_signature) = "worksheet";
+    option (google.api.method_signature) = "parent,worksheet";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
@@ -33,7 +33,7 @@ service WorksheetService {
   // - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
   // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
-    option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/worksheets/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
@@ -44,9 +44,10 @@ service WorksheetService {
   // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
     option (google.api.http) = {
-      post: "/v1/worksheets:search"
+      post: "/v1/{parent=projects/*}/worksheets:search"
       body: "*"
     };
+    option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
@@ -58,7 +59,7 @@ service WorksheetService {
   // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
     option (google.api.http) = {
-      patch: "/v1/{worksheet.name=worksheets/*}"
+      patch: "/v1/{worksheet.name=projects/*/worksheets/*}"
       body: "worksheet"
     };
     option (google.api.method_signature) = "worksheet,update_mask";
@@ -70,7 +71,7 @@ service WorksheetService {
   // Permissions required: bb.worksheets.get (or creator, or project member for shared worksheets)
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
     option (google.api.http) = {
-      patch: "/v1/{organizer.worksheet=worksheets/*}/organizer"
+      patch: "/v1/{organizer.worksheet=projects/*/worksheets/*}/organizer"
       body: "organizer"
     };
     option (google.api.method_signature) = "organizer,update_mask";
@@ -92,20 +93,24 @@ service WorksheetService {
   // The access is the same as UpdateWorksheet method.
   // Permissions required: bb.worksheets.manage (or creator, or project member for PROJECT_WRITE worksheets)
   rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
+    option (google.api.http) = {delete: "/v1/{name=projects/*/worksheets/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 
 message CreateWorksheetRequest {
+  // The parent resource where this worksheet will be created.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
   // The worksheet to create.
-  Worksheet worksheet = 1 [(google.api.field_behavior) = REQUIRED];
+  Worksheet worksheet = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetWorksheetRequest {
   // The name of the worksheet to retrieve.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -113,7 +118,7 @@ message UpdateWorksheetRequest {
   // The worksheet to update.
   //
   // The worksheet's `name` field is used to identify the worksheet to update.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   Worksheet worksheet = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
@@ -139,7 +144,7 @@ message UpdateWorksheetOrganizerRequest {
   // The organizer to update.
   //
   // The organizer's `worksheet` field is used to identify the worksheet.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   WorksheetOrganizer organizer = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to be updated.
@@ -155,7 +160,7 @@ message UpdateWorksheetOrganizerRequest {
 
 message WorksheetOrganizer {
   // The name of the worksheet.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   string worksheet = 1 [(google.api.field_behavior) = REQUIRED];
 
   // starred means if the worksheet is starred.
@@ -166,11 +171,15 @@ message WorksheetOrganizer {
 
 message DeleteWorksheetRequest {
   // The name of the worksheet to delete.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SearchWorksheetsRequest {
+  // The parent resource of the worksheets.
+  // Format: projects/{project}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
   // To filter the search result.
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
   //
@@ -178,7 +187,6 @@ message SearchWorksheetsRequest {
   // - creator: the worksheet creator in "users/{email}" format, support "==" and "!=" operator.
   // - starred: should be "true" or "false", filter starred/unstarred sheets, support "==" operator.
   // - visibility: check Visibility enum in the Worksheet message for values, support "==" and "in [xx]" operator.
-  // - project: the project full name in "projects/{id}" format, support "==" operator.
   //
   // For example:
   // creator == "users/{email}"
@@ -187,8 +195,7 @@ message SearchWorksheetsRequest {
   // starred == false
   // visibility in ["PRIVATE", "PROJECT_READ", "PROJECT_WRITE"]
   // visibility == "PRIVATE"
-  // project == "projects/{project resource id}"
-  string filter = 1;
+  string filter = 2;
 }
 
 message SearchWorksheetsResponse {
@@ -199,7 +206,7 @@ message SearchWorksheetsResponse {
 message Worksheet {
   // The name of the worksheet resource, generated by the server.
   // Canonical parent is project.
-  // Format: worksheets/{worksheet}
+  // Format: projects/{project}/worksheets/{worksheet}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE
@@ -207,7 +214,7 @@ message Worksheet {
 
   // The project resource name.
   // Format: projects/{project}
-  string project = 2 [(google.api.field_behavior) = REQUIRED];
+  string project = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database resource name.
   // Format: instances/{instance}/databases/{database}

@@ -32,7 +32,8 @@ const (
 
 // WorkSheetMessage is the message for a sheet.
 type WorkSheetMessage struct {
-	ProjectID string
+	ProjectID  string
+	ResourceID string
 	// The DatabaseUID is optional.
 	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
 	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
@@ -46,7 +47,6 @@ type WorkSheetMessage struct {
 	Visibility WorkSheetVisibility
 
 	// Output only fields
-	UID       int
 	Size      int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -56,7 +56,11 @@ type WorkSheetMessage struct {
 
 // FindWorkSheetMessage is the API message for finding sheets.
 type FindWorkSheetMessage struct {
-	UID *int
+	// Required field
+	ProjectIDs     []string
+	PrincipalEmail string
+
+	ResourceID *string
 
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
@@ -66,7 +70,7 @@ type FindWorkSheetMessage struct {
 
 // PatchWorkSheetMessage is the message to patch a sheet.
 type PatchWorkSheetMessage struct {
-	UID          int
+	ResourceID   string
 	Title        *string
 	Statement    *string
 	Visibility   *string
@@ -75,8 +79,8 @@ type PatchWorkSheetMessage struct {
 }
 
 // GetWorkSheet gets a sheet.
-func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, currentPrincipal string) (*WorkSheetMessage, error) {
-	sheets, err := s.ListWorkSheets(ctx, find, currentPrincipal)
+func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage) (*WorkSheetMessage, error) {
+	sheets, err := s.ListWorkSheets(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +96,10 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, cu
 }
 
 // ListWorkSheets returns a list of sheets.
-func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipal string) ([]*WorkSheetMessage, error) {
+func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage) ([]*WorkSheetMessage, error) {
+	if len(find.ProjectIDs) == 0 {
+		return nil, errors.Errorf("empty project filter")
+	}
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "worksheet.statement"
@@ -100,7 +107,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
-			worksheet.id,
+			worksheet.resource_id,
 			worksheet.creator,
 			worksheet.created_at,
 			worksheet.updated_at,
@@ -113,15 +120,21 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			OCTET_LENGTH(worksheet.statement),
 			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
-		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal = '%s'
-		WHERE TRUE`, statementField, currentPrincipal))
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet = worksheet.resource_id AND worksheet_organizer.principal = '%s'
+		WHERE TRUE`, statementField, find.PrincipalEmail))
+
+	if len(find.ProjectIDs) == 1 {
+		q.And("worksheet.project = ?", find.ProjectIDs[0])
+	} else {
+		q.And("worksheet.project = ANY(?)", find.ProjectIDs)
+	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
 
-	if v := find.UID; v != nil {
-		q.And("worksheet.id = ?", *v)
+	if v := find.ResourceID; v != nil {
+		q.And("worksheet.resource_id = ?", *v)
 	}
 
 	query, args, err := q.ToSQL()
@@ -141,7 +154,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		var instanceID, databaseName sql.NullString
 		var payloadBytes []byte
 		if err := rows.Scan(
-			&sheet.UID,
+			&sheet.ResourceID,
 			&sheet.Creator,
 			&sheet.CreatedAt,
 			&sheet.UpdatedAt,
@@ -193,7 +206,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			payload
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, '{}')
-		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
+		RETURNING resource_id, created_at, updated_at, OCTET_LENGTH(statement)
 	`, create.Creator, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility)
 
 	query, args, err := q.ToSQL()
@@ -202,7 +215,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	}
 
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&create.UID,
+		&create.ResourceID,
 		&create.CreatedAt,
 		&create.UpdatedAt,
 		&create.Size,
@@ -244,7 +257,7 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 		}
 	}
 
-	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE resource_id = ?", set, patch.ResourceID).ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
@@ -254,50 +267,34 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 	return nil
 }
 
-// DeleteWorkSheet deletes an existing sheet by ID.
-func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	q1 := qb.Q().Space(`DELETE FROM worksheet_organizer WHERE worksheet_id = ?`, sheetUID)
-	query1, args1, err := q1.ToSQL()
+// DeleteWorkSheet deletes an existing sheet by resource ID.
+// The worksheet_organizer rows are cascade-deleted via FK on worksheet(resource_id).
+func (s *Store) DeleteWorkSheet(ctx context.Context, resourceID string) error {
+	q := qb.Q().Space(`DELETE FROM worksheet WHERE resource_id = ?`, resourceID)
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := tx.ExecContext(ctx, query1, args1...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
-
-	q2 := qb.Q().Space(`DELETE FROM worksheet WHERE id = ?`, sheetUID)
-	query2, args2, err := q2.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query2, args2...); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 // WorksheetOrganizerMessage is the store message for worksheet organizer.
 type WorksheetOrganizerMessage struct {
-	// Related fields
-	WorksheetUID int
-	Principal    string
-	Payload      *storepb.WorkSheetOrganizerPayload
+	WorksheetResourceID string
+	Principal           string
+	Payload             *storepb.WorkSheetOrganizerPayload
 }
 
-func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, principal string) (*WorksheetOrganizerMessage, error) {
+func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetResourceID string, principal string) (*WorksheetOrganizerMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			payload
 		FROM worksheet_organizer
-		WHERE worksheet_id = ? AND principal = ?
-	`, worksheetUID, principal)
+		WHERE worksheet = ? AND principal = ?
+	`, worksheetResourceID, principal)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -305,9 +302,9 @@ func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, pri
 	}
 
 	worksheetOrganizer := WorksheetOrganizerMessage{
-		WorksheetUID: worksheetUID,
-		Principal:    principal,
-		Payload:      &storepb.WorkSheetOrganizerPayload{},
+		WorksheetResourceID: worksheetResourceID,
+		Principal:           principal,
+		Payload:             &storepb.WorkSheetOrganizerPayload{},
 	}
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
@@ -335,18 +332,18 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	}
 	q := qb.Q().Space(`
 	  INSERT INTO worksheet_organizer (
-			worksheet_id,
+			worksheet,
 			principal,
 			payload
 		)
 		VALUES (?, ?, ?)
-		ON CONFLICT(worksheet_id, principal) DO UPDATE SET
+		ON CONFLICT(worksheet, principal) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
-			worksheet_id,
+			worksheet,
 			principal,
 			payload
-	`, patch.WorksheetUID, patch.Principal, payloadStr)
+	`, patch.WorksheetResourceID, patch.Principal, payloadStr)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -356,7 +353,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	var worksheetOrganizer WorksheetOrganizerMessage
 	var payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&worksheetOrganizer.WorksheetUID,
+		&worksheetOrganizer.WorksheetResourceID,
 		&worksheetOrganizer.Principal,
 		&payload,
 	); err != nil {
@@ -395,8 +392,6 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 		if creatorEmail == "" {
 			return "", errors.New("invalid empty creator identifier")
 		}
-		// Assuming we trust the email or validate existence elsewhere, or we can keep GetUserByEmail if strict validation needed.
-		// For now, let's keep validation but return email.
 		user, err := s.GetUserByEmail(ctx, creatorEmail)
 		if err != nil {
 			return "", errors.Errorf("failed to get user: %v", err)
@@ -417,18 +412,12 @@ func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter str
 			return qb.Q().Space("worksheet.creator = ?", userID), nil
 		case "starred":
 			if starred, ok := value.(bool); ok {
-				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
+				return qb.Q().Space("worksheet.resource_id IN (SELECT worksheet FROM worksheet_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "visibility":
 			visibility := WorkSheetVisibility(value.(string))
 			return qb.Q().Space("worksheet.visibility = ?", visibility), nil
-		case "project":
-			projectID, err := common.GetProjectID(value.(string))
-			if err != nil {
-				return nil, errors.Errorf("invalid project filter %q", value)
-			}
-			return qb.Q().Space("worksheet.project = ?", projectID), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
