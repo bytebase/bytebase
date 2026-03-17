@@ -1,11 +1,17 @@
 package taskrun
 
 import (
+	"context"
+	"database/sql"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestGetPrependStatements(t *testing.T) {
@@ -289,4 +295,108 @@ func TestGetPrependStatements(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExecuteSheetMigration(t *testing.T) {
+	tests := []struct {
+		name             string
+		statement        string
+		driverErr        error
+		ghostErr         error
+		wantErr          string
+		wantExecuteCalls int
+		wantGhostCalls   int
+	}{
+		{
+			name:             "standard migration uses driver execute",
+			statement:        "ALTER TABLE users ADD COLUMN status VARCHAR(50);",
+			wantExecuteCalls: 1,
+			wantGhostCalls:   0,
+		},
+		{
+			name:             "gh-ost directive uses ghost executor",
+			statement:        "-- gh-ost = {}\nALTER TABLE users ADD COLUMN status VARCHAR(50);",
+			wantExecuteCalls: 0,
+			wantGhostCalls:   1,
+		},
+		{
+			name:             "standard migration returns driver error",
+			statement:        "ALTER TABLE users ADD COLUMN status VARCHAR(50);",
+			driverErr:        context.Canceled,
+			wantErr:          context.Canceled.Error(),
+			wantExecuteCalls: 1,
+			wantGhostCalls:   0,
+		},
+		{
+			name:             "gh-ost migration returns ghost error",
+			statement:        "-- gh-ost = {}\nALTER TABLE users ADD COLUMN status VARCHAR(50);",
+			ghostErr:         context.DeadlineExceeded,
+			wantErr:          context.DeadlineExceeded.Error(),
+			wantExecuteCalls: 0,
+			wantGhostCalls:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			driver := &fakeMigrationDriver{executeErr: tt.driverErr}
+			sheet := &store.SheetMessage{Statement: tt.statement}
+			ghostCalls := 0
+
+			err := executeSheetMigration(context.Background(), driver, sheet, db.ExecuteOptions{}, func() error {
+				ghostCalls++
+				return tt.ghostErr
+			})
+
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tt.wantErr)
+			}
+			require.Len(t, driver.executedStatements, tt.wantExecuteCalls)
+			require.Equal(t, tt.wantGhostCalls, ghostCalls)
+		})
+	}
+}
+
+type fakeMigrationDriver struct {
+	executedStatements []string
+	executeErr         error
+}
+
+func (d *fakeMigrationDriver) Open(_ context.Context, _ storepb.Engine, _ db.ConnectionConfig) (db.Driver, error) {
+	return d, nil
+}
+
+func (*fakeMigrationDriver) Close(_ context.Context) error {
+	return nil
+}
+
+func (*fakeMigrationDriver) Ping(_ context.Context) error {
+	return nil
+}
+
+func (*fakeMigrationDriver) GetDB() *sql.DB {
+	return nil
+}
+
+func (d *fakeMigrationDriver) Execute(_ context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	d.executedStatements = append(d.executedStatements, statement)
+	return 0, d.executeErr
+}
+
+func (*fakeMigrationDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+	return nil, nil
+}
+
+func (*fakeMigrationDriver) SyncInstance(_ context.Context) (*db.InstanceMetadata, error) {
+	return nil, nil
+}
+
+func (*fakeMigrationDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+	return nil, nil
+}
+
+func (*fakeMigrationDriver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+	return nil
 }

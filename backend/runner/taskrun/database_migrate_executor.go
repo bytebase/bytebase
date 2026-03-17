@@ -289,15 +289,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	// Parse ghost flags from sheet directive
-	flags, err := ghost.ParseGhostDirective(sheet.Statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse ghost directive")
-	}
-	if flags == nil {
-		flags = make(map[string]string)
-	}
-
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
@@ -308,13 +299,6 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	}
 	defer driver.Close(ctx)
 
-	slog.Debug("Start migration...",
-		slog.String("instance", database.InstanceID),
-		slog.String("database", database.DatabaseName),
-		slog.String("type", task.Type.String()),
-		slog.String("sheetSha256", sheet.Sha256),
-	)
-
 	// Set up execute options
 	opts := db.ExecuteOptions{}
 	if project != nil && project.Setting != nil {
@@ -323,34 +307,6 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
 		return exec.store.CreateTaskRunLog(ctx, database.ProjectID, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
 	}
-
-	// Prepare gh-ost migration context before beginning migration
-	// Remove all Bytebase directives from statement before passing to gh-ost
-	cleanedStatement := parserbase.CleanDirectives(sheet.Statement)
-	statement := strings.TrimSpace(cleanedStatement)
-	// Trim trailing semicolons.
-	statement = strings.TrimRight(statement, ";")
-
-	tableName, err := ghost.GetTableNameFromStatement(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
-	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
-	}
-
-	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
-	}
-	defer func() {
-		// Use migrationContext.Uuid as the tls_config_key by convention.
-		// We need to deregister it when gh-ost exits.
-		// https://github.com/bytebase/gh-ost2/pull/4
-		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
-	}()
 
 	// Begin migration - create pending changelog
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
@@ -367,7 +323,91 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
-	// Execute gh-ost migration
+	migrationErr := executeGhostMigration(ctx, driverCtx, driver, task, sheet, instance, database)
+
+	// Dump after migration and update changelog
+	update := &store.UpdateChangelogMessage{
+		ResourceID: changelogID,
+	}
+	opts.LogDatabaseSyncStart()
+	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.Error("failed to sync database schema", log.BBError(err))
+	} else {
+		opts.LogDatabaseSyncEnd("")
+		update.SyncHistory = &syncHistory
+	}
+	if migrationErr == nil {
+		status := store.ChangelogStatusDone
+		update.Status = &status
+	} else {
+		status := store.ChangelogStatusFailed
+		update.Status = &status
+	}
+	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
+		slog.Error("failed to update changelog", log.BBError(err))
+	}
+
+	if migrationErr != nil {
+		return nil, migrationErr
+	}
+
+	return &storepb.TaskRunResult{}, nil
+}
+
+func executeSheetMigration(driverCtx context.Context, driver db.Driver, sheet *store.SheetMessage, opts db.ExecuteOptions, executeGhost func() error) error {
+	if ghost.IsGhostEnabled(sheet.Statement) {
+		return executeGhost()
+	}
+	_, err := driver.Execute(driverCtx, sheet.Statement, opts)
+	return err
+}
+
+func executeGhostMigration(ctx context.Context, driverCtx context.Context, driver db.Driver, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) error {
+	flags, err := ghost.ParseGhostDirective(sheet.Statement)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse ghost directive")
+	}
+	if flags == nil {
+		flags = make(map[string]string)
+	}
+
+	slog.Debug("Start migration...",
+		slog.String("instance", database.InstanceID),
+		slog.String("database", database.DatabaseName),
+		slog.String("type", task.Type.String()),
+		slog.String("sheetSha256", sheet.Sha256),
+	)
+
+	// Prepare gh-ost migration context before beginning migration.
+	// Remove all Bytebase directives from statement before passing to gh-ost.
+	cleanedStatement := parserbase.CleanDirectives(sheet.Statement)
+	statement := strings.TrimSpace(cleanedStatement)
+	// Trim trailing semicolons.
+	statement = strings.TrimRight(statement, ";")
+
+	tableName, err := ghost.GetTableNameFromStatement(statement)
+	if err != nil {
+		return err
+	}
+
+	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
+	if adminDataSource == nil {
+		return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
+	}
+
+	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
+	if err != nil {
+		return errors.Wrap(err, "failed to init migrationContext for gh-ost")
+	}
+	defer func() {
+		// Use migrationContext.Uuid as the tls_config_key by convention.
+		// We need to deregister it when gh-ost exits.
+		// https://github.com/bytebase/gh-ost2/pull/4
+		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
+	}()
+
 	// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 	migrationError := make(chan error, 1)
 
@@ -399,44 +439,13 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		migrationError <- nil
 	}()
 
-	var migrationErr error
 	select {
 	case err := <-migrationError:
-		migrationErr = err
+		return err
 	case <-driverCtx.Done():
 		migrationContext.PanicAbort <- errors.New("task canceled")
-		migrationErr = errors.New("task canceled")
+		return errors.New("task canceled")
 	}
-
-	// Dump after migration and update changelog
-	update := &store.UpdateChangelogMessage{
-		ResourceID: changelogID,
-	}
-	opts.LogDatabaseSyncStart()
-	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
-	if err != nil {
-		opts.LogDatabaseSyncEnd(err.Error())
-		slog.Error("failed to sync database schema", log.BBError(err))
-	} else {
-		opts.LogDatabaseSyncEnd("")
-		update.SyncHistory = &syncHistory
-	}
-	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
-	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
-	}
-	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
-		slog.Error("failed to update changelog", log.BBError(err))
-	}
-
-	if migrationErr != nil {
-		return nil, migrationErr
-	}
-
-	return &storepb.TaskRunResult{}, nil
 }
 
 func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
@@ -533,9 +542,9 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			slog.String("type", task.Type.String()),
 		)
 
-		// Execute the SQL
-		_, err = driver.Execute(driverCtx, sheet.Statement, opts)
-		if err != nil {
+		if err := executeSheetMigration(driverCtx, driver, sheet, opts, func() error {
+			return executeGhostMigration(ctx, driverCtx, driver, task, sheet, instance, database)
+		}); err != nil {
 			migrationErr = errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			break
 		}
