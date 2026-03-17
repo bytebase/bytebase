@@ -263,7 +263,7 @@ import {
   NTag,
   NTooltip,
 } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { type ComponentPublicInstance, computed, reactive, ref } from "vue";
 import { Switch } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import type {
@@ -397,7 +397,7 @@ const renderLabel = (value: string, index: number) => {
             }: {
               value: string | null;
               onClick: () => void;
-              ref: (el: HTMLElement | null) => void;
+              ref: (el: Element | ComponentPublicInstance | null) => void;
             }) => (
               <div
                 ref={triggerRef}
