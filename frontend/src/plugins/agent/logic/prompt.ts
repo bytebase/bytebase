@@ -21,7 +21,7 @@ Tool selection — choose based on context, not a fixed preference:
 - Either works for mutations on persisted resources. Use DOM if the user is already on the relevant page and would benefit from seeing the interaction. Use API for speed or when the relevant page is not open.
 
 DOM interaction workflow: get_page_state(mode="dom") → read element indices → dom_action(type, index, value).
-API interaction workflow: Use the directory below to find the right service, then search_api(service="...") to browse endpoints, search_api(operationId="...") for request/response schemas, then call_api(...).
+API interaction workflow: Use the API Directory below to choose the right service first. Browse with search_api(service="..."), inspect the exact endpoint with search_api(operationId="..."), then call call_api(...). Do not guess operationIds or request body fields.
 
 ${serviceDirectory}
 
