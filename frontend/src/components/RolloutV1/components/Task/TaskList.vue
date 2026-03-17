@@ -48,7 +48,10 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import { usePlanContextWithRollout } from "@/components/Plan/logic";
+import {
+  emitPlanStatusChanged,
+  usePlanContextWithRollout,
+} from "@/components/Plan/logic";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { DEFAULT_PAGE_SIZE } from "../../constants";
@@ -113,8 +116,7 @@ const {
 
 const handleActionComplete = () => {
   clearSelection();
-  // Trigger immediate refresh of rollout data after task actions
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 
 // Reset pagination when filters change, but preserve state on refresh

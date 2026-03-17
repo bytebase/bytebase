@@ -51,6 +51,7 @@
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import { emitPlanStatusChanged } from "@/components/Plan/logic";
 import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
 import TaskStatusActions from "@/components/RolloutV1/components/Task/TaskStatusActions.vue";
 import { useDatabaseV1Store } from "@/store";
@@ -88,7 +89,7 @@ const getStageForTask = (task: Task): Stage | undefined => {
 
 // Handle action confirmed - trigger data refresh
 const handleActionConfirmed = () => {
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 
 // Fetch task target databases

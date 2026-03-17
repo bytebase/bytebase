@@ -13,8 +13,13 @@ import type {
   IssueStatusAction,
 } from "../components/HeaderSection/Actions/registry";
 
+export type RefreshMode = "normal" | "fast-follow";
+
 export type PlanEvents = Emittery<{
-  "status-changed": { eager: boolean };
+  "status-changed": {
+    eager: boolean;
+    refreshMode?: RefreshMode;
+  };
   "perform-issue-review-action": {
     action: IssueReviewAction;
   };
@@ -55,6 +60,17 @@ export const usePlanContext = () => {
     );
   }
   return context;
+};
+
+export const emitPlanStatusChanged = (
+  events: PlanEvents,
+  options: {
+    eager?: boolean;
+    refreshMode?: RefreshMode;
+  } = {}
+) => {
+  const { eager = true, refreshMode = "normal" } = options;
+  events.emit("status-changed", { eager, refreshMode });
 };
 
 export const tryUsePlanContext = () => {
