@@ -390,7 +390,15 @@ const renderLabel = (value: string, index: number) => {
           value={label.color}
           onUpdateValue={(color: string) => (label.color = color)}
           v-slots={{
-            trigger: ({ value, onClick, ref: triggerRef }: { value: string | null; onClick: () => void; ref: (el: any) => void }) => (
+            trigger: ({
+              value,
+              onClick,
+              ref: triggerRef,
+            }: {
+              value: string | null;
+              onClick: () => void;
+              ref: (el: HTMLElement | null) => void;
+            }) => (
               <div
                 ref={triggerRef}
                 class="w-4 h-4 rounded-sm cursor-pointer"
