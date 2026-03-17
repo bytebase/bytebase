@@ -21,7 +21,9 @@ func init() {
 
 // parsePgStatements is the ParseStatementsFunc for PostgreSQL.
 // Returns []ParsedStatement with both text and AST populated.
-// Uses omni for both splitting and parsing, returning OmniAST wrappers.
+// Uses omni for parsing, returning OmniAST wrappers that also carry legacy ANTLR
+// parse trees for backward compatibility with advisors that haven't migrated yet.
+// When omni parsing fails but ANTLR succeeds, falls back to ANTLR-only mode.
 func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
@@ -33,19 +35,45 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 		if stmt.Empty {
 			continue
 		}
-		omniStmts, err := ParsePg(stmt.Text)
-		if err != nil {
-			return nil, convertOmniError(err, statement, stmt)
-		}
-		for _, os := range omniStmts {
-			result = append(result, base.ParsedStatement{
-				Statement: stmt,
-				AST: &OmniAST{
+
+		// Parse with ANTLR (needed by advisors during migration).
+		// TODO(omni-migration): remove once all advisors migrate to omni AST.
+		antlrResult, antlrErr := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine())
+
+		// Parse with omni.
+		omniStmts, omniErr := ParsePg(stmt.Text)
+
+		switch {
+		case omniErr == nil:
+			// Omni succeeded: use omni AST with ANTLR fallback for advisors.
+			for _, os := range omniStmts {
+				omniAST := &OmniAST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
+				}
+				if antlrErr == nil && antlrResult != nil {
+					omniAST.antlrAST = antlrResult
+				}
+				result = append(result, base.ParsedStatement{
+					Statement: stmt,
+					AST:       omniAST,
+				})
+			}
+		case antlrErr == nil && antlrResult != nil:
+			// Omni failed but ANTLR succeeded: use ANTLR-only fallback.
+			// This handles cases where omni is stricter (e.g. reserved keywords used as identifiers).
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+					antlrAST:      antlrResult,
 				},
 			})
+		default:
+			// Both failed: return omni error (prefer omni error message).
+			return nil, convertOmniError(omniErr, statement, stmt)
 		}
 	}
 	return result, nil
