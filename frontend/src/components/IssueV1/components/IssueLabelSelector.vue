@@ -4,6 +4,7 @@
     :options="options"
     :disabled="disabled"
     :size="size"
+    :to="renderMenuInsideParent ? false : undefined"
     :consistent-menu-width="true"
     :max-tag-count="maxTagCount"
     :render-label="renderLabel"
@@ -67,10 +68,12 @@ const props = withDefaults(
     project: Project;
     size?: "small" | "medium" | "large";
     maxTagCount?: number | "responsive";
+    renderMenuInsideParent?: boolean;
   }>(),
   {
     size: "medium",
     maxTagCount: "responsive",
+    renderMenuInsideParent: false,
   }
 );
 
