@@ -60,6 +60,7 @@ func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
 	s.registerSkillTool()
+	s.registerQueryTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
