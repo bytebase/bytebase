@@ -53,6 +53,18 @@ function setNativeValue(
   el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function normalizeMultilineValue(value: string): string {
+  if (!value.includes("\\")) {
+    return value;
+  }
+
+  return value
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\\t/g, "\t");
+}
+
 function findInnerInput(
   el: Element
 ): HTMLInputElement | HTMLTextAreaElement | null {
@@ -70,8 +82,20 @@ async function findMonacoEditor(
     );
     if (!isMonacoLoaded()) return null;
     const monaco = await getMonacoEditor();
+    const monacoRoot = el.closest(".monaco-editor");
     for (const editor of monaco.editor.getEditors()) {
-      if (el.contains(editor.getDomNode())) return editor;
+      const domNode = editor.getDomNode();
+      if (!domNode) {
+        continue;
+      }
+      if (
+        el === domNode ||
+        el.contains(domNode) ||
+        domNode.contains(el) ||
+        monacoRoot === domNode
+      ) {
+        return editor;
+      }
     }
   } catch {
     // Monaco not available
@@ -91,10 +115,11 @@ async function handleInput(
   // Monaco editor
   const monacoEditor = await findMonacoEditor(el);
   if (monacoEditor) {
-    monacoEditor.setValue(value);
+    const normalizedValue = normalizeMultilineValue(value);
+    monacoEditor.setValue(normalizedValue);
     return {
       success: true,
-      message: `Set editor content (${value.length} chars)`,
+      message: `Set editor content (${normalizedValue.length} chars)`,
     };
   }
 
@@ -115,8 +140,10 @@ async function handleInput(
   }
 
   target.focus();
-  setNativeValue(target, value);
-  return { success: true, message: `Set value to "${value}"` };
+  const normalizedValue =
+    target instanceof HTMLTextAreaElement ? normalizeMultilineValue(value) : value;
+  setNativeValue(target, normalizedValue);
+  return { success: true, message: `Set value to "${normalizedValue}"` };
 }
 
 async function handleSelect(
