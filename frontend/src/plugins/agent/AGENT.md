@@ -27,9 +27,8 @@ frontend/src/plugins/agent/
 │       ├── navigate.ts  # Router navigation + route listing
 │       ├── pageState.ts # Page context (semantic or DOM)
 │       ├── domAction.ts # DOM action wrapper
-│       └── gen/         # Generated files (do not edit by hand)
-│           ├── openapi-index.ts     # API endpoint and schema index
-│           └── service-directory.ts # LLM-generated service directory
+│       └── gen/         # Generated API discovery artifacts
+│           └── openapi-index.ts     # Generated API endpoint and schema index
 └── store/               # Pinia store for agent state
 ```
 
@@ -53,32 +52,32 @@ The agent chooses between DOM and API based on page context:
 
 ## Maintaining the Service Directory
 
-**What:** A compact, feature-grouped summary of all API services. Injected into the system prompt so the agent knows which service to target without keyword-searching.
+**What:** A compact, feature-grouped summary of API services. It is embedded directly in `logic/prompt.ts` so the agent can choose the right service quickly before using `search_api` for exact endpoint details.
 
-**Where:** `logic/tools/gen/service-directory.ts`
+**Where:** `logic/prompt.ts` (`serviceDirectory` constant)
+
+**Source of truth:**
+- The `serviceDirectory` string in `logic/prompt.ts` is a **checked-in, manually maintained** prompt aid.
+- `openapi-index.ts` and `search_api` remain the actual API discovery source of truth.
 
 **When to update:**
-- After adding or removing API services
-- After significant endpoint additions that change what a service covers
-- When the generator script warns about uncovered services
+- After adding or removing an API service
+- After major endpoint additions that materially change what a service covers
+- When `pnpm --dir frontend run generate:openapi-index` warns about uncovered services
+- When the page agent consistently picks the wrong service because the descriptions are stale or missing key synonyms
 
 **How to update:**
-1. Run `pnpm --dir frontend run generate:openapi-index` — check for service coverage warnings
-2. Run `pnpm --dir frontend run generate:service-directory` — regenerates using an LLM
-3. Review the output in `gen/service-directory.ts` and commit
+1. Run `pnpm --dir frontend run generate:openapi-index`.
+2. If the script warns about missing services, edit the `serviceDirectory` block in `logic/prompt.ts` manually.
+3. Keep each service description to one line.
+4. Use user-facing feature names and useful synonyms, not raw method lists.
+5. Keep the category structure compact and stable; do not try to enumerate every endpoint.
+6. Preserve the surrounding prompt structure and the `serviceDirectory` constant name.
+7. Review the resulting prompt text and commit the file.
 
-The directory generation script (`scripts/generate_service_directory.js`) feeds the full endpoint list to an LLM and asks it to produce a grouped directory. The LLM prompt is in the script.
+## Maintaining Search Hints
 
-## Maintaining the Concept Alias Map
-
-**What:** A mapping from user-facing feature names to API service names and keywords. Lives in `searchApi.ts` as `CONCEPT_ALIASES`.
-
-**When to update:** When users report that searching for a feature by its common name returns no results.
-
-**How to update:** Add an entry mapping the user's term to the relevant service(s) and keywords:
-```ts
-"feature name": ["ServiceName", "keyword1", "keyword2"],
-```
+When users repeatedly search for a feature using terms that do not map cleanly to the right service, update the search heuristics in `logic/tools/searchApi.ts` so the agent can discover the relevant APIs more reliably.
 
 ## Maintaining Skills
 

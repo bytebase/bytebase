@@ -234,30 +234,29 @@ console.log(
   `  Endpoints: ${endpoints.length}, Schemas: ${schemaCount} (${objectCount} objects, ${enumCount} enums)`
 );
 
-// Validate service directory coverage
-const DIRECTORY_FILE = path.join(
-  __dirname,
-  "../src/plugins/agent/logic/tools/gen/service-directory.ts"
-);
-if (fs.existsSync(DIRECTORY_FILE)) {
-  const dirContent = fs.readFileSync(DIRECTORY_FILE, "utf8");
+// Validate service directory coverage in the prompt
+const PROMPT_FILE = path.join(__dirname, "../src/plugins/agent/logic/prompt.ts");
+if (fs.existsSync(PROMPT_FILE)) {
+  const promptContent = fs.readFileSync(PROMPT_FILE, "utf8");
   const specServices = new Set(endpoints.map((ep) => ep.service));
   const missing = [];
   for (const svc of specServices) {
-    if (!dirContent.includes(svc)) {
+    if (!promptContent.includes(svc)) {
       missing.push(svc);
     }
   }
   if (missing.length > 0) {
     console.warn(
-      `  ⚠ Services not in service-directory.ts: ${missing.join(", ")}`
+      `  ⚠ Services not reflected in prompt.ts serviceDirectory: ${missing.join(", ")}`
     );
     console.warn(
-      `    Run: pnpm --dir frontend run generate:service-directory`
+      "    Review frontend/src/plugins/agent/AGENT.md and manually update the serviceDirectory block in prompt.ts"
     );
   } else {
-    console.log(`  ✓ Service directory covers all ${specServices.size} services`);
+    console.log(`  ✓ Prompt service directory covers all ${specServices.size} services`);
   }
 } else {
-  console.warn(`  ⚠ No service-directory.ts found. Run: pnpm --dir frontend run generate:service-directory`);
+  console.warn(
+    "  ⚠ No prompt.ts found. Review frontend/src/plugins/agent/AGENT.md and restore or recreate the serviceDirectory block"
+  );
 }

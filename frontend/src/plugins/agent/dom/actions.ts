@@ -141,7 +141,9 @@ async function handleInput(
 
   target.focus();
   const normalizedValue =
-    target instanceof HTMLTextAreaElement ? normalizeMultilineValue(value) : value;
+    target instanceof HTMLTextAreaElement
+      ? normalizeMultilineValue(value)
+      : value;
   setNativeValue(target, normalizedValue);
   return { success: true, message: `Set value to "${normalizedValue}"` };
 }
