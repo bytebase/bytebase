@@ -117,7 +117,7 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	return nil
 }
 
-func (s *Scheduler) storeParallelLimitCause(ctx context.Context, projectID string, taskRunID int) {
+func (s *Scheduler) storeParallelLimitCause(ctx context.Context, projectID string, taskRunID int64) {
 	payload := &storepb.TaskRunPayload{
 		SchedulerInfo: &storepb.SchedulerInfo{
 			ReportTime: timestamppb.Now(),
@@ -185,8 +185,8 @@ type planKey struct {
 // schedulingContext holds pre-fetched and indexed active task run data for a scheduling cycle.
 type schedulingContext struct {
 	// Pre-indexed active task runs (AVAILABLE + RUNNING)
-	activeByDatabase  map[string]int  // dbKey -> blocking taskID (first found)
-	activeCountByPlan map[planKey]int // (project, planID) -> active count
+	activeByDatabase  map[string]int64 // dbKey -> blocking taskID (first found)
+	activeCountByPlan map[planKey]int  // (project, planID) -> active count
 
 	// Tracks promotions this round
 	promotedDBs    map[string]bool
@@ -200,7 +200,7 @@ func newSchedulingContext(ctx context.Context, s *store.Store) (*schedulingConte
 	}
 
 	sc := &schedulingContext{
-		activeByDatabase:  make(map[string]int),
+		activeByDatabase:  make(map[string]int64),
 		activeCountByPlan: make(map[planKey]int),
 		promotedDBs:       make(map[string]bool),
 		promotedCounts:    make(map[planKey]int),
@@ -211,7 +211,7 @@ func newSchedulingContext(ctx context.Context, s *store.Store) (*schedulingConte
 	}
 
 	// Group task run task UIDs by project for correct project-scoped lookups.
-	taskIDsByProject := make(map[string][]int)
+	taskIDsByProject := make(map[string][]int64)
 	for _, tr := range activeTaskRuns {
 		taskIDsByProject[tr.ProjectID] = append(taskIDsByProject[tr.ProjectID], tr.TaskUID)
 	}
@@ -219,7 +219,7 @@ func newSchedulingContext(ctx context.Context, s *store.Store) (*schedulingConte
 	// Batch fetch tasks per project.
 	type taskKey struct {
 		projectID string
-		id        int
+		id        int64
 	}
 	taskByKey := make(map[taskKey]*store.TaskMessage)
 	for projectID, ids := range taskIDsByProject {
@@ -251,7 +251,7 @@ func newSchedulingContext(ctx context.Context, s *store.Store) (*schedulingConte
 	return sc, nil
 }
 
-func (sc *schedulingContext) checkDatabaseMutualExclusion(task *store.TaskMessage) (canProceed bool, blockingTaskID *int) {
+func (sc *schedulingContext) checkDatabaseMutualExclusion(task *store.TaskMessage) (canProceed bool, blockingTaskID *int64) {
 	if task.DatabaseName == nil || !isSequentialTask(task) {
 		return true, nil
 	}

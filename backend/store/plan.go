@@ -67,29 +67,44 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, errors.Wrap(err, "failed to marshal plan config")
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	nextID, err := nextProjectID(ctx, tx, "plan", plan.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO plan (
+			id,
 			creator,
 			project,
 			name,
 			description,
 			config
 		) VALUES (
-			?, ?, ?, ?, ?
-		) RETURNING id, created_at, updated_at
-	`, creator, plan.ProjectID, plan.Name, plan.Description, config)
+			?, ?, ?, ?, ?, ?
+		) RETURNING created_at, updated_at
+	`, nextID, creator, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
 
-	var id int64
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&id, &plan.CreatedAt, &plan.UpdatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&plan.CreatedAt, &plan.UpdatedAt); err != nil {
 		return nil, errors.Wrap(err, "failed to insert plan")
 	}
 
-	plan.UID = id
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit tx")
+	}
+
+	plan.UID = nextID
 	plan.Creator = creator
 	return plan, nil
 }
@@ -104,7 +119,7 @@ func (s *Store) GetPlan(ctx context.Context, find *FindPlanMessage) (*PlanMessag
 		return nil, nil
 	}
 	if len(plans) > 1 {
-		return nil, errors.Errorf("expect to find one plan, found %d", len(plans))
+		return nil, errors.Errorf("expect to find one plan, found %d by filter %v", len(plans), find)
 	}
 	return plans[0], nil
 }
@@ -123,7 +138,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config,
 			plan.deleted
 		FROM plan
-		LEFT JOIN issue on plan.id = issue.plan_id
+		LEFT JOIN issue on plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE plan.project = ?
 	`, find.ProjectID)
 

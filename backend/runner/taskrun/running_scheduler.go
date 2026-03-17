@@ -59,7 +59,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 
 	for _, c := range claimed {
 		if err := s.executeTaskRun(ctx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
-			slog.Error("failed to execute task run", slog.Int("id", c.TaskRunUID), log.BBError(err))
+			slog.Error("failed to execute task run", slog.Int64("id", c.TaskRunUID), log.BBError(err))
 		}
 	}
 
@@ -67,7 +67,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 }
 
 // executeTaskRun executes a task run that is already in RUNNING status.
-func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int) error {
+func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int64) error {
 	task, err := s.store.GetTaskByID(ctx, projectID, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -79,7 +79,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 	// Validate task freshness before execution.
 	if err := s.validateTaskFreshness(ctx, task); err != nil {
 		slog.Warn("task run blocked by drift validation",
-			slog.Int("id", task.ID),
+			slog.Int64("id", task.ID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
@@ -112,7 +112,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 	return nil
 }
 
-func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *store.TaskMessage, executor Executor) {
+func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *store.TaskMessage, executor Executor) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -135,7 +135,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 
 	if err != nil && errors.Is(err, context.Canceled) {
 		slog.Warn("task run is canceled",
-			slog.Int("id", task.ID),
+			slog.Int64("id", task.ID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
@@ -148,7 +148,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
-				slog.Int("id", task.ID),
+				slog.Int64("id", task.ID),
 				log.BBError(err),
 			)
 			return
@@ -158,7 +158,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 
 	if err != nil {
 		slog.Warn("task run failed",
-			slog.Int("id", task.ID),
+			slog.Int64("id", task.ID),
 			slog.String("type", task.Type.String()),
 			log.BBError(err),
 		)
@@ -173,7 +173,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
-				slog.Int("id", task.ID),
+				slog.Int64("id", task.ID),
 				log.BBError(err),
 			)
 			return
@@ -218,7 +218,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 	}
 	if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 		slog.Error("Failed to mark task as DONE",
-			slog.Int("id", task.ID),
+			slog.Int64("id", task.ID),
 			log.BBError(err),
 		)
 		return

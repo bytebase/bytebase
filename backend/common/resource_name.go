@@ -192,12 +192,12 @@ func GetIdentityProviderID(name string) (string, error) {
 }
 
 // GetProjectIDIssueUID returns the project ID and issue UID from the issue name.
-func GetProjectIDIssueUID(name string) (string, int, error) {
+func GetProjectIDIssueUID(name string) (string, int64, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
 		return "", 0, err
 	}
-	issueUID, err := strconv.Atoi(tokens[1])
+	issueUID, err := strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
 		return "", 0, errors.Errorf("invalid issue ID %q", tokens[1])
 	}
@@ -205,12 +205,12 @@ func GetProjectIDIssueUID(name string) (string, int, error) {
 }
 
 // GetProjectIDIssueUIDIssueCommentID returns the project ID, issue UID and issue comment ID from the issue comment name.
-func GetProjectIDIssueUIDIssueCommentID(name string) (string, int, string, error) {
+func GetProjectIDIssueUIDIssueCommentID(name string) (string, int64, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, IssueCommentNamePrefix)
 	if err != nil {
 		return "", 0, "", err
 	}
-	issueUID, err := strconv.Atoi(tokens[1])
+	issueUID, err := strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
 		return "", 0, "", errors.Errorf("invalid issue ID %q", tokens[1])
 	}
@@ -231,16 +231,16 @@ func GetProjectIDPlanID(name string) (string, int64, error) {
 }
 
 // GetProjectIDPlanIDPlanCheckRunID returns the project ID, plan ID and plan check run ID from a resource name.
-func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int, int, error) {
+func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int64, int64, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix, PlanCheckRunPrefix)
 	if err != nil {
 		return "", 0, 0, err
 	}
-	planID, err := strconv.Atoi(tokens[1])
+	planID, err := strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
 		return "", 0, 0, errors.Errorf("invalid plan ID %q", tokens[1])
 	}
-	planCheckRunID, err := strconv.Atoi(tokens[2])
+	planCheckRunID, err := strconv.ParseInt(tokens[2], 10, 64)
 	if err != nil {
 		return "", 0, 0, errors.Errorf("invalid plan check run ID %q", tokens[2])
 	}
@@ -259,7 +259,7 @@ func GetProjectIDPlanIDFromPlanCheckRun(name string) (string, int64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	return projectID, int64(planID), nil
+	return projectID, planID, nil
 }
 
 // GetProjectIDPlanIDFromRolloutName returns the project ID and plan ID from a resource name.
@@ -297,7 +297,7 @@ func GetProjectIDPlanIDMaybeStageID(name string) (string, int64, *string, error)
 }
 
 // GetProjectIDPlanIDStageIDMaybeTaskID returns the project ID, plan ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDPlanIDStageIDMaybeTaskID(name string) (string, int64, string, *int, error) {
+func GetProjectIDPlanIDStageIDMaybeTaskID(name string) (string, int64, string, *int64, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", nil, errors.Errorf("invalid rollout task name %q", name)
@@ -315,9 +315,9 @@ func GetProjectIDPlanIDStageIDMaybeTaskID(name string) (string, int64, string, *
 	}
 
 	stageID := suffixParts[1]
-	var maybeTaskID *int
+	var maybeTaskID *int64
 	if suffixParts[3] != "-" {
-		taskID, err := strconv.Atoi(suffixParts[3])
+		taskID, err := strconv.ParseInt(suffixParts[3], 10, 64)
 		if err != nil {
 			return "", 0, "", nil, errors.Errorf("invalid task ID %q", suffixParts[3])
 		}
@@ -327,7 +327,7 @@ func GetProjectIDPlanIDStageIDMaybeTaskID(name string) (string, int64, string, *
 }
 
 // GetProjectIDPlanIDMaybeStageIDMaybeTaskID returns the project ID, plan ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDPlanIDMaybeStageIDMaybeTaskID(name string) (string, int64, *string, *int, error) {
+func GetProjectIDPlanIDMaybeStageIDMaybeTaskID(name string) (string, int64, *string, *int64, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, nil, nil, errors.Errorf("invalid rollout task name %q", name)
@@ -348,9 +348,9 @@ func GetProjectIDPlanIDMaybeStageIDMaybeTaskID(name string) (string, int64, *str
 	if suffixParts[1] != "-" {
 		maybeStageID = &suffixParts[1]
 	}
-	var maybeTaskID *int
+	var maybeTaskID *int64
 	if suffixParts[3] != "-" {
-		taskID, err := strconv.Atoi(suffixParts[3])
+		taskID, err := strconv.ParseInt(suffixParts[3], 10, 64)
 		if err != nil {
 			return "", 0, nil, nil, errors.Errorf("invalid task ID %q", suffixParts[3])
 		}
@@ -360,7 +360,7 @@ func GetProjectIDPlanIDMaybeStageIDMaybeTaskID(name string) (string, int64, *str
 }
 
 // GetProjectIDPlanIDStageIDTaskID returns the project ID, plan ID, stage ID, and task ID from a resource name.
-func GetProjectIDPlanIDStageIDTaskID(name string) (string, int64, string, int, error) {
+func GetProjectIDPlanIDStageIDTaskID(name string) (string, int64, string, int64, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", 0, errors.Errorf("invalid rollout task name %q", name)
@@ -378,7 +378,7 @@ func GetProjectIDPlanIDStageIDTaskID(name string) (string, int64, string, int, e
 	}
 
 	stageID := suffixParts[1]
-	taskID, err := strconv.Atoi(suffixParts[3])
+	taskID, err := strconv.ParseInt(suffixParts[3], 10, 64)
 	if err != nil {
 		return "", 0, "", 0, errors.Errorf("invalid task ID %q", suffixParts[3])
 	}
@@ -386,7 +386,7 @@ func GetProjectIDPlanIDStageIDTaskID(name string) (string, int64, string, int, e
 }
 
 // GetProjectIDPlanIDStageIDTaskIDTaskRunID returns the project ID, plan ID, stage ID, task ID and task run ID from a resource name.
-func GetProjectIDPlanIDStageIDTaskIDTaskRunID(name string) (string, int64, string, int, int, error) {
+func GetProjectIDPlanIDStageIDTaskIDTaskRunID(name string) (string, int64, string, int64, int64, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", 0, 0, errors.Errorf("invalid rollout task run name %q", name)
@@ -404,11 +404,11 @@ func GetProjectIDPlanIDStageIDTaskIDTaskRunID(name string) (string, int64, strin
 	}
 
 	stageID := suffixParts[1]
-	taskID, err := strconv.Atoi(suffixParts[3])
+	taskID, err := strconv.ParseInt(suffixParts[3], 10, 64)
 	if err != nil {
 		return "", 0, "", 0, 0, errors.Errorf("invalid task ID %q", suffixParts[3])
 	}
-	taskRunID, err := strconv.Atoi(suffixParts[5])
+	taskRunID, err := strconv.ParseInt(suffixParts[5], 10, 64)
 	if err != nil {
 		return "", 0, "", 0, 0, errors.Errorf("invalid task run ID %q", suffixParts[5])
 	}
@@ -572,7 +572,7 @@ func FormatSheet(projectID string, sheetSha256 string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SheetIDPrefix, sheetSha256)
 }
 
-func FormatIssue(projectID string, issueUID int) string {
+func FormatIssue(projectID string, issueUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), IssueNamePrefix, issueUID)
 }
 
@@ -597,13 +597,13 @@ func FormatStage(projectID string, planUID int64, stageID string) string {
 }
 
 // stageID is task environmentID.
-func FormatTask(projectID string, planUID int64, stageID string, taskUID int) string {
+func FormatTask(projectID string, planUID int64, stageID string, taskUID int64) string {
 	// stageUID is now environmentID
 	return fmt.Sprintf("%s/%s%d", FormatStage(projectID, planUID, stageID), TaskPrefix, taskUID)
 }
 
 // stageID is task environmentID.
-func FormatTaskRun(projectID string, planUID int64, stageID string, taskUID, taskRunUID int) string {
+func FormatTaskRun(projectID string, planUID int64, stageID string, taskUID, taskRunUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, planUID, stageID, taskUID), TaskRunPrefix, taskRunUID)
 }
 

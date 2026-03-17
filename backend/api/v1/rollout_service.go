@@ -740,8 +740,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	// Parse requested task IDs and group by their environment
-	taskEnvironments := map[string][]int{}
-	taskIDsToRunMap := map[int]bool{}
+	taskEnvironments := map[string][]int64{}
+	taskIDsToRunMap := map[int64]bool{}
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
 		if err != nil {
@@ -817,7 +817,14 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		taskRunCreates = append(taskRunCreates, create)
 	}
 	slices.SortFunc(taskRunCreates, func(a, b *store.TaskRunMessage) int {
-		return a.TaskUID - b.TaskUID
+		switch {
+		case a.TaskUID < b.TaskUID:
+			return -1
+		case a.TaskUID > b.TaskUID:
+			return 1
+		default:
+			return 0
+		}
 	})
 
 	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
@@ -871,7 +878,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list tasks"))
 	}
 
-	taskByID := make(map[int]*store.TaskMessage)
+	taskByID := make(map[int64]*store.TaskMessage)
 	for _, task := range tasks {
 		taskByID[task.ID] = task
 	}
@@ -880,7 +887,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
-	var taskUIDs []int
+	var taskUIDs []int64
 	environmentSet := map[string]struct{}{}
 	for _, task := range request.Tasks {
 		_, _, _, taskID, err := common.GetProjectIDPlanIDStageIDTaskID(task)
@@ -980,7 +987,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to cancel tasks"))
 	}
 
-	var taskRunIDs []int
+	var taskRunIDs []int64
 	for _, taskRun := range request.TaskRuns {
 		_, _, _, _, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
@@ -1013,7 +1020,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 				cancelFunc.(context.CancelFunc)()
 			}
 			// Broadcast cancel signal to all replicas for HA.
-			if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_TASK_RUN, projectID, int32(taskRun.ID)); err != nil {
+			if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_TASK_RUN, projectID, taskRun.ID); err != nil {
 				slog.Warn("failed to send cancel signal", log.BBError(err))
 			}
 		}

@@ -16,7 +16,7 @@ import (
 
 // TaskMessage is the message for tasks.
 type TaskMessage struct {
-	ID int
+	ID int64
 
 	// Related fields
 	ProjectID    string
@@ -49,8 +49,8 @@ func (t *TaskMessage) GetDatabaseName() string {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID  *int
-	IDs *[]int
+	ID  *int64
+	IDs *[]int64
 
 	// Related fields
 	ProjectID    string
@@ -67,7 +67,7 @@ type TaskFind struct {
 }
 
 // GetTaskByID gets a task by ID.
-func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int) (*TaskMessage, error) {
+func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int64) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ProjectID: projectID, ID: &id})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
@@ -82,7 +82,7 @@ func (s *Store) GetTaskByID(ctx context.Context, projectID string, id int) (*Tas
 
 // Get a blocking task in the pipeline.
 // A task is blocked by a task with a smaller schema version within the same pipeline.
-func (s *Store) FindBlockingTaskByVersion(ctx context.Context, projectID string, planUID int64, instanceID, databaseName string, version string) (*int, error) {
+func (s *Store) FindBlockingTaskByVersion(ctx context.Context, projectID string, planUID int64, instanceID, databaseName string, version string) (*int64, error) {
 	myVersion, err := model.NewVersion(version)
 	if err != nil {
 		return nil, err
@@ -92,14 +92,14 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, projectID string,
 			task.id,
 			task.payload->>'schemaVersion'
 		FROM task
-		LEFT JOIN plan ON plan.id = task.plan_id
-		LEFT JOIN issue ON issue.plan_id = plan.id
+		LEFT JOIN plan ON plan.project = task.project AND plan.id = task.plan_id
+		LEFT JOIN issue ON issue.project = plan.project AND issue.plan_id = plan.id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(
 				(SELECT
 					task_run.status
 				FROM task_run
-				WHERE task_run.task_id = task.id
+				WHERE task_run.project = task.project AND task_run.task_id = task.id
 				ORDER BY task_run.id DESC
 				LIMIT 1
 			), 'NOT_STARTED'
@@ -121,7 +121,7 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, projectID string,
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var id int
+		var id int64
 		var v string
 		if err := rows.Scan(&id, &v); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
@@ -142,7 +142,18 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, projectID string,
 
 // createTasksTx creates tasks in a transaction.
 func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
+	if len(creates) == 0 {
+		return nil, nil
+	}
+
+	projectID := creates[0].ProjectID
+	baseID, err := nextProjectID(ctx, txn, "task", projectID)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
+		ids          []int64
 		projects     []string
 		planIDs      []int64
 		instances    []string
@@ -151,7 +162,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 		types        []string
 		payloads     [][]byte
 	)
-	for _, create := range creates {
+	for i, create := range creates {
 		if create.Payload == nil {
 			create.Payload = &storepb.Task{}
 		}
@@ -159,6 +170,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
+		ids = append(ids, baseID+int64(i))
 		projects = append(projects, create.ProjectID)
 		planIDs = append(planIDs, create.PlanID)
 		instances = append(instances, create.InstanceID)
@@ -170,6 +182,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 
 	q := qb.Q().Space(`
 		INSERT INTO task (
+			id,
 			project,
 			plan_id,
 			instance,
@@ -178,6 +191,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 			type,
 			payload
 		) SELECT
+			unnest(CAST(? AS BIGINT[])),
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS BIGINT[])),
 			unnest(CAST(? AS TEXT[])),
@@ -186,6 +200,7 @@ func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMe
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS JSONB[]))
 		RETURNING id, project, plan_id, instance, db_name, environment, type, payload`,
+		ids,
 		projects,
 		planIDs,
 		instances,
@@ -377,7 +392,7 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 }
 
 // BatchSkipTasks batch skip tasks.
-func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int, comment string) error {
+func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs []int64, comment string) error {
 	q := qb.Q().Space(`
 		UPDATE task
 		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)

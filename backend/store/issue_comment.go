@@ -17,7 +17,7 @@ type IssueCommentMessage struct {
 	ResourceID   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	IssueUID     int
+	IssueUID     int64
 	Payload      *storepb.IssueCommentPayload
 	CreatorEmail string
 }
@@ -25,7 +25,7 @@ type IssueCommentMessage struct {
 type FindIssueCommentMessage struct {
 	ProjectID  string
 	ResourceID *string
-	IssueUID   *int
+	IssueUID   *int64
 
 	Limit  *int
 	Offset *int
@@ -133,7 +133,7 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 
 	// Prepare all payloads.
 	projectIDs := make([]string, 0, len(creates))
-	issueIDs := make([]int, 0, len(creates))
+	issueIDs := make([]int64, 0, len(creates))
 	payloads := make([][]byte, 0, len(creates))
 	for _, create := range creates {
 		payload, err := protojson.Marshal(create.Payload)

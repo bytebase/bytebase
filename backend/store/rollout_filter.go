@@ -69,7 +69,7 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 						storeTaskType := convertV1ToStoreTaskType(v1TaskType)
 						taskTypes = append(taskTypes, storeTaskType.String())
 					}
-					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY(?))", taskTypes), nil
+					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.project = plan.project AND task.plan_id = plan.id AND task.type = ANY(?))", taskTypes), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
@@ -86,7 +86,7 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 				if err != nil {
 					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
+				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.project = task.project AND task_run.task_id = task.id WHERE task.project = plan.project AND task.plan_id = plan.id), plan.created_at)`
 				if functionName == celoperators.GreaterEquals {
 					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil
 				}

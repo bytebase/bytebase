@@ -203,7 +203,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
 	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err

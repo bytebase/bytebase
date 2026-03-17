@@ -43,7 +43,7 @@ const (
 
 // Issue object of issue.
 type Issue struct {
-	ID          int
+	ID          int64
 	Name        string
 	Status      string
 	Type        string

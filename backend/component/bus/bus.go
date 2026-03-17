@@ -14,19 +14,19 @@ type PlanRef struct {
 // TaskRunRef identifies a task run by project and ID.
 type TaskRunRef struct {
 	ProjectID string
-	ID        int
+	ID        int64
 }
 
 // IssueRef identifies an issue by project and UID.
 type IssueRef struct {
 	ProjectID string
-	UID       int
+	UID       int64
 }
 
 // PlanCheckRunRef identifies a plan check run by project and UID.
 type PlanCheckRunRef struct {
 	ProjectID string
-	UID       int
+	UID       int64
 }
 
 // Bus is the message bus for all in-memory communication within the server.

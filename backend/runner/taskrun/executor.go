@@ -17,11 +17,11 @@ type Executor interface {
 	// If err is non-nil, the task will be marked as failed.
 	// driverCtx is used by the database driver so that we can cancel the query
 	// while having the ability to cleanup migration history etc.
-	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error)
+	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64) (result *storepb.TaskRunResult, err error)
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (result *storepb.TaskRunResult, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int64) (result *storepb.TaskRunResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)

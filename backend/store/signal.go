@@ -13,7 +13,7 @@ import (
 const SignalChannel = "bytebase_signal"
 
 // SendSignal sends a notification to the bytebase_signal channel.
-func (s *Store) SendSignal(ctx context.Context, signalType storepb.Signal_Type, projectID string, uid int32) error {
+func (s *Store) SendSignal(ctx context.Context, signalType storepb.Signal_Type, projectID string, uid int64) error {
 	payload, err := protojson.Marshal(&storepb.Signal{
 		Type:    signalType,
 		Uid:     uid,

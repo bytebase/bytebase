@@ -393,8 +393,8 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	q = qb.Q().Space("DELETE FROM task_run_log")
 	q.Space("WHERE task_run_id IN (")
 	q.Space("SELECT tr.id FROM task_run tr")
-	q.Space("JOIN task t ON tr.task_id = t.id")
-	q.Space("JOIN plan p ON t.plan_id = p.id")
+	q.Space("JOIN task t ON t.project = tr.project AND t.id = tr.task_id")
+	q.Space("JOIN plan p ON p.project = t.project AND p.id = t.plan_id")
 	q.Space("WHERE p.project = ?)", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -408,7 +408,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	q = qb.Q().Space("DELETE FROM task_run")
 	q.Space("WHERE task_id IN (")
 	q.Space("SELECT t.id FROM task t")
-	q.Space("JOIN plan p ON t.plan_id = p.id")
+	q.Space("JOIN plan p ON p.project = t.project AND p.id = t.plan_id")
 	q.Space("WHERE p.project = ?)", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {

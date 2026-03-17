@@ -984,7 +984,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 
 	// Parse issue names and validate all issues belong to the same project.
 	var projectID string
-	issueUIDs := make([]int, 0, len(req.Msg.Issues))
+	issueUIDs := make([]int64, 0, len(req.Msg.Issues))
 	for i, issueName := range req.Msg.Issues {
 		issueProjectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
 		if err != nil {

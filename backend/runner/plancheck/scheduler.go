@@ -90,7 +90,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	}
 }
 
-func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int, planUID int64) {
+func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int64, planUID int64) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 	planCheckRef := bus.PlanCheckRunRef{ProjectID: projectID, UID: uid}
@@ -152,7 +152,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, uid int, planUID int64, results []*storepb.PlanCheckRunResult_Result) {
+func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, uid int64, planUID int64, results []*storepb.PlanCheckRunResult_Result) {
 	result := &storepb.PlanCheckRunResult{
 		Results: results,
 	}
@@ -181,7 +181,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, 
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, projectID string, uid int, reason string) {
+func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, projectID string, uid int64, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}
@@ -195,7 +195,7 @@ func (s *Scheduler) markPlanCheckRunFailed(ctx context.Context, projectID string
 	}
 }
 
-func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, projectID string, uid int, reason string) {
+func (s *Scheduler) markPlanCheckRunCanceled(ctx context.Context, projectID string, uid int64, reason string) {
 	result := &storepb.PlanCheckRunResult{
 		Error: reason,
 	}

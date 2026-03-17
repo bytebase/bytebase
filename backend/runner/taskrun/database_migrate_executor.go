@@ -52,7 +52,7 @@ type DatabaseMigrateExecutor struct {
 }
 
 // RunOnce will run the database migration task executor once.
-func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
 	// Fetch instance, database, and project (common to all migration types)
 	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
@@ -163,7 +163,7 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 	return nil
 }
 
-func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
 	// so this works correctly for mixed DDL+DML statements.
@@ -288,7 +288,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Parse ghost flags from sheet directive
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
@@ -439,7 +439,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	return &storepb.TaskRunResult{}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
 		InstanceID:   task.InstanceID,
@@ -603,7 +603,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	return &storepb.TaskRunResult{}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
 	// Declarative releases should have exactly one file
 	if len(release.Payload.Files) == 0 {
 		return nil, errors.Errorf("no files found in declarative release")

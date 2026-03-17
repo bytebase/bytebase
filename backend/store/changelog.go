@@ -150,11 +150,12 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		FROM changelog
 		LEFT JOIN sync_history sh_cur ON sh_cur.resource_id = changelog.sync_history
 		LEFT JOIN LATERAL (
-			SELECT task.plan_id
+			SELECT task.project, task.plan_id
 			FROM task
-			WHERE task.id = (regexp_match(changelog.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
+			WHERE task.project = (regexp_match(changelog.payload->>'taskRun', 'projects/([^/]+)/'))[1]
+			  AND task.id = (regexp_match(changelog.payload->>'taskRun', 'tasks/(\d+)/'))[1]::int
 		) task_info ON TRUE
-		LEFT JOIN plan ON plan.id = task_info.plan_id
+		LEFT JOIN plan ON plan.project = task_info.project AND plan.id = task_info.plan_id
 		WHERE changelog.instance = ?
 	`, find.InstanceID)
 

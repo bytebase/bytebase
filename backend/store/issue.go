@@ -41,7 +41,7 @@ type IssueMessage struct {
 	PlanUID      *int64
 
 	// The following fields are output only and not used for create().
-	UID       int
+	UID       int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -61,7 +61,7 @@ type FindIssueMessage struct {
 	// Required field
 	ProjectIDs []string
 
-	UID       *int
+	UID       *int64
 	PlanUID   *int64
 	PlanUIDs  *[]int64
 	CreatorID *string
@@ -133,8 +133,20 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	}
 	tsVector := getTSVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	nextID, err := nextProjectID(ctx, tx, "issue", create.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO issue (
+			id,
 			creator,
 			project,
 			plan_id,
@@ -145,8 +157,8 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 			payload,
 			ts_vector
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		nextID,
 		create.CreatorEmail,
 		create.ProjectID,
 		create.PlanUID,
@@ -163,15 +175,20 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	create.UID = nextID
 	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{create.ProjectID}, UID: &create.UID})
 }
 
 // UpdateIssue updates an issue.
-func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
+func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, patch *UpdateIssueMessage) (*IssueMessage, error) {
 	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
 	if err != nil {
 		return nil, err
@@ -390,7 +407,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
 // Returns a map of issueUID -> old status for the updated issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueUIDs []int, newStatus storepb.Issue_Status) (map[int]storepb.Issue_Status, error) {
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueUIDs []int64, newStatus storepb.Issue_Status) (map[int64]storepb.Issue_Status, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -410,9 +427,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 	defer rows.Close()
 
-	oldStatuses := make(map[int]storepb.Issue_Status)
+	oldStatuses := make(map[int64]storepb.Issue_Status)
 	for rows.Next() {
-		var issueID int
+		var issueID int64
 		var statusString string
 		if err := rows.Scan(&issueID, &statusString); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan issue")

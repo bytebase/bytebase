@@ -30,7 +30,7 @@ const (
 
 // PlanCheckRunMessage is the message for a plan check run.
 type PlanCheckRunMessage struct {
-	UID       int
+	UID       int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
@@ -46,7 +46,7 @@ type FindPlanCheckRunMessage struct {
 	ProjectID    string
 	PlanUID      *int64
 	PlanUIDs     *[]int64
-	UIDs         *[]int
+	UIDs         *[]int64
 	Status       *[]PlanCheckRunStatus
 	ResultStatus *[]storepb.Advice_Status
 }
@@ -59,16 +59,31 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return errors.Wrapf(err, "failed to marshal result")
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	query := `
-		INSERT INTO plan_check_run (project, plan_id, status, result)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO plan_check_run (id, project, plan_id, status, result)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (project, plan_id) DO UPDATE SET
 			status = EXCLUDED.status,
 			result = EXCLUDED.result,
 			updated_at = now()
 	`
-	if _, err := s.GetDB().ExecContext(ctx, query, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
+	if _, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result); err != nil {
 		return errors.Wrapf(err, "failed to upsert plan check run")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit tx")
 	}
 	return nil
 }
@@ -159,7 +174,7 @@ func (s *Store) GetPlanCheckRun(ctx context.Context, projectID string, planUID i
 }
 
 // UpdatePlanCheckRun updates a plan check run.
-func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
+func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int64) error {
 	resultBytes, err := protojson.Marshal(result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result %v", result)
@@ -182,7 +197,7 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status
 }
 
 // BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
-func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, planCheckRunUIDs []int) error {
+func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, planCheckRunUIDs []int64) error {
 	q := qb.Q().Space(`
 		UPDATE plan_check_run
 		SET
@@ -201,7 +216,7 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, 
 
 // ClaimedPlanCheckRun represents a plan check run that was atomically claimed.
 type ClaimedPlanCheckRun struct {
-	UID       int
+	UID       int64
 	ProjectID string
 	PlanUID   int64
 }
