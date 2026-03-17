@@ -25,7 +25,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "project filter",
 			filter:   `project == "projects/test-project"`,
-			wantSQL:  "(query_history.project_id = $1)",
+			wantSQL:  "(query_history.project = $1)",
 			wantArgs: []any{"test-project"},
 			wantErr:  false,
 		},
@@ -67,21 +67,21 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "AND condition with project and database",
 			filter:   `project == "projects/test-project" && database == "instances/test-instance/databases/test-db"`,
-			wantSQL:  "((query_history.project_id = $1 AND query_history.database = $2))",
+			wantSQL:  "((query_history.project = $1 AND query_history.database = $2))",
 			wantArgs: []any{"test-project", "instances/test-instance/databases/test-db"},
 			wantErr:  false,
 		},
 		{
 			name:     "AND condition with three filters",
 			filter:   `project == "projects/test-project" && database == "instances/test-instance/databases/test-db" && type == "QUERY"`,
-			wantSQL:  "(((query_history.project_id = $1 AND query_history.database = $2) AND query_history.type = $3))",
+			wantSQL:  "(((query_history.project = $1 AND query_history.database = $2) AND query_history.type = $3))",
 			wantArgs: []any{"test-project", "instances/test-instance/databases/test-db", QueryHistoryType("QUERY")},
 			wantErr:  false,
 		},
 		{
 			name:     "OR condition with project and database",
 			filter:   `project == "projects/project1" || project == "projects/project2"`,
-			wantSQL:  "((query_history.project_id = $1 OR query_history.project_id = $2))",
+			wantSQL:  "((query_history.project = $1 OR query_history.project = $2))",
 			wantArgs: []any{"project1", "project2"},
 			wantErr:  false,
 		},
@@ -95,14 +95,14 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "complex nested AND/OR",
 			filter:   `(project == "projects/p1" || project == "projects/p2") && type == "QUERY"`,
-			wantSQL:  "(((query_history.project_id = $1 OR query_history.project_id = $2) AND query_history.type = $3))",
+			wantSQL:  "(((query_history.project = $1 OR query_history.project = $2) AND query_history.type = $3))",
 			wantArgs: []any{"p1", "p2", QueryHistoryType("QUERY")},
 			wantErr:  false,
 		},
 		{
 			name:     "complex nested with statement matches",
 			filter:   `project == "projects/test" && statement.matches("SELECT") && type == "QUERY"`,
-			wantSQL:  "(((query_history.project_id = $1 AND query_history.statement LIKE $2) AND query_history.type = $3))",
+			wantSQL:  "(((query_history.project = $1 AND query_history.statement LIKE $2) AND query_history.type = $3))",
 			wantArgs: []any{"test", "%SELECT%", QueryHistoryType("QUERY")},
 			wantErr:  false,
 		},
@@ -197,7 +197,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			name:        "multiple OR conditions",
 			filter:      `project == "projects/p1" || project == "projects/p2" || project == "projects/p3"`,
 			description: "multiple OR conditions should be chained",
-			wantSQL:     "(((query_history.project_id = $1 OR query_history.project_id = $2) OR query_history.project_id = $3))",
+			wantSQL:     "(((query_history.project = $1 OR query_history.project = $2) OR query_history.project = $3))",
 			wantArgs:    []any{"p1", "p2", "p3"},
 			wantErr:     false,
 		},
@@ -221,7 +221,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			name:        "complex filter with all supported fields",
 			filter:      `project == "projects/test" && database == "instances/i1/databases/db1" && type == "EXPORT" && statement.matches("INSERT")`,
 			description: "combination of all supported filter types",
-			wantSQL:     "(((query_history.project_id = $1 AND query_history.database = $2) AND (query_history.type = $3 AND query_history.statement LIKE $4)))",
+			wantSQL:     "(((query_history.project = $1 AND query_history.database = $2) AND (query_history.type = $3 AND query_history.statement LIKE $4)))",
 			wantArgs:    []any{"test", "instances/i1/databases/db1", QueryHistoryType("EXPORT"), "%INSERT%"},
 			wantErr:     false,
 		},
@@ -261,7 +261,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 		{
 			name:               "simple project filter",
 			filter:             `project == "projects/test-project"`,
-			expectedConditions: []string{"query_history.project_id = $1"},
+			expectedConditions: []string{"query_history.project = $1"},
 		},
 		{
 			name:               "database filter",
@@ -271,7 +271,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 		{
 			name:               "type and project combined",
 			filter:             `type == "QUERY" && project == "projects/my-project"`,
-			expectedConditions: []string{"query_history.type = $1", "AND", "query_history.project_id = $2"},
+			expectedConditions: []string{"query_history.type = $1", "AND", "query_history.project = $2"},
 		},
 		{
 			name:               "statement matches",
