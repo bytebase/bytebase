@@ -15,11 +15,10 @@ export function getToolDefinitions(): ToolDefinition[] {
 
 | Mode | Parameters | Result |
 |------|------------|--------|
+| List | (none) | All services |
 | Browse | service="SQLService" | All endpoints in a service |
 | Details | operationId="SQLService/Query" | Request/response schema |
 | Schema | schema="Instance" | Message type definition |
-| Search | query="database" | Keyword search (fallback) |
-| List | (none) | All services |
 
 **Typical workflow:** Read API Directory → search_api(service="...") → search_api(operationId="...") → call_api(...)`,
       parametersSchema: {
@@ -35,20 +34,10 @@ export function getToolDefinitions(): ToolDefinition[] {
             description:
               'Get the definition of a message type. Examples: "Instance", "Engine", "bytebase.v1.Instance"',
           },
-          query: {
-            type: "string",
-            description:
-              'Free-text search for API endpoints. Examples: "create database", "execute sql"',
-          },
           service: {
             type: "string",
             description:
               'Filter to a specific service. Examples: "SQLService", "DatabaseService"',
-          },
-          limit: {
-            type: "number",
-            description:
-              "Maximum number of results to return (default: 5, max: 50)",
           },
         },
       },
