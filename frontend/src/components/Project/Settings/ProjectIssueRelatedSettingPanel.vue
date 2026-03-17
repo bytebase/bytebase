@@ -384,21 +384,22 @@ const renderLabel = (value: string, index: number) => {
       }}
     >
       <div class="flex flex-row items-start justify-center gap-x-2">
-        <div class="w-4 h-4 relative">
-          <NColorPicker
-            class="w-full! h-full!"
-            modes={["hex"]}
-            showAlpha={false}
-            value={label.color}
-            renderLabel={() => (
+        <NColorPicker
+          modes={["hex"]}
+          showAlpha={false}
+          value={label.color}
+          onUpdateValue={(color: string) => (label.color = color)}
+          v-slots={{
+            trigger: ({ value, onClick, ref: triggerRef }: { value: string | null; onClick: () => void; ref: (el: any) => void }) => (
               <div
-                class="w-4 h-4 rounded-sm cursor-pointer relative"
-                style={{ backgroundColor: label.color }}
+                ref={triggerRef}
+                class="w-4 h-4 rounded-sm cursor-pointer"
+                style={{ backgroundColor: value || label.color }}
+                onClick={onClick}
               />
-            )}
-            onUpdateValue={(color: string) => (label.color = color)}
-          />
-        </div>
+            ),
+          }}
+        />
         <span>{label.value}</span>
       </div>
     </NTag>
