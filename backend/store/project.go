@@ -228,6 +228,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		return nil, err
 	}
 	policyMessage, err := upsertPolicyImpl(ctx, tx, &PolicyMessage{
+		Workspace:         create.Workspace,
 		ResourceType:      storepb.Policy_PROJECT,
 		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
