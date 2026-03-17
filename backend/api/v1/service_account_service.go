@@ -91,7 +91,12 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash service key"))
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	createdSA, err := s.store.CreateServiceAccount(ctx, &store.CreateServiceAccountMessage{
+		Workspace:      workspace.ResourceID,
 		Email:          email,
 		Name:           sa.Title,
 		ServiceKeyHash: string(passwordHash),

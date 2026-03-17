@@ -135,7 +135,12 @@ func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.St
 	if err != nil {
 		return err
 	}
+	workspace, err := stores.GetWorkspace(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get workspace")
+	}
 	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:         workspace.ResourceID,
 		Resource:          common.FormatProject(issue.ProjectID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),

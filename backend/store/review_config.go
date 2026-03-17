@@ -14,10 +14,11 @@ import (
 
 // ReviewConfigMessage is the API message for sql review.
 type ReviewConfigMessage struct {
-	ID      string
-	Enforce bool
-	Name    string
-	Payload *storepb.ReviewConfigPayload
+	ID        string
+	Workspace string
+	Enforce   bool
+	Name      string
+	Payload   *storepb.ReviewConfigPayload
 }
 
 // FindReviewConfigMessage is the API message for finding sql review.
@@ -54,6 +55,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 	q := qb.Q().Space(`
 		SELECT
 			id,
+			workspace,
 			enabled,
 			name,
 			payload
@@ -83,6 +85,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 
 		if err := rows.Scan(
 			&sqlReview.ID,
+			&sqlReview.Workspace,
 			&sqlReview.Enforce,
 			&sqlReview.Name,
 			&payload,
@@ -118,11 +121,12 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 	q := qb.Q().Space(`
 		INSERT INTO review_config (
 			id,
+			workspace,
 			name,
 			payload
 		)
-		VALUES (?, ?, ?)
-	`, create.ID, create.Name, payload)
+		VALUES (?, ?, ?, ?)
+	`, create.ID, create.Workspace, create.Name, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -183,6 +187,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		WHERE id = ?
 		RETURNING
 			id,
+			workspace,
 			enabled,
 			name,
 			payload
@@ -198,6 +203,7 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&sqlReview.ID,
+		&sqlReview.Workspace,
 		&sqlReview.Enforce,
 		&sqlReview.Name,
 		&payload,

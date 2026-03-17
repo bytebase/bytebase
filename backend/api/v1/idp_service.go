@@ -88,7 +88,12 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err := validIdentityProviderConfig(req.Msg.IdentityProvider.Type, req.Msg.IdentityProvider.Config); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	identityProviderMessage := &store.IdentityProviderMessage{
+		Workspace:  workspace.ResourceID,
 		ResourceID: req.Msg.IdentityProviderId,
 		Title:      req.Msg.IdentityProvider.Title,
 		Domain:     req.Msg.IdentityProvider.Domain,
@@ -100,7 +105,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return connect.NewResponse(identityProvider), nil
 	}
 
-	identityProviderMessage, err := s.store.CreateIdentityProvider(ctx, identityProviderMessage)
+	identityProviderMessage, err = s.store.CreateIdentityProvider(ctx, identityProviderMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create identity provider"))
 	}

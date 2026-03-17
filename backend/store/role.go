@@ -15,6 +15,7 @@ import (
 // RoleMessage is the message for roles.
 type RoleMessage struct {
 	ResourceID  string
+	Workspace   string
 	Name        string
 	Description string
 	Permissions map[permission.Permission]bool
@@ -98,9 +99,9 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 
 	q := qb.Q().Space(`
 		INSERT INTO
-			role (resource_id, name, description, permissions)
-		VALUES (?, ?, ?, ?)
-	`, create.ResourceID, create.Name, create.Description, permissionBytes)
+			role (resource_id, workspace, name, description, permissions)
+		VALUES (?, ?, ?, ?, ?)
+	`, create.ResourceID, create.Workspace, create.Name, create.Description, permissionBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -152,7 +153,7 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 
 	q := qb.Q().Space(`
 		SELECT
-			resource_id, name, description, permissions
+			resource_id, workspace, name, description, permissions
 		FROM role
 		WHERE TRUE
 	`)
@@ -178,7 +179,7 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 			Permissions: map[permission.Permission]bool{},
 		}
 		var permissionBytes []byte
-		if err := rows.Scan(&role.ResourceID, &role.Name, &role.Description, &permissionBytes); err != nil {
+		if err := rows.Scan(&role.ResourceID, &role.Workspace, &role.Name, &role.Description, &permissionBytes); err != nil {
 			return nil, err
 		}
 		var rolePermissions storepb.RolePermissions

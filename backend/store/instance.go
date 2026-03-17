@@ -23,6 +23,7 @@ import (
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
+	Workspace     string
 	EnvironmentID *string
 	Deleted       bool
 	Metadata      *storepb.Instance
@@ -41,6 +42,7 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
+	Workspace   *string
 	ResourceID  *string
 	ResourceIDs *[]string
 	ShowDeleted bool
@@ -83,6 +85,9 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 	}
+	if v := find.Workspace; v != nil {
+		where.And("instance.workspace = ?", *v)
+	}
 	if v := find.ResourceID; v != nil {
 		where.And("instance.resource_id = ?", *v)
 	}
@@ -96,6 +101,7 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 	q := qb.Q().Space(`
 		SELECT
 			instance.resource_id,
+			instance.workspace,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
@@ -137,6 +143,7 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		var metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.ResourceID,
+			&instanceMessage.Workspace,
 			&environment,
 			&instanceMessage.Deleted,
 			&metadata,
@@ -189,10 +196,11 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
+				workspace,
 				environment,
 				metadata
-			) VALUES (?, ?, ?)
-		`, instanceCreate.ResourceID, environment, metadataBytes)
+			) VALUES (?, ?, ?, ?)
+		`, instanceCreate.ResourceID, instanceCreate.Workspace, environment, metadataBytes)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -204,6 +212,7 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
 		ResourceID:    instanceCreate.ResourceID,
+		Workspace:     instanceCreate.Workspace,
 		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)

@@ -89,7 +89,12 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 	for _, v := range req.Msg.GetRole().GetPermissions() {
 		permissions[permission.Permission(v)] = true
 	}
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	create := &store.RoleMessage{
+		Workspace:   workspace.ResourceID,
 		ResourceID:  req.Msg.RoleId,
 		Name:        req.Msg.Role.Title,
 		Description: req.Msg.Role.Description,

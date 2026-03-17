@@ -215,7 +215,11 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
 		}
-		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
+		workspaceForAudit, err := storage.GetWorkspace(createAuditLogCtx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get workspace for audit log")
+		}
+		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceForAudit.ResourceID, p); err != nil {
 			return err
 		}
 

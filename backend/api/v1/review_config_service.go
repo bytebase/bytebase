@@ -41,6 +41,12 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 		return nil, err
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	reviewConfigMessage.Workspace = workspace.ResourceID
+
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

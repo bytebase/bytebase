@@ -481,10 +481,15 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
 				email = scimGroup.ExternalID
 			}
+			workspace, err := s.store.GetWorkspace(ctx)
+			if err != nil {
+				return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get workspace, error %v", err))
+			}
 			newGroup, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-				ID:    scimGroup.ExternalID,
-				Email: email,
-				Title: scimGroup.DisplayName,
+				Workspace: workspace.ResourceID,
+				ID:        scimGroup.ExternalID,
+				Email:     email,
+				Title:     scimGroup.DisplayName,
 				Payload: &storepb.GroupPayload{
 					Source:  source,
 					Members: members,

@@ -16,8 +16,9 @@ import (
 
 // SettingMessage is the message of setting.
 type SettingMessage struct {
-	Name  storepb.SettingName
-	Value proto.Message
+	Name      storepb.SettingName
+	Workspace string
+	Value     proto.Message
 }
 
 func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
@@ -134,8 +135,9 @@ func (s *Store) UpdateLicense(ctx context.Context, license string) error {
 
 	systemSetting.License = license
 	if _, err := s.UpsertSetting(ctx, &SettingMessage{
-		Name:  storepb.SettingName_SYSTEM,
-		Value: systemSetting,
+		Name:      storepb.SettingName_SYSTEM,
+		Workspace: setting.Workspace,
+		Value:     systemSetting,
 	}); err != nil {
 		return errors.Wrap(err, "failed to upsert system setting")
 	}
@@ -255,6 +257,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	q := qb.Q().Space(`
 		SELECT
 			name,
+			workspace,
 			value
 		FROM setting
 		WHERE TRUE
@@ -279,6 +282,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		var valueString string
 		if err := rows.Scan(
 			&nameString,
+			&settingMessage.Workspace,
 			&valueString,
 		); err != nil {
 			return nil, err
@@ -318,11 +322,11 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO setting (name, value)
-		VALUES (?, ?)
+		INSERT INTO setting (name, workspace, value)
+		VALUES (?, ?, ?)
 		ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value
-		RETURNING name, value
-	`, update.Name.String(), string(valueBytes))
+		RETURNING name, workspace, value
+	`, update.Name.String(), update.Workspace, string(valueBytes))
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -334,6 +338,7 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	var valueString string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&nameString,
+		&setting.Workspace,
 		&valueString,
 	); err != nil {
 		if err == sql.ErrNoRows {

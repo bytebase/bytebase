@@ -160,7 +160,12 @@ func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMe
 		return errors.Wrapf(err, "failed to find onboarding project %v", projectID)
 	}
 	if project == nil {
+		workspace, err := m.store.GetWorkspace(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get workspace")
+		}
 		sampleProject, err := m.store.CreateProject(ctx, &store.ProjectMessage{
+			Workspace:  workspace.ResourceID,
 			ResourceID: "project-sample",
 			Title:      "Sample Project",
 			Setting:    &storepb.Project{},
@@ -224,7 +229,12 @@ func (m *Manager) generateInstance(
 		return errors.Wrapf(err, "failed to find onboarding instance %v", instanceMessage.ResourceID)
 	}
 	if instance == nil {
+		workspace, err := m.store.GetWorkspace(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get workspace")
+		}
 		sampleInstance, err := m.store.CreateInstance(ctx, &store.InstanceMessage{
+			Workspace:     workspace.ResourceID,
 			ResourceID:    instanceMessage.ResourceID,
 			EnvironmentID: instanceMessage.EnvironmentID,
 			Metadata: &storepb.Instance{

@@ -22,6 +22,7 @@ import (
 // ProjectMessage is the message for project.
 type ProjectMessage struct {
 	ResourceID string
+	Workspace  string
 	Title      string
 	Webhooks   []*ProjectWebhookMessage
 	Setting    *storepb.Project
@@ -34,6 +35,7 @@ func (p *ProjectMessage) GetName() string {
 
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
+	Workspace   *string
 	ResourceID  *string
 	ResourceIDs []string
 	ShowDeleted bool
@@ -81,9 +83,12 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 
 // ListProjects lists all projects.
 func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	q := qb.Q().Space("SELECT resource_id, name, setting, deleted FROM project WHERE TRUE")
+	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE TRUE")
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
+	}
+	if v := find.Workspace; v != nil {
+		q.And("workspace = ?", *v)
 	}
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -128,6 +133,7 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		var payload []byte
 		if err := rows.Scan(
 			&projectMessage.ResourceID,
+			&projectMessage.Workspace,
 			&projectMessage.Title,
 			&payload,
 			&projectMessage.Deleted,
@@ -192,11 +198,12 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 
 	project := &ProjectMessage{
 		ResourceID: create.ResourceID,
+		Workspace:  create.Workspace,
 		Title:      create.Title,
 		Setting:    create.Setting,
 	}
-	q := qb.Q().Space("INSERT INTO project (resource_id, name, setting)")
-	q.Space("VALUES (?, ?, ?)", create.ResourceID, create.Title, payload)
+	q := qb.Q().Space("INSERT INTO project (resource_id, workspace, name, setting)")
+	q.Space("VALUES (?, ?, ?, ?)", create.ResourceID, create.Workspace, create.Title, payload)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, err
