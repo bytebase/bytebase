@@ -27,7 +27,6 @@ message SystemSetting {
   string auth_secret = 1;
   // Field 2 was workspace_id, now stored in the workspace table.
   reserved 2;
-  reserved "workspace_id";
   // Enterprise license JWT token.
   string license = 3;
 }
