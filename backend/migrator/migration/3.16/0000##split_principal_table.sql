@@ -1,8 +1,33 @@
 -- Split principal table into three tables: principal (END_USER only), service_account, workload_identity.
 
--- Step 0: Fix legacy emails, create tables, migrate data, clean up principal.
+-- Step 0: Create tables, fix legacy emails, migrate data, clean up principal.
 -- All data migration is guarded by checking principal.type column existence,
 -- which is dropped at the end — so re-runs skip all data operations.
+
+-- Create tables (idempotent) before the DO block uses them.
+CREATE TABLE IF NOT EXISTS service_account (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    service_key_hash text NOT NULL,
+    project text REFERENCES project(resource_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS workload_identity (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    project text REFERENCES project(resource_id),
+    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
+
 DO $$
 DECLARE
     rec RECORD;
@@ -65,30 +90,6 @@ BEGIN
     -- Clean up principal table.
     DELETE FROM principal WHERE type != 'END_USER';
 END $$;
-
--- Create tables (idempotent).
-CREATE TABLE IF NOT EXISTS service_account (
-    deleted boolean NOT NULL DEFAULT FALSE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    name text NOT NULL,
-    email text NOT NULL PRIMARY KEY,
-    service_key_hash text NOT NULL,
-    project text REFERENCES project(resource_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
-
-CREATE TABLE IF NOT EXISTS workload_identity (
-    deleted boolean NOT NULL DEFAULT FALSE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    name text NOT NULL,
-    email text NOT NULL PRIMARY KEY,
-    project text REFERENCES project(resource_id),
-    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
-    config jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX IF NOT EXISTS idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
 
 -- Drop FK constraints on creator/deleter columns that can reference SA/WI emails.
 -- Keep FKs on oauth2_authorization_code, oauth2_refresh_token, web_refresh_token (END_USER only).

@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func TestGitOpsCheck(t *testing.T) {
@@ -1170,15 +1171,17 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 
 			if tc.expectError {
 				a.NotEmpty(errorAdvices, "Expected SQL review error for altering non-existent table t2")
-				// Validate the error message mentions the missing table.
+				// Accept omni-native missing-table errors instead of legacy ANTLR titles.
 				foundTableError := false
 				for _, advice := range errorAdvices {
-					if advice.Title == "Table `t2` does not exist" {
+					if advice.Code == int32(code.TableNotExists) {
 						foundTableError = true
+						a.NotEqual("Table `t2` does not exist", advice.Title, "Should not require the legacy ANTLR advice title")
+						a.Contains(advice.Content, `relation "t2" does not exist`, "Error content should preserve the omni-native missing-table message")
 						a.Contains(advice.Content, "t2", "Error content should mention table t2")
 					}
 				}
-				a.True(foundTableError, "Expected error about table t2 not existing")
+				a.True(foundTableError, "Expected a missing-table SQL review error for table t2")
 			} else {
 				a.Empty(errorAdvices, "Expected no SQL review errors for valid migration sequence")
 			}

@@ -120,6 +120,7 @@ func SQLReviewCheck(
 	if checkContext.FinalMetadata != nil {
 		walkThroughContext := schema.WalkThroughContext{
 			SessionUser: checkContext.SessionUser,
+			RawSQL:      statements,
 		}
 		if advice := schema.WalkThroughWithContext(checkContext.DBType, walkThroughContext, checkContext.FinalMetadata, asts); advice != nil {
 			for _, rule := range ruleList {
