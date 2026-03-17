@@ -317,7 +317,9 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 			state := newSearchPathTestState(test.searchPath)
 			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
 			require.NoError(t, err)
-			advice := WalkThroughWithContext(test.session, state, base.ExtractASTs(stmts))
+			ctx := test.session
+			ctx.RawSQL = test.sql
+			advice := WalkThroughWithContext(ctx, state, base.ExtractASTs(stmts))
 			require.Nil(t, advice)
 			test.assert(t, state)
 		})

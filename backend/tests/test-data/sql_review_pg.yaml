@@ -46,121 +46,13 @@
   result:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "TABLE_REQUIRE_PK",
-        "content":  "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        )\"",
-        "code":  601,
+        "status":  "WARNING",
+        "title":  "DDL simulation failed",
+        "content":  "ERROR: relation \"room\" does not exist (SQLSTATE 42P01)",
+        "code":  604,
         "sqlReviewReport":  {
           "startPosition":  {
             "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "ERROR",
-        "title":  "TABLE_NO_FOREIGN_KEY",
-        "content":  "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )\"",
-        "code":  602,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "NAMING_TABLE",
-        "content":  "\"userTable\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code":  301,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "NAMING_COLUMN",
-        "content":  "\"userTable\".\"roomId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
-        "code":  302,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  4
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "NAMING_INDEX_UK",
-        "content":  "Unique key in table \"userTable\" mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found \"uk1\"",
-        "code":  304,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  5
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "NAMING_INDEX_FK",
-        "content":  "Foreign key in table \"userTable\" mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found \"fk1\"",
-        "code":  305,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "COLUMN_REQUIRED",
-        "content":  "Table \"userTable\" requires columns: created_ts, creator_id, updated_ts, updater_id",
-        "code":  401,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  1
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "COLUMN_NO_NULL",
-        "content":  "Column \"id\" in \"public\".\"userTable\" cannot have NULL value",
-        "code":  402,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  2
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "COLUMN_NO_NULL",
-        "content":  "Column \"name\" in \"public\".\"userTable\" cannot have NULL value",
-        "code":  402,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  3
-          }
-        }
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "COLUMN_NO_NULL",
-        "content":  "Column \"roomId\" in \"public\".\"userTable\" cannot have NULL value",
-        "code":  402,
-        "sqlReviewReport":  {
-          "startPosition":  {
-            "line":  4
           }
         }
       }

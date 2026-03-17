@@ -48,7 +48,7 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 	}
 
 	// Set initial search path from metadata config.
-	if searchPath := d.GetSearchPath(); len(searchPath) > 0 {
+	if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
 		c.SetSearchPath(searchPath)
 	}
 
@@ -162,6 +162,26 @@ func mapSQLSTATEToCode(err error) code.Code {
 	default:
 		return code.DDLSimulationFailed
 	}
+}
+
+func getConfiguredSearchPath(d *model.DatabaseMetadata) []string {
+	configured := d.GetConfiguredSearchPath()
+	if len(configured) == 0 {
+		return nil
+	}
+
+	searchPath := make([]string, 0, len(configured))
+	for _, item := range configured {
+		if item.CurrentUser {
+			searchPath = append(searchPath, "$user")
+			continue
+		}
+		if item.Schema == "" {
+			continue
+		}
+		searchPath = append(searchPath, item.Schema)
+	}
+	return searchPath
 }
 
 // catalogToProto converts the omni catalog state to a storepb.DatabaseSchemaMetadata proto.
