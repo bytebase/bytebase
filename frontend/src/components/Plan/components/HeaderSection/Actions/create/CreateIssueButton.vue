@@ -39,6 +39,7 @@
             :selected="selectedLabels"
             :project="project"
             :size="'medium'"
+            :render-menu-inside-parent="true"
             @update:selected="selectedLabels = $event"
           />
         </div>
@@ -55,7 +56,7 @@
             }}
           </NCheckbox>
           <div class="grow" />
-          <NButton size="small" quaternary @click="showPopover = false">
+          <NButton size="small" quaternary @click="handleCancel">
             {{ $t("common.cancel") }}
           </NButton>
           <NTooltip :disabled="confirmErrors.length === 0" placement="top">
@@ -83,7 +84,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { NAlert, NButton, NCheckbox, NPopover, NTooltip } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
@@ -136,13 +137,15 @@ const {
 
 const checksWarningAcknowledged = ref(false);
 
-// Reset state when popover opens
-watch(showPopover, (show) => {
-  if (show) {
-    selectedLabels.value = [];
-    checksWarningAcknowledged.value = false;
-  }
-});
+const resetDraft = () => {
+  selectedLabels.value = [];
+  checksWarningAcknowledged.value = false;
+};
+
+const handleCancel = () => {
+  resetDraft();
+  showPopover.value = false;
+};
 
 // Errors that disable the main button
 const errors = computed(() => {
@@ -244,6 +247,7 @@ const doCreateIssue = async () => {
 
     events.emit("status-changed", { eager: true });
 
+    resetDraft();
     showPopover.value = false;
 
     nextTick(() => {

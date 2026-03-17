@@ -37,11 +37,12 @@
             :selected="selectedLabels"
             :project="project"
             :size="'medium'"
+            :render-menu-inside-parent="true"
             @update:selected="selectedLabels = $event"
           />
         </div>
         <div class="flex justify-end gap-x-2">
-          <NButton size="small" quaternary @click="showPopover = false">
+          <NButton size="small" quaternary @click="handleCancel">
             {{ $t("common.cancel") }}
           </NButton>
           <NTooltip :disabled="confirmErrors.length === 0" placement="top">
@@ -69,7 +70,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { NButton, NPopover, NTooltip } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
@@ -120,12 +121,14 @@ const loading = ref(false);
 const showPopover = ref(false);
 const selectedLabels = ref<string[]>([]);
 
-// Reset labels when popover opens
-watch(showPopover, (show) => {
-  if (show) {
-    selectedLabels.value = [];
-  }
-});
+const resetDraft = () => {
+  selectedLabels.value = [];
+};
+
+const handleCancel = () => {
+  resetDraft();
+  showPopover.value = false;
+};
 
 // Use the validation hook for all specs
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
@@ -252,6 +255,8 @@ const doCreateDataExportIssue = async () => {
   });
   const createdIssue =
     await issueServiceClientConnect.createIssue(issueRequest);
+
+  resetDraft();
 
   // Redirect to issue detail page
   nextTick(() => {
