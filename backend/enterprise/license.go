@@ -213,7 +213,13 @@ func (s *LicenseService) loadSubscriptionFromDB(ctx context.Context) *v1pb.Subsc
 		return defaultFreeSubscription
 	}
 
-	subscription, err := s.parseLicense(setting.License, setting.WorkspaceId)
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		slog.Debug("failed to get workspace", log.BBError(err))
+		return defaultFreeSubscription
+	}
+
+	subscription, err := s.parseLicense(setting.License, workspace.ResourceID)
 	if err != nil {
 		slog.Debug("failed to parse enterprise license", log.BBError(err))
 		return defaultFreeSubscription
@@ -335,11 +341,11 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, license string) error {
 	if license != "" {
-		systemSetting, err := s.store.GetSystemSetting(ctx)
+		workspace, err := s.store.GetWorkspace(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get system setting")
+			return errors.Wrapf(err, "failed to get workspace")
 		}
-		if _, err := s.parseLicense(license, systemSetting.WorkspaceId); err != nil {
+		if _, err := s.parseLicense(license, workspace.ResourceID); err != nil {
 			return err
 		}
 	}

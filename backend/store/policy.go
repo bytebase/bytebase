@@ -34,11 +34,11 @@ func generateEtag(t time.Time) string {
 
 // GetWorkspaceResourceName returns the workspace resource name "workspaces/{id}".
 func (s *Store) GetWorkspaceResourceName(ctx context.Context) (string, error) {
-	systemSetting, err := s.GetSystemSetting(ctx)
+	workspace, err := s.GetWorkspace(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get system setting")
+		return "", err
 	}
-	return common.FormatWorkspace(systemSetting.WorkspaceId), nil
+	return common.FormatWorkspace(workspace.ResourceID), nil
 }
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {

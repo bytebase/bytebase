@@ -115,11 +115,11 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
 
-	systemSetting, err := s.store.GetSystemSetting(ctx)
+	workspace, err := s.store.GetWorkspace(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get system setting"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace"))
 	}
-	workspaceID := systemSetting.WorkspaceId
+	workspaceID := workspace.ResourceID
 
 	usedFeatures, err := s.getUsedFeatures(ctx)
 	if err != nil {

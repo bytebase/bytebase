@@ -4405,7 +4405,6 @@ The severity level for SQL review rules.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | auth_secret | [string](#string) |  | Authentication secret for token signing (32-character random string). |
-| workspace_id | [string](#string) |  | Unique workspace identifier (UUID). |
 | license | [string](#string) |  | Enterprise license JWT token. |
 
 
