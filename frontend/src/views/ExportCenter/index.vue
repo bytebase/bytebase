@@ -111,6 +111,11 @@ const readonlyScopes = computed((): SearchScope[] => {
       value: extractProjectResourceName(specificProject.value.name),
       readonly: true,
     },
+    {
+      id: "issue-type",
+      value: Issue_Type[Issue_Type.DATABASE_EXPORT],
+      readonly: true,
+    },
   ];
 });
 
@@ -167,9 +172,7 @@ const overrideSearchScopeIdList = computed(() => {
 });
 
 const mergedIssueFilter = computed(() => {
-  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value, {
-    typeList: [Issue_Type.DATABASE_EXPORT],
-  });
+  return buildIssueFilterBySearchParams(dataExportIssueSearchParams.value);
 });
 
 const fetchIssueList = async ({

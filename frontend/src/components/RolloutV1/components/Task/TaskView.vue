@@ -137,6 +137,7 @@ import { RouterLink } from "vue-router";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import {
+  emitPlanStatusChanged,
   getSpecTitle,
   usePlanContextWithRollout,
 } from "@/components/Plan/logic";
@@ -269,6 +270,6 @@ watchEffect(async () => {
 
 // Handle task action completion to refresh data
 const handleTaskActionConfirmed = async () => {
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 </script>

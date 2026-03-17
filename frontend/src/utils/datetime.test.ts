@@ -26,6 +26,13 @@ describe("formatRelativeTime", () => {
     expect(result).toBe("now");
   });
 
+  test("supports overriding the 'now' threshold", () => {
+    const result = formatRelativeTime(Date.now() - 5000, {
+      nowThresholdMs: 3000,
+    });
+    expect(result).toContain("seconds ago");
+  });
+
   test("returns 'X seconds ago' for 10-59 seconds", () => {
     const result = formatRelativeTime(Date.now() - 30_000);
     expect(result).toContain("seconds ago");
@@ -53,12 +60,13 @@ describe("formatRelativeTime", () => {
 });
 
 describe("formatAbsoluteDateTime", () => {
-  test("includes month, day, year, and time", () => {
+  test("includes month, day, year, time, and seconds", () => {
     const ts = new Date("2026-03-02T14:30:00Z").getTime();
     const result = formatAbsoluteDateTime(ts);
     expect(result).toContain("Mar");
     expect(result).toContain("2026");
     expect(result).toContain("2");
+    expect(result).toContain("00");
   });
 });
 

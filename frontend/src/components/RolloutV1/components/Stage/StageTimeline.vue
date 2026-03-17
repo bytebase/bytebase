@@ -91,27 +91,30 @@
                 :timestamp="taskRun.updateTime"
                 custom-class="!text-xs !text-gray-400"
               />
-              <span v-if="getTaskRunCreatorDisplay(taskRun)">·</span>
-              <router-link
-                v-if="getTaskRunCreatorDisplay(taskRun)"
-                :to="{
-                  name: WORKSPACE_ROUTE_USER_PROFILE,
-                  params: {
-                    principalEmail: getTaskRunCreatorDisplay(taskRun)?.email || '',
-                  },
-                }"
-                class="hover:underline"
-                @click.stop
-              >
-                {{ getTaskRunCreatorDisplay(taskRun)?.title }}
-              </router-link>
-              <NTooltip v-if="getTaskRunDuration(taskRun)">
+              <template v-if="getTaskRunCreatorDisplay(taskRun)">
                 <span>·</span>
-                <template #trigger>
-                  <span>{{ getTaskRunDuration(taskRun) }}</span>
-                </template>
-                {{ $t("common.duration") }}
-              </NTooltip>
+                <router-link
+                  :to="{
+                    name: WORKSPACE_ROUTE_USER_PROFILE,
+                    params: {
+                      principalEmail: getTaskRunCreatorDisplay(taskRun)?.email || '',
+                    },
+                  }"
+                  class="hover:underline"
+                  @click.stop
+                >
+                  {{ getTaskRunCreatorDisplay(taskRun)?.title }}
+                </router-link>
+              </template>
+              <template v-if="getTaskRunDuration(taskRun)">
+                <span>·</span>
+                <NTooltip>
+                  <template #trigger>
+                    <span>{{ getTaskRunDuration(taskRun) }}</span>
+                  </template>
+                  {{ $t("common.duration") }}
+                </NTooltip>
+              </template>
             </div>
           </div>
         </NTimelineItem>

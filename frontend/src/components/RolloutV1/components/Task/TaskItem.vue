@@ -235,6 +235,7 @@ import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import { emitPlanStatusChanged } from "@/components/Plan/logic";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -302,7 +303,7 @@ const {
 
 // Handle action confirmed - trigger data refresh
 const handleActionConfirm = () => {
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 
 const taskDetailRoute = computed(() => {

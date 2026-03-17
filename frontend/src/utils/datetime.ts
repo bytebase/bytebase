@@ -1,12 +1,21 @@
 import { locale } from "@/plugins/i18n";
 
 export const RELATIVE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+export const DEFAULT_NOW_THRESHOLD_MS = 10_000;
+
+type RelativeTimeFormatOptions = {
+  nowThresholdMs?: number;
+};
 
 export function getActiveLocale(): string {
   return locale.value;
 }
 
-export function formatRelativeTime(timestampMs: number): string {
+export function formatRelativeTime(
+  timestampMs: number,
+  options: RelativeTimeFormatOptions = {}
+): string {
+  const { nowThresholdMs = DEFAULT_NOW_THRESHOLD_MS } = options;
   const diffMs = Date.now() - timestampMs;
   const absDiff = Math.abs(diffMs);
   const sign = diffMs >= 0 ? -1 : 1;
@@ -15,7 +24,7 @@ export function formatRelativeTime(timestampMs: number): string {
     numeric: "auto",
   });
 
-  if (absDiff < 10_000) {
+  if (absDiff < nowThresholdMs) {
     return rtf.format(0, "second");
   }
   if (absDiff < 60_000) {
@@ -37,6 +46,7 @@ export function formatAbsoluteDateTime(timestampMs: number): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    second: "2-digit",
     timeZoneName: "short",
   }).format(new Date(timestampMs));
 }
