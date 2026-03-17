@@ -14,6 +14,8 @@ import (
 type OmniAST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateStmt).
 	Node ast.Node
+	// Text is the original SQL text of this statement.
+	Text string
 	// StartPosition is the 1-based position where this statement starts.
 	StartPosition *storepb.Position
 }
