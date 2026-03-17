@@ -193,6 +193,20 @@ func (d *DatabaseMetadata) GetProto() *storepb.DatabaseSchemaMetadata {
 	return d.proto
 }
 
+// ReplaceFrom replaces the internal state of this DatabaseMetadata with that
+// of another. The receiver pointer remains stable so callers that hold a
+// reference to it continue to see the updated state.
+func (d *DatabaseMetadata) ReplaceFrom(other *DatabaseMetadata) {
+	d.proto = other.proto
+	d.config = other.config
+	d.rawDump = other.rawDump
+	d.isObjectCaseSensitive = other.isObjectCaseSensitive
+	d.isDetailCaseSensitive = other.isDetailCaseSensitive
+	d.searchPath = other.searchPath
+	d.internal = other.internal
+	d.linkedDatabase = other.linkedDatabase
+}
+
 func (d *DatabaseMetadata) GetRawDump() []byte {
 	return d.rawDump
 }

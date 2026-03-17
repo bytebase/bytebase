@@ -91,8 +91,8 @@ var (
 					{
 						Name: MockTableName,
 						Columns: []*storepb.ColumnMetadata{
-							{Name: "id"},
-							{Name: "name"},
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "name", Type: "text", Position: 2},
 						},
 						Indexes: []*storepb.IndexMetadata{
 							{

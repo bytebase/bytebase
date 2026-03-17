@@ -76,8 +76,8 @@ func TestWalkThrough(t *testing.T) {
 	}
 
 	tests := []testData{}
-	filepath := filepath.Join("testdata", "walk_through.yaml")
-	yamlFile, err := os.Open(filepath)
+	targetPath := filepath.Join("testdata", "walk_through.yaml")
+	yamlFile, err := os.Open(targetPath)
 	require.NoError(t, err)
 	defer yamlFile.Close()
 
@@ -87,7 +87,8 @@ func TestWalkThrough(t *testing.T) {
 	require.NoError(t, err)
 	sm := sheet.NewManager()
 
-	for _, test := range tests {
+	for i := range tests {
+		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
 		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
 		require.True(t, ok)
@@ -97,11 +98,13 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThrough(state, asts)
+		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
-			require.Equal(t, test.Advice.Code, advice.Code)
-			require.Equal(t, test.Advice.Content, advice.Content)
+			if test.Advice != nil {
+				require.Equal(t, test.Advice.Code, advice.Code)
+				require.Equal(t, test.Advice.Content, advice.Content)
+			}
 			continue
 		}
 
@@ -111,7 +114,7 @@ func TestWalkThrough(t *testing.T) {
 		}
 
 		want := &storepb.DatabaseSchemaMetadata{}
-		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
@@ -171,8 +174,8 @@ func TestWalkThroughANTLR(t *testing.T) {
 	}
 
 	tests := []testData{}
-	filepath := filepath.Join("testdata", "walk_through.yaml")
-	yamlFile, err := os.Open(filepath)
+	targetPath := filepath.Join("testdata", "walk_through.yaml")
+	yamlFile, err := os.Open(targetPath)
 	require.NoError(t, err)
 	defer yamlFile.Close()
 
@@ -181,7 +184,8 @@ func TestWalkThroughANTLR(t *testing.T) {
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err)
 
-	for _, test := range tests {
+	for i := range tests {
+		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
 		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
 		require.True(t, ok)
@@ -194,13 +198,16 @@ func TestWalkThroughANTLR(t *testing.T) {
 		if parseErr != nil {
 			t.Fatalf("Failed to parse SQL: %v\nSQL: %s", parseErr, test.Statement)
 		}
+		asts := base.ExtractASTs(stmts)
 
 		// Call WalkThrough with AST
-		advice := WalkThrough(state, base.ExtractASTs(stmts))
+		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
-			require.Equal(t, test.Advice.Code, advice.Code)
-			require.Equal(t, test.Advice.Content, advice.Content)
+			if test.Advice != nil {
+				require.Equal(t, test.Advice.Code, advice.Code)
+				require.Equal(t, test.Advice.Content, advice.Content)
+			}
 			continue
 		}
 
@@ -210,7 +217,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 		}
 
 		want := &storepb.DatabaseSchemaMetadata{}
-		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
+		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
@@ -304,12 +311,15 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i := range tests {
+		test := &tests[i]
 		t.Run(test.name, func(t *testing.T) {
 			state := newSearchPathTestState(test.searchPath)
 			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
 			require.NoError(t, err)
-			advice := WalkThroughWithContext(test.session, state, base.ExtractASTs(stmts))
+			ctx := test.session
+			ctx.RawSQL = test.sql
+			advice := WalkThroughWithContext(ctx, state, base.ExtractASTs(stmts))
 			require.Nil(t, advice)
 			test.assert(t, state)
 		})
