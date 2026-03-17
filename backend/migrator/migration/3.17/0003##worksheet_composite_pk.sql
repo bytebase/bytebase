@@ -1,7 +1,9 @@
 -- Phase A: Drop old FKs and PKs
+ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS sheet_organizer_sheet_id_fkey;
 ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS worksheet_organizer_worksheet_id_fkey;
 ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS worksheet_organizer_worksheet_fkey;
 ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS worksheet_organizer_pkey;
+ALTER TABLE worksheet_organizer DROP CONSTRAINT IF EXISTS sheet_organizer_pkey;
 DROP INDEX IF EXISTS idx_worksheet_unique_resource_id;
 
 -- Phase B: Change worksheet PK to resource_id
