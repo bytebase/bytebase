@@ -1175,8 +1175,7 @@
     },
     "approval": {
       "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
-    },
-    "grant-request": {}
+    }
   },
   "plan": {
     "plans": "Plans",
@@ -1795,66 +1794,6 @@
       "invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
       "version-already-exists": "This version already exists in the database",
       "delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
-    },
-    "general": {
-      "workspace": {
-        "watermark": {},
-        "allow-admin-data-source": {},
-        "product-improvement": {},
-        "audit-log-stdout": {},
-        "enable-debug": {},
-        "disallow-signup": {},
-        "require-2fa": {},
-        "disallow-password-signin": {},
-        "external-url": {},
-        "access-token-duration": {},
-        "refresh-token-duration": {},
-        "inactive-session-timeout": {},
-        "maximum-role-expiration": {},
-        "maximum-sql-result": {
-          "size": {},
-          "rows": {}
-        },
-        "query-data-policy": {
-          "timeout": {}
-        },
-        "domain-restriction": {
-          "members-restriction": {}
-        },
-        "password-restriction": {},
-        "ai-assistant": {
-          "provider": {},
-          "api-key": {},
-          "endpoint": {},
-          "model": {}
-        },
-        "announcement": {},
-        "announcement-alert-level": {},
-        "announcement-text": {},
-        "extra-link": {},
-        "default-landing-page": {
-          "workspace": {},
-          "sql-editor": {}
-        }
-      }
-    },
-    "sensitive-data": {
-      "global-rules": {
-        "error": {}
-      },
-      "semantic-types": {
-        "table": {},
-        "template": {}
-      },
-      "algorithms": {
-        "table": {},
-        "error": {},
-        "full-mask": {},
-        "range-mask": {},
-        "md5-mask": {},
-        "inner-outer-mask": {}
-      },
-      "classification": {}
     }
   },
   "project": {

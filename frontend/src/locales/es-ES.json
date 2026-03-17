@@ -2481,7 +2481,9 @@
     "input-placeholder": "Ask anything...",
     "send": "Send",
     "args": "Args:",
-    "result": "Result:"
+    "result": "Result:",
+    "stop": "Stop",
+    "interrupted": "Interrupted"
   },
   "audit-log": {
     "export-finished": "Exportación finalizada",

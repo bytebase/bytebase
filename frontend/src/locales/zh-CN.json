@@ -1175,8 +1175,7 @@
     },
     "approval": {
       "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
-    },
-    "grant-request": {}
+    }
   },
   "plan": {
     "plans": "变更计划",
@@ -1795,66 +1794,6 @@
       "invalid-version-format": "版本必须是用点分隔的数字部分（例如，1.0.0）",
       "version-already-exists": "此版本已存在于数据库中",
       "delete-confirm-dialog": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
-    },
-    "general": {
-      "workspace": {
-        "watermark": {},
-        "allow-admin-data-source": {},
-        "product-improvement": {},
-        "audit-log-stdout": {},
-        "enable-debug": {},
-        "disallow-signup": {},
-        "require-2fa": {},
-        "disallow-password-signin": {},
-        "external-url": {},
-        "access-token-duration": {},
-        "refresh-token-duration": {},
-        "inactive-session-timeout": {},
-        "maximum-role-expiration": {},
-        "maximum-sql-result": {
-          "size": {},
-          "rows": {}
-        },
-        "query-data-policy": {
-          "timeout": {}
-        },
-        "domain-restriction": {
-          "members-restriction": {}
-        },
-        "password-restriction": {},
-        "ai-assistant": {
-          "provider": {},
-          "api-key": {},
-          "endpoint": {},
-          "model": {}
-        },
-        "announcement": {},
-        "announcement-alert-level": {},
-        "announcement-text": {},
-        "extra-link": {},
-        "default-landing-page": {
-          "workspace": {},
-          "sql-editor": {}
-        }
-      }
-    },
-    "sensitive-data": {
-      "global-rules": {
-        "error": {}
-      },
-      "semantic-types": {
-        "table": {},
-        "template": {}
-      },
-      "algorithms": {
-        "table": {},
-        "error": {},
-        "full-mask": {},
-        "range-mask": {},
-        "md5-mask": {},
-        "inner-outer-mask": {}
-      },
-      "classification": {}
     }
   },
   "project": {
