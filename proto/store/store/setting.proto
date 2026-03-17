@@ -25,8 +25,8 @@ enum SettingName {
 message SystemSetting {
   // Authentication secret for token signing (32-character random string).
   string auth_secret = 1;
-  // Unique workspace identifier (UUID).
-  string workspace_id = 2;
+  // Field 2 was workspace_id, now stored in the workspace table.
+  reserved 2;
   // Enterprise license JWT token.
   string license = 3;
 }

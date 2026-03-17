@@ -362,8 +362,6 @@ type SystemSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Authentication secret for token signing (32-character random string).
 	AuthSecret string `protobuf:"bytes,1,opt,name=auth_secret,json=authSecret,proto3" json:"auth_secret,omitempty"`
-	// Unique workspace identifier (UUID).
-	WorkspaceId string `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	// Enterprise license JWT token.
 	License       string `protobuf:"bytes,3,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -403,13 +401,6 @@ func (*SystemSetting) Descriptor() ([]byte, []int) {
 func (x *SystemSetting) GetAuthSecret() string {
 	if x != nil {
 		return x.AuthSecret
-	}
-	return ""
-}
-
-func (x *SystemSetting) GetWorkspaceId() string {
-	if x != nil {
-		return x.WorkspaceId
 	}
 	return ""
 }
@@ -2412,12 +2403,11 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"m\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x1f\n" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
-	"authSecret\x12!\n" +
-	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicense\"\xcf\x0f\n" +
+	"authSecret\x12\x18\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x02\x10\x03\"\xcf\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +

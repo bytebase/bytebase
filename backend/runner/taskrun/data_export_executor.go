@@ -115,8 +115,13 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return nil, exportErr
 	}
 
+	workspace, err := exec.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace")
+	}
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
-		Bytes: bytes,
+		Workspace: workspace.ResourceID,
+		Bytes:     bytes,
 		Payload: &storepb.ExportArchivePayload{
 			FileFormat: exportConfig.Format,
 		},

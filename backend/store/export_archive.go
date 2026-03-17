@@ -14,6 +14,7 @@ import (
 
 type ExportArchiveMessage struct {
 	ResourceID string
+	Workspace  string
 	CreatedAt  time.Time
 	Bytes      []byte
 	Payload    *storepb.ExportArchivePayload
@@ -24,6 +25,7 @@ func (s *Store) GetExportArchive(ctx context.Context, resourceID string) (*Expor
 	q := qb.Q().Space(`
 		SELECT
 			resource_id,
+			workspace,
 			created_at,
 			bytes,
 			payload
@@ -40,6 +42,7 @@ func (s *Store) GetExportArchive(ctx context.Context, resourceID string) (*Expor
 	var bytesVal, payload []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&exportArchive.ResourceID,
+		&exportArchive.Workspace,
 		&exportArchive.CreatedAt,
 		&bytesVal,
 		&payload,
@@ -68,12 +71,13 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 
 	q := qb.Q().Space(`
 		INSERT INTO export_archive (
+			workspace,
 			bytes,
 			payload
 		)
-		VALUES (?, ?)
+		VALUES (?, ?, ?)
 		RETURNING resource_id
-	`, create.Bytes, payload)
+	`, create.Workspace, create.Bytes, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

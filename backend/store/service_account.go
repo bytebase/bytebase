@@ -15,6 +15,7 @@ type ServiceAccountMessage struct {
 	// Email must be lower case, format: {name}@{project-id}.service.bytebase.com or {name}@service.bytebase.com
 	Email          string
 	Name           string
+	Workspace      string
 	ServiceKeyHash string
 	MemberDeleted  bool
 	// Project is the owning project. NULL for workspace-level service accounts.
@@ -38,6 +39,7 @@ type CreateServiceAccountMessage struct {
 	// Email must be lower case.
 	Email          string
 	Name           string
+	Workspace      string
 	ServiceKeyHash string
 	// Project is the owning project. NULL for workspace-level service accounts.
 	Project *string
@@ -88,6 +90,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			deleted,
 			email,
 			name,
+			workspace,
 			service_key_hash,
 			project
 		FROM service_account
@@ -121,6 +124,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			&sa.MemberDeleted,
 			&sa.Email,
 			&sa.Name,
+			&sa.Workspace,
 			&sa.ServiceKeyHash,
 			&project,
 		); err != nil {
@@ -146,11 +150,12 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 		INSERT INTO service_account (
 			email,
 			name,
+			workspace,
 			service_key_hash,
 			project
 		)
-		VALUES (?, ?, ?, ?)
-	`, email, create.Name, create.ServiceKeyHash, create.Project)
+		VALUES (?, ?, ?, ?, ?)
+	`, email, create.Name, create.Workspace, create.ServiceKeyHash, create.Project)
 
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
@@ -164,6 +169,7 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 	return &ServiceAccountMessage{
 		Email:          email,
 		Name:           create.Name,
+		Workspace:      create.Workspace,
 		ServiceKeyHash: create.ServiceKeyHash,
 		Project:        create.Project,
 	}, nil
@@ -187,7 +193,7 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	}
 
 	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE email = ?
-		RETURNING deleted, email, name, service_key_hash, project`,
+		RETURNING deleted, email, name, workspace, service_key_hash, project`,
 		set, sa.Email).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -199,6 +205,7 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 		&updated.MemberDeleted,
 		&updated.Email,
 		&updated.Name,
+		&updated.Workspace,
 		&updated.ServiceKeyHash,
 		&project,
 	); err != nil {

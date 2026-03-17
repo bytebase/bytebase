@@ -415,7 +415,12 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		return nil, err
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	create := &store.PolicyMessage{
+		Workspace:         workspace.ResourceID,
 		ResourceType:      resourceType,
 		Resource:          parent,
 		Payload:           payloadStr,

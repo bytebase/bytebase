@@ -34,11 +34,11 @@ func generateEtag(t time.Time) string {
 
 // GetWorkspaceResourceName returns the workspace resource name "workspaces/{id}".
 func (s *Store) GetWorkspaceResourceName(ctx context.Context) (string, error) {
-	systemSetting, err := s.GetSystemSetting(ctx)
+	workspace, err := s.GetWorkspace(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get system setting")
+		return "", err
 	}
-	return common.FormatWorkspace(systemSetting.WorkspaceId), nil
+	return common.FormatWorkspace(workspace.ResourceID), nil
 }
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
@@ -109,7 +109,12 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		return nil, err
 	}
 
+	workspace, err := s.GetWorkspace(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
+		Workspace:         workspace.ResourceID,
 		ResourceType:      storepb.Policy_WORKSPACE,
 		Resource:          workspaceResource,
 		Payload:           string(policyPayload),
@@ -447,6 +452,7 @@ func (s *Store) GetMaskingExemptionPolicyByProject(ctx context.Context, projectI
 
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
+	Workspace         string
 	Resource          string
 	ResourceType      storepb.Policy_Resource
 	Payload           string
@@ -511,6 +517,7 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
+			workspace,
 			updated_at,
 			resource_type,
 			resource,
@@ -551,6 +558,7 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 		var policyMessage PolicyMessage
 		var resourceTypeString, typeString string
 		if err := rows.Scan(
+			&policyMessage.Workspace,
 			&policyMessage.UpdatedAt,
 			&resourceTypeString,
 			&policyMessage.Resource,
@@ -674,6 +682,7 @@ func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (
 
 	q := qb.Q().Space(`
 		INSERT INTO policy (
+			workspace,
 			resource_type,
 			resource,
 			inherit_from_parent,
@@ -682,13 +691,14 @@ func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (
 			enforce,
 			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
 			inherit_from_parent = EXCLUDED.inherit_from_parent,
 			payload = EXCLUDED.payload,
 			enforce = EXCLUDED.enforce,
 			updated_at = EXCLUDED.updated_at
 	`,
+		create.Workspace,
 		create.ResourceType.String(),
 		create.Resource,
 		create.InheritFromParent,

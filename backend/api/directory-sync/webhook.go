@@ -481,10 +481,15 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
 				email = scimGroup.ExternalID
 			}
+			workspace, err := s.store.GetWorkspace(ctx)
+			if err != nil {
+				return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get workspace, error %v", err))
+			}
 			newGroup, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-				ID:    scimGroup.ExternalID,
-				Email: email,
-				Title: scimGroup.DisplayName,
+				Workspace: workspace.ResourceID,
+				ID:        scimGroup.ExternalID,
+				Email:     email,
+				Title:     scimGroup.DisplayName,
 				Payload: &storepb.GroupPayload{
 					Source:  source,
 					Members: members,
@@ -841,13 +846,12 @@ func (s *Service) validRequestURL(ctx context.Context, c *echo.Context) error {
 	}
 
 	workspaceID := c.Param("workspaceID")
-	systemSetting, err := s.store.GetSystemSetting(ctx)
+	workspace, err := s.store.GetWorkspace(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to get system setting")
+		return errors.Wrap(err, "failed to get workspace")
 	}
-	myWorkspaceID := systemSetting.WorkspaceId
-	if myWorkspaceID != workspaceID {
-		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
+	if workspace.ResourceID != workspaceID {
+		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, workspace.ResourceID)
 	}
 
 	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx)

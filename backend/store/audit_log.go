@@ -19,6 +19,7 @@ import (
 
 type AuditLog struct {
 	ResourceID string
+	Workspace  string
 	CreatedAt  time.Time
 	Payload    *storepb.AuditLog
 }
@@ -31,13 +32,13 @@ type AuditLogFind struct {
 	OrderByKeys []*OrderByKey
 }
 
-func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) error {
+func (s *Store) CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error {
 	p, err := protojson.Marshal(payload)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	q := qb.Q().Space("INSERT INTO audit_log (payload) VALUES (?)", p)
+	q := qb.Q().Space("INSERT INTO audit_log (workspace, payload) VALUES (?, ?)", workspace, p)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
@@ -53,6 +54,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	q := qb.Q().Space(`
 		SELECT
 			resource_id,
+			workspace,
 			created_at,
 			payload
 		FROM audit_log
@@ -102,6 +104,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 
 		if err := rows.Scan(
 			&l.ResourceID,
+			&l.Workspace,
 			&l.CreatedAt,
 			&payload,
 		); err != nil {

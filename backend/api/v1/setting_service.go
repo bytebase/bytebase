@@ -571,9 +571,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}), nil
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	setting, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
-		Name:  storeSettingName,
-		Value: storeSettingValue,
+		Name:      storeSettingName,
+		Workspace: workspace.ResourceID,
+		Value:     storeSettingValue,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))

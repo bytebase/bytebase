@@ -84,11 +84,16 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	}
 
 	// Create the workload identity
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	createdWI, err := s.store.CreateWorkloadIdentity(ctx, &store.CreateWorkloadIdentityMessage{
-		Email:   email,
-		Name:    wi.Title,
-		Project: projectID,
-		Config:  storeConfig,
+		Workspace: workspace.ResourceID,
+		Email:     email,
+		Name:      wi.Title,
+		Project:   projectID,
+		Config:    storeConfig,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workload identity"))

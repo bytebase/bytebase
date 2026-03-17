@@ -217,6 +217,12 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 
 	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	projectMessage.Workspace = workspace.ResourceID
+
 	setting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		slog.Error("failed to find classification setting", log.BBError(err))
@@ -590,7 +596,12 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
 	if _, err := s.store.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:         workspace.ResourceID,
 		Resource:          common.FormatProject(project.ResourceID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),

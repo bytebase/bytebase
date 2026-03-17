@@ -208,6 +208,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	instanceMessage.Workspace = workspace.ResourceID
+
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

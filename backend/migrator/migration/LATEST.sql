@@ -1,24 +1,15 @@
--- idp stores generic identity provider.
-CREATE TABLE idp (
-  resource_id text NOT NULL PRIMARY KEY,
-  name text NOT NULL,
-  domain text NOT NULL,
-  type text NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
-  -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
-  -- Stored as IdentityProviderConfig (proto/store/store/idp.proto)
-  config jsonb NOT NULL DEFAULT '{}'
+-----------------------
+-- Global identity: workspace and principal
+-- We will use the IAM policy to list the principal's workspaces.
+-----------------------
+
+CREATE TABLE workspace (
+    resource_id text PRIMARY KEY,
+    name        text NOT NULL,
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    deleted     boolean NOT NULL DEFAULT FALSE
 );
 
--- Project (created before principal for foreign key reference)
-CREATE TABLE project (
-    resource_id text NOT NULL PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    name text NOT NULL,
-    -- Stored as Project (proto/store/store/project.proto)
-    setting jsonb NOT NULL DEFAULT '{}'
-);
-
--- principal
 CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
@@ -35,30 +26,11 @@ CREATE TABLE principal (
 
 CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
 
--- service_account
-CREATE TABLE service_account (
-    deleted boolean NOT NULL DEFAULT FALSE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    name text NOT NULL,
-    email text NOT NULL PRIMARY KEY,
-    service_key_hash text NOT NULL,
-    project text REFERENCES project(resource_id)
-);
+ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
-CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
-
--- workload_identity
-CREATE TABLE workload_identity (
-    deleted boolean NOT NULL DEFAULT FALSE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    name text NOT NULL,
-    email text NOT NULL PRIMARY KEY,
-    project text REFERENCES project(resource_id),
-    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
-    config jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
+-----------------------
+-- Workspace-scoped tables
+-----------------------
 
 -- Setting
 CREATE TABLE setting (
@@ -66,13 +38,18 @@ CREATE TABLE setting (
     -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
     -- Stored as JSON marshalled by protojson.Marshal (camelCase keys)
     value jsonb NOT NULL
 );
 
+CREATE UNIQUE INDEX idx_setting_unique_workspace_name ON setting(workspace, name);
+CREATE INDEX idx_setting_workspace ON setting(workspace);
+
 -- Role
 CREATE TABLE role (
     resource_id text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
     name text NOT NULL,
     description text NOT NULL,
     -- Stored as RolePermissions (proto/store/store/role.proto)
@@ -81,11 +58,14 @@ CREATE TABLE role (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
+CREATE UNIQUE INDEX idx_role_unique_workspace_resource_id ON role(workspace, resource_id);
+
 -- Policy
 -- policy stores the policies for each resources.
 CREATE TABLE policy (
     enforce boolean NOT NULL DEFAULT TRUE,
     updated_at timestamptz NOT NULL DEFAULT now(),
+    workspace text NOT NULL REFERENCES workspace(resource_id),
     -- resource_type: WORKSPACE, ENVIRONMENT, PROJECT
     -- Enum: Policy.Resource (proto/store/store/policy.proto)
     resource_type text NOT NULL,
@@ -106,6 +86,116 @@ CREATE TABLE policy (
     PRIMARY KEY (resource_type, resource, type)
 );
 
+CREATE INDEX idx_policy_workspace ON policy(workspace);
+
+-- idp stores generic identity provider.
+CREATE TABLE idp (
+    resource_id text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),
+    -- config stores the corresponding configuration of the IdP, which may vary depending on the type of the IdP.
+    -- Stored as IdentityProviderConfig (proto/store/store/idp.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_idp_unique_workspace_resource_id ON idp(workspace, resource_id);
+
+CREATE TABLE user_group (
+    id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    email text,
+    name text NOT NULL,
+    description text NOT NULL DEFAULT '',
+    -- Stored as GroupPayload (proto/store/store/group.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_user_group_unique_email ON user_group(workspace, email) WHERE email IS NOT NULL;
+
+-- review config table.
+CREATE TABLE review_config (
+    id text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    enabled boolean NOT NULL DEFAULT TRUE,
+    name text NOT NULL,
+    -- Stored as ReviewConfigPayload (proto/store/store/review_config.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE audit_log (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    -- Stored as AuditLog (proto/store/store/audit_log.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_audit_log_workspace ON audit_log(workspace);
+CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
+CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
+CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
+CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
+CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
+
+CREATE TABLE export_archive (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    bytes bytea,
+    -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+-----------------------
+-- Project and project-scoped tables
+-----------------------
+
+CREATE TABLE project (
+    resource_id text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    deleted boolean NOT NULL DEFAULT FALSE,
+    name text NOT NULL,
+    -- Stored as Project (proto/store/store/project.proto)
+    setting jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_project_unique_workspace_resource_id ON project(workspace, resource_id);
+CREATE INDEX idx_project_workspace ON project(workspace);
+
+-- service_account
+-- Service Account needs both workspace and project
+CREATE TABLE service_account (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    service_key_hash text NOT NULL,
+    project text REFERENCES project(resource_id)
+);
+
+CREATE INDEX idx_service_account_project ON service_account(project) WHERE project IS NOT NULL;
+CREATE UNIQUE INDEX idx_service_account_unique_workspace_email ON service_account(workspace, email);
+CREATE INDEX idx_service_account_workspace ON service_account(workspace);
+
+-- workload_identity
+CREATE TABLE workload_identity (
+    deleted boolean NOT NULL DEFAULT FALSE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    name text NOT NULL,
+    email text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    project text REFERENCES project(resource_id),
+    -- Stored as WorkloadIdentityConfig (proto/store/store/user.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_workload_identity_project ON workload_identity(project) WHERE project IS NOT NULL;
+CREATE UNIQUE INDEX idx_workload_identity_unique_workspace_email ON workload_identity(workspace, email);
+CREATE INDEX idx_workload_identity_workspace ON workload_identity(workspace);
+
 -- Project Hook
 CREATE TABLE project_webhook (
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -116,48 +206,9 @@ CREATE TABLE project_webhook (
 
 CREATE INDEX idx_project_webhook_project ON project_webhook(project);
 
--- Instance
-CREATE TABLE instance (
-    resource_id text NOT NULL PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    environment text,
-    -- Stored as Instance (proto/store/store/instance.proto)
-    metadata jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
-
--- db stores the databases for a particular instance
--- data is synced periodically from the instance
-CREATE TABLE db (
-    instance text NOT NULL REFERENCES instance(resource_id),
-    name text NOT NULL,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    project text NOT NULL REFERENCES project(resource_id),
-    environment text,
-    -- Stored as DatabaseMetadata (proto/store/store/database.proto)
-    metadata jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (instance, name)
-);
-
-CREATE INDEX idx_db_project ON db(project);
-
--- db_schema stores the database schema metadata for a particular database.
-CREATE TABLE db_schema (
-    instance text NOT NULL,
-    db_name text NOT NULL,
-    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
-    metadata json NOT NULL DEFAULT '{}',
-    raw_dump text NOT NULL DEFAULT '',
-    -- Stored as DatabaseConfig (proto/store/store/database.proto)
-    config jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (instance, db_name),
-    CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
-);
-
 CREATE TABLE sheet_blob (
-	sha256 bytea NOT NULL PRIMARY KEY,
-	content text NOT NULL
+    sha256 bytea NOT NULL PRIMARY KEY,
+    content text NOT NULL
 );
 
 -- plan table stores the plan for a project
@@ -195,7 +246,6 @@ CREATE TABLE plan_check_run (
 );
 
 CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(project, plan_id);
-
 CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status IN ('AVAILABLE', 'RUNNING');
 
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
@@ -212,6 +262,246 @@ CREATE TABLE plan_webhook_delivery (
     PRIMARY KEY (project, plan_id),
     FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
 );
+
+-- issue
+CREATE TABLE issue (
+    id serial,
+    creator text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    project text NOT NULL REFERENCES project(resource_id),
+    plan_id bigint,
+    name text NOT NULL,
+    status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
+    -- type: DATABASE_CHANGE, ROLE_GRANT, DATABASE_EXPORT, ACCESS_GRANT
+    -- Enum: Issue.Type (proto/store/store/issue.proto)
+    type text NOT NULL,
+    description text NOT NULL DEFAULT '',
+    -- Stored as Issue (proto/store/store/issue.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    ts_vector tsvector,
+    PRIMARY KEY (project, id),
+    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
+);
+
+CREATE INDEX idx_issue_project ON issue(project);
+CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
+CREATE INDEX idx_issue_creator ON issue(creator);
+CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
+
+ALTER SEQUENCE issue_id_seq RESTART WITH 101;
+
+CREATE TABLE issue_comment (
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
+    creator text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    project text NOT NULL REFERENCES project(resource_id),
+    issue_id integer NOT NULL,
+    -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (resource_id),
+    FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
+);
+
+CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
+CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
+
+-- worksheet table stores worksheets in SQL Editor.
+CREATE TABLE worksheet (
+    id serial,
+    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
+    creator text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    project text NOT NULL REFERENCES project(resource_id),
+    instance text,
+    db_name text,
+    name text NOT NULL,
+    statement text NOT NULL,
+    -- visibility: PROJECT_READ, PROJECT_WRITE, PRIVATE
+    -- Enum: Worksheet.Visibility (proto/v1/v1/worksheet_service.proto)
+    visibility text NOT NULL,
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (resource_id)
+);
+
+CREATE INDEX idx_worksheet_project ON worksheet(project);
+CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
+
+ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
+
+-- worksheet_organizer table stores the sheet status for a principal.
+CREATE TABLE worksheet_organizer (
+    worksheet text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
+    principal text NOT NULL,
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (worksheet, principal)
+);
+
+CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal);
+CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
+
+CREATE TABLE db_group (
+    project text NOT NULL REFERENCES project(resource_id),
+    resource_id text NOT NULL,
+    name text NOT NULL DEFAULT '',
+    -- Stored as google.type.Expr (from Google Common Expression Language)
+    expression jsonb NOT NULL DEFAULT '{}',
+    -- Stored as DatabaseGroupPayload (proto/store/store/db_group.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, resource_id)
+);
+
+CREATE TABLE release (
+    project text NOT NULL REFERENCES project(resource_id),
+    train text NOT NULL DEFAULT '',
+    iteration integer NOT NULL DEFAULT 0,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    release_id text NOT NULL DEFAULT '',
+    creator text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    category text NOT NULL DEFAULT '',
+    -- Stored as ReleasePayload (proto/store/store/release.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, train, iteration)
+);
+
+CREATE INDEX idx_release_project ON release(project);
+CREATE INDEX idx_release_project_release_id ON release(project, release_id);
+CREATE INDEX idx_release_category ON release(project, category);
+
+CREATE TABLE access_grant (
+    id text PRIMARY KEY,
+    project text NOT NULL REFERENCES project(resource_id),
+    creator text NOT NULL,
+    status text NOT NULL DEFAULT 'PENDING',
+    expire_time timestamptz,
+    -- Stored as AccessGrantPayload (proto/store/store/access_grant.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
+
+CREATE TABLE query_history (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    creator text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    project text NOT NULL REFERENCES project(resource_id),
+    database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
+    statement text NOT NULL,
+    -- type: QUERY, EXPORT
+    type text NOT NULL,
+    -- saved for details, like error, duration, etc.
+    -- Stored as QueryHistoryPayload (proto/store/store/query_history.proto)
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_query_history_creator_created_at_project ON query_history(creator, created_at, project DESC);
+
+-----------------------
+-- Instance and instance-scoped tables
+-----------------------
+
+CREATE TABLE instance (
+    resource_id text NOT NULL PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
+    deleted boolean NOT NULL DEFAULT FALSE,
+    environment text,
+    -- Stored as Instance (proto/store/store/instance.proto)
+    metadata jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_instance_unique_workspace_resource_id ON instance(workspace, resource_id);
+CREATE INDEX idx_instance_workspace ON instance(workspace);
+CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
+
+-- db stores the databases for a particular instance
+-- data is synced periodically from the instance
+CREATE TABLE db (
+    instance text NOT NULL REFERENCES instance(resource_id),
+    name text NOT NULL,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    project text NOT NULL REFERENCES project(resource_id),
+    environment text,
+    -- Stored as DatabaseMetadata (proto/store/store/database.proto)
+    metadata jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (instance, name)
+);
+
+CREATE INDEX idx_db_project ON db(project);
+
+-- db_schema stores the database schema metadata for a particular database.
+CREATE TABLE db_schema (
+    instance text NOT NULL,
+    db_name text NOT NULL,
+    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
+    metadata json NOT NULL DEFAULT '{}',
+    raw_dump text NOT NULL DEFAULT '',
+    -- Stored as DatabaseConfig (proto/store/store/database.proto)
+    config jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (instance, db_name),
+    CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
+);
+
+CREATE TABLE revision (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    instance text NOT NULL,
+    db_name text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    deleter text,
+    deleted_at timestamptz,
+    version text NOT NULL,
+    -- Stored as RevisionPayload (proto/store/store/revision.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
+);
+
+CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at_null ON revision(instance, db_name, (payload->>'type'), version) WHERE deleted_at IS NULL;
+CREATE INDEX idx_revision_instance_db_name_type_version ON revision(instance, db_name, (payload->>'type'), version);
+
+CREATE TABLE sync_history (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    instance text NOT NULL,
+    db_name text NOT NULL,
+    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
+    metadata json NOT NULL DEFAULT '{}',
+    raw_dump text NOT NULL DEFAULT '',
+    CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
+);
+
+CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
+
+CREATE TABLE changelog (
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    instance text NOT NULL,
+    db_name text NOT NULL,
+    status text NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
+    sync_history text REFERENCES sync_history(resource_id),
+    -- Stored as ChangelogPayload (proto/store/store/changelog.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
+);
+
+CREATE INDEX idx_changelog_instance_db_name ON changelog (instance, db_name);
+
+-- instance change history records the changes an instance and its databases.
+CREATE TABLE instance_change_history (
+    id bigserial PRIMARY KEY,
+    version text NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON instance_change_history (version);
+
+ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
+
+-----------------------
+-- Pipeline (cross project + instance)
+-----------------------
 
 -- task table stores the task for a plan
 CREATE TABLE task (
@@ -255,17 +545,14 @@ CREATE TABLE task_run (
 );
 
 CREATE INDEX idx_task_run_task_id ON task_run(task_id);
-
 CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run(project, task_id, attempt);
-
 -- Partial index for active task runs. Most task runs are in terminal states (DONE, FAILED, CANCELED)
 -- that never change. Queries frequently filter for active statuses (PENDING, RUNNING), so a partial
 -- index is more efficient than a full index on status - smaller size, faster maintenance, better cache efficiency.
 CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'AVAILABLE', 'RUNNING');
+CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
-
-CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
 -- replica_heartbeat tracks active replicas in HA deployments.
 -- Used to detect and clean up stale RUNNING task runs from crashed replicas.
@@ -284,236 +571,10 @@ CREATE TABLE task_run_log (
     FOREIGN KEY (project, task_run_id) REFERENCES task_run(project, id)
 );
 
--- Pipeline related END
 -----------------------
--- issue
-CREATE TABLE issue (
-    id serial,
-    creator text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    plan_id bigint,
-    name text NOT NULL,
-    status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
-    -- type: DATABASE_CHANGE, ROLE_GRANT, DATABASE_EXPORT, ACCESS_GRANT
-    -- Enum: Issue.Type (proto/store/store/issue.proto)
-    type text NOT NULL,
-    description text NOT NULL DEFAULT '',
-    -- Stored as Issue (proto/store/store/issue.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    ts_vector tsvector,
-    PRIMARY KEY (project, id),
-    FOREIGN KEY (project, plan_id) REFERENCES plan(project, id)
-);
+-- OAuth2 and auth
+-----------------------
 
-CREATE INDEX idx_issue_project ON issue(project);
-
-CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
-
-CREATE INDEX idx_issue_creator ON issue(creator);
-
-CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
-
-ALTER SEQUENCE issue_id_seq RESTART WITH 101;
-
--- instance change history records the changes an instance and its databases.
-CREATE TABLE instance_change_history (
-    id bigserial PRIMARY KEY,
-    version text NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON instance_change_history (version);
-
-ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
-
-CREATE TABLE audit_log (
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    -- Stored as AuditLog (proto/store/store/audit_log.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
-
-CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
-
-CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
-
-CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
-
-CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
-
-CREATE TABLE issue_comment (
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    creator text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    issue_id integer NOT NULL,
-    -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (resource_id),
-    FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
-);
-
-CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
-CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
-
-CREATE TABLE query_history (
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    creator text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
-    statement text NOT NULL,
-    -- type: QUERY, EXPORT
-    type text NOT NULL,
-    -- saved for details, like error, duration, etc.
-    -- Stored as QueryHistoryPayload (proto/store/store/query_history.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_query_history_creator_created_at_project ON query_history(creator, created_at, project DESC);
-
--- worksheet table stores worksheets in SQL Editor.
-CREATE TABLE worksheet (
-    id serial,
-    resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    creator text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    instance text,
-    db_name text,
-    name text NOT NULL,
-    statement text NOT NULL,
-    -- visibility: PROJECT_READ, PROJECT_WRITE, PRIVATE
-    -- Enum: Worksheet.Visibility (proto/v1/v1/worksheet_service.proto)
-    visibility text NOT NULL,
-    payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (resource_id)
-);
-
-CREATE INDEX idx_worksheet_project ON worksheet(project);
-CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
-
-ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
-
--- worksheet_organizer table stores the sheet status for a principal.
-CREATE TABLE worksheet_organizer (
-    worksheet text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
-    principal text NOT NULL,
-    payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (worksheet, principal)
-);
-
-CREATE INDEX idx_worksheet_organizer_principal ON worksheet_organizer(principal);
-
-CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(payload);
-
-CREATE TABLE db_group (
-    project text NOT NULL REFERENCES project(resource_id),
-    resource_id text NOT NULL,
-    name text NOT NULL DEFAULT '',
-    -- Stored as google.type.Expr (from Google Common Expression Language)
-    expression jsonb NOT NULL DEFAULT '{}',
-    -- Stored as DatabaseGroupPayload (proto/store/store/db_group.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, resource_id)
-);
-
-CREATE TABLE export_archive (
-  resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  bytes bytea,
-  -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
-  payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE TABLE user_group (
-  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  email text,
-  name text NOT NULL,
-  description text NOT NULL DEFAULT '',
-  -- Stored as GroupPayload (proto/store/store/group.proto)
-  payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_user_group_unique_email ON user_group(email) WHERE email IS NOT NULL;
-
--- review config table.
-CREATE TABLE review_config (
-    id text NOT NULL PRIMARY KEY,
-    enabled boolean NOT NULL DEFAULT TRUE,
-    name text NOT NULL,
-    -- Stored as ReviewConfigPayload (proto/store/store/review_config.proto)
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE TABLE revision (
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    instance text NOT NULL,
-    db_name text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    deleter text,
-    deleted_at timestamptz,
-    version text NOT NULL,
-    -- Stored as RevisionPayload (proto/store/store/revision.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
-);
-
-CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at_null ON revision(instance, db_name, (payload->>'type'), version) WHERE deleted_at IS NULL;
-
-CREATE INDEX idx_revision_instance_db_name_type_version ON revision(instance, db_name, (payload->>'type'), version);
-
-CREATE TABLE sync_history (
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    instance text NOT NULL,
-    db_name text NOT NULL,
-    -- Stored as DatabaseSchemaMetadata (proto/store/store/database.proto)
-    metadata json NOT NULL DEFAULT '{}',
-    raw_dump text NOT NULL DEFAULT '',
-    CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
-);
-
-CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
-
-CREATE TABLE changelog (
-    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    instance text NOT NULL,
-    db_name text NOT NULL,
-    status text NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    sync_history text REFERENCES sync_history(resource_id),
-    -- Stored as ChangelogPayload (proto/store/store/changelog.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
-);
-
-CREATE INDEX idx_changelog_instance_db_name ON changelog (instance, db_name);
-
-CREATE TABLE release (
-    project text NOT NULL REFERENCES project(resource_id),
-    train text NOT NULL DEFAULT '',
-    iteration integer NOT NULL DEFAULT 0,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    release_id text NOT NULL DEFAULT '',
-    creator text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    category text NOT NULL DEFAULT '',
-    -- Stored as ReleasePayload (proto/store/store/release.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, train, iteration)
-);
-
-CREATE INDEX idx_release_project ON release(project);
-CREATE INDEX idx_release_project_release_id ON release(project, release_id);
-CREATE INDEX idx_release_category ON release(project, category);
-
--- OAuth2 tables
 CREATE TABLE oauth2_client (
     client_id text PRIMARY KEY,
     client_secret_hash text NOT NULL,
@@ -550,49 +611,41 @@ CREATE TABLE web_refresh_token (
 CREATE INDEX idx_web_refresh_token_user_email ON web_refresh_token(user_email);
 CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
 
-ALTER SEQUENCE principal_id_seq RESTART WITH 101;
+-----------------------
+-- Seed data
+-----------------------
 
-CREATE TABLE access_grant (
-    id text PRIMARY KEY,
-    project text NOT NULL REFERENCES project(resource_id),
-    creator text NOT NULL,
-    status text NOT NULL DEFAULT 'PENDING',
-    expire_time timestamptz,
-    -- Stored as AccessGrantPayload (proto/store/store/access_grant.proto)
-    payload jsonb NOT NULL DEFAULT '{}',
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- Generate a workspace once, then use it everywhere.
+DO $$
+DECLARE
+  ws_id text := gen_random_uuid()::text;
+  auth_secret text;
+BEGIN
+  -- Generate random alphanumeric auth_secret (0-9, a-z, A-Z) compatible with Go's common.RandomString
+  SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
+    INTO auth_secret
+    FROM generate_series(1, 32);
 
-CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
+  -- Create the default workspace.
+  INSERT INTO workspace (resource_id, name) VALUES (ws_id, 'Default Workspace');
 
--- Default project.
-INSERT INTO project (name, resource_id) VALUES ('Default', 'default');
+  -- Default project.
+  INSERT INTO project (name, resource_id, workspace) VALUES ('Default', 'default', ws_id);
 
--- Initialize settings with static values
-INSERT INTO setting (name, value) VALUES ('APP_IM', '{}'::jsonb);
-INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}'::jsonb);
-INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}'::jsonb);
-INSERT INTO setting (name, value) VALUES (
-  'WORKSPACE_PROFILE',
-  ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '","passwordRestriction":{"minLength":8}}')::jsonb
-);
-INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}'::jsonb);
+  -- Initialize settings.
+  INSERT INTO setting (name, workspace, value) VALUES ('SYSTEM', ws_id,
+    json_build_object('authSecret', auth_secret));
+  INSERT INTO setting (name, workspace, value) VALUES ('APP_IM', ws_id, '{}'::jsonb);
+  INSERT INTO setting (name, workspace, value) VALUES ('DATA_CLASSIFICATION', ws_id, '{}'::jsonb);
+  INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_APPROVAL', ws_id,
+    '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}'::jsonb);
+  INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', ws_id,
+    ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '","passwordRestriction":{"minLength":8}}')::jsonb);
+  INSERT INTO setting (name, workspace, value) VALUES ('ENVIRONMENT', ws_id,
+    '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}'::jsonb);
 
--- Initialize settings with dynamically generated values
--- Generate random alphanumeric string (0-9, a-z, A-Z) compatible with Go's common.RandomString
--- Initialize SYSTEM setting with auth_secret and workspace_id
-INSERT INTO setting (name, value)
-VALUES (
-  'SYSTEM',
-  json_build_object(
-    'authSecret', (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
-     FROM generate_series(1, 32)),
-    'workspaceId', gen_random_uuid()::text
-  )
-);
-
--- Initialize workspace IAM policy
--- Grant workspace member role to allUsers
-INSERT INTO policy (resource_type, resource, type, payload, inherit_from_parent, enforce)
-VALUES ('WORKSPACE', 'workspaces/' || (SELECT value->>'workspaceId' FROM setting WHERE name = 'SYSTEM'), 'IAM', '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);
+  -- Initialize workspace IAM policy — grant workspace member role to allUsers.
+  INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent, enforce)
+  VALUES (ws_id, 'WORKSPACE', 'workspaces/' || ws_id, 'IAM',
+    '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);
+END $$;

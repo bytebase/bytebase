@@ -43,6 +43,7 @@ type UpdateGroupMessage struct {
 // GroupMessage is the message for a group.
 type GroupMessage struct {
 	ID          string
+	Workspace   string
 	Email       string
 	Title       string
 	Description string
@@ -108,6 +109,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	q.Space(`
 		SELECT
 			user_group.id,
+			user_group.workspace,
 			user_group.email,
 			user_group.name,
 			user_group.description,
@@ -142,6 +144,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 		var payload []byte
 		if err := rows.Scan(
 			&group.ID,
+			&group.Workspace,
 			&email,
 			&group.Title,
 			&group.Description,
@@ -188,13 +191,14 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 	q := qb.Q().Space(`
 		INSERT INTO user_group (
 			id,
+			workspace,
 			email,
 			name,
 			description,
 			payload
-		) VALUES (COALESCE(NULLIF(?, ''), gen_random_uuid()::text), ?, ?, ?, ?)
+		) VALUES (COALESCE(NULLIF(?, ''), gen_random_uuid()::text), ?, ?, ?, ?, ?)
 		RETURNING id
-	`, create.ID, email, create.Title, create.Description, payloadBytes)
+	`, create.ID, create.Workspace, email, create.Title, create.Description, payloadBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

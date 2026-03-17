@@ -134,6 +134,12 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", groupMessage.Email))
 	}
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	groupMessage.Workspace = workspace.ResourceID
+
 	group, err := s.store.CreateGroup(ctx, groupMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

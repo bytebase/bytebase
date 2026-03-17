@@ -188,9 +188,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	secret := systemSetting.AuthSecret
 
+	workspace, err := s.store.GetWorkspace(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace")
+	}
+
 	// Initialize telemetry reporter for hub.bytebase.com event reporting.
 	telemetry.InitGlobalReporter(
-		systemSetting.GetWorkspaceId(),
+		workspace.ResourceID,
 		profile.Version,
 		profile.GitCommit,
 		workspaceProfile.GetEnableMetricCollection(),

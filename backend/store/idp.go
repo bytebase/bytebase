@@ -15,6 +15,7 @@ import (
 // IdentityProviderMessage is the message for identity provider.
 type IdentityProviderMessage struct {
 	ResourceID string
+	Workspace  string
 	Title      string
 	Domain     string
 	Type       storepb.IdentityProviderType
@@ -53,6 +54,7 @@ type UpdateIdentityProviderMessage struct {
 func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProviderMessage) (*IdentityProviderMessage, error) {
 	identityProvider := &IdentityProviderMessage{
 		ResourceID: create.ResourceID,
+		Workspace:  create.Workspace,
 		Title:      create.Title,
 		Domain:     create.Domain,
 		Type:       create.Type,
@@ -66,13 +68,14 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	q := qb.Q().Space(`
 		INSERT INTO idp (
 			resource_id,
+			workspace,
 			name,
 			domain,
 			type,
 			config
 		)
-		VALUES (?, ?, ?, ?, ?)
-	`, create.ResourceID, create.Title, create.Domain, create.Type.String(), configBytes)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, create.ResourceID, create.Workspace, create.Title, create.Domain, create.Type.String(), configBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -107,6 +110,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 	q := qb.Q().Space(`
 		SELECT
 			resource_id,
+			workspace,
 			name,
 			domain,
 			type,
@@ -139,6 +143,7 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		var identityProviderConfig string
 		if err := rows.Scan(
 			&identityProviderMessage.ResourceID,
+			&identityProviderMessage.Workspace,
 			&identityProviderMessage.Title,
 			&identityProviderMessage.Domain,
 			&identityProviderType,
@@ -183,6 +188,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		WHERE resource_id = ?
 		RETURNING
 			resource_id,
+			workspace,
 			name,
 			domain,
 			type,
@@ -199,6 +205,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 	var identityProviderConfig string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&identityProvider.ResourceID,
+		&identityProvider.Workspace,
 		&identityProvider.Title,
 		&identityProvider.Domain,
 		&identityProviderType,
