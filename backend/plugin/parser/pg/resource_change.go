@@ -74,6 +74,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 				handleDropIndexOmni(n, database, searchPath, dbMetadata, changedResources)
 			case ast.OBJECT_TABLE, ast.OBJECT_MATVIEW:
 				handleDropTableOmni(n, database, searchPath, dbMetadata, changedResources)
+			default:
 			}
 
 		case *ast.AlterTableStmt:
@@ -165,6 +166,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 			if len(sampleDMLs) < common.MaximumLintExplainSize {
 				sampleDMLs = append(sampleDMLs, getOmniStatementText(omniAST))
 			}
+		default:
 		}
 	}
 

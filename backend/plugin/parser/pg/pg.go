@@ -52,7 +52,7 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 }
 
 // convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, fullSQL string, stmt base.Statement) error {
+func convertOmniError(err error, _ string, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err
