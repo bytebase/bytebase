@@ -13,10 +13,7 @@ import {
   getValuesFromSearchParams,
 } from "../common";
 
-export const buildIssueFilterBySearchParams = (
-  params: SearchParams,
-  defaultFilter?: Partial<IssueFilter>
-) => {
+export const buildIssueFilterBySearchParams = (params: SearchParams) => {
   const { query } = params;
   const projectScope = getValueFromSearchParams(params, "project");
 
@@ -25,7 +22,6 @@ export const buildIssueFilterBySearchParams = (
   const approvalStatus = getValueFromSearchParams(params, "approval");
 
   const filter: IssueFilter = {
-    ...defaultFilter,
     query,
     project: `${projectNamePrefix}${projectScope || "-"}`,
     createdTsAfter: createdTsRange?.[0],
