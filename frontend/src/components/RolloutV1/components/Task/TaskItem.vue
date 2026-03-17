@@ -234,6 +234,7 @@ import BBSpin from "@/bbkit/BBSpin.vue";
 import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
+import { emitPlanStatusChanged } from "@/components/Plan/logic";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -302,7 +303,7 @@ const {
 
 // Handle action confirmed - trigger data refresh
 const handleActionConfirm = () => {
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 
 const taskDetailRoute = computed(() => {

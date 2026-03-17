@@ -25,7 +25,12 @@ import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { getRolloutFromPlan, isValidIssueName, isValidPlanName } from "@/utils";
+import {
+  getRolloutFromPlan,
+  isValidIssueName,
+  isValidPlanName,
+  sleep,
+} from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshIssue,
@@ -38,8 +43,9 @@ import {
 
 type ResourceType = "plan" | "planCheckRuns" | "issue" | "rollout" | "taskRuns";
 
-// Progressive polling configuration.
-const POLLER_INTERVAL = { min: 2000, max: 30000, growth: 2, jitter: 3000 };
+// CI/CD-style polling: quick follow-up after user actions, then progressive backoff.
+const POLLER_INTERVAL = { min: 1000, max: 30000, growth: 2, jitter: 250 };
+const FAST_FOLLOW_REFRESH_DELAYS = [500, 1500, 3000];
 
 const KEY = Symbol(
   `bb.plan.poller.${uuidv4()}`
@@ -76,6 +82,7 @@ export const provideResourcePoller = () => {
     isPollerRunning: false,
     isInitializing: false, // Track if initialization is in progress
   });
+  let actionRefreshSequenceId = 0;
 
   // Define refresh strategies for each resource
   const resourceStrategies: Record<ResourceType, ResourceRefreshStrategy> = {
@@ -273,6 +280,23 @@ export const provideResourcePoller = () => {
     }
   };
 
+  const scheduleFastFollowRefreshes = (resources: ResourceType[]) => {
+    const sequenceId = ++actionRefreshSequenceId;
+
+    void (async () => {
+      for (const retryDelay of FAST_FOLLOW_REFRESH_DELAYS) {
+        await sleep(retryDelay);
+        if (sequenceId !== actionRefreshSequenceId) {
+          return;
+        }
+        await refreshResources(resources, {
+          force: true,
+          isManual: false,
+        });
+      }
+    })();
+  };
+
   // Create the poller
   const resourcePoller = useProgressivePoll(refreshResources, {
     interval: POLLER_INTERVAL,
@@ -363,10 +387,21 @@ export const provideResourcePoller = () => {
   );
 
   // Event listeners
-  events.on("status-changed", async ({ eager }) => {
+  events.on("status-changed", async ({ eager, refreshMode = "normal" }) => {
     try {
+      const shouldFastFollow = refreshMode === "fast-follow";
       if (eager) {
-        await refreshResources(resourcesToPolled.value, { isManual: false });
+        const resources = resourcesToPolled.value;
+        await refreshResources(resources, {
+          force: shouldFastFollow,
+          isManual: false,
+        });
+        if (shouldFastFollow) {
+          scheduleFastFollowRefreshes(resources);
+        }
+      } else if (shouldFastFollow) {
+        resourcePoller.restart();
+        scheduleFastFollowRefreshes(resourcesToPolled.value);
       }
     } catch (error) {
       console.error("Error refreshing resources on status-changed:", error);
