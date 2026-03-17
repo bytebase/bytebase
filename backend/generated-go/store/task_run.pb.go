@@ -140,14 +140,14 @@ type TaskRunResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Error message for failed task runs. Empty for successful or canceled runs.
 	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
-	// UID of the export archive generated for export tasks.
-	ExportArchiveUid int32 `protobuf:"varint,5,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
 	// Indicates whether a prior backup was created for this task run.
 	// When true, the task run can be rolled back using the backup tables.
 	// Backup details are available in the task run logs (PRIOR_BACKUP log entries).
 	HasPriorBackup bool `protobuf:"varint,6,opt,name=has_prior_backup,json=hasPriorBackup,proto3" json:"has_prior_backup,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Resource ID of the export archive generated for export tasks.
+	ExportArchiveId string `protobuf:"bytes,9,opt,name=export_archive_id,json=exportArchiveId,proto3" json:"export_archive_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *TaskRunResult) Reset() {
@@ -187,18 +187,18 @@ func (x *TaskRunResult) GetDetail() string {
 	return ""
 }
 
-func (x *TaskRunResult) GetExportArchiveUid() int32 {
-	if x != nil {
-		return x.ExportArchiveUid
-	}
-	return 0
-}
-
 func (x *TaskRunResult) GetHasPriorBackup() bool {
 	if x != nil {
 		return x.HasPriorBackup
 	}
 	return false
+}
+
+func (x *TaskRunResult) GetExportArchiveId() string {
+	if x != nil {
+		return x.ExportArchiveId
+	}
+	return ""
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.
@@ -397,11 +397,11 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\x12\r\n" +
-	"\tAVAILABLE\x10\b\"\x7f\n" +
+	"\tAVAILABLE\x10\b\"\x83\x01\n" +
 	"\rTaskRunResult\x12\x16\n" +
-	"\x06detail\x18\x01 \x01(\tR\x06detail\x12,\n" +
-	"\x12export_archive_uid\x18\x05 \x01(\x05R\x10exportArchiveUid\x12(\n" +
-	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackup\"\xea\x01\n" +
+	"\x06detail\x18\x01 \x01(\tR\x06detail\x12(\n" +
+	"\x10has_prior_backup\x18\x06 \x01(\bR\x0ehasPriorBackup\x12*\n" +
+	"\x11export_archive_id\x18\t \x01(\tR\x0fexportArchiveIdJ\x04\b\x05\x10\x06\"\xea\x01\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12O\n" +

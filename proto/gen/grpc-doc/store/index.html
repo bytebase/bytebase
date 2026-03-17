@@ -13025,19 +13025,19 @@ or sheet content for non-release tasks.</p></td>
                 </tr>
               
                 <tr>
-                  <td>export_archive_uid</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>UID of the export archive generated for export tasks. </p></td>
-                </tr>
-              
-                <tr>
                   <td>has_prior_backup</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Indicates whether a prior backup was created for this task run.
 When true, the task run can be rolled back using the backup tables.
 Backup details are available in the task run logs (PRIOR_BACKUP log entries). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_archive_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Resource ID of the export archive generated for export tasks. </p></td>
                 </tr>
               
             </tbody>

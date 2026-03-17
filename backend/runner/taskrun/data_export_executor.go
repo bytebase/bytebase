@@ -126,7 +126,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	return &storepb.TaskRunResult{
-		ExportArchiveUid: int32(exportArchive.UID),
+		ExportArchiveId: exportArchive.ResourceID,
 	}, nil
 }
 

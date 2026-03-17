@@ -56,10 +56,10 @@ func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRu
 		t.SchedulerInfo = convertToSchedulerInfo(taskRun.PayloadProto.SchedulerInfo)
 	}
 
-	if taskRun.ResultProto.ExportArchiveUid != 0 {
+	if taskRun.ResultProto.ExportArchiveId != "" {
 		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
-		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
-		exportArchive, err := s.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+		exportArchiveID := taskRun.ResultProto.ExportArchiveId
+		exportArchive, err := s.GetExportArchive(ctx, exportArchiveID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get export archive")
 		}

@@ -23885,7 +23885,7 @@ components:
           title: name
           description: |-
             The name for the query history.
-             Format: queryHistories/{uid}
+             Format: projects/{project}/queryHistories/{id}
           readOnly: true
         database:
           type: string

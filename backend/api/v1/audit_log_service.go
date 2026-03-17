@@ -162,7 +162,7 @@ func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 
 func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
-		Name:        fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
+		Name:        fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
 		CreateTime:  timestamppb.New(l.CreatedAt),
 		User:        l.Payload.User,
 		Method:      l.Payload.Method,

@@ -1869,7 +1869,7 @@ func (x *SearchQueryHistoriesResponse) GetNextPageToken() string {
 type QueryHistory struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name for the query history.
-	// Format: queryHistories/{uid}
+	// Format: projects/{project}/queryHistories/{id}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The database name to execute the query.
 	// Format: instances/{instance}/databases/{databaseName}

@@ -939,11 +939,11 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %v has no task run", requestName))
 		}
 		taskRun := taskRuns[0]
-		exportArchiveUID := int(taskRun.ResultProto.ExportArchiveUid)
-		if exportArchiveUID == 0 {
+		exportArchiveID := taskRun.ResultProto.ExportArchiveId
+		if exportArchiveID == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
 		}
-		exportArchive, err := s.store.GetExportArchive(ctx, &store.FindExportArchiveMessage{UID: &exportArchiveUID})
+		exportArchive, err := s.store.GetExportArchive(ctx, exportArchiveID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}
