@@ -328,7 +328,7 @@ CREATE UNIQUE INDEX idx_instance_change_history_unique_version ON instance_chang
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
 CREATE TABLE audit_log (
-    id bigserial PRIMARY KEY,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as AuditLog (proto/store/store/audit_log.proto)
     payload jsonb NOT NULL DEFAULT '{}'
@@ -343,8 +343,6 @@ CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
 CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
 
 CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
-
-ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
@@ -363,7 +361,7 @@ CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
 CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
 
 CREATE TABLE query_history (
-    id bigserial PRIMARY KEY,
+    resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     project_id text NOT NULL, -- the project resource id
@@ -377,8 +375,6 @@ CREATE TABLE query_history (
 );
 
 CREATE INDEX idx_query_history_creator_created_at_project_id ON query_history(creator, created_at, project_id DESC);
-
-ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
@@ -428,7 +424,7 @@ CREATE TABLE db_group (
 );
 
 CREATE TABLE export_archive (
-  id serial PRIMARY KEY,
+  resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
   created_at timestamptz NOT NULL DEFAULT now(),
   bytes bytea,
   -- Stored as ExportArchivePayload (proto/store/store/export_archive.proto)
