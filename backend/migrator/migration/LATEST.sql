@@ -185,7 +185,7 @@ CREATE TABLE plan_check_run (
     id serial,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL,
+    project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint NOT NULL,
     status text NOT NULL CHECK (status IN ('AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
@@ -204,7 +204,7 @@ ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 -- One row per plan at any time - mutually exclusive events.
 -- Row is deleted when user clicks BatchRunTasks to reset notification state.
 CREATE TABLE plan_webhook_delivery (
-    project TEXT NOT NULL,
+    project TEXT NOT NULL REFERENCES project(resource_id),
     plan_id BIGINT NOT NULL,
     -- Event type: 'PIPELINE_FAILED' or 'PIPELINE_COMPLETED'
     event_type TEXT NOT NULL,
@@ -238,7 +238,7 @@ CREATE TABLE task_run (
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL,
+    project text NOT NULL REFERENCES project(resource_id),
     task_id integer NOT NULL,
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
@@ -275,7 +275,7 @@ CREATE TABLE replica_heartbeat (
 );
 
 CREATE TABLE task_run_log (
-    project text NOT NULL,
+    project text NOT NULL REFERENCES project(resource_id),
     task_run_id integer NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     -- Stored as TaskRunLog (proto/store/store/task_run_log.proto)
@@ -349,7 +349,7 @@ CREATE TABLE issue_comment (
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL,
+    project text NOT NULL REFERENCES project(resource_id),
     issue_id integer NOT NULL,
     -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
     payload jsonb NOT NULL DEFAULT '{}',
@@ -364,7 +364,7 @@ CREATE TABLE query_history (
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    project_id text NOT NULL, -- the project resource id
+    project text NOT NULL REFERENCES project(resource_id),
     database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
     statement text NOT NULL,
     -- type: QUERY, EXPORT
@@ -374,7 +374,7 @@ CREATE TABLE query_history (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_query_history_creator_created_at_project_id ON query_history(creator, created_at, project_id DESC);
+CREATE INDEX idx_query_history_creator_created_at_project ON query_history(creator, created_at, project DESC);
 
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (

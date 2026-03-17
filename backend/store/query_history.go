@@ -33,8 +33,8 @@ type QueryHistoryMessage struct {
 
 	// Related fields
 	Creator string
-	// ProjectID is the project resource id.
-	ProjectID string
+	// Project is the project resource id.
+	Project string
 
 	// Domain specific fields
 	Type      QueryHistoryType
@@ -46,8 +46,8 @@ type QueryHistoryMessage struct {
 
 // FindQueryHistoryMessage is the API message for finding query histories.
 type FindQueryHistoryMessage struct {
-	Creator   *string
-	ProjectID *string
+	Creator *string
+	Project *string
 	// Instance is the instance resource name like instances/{instance}.
 	Instance *string
 	// Database is database resource name like instances/{instance}/databases/{database}.
@@ -69,7 +69,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 	q := qb.Q().Space(`
 		INSERT INTO query_history (
 			creator,
-			project_id,
+			project,
 			database,
 			statement,
 			type,
@@ -81,7 +81,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 			created_at
 	`,
 		create.Creator,
-		create.ProjectID,
+		create.Project,
 		create.Database,
 		create.Statement,
 		create.Type,
@@ -110,7 +110,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			query_history.id,
 			query_history.creator,
 			query_history.created_at,
-			query_history.project_id,
+			query_history.project,
 			query_history.database,
 			query_history.statement,
 			query_history.type,
@@ -125,8 +125,8 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	if v := find.Creator; v != nil {
 		q.And("query_history.creator = ?", *v)
 	}
-	if v := find.ProjectID; v != nil {
-		q.And("query_history.project_id = ?", *v)
+	if v := find.Project; v != nil {
+		q.And("query_history.project = ?", *v)
 	}
 	if v := find.Instance; v != nil {
 		q.And("query_history.database LIKE ?", *v)
@@ -164,7 +164,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			&queryHistory.UID,
 			&queryHistory.Creator,
 			&queryHistory.CreatedAt,
-			&queryHistory.ProjectID,
+			&queryHistory.Project,
 			&queryHistory.Database,
 			&queryHistory.Statement,
 			&queryHistory.Type,
@@ -211,7 +211,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 			if err != nil {
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
-			return qb.Q().Space("query_history.project_id = ?", projectID), nil
+			return qb.Q().Space("query_history.project = ?", projectID), nil
 		case "database":
 			return qb.Q().Space("query_history.database = ?", value.(string)), nil
 		case "instance":

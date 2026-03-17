@@ -1226,7 +1226,7 @@ func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
 	qh := &store.QueryHistoryMessage{
 		Creator:   userEmail,
-		ProjectID: database.ProjectID,
+		Project:   database.ProjectID,
 		Database:  common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		Statement: statement,
 		Type:      queryType,
