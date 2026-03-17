@@ -57,7 +57,10 @@ import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { usePlanContextWithRollout } from "@/components/Plan/logic";
+import {
+  emitPlanStatusChanged,
+  usePlanContextWithRollout,
+} from "@/components/Plan/logic";
 import { rolloutServiceClientConnect } from "@/connect";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
@@ -171,7 +174,7 @@ const handleCreateStage = async (stage: Stage) => {
 };
 
 const handleStageActionConfirmed = () => {
-  events.emit("status-changed", { eager: true });
+  emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
   showStageActionPanel.value = false;
   stageActionTarget.value = null;
 };

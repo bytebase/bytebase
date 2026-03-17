@@ -27,6 +27,7 @@
         :action="currentAction"
         :target="actionTarget"
         @close="handleActionPanelClose"
+        @confirm="handleActionConfirmed"
       />
     </template>
   </div>
@@ -113,6 +114,10 @@ const handleDropdownSelect = (key: string) => {
 };
 
 const handleActionPanelClose = () => {
+  closeActionPanel();
+};
+
+const handleActionConfirmed = () => {
   closeActionPanel();
   emit("action-confirmed");
 };
