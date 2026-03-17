@@ -35,6 +35,7 @@ func TestListChangelogsWithInvalidUTF8(t *testing.T) {
 	setup := `
 		CREATE TABLE sync_history (
 			id bigserial PRIMARY KEY,
+			resource_id text NOT NULL DEFAULT 'instances/test-instance/databases/test-db/syncHistories/1',
 			created_at timestamptz NOT NULL DEFAULT now(),
 			instance text NOT NULL,
 			db_name  text NOT NULL,
