@@ -7177,7 +7177,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name for the query history. Format: queryHistories/{uid} |
+| name | [string](#string) |  | The name for the query history. Format: projects/{project}/queryHistories/{id} |
 | database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
 | creator | [string](#string) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

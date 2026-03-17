@@ -1214,7 +1214,7 @@ export declare const SearchQueryHistoriesResponseSchema: GenMessage<SearchQueryH
 export declare type QueryHistory = Message<"bytebase.v1.QueryHistory"> & {
   /**
    * The name for the query history.
-   * Format: queryHistories/{uid}
+   * Format: projects/{project}/queryHistories/{id}
    *
    * @generated from field: string name = 1;
    */

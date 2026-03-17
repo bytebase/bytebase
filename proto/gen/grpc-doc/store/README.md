@@ -4788,8 +4788,8 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Error message for failed task runs. Empty for successful or canceled runs. |
-| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, the task run can be rolled back using the backup tables. Backup details are available in the task run logs (PRIOR_BACKUP log entries). |
+| export_archive_id | [string](#string) |  | Resource ID of the export archive generated for export tasks. |
 
 
 

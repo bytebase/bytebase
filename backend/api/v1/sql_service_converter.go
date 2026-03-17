@@ -56,7 +56,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 	}
 
 	return &v1pb.QueryHistory{
-		Name:       fmt.Sprintf("queryHistories/%d", history.UID),
+		Name:       fmt.Sprintf("%s/queryHistories/%s", common.FormatProject(history.Project), history.ResourceID),
 		Statement:  history.Statement,
 		Error:      history.Payload.Error,
 		Database:   history.Database,

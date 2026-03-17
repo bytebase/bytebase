@@ -23,10 +23,10 @@ func (x *TaskRunResult) Equal(y *TaskRunResult) bool {
 	if x.Detail != y.Detail {
 		return false
 	}
-	if x.ExportArchiveUid != y.ExportArchiveUid {
+	if x.HasPriorBackup != y.HasPriorBackup {
 		return false
 	}
-	if x.HasPriorBackup != y.HasPriorBackup {
+	if x.ExportArchiveId != y.ExportArchiveId {
 		return false
 	}
 	return true

@@ -13,84 +13,50 @@ import (
 )
 
 type ExportArchiveMessage struct {
-	UID       int
-	CreatedAt time.Time
-	Bytes     []byte
-	Payload   *storepb.ExportArchivePayload
-}
-
-// FindExportArchiveMessage is the API message for finding export archives.
-type FindExportArchiveMessage struct {
-	UID *int
+	ResourceID string
+	CreatedAt  time.Time
+	Bytes      []byte
+	Payload    *storepb.ExportArchivePayload
 }
 
 // GetExportArchive gets a export archive.
-func (s *Store) GetExportArchive(ctx context.Context, find *FindExportArchiveMessage) (*ExportArchiveMessage, error) {
-	exportArchives, err := s.ListExportArchives(ctx, find)
-	if err != nil {
-		return nil, err
-	}
-	if len(exportArchives) == 0 {
-		return nil, nil
-	}
-	if len(exportArchives) > 1 {
-		return nil, errors.Errorf("expected 1 export archive, got %d", len(exportArchives))
-	}
-	return exportArchives[0], nil
-}
-
-// ListExportArchives lists export archives.
-func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveMessage) ([]*ExportArchiveMessage, error) {
+func (s *Store) GetExportArchive(ctx context.Context, resourceID string) (*ExportArchiveMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			created_at,
 			bytes,
 			payload
 		FROM export_archive
-		WHERE TRUE
-	`)
-
-	if v := find.UID; v != nil {
-		q.And("id = ?", *v)
-	}
+		WHERE resource_id = ?
+	`, resourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
+	var exportArchive ExportArchiveMessage
+	var bytesVal, payload []byte
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&exportArchive.ResourceID,
+		&exportArchive.CreatedAt,
+		&bytesVal,
+		&payload,
+	); err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil
+		}
 		return nil, err
 	}
-	defer rows.Close()
-
-	var exportArchives []*ExportArchiveMessage
-	for rows.Next() {
-		var exportArchive ExportArchiveMessage
-		var bytes, payload []byte
-		if err := rows.Scan(
-			&exportArchive.UID,
-			&exportArchive.CreatedAt,
-			&bytes,
-			&payload,
-		); err != nil {
-			return nil, err
-		}
-		exportArchivePayload := &storepb.ExportArchivePayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, exportArchivePayload); err != nil {
-			return nil, err
-		}
-		exportArchive.Payload = exportArchivePayload
-		exportArchive.Bytes = bytes
-		exportArchives = append(exportArchives, &exportArchive)
-	}
-	if err := rows.Err(); err != nil {
+	exportArchivePayload := &storepb.ExportArchivePayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, exportArchivePayload); err != nil {
 		return nil, err
 	}
+	exportArchive.Payload = exportArchivePayload
+	exportArchive.Bytes = bytesVal
 
-	return exportArchives, nil
+	return &exportArchive, nil
 }
 
 // CreateExportArchive creates a export archive.
@@ -106,7 +72,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 			payload
 		)
 		VALUES (?, ?)
-		RETURNING id
+		RETURNING resource_id
 	`, create.Bytes, payload)
 
 	query, args, err := q.ToSQL()
@@ -114,26 +80,11 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ResourceID); err != nil {
 		return nil, err
 	}
 
 	return create, nil
-}
-
-// DeleteExportArchive deletes a export archive.
-func (s *Store) DeleteExportArchive(ctx context.Context, uid int) error {
-	q := qb.Q().Space("DELETE FROM export_archive WHERE id = ?", uid)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // DeleteExpiredExportArchives deletes export archives older than the specified retention period.

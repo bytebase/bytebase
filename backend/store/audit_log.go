@@ -18,9 +18,9 @@ import (
 )
 
 type AuditLog struct {
-	ID        int
-	CreatedAt time.Time
-	Payload   *storepb.AuditLog
+	ResourceID string
+	CreatedAt  time.Time
+	Payload    *storepb.AuditLog
 }
 
 type AuditLogFind struct {
@@ -52,7 +52,7 @@ func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) e
 func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*AuditLog, error) {
 	q := qb.Q().Space(`
 		SELECT
-			id,
+			resource_id,
 			created_at,
 			payload
 		FROM audit_log
@@ -73,7 +73,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		}
 		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	} else {
-		q.Space("ORDER BY id DESC")
+		q.Space("ORDER BY created_at DESC")
 	}
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -101,7 +101,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		var payload []byte
 
 		if err := rows.Scan(
-			&l.ID,
+			&l.ResourceID,
 			&l.CreatedAt,
 			&payload,
 		); err != nil {

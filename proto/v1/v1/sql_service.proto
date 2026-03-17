@@ -501,7 +501,7 @@ message SearchQueryHistoriesResponse {
 
 message QueryHistory {
   // The name for the query history.
-  // Format: queryHistories/{uid}
+  // Format: projects/{project}/queryHistories/{id}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database name to execute the query.

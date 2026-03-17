@@ -14442,7 +14442,7 @@ components:
           title: name
           description: |-
             The name for the query history.
-             Format: queryHistories/{uid}
+             Format: projects/{project}/queryHistories/{id}
         database:
           type: string
           title: database
