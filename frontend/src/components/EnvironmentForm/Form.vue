@@ -3,9 +3,23 @@
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
         <div for="name" class="flex item-center gap-x-2">
-          <div class="relative ml-1 mr-3">
-            <component :is="renderColorPicker()" />
-          </div>
+          <NColorPicker
+            :modes="['hex']"
+            :show-alpha="false"
+            :disabled="!allowEdit"
+            :value="state.environment.color || '#4f46e5'"
+            @complete="onColorComplete"
+            @update:value="onColorUpdate"
+          >
+            <template #trigger="{ value, onClick, ref: triggerRef }">
+              <div
+                :ref="triggerRef"
+                class="w-5 h-5 rounded-sm cursor-pointer"
+                :style="{ backgroundColor: value || '#4f46e5' }"
+                @click="onClick"
+              />
+            </template>
+          </NColorPicker>
           <span for="name" class="font-medium">
             {{ t("common.environment-name") }}
             <RequiredStar />
@@ -148,7 +162,7 @@
   </div>
 </template>
 
-<script lang="tsx" setup>
+<script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { NCheckbox, NColorPicker, NInput } from "naive-ui";
 import { computed, ref, watch } from "vue";
@@ -292,43 +306,24 @@ const existRelatedResource = computedAsync(async () => {
   return listInstance.length !== 0 || listDatabase.length !== 0;
 }, false);
 
-const renderColorPicker = () => {
-  return (
-    <NColorPicker
-      class="w-full! h-full!"
-      modes={["hex"]}
-      showAlpha={false}
-      disabled={!allowEdit.value}
-      value={state.value.environment.color || "#4f46e5"}
-      renderLabel={() => (
-        <div
-          class="w-5 h-5 rounded-sm cursor-pointer relative"
-          style={{
-            backgroundColor: state.value.environment.color || "#4f46e5",
-          }}
-        />
-      )}
-      onComplete={(color: string) => {
-        if (color.toUpperCase() === "#FFFFFF") {
-          pushNotification({
-            module: "bytebase",
-            style: "WARN",
-            title: t("common.warning"),
-            description: "Invalid color",
-          });
-          state.value.environment.color = "#4f46e5";
-          return;
-        }
-      }}
-      onUpdateValue={(color: string) => {
-        if (!hasEnvironmentPolicyFeature.value) {
-          missingFeature.value = PlanFeature.FEATURE_ENVIRONMENT_TIERS;
-          return;
-        }
-        state.value.environment.color = color;
-      }}
-    />
-  );
+const onColorComplete = (color: string) => {
+  if (color.toUpperCase() === "#FFFFFF") {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("common.warning"),
+      description: "Invalid color",
+    });
+    state.value.environment.color = "#4f46e5";
+  }
+};
+
+const onColorUpdate = (color: string) => {
+  if (!hasEnvironmentPolicyFeature.value) {
+    missingFeature.value = PlanFeature.FEATURE_ENVIRONMENT_TIERS;
+    return;
+  }
+  state.value.environment.color = color;
 };
 
 const deleteEnvironment = () => {
