@@ -316,7 +316,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	defer tx.Rollback()
 
 	// Delete query_history entries that reference this project
-	q := qb.Q().Space("DELETE FROM query_history WHERE project_id = ?", resourceID)
+	q := qb.Q().Space("DELETE FROM query_history WHERE project = ?", resourceID)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build query_history delete query")
