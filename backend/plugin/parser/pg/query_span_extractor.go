@@ -147,17 +147,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, base.MixUserSystemTablesError
 	}
 
-	// Get query type using ANTLR-based detection
-	queryTypeListener := &queryTypeListener{
-		result:     base.QueryTypeUnknown,
-		allSystems: allSystems,
+	// Get query type using omni AST
+	omniStmts, err := ParsePg(stmt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse statement for query type: %s", stmt)
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, parseResult.Tree)
-	if queryTypeListener.err != nil {
-		return nil, errors.Wrapf(queryTypeListener.err, "failed to get query type from statement: %s", stmt)
+	if len(omniStmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement for query type, got %d", len(omniStmts))
 	}
-
-	queryType, isExplainAnalyze := queryTypeListener.result, queryTypeListener.isExplainAnalyze
+	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
 
 	// For non-SELECT queries, return early
 	if queryType != base.Select {
