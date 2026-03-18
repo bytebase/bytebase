@@ -28,8 +28,9 @@
       <DiffEditor
         ref="diffEditorRef"
         class="h-full"
-        :original="original"
-        :modified="modified"
+        :original="normalizedOriginal"
+        :modified="normalizedModified"
+        :options="{ ignoreTrimWhitespace: true }"
         :readonly="true"
       />
     </div>
@@ -38,8 +39,8 @@
   <SchemaDiffViewerModal
     v-if="showFullscreenModal"
     :title="title"
-    :original="original"
-    :modified="modified"
+    :original="normalizedOriginal"
+    :modified="normalizedModified"
     @close="showFullscreenModal = false"
   />
 </template>
@@ -47,16 +48,22 @@
 <script lang="ts" setup>
 import { ArrowDownIcon, ArrowUpIcon, Maximize2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaDiffViewerModal from "./SchemaDiffViewerModal.vue";
 
-defineProps<{
+const props = defineProps<{
   title: string;
   original: string;
   modified: string;
   showFullscreen?: boolean;
 }>();
+
+const normalizeLineEndings = (content: string) =>
+  content.replace(/\r\n?/g, "\n");
+
+const normalizedOriginal = computed(() => normalizeLineEndings(props.original));
+const normalizedModified = computed(() => normalizeLineEndings(props.modified));
 
 const showFullscreenModal = ref(false);
 const diffEditorRef = ref<InstanceType<typeof DiffEditor>>();
