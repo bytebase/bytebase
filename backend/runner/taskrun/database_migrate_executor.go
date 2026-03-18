@@ -288,25 +288,14 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	// Parse ghost flags from sheet directive
+func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver) error {
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse ghost directive")
+		return errors.Wrapf(err, "failed to parse ghost directive")
 	}
 	if flags == nil {
 		flags = make(map[string]string)
 	}
-
-	// Get database driver
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
-		TaskRunUID: &taskRunUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
-	}
-	defer driver.Close(ctx)
 
 	slog.Debug("Start migration...",
 		slog.String("instance", database.InstanceID),
@@ -315,35 +304,24 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		slog.String("sheetSha256", sheet.Sha256),
 	)
 
-	// Set up execute options
-	opts := db.ExecuteOptions{}
-	if project != nil && project.Setting != nil {
-		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
-	}
-	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, database.ProjectID, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
-	}
-
-	// Prepare gh-ost migration context before beginning migration
-	// Remove all Bytebase directives from statement before passing to gh-ost
+	// Remove all Bytebase directives from statement before passing to gh-ost.
 	cleanedStatement := parserbase.CleanDirectives(sheet.Statement)
 	statement := strings.TrimSpace(cleanedStatement)
-	// Trim trailing semicolons.
 	statement = strings.TrimRight(statement, ";")
 
 	tableName, err := ghost.GetTableNameFromStatement(statement)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	if adminDataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
+		return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
 	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
+		return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
 	defer func() {
 		// Use migrationContext.Uuid as the tls_config_key by convention.
@@ -352,25 +330,8 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
 	}()
 
-	// Begin migration - create pending changelog
-	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-		Status:       store.ChangelogStatusPending,
-		SyncHistory:  nil,
-		Payload: &storepb.ChangelogPayload{
-			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
-			GitCommit: exec.profile.GitCommit,
-		},
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create changelog")
-	}
-
-	// Execute gh-ost migration
 	// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 	migrationError := make(chan error, 1)
-
 	migrator := logic.NewMigrator(migrationContext, "bb")
 
 	defer func() {
@@ -399,14 +360,51 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		migrationError <- nil
 	}()
 
-	var migrationErr error
 	select {
 	case err := <-migrationError:
-		migrationErr = err
+		return err
 	case <-driverCtx.Done():
 		migrationContext.PanicAbort <- errors.New("task canceled")
-		migrationErr = errors.New("task canceled")
+		return errors.New("task canceled")
 	}
+}
+
+func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+	// Get database driver
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunUID: &taskRunUID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
+	}
+	defer driver.Close(ctx)
+
+	// Set up execute options
+	opts := db.ExecuteOptions{}
+	if project != nil && project.Setting != nil {
+		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
+	}
+	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
+		return exec.store.CreateTaskRunLog(ctx, database.ProjectID, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+	}
+
+	// Begin migration - create pending changelog
+	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusPending,
+		SyncHistory:  nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:   common.FormatTaskRun(database.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
+			GitCommit: exec.profile.GitCommit,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create changelog")
+	}
+
+	migrationErr := executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver)
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
@@ -527,14 +525,17 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			},
 		})
 
-		slog.Debug("Start migration...",
-			slog.String("instance", database.InstanceID),
-			slog.String("database", database.DatabaseName),
-			slog.String("type", task.Type.String()),
-		)
-
-		// Execute the SQL
-		_, err = driver.Execute(driverCtx, sheet.Statement, opts)
+		// Execute the SQL.
+		if ghost.IsGhostEnabled(sheet.Statement) {
+			err = executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver)
+		} else {
+			slog.Debug("Start migration...",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("type", task.Type.String()),
+			)
+			_, err = driver.Execute(driverCtx, sheet.Statement, opts)
+		}
 		if err != nil {
 			migrationErr = errors.Wrapf(err, "failed to execute release file %s (version %s)", file.Path, file.Version)
 			break
