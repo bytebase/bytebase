@@ -147,15 +147,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, base.MixUserSystemTablesError
 	}
 
-	// Get query type using omni AST
-	omniStmts, err := ParsePg(stmt)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse statement for query type: %s", stmt)
+	// Get query type using omni AST.
+	// Fall back to Select if omni cannot parse the statement (e.g. non-standard
+	// syntax like 4-part column references that ANTLR accepts but libpg_query rejects).
+	queryType, isExplainAnalyze := base.Select, false
+	if omniStmts, parseErr := ParsePg(stmt); parseErr == nil && len(omniStmts) == 1 {
+		queryType, isExplainAnalyze = classifyQueryType(omniStmts[0].AST, allSystems)
 	}
-	if len(omniStmts) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement for query type, got %d", len(omniStmts))
-	}
-	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
 
 	// For non-SELECT queries, return early
 	if queryType != base.Select {
