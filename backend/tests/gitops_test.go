@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
@@ -308,6 +309,144 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(rolloutResp2)
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
+}
+
+func TestGitOpsRolloutGhostDirective(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	mysqlContainer, err := getMySQLContainer(ctx)
+	a.NoError(err)
+	defer func() {
+		mysqlContainer.Close(ctx)
+	}()
+
+	const databaseName = "gitops_rollout_ghost_db"
+	mysqlDB := mysqlContainer.db
+	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+	a.NoError(err)
+	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
+	a.NoError(err)
+	_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
+	a.NoError(err)
+	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
+	a.NoError(err)
+
+	projectID := generateRandomString("gitops-rollout-ghost")
+	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
+		},
+		ProjectId: projectID,
+	}))
+	a.NoError(err)
+	project := projectResp.Msg
+
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "gitops-rollout-ghost",
+			Engine:      v1pb.Engine_MYSQL,
+			Environment: stringPtr("environments/test"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+	instance := instanceResp.Msg
+
+	backupDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
+	err = ctl.createDatabase(ctx, project, instance, nil, backupDBName, "")
+	a.NoError(err)
+	err = ctl.createDatabase(ctx, project, instance, nil, databaseName, "")
+	a.NoError(err)
+
+	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
+		Parent: project.Name,
+		Release: &v1pb.Release{
+			Type: v1pb.Release_VERSIONED,
+			Files: []*v1pb.Release_File{
+				{
+					Path:      "migrations/001__create_book.sql",
+					Version:   "001",
+					Statement: []byte(mysqlMigrationStatement),
+				},
+				{
+					Path:    "migrations/002__add_author.sql",
+					Version: "002",
+					Statement: []byte(`-- gh-ost = {}
+ALTER TABLE book ADD author VARCHAR(54);`),
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Title:       "GitOps gh-ost deployment",
+			Description: "Deploy release with gh-ost directive",
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Release: createReleaseResp.Msg.Name,
+							Targets: []string{
+								fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+	plan := planResp.Msg
+
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
+		Parent: plan.Name,
+	}))
+	a.NoError(err)
+	rollout := rolloutResp.Msg
+
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Title:       "GitOps gh-ost rollout",
+			Description: "Deploy release via versioned release workflow with gh-ost",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Plan:        plan.Name,
+		},
+	}))
+	a.NoError(err)
+	issue := issueResp.Msg
+
+	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
+	a.NoError(err)
+
+	dbSchemaResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{
+		Name: fmt.Sprintf("%s/databases/%s/schema", instance.Name, databaseName),
+	}))
+	a.NoError(err)
+	a.Equal(wantDBSchema2, dbSchemaResp.Msg.Schema)
+
+	revisionsResp, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{
+		Parent: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),
+	}))
+	a.NoError(err)
+	a.Len(revisionsResp.Msg.Revisions, 2)
+	for _, revision := range revisionsResp.Msg.Revisions {
+		a.Equal(createReleaseResp.Msg.Name, revision.Release)
+	}
 }
 
 // TestGitOpsRolloutMultiTarget tests a more complex GitOps scenario:
