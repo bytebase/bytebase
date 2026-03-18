@@ -41,7 +41,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 	// EXPLAIN: check for ANALYZE option
 	case *ast.ExplainStmt:
 		if isExplainAnalyzeOmni(n) {
-			qt := classifyExplainedQuery(n.Query, allSystems)
+			qt := classifyExplainedQuery(n.Query)
 			return qt, true
 		}
 		return base.Explain, false
@@ -134,7 +134,7 @@ func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 }
 
 // classifyExplainedQuery returns the QueryType for the query inside EXPLAIN ANALYZE.
-func classifyExplainedQuery(query ast.Node, allSystems bool) base.QueryType {
+func classifyExplainedQuery(query ast.Node) base.QueryType {
 	if query == nil {
 		return base.Select
 	}
