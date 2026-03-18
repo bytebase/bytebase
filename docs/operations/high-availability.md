@@ -16,11 +16,11 @@ Before you keep more than one Bytebase server active at the same time, make sure
 
 1. **HA is enabled in the license.**
    - Check `GET /v1/subscription` and confirm `ha: true`.
-2. **All replicas use the same metadata database.**
+2. **Every HA replica starts with `--ha` and the same shared metadata database.**
    - Active replicas are counted as Bytebase servers sharing the same database.
-   - For Kubernetes operators, this means using an external PostgreSQL metadata database that every replica can reach.
+   - HA mode requires external PostgreSQL, so each replica must use the same `PG_URL` value instead of the embedded database.
 3. **All replicas use the same external URL.**
-   - Bytebase exposes a single external URL through actuator info and uses that address for user access and callbacks.
+   - Start replicas with the same `--external-url` value so Bytebase reports one `externalUrl` for user access and callbacks.
 4. **Your platform provides traffic management and rollout control.**
    - For example, a load balancer plus a rolling update strategy managed by your orchestrator.
 
@@ -30,7 +30,7 @@ Bytebase tracks live replicas with heartbeats:
 
 - Each replica writes a heartbeat immediately on startup and then every 10 seconds.
 - A replica is considered active when it has sent a heartbeat within the last 30 seconds.
-- The actuator API exposes the current active replica count as `replica_count` on `GET /v1/actuator/info`.
+- The actuator API exposes the current active replica count as `replicaCount` on `GET /v1/actuator/info`.
 - Bytebase always reports at least one active replica for the current server, even if heartbeat counting fails.
 
 ## What happens when HA is not licensed
@@ -52,15 +52,15 @@ Use this checklist when enabling or validating HA:
 1. Call `GET /v1/subscription` and verify `ha` is `true`.
 2. Call `GET /v1/actuator/info` and record:
    - `version`
-   - `external_url`
-   - `replica_count`
-3. Confirm every replica points to the same metadata database and external URL.
+   - `externalUrl`
+   - `replicaCount`
+3. Confirm every replica starts with `--ha`, points to the same `PG_URL`, and uses the same external URL.
 4. After adding or restarting replicas, allow at least 30 seconds for the active replica count to settle.
 5. Review logs for HA-license warnings before declaring the topology healthy.
 
 ## Troubleshooting
 
-### `replica_count` stays at `1`
+### `replicaCount` stays at `1`
 
 Check the following:
 
@@ -68,7 +68,7 @@ Check the following:
 - The replica can reach the shared metadata database and write heartbeats.
 - You waited long enough for the new replica to start and publish heartbeats.
 
-### `replica_count` is lower than expected during a restart
+### `replicaCount` is lower than expected during a restart
 
 A replica falls out of the active set after roughly 30 seconds without a heartbeat. A brief drop during restarts or node moves can therefore be expected.
 

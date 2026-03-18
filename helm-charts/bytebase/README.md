@@ -23,7 +23,7 @@ install <RELEASE_NAME> bytebase-repo/bytebase
 
 The bundled Helm chart currently deploys Bytebase as a single-replica StatefulSet. It does not expose a Helm value for running multiple Bytebase application replicas.
 
-If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart and review the operator runbook before proceeding:
+If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart. Each HA replica must still start with `--ha` and the same shared external PostgreSQL `PG_URL`; review the operator runbook before proceeding:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
@@ -66,7 +66,7 @@ helm delete --namespace <YOUR_NAMESPACE> <RELEASE_NAME>
 
 Use `helm upgrade` command to upgrade the bytebase version or configuration.
 
-For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, follow the operator runbook and upgrade guidance here:
+For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, keep `--ha` and the shared external PostgreSQL `PG_URL` consistent on every replica and follow the operator runbook and upgrade guidance here:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
