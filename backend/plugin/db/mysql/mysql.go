@@ -118,7 +118,7 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "unix"
 	}
 
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
+	params := []string{"multiStatements=true", "maxAllowedPacket=0", "charset=utf8mb4"}
 	if err := validateMySQLExtraConnectionParameters(connCfg.DataSource.GetExtraConnectionParameters()); err != nil {
 		return "", err
 	}
