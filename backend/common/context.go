@@ -15,6 +15,7 @@ const (
 	UserContextKey ContextKey = iota
 	AuthContextKey
 	ServiceDataKey
+	WorkspaceIDContextKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -26,6 +27,14 @@ func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool
 	return setServiceData, ok
 }
 
+// GetWorkspaceIDFromContext returns the workspace ID from the request context.
+func GetWorkspaceIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(WorkspaceIDContextKey).(string); ok {
+		return v
+	}
+	return ""
+}
+
 type AuthMethod int
 
 const (
@@ -34,6 +43,8 @@ const (
 	AuthMethodCustom
 )
 
+// TODO(ed): refactor this
+// Maybe only need resource fullname, like workspaces/{id} or projects/{id}
 type Resource struct {
 	Type      string
 	Name      string

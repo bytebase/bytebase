@@ -24,6 +24,8 @@ type FindUserMessage struct {
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
+	// Workspace is required when ProjectID is set, for the project member CTE query.
+	Workspace string
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -37,7 +39,7 @@ type UpdateUserMessage struct {
 	Phone        *string
 }
 
-// UserMessage is the message for an user.
+// UserMessage is the message for an end user (principal table).
 type UserMessage struct {
 	ID int
 	// Email must be lower case.
@@ -193,11 +195,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
+			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ? AND policy.workspace = ?
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	}
 
@@ -546,6 +548,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// Update IAM policies: bindings->members array contains user references
 	// Update MASKING_EXEMPTION policies: exemptions->members field contains user references
 	var invalidatedPolicies []struct {
+		Workspace    string
 		ResourceType storepb.Policy_Resource
 		Resource     string
 		Type         storepb.Policy_Type
@@ -589,7 +592,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 				   jsonb_array_elements_text(binding->'members') AS member
 			  WHERE member = $1
 		  )
-		RETURNING resource_type, resource, type`
+		RETURNING workspace, resource_type, resource, type`
 
 	rows, err := tx.QueryContext(ctx, iamPolicySQL, oldUserRef, newUserRef, storepb.Policy_IAM.String())
 	if err != nil {
@@ -598,16 +601,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	defer rows.Close()
 
 	for rows.Next() {
-		var resourceTypeStr, resource, typeStr string
-		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+		var workspace, resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&workspace, &resourceTypeStr, &resource, &typeStr); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan updated IAM policy")
 		}
 
 		var invalidation struct {
+			Workspace    string
 			ResourceType storepb.Policy_Resource
 			Resource     string
 			Type         storepb.Policy_Type
 		}
+		invalidation.Workspace = workspace
 		invalidation.Resource = resource
 
 		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
@@ -665,7 +670,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 			       jsonb_array_elements_text(exemption->'members') AS member
 			  WHERE member = $1
 		  )
-		RETURNING resource_type, resource, type`
+		RETURNING workspace, resource_type, resource, type`
 
 	rows, err = tx.QueryContext(ctx, maskingPolicySQL, oldUserRef, newUserRef, storepb.Policy_MASKING_EXEMPTION.String())
 	if err != nil {
@@ -674,16 +679,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	defer rows.Close()
 
 	for rows.Next() {
-		var resourceTypeStr, resource, typeStr string
-		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+		var workspace, resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&workspace, &resourceTypeStr, &resource, &typeStr); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan updated MASKING_EXEMPTION policy")
 		}
 
 		var invalidation struct {
+			Workspace    string
 			ResourceType storepb.Policy_Resource
 			Resource     string
 			Type         storepb.Policy_Type
 		}
+		invalidation.Workspace = workspace
 		invalidation.Resource = resource
 
 		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
@@ -779,7 +786,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 
 	// Invalidate policy cache for updated policies
 	for _, p := range invalidatedPolicies {
-		s.policyCache.Remove(getPolicyCacheKey(p.ResourceType, p.Resource, p.Type))
+		s.policyCache.Remove(getPolicyCacheKey(p.Workspace, p.ResourceType, p.Resource, p.Type))
 	}
 
 	// Invalidate group cache for updated groups

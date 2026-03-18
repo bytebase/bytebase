@@ -142,7 +142,7 @@ func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskM
 		return 0, errors.Errorf("plan %v not found", task.PlanID)
 	}
 
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get project")
 	}

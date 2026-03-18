@@ -53,7 +53,7 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 
 // ListIdentityProviders lists all identity providers.
 func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
-	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -67,11 +67,11 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, req *connect.Request[v1pb.CreateIdentityProviderRequest]) (*connect.Response[v1pb.IdentityProvider], error) {
-	if err := s.checkFeatureAvailable(req.Msg.IdentityProvider); err != nil {
+	if err := s.checkFeatureAvailable(ctx, req.Msg.IdentityProvider); err != nil {
 		return nil, err
 	}
 
-	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 
@@ -88,12 +88,8 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err := validIdentityProviderConfig(req.Msg.IdentityProvider.Type, req.Msg.IdentityProvider.Config); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
 	identityProviderMessage := &store.IdentityProviderMessage{
-		Workspace:  workspace.ResourceID,
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: req.Msg.IdentityProviderId,
 		Title:      req.Msg.IdentityProvider.Title,
 		Domain:     req.Msg.IdentityProvider.Domain,
@@ -105,7 +101,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return connect.NewResponse(identityProvider), nil
 	}
 
-	identityProviderMessage, err = s.store.CreateIdentityProvider(ctx, identityProviderMessage)
+	identityProviderMessage, err := s.store.CreateIdentityProvider(ctx, identityProviderMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create identity provider"))
 	}
@@ -121,7 +117,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	if req.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
-	if err := s.checkFeatureAvailable(req.Msg.IdentityProvider); err != nil {
+	if err := s.checkFeatureAvailable(ctx, req.Msg.IdentityProvider); err != nil {
 		return nil, err
 	}
 
@@ -131,6 +127,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 
 	identityProviderMessage, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {
@@ -148,6 +145,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProviderMessage.ResourceID,
+		Workspace:  identityProviderMessage.Workspace,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -200,7 +198,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 
-	if err := s.store.DeleteIdentityProvider(ctx, identityProvider.ResourceID); err != nil {
+	if err := s.store.DeleteIdentityProvider(ctx, identityProvider.Workspace, identityProvider.ResourceID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -211,12 +209,12 @@ var googleGitHubDomains = map[string]bool{
 	"github.com": true,
 }
 
-func (s *IdentityProviderService) checkFeatureAvailable(idp *v1pb.IdentityProvider) error {
+func (s *IdentityProviderService) checkFeatureAvailable(ctx context.Context, idp *v1pb.IdentityProvider) error {
 	featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
 	if idp.Type == v1pb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
 		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
 	}
-	if err := s.licenseService.IsFeatureEnabled(featurePlan); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), featurePlan); err != nil {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	}
 	return nil
@@ -229,7 +227,7 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -388,6 +386,7 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 	}
 
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {

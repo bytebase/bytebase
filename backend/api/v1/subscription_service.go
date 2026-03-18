@@ -32,7 +32,7 @@ func NewSubscriptionService(
 
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
-	subscription := s.licenseService.LoadSubscription(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
 }
 
@@ -41,13 +41,13 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *conne
 	if s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update license in the SaaS mode"))
 	}
-	if err := s.licenseService.StoreLicense(ctx, req.Msg.License); err != nil {
+	if err := s.licenseService.StoreLicense(ctx, common.GetWorkspaceIDFromContext(ctx), req.Msg.License); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store license"))
 	}
 
-	subscription := s.licenseService.LoadSubscription(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
 }

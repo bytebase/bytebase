@@ -31,17 +31,17 @@ func NewManager(store *store.Store, licenseService *enterprise.LicenseService) (
 // Check if the user has permission on the resource hierarchy.
 // CEL on the binding is not considered.
 // When multiple projects are specified, the user should have permission on every projects.
-func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
+func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, user *store.UserMessage, workspaceID string, projectIDs ...string) (bool, error) {
 	getPermissions := func(role string) map[permission.Permission]bool {
-		perms, _ := m.GetPermissions(ctx, role)
+		perms, _ := m.GetPermissions(ctx, workspaceID, role)
 		return perms
 	}
 	getGroupMembers := func(groupName string) map[string]bool {
-		members, _ := m.store.GetGroupMembersSnapshot(ctx, groupName)
+		members, _ := m.store.GetGroupMembersSnapshot(ctx, workspaceID, groupName)
 		return members
 	}
 
-	policyMessage, err := m.store.GetWorkspaceIamPolicySnapshot(ctx)
+	policyMessage, err := m.store.GetWorkspaceIamPolicySnapshot(ctx, workspaceID)
 	if err != nil {
 		return false, err
 	}
@@ -53,6 +53,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 		allOK := true
 		for _, projectID := range projectIDs {
 			project, err := m.store.GetProject(ctx, &store.FindProjectMessage{
+				Workspace:   workspaceID,
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
@@ -62,7 +63,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 			if project == nil {
 				return false, errors.Errorf("project %q not found", projectID)
 			}
-			policyMessage, err := m.store.GetProjectIamPolicySnapshot(ctx, project.ResourceID)
+			policyMessage, err := m.store.GetProjectIamPolicySnapshot(ctx, workspaceID, project.ResourceID)
 			if err != nil {
 				return false, err
 			}
@@ -83,9 +84,9 @@ func (m *Manager) ReloadCache(_ context.Context) error {
 
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[permission.Permission]bool, error) {
+func (m *Manager) GetPermissions(ctx context.Context, workspaceID string, roleName string) (map[permission.Permission]bool, error) {
 	resourceID := strings.TrimPrefix(roleName, "roles/")
-	role, err := m.store.GetRoleSnapshot(ctx, resourceID)
+	role, err := m.store.GetRoleSnapshot(ctx, workspaceID, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +96,8 @@ func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[perm
 	return maps.Clone(role.Permissions), nil
 }
 
-func (m *Manager) GetUserGroups(ctx context.Context, email string) ([]string, error) {
-	return m.store.GetUserGroupsSnapshot(ctx, common.FormatUserEmail(email))
+func (m *Manager) GetUserGroups(ctx context.Context, workspaceID string, email string) ([]string, error) {
+	return m.store.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(email))
 }
 
 func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool) bool {

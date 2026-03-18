@@ -27,6 +27,10 @@ type Manager struct {
 	port     int // The base port for sample instances
 }
 
+func isSampleInstanceID(instanceID string) bool {
+	return instanceID == "test-sample-instance" || instanceID == "prod-sample-instance"
+}
+
 // NewManager creates a new sample instance manager.
 func NewManager(store *store.Store, profile *config.Profile) *Manager {
 	// Using profile.Port + 3 as our sample database port.
@@ -41,9 +45,9 @@ func NewManager(store *store.Store, profile *config.Profile) *Manager {
 }
 
 // StartIfExist starts sample instances if they exist in the database.
-func (m *Manager) StartIfExist(ctx context.Context) error {
+func (m *Manager) StartIfExist(ctx context.Context, workspaceID string) error {
 	// Check if sample instances exist in the database
-	hasSampleInstances, err := m.store.HasSampleInstances(ctx)
+	hasSampleInstances, err := m.store.HasSampleInstances(ctx, workspaceID)
 	if err != nil {
 		slog.Warn("failed to check for sample instances", log.BBError(err))
 		return nil // Non-fatal error
@@ -68,14 +72,13 @@ func (m *Manager) StartIfExist(ctx context.Context) error {
 
 // HandleInstanceDeletion handles the deletion of a sample instance.
 // We stop all sample instances only when both have been deleted.
-func (m *Manager) HandleInstanceDeletion(ctx context.Context, instanceID string) error {
-	if instanceID != "test-sample-instance" && instanceID != "prod-sample-instance" {
-		// Not a sample instance
+func (m *Manager) HandleInstanceDeletion(ctx context.Context, workspaceID string, instanceID string) error {
+	if !isSampleInstanceID(instanceID) {
 		return nil
 	}
 
 	// Check if any sample instances still exist after this deletion
-	hasSampleInstances, err := m.store.HasSampleInstances(ctx)
+	hasSampleInstances, err := m.store.HasSampleInstances(ctx, workspaceID)
 	if err != nil {
 		slog.Warn("failed to check for remaining sample instances", log.BBError(err))
 		return nil // Non-fatal error
@@ -110,8 +113,7 @@ func (m *Manager) HandleInstanceDeletion(ctx context.Context, instanceID string)
 // HandleInstanceCreation handles the creation of a sample instance.
 // When any sample instance is created, we start all sample instances.
 func (m *Manager) HandleInstanceCreation(ctx context.Context, instanceID string) error {
-	if instanceID != "test-sample-instance" && instanceID != "prod-sample-instance" {
-		// Not a sample instance
+	if !isSampleInstanceID(instanceID) {
 		return nil
 	}
 
@@ -151,21 +153,19 @@ func (m *Manager) Port() int {
 }
 
 // GenerateOnboardingData generates onboarding data including project and instance.
-func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMessage, schemaSyncer *schemasync.Syncer) error {
+func (m *Manager) GenerateOnboardingData(ctx context.Context, workspaceID string, user *store.UserMessage, schemaSyncer *schemasync.Syncer) error {
+	// Sample instances are only for self-hosted (non-SaaS), so IDs are static.
 	projectID := "project-sample"
 	project, err := m.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding project %v", projectID)
 	}
 	if project == nil {
-		workspace, err := m.store.GetWorkspace(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace")
-		}
 		sampleProject, err := m.store.CreateProject(ctx, &store.ProjectMessage{
-			Workspace:  workspace.ResourceID,
+			Workspace:  workspaceID,
 			ResourceID: "project-sample",
 			Title:      "Sample Project",
 			Setting:    &storepb.Project{},
@@ -182,6 +182,7 @@ func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMe
 		{
 			ResourceID:    "test-sample-instance",
 			EnvironmentID: &testEnvID,
+			Workspace:     workspaceID,
 			Metadata: &storepb.Instance{
 				Title: "Test Sample Instance",
 				DataSources: []*storepb.DataSource{
@@ -195,6 +196,7 @@ func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMe
 		{
 			ResourceID:    "prod-sample-instance",
 			EnvironmentID: &prodEnvID,
+			Workspace:     workspaceID,
 			Metadata: &storepb.Instance{
 				Title: "Prod Sample Instance",
 				DataSources: []*storepb.DataSource{
@@ -223,18 +225,15 @@ func (m *Manager) generateInstance(
 ) error {
 	// Generate Sample Instance
 	instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  instanceMessage.Workspace,
 		ResourceID: &instanceMessage.ResourceID,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance %v", instanceMessage.ResourceID)
 	}
 	if instance == nil {
-		workspace, err := m.store.GetWorkspace(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace")
-		}
 		sampleInstance, err := m.store.CreateInstance(ctx, &store.InstanceMessage{
-			Workspace:     workspace.ResourceID,
+			Workspace:     instanceMessage.Workspace,
 			ResourceID:    instanceMessage.ResourceID,
 			EnvironmentID: instanceMessage.EnvironmentID,
 			Metadata: &storepb.Instance{

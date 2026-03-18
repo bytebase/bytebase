@@ -45,11 +45,11 @@ migrateStorageKeys();
 
   app.use(pinia);
 
+  const currentUser = await useAuthStore().fetchCurrentUser()
   // Initialize stores.
   await Promise.all([
-    useActuatorV1Store().fetchServerInfo(),
+    useActuatorV1Store().fetchServerInfo(currentUser?.workspace),
     useSubscriptionV1Store().fetchSubscription(),
-    useAuthStore().fetchCurrentUser(),
   ]);
 
   app.use(router).use(highlight).use(i18n).use(NaiveUI);

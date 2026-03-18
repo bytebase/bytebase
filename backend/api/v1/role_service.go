@@ -38,7 +38,7 @@ func NewRoleService(store *store.Store, iamManager *iam.Manager, licenseService 
 
 // ListRoles lists roles.
 func (s *RoleService) ListRoles(ctx context.Context, _ *connect.Request[v1pb.ListRolesRequest]) (*connect.Response[v1pb.ListRolesResponse], error) {
-	roleMessages, err := s.store.ListRoles(ctx, &store.FindRoleMessage{})
+	roleMessages, err := s.store.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list roles"))
 	}
@@ -54,7 +54,7 @@ func (s *RoleService) GetRole(ctx context.Context, req *connect.Request[v1pb.Get
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
@@ -73,7 +73,8 @@ func (*RoleService) getBuildinRole(roleID string) *store.RoleMessage {
 
 // CreateRole creates a new role.
 func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.CreateRoleRequest]) (*connect.Response[v1pb.Role], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_ROLES); err != nil {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_CUSTOM_ROLES); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
@@ -89,12 +90,8 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 	for _, v := range req.Msg.GetRole().GetPermissions() {
 		permissions[permission.Permission(v)] = true
 	}
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
 	create := &store.RoleMessage{
-		Workspace:   workspace.ResourceID,
+		Workspace:   workspaceID,
 		ResourceID:  req.Msg.RoleId,
 		Name:        req.Msg.Role.Title,
 		Description: req.Msg.Role.Description,
@@ -121,7 +118,8 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 
 // UpdateRole updates an existing role.
 func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.UpdateRoleRequest]) (*connect.Response[v1pb.Role], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_ROLES); err != nil {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_CUSTOM_ROLES); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	if req.Msg.UpdateMask == nil {
@@ -134,7 +132,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot change the build-in role %s", req.Msg.Role.Name))
 	}
-	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{Workspace: workspaceID, ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
@@ -149,6 +147,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 	}
 	patch := &store.UpdateRoleMessage{
 		ResourceID: roleID,
+		Workspace:  workspaceID,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -195,7 +194,8 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot delete the build-in role %s", req.Msg.Name))
 	}
-	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{Workspace: workspaceID, ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
@@ -203,7 +203,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("role not found: %s", roleID))
 	}
 
-	usedByResources, err := s.store.GetResourcesUsedByRole(ctx, req.Msg.Name)
+	usedByResources, err := s.store.GetResourcesUsedByRole(ctx, workspaceID, req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check if the role is used"))
 	}
@@ -223,7 +223,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot delete because role %s is used by resources: %s", common.FormatRole(roleID), strings.Join(usedBy, ",")))
 	}
 
-	if err := s.store.DeleteRole(ctx, roleID); err != nil {
+	if err := s.store.DeleteRole(ctx, workspaceID, roleID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to delete role"))
 	}
 	if err := s.iamManager.ReloadCache(ctx); err != nil {

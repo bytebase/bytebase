@@ -331,6 +331,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ResourcePackage'
+  /bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo:
+    post:
+      tags:
+        - bytebase.v1.ActuatorService
+      summary: GetWorkspaceActuatorInfo
+      description: Gets workspace-scoped actuator info. Requires authentication.
+      operationId: bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetWorkspaceActuatorInfoRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
   /bytebase.v1.ActuatorService/SetupSample:
     post:
       tags:
@@ -7118,10 +7154,12 @@ components:
           title: last_active_time
           description: The last time any API call was made, refreshed on each request.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        workspaceId:
+        workspace:
           type: string
-          title: workspace_id
-          description: The unique identifier for the workspace.
+          title: workspace
+          description: |-
+            The unique identifier for the workspace.
+             Format: workspaces/{id}
         unlicensedFeatures:
           type: array
           items:
@@ -10793,6 +10831,13 @@ components:
       additionalProperties: false
     bytebase.v1.GetResourcePackageRequest:
       type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            Optional workspace name, format: workspaces/{workspace}.
+             Set when using the workspace-scoped URL pattern.
       title: GetResourcePackageRequest
       additionalProperties: false
       description: Request message for getting branding resources.
@@ -11001,6 +11046,16 @@ components:
              Format: projects/{project}/worksheets/{worksheet}
       title: GetWorksheetRequest
       additionalProperties: false
+    bytebase.v1.GetWorkspaceActuatorInfoRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'The workspace name, format: workspaces/{workspace}.'
+      title: GetWorkspaceActuatorInfoRequest
+      additionalProperties: false
+      description: Request message for getting workspace-scoped actuator information.
     bytebase.v1.GridLevel:
       type: object
       properties:
@@ -18561,10 +18616,6 @@ components:
           type: string
           title: password
           description: The password for authentication. Only used during user creation or password updates.
-        serviceKey:
-          type: string
-          title: service_key
-          description: The service key for service account authentication. Only used for service accounts.
         mfaEnabled:
           type: boolean
           title: mfa_enabled
@@ -18601,6 +18652,12 @@ components:
           description: |-
             The groups for the user.
              Format: groups/{email}
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The current workspace.
+             Format: workspaces/{id}
       title: User
       additionalProperties: false
     bytebase.v1.User.Profile:

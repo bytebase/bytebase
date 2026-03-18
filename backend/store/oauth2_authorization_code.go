@@ -43,12 +43,12 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 	return create, nil
 }
 
-func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, code string) (*OAuth2AuthorizationCodeMessage, error) {
+func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (*OAuth2AuthorizationCodeMessage, error) {
 	q := qb.Q().Space(`
 		SELECT code, client_id, user_email, config, expires_at
 		FROM oauth2_authorization_code
-		WHERE code = ?
-	`, code)
+		WHERE code = ? AND client_id = ?
+	`, code, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -73,11 +73,11 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, code string) (*O
 	return msg, nil
 }
 
-func (s *Store) DeleteOAuth2AuthorizationCode(ctx context.Context, code string) error {
+func (s *Store) DeleteOAuth2AuthorizationCode(ctx context.Context, clientID, code string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_authorization_code
-		WHERE code = ?
-	`, code)
+		WHERE code = ? AND client_id = ?
+	`, code, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

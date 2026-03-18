@@ -218,7 +218,7 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 		return false, nil, errors.Errorf("no resource found for IAM auth method")
 	}
 	if authContext.HasWorkspaceResource() {
-		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user)
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return false, nil, err
 		}
@@ -228,7 +228,7 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	}
 	projectIDs := authContext.GetProjectResources()
 	if len(projectIDs) > 0 {
-		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, projectIDs...)
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, common.GetWorkspaceIDFromContext(ctx), projectIDs...)
 		if err != nil {
 			return false, nil, err
 		}

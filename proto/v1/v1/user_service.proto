@@ -270,8 +270,9 @@ message User {
   // The password for authentication. Only used during user creation or password updates.
   string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
 
-  // The service key for service account authentication. Only used for service accounts.
-  string service_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  // Field 7 was service_key, now managed by ServiceAccountService.
+  reserved 7;
+  reserved "service_key";
 
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 8;
@@ -304,4 +305,8 @@ message User {
   // The groups for the user.
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The current workspace.
+  // Format: workspaces/{id}
+  string workspace = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

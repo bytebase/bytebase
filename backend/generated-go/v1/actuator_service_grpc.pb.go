@@ -20,10 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ActuatorService_GetActuatorInfo_FullMethodName    = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	ActuatorService_SetupSample_FullMethodName        = "/bytebase.v1.ActuatorService/SetupSample"
-	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
-	ActuatorService_GetResourcePackage_FullMethodName = "/bytebase.v1.ActuatorService/GetResourcePackage"
+	ActuatorService_GetActuatorInfo_FullMethodName          = "/bytebase.v1.ActuatorService/GetActuatorInfo"
+	ActuatorService_SetupSample_FullMethodName              = "/bytebase.v1.ActuatorService/SetupSample"
+	ActuatorService_DeleteCache_FullMethodName              = "/bytebase.v1.ActuatorService/DeleteCache"
+	ActuatorService_GetResourcePackage_FullMethodName       = "/bytebase.v1.ActuatorService/GetResourcePackage"
+	ActuatorService_GetWorkspaceActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo"
 )
 
 // ActuatorServiceClient is the client API for ActuatorService service.
@@ -44,6 +45,8 @@ type ActuatorServiceClient interface {
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
+	// Gets workspace-scoped actuator info. Requires authentication.
+	GetWorkspaceActuatorInfo(ctx context.Context, in *GetWorkspaceActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 }
 
 type actuatorServiceClient struct {
@@ -94,6 +97,16 @@ func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetR
 	return out, nil
 }
 
+func (c *actuatorServiceClient) GetWorkspaceActuatorInfo(ctx context.Context, in *GetWorkspaceActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ActuatorInfo)
+	err := c.cc.Invoke(ctx, ActuatorService_GetWorkspaceActuatorInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActuatorServiceServer is the server API for ActuatorService service.
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility.
@@ -112,6 +125,8 @@ type ActuatorServiceServer interface {
 	// Gets custom branding resources such as logos.
 	// Permissions required: None
 	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
+	// Gets workspace-scoped actuator info. Requires authentication.
+	GetWorkspaceActuatorInfo(context.Context, *GetWorkspaceActuatorInfoRequest) (*ActuatorInfo, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }
 
@@ -133,6 +148,9 @@ func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCa
 }
 func (UnimplementedActuatorServiceServer) GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetResourcePackage not implemented")
+}
+func (UnimplementedActuatorServiceServer) GetWorkspaceActuatorInfo(context.Context, *GetWorkspaceActuatorInfoRequest) (*ActuatorInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWorkspaceActuatorInfo not implemented")
 }
 func (UnimplementedActuatorServiceServer) mustEmbedUnimplementedActuatorServiceServer() {}
 func (UnimplementedActuatorServiceServer) testEmbeddedByValue()                         {}
@@ -227,6 +245,24 @@ func _ActuatorService_GetResourcePackage_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_GetWorkspaceActuatorInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkspaceActuatorInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).GetWorkspaceActuatorInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_GetWorkspaceActuatorInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).GetWorkspaceActuatorInfo(ctx, req.(*GetWorkspaceActuatorInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActuatorService_ServiceDesc is the grpc.ServiceDesc for ActuatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -249,6 +285,10 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetResourcePackage",
 			Handler:    _ActuatorService_GetResourcePackage_Handler,
+		},
+		{
+			MethodName: "GetWorkspaceActuatorInfo",
+			Handler:    _ActuatorService_GetWorkspaceActuatorInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

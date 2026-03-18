@@ -616,8 +616,6 @@ type User struct {
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	// The password for authentication. Only used during user creation or password updates.
 	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
-	// The service key for service account authentication. Only used for service accounts.
-	ServiceKey string `protobuf:"bytes,7,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The mfa_enabled flag means if the user has enabled MFA.
 	MfaEnabled bool `protobuf:"varint,8,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
 	// Temporary OTP secret used during MFA setup and regeneration.
@@ -633,7 +631,10 @@ type User struct {
 	Profile *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
 	// The groups for the user.
 	// Format: groups/{email}
-	Groups        []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
+	Groups []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
+	// The current workspace.
+	// Format: workspaces/{id}
+	Workspace     string `protobuf:"bytes,16,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -703,13 +704,6 @@ func (x *User) GetPassword() string {
 	return ""
 }
 
-func (x *User) GetServiceKey() string {
-	if x != nil {
-		return x.ServiceKey
-	}
-	return ""
-}
-
 func (x *User) GetMfaEnabled() bool {
 	if x != nil {
 		return x.MfaEnabled
@@ -757,6 +751,13 @@ func (x *User) GetGroups() []string {
 		return x.Groups
 	}
 	return nil
+}
+
+func (x *User) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
 }
 
 type User_Profile struct {
@@ -864,15 +865,13 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x12UpdateEmailRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\x12\x19\n" +
-	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\xf5\x05\n" +
+	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\x85\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1e\n" +
 	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1f\n" +
-	"\bpassword\x18\x06 \x01(\tB\x03\xe0A\x04R\bpassword\x12$\n" +
-	"\vservice_key\x18\a \x01(\tB\x03\xe0A\x04R\n" +
-	"serviceKey\x12\x1f\n" +
+	"\bpassword\x18\x06 \x01(\tB\x03\xe0A\x04R\bpassword\x12\x1f\n" +
 	"\vmfa_enabled\x18\b \x01(\bR\n" +
 	"mfaEnabled\x12&\n" +
 	"\x0ftemp_otp_secret\x18\t \x01(\tR\rtempOtpSecret\x12.\n" +
@@ -881,12 +880,13 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
-	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x1a\xbc\x01\n" +
+	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x12!\n" +
+	"\tworkspace\x18\x10 \x01(\tB\x03\xe0A\x03R\tworkspace\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
-	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x102\xd3\b\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x10J\x04\b\a\x10\bR\vservice_key2\xd3\b\n" +
 	"\vUserService\x12p\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"5\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x86\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\".\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12Y\n" +

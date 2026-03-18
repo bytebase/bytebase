@@ -19,6 +19,7 @@ import (
 
 // FindGroupMessage is the message for finding groups.
 type FindGroupMessage struct {
+	Workspace string
 	ID        *string
 	Email     *string
 	ProjectID *string
@@ -31,7 +32,8 @@ type FindGroupMessage struct {
 // UpdateGroupMessage is the message to update a group.
 type UpdateGroupMessage struct {
 	// identifier
-	ID string
+	ID        string
+	Workspace string
 
 	// payload
 	Email       *string
@@ -75,7 +77,7 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*GroupMessage, error) {
 	with := qb.Q()
 	from := qb.Q().Space("user_group")
-	where := qb.Q().Space("TRUE")
+	where := qb.Q().Space("user_group.workspace = ?", find.Workspace)
 
 	// Build CTE for project filtering if needed
 	if v := find.ProjectID; v != nil {
@@ -84,11 +86,11 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
+			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ? AND policy.workspace = ?
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
 		from.Space(`INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	}
 
@@ -238,14 +240,14 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 	q := qb.Q().Space(`
 		UPDATE user_group
 		SET ?
-		WHERE id = ?
+		WHERE id = ? AND workspace = ?
 		RETURNING
 			id,
 			email,
 			name,
 			description,
 			payload
-	`, set, patch.ID)
+	`, set, patch.ID, patch.Workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -283,8 +285,8 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 }
 
 // DeleteGroup deletes a group.
-func (s *Store) DeleteGroup(ctx context.Context, id string) error {
-	q := qb.Q().Space("DELETE FROM user_group WHERE id = ? RETURNING email", id)
+func (s *Store) DeleteGroup(ctx context.Context, workspace string, id string) error {
+	q := qb.Q().Space("DELETE FROM user_group WHERE id = ? AND workspace = ? RETURNING email", id, workspace)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
@@ -305,12 +307,12 @@ func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 // GetUserGroupsSnapshot returns groups for a user with snapshot reads (with cache).
 // userName format is "users/{email}".
 // Trades consistency for performance.
-func (s *Store) GetUserGroupsSnapshot(ctx context.Context, userName string) ([]string, error) {
+func (s *Store) GetUserGroupsSnapshot(ctx context.Context, workspaceID string, userName string) ([]string, error) {
 	if v, ok := s.memberGroupsCache.Get(userName); ok {
 		return v, nil
 	}
 
-	groups, err := s.ListGroups(ctx, &FindGroupMessage{})
+	groups, err := s.ListGroups(ctx, &FindGroupMessage{Workspace: workspaceID})
 	if err != nil {
 		return nil, err
 	}
@@ -335,14 +337,14 @@ func (s *Store) GetUserGroupsSnapshot(ctx context.Context, userName string) ([]s
 // GetGroupMembersSnapshot returns group members with snapshot reads (with cache).
 // groupName format is "groups/{email}".
 // Trades consistency for performance.
-func (s *Store) GetGroupMembersSnapshot(ctx context.Context, groupName string) (map[string]bool, error) {
+func (s *Store) GetGroupMembersSnapshot(ctx context.Context, workspaceID string, groupName string) (map[string]bool, error) {
 	if v, ok := s.groupMembersCache.Get(groupName); ok {
 		return v, nil
 	}
 
 	// Extract email from group name "groups/{email}"
 	email := strings.TrimPrefix(groupName, "groups/")
-	group, err := s.GetGroup(ctx, &FindGroupMessage{Email: &email})
+	group, err := s.GetGroup(ctx, &FindGroupMessage{Workspace: workspaceID, Email: &email})
 	if err != nil {
 		return nil, err
 	}

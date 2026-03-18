@@ -59,7 +59,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRu
 	if taskRun.ResultProto.ExportArchiveId != "" {
 		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
 		exportArchiveID := taskRun.ResultProto.ExportArchiveId
-		exportArchive, err := s.GetExportArchive(ctx, exportArchiveID)
+		exportArchive, err := s.GetExportArchive(ctx, common.GetWorkspaceIDFromContext(ctx), exportArchiveID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get export archive")
 		}

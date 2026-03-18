@@ -137,8 +137,8 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
-	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
+func getPolicyCacheKey(workspace string, resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
+	return fmt.Sprintf("workspaces/%s/policies/%s/%s/%s", workspace, resourceType, resource, policyType)
 }
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {

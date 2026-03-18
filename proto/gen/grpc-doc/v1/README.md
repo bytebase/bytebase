@@ -127,6 +127,7 @@
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
+    - [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
@@ -2538,7 +2539,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
 | need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
-| workspace_id | [string](#string) |  | The unique identifier for the workspace. |
+| workspace | [string](#string) |  | The unique identifier for the workspace. Format: workspaces/{id} |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
 | activated_user_count | [int32](#int32) |  | The number of activated users. |
@@ -2578,6 +2579,26 @@ Request message for getting actuator information.
 
 ### GetResourcePackageRequest
 Request message for getting branding resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Optional workspace name, format: workspaces/{workspace}. Set when using the workspace-scoped URL pattern. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetWorkspaceActuatorInfoRequest"></a>
+
+### GetWorkspaceActuatorInfoRequest
+Request message for getting workspace-scoped actuator information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. |
 
 
 
@@ -2643,6 +2664,7 @@ ActuatorService manages system health and operational information.
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
+| GetWorkspaceActuatorInfo | [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets workspace-scoped actuator info. Requires authentication. |
 
  
 
@@ -3146,7 +3168,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
 | temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
@@ -3154,6 +3175,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+| workspace | [string](#string) |  | The current workspace. Format: workspaces/{id} |
 
 
 

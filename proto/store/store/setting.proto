@@ -23,10 +23,12 @@ enum SettingName {
 }
 
 message SystemSetting {
-  // Authentication secret for token signing (32-character random string).
-  string auth_secret = 1;
+  // Field 1 was auth_secret, now stored in the server_config table.
+  reserved 1;
+  reserved "auth_secret";
   // Field 2 was workspace_id, now stored in the workspace table.
   reserved 2;
+  reserved "workspace_id";
   // Enterprise license JWT token.
   string license = 3;
 }

@@ -45,8 +45,8 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 }
 
 // GetSQLResultSize gets the valid data_export_result_size from the workspace profile setting.
-func (s *Store) GetSQLResultSize(ctx context.Context) (int64, error) {
-	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
+func (s *Store) GetSQLResultSize(ctx context.Context, workspaceID string) (int64, error) {
+	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx, workspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -58,8 +58,8 @@ func (s *Store) GetSQLResultSize(ctx context.Context) (int64, error) {
 }
 
 // GetQueryTimeoutInSeconds gets the valid query_timeout from the workspace profile setting.
-func (s *Store) GetQueryTimeoutInSeconds(ctx context.Context) (int64, error) {
-	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx)
+func (s *Store) GetQueryTimeoutInSeconds(ctx context.Context, workspaceID string) (int64, error) {
+	workspaceProfile, err := s.GetWorkspaceProfileSetting(ctx, workspaceID)
 	if err != nil {
 		return 0, err
 	}
@@ -71,8 +71,8 @@ func (s *Store) GetQueryTimeoutInSeconds(ctx context.Context) (int64, error) {
 }
 
 // GetWorkspaceProfileSetting gets the workspace profile setting payload.
-func (s *Store) GetWorkspaceProfileSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_WORKSPACE_PROFILE)
+func (s *Store) GetWorkspaceProfileSetting(ctx context.Context, workspaceID string) (*storepb.WorkspaceProfileSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_WORKSPACE_PROFILE)
 	}
@@ -87,8 +87,8 @@ func (s *Store) GetWorkspaceProfileSetting(ctx context.Context) (*storepb.Worksp
 	return val, nil
 }
 
-func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_APP_IM)
+func (s *Store) GetAppIMSetting(ctx context.Context, workspaceID string) (*storepb.AppIMSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_APP_IM)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_APP_IM)
 	}
@@ -103,8 +103,8 @@ func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, err
 	return val, nil
 }
 
-func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_SYSTEM)
+func (s *Store) GetSystemSetting(ctx context.Context, workspaceID string) (*storepb.SystemSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_SYSTEM)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_SYSTEM)
 	}
@@ -120,8 +120,8 @@ func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, e
 }
 
 // UpdateLicense updates the license in SYSTEM setting.
-func (s *Store) UpdateLicense(ctx context.Context, license string) error {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_SYSTEM)
+func (s *Store) UpdateLicense(ctx context.Context, workspaceID string, license string) error {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_SYSTEM)
 	if err != nil {
 		return errors.Wrap(err, "failed to get system setting")
 	}
@@ -145,8 +145,8 @@ func (s *Store) UpdateLicense(ctx context.Context, license string) error {
 }
 
 // GetWorkspaceApprovalSetting gets the workspace approval setting.
-func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.WorkspaceApprovalSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_WORKSPACE_APPROVAL)
+func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context, workspaceID string) (*storepb.WorkspaceApprovalSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_WORKSPACE_APPROVAL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_WORKSPACE_APPROVAL)
 	}
@@ -162,8 +162,8 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 }
 
 // GetSemanticTypesSetting gets the semantic types setting.
-func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_SEMANTIC_TYPES)
+func (s *Store) GetSemanticTypesSetting(ctx context.Context, workspaceID string) (*storepb.SemanticTypeSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_SEMANTIC_TYPES)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_SEMANTIC_TYPES)
 	}
@@ -179,8 +179,8 @@ func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticT
 }
 
 // GetDataClassificationSetting gets the data classification setting.
-func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_DATA_CLASSIFICATION)
+func (s *Store) GetDataClassificationSetting(ctx context.Context, workspaceID string) (*storepb.DataClassificationSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_DATA_CLASSIFICATION)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_DATA_CLASSIFICATION)
 	}
@@ -195,8 +195,8 @@ func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.Data
 	return val, nil
 }
 
-func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_AI)
+func (s *Store) GetAISetting(ctx context.Context, workspaceID string) (*storepb.AISetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_AI)
 	if err != nil {
 		return nil, err
 	}
@@ -211,8 +211,8 @@ func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
 	return val, nil
 }
 
-func (s *Store) GetEnvironment(ctx context.Context) (*storepb.EnvironmentSetting, error) {
-	setting, err := s.GetSetting(ctx, storepb.SettingName_ENVIRONMENT)
+func (s *Store) GetEnvironment(ctx context.Context, workspaceID string) (*storepb.EnvironmentSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_ENVIRONMENT)
 	if err != nil {
 		return nil, err
 	}
@@ -229,16 +229,17 @@ func (s *Store) GetEnvironment(ctx context.Context) (*storepb.EnvironmentSetting
 
 // FindSettingMessage is the message for finding settings.
 type FindSettingMessage struct {
-	Name *storepb.SettingName
+	Workspace string
+	Name      *storepb.SettingName
 }
 
 // GetSetting returns the setting by name.
-func (s *Store) GetSetting(ctx context.Context, name storepb.SettingName) (*SettingMessage, error) {
+func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
 	if v, ok := s.settingCache.Get(name); ok && s.enableCache {
 		return v, nil
 	}
 
-	settings, err := s.ListSettings(ctx, &FindSettingMessage{Name: &name})
+	settings, err := s.ListSettings(ctx, &FindSettingMessage{Workspace: workspace, Name: &name})
 	if err != nil {
 		return nil, err
 	}
@@ -260,9 +261,10 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 			workspace,
 			value
 		FROM setting
-		WHERE TRUE
-	`)
-	if find != nil && find.Name != nil {
+		WHERE workspace = ?
+	`, find.Workspace)
+
+	if find.Name != nil {
 		q.And("name = ?", find.Name.String())
 	}
 	query, args, err := q.ToSQL()
@@ -324,7 +326,7 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	q := qb.Q().Space(`
 		INSERT INTO setting (name, workspace, value)
 		VALUES (?, ?, ?)
-		ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value
+		ON CONFLICT (name, workspace) DO UPDATE SET value = EXCLUDED.value
 		RETURNING name, workspace, value
 	`, update.Name.String(), update.Workspace, string(valueBytes))
 
@@ -366,8 +368,8 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 }
 
 // DeleteSetting deletes a setting by the name.
-func (s *Store) DeleteSetting(ctx context.Context, name storepb.SettingName) error {
-	q := qb.Q().Space("DELETE FROM setting WHERE name = ?", name.String())
+func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storepb.SettingName) error {
+	q := qb.Q().Space("DELETE FROM setting WHERE name = ? AND workspace = ?", name.String(), workspace)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")

@@ -654,6 +654,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest"><span class="badge">M</span>GetWorkspaceActuatorInfoRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ResourcePackage"><span class="badge">M</span>ResourcePackage</a>
                 </li>
               
@@ -7811,10 +7815,11 @@ Permissions required: bb.settings.set</p></td>
                 </tr>
               
                 <tr>
-                  <td>workspace_id</td>
+                  <td>workspace</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The unique identifier for the workspace. </p></td>
+                  <td><p>The unique identifier for the workspace.
+Format: workspaces/{id} </p></td>
                 </tr>
               
                 <tr>
@@ -7905,6 +7910,48 @@ Permissions required: bb.settings.set</p></td>
         <p>Request message for getting branding resources.</p>
 
         
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional workspace name, format: workspaces/{workspace}.
+Set when using the workspace-scoped URL pattern. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</h3>
+        <p>Request message for getting workspace-scoped actuator information.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The workspace name, format: workspaces/{workspace}. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -8023,6 +8070,13 @@ Permissions required: None</p></td>
 Permissions required: None</p></td>
               </tr>
             
+              <tr>
+                <td>GetWorkspaceActuatorInfo</td>
+                <td><a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</a></td>
+                <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
+                <td><p>Gets workspace-scoped actuator info. Requires authentication.</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -8077,6 +8131,23 @@ Permissions required: None</p></td>
                 <td>GetResourcePackage</td>
                 <td>GET</td>
                 <td>/v1/actuator/resources</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>GetResourcePackage</td>
+                <td>GET</td>
+                <td>/v1/{name=workspaces/*}/actuator/resources</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetWorkspaceActuatorInfo</td>
+                <td>GET</td>
+                <td>/v1/{name=workspaces/*}/actuator/info</td>
                 <td></td>
               </tr>
               
@@ -9295,13 +9366,6 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
-                  <td>service_key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The service key for service account authentication. Only used for service accounts. </p></td>
-                </tr>
-              
-                <tr>
                   <td>mfa_enabled</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -9350,6 +9414,14 @@ Could be empty. </p></td>
                   <td>repeated</td>
                   <td><p>The groups for the user.
 Format: groups/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The current workspace.
+Format: workspaces/{id} </p></td>
                 </tr>
               
             </tbody>

@@ -38,7 +38,8 @@ type protectedResourceMetadata struct {
 func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	workspaceID, _ := s.getWorkspaceFromRequest(c)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
 	}

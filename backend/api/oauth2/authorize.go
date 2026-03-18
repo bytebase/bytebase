@@ -38,7 +38,12 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 	if clientID == "" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "client_id is required")
 	}
-	client, err := s.store.GetOAuth2Client(ctx, clientID)
+
+	workspaceID, err := s.getWorkspaceFromRequest(c)
+	if err != nil {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
+	}
+	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}
@@ -85,8 +90,13 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	codeChallengeMethod := c.FormValue("code_challenge_method")
 	action := c.FormValue("action")
 
+	workspaceID, err := s.getWorkspaceFromRequest(c)
+	if err != nil {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
+	}
+
 	// Validate client
-	client, err := s.store.GetOAuth2Client(ctx, clientID)
+	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
 	if err != nil || client == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client", "client not found")
 	}
@@ -163,7 +173,7 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	}
 
 	// Update client last active
-	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, clientID); err != nil {
+	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.Workspace, clientID); err != nil {
 		slog.Warn("failed to update OAuth2 client last active", slog.String("clientID", clientID), log.BBError(err))
 	}
 

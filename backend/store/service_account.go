@@ -24,6 +24,7 @@ type ServiceAccountMessage struct {
 
 // FindServiceAccountMessage is the message for finding service accounts.
 type FindServiceAccountMessage struct {
+	Workspace   string
 	Email       *string
 	ShowDeleted bool
 	Limit       *int
@@ -52,9 +53,40 @@ type UpdateServiceAccountMessage struct {
 	Delete         *bool
 }
 
-// GetServiceAccountByEmail gets a service account by email.
+// GetServiceAccountByEmail gets a service account by email without workspace filter.
+// For use by login flow, runners, and GetAccountByEmail (cross-workspace).
 func (s *Store) GetServiceAccountByEmail(ctx context.Context, email string) (*ServiceAccountMessage, error) {
-	sas, err := s.ListServiceAccounts(ctx, &FindServiceAccountMessage{Email: &email, ShowDeleted: true})
+	q := qb.Q().Space(`
+		SELECT deleted, email, name, workspace, service_key_hash, project
+		FROM service_account
+		WHERE email = ?
+	`, strings.ToLower(email))
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var sa ServiceAccountMessage
+	var project sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&sa.MemberDeleted, &sa.Email, &sa.Name, &sa.Workspace, &sa.ServiceKeyHash, &project,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if project.Valid {
+		sa.Project = &project.String
+	}
+	return &sa, nil
+}
+
+// GetServiceAccount gets a service account by workspace and email.
+// For use by API layer (workspace-scoped).
+func (s *Store) GetServiceAccount(ctx context.Context, workspace string, email string) (*ServiceAccountMessage, error) {
+	sas, err := s.ListServiceAccounts(ctx, &FindServiceAccountMessage{Workspace: workspace, Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +98,7 @@ func (s *Store) GetServiceAccountByEmail(ctx context.Context, email string) (*Se
 
 // ListServiceAccounts lists service accounts.
 func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccountMessage) ([]*ServiceAccountMessage, error) {
-	where := qb.Q().Space("TRUE")
+	where := qb.Q().Space("workspace = ?", find.Workspace)
 
 	if v := find.Email; v != nil {
 		where.And("email = ?", strings.ToLower(*v))
@@ -192,9 +224,9 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 		return sa, nil
 	}
 
-	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE email = ?
+	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE email = ? AND workspace = ?
 		RETURNING deleted, email, name, workspace, service_key_hash, project`,
-		set, sa.Email).ToSQL()
+		set, sa.Email, sa.Workspace).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

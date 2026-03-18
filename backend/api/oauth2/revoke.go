@@ -33,7 +33,12 @@ func (s *Service) handleRevoke(c *echo.Context) error {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client authentication required")
 	}
 
-	client, err := s.store.GetOAuth2Client(ctx, clientID)
+	workspaceID, err := s.getWorkspaceFromRequest(c)
+	if err != nil {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
+	}
+
+	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}
@@ -57,7 +62,7 @@ func (s *Service) handleRevoke(c *echo.Context) error {
 	// Try to revoke as refresh token
 	// RFC 7009 says to return 200 even if token is invalid, but we log errors for debugging
 	tokenHash := auth.HashToken(req.Token)
-	if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
+	if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
 		slog.Warn("failed to delete OAuth2 refresh token during revocation", log.BBError(err))
 	}
 

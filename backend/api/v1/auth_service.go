@@ -100,20 +100,20 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	// 3. Check if MFA challenge needed (returns early with temp token)
-	if resp, err := s.checkMFARequired(loginUser, mfaSecondLogin); err != nil {
+	if resp, err := s.checkMFARequired(ctx, loginUser, mfaSecondLogin); err != nil {
 		return nil, err
 	} else if resp != nil {
 		return resp, nil
 	}
 
 	// 4. Generate appropriate token
-	token, err := s.generateLoginToken(ctx, loginUser)
+	token, workspaceID, err := s.generateLoginToken(ctx, loginUser)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate access token"))
 	}
 
 	// 5. Build response and finalize
-	return s.finalizeLogin(ctx, req, loginUser, token, requireResetPassword)
+	return s.finalizeLogin(ctx, req, loginUser, token, workspaceID, requireResetPassword)
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
@@ -121,11 +121,11 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 	if user.Type != storepb.PrincipalType_END_USER {
 		return false
 	}
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 		return false
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		slog.Error("failed to get workspace setting", log.BBError(err))
 		return false
@@ -136,7 +136,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		if !passwordRestriction.GetRequireResetPasswordForFirstLogin() {
 			return false
 		}
-		count, err := s.store.CountActiveEndUsers(ctx)
+		count, err := s.store.CountActiveEndUsersPerWorkspace(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			slog.Error("failed to count end users", log.BBError(err))
 			return false
@@ -171,7 +171,7 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 
 	origin := req.Header().Get("Origin")
 	// Clear access token cookie
-	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "").String())
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, common.GetWorkspaceIDFromContext(ctx), origin, "").String())
 	// Clear refresh token cookie
 	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
 	return resp, nil
@@ -210,8 +210,12 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	}
 
 	// 5. Issue new tokens
-	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
-	accessToken, err := auth.GenerateAccessToken(user.Email, s.secret, accessTokenDuration)
+	workspaceID, err := s.store.FindWorkspaceIDByMemberEmail(ctx, common.FormatUserEmail(user.Email))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
+	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate access token"))
 	}
@@ -233,7 +237,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	// 6. Set cookies and return
 	resp := connect.NewResponse(&v1pb.RefreshResponse{})
 	origin := req.Header().Get("Origin")
-	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, accessToken).String())
 	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, newRefreshToken, time.Until(stored.ExpiresAt)).String())
 
 	return resp, nil
@@ -245,29 +249,37 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 		return nil, err
 	}
 
-	user, err := s.store.GetPrincipalByEmail(ctx, request.Email)
+	// GetAccountByEmail is cross-workspace, which is correct for login.
+	// Email is globally unique (PK). The token gets workspace from account.Workspace (SA/WI)
+	// or from the default workspace (END_USER).
+	account, err := s.store.GetAccountByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user by email %q", request.Email))
 	}
-	if user == nil {
+	if account == nil {
 		return nil, invalidCredentialsError
 	}
 	// Compare the stored hashed password, with the hashed version of the password that was received.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(request.Password)); err != nil {
 		// If the two passwords don't match, return a 401 status.
 		return nil, invalidCredentialsError
 	}
-	return user, nil
+
+	// Convert AccountMessage to UserMessage for downstream use.
+	return s.accountToUser(ctx, account)
 }
 
+// getOrCreateUserWithIDP authenticates a user via an identity provider (SSO).
+// Login API has allow_without_credential, so there's no workspace in the token context.
+// We resolve workspace from the IDP entity (IDP resource_id is globally unique).
 func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	idpID, err := common.GetIdentityProviderID(request.IdpName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get identity provider ID"))
 	}
-	idp, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		ResourceID: &idpID,
-	})
+	// Look up IDP without workspace filter — IDP resource_id is globally unique.
+	// The workspace is resolved from the IDP entity.
+	idp, err := s.store.GetIdentityProviderByID(ctx, idpID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get identity provider"))
 	}
@@ -275,7 +287,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	workspaceID := idp.Workspace
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -399,7 +412,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
 		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
 	}
-	if err := s.licenseService.IsFeatureEnabled(featurePlan); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, featurePlan); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	// Create new user from identity provider.
@@ -424,6 +437,17 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
+
+	// Add the new user to the workspace IAM policy as a member.
+	// The IDP is workspace-scoped, so authenticating through it grants workspace access.
+	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: workspaceID,
+		Member:    common.FormatUserEmail(email),
+		Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+	}
+
 	if userInfo.HasGroups {
 		// Sync user groups with the identity provider.
 		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
@@ -435,9 +459,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 }
 
 func (s *AuthService) userCountGuard(ctx context.Context) error {
-	userLimit := s.licenseService.GetUserLimit(ctx)
+	userLimit := s.licenseService.GetUserLimit(ctx, common.GetWorkspaceIDFromContext(ctx))
 
-	count, err := s.store.CountActiveEndUsers(ctx)
+	count, err := s.store.CountActiveEndUsersPerWorkspace(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
@@ -481,7 +505,8 @@ func (s *AuthService) countRecentLoginFailures(ctx context.Context, email string
 	filterQ.And("created_at >= ?", windowStart)
 
 	logs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
-		FilterQ: filterQ,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		FilterQ:   filterQ,
 	})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to search audit logs for login failures")
@@ -556,7 +581,7 @@ func validateWithCodeAndSecret(code, secret string) bool {
 // The given groups are the groups that the user belongs to in the identity provider.
 // Supported groups format: ["group1", "group2", ...], ["dev@bb.com", ...]
 func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessage, groups []string) error {
-	bbGroups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
+	bbGroups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list groups"))
 	}
@@ -585,8 +610,9 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 				})
 			}
 			if _, err := s.store.UpdateGroup(ctx, &store.UpdateGroupMessage{
-				ID:      bbGroup.ID,
-				Payload: bbGroup.Payload,
+				ID:        bbGroup.ID,
+				Workspace: bbGroup.Workspace,
+				Payload:   bbGroup.Payload,
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update group %q", bbGroup.Email))
 			}
@@ -684,8 +710,8 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 	loginViaIDP := request.GetIdpName() != ""
 
 	// Check disallow password signin
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
-		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
+		setting, err := s.store.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 		}
@@ -700,13 +726,13 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 
 // checkMFARequired checks if MFA is required and returns a response with temp token if so.
 // Returns (nil, nil) if MFA is not required or already completed.
-func (s *AuthService) checkMFARequired(user *store.UserMessage, mfaSecondLogin bool) (*connect.Response[v1pb.LoginResponse], error) {
+func (s *AuthService) checkMFARequired(ctx context.Context, user *store.UserMessage, mfaSecondLogin bool) (*connect.Response[v1pb.LoginResponse], error) {
 	if mfaSecondLogin {
 		return nil, nil
 	}
 
 	userMFAEnabled := user.MFAConfig != nil && user.MFAConfig.OtpSecret != ""
-	mfaFeatureEnabled := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil
+	mfaFeatureEnabled := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_TWO_FA) == nil
 	if !mfaFeatureEnabled || !userMFAEnabled {
 		return nil, nil
 	}
@@ -722,21 +748,63 @@ func (s *AuthService) checkMFARequired(user *store.UserMessage, mfaSecondLogin b
 }
 
 // generateLoginToken generates the appropriate token based on user type.
-func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMessage) (string, error) {
-	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
+// Resolves the workspace via IAM policy membership or account record.
+// generateLoginToken returns (token, workspaceID, error).
+func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMessage) (string, string, error) {
+	workspaceID, err := s.resolveWorkspaceForLogin(ctx, user)
+	if err != nil {
+		return "", "", err
+	}
 
+	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
+
+	var token string
 	switch user.Type {
 	case storepb.PrincipalType_END_USER:
-		return auth.GenerateAccessToken(user.Email, s.secret, tokenDuration)
+		token, err = auth.GenerateAccessToken(user.Email, workspaceID, s.secret, tokenDuration)
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		return auth.GenerateAPIToken(user.Email, s.secret)
+		token, err = auth.GenerateAPIToken(user.Email, workspaceID, s.secret)
 	default:
-		return "", connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user type %s cannot login", user.Type))
+		return "", "", connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user type %s cannot login", user.Type))
 	}
+	if err != nil {
+		return "", "", err
+	}
+	return token, workspaceID, nil
+}
+
+// resolveWorkspaceForLogin determines the workspace for a login token.
+// For SA/WI: looks up the account record to get workspace.
+// For END_USER: finds workspaces via IAM policy membership.
+//   - If the user belongs to exactly 1 workspace, use it.
+//   - If multiple, use the first one (TODO: workspace picker in SaaS mode).
+//   - If none, return error.
+func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.UserMessage) (string, error) {
+	// Determine member name format based on user type.
+	var memberName string
+	switch user.Type {
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
+		// SA has workspace on its record — look it up directly.
+		sa, err := s.store.GetServiceAccountByEmail(ctx, user.Email)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to get service account")
+		}
+		if sa != nil {
+			return sa.Workspace, nil
+		}
+		return "", errors.Errorf("service account %q not found", user.Email)
+	case storepb.PrincipalType_END_USER:
+		memberName = common.FormatUserEmail(user.Email)
+	default:
+		return "", errors.Errorf("unsupported user type %s for login", user.Type)
+	}
+
+	// find workspaces by IAM policy membership.
+	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName)
 }
 
 // finalizeLogin builds the response, sets cookies if needed, and updates the user profile.
-func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1pb.LoginRequest], user *store.UserMessage, token string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
+func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1pb.LoginRequest], user *store.UserMessage, token string, workspaceID string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
 	response := &v1pb.LoginResponse{
 		RequireResetPassword: requireResetPassword,
 	}
@@ -747,7 +815,7 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
 		}
 		origin := req.Header().Get("Origin")
-		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, token)
+		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 
 		// Issue refresh token for web login
@@ -755,7 +823,7 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
 		}
-		refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService)
+		refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 		if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
 			TokenHash: auth.HashToken(refreshToken),
 			UserEmail: user.Email,
@@ -784,6 +852,7 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 		}
+		v1User.Workspace = common.FormatWorkspace(workspaceID)
 		response.User = v1User
 	}
 
@@ -809,7 +878,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Find workload identity by email
-	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, request.Email)
+	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workload identity"))
 	}
@@ -835,7 +904,8 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Generate Bytebase API token (1 hour duration, same as service account)
-	token, err := auth.GenerateAPIToken(wi.Email, s.secret)
+	wiWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
+	token, err := auth.GenerateAPIToken(wi.Email, wiWorkspaceID, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))
@@ -844,4 +914,27 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{
 		AccessToken: token,
 	}), nil
+}
+
+// accountToUser converts an AccountMessage to a UserMessage.
+// For END_USER, loads the full user record. For SA/WI, constructs a minimal UserMessage.
+func (s *AuthService) accountToUser(ctx context.Context, account *store.AccountMessage) (*store.UserMessage, error) {
+	if account.Type == storepb.PrincipalType_END_USER {
+		user, err := s.store.GetUserByEmail(ctx, account.Email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user %q", account.Email))
+		}
+		if user == nil {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
+		}
+		return user, nil
+	}
+
+	// SA/WI: construct a minimal UserMessage with the fields available from AccountMessage.
+	return &store.UserMessage{
+		Email:         account.Email,
+		Name:          account.Name,
+		Type:          account.Type,
+		MemberDeleted: account.MemberDeleted,
+	}, nil
 }

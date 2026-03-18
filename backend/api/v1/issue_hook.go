@@ -102,7 +102,7 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 			return nil, errors.Wrapf(err, "failed to activate access grant %v", accessGrantName)
 		}
 	case storepb.Issue_ROLE_GRANT:
-		if err := utils.UpdateProjectPolicyFromRoleGrantIssue(ctx, stores, issue, issue.Payload.RoleGrant); err != nil {
+		if err := utils.UpdateProjectPolicyFromRoleGrantIssue(ctx, stores, common.GetWorkspaceIDFromContext(ctx), issue, issue.Payload.RoleGrant); err != nil {
 			return nil, err
 		}
 	default:

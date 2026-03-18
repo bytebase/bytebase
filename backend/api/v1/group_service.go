@@ -39,7 +39,7 @@ func NewGroupService(store *store.Store, iamManager *iam.Manager, licenseService
 
 // GetGroup gets a group.
 func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.GetGroupRequest]) (*connect.Response[v1pb.Group], error) {
-	group, err := utils.GetGroupByName(ctx, s.store, req.Msg.Name)
+	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -85,8 +85,9 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindGroupMessage{
-		Limit:  &limitPlusOne,
-		Offset: &offset.offset,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
 	}
 	filterQ, err := store.GetListGroupFilter(find, request.Msg.Filter)
 	if err != nil {
@@ -122,7 +123,7 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 
 // CreateGroup creates a group.
 func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1pb.CreateGroupRequest]) (*connect.Response[v1pb.Group], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	groupMessage, err := s.convertToGroupMessage(ctx, req.Msg)
@@ -134,11 +135,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", groupMessage.Email))
 	}
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
-	groupMessage.Workspace = workspace.ResourceID
+	groupMessage.Workspace = common.GetWorkspaceIDFromContext(ctx)
 
 	group, err := s.store.CreateGroup(ctx, groupMessage)
 	if err != nil {
@@ -158,11 +155,11 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 
 // UpdateGroup updates a group.
 func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1pb.UpdateGroupRequest]) (*connect.Response[v1pb.Group], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
-	group, err := utils.GetGroupByName(ctx, s.store, req.Msg.Group.Name)
+	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Group.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -194,7 +191,8 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 	}
 
 	patch := &store.UpdateGroupMessage{
-		ID: group.ID,
+		ID:        group.ID,
+		Workspace: group.Workspace,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -238,7 +236,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 
 // DeleteGroup deletes a group.
 func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1pb.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error) {
-	group, err := utils.GetGroupByName(ctx, s.store, req.Msg.Name)
+	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -255,7 +253,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, err
 	}
 
-	if err := s.store.DeleteGroup(ctx, group.ID); err != nil {
+	if err := s.store.DeleteGroup(ctx, group.Workspace, group.ID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -272,7 +270,7 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 		return nil
 	}
 
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user)
+	ok, err := s.iamManager.CheckPermission(ctx, permission, user, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 	}
@@ -374,7 +372,7 @@ func (s *GroupService) checkGroupPermission(ctx context.Context, req connect.Any
 	}
 
 	if getMemberInGroup(user, group) == nil {
-		ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsGet, user)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsGet, user, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}

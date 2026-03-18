@@ -60,6 +60,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -91,7 +92,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Get environment order.
-	environments, err := s.store.GetEnvironment(ctx)
+	environments, err := s.store.GetEnvironment(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
@@ -115,6 +116,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -179,7 +181,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	}
 
 	// Get environment order once for all rollouts.
-	environments, err := s.store.GetEnvironment(ctx)
+	environments, err := s.store.GetEnvironment(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
@@ -228,6 +230,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -260,7 +263,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	// Check permission: allow if user has bb.rollouts.create permission
-	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.RolloutsCreate, user, project.ResourceID)
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.RolloutsCreate, user, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
@@ -293,7 +296,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	// Get environment order.
-	environments, err := s.store.GetEnvironment(ctx)
+	environments, err := s.store.GetEnvironment(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environments"))
 	}
@@ -322,6 +325,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -431,7 +435,7 @@ func CreateRolloutAndPendingTasks(
 		policy, ok := envPolicies[task.Environment]
 		if !ok {
 			var err error
-			policy, err = s.GetRolloutPolicy(ctx, task.Environment)
+			policy, err = s.GetRolloutPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), task.Environment)
 			if err != nil {
 				// Don't error out entirely just because policy fetch failed for one env, but logging/continuing is better.
 				// However, here we don't have logger injected easily.
@@ -571,7 +575,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	}
 	task := tasks[0]
 
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance"))
 	}
@@ -705,6 +709,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -845,6 +850,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -935,6 +941,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -1107,7 +1114,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 	}
 	task := tasks[0]
 
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance"))
 	}
@@ -1195,8 +1202,8 @@ func filterTasksByStage(tasks []*store.TaskMessage, targetEnvironment *string) (
 	return filteredTasks, nil
 }
 
-func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Store, environment string) (*storepb.RolloutPolicy, error) {
-	policy, err := stores.GetRolloutPolicy(ctx, environment)
+func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Store, workspaceID string, environment string) (*storepb.RolloutPolicy, error) {
+	policy, err := stores.GetRolloutPolicy(ctx, workspaceID, environment)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout policy for environment %s", environment)
 	}
@@ -1211,7 +1218,7 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.
-	ok, err := s.iamManager.CheckPermission(ctx, permission.TaskRunsCreate, user, project.ResourceID)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.TaskRunsCreate, user, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check workspace role")
 	}
@@ -1219,21 +1226,21 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 		return true, nil
 	}
 
-	p, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, environment)
+	p, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), environment)
 	if err != nil {
 		return false, err
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %s IAM policy", project.ResourceID)
 	}
-	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get workspace IAM policy")
 	}
-	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)
-	workspaceRoles := utils.GetUserFormattedRolesMap(ctx, s.store, user, workspacePolicy.Policy)
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, policy.Policy)
+	workspaceRoles := utils.GetUserFormattedRolesMap(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, workspacePolicy.Policy)
 	for k := range workspaceRoles {
 		roles[k] = true
 	}

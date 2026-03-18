@@ -1123,6 +1123,21 @@
         
           
           <li>
+            <a href="#store%2fserver_config.proto">store/server_config.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ServerConfigPayload"><span class="badge">M</span>ServerConfigPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fsetting.proto">store/setting.proto</a>
             <ul>
               
@@ -11159,6 +11174,44 @@ Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/task
     
       
       <div class="file-heading">
+        <h2 id="store/server_config.proto">store/server_config.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ServerConfigPayload">ServerConfigPayload</h3>
+        <p>ServerConfigPayload stores global server-level infrastructure configuration.</p><p>Only contains settings that are truly cross-workspace and cannot be derived</p><p>from any workspace context (e.g., JWT signing secret).</p><p>All other settings live in per-workspace WORKSPACE_PROFILE.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>auth_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Authentication secret for token signing (32-character random string). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/setting.proto">store/setting.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -12098,13 +12151,6 @@ are /[a-z][0-9]-/. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>auth_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Authentication secret for token signing (32-character random string). </p></td>
-                </tr>
               
                 <tr>
                   <td>license</td>

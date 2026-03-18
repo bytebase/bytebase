@@ -1019,7 +1019,7 @@ const changeInstanceActivation = async (on: boolean) => {
     ]);
     useDatabaseV1Store().updateDatabaseInstance(updated);
     // refresh activatedInstanceCount
-    await actuatorStore.fetchServerInfo();
+    await actuatorStore.fetchServerInfo(actuatorStore.workspaceResourceName);
 
     pushNotification({
       module: "bytebase",

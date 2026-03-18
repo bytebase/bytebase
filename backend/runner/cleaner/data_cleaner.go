@@ -116,7 +116,7 @@ func (c *DataCleaner) cleanupStaleHeartbeats(ctx context.Context) {
 }
 
 func (c *DataCleaner) cleanupExportArchives(ctx context.Context) {
-	rowsAffected, err := c.store.DeleteExpiredExportArchives(ctx, exportArchiveRetentionPeriod)
+	rowsAffected, err := c.store.DeleteExpiredExportArchivesAll(ctx, exportArchiveRetentionPeriod)
 	if err != nil {
 		slog.Error("Failed to clean up expired export archives", log.BBError(err))
 		return

@@ -29,6 +29,7 @@ func HashToken(token string) string {
 // claimsMessage is the JWT claims structure for web authentication tokens.
 type claimsMessage struct {
 	jwt.RegisteredClaims
+	WorkspaceID string `json:"workspace_id,omitempty"`
 }
 
 // oauth2ClaimsMessage extends claimsMessage with OAuth2-specific fields.
@@ -38,25 +39,25 @@ type oauth2ClaimsMessage struct {
 }
 
 // GenerateAPIToken generates an API token.
-func GenerateAPIToken(userEmail string, secret string) (string, error) {
+func GenerateAPIToken(userEmail string, workspaceID string, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(userEmail, AccessTokenAudience, expirationTime, []byte(secret))
+	return generateToken(userEmail, workspaceID, AccessTokenAudience, expirationTime, []byte(secret))
 }
 
 // GenerateAccessToken generates an access token for web.
-func GenerateAccessToken(userEmail string, secret string, tokenDuration time.Duration) (string, error) {
+func GenerateAccessToken(userEmail string, workspaceID string, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, AccessTokenAudience, expirationTime, []byte(secret))
+	return generateToken(userEmail, workspaceID, AccessTokenAudience, expirationTime, []byte(secret))
 }
 
 // GenerateMFATempToken generates a temporary token for MFA.
 func GenerateMFATempToken(userEmail string, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, MFATempTokenAudience, expirationTime, []byte(secret))
+	return generateToken(userEmail, "", MFATempTokenAudience, expirationTime, []byte(secret))
 }
 
 // generateToken creates a JWT token for web authentication.
-func generateToken(userEmail string, aud string, expirationTime time.Time, secret []byte) (string, error) {
+func generateToken(userEmail string, workspaceID string, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	claims := &claimsMessage{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  jwt.ClaimStrings{aud},
@@ -65,6 +66,7 @@ func generateToken(userEmail string, aud string, expirationTime time.Time, secre
 			Issuer:    issuer,
 			Subject:   userEmail,
 		},
+		WorkspaceID: workspaceID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -75,13 +77,13 @@ func generateToken(userEmail string, aud string, expirationTime time.Time, secre
 
 // GenerateOAuth2AccessToken generates an access token for OAuth2 clients.
 // The clientID is included in the token claims for audit purposes.
-func GenerateOAuth2AccessToken(userEmail, clientID, secret string, duration time.Duration) (string, error) {
+func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret string, duration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(duration)
-	return generateOAuth2Token(userEmail, clientID, OAuth2AccessTokenAudience, expirationTime, []byte(secret))
+	return generateOAuth2Token(userEmail, clientID, workspaceID, OAuth2AccessTokenAudience, expirationTime, []byte(secret))
 }
 
 // generateOAuth2Token creates a JWT token with OAuth2-specific claims including client_id.
-func generateOAuth2Token(userEmail, clientID, aud string, expirationTime time.Time, secret []byte) (string, error) {
+func generateOAuth2Token(userEmail, clientID, workspaceID, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	claims := &oauth2ClaimsMessage{
 		ClientID: clientID,
 		claimsMessage: claimsMessage{
@@ -92,6 +94,7 @@ func generateOAuth2Token(userEmail, clientID, aud string, expirationTime time.Ti
 				Issuer:    issuer,
 				Subject:   userEmail,
 			},
+			WorkspaceID: workspaceID,
 		},
 	}
 

@@ -34,7 +34,7 @@ func FormatGroupName(group *store.GroupMessage) string {
 
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
 // The role can be either with or without the "roles/" prefix.
-func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role string, policies ...*storepb.IamPolicy) []*store.UserMessage {
+func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, workspace string, role string, policies ...*storepb.IamPolicy) []*store.UserMessage {
 	roleFullName := role
 	if !strings.HasPrefix(role, common.RolePrefix) {
 		roleFullName = common.FormatRole(role)
@@ -64,7 +64,7 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role st
 					}
 					return allUsers
 				}
-				userMessages := GetUsersByMember(ctx, stores, member)
+				userMessages := GetUsersByMember(ctx, stores, workspace, member)
 
 				for _, user := range userMessages {
 					if seen[user.Email] {
@@ -85,12 +85,12 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role st
 //   - Group email (contains @) - used as group ID in legacy deployments
 //
 // This supports both attribute mapping configurations in Azure Entra ID.
-func GetGroupByName(ctx context.Context, stores *store.Store, name string) (*store.GroupMessage, error) {
+func GetGroupByName(ctx context.Context, stores *store.Store, workspace string, name string) (*store.GroupMessage, error) {
 	identifier, err := common.GetGroupEmail(name)
 	if err != nil {
 		return nil, err
 	}
-	find := &store.FindGroupMessage{}
+	find := &store.FindGroupMessage{Workspace: workspace}
 	if strings.Contains(identifier, "@") {
 		find.Email = &identifier
 	} else {
@@ -106,7 +106,8 @@ func GetGroupByName(ctx context.Context, stores *store.Store, name string) (*sto
 		// For legacy SCIM sync attribute mapping, the group ExternalID map to Email
 		// If users keep using this legacy mapping, the new group will have empty email, and the email will set as the ID.
 		return stores.GetGroup(ctx, &store.FindGroupMessage{
-			ID: &identifier,
+			Workspace: workspace,
+			ID:        &identifier,
 		})
 	}
 	return group, nil
@@ -114,7 +115,7 @@ func GetGroupByName(ctx context.Context, stores *store.Store, name string) (*sto
 
 // GetUsersByMember gets user messages by member.
 // The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
-func GetUsersByMember(ctx context.Context, stores *store.Store, member string) []*store.UserMessage {
+func GetUsersByMember(ctx context.Context, stores *store.Store, workspace string, member string) []*store.UserMessage {
 	var users []*store.UserMessage
 	if strings.HasPrefix(member, common.UserNamePrefix) {
 		user := getUserByIdentifier(ctx, stores, member, common.UserNamePrefix)
@@ -132,7 +133,7 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, member string) [
 			users = append(users, user)
 		}
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
-		group, err := GetGroupByName(ctx, stores, member)
+		group, err := GetGroupByName(ctx, stores, workspace, member)
 		if err != nil {
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return users
@@ -172,17 +173,24 @@ func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier, p
 		slog.Error("failed to parse email from identifier", slog.String("identifier", identifier), log.BBError(err))
 		return nil
 	}
-	// GetPrincipalByEmail handles all principal types based on email format
-	user, err := stores.GetPrincipalByEmail(ctx, email)
+	account, err := stores.GetAccountByEmail(ctx, email)
 	if err != nil {
 		slog.Error("failed to get principal by email", slog.String("identifier", identifier), log.BBError(err))
 		return nil
 	}
-	return user
+	if account == nil {
+		return nil
+	}
+	return &store.UserMessage{
+		Email:         account.Email,
+		Name:          account.Name,
+		Type:          account.Type,
+		MemberDeleted: account.MemberDeleted,
+	}
 }
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.
-func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policies ...*storepb.IamPolicy) []*storepb.Binding {
+func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, workspace string, user *store.UserMessage, policies ...*storepb.IamPolicy) []*storepb.Binding {
 	userMemberName := formatMemberNameByType(user)
 
 	var bindings []*storepb.Binding
@@ -204,7 +212,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 					break
 				}
 				if strings.HasPrefix(member, common.GroupPrefix) {
-					group, err := GetGroupByName(ctx, stores, member)
+					group, err := GetGroupByName(ctx, stores, workspace, member)
 					if err != nil {
 						slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 						continue
@@ -234,7 +242,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 
 // MemberContainsUser checks if a member (user, service account, workload identity, or group) contains the specified user.
 // The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
-func MemberContainsUser(ctx context.Context, stores *store.Store, member string, user *store.UserMessage) bool {
+func MemberContainsUser(ctx context.Context, stores *store.Store, workspace string, member string, user *store.UserMessage) bool {
 	if member == common.AllUsers {
 		return true
 	}
@@ -271,7 +279,7 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, member string,
 
 	// Check if member is a group
 	if strings.HasPrefix(member, common.GroupPrefix) {
-		group, err := GetGroupByName(ctx, stores, member)
+		group, err := GetGroupByName(ctx, stores, workspace, member)
 		if err != nil {
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return false
@@ -294,11 +302,11 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, member string,
 // GetUserRolesInIamPolicy returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
 // the returned role name should in the roles/{id} format.
-func GetUserRolesInIamPolicy(ctx context.Context, stores *store.Store, user *store.UserMessage, policies ...*storepb.IamPolicy) []string {
+func GetUserRolesInIamPolicy(ctx context.Context, stores *store.Store, workspace string, user *store.UserMessage, policies ...*storepb.IamPolicy) []string {
 	var roles []string
 
 	for _, policy := range policies {
-		bindings := GetUserIAMPolicyBindings(ctx, stores, user, policy)
+		bindings := GetUserIAMPolicyBindings(ctx, stores, workspace, user, policy)
 		for _, binding := range bindings {
 			roles = append(roles, binding.Role)
 		}
@@ -309,8 +317,8 @@ func GetUserRolesInIamPolicy(ctx context.Context, stores *store.Store, user *sto
 }
 
 // See GetUserRoles. The returned map key format is roles/{role}.
-func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) map[string]bool {
-	roles := GetUserRolesInIamPolicy(ctx, stores, user, projectPolicies...)
+func GetUserFormattedRolesMap(ctx context.Context, stores *store.Store, workspace string, user *store.UserMessage, projectPolicies ...*storepb.IamPolicy) map[string]bool {
+	roles := GetUserRolesInIamPolicy(ctx, stores, workspace, user, projectPolicies...)
 
 	rolesMap := make(map[string]bool)
 	for _, role := range roles {

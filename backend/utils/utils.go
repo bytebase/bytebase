@@ -78,8 +78,8 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 }
 
 // UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
-func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
-	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.ProjectID)
+func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, workspaceID string, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
+	policyMessage, err := stores.GetProjectIamPolicy(ctx, workspaceID, issue.ProjectID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project policy for project %s", issue.ProjectID)
 	}
@@ -135,12 +135,8 @@ func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.St
 	if err != nil {
 		return err
 	}
-	workspace, err := stores.GetWorkspace(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to get workspace")
-	}
 	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspace.ResourceID,
+		Workspace:         workspaceID,
 		Resource:          common.FormatProject(issue.ProjectID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),

@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -101,7 +102,7 @@ type claudeResponse struct {
 // AICompletion is the mixer for AI completion.
 func (s *SQLService) AICompletion(ctx context.Context, req *connect.Request[v1pb.AICompletionRequest]) (*connect.Response[v1pb.AICompletionResponse], error) {
 	request := req.Msg
-	aiSetting, err := s.store.GetAISetting(ctx)
+	aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}

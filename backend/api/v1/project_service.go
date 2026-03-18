@@ -91,6 +91,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindProjectMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		ShowDeleted: req.Msg.ShowDeleted,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -147,6 +148,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindProjectMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		ShowDeleted: req.Msg.ShowDeleted,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -176,14 +178,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 		}
 	}
 
-	ok, err = s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user)
+	ok, err = s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
 		var ps []*store.ProjectMessage
 		for _, project := range projects {
-			ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, project.ResourceID)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for project %q", project.ResourceID))
 			}
@@ -217,13 +219,10 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 
 	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
-	projectMessage.Workspace = workspace.ResourceID
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	projectMessage.Workspace = workspaceID
 
-	setting, err := s.store.GetDataClassificationSetting(ctx)
+	setting, err := s.store.GetDataClassificationSetting(ctx, workspaceID)
 	if err != nil {
 		slog.Error("failed to find classification setting", log.BBError(err))
 	}
@@ -279,6 +278,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 
 	patch := &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
+		Workspace:  project.Workspace,
 	}
 
 	projectSettings := proto.CloneOf(project.Setting)
@@ -287,7 +287,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "title":
 			patch.Title = &req.Msg.Project.Title
 		case "data_classification_config_id":
-			setting, err := s.store.GetDataClassificationSetting(ctx)
+			setting, err := s.store.GetDataClassificationSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get data classification setting"))
 			}
@@ -364,7 +364,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	if err := s.store.UpdateProjects(ctx, patch); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &patch.ResourceID})
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &patch.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -388,6 +388,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		if !project.Deleted {
 			if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 				ResourceID: project.ResourceID,
+				Workspace:  project.Workspace,
 				Delete:     &deletePatch,
 			}); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
@@ -395,7 +396,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		}
 
 		// Permanently delete the project and all related resources (moves databases to default project)
-		if err := s.store.DeleteProject(ctx, project.ResourceID); err != nil {
+		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
 		}
 
@@ -414,6 +415,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	// For archive (soft delete), just mark the project as deleted without touching databases or issues
 	if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
+		Workspace:  project.Workspace,
 		Delete:     &deletePatch,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -435,11 +437,12 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 
 	if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
+		Workspace:  project.Workspace,
 		Delete:     &undeletePatch,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &project.ResourceID})
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &project.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -472,6 +475,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			if !project.Deleted {
 				projectsToSoftDelete = append(projectsToSoftDelete, &store.UpdateProjectMessage{
 					ResourceID: project.ResourceID,
+					Workspace:  project.Workspace,
 					Delete:     &deletePatch,
 				})
 			}
@@ -484,7 +488,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 
 		// Permanently delete all projects (moves databases to default project)
 		for _, project := range projectsToPurge {
-			if err := s.store.DeleteProject(ctx, project.ResourceID); err != nil {
+			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
 			}
 		}
@@ -515,6 +519,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 	for _, project := range projects {
 		updatePatches = append(updatePatches, &store.UpdateProjectMessage{
 			ResourceID: project.ResourceID,
+			Workspace:  project.Workspace,
 			Delete:     &deletePatch,
 		})
 	}
@@ -534,7 +539,9 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -544,7 +551,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found project %s", projectID))
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -562,7 +569,9 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -575,7 +584,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Resource))
 	}
 
-	oldIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	oldIamPolicyMsg, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
@@ -596,12 +605,8 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
-	if _, err := s.store.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspace.ResourceID,
+	if _, err = s.store.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:         workspaceID,
 		Resource:          common.FormatProject(project.ResourceID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),
@@ -613,7 +618,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -738,7 +743,9 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -751,7 +758,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project))
 	}
 
-	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 
@@ -770,6 +777,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 	}
 
 	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -785,7 +793,9 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -798,7 +808,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
 	}
 
-	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile); err != nil {
+	if _, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx)); err != nil {
 		return nil, err
 	}
 
@@ -862,6 +872,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	}
 
 	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -877,7 +888,9 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -906,6 +919,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 	}
 
 	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -916,7 +930,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -926,6 +940,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -1008,6 +1023,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	}
 
 	find := &store.FindProjectMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		ResourceID:  &projectID,
 		ShowDeleted: true,
 	}
@@ -1050,7 +1066,7 @@ func validateIAMPolicy(
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
-	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx)
+	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
@@ -1059,7 +1075,7 @@ func validateIAMPolicy(
 		maximumRoleExpiration = workspaceProfileSetting.MaximumRoleExpiration
 	}
 
-	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{})
+	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}

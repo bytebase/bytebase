@@ -28,6 +28,7 @@ type WorkloadIdentityMessage struct {
 
 // FindWorkloadIdentityMessage is the message for finding workload identities.
 type FindWorkloadIdentityMessage struct {
+	Workspace   string
 	Email       *string
 	ShowDeleted bool
 	Limit       *int
@@ -57,9 +58,46 @@ type UpdateWorkloadIdentityMessage struct {
 	Config *storepb.WorkloadIdentityConfig
 }
 
-// GetWorkloadIdentityByEmail gets a workload identity by email.
+// GetWorkloadIdentityByEmail gets a workload identity by email without workspace filter.
+// For use by login flow, runners, and GetAccountByEmail (cross-workspace).
 func (s *Store) GetWorkloadIdentityByEmail(ctx context.Context, email string) (*WorkloadIdentityMessage, error) {
-	wis, err := s.ListWorkloadIdentities(ctx, &FindWorkloadIdentityMessage{Email: &email, ShowDeleted: true})
+	q := qb.Q().Space(`
+		SELECT deleted, email, name, workspace, project, config
+		FROM workload_identity
+		WHERE email = ?
+	`, strings.ToLower(email))
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var wi WorkloadIdentityMessage
+	var project sql.NullString
+	var configBytes []byte
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&wi.MemberDeleted, &wi.Email, &wi.Name, &wi.Workspace, &project, &configBytes,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if project.Valid {
+		wi.Project = &project.String
+	}
+	var config storepb.WorkloadIdentityConfig
+	if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, &config); err != nil {
+		return nil, err
+	}
+	wi.Config = &config
+	return &wi, nil
+}
+
+// GetWorkloadIdentity gets a workload identity by workspace and email.
+// For use by API layer (workspace-scoped).
+func (s *Store) GetWorkloadIdentity(ctx context.Context, workspace string, email string) (*WorkloadIdentityMessage, error) {
+	wis, err := s.ListWorkloadIdentities(ctx, &FindWorkloadIdentityMessage{Workspace: workspace, Email: &email, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +109,7 @@ func (s *Store) GetWorkloadIdentityByEmail(ctx context.Context, email string) (*
 
 // ListWorkloadIdentities lists workload identities.
 func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadIdentityMessage) ([]*WorkloadIdentityMessage, error) {
-	where := qb.Q().Space("TRUE")
+	where := qb.Q().Space("workspace = ?", find.Workspace)
 
 	if v := find.Email; v != nil {
 		where.And("email = ?", strings.ToLower(*v))
@@ -212,9 +250,9 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 		return wi, nil
 	}
 
-	sqlStr, args, err := qb.Q().Space(`UPDATE workload_identity SET ? WHERE email = ?
+	sqlStr, args, err := qb.Q().Space(`UPDATE workload_identity SET ? WHERE email = ? AND workspace = ?
 		RETURNING deleted, email, name, workspace, project, config`,
-		set, wi.Email).ToSQL()
+		set, wi.Email, wi.Workspace).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

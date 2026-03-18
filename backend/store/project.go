@@ -35,7 +35,7 @@ func (p *ProjectMessage) GetName() string {
 
 // FindProjectMessage is the message for finding projects.
 type FindProjectMessage struct {
-	Workspace   *string
+	Workspace   string
 	ResourceID  *string
 	ResourceIDs []string
 	ShowDeleted bool
@@ -48,6 +48,7 @@ type FindProjectMessage struct {
 // UpdateProjectMessage is the message for updating a project.
 type UpdateProjectMessage struct {
 	ResourceID string
+	Workspace  string
 
 	Title   *string
 	Setting *storepb.Project
@@ -83,12 +84,9 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 
 // ListProjects lists all projects.
 func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE TRUE")
+	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE workspace = ?", find.Workspace)
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
-	}
-	if v := find.Workspace; v != nil {
-		q.And("workspace = ?", *v)
 	}
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -107,6 +105,7 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		}
 		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	} else {
+		// TODO(ed): order won't work
 		q.Space("ORDER BY project.resource_id")
 	}
 	if v := find.Limit; v != nil {
@@ -245,7 +244,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policyMessage.ResourceType, policyMessage.Resource, policyMessage.Type), policyMessage)
+	s.policyCache.Add(getPolicyCacheKey(policyMessage.Workspace, policyMessage.ResourceType, policyMessage.Resource, policyMessage.Type), policyMessage)
 	s.storeProjectCache(project)
 	return project, nil
 }
@@ -288,8 +287,8 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 			deleted = COALESCE(u.deleted, p.deleted),
 			setting = COALESCE(u.setting::jsonb, p.setting)
 		FROM unnest(?::text[], ?::text[], ?::bool[], ?::text[]) AS u(resource_id, name, deleted, setting)
-		WHERE p.resource_id = u.resource_id
-	`, resourceIDs, titles, deleteds, settings)
+		WHERE p.resource_id = u.resource_id AND p.workspace = ?
+	`, resourceIDs, titles, deleteds, settings, patches[0].Workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -316,7 +315,7 @@ func (s *Store) removeProjectCache(resourceID string) {
 // - Administrative cleanup of old soft-deleted projects
 // - Test cleanup
 // Following AIP-164/165, this only works on projects where deleted = TRUE.
-func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
+func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID string) error {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -336,6 +335,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	// Delete policy entries that reference this project
 	q = qb.Q().Space("DELETE FROM policy")
 	q.Space("WHERE (resource_type = ? AND resource = 'projects/' || ?)", storepb.Policy_PROJECT.String(), resourceID)
+	q.And("workspace = ?", workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build policy delete query")
@@ -501,8 +501,8 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 
 	// Delete worksheet_organizer entries
 	q = qb.Q().Space(`DELETE FROM worksheet_organizer
-		WHERE principal IN (SELECT email FROM service_account WHERE project = ?)
-		   OR principal IN (SELECT email FROM workload_identity WHERE project = ?)`, resourceID, resourceID)
+		WHERE principal IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR principal IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build worksheet_organizer delete query")
@@ -513,8 +513,8 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 
 	// Delete worksheets created by project service accounts or workload identities
 	q = qb.Q().Space(`DELETE FROM worksheet
-		WHERE creator IN (SELECT email FROM service_account WHERE project = ?)
-		   OR creator IN (SELECT email FROM workload_identity WHERE project = ?)`, resourceID, resourceID)
+		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build worksheet delete query for principals")
@@ -525,8 +525,8 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 
 	// Nullify revision.deleter references
 	q = qb.Q().Space(`UPDATE revision SET deleter = NULL
-		WHERE deleter IN (SELECT email FROM service_account WHERE project = ?)
-		   OR deleter IN (SELECT email FROM workload_identity WHERE project = ?)`, resourceID, resourceID)
+		WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build revision update query")
@@ -536,7 +536,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	}
 
 	// Delete project service accounts
-	q = qb.Q().Space("DELETE FROM service_account WHERE project = ?", resourceID)
+	q = qb.Q().Space("DELETE FROM service_account WHERE project = ? AND workspace = ?", resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build service_account delete query")
@@ -546,7 +546,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	}
 
 	// Delete project workload identities
-	q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ?", resourceID)
+	q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ? AND workspace = ?", resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build workload_identity delete query")
@@ -556,7 +556,7 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 	}
 
 	// Finally, delete the project itself (only if it's marked as deleted)
-	q = qb.Q().Space("DELETE FROM project WHERE resource_id = ? AND deleted = TRUE", resourceID)
+	q = qb.Q().Space("DELETE FROM project WHERE resource_id = ? AND deleted = TRUE AND workspace = ?", resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build project delete query")

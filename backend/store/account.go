@@ -7,16 +7,25 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// GetPrincipalByEmail gets any principal (user, service account, or workload identity) by email.
-// This is used by the auth layer where the JWT subject can be any principal type.
-// It determines the principal type by the email format and calls the appropriate method.
-func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMessage, error) {
-	// Use the unified cache first for all types
-	if v, ok := s.userEmailCache.Get(email); ok && s.enableCache {
-		return v, nil
-	}
+// AccountMessage is a unified account representation for the auth layer.
+// It contains only the fields needed for authentication and authorization,
+// regardless of the underlying principal type (END_USER, SERVICE_ACCOUNT, WORKLOAD_IDENTITY).
+type AccountMessage struct {
+	Email string
+	Name  string
+	Type  storepb.PrincipalType
+	// Workspace is the workspace resource ID.
+	// Empty for END_USER (global identity, workspace resolved via IAM policy).
+	// Populated for SERVICE_ACCOUNT and WORKLOAD_IDENTITY (workspace-scoped).
+	Workspace     string
+	PasswordHash  string
+	MemberDeleted bool
+}
 
-	// Determine principal type by email format and query accordingly
+// GetAccountByEmail gets any principal (user, service account, or workload identity) by email.
+// Used by the auth layer (login, token validation) and runners.
+// Queries cross-workspace — safe because all PKs (email, id) are globally unique.
+func (s *Store) GetAccountByEmail(ctx context.Context, email string) (*AccountMessage, error) {
 	if common.IsServiceAccountEmail(email) {
 		sa, err := s.GetServiceAccountByEmail(ctx, email)
 		if err != nil {
@@ -25,18 +34,14 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 		if sa == nil {
 			return nil, nil
 		}
-		// Convert to UserMessage for compatibility with auth layer
-		user := &UserMessage{
+		return &AccountMessage{
 			Email:         sa.Email,
 			Name:          sa.Name,
+			Workspace:     sa.Workspace,
 			PasswordHash:  sa.ServiceKeyHash,
 			Type:          storepb.PrincipalType_SERVICE_ACCOUNT,
 			MemberDeleted: sa.MemberDeleted,
-			MFAConfig:     &storepb.MFAConfig{},
-			Profile:       &storepb.UserProfile{},
-		}
-		s.userEmailCache.Add(user.Email, user)
-		return user, nil
+		}, nil
 	}
 
 	if common.IsWorkloadIdentityEmail(email) {
@@ -47,19 +52,28 @@ func (s *Store) GetPrincipalByEmail(ctx context.Context, email string) (*UserMes
 		if wi == nil {
 			return nil, nil
 		}
-		// Convert to UserMessage for compatibility with auth layer
-		user := &UserMessage{
+		return &AccountMessage{
 			Email:         wi.Email,
 			Name:          wi.Name,
+			Workspace:     wi.Workspace,
 			Type:          storepb.PrincipalType_WORKLOAD_IDENTITY,
 			MemberDeleted: wi.MemberDeleted,
-			MFAConfig:     &storepb.MFAConfig{},
-			Profile:       &storepb.UserProfile{},
-		}
-		s.userEmailCache.Add(user.Email, user)
-		return user, nil
+		}, nil
 	}
 
 	// Default to end user lookup.
-	return s.GetUserByEmail(ctx, email)
+	user, err := s.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+	return &AccountMessage{
+		Email:         user.Email,
+		Name:          user.Name,
+		Type:          storepb.PrincipalType_END_USER,
+		PasswordHash:  user.PasswordHash,
+		MemberDeleted: user.MemberDeleted,
+	}, nil
 }

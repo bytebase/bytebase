@@ -154,10 +154,38 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.store = stores
 	sheetManager := sheet.NewManager()
 
-	// Initialize sample instance manager and start sample instances if they exist
-	s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
-	if err := s.sampleInstanceManager.StartIfExist(ctx); err != nil {
-		slog.Warn("failed to start sample instances", log.BBError(err))
+	if !s.profile.SaaS {
+		// TODO(ed): sample instance is only available for self-host
+		workspaceID, err := stores.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get workspace ID")
+		}
+
+		// Initialize sample instance manager and start sample instances if they exist
+		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
+		if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
+			slog.Warn("failed to start sample instances", log.BBError(err))
+		}
+
+		// TODO(ed): EnableDebug should only be able to be configured in self-host
+		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get workspace profile setting")
+		}
+		profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
+		if workspaceProfile.EnableDebug {
+			log.LogLevel.Set(slog.LevelDebug)
+		}
+
+		// TODO(ed): EnableMetricCollection should only be able to be configured in self-host
+		// TODO(ed): refactor the telemetry, do NOT pass the workspaceID during initialization.
+		// Initialize telemetry reporter for hub.bytebase.com event reporting.
+		telemetry.InitGlobalReporter(
+			workspaceID,
+			profile.Version,
+			profile.GitCommit,
+			workspaceProfile.GetEnableMetricCollection(),
+		)
 	}
 
 	s.bus, err = bus.New()
@@ -165,41 +193,16 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create message bus")
 	}
 
-	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores)
+	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores, profile.SaaS)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}
-	// Cache the license.
-	s.licenseService.LoadSubscription(ctx)
 
-	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
+	// The auth secret is a global infrastructure value stored in server_config.
+	secret, err := s.store.GetAuthSecret(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get workspace profile setting")
+		return nil, errors.Wrap(err, "failed to get auth secret")
 	}
-	profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
-	if workspaceProfile.EnableDebug {
-		log.LogLevel.Set(slog.LevelDebug)
-	}
-
-	// Settings are now initialized in the database schema (LATEST.sql)
-	systemSetting, err := s.store.GetSystemSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get system setting")
-	}
-	secret := systemSetting.AuthSecret
-
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get workspace")
-	}
-
-	// Initialize telemetry reporter for hub.bytebase.com event reporting.
-	telemetry.InitGlobalReporter(
-		workspace.ResourceID,
-		profile.Version,
-		profile.GitCommit,
-		workspaceProfile.GetEnableMetricCollection(),
-	)
 
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
@@ -279,16 +282,20 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
 
-	// Check workspace setting and set audit logger runtime flag
-	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
-	if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
-		// Validate license before enabling (prevents usage after license downgrade/expiry)
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-			slog.Warn("audit logging enabled in workspace settings but license insufficient, keeping disabled",
-				log.BBError(err))
-		} else {
-			s.profile.RuntimeEnableAuditLogStdout.Store(true)
-			slog.Info("audit logging to stdout enabled via workspace setting")
+	// TODO(ed): the GetEnableAuditLogStdout should only be able to be configured in self-host
+	if !s.profile.SaaS {
+		// Check workspace setting and set audit logger runtime flag
+		runWorkspaceID, _ := s.store.GetWorkspaceID(ctx)
+		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, runWorkspaceID)
+		if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
+			// Validate license before enabling (prevents usage after license downgrade/expiry)
+			if err := s.licenseService.IsFeatureEnabled(ctx, runWorkspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+				slog.Warn("audit logging enabled in workspace settings but license insufficient, keeping disabled",
+					log.BBError(err))
+			} else {
+				s.profile.RuntimeEnableAuditLogStdout.Store(true)
+				slog.Info("audit logging to stdout enabled via workspace setting")
+			}
 		}
 	}
 

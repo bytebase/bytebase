@@ -3,6 +3,12 @@
 -- We will use the IAM policy to list the principal's workspaces.
 -----------------------
 
+-- Global server configuration (single row, not workspace-scoped).
+CREATE TABLE server_config (
+    -- Stored as ServerConfigPayload (proto/store/store/server_config.proto)
+    payload     jsonb NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE workspace (
     resource_id text PRIMARY KEY,
     name        text NOT NULL,
@@ -58,8 +64,6 @@ CREATE TABLE role (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_role_unique_workspace_resource_id ON role(workspace, resource_id);
-
 -- Policy
 -- policy stores the policies for each resources.
 CREATE TABLE policy (
@@ -87,6 +91,7 @@ CREATE TABLE policy (
 );
 
 CREATE INDEX idx_policy_workspace ON policy(workspace);
+CREATE UNIQUE INDEX idx_policy_unique_workspace_resource ON policy(workspace, resource_type, resource, type);
 
 -- idp stores generic identity provider.
 CREATE TABLE idp (
@@ -99,8 +104,6 @@ CREATE TABLE idp (
     -- Stored as IdentityProviderConfig (proto/store/store/idp.proto)
     config jsonb NOT NULL DEFAULT '{}'
 );
-
-CREATE UNIQUE INDEX idx_idp_unique_workspace_resource_id ON idp(workspace, resource_id);
 
 CREATE TABLE user_group (
     id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -161,7 +164,6 @@ CREATE TABLE project (
     setting jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_project_unique_workspace_resource_id ON project(workspace, resource_id);
 CREATE INDEX idx_project_workspace ON project(workspace);
 
 -- service_account
@@ -414,7 +416,6 @@ CREATE TABLE instance (
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_instance_unique_workspace_resource_id ON instance(workspace, resource_id);
 CREATE INDEX idx_instance_workspace ON instance(workspace);
 CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
 
@@ -577,6 +578,7 @@ CREATE TABLE task_run_log (
 
 CREATE TABLE oauth2_client (
     client_id text PRIMARY KEY,
+    workspace text NOT NULL REFERENCES workspace(resource_id),
     client_secret_hash text NOT NULL,
     config jsonb NOT NULL,
     last_active_at timestamptz NOT NULL DEFAULT now()
@@ -600,6 +602,7 @@ CREATE TABLE oauth2_refresh_token (
 CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_code(expires_at);
 CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
 CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);
+CREATE INDEX idx_oauth2_client_workspace ON oauth2_client(workspace);
 
 -- Web refresh tokens for session management
 CREATE TABLE web_refresh_token (
@@ -626,6 +629,11 @@ BEGIN
     INTO auth_secret
     FROM generate_series(1, 32);
 
+  -- Global server config (auth secret only).
+  INSERT INTO server_config (payload) VALUES (
+    json_build_object('authSecret', auth_secret)
+  );
+
   -- Create the default workspace.
   INSERT INTO workspace (resource_id, name) VALUES (ws_id, 'Default Workspace');
 
@@ -634,7 +642,7 @@ BEGIN
 
   -- Initialize settings.
   INSERT INTO setting (name, workspace, value) VALUES ('SYSTEM', ws_id,
-    json_build_object('authSecret', auth_secret));
+    json_build_object('license', ''));
   INSERT INTO setting (name, workspace, value) VALUES ('APP_IM', ws_id, '{}'::jsonb);
   INSERT INTO setting (name, workspace, value) VALUES ('DATA_CLASSIFICATION', ws_id, '{}'::jsonb);
   INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_APPROVAL', ws_id,

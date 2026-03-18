@@ -360,8 +360,6 @@ func (AISetting_Provider) EnumDescriptor() ([]byte, []int) {
 
 type SystemSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Authentication secret for token signing (32-character random string).
-	AuthSecret string `protobuf:"bytes,1,opt,name=auth_secret,json=authSecret,proto3" json:"auth_secret,omitempty"`
 	// Enterprise license JWT token.
 	License       string `protobuf:"bytes,3,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -396,13 +394,6 @@ func (x *SystemSetting) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SystemSetting.ProtoReflect.Descriptor instead.
 func (*SystemSetting) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *SystemSetting) GetAuthSecret() string {
-	if x != nil {
-		return x.AuthSecret
-	}
-	return ""
 }
 
 func (x *SystemSetting) GetLicense() string {
@@ -2404,10 +2395,8 @@ var File_store_setting_proto protoreflect.FileDescriptor
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
-	"\rSystemSetting\x12\x1f\n" +
-	"\vauth_secret\x18\x01 \x01(\tR\n" +
-	"authSecret\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x02\x10\x03\"\xcf\x0f\n" +
+	"\rSystemSetting\x12\x18\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xcf\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +

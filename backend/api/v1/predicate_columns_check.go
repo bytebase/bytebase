@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -14,17 +15,17 @@ import (
 func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
 	var result [][]base.ColumnResource
 
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find classification setting")
 	}
 
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find semantic types setting")
 	}
@@ -99,7 +100,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 		if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
 			for _, e := range policy.Exemptions {
 				for _, member := range e.Members {
-					if utils.MemberContainsUser(ctx, s.store, member, currentPrincipal) {
+					if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
 						exemptions = append(exemptions, e)
 						break
 					}

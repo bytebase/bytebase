@@ -175,11 +175,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	var parents []string
 	if authContext.HasWorkspaceResource() {
-		workspace, err := storage.GetWorkspace(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace")
-		}
-		parents = append(parents, common.FormatWorkspace(workspace.ResourceID))
+		parents = append(parents, common.FormatWorkspace(common.GetWorkspaceIDFromContext(ctx)))
 	} else {
 		for _, projectID := range authContext.GetProjectResources() {
 			parents = append(parents, common.FormatProject(projectID))
@@ -215,11 +211,8 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
 		}
-		workspaceForAudit, err := storage.GetWorkspace(createAuditLogCtx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace for audit log")
-		}
-		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceForAudit.ResourceID, p); err != nil {
+		workspaceIDForAudit := common.GetWorkspaceIDFromContext(createAuditLogCtx)
+		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
 			return err
 		}
 

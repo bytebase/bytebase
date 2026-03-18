@@ -41,11 +41,7 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 		return nil, err
 	}
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
-	reviewConfigMessage.Workspace = workspace.ResourceID
+	reviewConfigMessage.Workspace = common.GetWorkspaceIDFromContext(ctx)
 
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
@@ -60,7 +56,7 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 
 // ListReviewConfigs lists the review configs.
 func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *connect.Request[v1pb.ListReviewConfigsRequest]) (*connect.Response[v1pb.ListReviewConfigsResponse], error) {
-	messages, err := s.store.ListReviewConfigs(ctx, &store.FindReviewConfigMessage{})
+	messages, err := s.store.ListReviewConfigs(ctx, &store.FindReviewConfigMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -83,7 +79,7 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, req *connect.
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	message, err := s.store.GetReviewConfig(ctx, id)
+	message, err := s.store.GetReviewConfig(ctx, common.GetWorkspaceIDFromContext(ctx), id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -104,7 +100,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	existed, err := s.store.GetReviewConfig(ctx, id)
+	existed, err := s.store.GetReviewConfig(ctx, common.GetWorkspaceIDFromContext(ctx), id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review config %q", id))
 	}
@@ -118,7 +114,8 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 	}
 
 	patch := &store.PatchReviewConfigMessage{
-		ID: id,
+		ID:        id,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 	}
 
 	for _, path := range req.Msg.UpdateMask.Paths {
@@ -161,13 +158,14 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	if err := s.store.DeleteReviewConfig(ctx, id); err != nil {
+	if err := s.store.DeleteReviewConfig(ctx, common.GetWorkspaceIDFromContext(ctx), id); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to delete review config"))
 	}
 
 	policyType := storepb.Policy_TAG
 	policies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
-		Type: &policyType,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Type:      &policyType,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list tag policy"))
@@ -194,6 +192,7 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 		if _, err := s.store.UpdatePolicy(ctx, &store.UpdatePolicyMessage{
 			ResourceType: policy.ResourceType,
 			Resource:     policy.Resource,
+			Workspace:    policy.Workspace,
 			Payload:      &patch,
 		}); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update tag policy"))
@@ -231,8 +230,9 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
 	policyType := storepb.Policy_TAG
 	tagPolicies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
-		Type:    &policyType,
-		ShowAll: false,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Type:      &policyType,
+		ShowAll:   false,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list tag policy"))
@@ -260,7 +260,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 			if err != nil {
 				return nil, err
 			}
-			environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
+			environment, err := s.store.GetEnvironmentByID(ctx, common.GetWorkspaceIDFromContext(ctx), environmentID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get environment %s", environmentID))
 			}
@@ -274,6 +274,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				return nil, err
 			}
 			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+				Workspace:   common.GetWorkspaceIDFromContext(ctx),
 				ResourceID:  &projectID,
 				ShowDeleted: false,
 			})

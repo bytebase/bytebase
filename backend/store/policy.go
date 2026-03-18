@@ -23,8 +23,8 @@ type IamPolicyMessage struct {
 	Etag   string
 }
 
-func getIamPolicyCacheKey(resourceType storepb.Policy_Resource, resourceID string) string {
-	return fmt.Sprintf("iam/%s/%s", resourceType, resourceID)
+func getIamPolicyCacheKey(workspace string, resourceType storepb.Policy_Resource, resourceID string) string {
+	return fmt.Sprintf("iam/%s/%s/%s", workspace, resourceType, resourceID)
 }
 
 // generateEtag generates etag for the given body.
@@ -32,45 +32,27 @@ func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
 }
 
-// GetWorkspaceResourceName returns the workspace resource name "workspaces/{id}".
-func (s *Store) GetWorkspaceResourceName(ctx context.Context) (string, error) {
-	workspace, err := s.GetWorkspace(ctx)
-	if err != nil {
-		return "", err
-	}
-	return common.FormatWorkspace(workspace.ResourceID), nil
-}
-
-func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
-	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (s *Store) GetWorkspaceIamPolicy(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {
+	workspaceResource := common.FormatWorkspace(workspaceID)
 	resourceType := storepb.Policy_WORKSPACE
-	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
+	return s.getIamPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &workspaceResource,
 	})
-	if err != nil {
-		return nil, err
-	}
-	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource), policy)
-	return policy, nil
 }
 
 type PatchIamPolicyMessage struct {
-	Member string
-	Roles  []string
+	Workspace string
+	Member    string
+	Roles     []string
 }
 
 // PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
 func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*IamPolicyMessage, error) {
-	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
-	if err != nil {
-		return nil, err
-	}
+	workspaceResource := common.FormatWorkspace(patch.Workspace)
 
-	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx)
+	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx, patch.Workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +91,8 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		return nil, err
 	}
 
-	workspace, err := s.GetWorkspace(ctx)
-	if err != nil {
-		return nil, err
-	}
 	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
-		Workspace:         workspace.ResourceID,
+		Workspace:         patch.Workspace,
 		ResourceType:      storepb.Policy_WORKSPACE,
 		Resource:          workspaceResource,
 		Payload:           string(policyPayload),
@@ -127,45 +105,36 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	}
 
 	// Invalidate IAM policy cache after mutation.
-	s.iamPolicyCache.Remove(getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource))
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, storepb.Policy_WORKSPACE, workspaceResource))
 
-	return s.GetWorkspaceIamPolicy(ctx)
+	return s.GetWorkspaceIamPolicy(ctx, patch.Workspace)
 }
 
-func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
-	resourceType := storepb.Policy_PROJECT
+func (s *Store) GetProjectIamPolicy(ctx context.Context, workspaceID string, projectID string) (*IamPolicyMessage, error) {
 	resource := common.FormatProject(projectID)
-	policy, err := s.getIamPolicy(ctx, &FindPolicyMessage{
+	resourceType := storepb.Policy_PROJECT
+	return s.getIamPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
 	})
-	if err != nil {
-		return nil, err
-	}
-	s.iamPolicyCache.Add(getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID), policy)
-	return policy, nil
 }
 
-// GetWorkspaceIamPolicySnapshot returns the workspace IAM policy with snapshot reads (with cache).
-func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context) (*IamPolicyMessage, error) {
-	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
-	if err != nil {
-		return nil, err
-	}
-	key := getIamPolicyCacheKey(storepb.Policy_WORKSPACE, workspaceResource)
+func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {
+	workspaceResource := common.FormatWorkspace(workspaceID)
+	key := getIamPolicyCacheKey(workspaceID, storepb.Policy_WORKSPACE, workspaceResource)
 	if v, ok := s.iamPolicyCache.Get(key); ok {
 		return v, nil
 	}
-	return s.GetWorkspaceIamPolicy(ctx)
+	return s.GetWorkspaceIamPolicy(ctx, workspaceID)
 }
 
-// GetProjectIamPolicySnapshot returns the project IAM policy with snapshot reads (with cache).
-func (s *Store) GetProjectIamPolicySnapshot(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
-	key := getIamPolicyCacheKey(storepb.Policy_PROJECT, projectID)
+func (s *Store) GetProjectIamPolicySnapshot(ctx context.Context, workspaceID string, projectID string) (*IamPolicyMessage, error) {
+	key := getIamPolicyCacheKey(workspaceID, storepb.Policy_PROJECT, projectID)
 	if v, ok := s.iamPolicyCache.Get(key); ok {
 		return v, nil
 	}
-	return s.GetProjectIamPolicy(ctx, projectID)
+	return s.GetProjectIamPolicy(ctx, workspaceID, projectID)
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
@@ -206,11 +175,12 @@ func GetDefaultRolloutPolicy() *storepb.RolloutPolicy {
 	}
 }
 
-func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
+func (s *Store) GetRolloutPolicy(ctx context.Context, workspaceID string, environment string) (*storepb.RolloutPolicy, error) {
 	resource := common.FormatEnvironment(environment)
 	resourceType := storepb.Policy_ENVIRONMENT
 	pType := storepb.Policy_ROLLOUT
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -253,16 +223,13 @@ func formatEffectiveQueryDataPolicy(policy *storepb.QueryDataPolicy) *EffectiveQ
 	}
 }
 
-func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName string) (*EffectiveQueryDataPolicy, error) {
-	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
+func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, workspaceID string, projectFullName string) (*EffectiveQueryDataPolicy, error) {
+	workspaceResource := common.FormatWorkspace(workspaceID)
+	workspacePolicy, err := s.getQueryDataPolicy(ctx, workspaceID, workspaceResource)
 	if err != nil {
 		return nil, err
 	}
-	workspacePolicy, err := s.getQueryDataPolicy(ctx, workspaceResource)
-	if err != nil {
-		return nil, err
-	}
-	projectPolicy, err := s.getQueryDataPolicy(ctx, projectFullName)
+	projectPolicy, err := s.getQueryDataPolicy(ctx, workspaceID, projectFullName)
 	if err != nil {
 		return nil, err
 	}
@@ -270,12 +237,12 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName
 	formatWorkspacePolicy := formatEffectiveQueryDataPolicy(workspacePolicy)
 	formatProjectPolicy := formatEffectiveQueryDataPolicy(projectPolicy)
 
-	maximumResultSize, err := s.GetSQLResultSize(ctx)
+	maximumResultSize, err := s.GetSQLResultSize(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	queryTimeout, err := s.GetQueryTimeoutInSeconds(ctx)
+	queryTimeout, err := s.GetQueryTimeoutInSeconds(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -290,13 +257,14 @@ func (s *Store) GetEffectiveQueryDataPolicy(ctx context.Context, projectFullName
 	}, nil
 }
 
-func (s *Store) getQueryDataPolicy(ctx context.Context, resource string) (*storepb.QueryDataPolicy, error) {
+func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, resource string) (*storepb.QueryDataPolicy, error) {
 	resourceType, _, err := common.GetPolicyResourceTypeAndResource(resource)
 	if err != nil {
 		return nil, err
 	}
 	pType := storepb.Policy_QUERY_DATA
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -321,7 +289,7 @@ type reviewConfigResource struct {
 }
 
 // GetReviewConfigForDatabase will get the review config for a database.
-func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
+func (s *Store) GetReviewConfigForDatabase(ctx context.Context, workspaceID string, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
 	resources := []*reviewConfigResource{}
 	if database.EffectiveEnvironmentID != nil {
 		resources = append(resources, &reviewConfigResource{
@@ -334,7 +302,7 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 		resource:     common.FormatProject(database.ProjectID),
 	})
 	for _, v := range resources {
-		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
+		reviewConfig, err := s.getReviewConfigByResource(ctx, workspaceID, v.resourceType, v.resource)
 		if err != nil {
 			slog.Debug("failed to get review config", slog.String("resource_type", v.resourceType.String()), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
@@ -349,10 +317,11 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 	return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for database %s not found", database.DatabaseName)}
 }
 
-func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewConfigPayload, error) {
+func (s *Store) getReviewConfigByResource(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewConfigPayload, error) {
 	pType := storepb.Policy_TAG
 
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -381,7 +350,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 		return nil, errors.Wrapf(err, "failed to extract review config %s", reviewConfigName)
 	}
 
-	reviewConfig, err := s.GetReviewConfig(ctx, reviewConfigID)
+	reviewConfig, err := s.GetReviewConfig(ctx, workspaceID, reviewConfigID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,14 +365,12 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 }
 
 // GetMaskingRulePolicy will get the masking rule policy.
-func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
-	workspaceResource, err := s.GetWorkspaceResourceName(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (s *Store) GetMaskingRulePolicy(ctx context.Context, workspaceID string) (*storepb.MaskingRulePolicy, error) {
+	workspaceResource := common.FormatWorkspace(workspaceID)
 	resourceType := storepb.Policy_WORKSPACE
 	pType := storepb.Policy_MASKING_RULE
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &workspaceResource,
 		Type:         &pType,
@@ -425,11 +392,12 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 }
 
 // GetMaskingExemptionPolicyByProject gets the masking exemption policy for a project.
-func (s *Store) GetMaskingExemptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExemptionPolicy, error) {
+func (s *Store) GetMaskingExemptionPolicyByProject(ctx context.Context, workspaceID string, projectID string) (*storepb.MaskingExemptionPolicy, error) {
 	resourceType := storepb.Policy_PROJECT
 	resource := common.FormatProject(projectID)
 	pType := storepb.Policy_MASKING_EXEMPTION
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -465,6 +433,7 @@ type PolicyMessage struct {
 
 // FindPolicyMessage is the message for finding policies.
 type FindPolicyMessage struct {
+	Workspace    string
 	ResourceType *storepb.Policy_Resource
 	Resource     *string
 	Type         *storepb.Policy_Type
@@ -477,6 +446,7 @@ type UpdatePolicyMessage struct {
 	ResourceType      storepb.Policy_Resource
 	Resource          string
 	Type              storepb.Policy_Type
+	Workspace         string
 	InheritFromParent *bool
 	Payload           *string
 	Enforce           *bool
@@ -485,7 +455,7 @@ type UpdatePolicyMessage struct {
 // GetPolicy gets a policy.
 func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
 	if find.ResourceType != nil && find.Resource != nil && find.Type != nil {
-		if v, ok := s.policyCache.Get(getPolicyCacheKey(*find.ResourceType, *find.Resource, *find.Type)); ok && s.enableCache {
+		if v, ok := s.policyCache.Get(getPolicyCacheKey(find.Workspace, *find.ResourceType, *find.Resource, *find.Type)); ok && s.enableCache {
 			return v, nil
 		}
 	}
@@ -499,7 +469,7 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 	if len(policies) == 0 {
 		// Cache the policy for not found as well to reduce the look up latency.
 		if find.ResourceType != nil && find.Resource != nil && find.Type != nil {
-			s.policyCache.Add(getPolicyCacheKey(*find.ResourceType, *find.Resource, *find.Type), nil)
+			s.policyCache.Add(getPolicyCacheKey(find.Workspace, *find.ResourceType, *find.Resource, *find.Type), nil)
 		}
 		return nil, nil
 	}
@@ -508,7 +478,7 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 	}
 	policy := policies[0]
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
@@ -526,8 +496,8 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 			payload,
 			enforce
 		FROM policy
-		WHERE TRUE
-	`)
+		WHERE workspace = ?
+	`, find.Workspace)
 
 	if v := find.ResourceType; v != nil {
 		q.And("resource_type = ?", v.String())
@@ -586,7 +556,7 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 	}
 
 	for _, policy := range policyList {
-		s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
+		s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
 	}
 
 	return policyList, nil
@@ -609,7 +579,7 @@ func (s *Store) CreatePolicy(ctx context.Context, create *PolicyMessage) (*Polic
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
@@ -628,7 +598,7 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		set.Comma("enforce = ?", *v)
 	}
 
-	query, args, err := qb.Q().Space("UPDATE policy SET ? WHERE resource_type = ? AND resource = ? AND type = ? RETURNING payload, inherit_from_parent, enforce, updated_at", set, patch.ResourceType, patch.Resource, patch.Type.String()).ToSQL()
+	query, args, err := qb.Q().Space("UPDATE policy SET ? WHERE resource_type = ? AND resource = ? AND type = ? AND workspace = ? RETURNING payload, inherit_from_parent, enforce, updated_at", set, patch.ResourceType, patch.Resource, patch.Type.String(), patch.Workspace).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
@@ -651,17 +621,18 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
 
 // DeletePolicy deletes the policy.
 func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
-	q := qb.Q().Space("DELETE FROM policy WHERE resource_type = ? AND resource = ? AND type = ?",
+	q := qb.Q().Space("DELETE FROM policy WHERE resource_type = ? AND resource = ? AND type = ? AND workspace = ?",
 		policy.ResourceType,
 		policy.Resource,
 		policy.Type.String(),
+		policy.Workspace,
 	)
 
 	query, args, err := q.ToSQL()
@@ -673,7 +644,7 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 		return err
 	}
 
-	s.policyCache.Remove(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type))
+	s.policyCache.Remove(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type))
 	return nil
 }
 
@@ -692,7 +663,7 @@ func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (
 			updated_at
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
+		ON CONFLICT(workspace, resource_type, resource, type) DO UPDATE SET
 			inherit_from_parent = EXCLUDED.inherit_from_parent,
 			payload = EXCLUDED.payload,
 			enforce = EXCLUDED.enforce,

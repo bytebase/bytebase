@@ -228,9 +228,6 @@ func (x *User) Equal(y *User) bool {
 	if x.Password != y.Password {
 		return false
 	}
-	if x.ServiceKey != y.ServiceKey {
-		return false
-	}
 	if x.MfaEnabled != y.MfaEnabled {
 		return false
 	}
@@ -261,6 +258,9 @@ func (x *User) Equal(y *User) bool {
 		if x.Groups[i] != y.Groups[i] {
 			return false
 		}
+	}
+	if x.Workspace != y.Workspace {
+		return false
 	}
 	return true
 }
