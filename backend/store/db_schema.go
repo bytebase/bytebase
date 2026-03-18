@@ -3,6 +3,9 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -78,6 +81,17 @@ func (s *Store) UpsertDBSchema(
 	dbConfig *storepb.DatabaseConfig,
 	rawDump []byte,
 ) error {
+	if fields := common.ValidateProtoUTF8(dbMetadata); len(fields) > 0 {
+		slog.Warn("invalid UTF-8 in schema metadata",
+			slog.String("instance", instanceID),
+			slog.String("database", databaseName),
+			slog.Any("fields", fields))
+	}
+	if !utf8.Valid(rawDump) {
+		slog.Warn("invalid UTF-8 in raw schema dump",
+			slog.String("instance", instanceID),
+			slog.String("database", databaseName))
+	}
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
 		return err
@@ -166,6 +180,8 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, &databaseConfig); err != nil {
 		return nil, err
 	}
+	common.SanitizeProtoStringFields(&databaseSchema)
+	schema = []byte(strings.ToValidUTF8(string(schema), ""))
 	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, err
