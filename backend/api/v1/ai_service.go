@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -502,12 +503,16 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 		return nil, errors.Errorf("failed to marshal Gemini request: %s", err)
 	}
 
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", aiSetting.Endpoint, aiSetting.Model, aiSetting.ApiKey)
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payloadBytes))
+	requestURL, err := url.JoinPath(aiSetting.Endpoint, "models", aiSetting.Model+":generateContent")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build Gemini request URL")
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Errorf("failed to create HTTP request: %s", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", aiSetting.ApiKey)
 
 	body, err := doHTTPRequest(ctx, httpReq, "Gemini")
 	if err != nil {
