@@ -72,7 +72,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
             {plan.title ? (
               <NPerformantEllipsis class="truncate">
                 {{
-                  default: () => <span>{plan.title}</span>,
+                  default: () => <span class="normal-nums">{plan.title}</span>,
                   tooltip: () => (
                     <div class="whitespace-pre-wrap wrap-break-word break-all">
                       {plan.title}
@@ -102,7 +102,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       title: t("plan.checks.self"),
       width: 200,
       hide: !showExtendedColumns.value,
-      render: (plan) => <PlanCheckStatusCount plan={plan} size="small" />,
+      render: (plan) => <PlanCheckStatusCount plan={plan} />,
     },
     {
       key: "updateTime",

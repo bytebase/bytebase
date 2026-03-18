@@ -85,7 +85,9 @@ const columnList = computed(
               {rollout.title ? (
                 <NPerformantEllipsis class="truncate">
                   {{
-                    default: () => <span>{rollout.title}</span>,
+                    default: () => (
+                      <span class="normal-nums">{rollout.title}</span>
+                    ),
                     tooltip: () => (
                       <div class="whitespace-pre-wrap wrap-break-word break-all">
                         {rollout.title}
