@@ -60,7 +60,7 @@ const props = defineProps<{
 }>();
 
 const normalizeLineEndings = (content: string) =>
-  content.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+  content.replace(/\r\n?/g, "\n");
 
 const normalizedOriginal = computed(() => normalizeLineEndings(props.original));
 const normalizedModified = computed(() => normalizeLineEndings(props.modified));
