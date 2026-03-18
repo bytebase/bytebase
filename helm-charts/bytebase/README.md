@@ -19,6 +19,15 @@ install <RELEASE_NAME> bytebase-repo/bytebase
 - Kubernetes 1.24+
 - Helm 3.9.0+
 
+## High availability note
+
+The bundled Helm chart currently deploys Bytebase as a single-replica StatefulSet. It does not expose a Helm value for running multiple Bytebase application replicas.
+
+If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart and review the operator runbook before proceeding:
+
+- [High availability runbook](../../docs/operations/high-availability.md)
+- [Upgrade guidance](../../docs/operations/upgrade.md)
+
 ## Installing the Chart
 
 ```bash
@@ -56,6 +65,11 @@ helm delete --namespace <YOUR_NAMESPACE> <RELEASE_NAME>
 ## Upgrade Bytebase Version/Configuration
 
 Use `helm upgrade` command to upgrade the bytebase version or configuration.
+
+For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, follow the operator runbook and upgrade guidance here:
+
+- [High availability runbook](../../docs/operations/high-availability.md)
+- [Upgrade guidance](../../docs/operations/upgrade.md)
 
 ```bash
 helm -n <YOUR_NAMESPACE> \
@@ -102,4 +116,6 @@ upgrade bytebase-release bytebase-repo/bytebase
 
 - Contact <support@bytebase.com>
 - [Bytebase Docs](https://docs.bytebase.com)
+- [High availability runbook](../../docs/operations/high-availability.md)
+- [Upgrade guidance](../../docs/operations/upgrade.md)
 - [Bytebase GitHub Issue Page](https://github.com/bytebase/bytebase/issues/new/choose)
