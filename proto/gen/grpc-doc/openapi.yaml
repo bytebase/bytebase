@@ -65,6 +65,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
+  /v1/ai/chat:
+    post:
+      tags:
+        - AIService
+      summary: Chat
+      description: |-
+        Chat sends a conversation with tool definitions to the configured AI provider
+         and returns the AI response.
+      operationId: AIService_Chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.AIChatRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AIChatResponse'
   /v1/auditLogs:export:
     post:
       tags:
@@ -15963,6 +15985,124 @@ paths:
                 $ref: '#/components/schemas/bytebase.v1.AdminExecuteResponse'
 components:
   schemas:
+    bytebase.v1.AIChatMessage:
+      type: object
+      properties:
+        role:
+          title: role
+          description: The role of the message sender.
+          $ref: '#/components/schemas/bytebase.v1.AIChatMessageRole'
+        content:
+          type:
+            - string
+            - "null"
+          title: content
+          description: The text content of the message. Optional for assistant messages that only contain tool calls.
+        toolCalls:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AIChatToolCall'
+          title: tool_calls
+          description: Tool calls made by the assistant. Only present in assistant messages.
+        toolCallId:
+          type:
+            - string
+            - "null"
+          title: tool_call_id
+          description: The ID of the tool call this message is responding to. Only present in tool messages.
+      title: AIChatMessage
+      additionalProperties: false
+      description: A single message in the conversation.
+    bytebase.v1.AIChatMessageRole:
+      type: string
+      title: AIChatMessageRole
+      enum:
+        - AI_CHAT_MESSAGE_ROLE_UNSPECIFIED
+        - AI_CHAT_MESSAGE_ROLE_SYSTEM
+        - AI_CHAT_MESSAGE_ROLE_USER
+        - AI_CHAT_MESSAGE_ROLE_ASSISTANT
+        - AI_CHAT_MESSAGE_ROLE_TOOL
+      description: Role of a chat message.
+    bytebase.v1.AIChatRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AIChatMessage'
+          title: messages
+          description: The conversation messages.
+        toolDefinitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AIChatToolDefinition'
+          title: tool_definitions
+          description: The tool definitions available to the AI.
+      title: AIChatRequest
+      additionalProperties: false
+      description: Request message for AIService.Chat.
+    bytebase.v1.AIChatResponse:
+      type: object
+      properties:
+        content:
+          type:
+            - string
+            - "null"
+          title: content
+          description: The text content of the AI response. Optional when the response only contains tool calls.
+        toolCalls:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.AIChatToolCall'
+          title: tool_calls
+          description: Tool calls the AI wants to make.
+      title: AIChatResponse
+      additionalProperties: false
+      description: Response message for AIService.Chat.
+    bytebase.v1.AIChatToolCall:
+      type: object
+      properties:
+        id:
+          type: string
+          title: id
+          description: The unique ID of this tool call.
+        name:
+          type: string
+          title: name
+          description: The name of the tool to call.
+        arguments:
+          type: string
+          title: arguments
+          description: The JSON-encoded arguments to pass to the tool.
+        metadata:
+          type:
+            - string
+            - "null"
+          title: metadata
+          description: |-
+            Opaque provider-specific metadata (e.g., Gemini thought_signature).
+             Frontend must echo this back unchanged when sending tool results.
+      title: AIChatToolCall
+      additionalProperties: false
+      description: A tool call made by the AI.
+    bytebase.v1.AIChatToolDefinition:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: The name of the tool.
+        description:
+          type: string
+          title: description
+          description: A description of what the tool does.
+        parametersSchema:
+          type: string
+          title: parameters_schema
+          description: The JSON Schema describing the tool's parameters.
+      title: AIChatToolDefinition
+      additionalProperties: false
+      description: A tool definition that the AI can invoke.
     bytebase.v1.AICompletionRequest:
       type: object
       properties:
@@ -29760,6 +29900,8 @@ tags:
     description: SettingService manages workspace-level settings and configurations.
   - name: ActuatorService
     description: ActuatorService manages system health and operational information.
+  - name: AIService
+    description: AIService provides AI chat capabilities for the page agent.
   - name: AuditLogService
     description: AuditLogService manages audit logs for system activities and API calls.
   - name: UserService

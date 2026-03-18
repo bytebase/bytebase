@@ -53,9 +53,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - name: Copy config files
-        run: pnpm run copy:config-files
-        working-directory: frontend
       - name: Run unit tests
         run: pnpm test
         working-directory: frontend

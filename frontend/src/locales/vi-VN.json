@@ -2473,6 +2473,18 @@
     },
     "tooltip-for-resource": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ ưu tiên cấu hình ở cấp độ môi trường."
   },
+  "agent": {
+    "assistant-title": "Bytebase Assistant",
+    "new-chat": "New chat",
+    "minimize": "Minimize",
+    "close": "Close",
+    "input-placeholder": "Ask anything...",
+    "send": "Send",
+    "args": "Args:",
+    "result": "Result:",
+    "stop": "Stop",
+    "interrupted": "Interrupted"
+  },
   "audit-log": {
     "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và thời gian kết thúc trong vòng 30 ngày",

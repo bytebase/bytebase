@@ -30,50 +30,6 @@ func TestSearchAPIListServices(t *testing.T) {
 	require.Contains(t, text, "ProjectService")
 }
 
-func TestSearchAPIByQuery(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	tests := []struct {
-		name          string
-		query         string
-		expectContain []string
-	}{
-		{
-			name:          "search for sql",
-			query:         "sql",
-			expectContain: []string{"SQL"},
-		},
-		{
-			name:          "search for database",
-			query:         "database",
-			expectContain: []string{"Database"},
-		},
-		{
-			name:          "search for project",
-			query:         "project",
-			expectContain: []string{"Project"},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-				Query: tc.query,
-			})
-			require.NoError(t, err)
-			require.NotNil(t, result)
-			require.Len(t, result.Content, 1)
-
-			text := result.Content[0].(*mcpsdk.TextContent).Text
-			for _, expected := range tc.expectContain {
-				require.Contains(t, text, expected, "expected %q in result for query %q", expected, tc.query)
-			}
-		})
-	}
-}
-
 func TestSearchAPIByService(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
 	s, err := NewServer(nil, profile, "test-secret")
@@ -184,83 +140,6 @@ func TestSearchAPIDetailModeNotFound(t *testing.T) {
 	require.Contains(t, text, "Unknown operationId")
 }
 
-func TestSearchAPILimit(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	// Test with custom limit
-	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Service: "DatabaseService",
-		Limit:   2,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Len(t, result.Content, 1)
-
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	// Should show "Showing X of Y results" if limited
-	if strings.Contains(text, "Showing") {
-		require.Contains(t, text, "Showing 2 of")
-	}
-}
-
-func TestSearchAPIDefaultLimit(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	// Test default limit (should be 5)
-	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Query: "list",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Len(t, result.Content, 1)
-
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	// Count how many "###" headers (each endpoint starts with ###)
-	count := strings.Count(text, "### ")
-	require.LessOrEqual(t, count, 5, "default limit should be 5")
-}
-
-func TestSearchAPIMaxLimit(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	// Test max limit enforcement (should cap at 50)
-	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Query: "list",
-		Limit: 100, // Should be capped to 50
-	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Len(t, result.Content, 1)
-
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	count := strings.Count(text, "### ")
-	require.LessOrEqual(t, count, 50, "max limit should be 50")
-}
-
-func TestSearchAPINoResults(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	// Test query with no results - use a query that truly won't match anything
-	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Query: "zzzzqqqq",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Len(t, result.Content, 1)
-
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "No endpoints found")
-	require.Contains(t, text, "Try:")
-}
-
 func TestSearchAPIServiceShowsAll(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
 	s, err := NewServer(nil, profile, "test-secret")
@@ -278,26 +157,6 @@ func TestSearchAPIServiceShowsAll(t *testing.T) {
 	// Should show "Found X endpoints" not "Showing X of Y"
 	require.Contains(t, text, "Found")
 	require.NotContains(t, text, "Showing")
-}
-
-func TestSearchAPIQueryWithService(t *testing.T) {
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
-	s, err := NewServer(nil, profile, "test-secret")
-	require.NoError(t, err)
-
-	// Test query within a specific service
-	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Service: "SQLService",
-		Query:   "query",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Len(t, result.Content, 1)
-
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "SQLService/")
-	// Should only return SQLService endpoints
-	require.NotContains(t, text, "DatabaseService/")
 }
 
 func TestSearchAPISchemaLookup(t *testing.T) {

@@ -2473,6 +2473,18 @@
     },
     "tooltip-for-resource": "También es configurable a nivel {scope}. Bytebase dará prioridad a la configuración a nivel de entorno."
   },
+  "agent": {
+    "assistant-title": "Bytebase Assistant",
+    "new-chat": "New chat",
+    "minimize": "Minimize",
+    "close": "Close",
+    "input-placeholder": "Ask anything...",
+    "send": "Send",
+    "args": "Args:",
+    "result": "Result:",
+    "stop": "Stop",
+    "interrupted": "Interrupted"
+  },
   "audit-log": {
     "export-finished": "Exportación finalizada",
     "export-tooltip": "Debe seleccionar la hora de inicio y la hora de finalización dentro de los 30 días",

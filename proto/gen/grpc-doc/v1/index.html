@@ -677,6 +677,45 @@
         
           
           <li>
+            <a href="#v1%2fai_service.proto">v1/ai_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatMessage"><span class="badge">M</span>AIChatMessage</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatRequest"><span class="badge">M</span>AIChatRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatResponse"><span class="badge">M</span>AIChatResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatToolCall"><span class="badge">M</span>AIChatToolCall</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatToolDefinition"><span class="badge">M</span>AIChatToolDefinition</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatMessageRole"><span class="badge">E</span>AIChatMessageRole</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.AIService"><span class="badge">S</span>AIService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fiam_policy.proto">v1/iam_policy.proto</a>
             <ul>
               
@@ -8078,6 +8117,300 @@ Permissions required: None</p></td>
                 <td>GET</td>
                 <td>/v1/actuator/resources</td>
                 <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/ai_service.proto">v1/ai_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.AIChatMessage">AIChatMessage</h3>
+        <p>A single message in the conversation.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#bytebase.v1.AIChatMessageRole">AIChatMessageRole</a></td>
+                  <td></td>
+                  <td><p>The role of the message sender. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The text content of the message. Optional for assistant messages that only contain tool calls. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tool_calls</td>
+                  <td><a href="#bytebase.v1.AIChatToolCall">AIChatToolCall</a></td>
+                  <td>repeated</td>
+                  <td><p>Tool calls made by the assistant. Only present in assistant messages. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tool_call_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The ID of the tool call this message is responding to. Only present in tool messages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AIChatRequest">AIChatRequest</h3>
+        <p>Request message for AIService.Chat.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>messages</td>
+                  <td><a href="#bytebase.v1.AIChatMessage">AIChatMessage</a></td>
+                  <td>repeated</td>
+                  <td><p>The conversation messages. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tool_definitions</td>
+                  <td><a href="#bytebase.v1.AIChatToolDefinition">AIChatToolDefinition</a></td>
+                  <td>repeated</td>
+                  <td><p>The tool definitions available to the AI. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AIChatResponse">AIChatResponse</h3>
+        <p>Response message for AIService.Chat.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The text content of the AI response. Optional when the response only contains tool calls. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tool_calls</td>
+                  <td><a href="#bytebase.v1.AIChatToolCall">AIChatToolCall</a></td>
+                  <td>repeated</td>
+                  <td><p>Tool calls the AI wants to make. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AIChatToolCall">AIChatToolCall</h3>
+        <p>A tool call made by the AI.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The unique ID of this tool call. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the tool to call. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>arguments</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The JSON-encoded arguments to pass to the tool. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>metadata</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Opaque provider-specific metadata (e.g., Gemini thought_signature).
+Frontend must echo this back unchanged when sending tool results. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.AIChatToolDefinition">AIChatToolDefinition</h3>
+        <p>A tool definition that the AI can invoke.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the tool. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A description of what the tool does. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parameters_schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The JSON Schema describing the tool&#39;s parameters. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.AIChatMessageRole">AIChatMessageRole</h3>
+        <p>Role of a chat message.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AI_CHAT_MESSAGE_ROLE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified role.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AI_CHAT_MESSAGE_ROLE_SYSTEM</td>
+                <td>1</td>
+                <td><p>System message providing instructions.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AI_CHAT_MESSAGE_ROLE_USER</td>
+                <td>2</td>
+                <td><p>User message.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AI_CHAT_MESSAGE_ROLE_ASSISTANT</td>
+                <td>3</td>
+                <td><p>Assistant (AI) message.</p></td>
+              </tr>
+            
+              <tr>
+                <td>AI_CHAT_MESSAGE_ROLE_TOOL</td>
+                <td>4</td>
+                <td><p>Tool result message.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AIService">AIService</h3>
+        <p>AIService provides AI chat capabilities for the page agent.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Chat</td>
+                <td><a href="#bytebase.v1.AIChatRequest">AIChatRequest</a></td>
+                <td><a href="#bytebase.v1.AIChatResponse">AIChatResponse</a></td>
+                <td><p>Chat sends a conversation with tool definitions to the configured AI provider
+and returns the AI response.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>Chat</td>
+                <td>POST</td>
+                <td>/v1/ai/chat</td>
+                <td>*</td>
               </tr>
               
             
