@@ -2,6 +2,7 @@ package taskrun
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -45,21 +46,33 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 	}
 }
 
-func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
-	// Acquire cluster-wide mutex - only one replica runs at a time.
-	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeyPendingScheduler)
+func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
+	startedAt := time.Now()
+	tx, err := s.store.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to acquire advisory lock")
-	}
-	if !acquired {
-		// Another replica is running, skip this cycle.
-		return nil
+		return errors.Wrapf(err, "failed to begin pending scheduler transaction")
 	}
 	defer func() {
-		if err := lock.Release(); err != nil {
-			slog.Error("Failed to release pending scheduler advisory lock", log.BBError(err))
+		if rollbackErr := tx.Rollback(); rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
+			if err == nil {
+				err = errors.Wrapf(rollbackErr, "failed to rollback pending scheduler transaction")
+				return
+			}
+			slog.Error("Failed to rollback pending scheduler transaction", log.BBError(rollbackErr))
 		}
 	}()
+
+	// Acquire cluster-wide mutex - only one replica runs at a time.
+	acquired, err := store.TryAdvisoryXactLock(ctx, tx, store.AdvisoryLockKeyPendingScheduler)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire pending scheduler advisory lock")
+	}
+	if !acquired {
+		slog.Debug("Pending scheduler advisory lock held by another replica, skipping",
+			slog.Duration("duration", time.Since(startedAt)),
+		)
+		return nil
+	}
 
 	taskRuns, err := s.store.ListTaskRunsByStatus(ctx, []storepb.TaskRun_Status{storepb.TaskRun_PENDING})
 	if err != nil {
@@ -74,8 +87,15 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 
 	for _, taskRun := range taskRuns {
 		if err := s.schedulePendingTaskRun(ctx, taskRun, sc); err != nil {
-			slog.Error("failed to schedule pending task run", log.BBError(err))
+			slog.Error("failed to schedule pending task run",
+				slog.Int64("taskRunID", taskRun.ID),
+				log.BBError(err),
+			)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit pending scheduler transaction")
 	}
 
 	return nil
