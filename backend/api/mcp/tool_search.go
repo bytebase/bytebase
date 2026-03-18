@@ -58,7 +58,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		// List all services
 		text = s.formatServiceList()
 
-	case input.Service != "":
+	default:
 		// List all endpoints in a service (no limit)
 		endpoints := s.openAPIIndex.GetServiceEndpoints(input.Service)
 		if len(endpoints) == 0 {

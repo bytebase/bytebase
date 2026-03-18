@@ -61,10 +61,10 @@ type chatOpenAIRequest struct {
 }
 
 type chatOpenAIMessage struct {
-	Role       string             `json:"role"`
-	Content    *string            `json:"content"`
-	ToolCalls  []json.RawMessage  `json:"tool_calls,omitempty"`
-	ToolCallID string             `json:"tool_call_id,omitempty"`
+	Role       string            `json:"role"`
+	Content    *string           `json:"content"`
+	ToolCalls  []json.RawMessage `json:"tool_calls,omitempty"`
+	ToolCallID string            `json:"tool_call_id,omitempty"`
 }
 
 type chatOpenAITool struct {
@@ -92,9 +92,9 @@ type chatOpenAIFunctionCallRef struct {
 type chatOpenAIResponse struct {
 	Choices []struct {
 		Message struct {
-			Role      string             `json:"role"`
-			Content   *string            `json:"content"`
-			ToolCalls []json.RawMessage  `json:"tool_calls"`
+			Role      string            `json:"role"`
+			Content   *string           `json:"content"`
+			ToolCalls []json.RawMessage `json:"tool_calls"`
 		} `json:"message"`
 	} `json:"choices"`
 }
@@ -413,7 +413,7 @@ type chatGeminiResponse struct {
 }
 
 type chatGeminiResponsePart struct {
-	Text         string                 `json:"text,omitempty"`
+	Text         string                  `json:"text,omitempty"`
 	FunctionCall *chatGeminiFunctionCall `json:"functionCall,omitempty"`
 }
 
