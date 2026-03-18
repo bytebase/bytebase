@@ -72,7 +72,6 @@ func (s *ActuatorService) GetActuatorInfo(
 }
 
 // GetWorkspaceActuatorInfo gets workspace-scoped actuator info. Requires authentication.
-// TODO(ed): after login, refresh the actuator with workspace id.
 func (s *ActuatorService) GetWorkspaceActuatorInfo(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetWorkspaceActuatorInfoRequest],
