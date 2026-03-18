@@ -4,20 +4,38 @@
 -- project: natural key = resource_id (FK referenced by many tables)
 ALTER TABLE project DROP CONSTRAINT IF EXISTS project_pkey;
 ALTER TABLE project DROP COLUMN IF EXISTS id;
-DROP INDEX IF EXISTS idx_project_unique_resource_id;
-ALTER TABLE project ADD PRIMARY KEY (resource_id);
+DO $$
+BEGIN
+    IF to_regclass('idx_project_unique_resource_id') IS NOT NULL THEN
+        ALTER TABLE project ADD CONSTRAINT project_pkey PRIMARY KEY USING INDEX idx_project_unique_resource_id;
+    ELSE
+        ALTER TABLE project ADD PRIMARY KEY (resource_id);
+    END IF;
+END $$;
 
 -- instance: natural key = resource_id (FK referenced by db, task)
 ALTER TABLE instance DROP CONSTRAINT IF EXISTS instance_pkey;
 ALTER TABLE instance DROP COLUMN IF EXISTS id;
-DROP INDEX IF EXISTS idx_instance_unique_resource_id;
-ALTER TABLE instance ADD PRIMARY KEY (resource_id);
+DO $$
+BEGIN
+    IF to_regclass('idx_instance_unique_resource_id') IS NOT NULL THEN
+        ALTER TABLE instance ADD CONSTRAINT instance_pkey PRIMARY KEY USING INDEX idx_instance_unique_resource_id;
+    ELSE
+        ALTER TABLE instance ADD PRIMARY KEY (resource_id);
+    END IF;
+END $$;
 
 -- db: natural key = (instance, name) (FK referenced by db_schema, revision, sync_history, changelog)
 ALTER TABLE db DROP CONSTRAINT IF EXISTS db_pkey;
 ALTER TABLE db DROP COLUMN IF EXISTS id;
-DROP INDEX IF EXISTS idx_db_unique_instance_name;
-ALTER TABLE db ADD PRIMARY KEY (instance, name);
+DO $$
+BEGIN
+    IF to_regclass('idx_db_unique_instance_name') IS NOT NULL THEN
+        ALTER TABLE db ADD CONSTRAINT db_pkey PRIMARY KEY USING INDEX idx_db_unique_instance_name;
+    ELSE
+        ALTER TABLE db ADD PRIMARY KEY (instance, name);
+    END IF;
+END $$;
 
 -- setting: natural key = name
 ALTER TABLE setting DROP CONSTRAINT IF EXISTS setting_pkey;
