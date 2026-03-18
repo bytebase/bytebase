@@ -3,8 +3,7 @@ package pg
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -30,13 +29,13 @@ type ExtractAccessTablesOption struct {
 // ExtractAccessTables extracts all table/view references from a SQL statement.
 // This is a lightweight version that doesn't perform full query span analysis.
 func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]base.ColumnResource, error) {
-	parseResults, err := ParsePostgreSQL(statement)
+	omniStmts, err := ParsePg(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PostgreSQL statement")
 	}
 
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	if len(omniStmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
 	}
 
 	searchPath := []string{option.DefaultSchema}
@@ -53,7 +52,18 @@ func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]
 		skipMetadataValidation: option.SkipMetadataValidation,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResults[0].Tree)
+	// Walk the omni AST to find all RangeVar nodes (table references)
+	ast.Inspect(omniStmts[0].AST, func(n ast.Node) bool {
+		if extractor.err != nil {
+			return false
+		}
+		rv, ok := n.(*ast.RangeVar)
+		if !ok {
+			return true
+		}
+		extractor.processRangeVar(rv)
+		return true
+	})
 
 	if extractor.err != nil {
 		return nil, errors.Wrapf(extractor.err, "failed to extract access tables")
@@ -63,7 +73,6 @@ func ExtractAccessTables(statement string, option ExtractAccessTablesOption) ([]
 }
 
 type accessTableExtractor struct {
-	*postgresql.BasePostgreSQLParserListener
 	err                    error
 	defaultDatabase        string
 	searchPath             []string
@@ -74,45 +83,23 @@ type accessTableExtractor struct {
 	skipMetadataValidation bool
 }
 
-func (a *accessTableExtractor) EnterQualified_name(qn *postgresql.Qualified_nameContext) {
-	if a.err != nil {
-		return
-	}
+func (a *accessTableExtractor) processRangeVar(rv *ast.RangeVar) {
 	resource := base.ColumnResource{
 		Database: a.defaultDatabase,
 	}
-	var directions []string
-	qnLength := 1
-	directions = append(directions, NormalizePostgreSQLColid(qn.Colid()))
-	if qn.Indirection() != nil {
-		allIndirectionElements := qn.Indirection().AllIndirection_el()
-		for _, el := range allIndirectionElements {
-			if el.Attr_name() != nil {
-				directions = append(directions, normalizePostgreSQLCollabel(el.Attr_name().Collabel()))
-				qnLength++
-				break
-			}
-			continue
-		}
-	}
 
-	switch qnLength {
-	case 1:
-		resource.Table = directions[0]
-	case 2:
-		resource.Schema = directions[0]
-		resource.Table = directions[1]
-	case 3:
-		resource.Database = directions[0]
-		resource.Schema = directions[1]
-		resource.Table = directions[2]
-	default:
-		a.err = errors.Errorf("improper qualified name (too many dotted names): %s", qn.GetParser().GetTokenStream().GetTextFromInterval(qn.GetSourceInterval()))
-		return
+	if rv.Catalogname != "" {
+		resource.Database = rv.Catalogname
+		resource.Schema = rv.Schemaname
+		resource.Table = rv.Relname
+	} else if rv.Schemaname != "" {
+		resource.Schema = rv.Schemaname
+		resource.Table = rv.Relname
+	} else {
+		resource.Table = rv.Relname
 	}
 
 	if a.skipMetadataValidation {
-		// If schema is not specified, use the first schema in search path as default
 		if resource.Schema == "" && !isSystemResource(resource) {
 			if len(a.searchPath) > 0 {
 				resource.Schema = a.searchPath[0]

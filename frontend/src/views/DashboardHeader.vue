@@ -53,6 +53,13 @@
         </NButton>
       </router-link>
 
+      <NButton size="small" @click="agentStore.toggle()">
+        <template #icon>
+          <BotIcon class="w-4 h-4" />
+        </template>
+        <span v-if="windowWidth >= 640">Agent</span>
+      </NButton>
+
       <ProfileBrandingLogo>
         <ProfileDropdown :link="true" />
       </ProfileBrandingLogo>
@@ -69,6 +76,7 @@
 <script lang="ts" setup>
 import { computedAsync, useLocalStorage, useWindowSize } from "@vueuse/core";
 import {
+  BotIcon,
   CircleDotIcon,
   MenuIcon,
   MessagesSquareIcon,
@@ -81,6 +89,7 @@ import { computed, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
+import { useAgentStore } from "@/plugins/agent";
 import {
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MY_ISSUES,
@@ -128,6 +137,7 @@ interface LocalState {
   showProjectModal: boolean;
 }
 
+const agentStore = useAgentStore();
 const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();

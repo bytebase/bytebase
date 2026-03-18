@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "v1/annotation.proto";
+
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
+
+// AIService provides AI chat capabilities for the page agent.
+service AIService {
+  // Chat sends a conversation with tool definitions to the configured AI provider
+  // and returns the AI response.
+  rpc Chat(AIChatRequest) returns (AIChatResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/chat"
+      body: "*"
+    };
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+}
+
+// Role of a chat message.
+enum AIChatMessageRole {
+  // Unspecified role.
+  AI_CHAT_MESSAGE_ROLE_UNSPECIFIED = 0;
+  // System message providing instructions.
+  AI_CHAT_MESSAGE_ROLE_SYSTEM = 1;
+  // User message.
+  AI_CHAT_MESSAGE_ROLE_USER = 2;
+  // Assistant (AI) message.
+  AI_CHAT_MESSAGE_ROLE_ASSISTANT = 3;
+  // Tool result message.
+  AI_CHAT_MESSAGE_ROLE_TOOL = 4;
+}
+
+// A single message in the conversation.
+message AIChatMessage {
+  // The role of the message sender.
+  AIChatMessageRole role = 1;
+
+  // The text content of the message. Optional for assistant messages that only contain tool calls.
+  optional string content = 2;
+
+  // Tool calls made by the assistant. Only present in assistant messages.
+  repeated AIChatToolCall tool_calls = 3;
+
+  // The ID of the tool call this message is responding to. Only present in tool messages.
+  optional string tool_call_id = 4;
+}
+
+// A tool definition that the AI can invoke.
+message AIChatToolDefinition {
+  // The name of the tool.
+  string name = 1;
+
+  // A description of what the tool does.
+  string description = 2;
+
+  // The JSON Schema describing the tool's parameters.
+  string parameters_schema = 3;
+}
+
+// A tool call made by the AI.
+message AIChatToolCall {
+  // The unique ID of this tool call.
+  string id = 1;
+
+  // The name of the tool to call.
+  string name = 2;
+
+  // The JSON-encoded arguments to pass to the tool.
+  string arguments = 3;
+
+  // Opaque provider-specific metadata (e.g., Gemini thought_signature).
+  // Frontend must echo this back unchanged when sending tool results.
+  optional string metadata = 4;
+}
+
+// Request message for AIService.Chat.
+message AIChatRequest {
+  // The conversation messages.
+  repeated AIChatMessage messages = 1;
+
+  // The tool definitions available to the AI.
+  repeated AIChatToolDefinition tool_definitions = 2;
+}
+
+// Response message for AIService.Chat.
+message AIChatResponse {
+  // The text content of the AI response. Optional when the response only contains tool calls.
+  optional string content = 1;
+
+  // Tool calls the AI wants to make.
+  repeated AIChatToolCall tool_calls = 2;
+}

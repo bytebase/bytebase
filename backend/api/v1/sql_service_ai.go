@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -224,15 +225,19 @@ func callGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		return nil, errors.Errorf("failed to marshal Gemini request payload: %s", err)
 	}
 
-	// Gemini API endpoint format: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", aiSetting.Endpoint, aiSetting.Model, aiSetting.ApiKey)
+	// Gemini API endpoint format: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+	requestURL, err := url.JoinPath(aiSetting.Endpoint, "models", aiSetting.Model+":generateContent")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build Gemini request URL")
+	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payloadBytes))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, errors.Errorf("failed to create HTTP request: %s", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", aiSetting.ApiKey)
 
 	client := &http.Client{}
 	httpResp, err := client.Do(httpReq)

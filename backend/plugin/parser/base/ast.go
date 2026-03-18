@@ -33,12 +33,25 @@ func (a *ANTLRAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
+// AntlrASTProvider is an optional interface that AST implementations can provide
+// to expose an underlying ANTLR AST. This is used during parser migrations when
+// an AST wraps both a new AST format and a legacy ANTLR tree for backward compatibility.
+type AntlrASTProvider interface {
+	AsANTLRAST() (*ANTLRAST, bool)
+}
+
 // GetANTLRAST extracts the ANTLRAST from an AST interface.
 // Returns the ANTLRAST and true if it is an ANTLR-based AST, nil and false otherwise.
+// Also checks for AntlrASTProvider implementations (e.g. OmniAST during migration).
 func GetANTLRAST(a AST) (*ANTLRAST, bool) {
 	if a == nil {
 		return nil, false
 	}
-	antlrAST, ok := a.(*ANTLRAST)
-	return antlrAST, ok
+	if antlrAST, ok := a.(*ANTLRAST); ok {
+		return antlrAST, ok
+	}
+	if provider, ok := a.(AntlrASTProvider); ok {
+		return provider.AsANTLRAST()
+	}
+	return nil, false
 }

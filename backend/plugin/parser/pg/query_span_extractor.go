@@ -123,21 +123,21 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	// Walk the tree to extract access tables
 
-	accessTableExtractor := &accessTableExtractor{
+	antlrExtractor := &antlrAccessTableExtractor{
 		defaultDatabase:     q.defaultDatabase,
 		searchPath:          q.searchPath,
 		getDatabaseMetadata: q.gCtx.GetDatabaseMetadataFunc,
 		ctx:                 ctx,
 		instanceID:          q.gCtx.InstanceID,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(accessTableExtractor, parseResult.Tree)
-	if accessTableExtractor.err != nil {
-		return nil, errors.Wrapf(accessTableExtractor.err, "failed to extract query span from statement: %s", stmt)
+	antlr.ParseTreeWalkerDefault.Walk(antlrExtractor, parseResult.Tree)
+	if antlrExtractor.err != nil {
+		return nil, errors.Wrapf(antlrExtractor.err, "failed to extract query span from statement: %s", stmt)
 	}
 
 	// Build access map
 	accessesMap := make(base.SourceColumnSet)
-	for _, resource := range accessTableExtractor.accessTables {
+	for _, resource := range antlrExtractor.accessTables {
 		accessesMap[resource] = true
 	}
 
@@ -147,17 +147,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, base.MixUserSystemTablesError
 	}
 
-	// Get query type using ANTLR-based detection
-	queryTypeListener := &queryTypeListener{
-		result:     base.QueryTypeUnknown,
-		allSystems: allSystems,
+	// Get query type using omni AST.
+	// Fall back to Select if omni cannot parse the statement (e.g. non-standard
+	// syntax like 4-part column references that ANTLR accepts but libpg_query rejects).
+	queryType, isExplainAnalyze := base.Select, false
+	if omniStmts, parseErr := ParsePg(stmt); parseErr == nil && len(omniStmts) == 1 {
+		queryType, isExplainAnalyze = classifyQueryType(omniStmts[0].AST, allSystems)
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, parseResult.Tree)
-	if queryTypeListener.err != nil {
-		return nil, errors.Wrapf(queryTypeListener.err, "failed to get query type from statement: %s", stmt)
-	}
-
-	queryType, isExplainAnalyze := queryTypeListener.result, queryTypeListener.isExplainAnalyze
 
 	// For non-SELECT queries, return early
 	if queryType != base.Select {

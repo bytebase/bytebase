@@ -1088,8 +1088,8 @@
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
       "open-cannot-reopen": "打开中的工单无法重开",
-      "done-cannot-reopen": "已批准的工单无法重开",
-      "done-cannot-close": "已批准的工单无法关闭",
+      "done-cannot-reopen": "已完成的工单无法重开",
+      "done-cannot-close": "已完成的工单无法关闭",
       "canceled-cannot-close": "已取消的工单无法关闭",
       "reopen": "重开",
       "reopened": "重开",
@@ -1137,7 +1137,7 @@
     "error": {
       "statement-cannot-be-modified": "工单创建后，语句将无法修改"
     },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已批准」，但其中部分任务并未成功执行。",
+    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "data-export": {
       "options": "配置项",
       "limits": "限制",
@@ -2963,5 +2963,17 @@
   },
   "help-drawer": {
     "dont-show-again": "不再显示这些提示"
+  },
+  "agent": {
+    "assistant-title": "Bytebase 助手",
+    "new-chat": "新对话",
+    "minimize": "最小化",
+    "close": "关闭",
+    "input-placeholder": "输入任何问题...",
+    "send": "发送",
+    "args": "参数：",
+    "result": "结果：",
+    "stop": "停止",
+    "interrupted": "已中断"
   }
 }

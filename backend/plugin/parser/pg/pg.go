@@ -1,10 +1,14 @@
 package pg
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
+
+	omniparser "github.com/bytebase/omni/pg/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -17,8 +21,9 @@ func init() {
 
 // parsePgStatements is the ParseStatementsFunc for PostgreSQL.
 // Returns []ParsedStatement with both text and AST populated.
-// Uses omni's lexical splitter for splitting, then ANTLR for parsing each statement.
-// This preserves ANTLRAST compatibility for existing callers.
+// Uses omni for parsing, returning OmniAST wrappers that also carry legacy ANTLR
+// parse trees for backward compatibility with advisors that haven't migrated yet.
+// When omni parsing fails but ANTLR succeeds, falls back to ANTLR-only mode.
 func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
@@ -30,16 +35,70 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 		if stmt.Empty {
 			continue
 		}
-		ast, err := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine())
-		if err != nil {
-			return nil, err
+
+		// Parse with ANTLR (needed by advisors during migration).
+		// TODO(omni-migration): remove once all advisors migrate to omni AST.
+		antlrResult, antlrErr := parseSinglePostgreSQL(stmt.Text, stmt.BaseLine())
+
+		// Parse with omni.
+		omniStmts, omniErr := ParsePg(stmt.Text)
+
+		switch {
+		case omniErr == nil:
+			// Omni succeeded: use omni AST with ANTLR fallback for advisors.
+			for _, os := range omniStmts {
+				omniAST := &OmniAST{
+					Node:          os.AST,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				}
+				if antlrErr == nil && antlrResult != nil {
+					omniAST.antlrAST = antlrResult
+				}
+				result = append(result, base.ParsedStatement{
+					Statement: stmt,
+					AST:       omniAST,
+				})
+			}
+		case antlrErr == nil && antlrResult != nil:
+			// Omni failed but ANTLR succeeded: use ANTLR-only fallback.
+			// This handles cases where omni is stricter (e.g. reserved keywords used as identifiers).
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+					antlrAST:      antlrResult,
+				},
+			})
+		default:
+			// Both failed: return omni error (prefer omni error message).
+			return nil, convertOmniError(omniErr, statement, stmt)
 		}
-		result = append(result, base.ParsedStatement{
-			Statement: stmt,
-			AST:       ast,
-		})
 	}
 	return result, nil
+}
+
+// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertOmniError(err error, _ string, stmt base.Statement) error {
+	var parseErr *omniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+
+	// Convert byte offset within stmt.Text to line:column.
+	pos := byteOffsetToRunePosition(stmt.Text, parseErr.Position)
+
+	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
+	if stmt.Start != nil {
+		pos.Line += stmt.Start.Line - 1
+	}
+
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
+		RawMessage: parseErr.Message,
+	}
 }
 
 // ParsePostgreSQL parses the given SQL and returns a list of ANTLRAST (one per statement).

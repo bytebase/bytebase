@@ -24,7 +24,7 @@
       {
         "status":  "ERROR",
         "title":  "Syntax error",
-        "content":  "Syntax error at line 1:14 \nrelated text: CREATE TABLE user",
+        "content":  "Syntax error at line 1: unexpected token in statement",
         "code":  201,
         "sqlReviewReport":  {
           "startPosition":  {

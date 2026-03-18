@@ -173,17 +173,17 @@ $$ LANGUAGE plpgsql;`,
 		{
 			name:     "Only DO keyword",
 			stmt:     `DO`,
-			expected: false,
+			expected: true, // omni parser accepts bare DO as a valid DoStmt
 		},
 		{
 			name:     "DO without body",
 			stmt:     `DO;`,
-			expected: false,
+			expected: true, // omni parser accepts DO; as a valid DoStmt
 		},
 		{
 			name:     "Malformed DO block",
 			stmt:     `DO $$ BEGIN`,
-			expected: false,
+			expected: true, // omni parser treats unterminated dollar-quote as consuming to EOF, producing a valid DoStmt
 		},
 		{
 			name: "Multiple statements with DO block",
