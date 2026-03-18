@@ -54,10 +54,6 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 	}
 	defer func() {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
-			if err == nil {
-				err = errors.Wrapf(rollbackErr, "failed to rollback pending scheduler transaction")
-				return
-			}
 			slog.Error("Failed to rollback pending scheduler transaction", log.BBError(rollbackErr))
 		}
 	}()
