@@ -50,6 +50,17 @@ func TryAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*Adv
 	return &AdvisoryLock{conn: conn, key: key}, true, nil
 }
 
+// TryAdvisoryXactLock attempts to acquire a transaction-level advisory lock.
+// Returns true if acquired, false if already held by another transaction.
+// The lock is automatically released when the transaction ends.
+func TryAdvisoryXactLock(ctx context.Context, tx *sql.Tx, key AdvisoryLockKey) (bool, error) {
+	var acquired bool
+	if err := tx.QueryRowContext(ctx, "SELECT pg_try_advisory_xact_lock($1)", int64(key)).Scan(&acquired); err != nil {
+		return false, err
+	}
+	return acquired, nil
+}
+
 // Release releases the advisory lock and returns the connection to the pool.
 // Uses context.Background() to ensure cleanup completes even if parent ctx is cancelled.
 func (l *AdvisoryLock) Release() error {
