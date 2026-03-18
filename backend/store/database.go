@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -218,7 +219,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataString), &metadata); err != nil {
 			return nil, err
 		}
+		common.SanitizeProtoStringFields(&metadata)
 		databaseMessage.Metadata = &metadata
+		databaseMessage.DatabaseName = strings.ToValidUTF8(databaseMessage.DatabaseName, "")
 
 		databases = append(databases, databaseMessage)
 	}
@@ -266,6 +269,12 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 // UpsertDatabase upserts a database.
 func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
+	if fields := common.ValidateProtoUTF8(create.Metadata); len(fields) > 0 {
+		slog.Warn("invalid UTF-8 in database metadata",
+			slog.String("instance", create.InstanceID),
+			slog.String("database", create.DatabaseName),
+			slog.Any("fields", fields))
+	}
 	metadataString, err := protojson.Marshal(create.Metadata)
 	if err != nil {
 		return nil, err
@@ -341,6 +350,12 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		md := proto.CloneOf(database.Metadata)
 		for _, f := range fs {
 			f(md)
+		}
+		if fields := common.ValidateProtoUTF8(md); len(fields) > 0 {
+			slog.Warn("invalid UTF-8 in database metadata",
+				slog.String("instance", patch.InstanceID),
+				slog.String("database", patch.DatabaseName),
+				slog.Any("fields", fields))
 		}
 		metadataBytes, err := protojson.Marshal(md)
 		if err != nil {
