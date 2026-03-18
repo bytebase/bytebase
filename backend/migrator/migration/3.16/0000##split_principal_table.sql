@@ -87,8 +87,6 @@ BEGIN
     FROM principal WHERE type = 'WORKLOAD_IDENTITY'
     ON CONFLICT (email) DO NOTHING;
 
-    -- Clean up principal table.
-    DELETE FROM principal WHERE type != 'END_USER';
 END $$;
 
 -- Drop FK constraints on creator/deleter columns that can reference SA/WI emails.
@@ -104,6 +102,17 @@ ALTER TABLE revision DROP CONSTRAINT IF EXISTS revision_deleter_fkey;
 ALTER TABLE release DROP CONSTRAINT IF EXISTS release_creator_fkey;
 ALTER TABLE access_grant DROP CONSTRAINT IF EXISTS access_grant_creator_fkey;
 
+
+-- Clean up principal only after dropping creator/deleter FKs that may still reference SA/WI emails.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'principal' AND column_name = 'type'
+    ) THEN
+        DELETE FROM principal WHERE type != 'END_USER';
+    END IF;
+END $$;
 -- Add missing index for plan.creator (queried in plan filter).
 CREATE INDEX IF NOT EXISTS idx_plan_creator ON plan(creator);
 
