@@ -307,107 +307,307 @@ func TestMigration3_16_2_DropUnusedIDColumnsReusesNaturalKeyIndexes(t *testing.T
 	db := container.GetDB()
 
 	setup := `
-		CREATE TABLE project (
-			id INT PRIMARY KEY,
-			resource_id TEXT NOT NULL
-		);
-		CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
-		CREATE TABLE project_child (
-			project TEXT NOT NULL REFERENCES project(resource_id)
-		);
+			CREATE TABLE project (
+				id INT PRIMARY KEY,
+				resource_id TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
+			CREATE TABLE project_child (
+				project TEXT NOT NULL REFERENCES project(resource_id)
+			);
 
-		CREATE TABLE instance (
-			id INT PRIMARY KEY,
-			resource_id TEXT NOT NULL
-		);
-		CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
-		CREATE TABLE instance_child (
-			instance TEXT NOT NULL REFERENCES instance(resource_id)
-		);
+			CREATE TABLE instance (
+				id INT PRIMARY KEY,
+				resource_id TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
+			CREATE TABLE instance_child (
+				instance TEXT NOT NULL REFERENCES instance(resource_id)
+			);
 
-		CREATE TABLE db (
-			id INT PRIMARY KEY,
-			instance TEXT NOT NULL REFERENCES instance(resource_id),
-			name TEXT NOT NULL
-		);
-		CREATE UNIQUE INDEX idx_db_unique_instance_name ON db(instance, name);
-		CREATE TABLE db_child (
-			instance TEXT NOT NULL,
-			db_name TEXT NOT NULL,
-			CONSTRAINT db_child_fk FOREIGN KEY (instance, db_name) REFERENCES db(instance, name)
-		);
+			CREATE TABLE db (
+				id INT PRIMARY KEY,
+				instance TEXT NOT NULL REFERENCES instance(resource_id),
+				name TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_db_unique_instance_name ON db(instance, name);
+			CREATE TABLE db_child (
+				instance TEXT NOT NULL,
+				db_name TEXT NOT NULL,
+				CONSTRAINT db_child_fk FOREIGN KEY (instance, db_name) REFERENCES db(instance, name)
+			);
 
-		INSERT INTO project(id, resource_id) VALUES (1, 'projects/demo');
-		INSERT INTO project_child(project) VALUES ('projects/demo');
-		INSERT INTO instance(id, resource_id) VALUES (1, 'instances/demo');
-		INSERT INTO instance_child(instance) VALUES ('instances/demo');
-		INSERT INTO db(id, instance, name) VALUES (1, 'instances/demo', 'db1');
-		INSERT INTO db_child(instance, db_name) VALUES ('instances/demo', 'db1');
-	`
+			CREATE TABLE setting (
+				id INT PRIMARY KEY,
+				name TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
+			CREATE TABLE setting_child (
+				setting_name TEXT NOT NULL REFERENCES setting(name)
+			);
+
+			CREATE TABLE policy (
+				id INT PRIMARY KEY,
+				resource_type TEXT NOT NULL,
+				resource TEXT NOT NULL,
+				type TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_type ON policy(resource_type, resource, type);
+			CREATE TABLE policy_child (
+				resource_type TEXT NOT NULL,
+				resource TEXT NOT NULL,
+				policy_type TEXT NOT NULL,
+				CONSTRAINT policy_child_fk FOREIGN KEY (resource_type, resource, policy_type) REFERENCES policy(resource_type, resource, type)
+			);
+
+			CREATE TABLE idp (
+				id INT PRIMARY KEY,
+				resource_id TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_idp_unique_resource_id ON idp(resource_id);
+			CREATE TABLE idp_child (
+				idp TEXT NOT NULL REFERENCES idp(resource_id)
+			);
+
+			CREATE TABLE role (
+				id INT PRIMARY KEY,
+				resource_id TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_role_unique_resource_id ON role(resource_id);
+			CREATE TABLE role_child (
+				role TEXT NOT NULL REFERENCES role(resource_id)
+			);
+
+			CREATE TABLE db_schema (
+				id INT PRIMARY KEY,
+				instance TEXT NOT NULL,
+				db_name TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance, db_name);
+			CREATE TABLE db_schema_child (
+				instance TEXT NOT NULL,
+				db_name TEXT NOT NULL,
+				CONSTRAINT db_schema_child_fk FOREIGN KEY (instance, db_name) REFERENCES db_schema(instance, db_name)
+			);
+
+			CREATE TABLE db_group (
+				id INT PRIMARY KEY,
+				project TEXT NOT NULL,
+				resource_id TEXT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_db_group_unique_project_resource_id ON db_group(project, resource_id);
+			CREATE TABLE db_group_child (
+				project TEXT NOT NULL,
+				resource_id TEXT NOT NULL,
+				CONSTRAINT db_group_child_fk FOREIGN KEY (project, resource_id) REFERENCES db_group(project, resource_id)
+			);
+
+			CREATE TABLE release (
+				id INT PRIMARY KEY,
+				project TEXT NOT NULL,
+				train TEXT NOT NULL,
+				iteration INT NOT NULL
+			);
+			CREATE UNIQUE INDEX idx_release_project_train_iteration ON release(project, train, iteration);
+			CREATE TABLE release_child (
+				project TEXT NOT NULL,
+				train TEXT NOT NULL,
+				iteration INT NOT NULL,
+				CONSTRAINT release_child_fk FOREIGN KEY (project, train, iteration) REFERENCES release(project, train, iteration)
+			);
+
+			INSERT INTO project(id, resource_id) VALUES (1, 'projects/demo');
+			INSERT INTO project_child(project) VALUES ('projects/demo');
+			INSERT INTO instance(id, resource_id) VALUES (1, 'instances/demo');
+			INSERT INTO instance_child(instance) VALUES ('instances/demo');
+			INSERT INTO db(id, instance, name) VALUES (1, 'instances/demo', 'db1');
+			INSERT INTO db_child(instance, db_name) VALUES ('instances/demo', 'db1');
+			INSERT INTO setting(id, name) VALUES (1, 'bb.workspace');
+			INSERT INTO setting_child(setting_name) VALUES ('bb.workspace');
+			INSERT INTO policy(id, resource_type, resource, type) VALUES (1, 'PROJECT', 'projects/demo', 'IAM');
+			INSERT INTO policy_child(resource_type, resource, policy_type) VALUES ('PROJECT', 'projects/demo', 'IAM');
+			INSERT INTO idp(id, resource_id) VALUES (1, 'idps/demo');
+			INSERT INTO idp_child(idp) VALUES ('idps/demo');
+			INSERT INTO role(id, resource_id) VALUES (1, 'roles/demo');
+			INSERT INTO role_child(role) VALUES ('roles/demo');
+			INSERT INTO db_schema(id, instance, db_name) VALUES (1, 'instances/demo', 'db1');
+			INSERT INTO db_schema_child(instance, db_name) VALUES ('instances/demo', 'db1');
+			INSERT INTO db_group(id, project, resource_id) VALUES (1, 'projects/demo', 'groups/demo');
+			INSERT INTO db_group_child(project, resource_id) VALUES ('projects/demo', 'groups/demo');
+			INSERT INTO release(id, project, train, iteration) VALUES (1, 'projects/demo', 'trains/demo', 1);
+			INSERT INTO release_child(project, train, iteration) VALUES ('projects/demo', 'trains/demo', 1);
+		`
 	_, err := db.ExecContext(ctx, setup)
 	require.NoError(t, err)
 
 	// Run the exact 3.16.2 statements for the affected tables.
 	migrate := `
-		ALTER TABLE project DROP CONSTRAINT IF EXISTS project_pkey;
-		ALTER TABLE project DROP COLUMN IF EXISTS id;
-		DO $$
-		BEGIN
-			IF to_regclass('idx_project_unique_resource_id') IS NOT NULL THEN
-				ALTER TABLE project ADD CONSTRAINT project_pkey PRIMARY KEY USING INDEX idx_project_unique_resource_id;
-			ELSE
-				ALTER TABLE project ADD PRIMARY KEY (resource_id);
-			END IF;
-		END $$;
+			ALTER TABLE project DROP CONSTRAINT IF EXISTS project_pkey;
+			ALTER TABLE project DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_project_unique_resource_id') IS NOT NULL THEN
+					ALTER TABLE project ADD CONSTRAINT project_pkey PRIMARY KEY USING INDEX idx_project_unique_resource_id;
+				ELSE
+					ALTER TABLE project ADD PRIMARY KEY (resource_id);
+				END IF;
+			END $$;
 
-		ALTER TABLE instance DROP CONSTRAINT IF EXISTS instance_pkey;
-		ALTER TABLE instance DROP COLUMN IF EXISTS id;
-		DO $$
-		BEGIN
-			IF to_regclass('idx_instance_unique_resource_id') IS NOT NULL THEN
-				ALTER TABLE instance ADD CONSTRAINT instance_pkey PRIMARY KEY USING INDEX idx_instance_unique_resource_id;
-			ELSE
-				ALTER TABLE instance ADD PRIMARY KEY (resource_id);
-			END IF;
-		END $$;
+			ALTER TABLE instance DROP CONSTRAINT IF EXISTS instance_pkey;
+			ALTER TABLE instance DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_instance_unique_resource_id') IS NOT NULL THEN
+					ALTER TABLE instance ADD CONSTRAINT instance_pkey PRIMARY KEY USING INDEX idx_instance_unique_resource_id;
+				ELSE
+					ALTER TABLE instance ADD PRIMARY KEY (resource_id);
+				END IF;
+			END $$;
 
-		ALTER TABLE db DROP CONSTRAINT IF EXISTS db_pkey;
-		ALTER TABLE db DROP COLUMN IF EXISTS id;
-		DO $$
-		BEGIN
-			IF to_regclass('idx_db_unique_instance_name') IS NOT NULL THEN
-				ALTER TABLE db ADD CONSTRAINT db_pkey PRIMARY KEY USING INDEX idx_db_unique_instance_name;
-			ELSE
-				ALTER TABLE db ADD PRIMARY KEY (instance, name);
-			END IF;
-		END $$;
-	`
+			ALTER TABLE db DROP CONSTRAINT IF EXISTS db_pkey;
+			ALTER TABLE db DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_db_unique_instance_name') IS NOT NULL THEN
+					ALTER TABLE db ADD CONSTRAINT db_pkey PRIMARY KEY USING INDEX idx_db_unique_instance_name;
+				ELSE
+					ALTER TABLE db ADD PRIMARY KEY (instance, name);
+				END IF;
+			END $$;
+
+			ALTER TABLE setting DROP CONSTRAINT IF EXISTS setting_pkey;
+			ALTER TABLE setting DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_setting_unique_name') IS NOT NULL THEN
+					ALTER TABLE setting ADD CONSTRAINT setting_pkey PRIMARY KEY USING INDEX idx_setting_unique_name;
+				ELSE
+					ALTER TABLE setting ADD PRIMARY KEY (name);
+				END IF;
+			END $$;
+
+			ALTER TABLE policy DROP CONSTRAINT IF EXISTS policy_pkey;
+			ALTER TABLE policy DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_policy_unique_resource_type_resource_type') IS NOT NULL THEN
+					ALTER TABLE policy ADD CONSTRAINT policy_pkey PRIMARY KEY USING INDEX idx_policy_unique_resource_type_resource_type;
+				ELSE
+					ALTER TABLE policy ADD PRIMARY KEY (resource_type, resource, type);
+				END IF;
+			END $$;
+
+			ALTER TABLE idp DROP CONSTRAINT IF EXISTS idp_pkey;
+			ALTER TABLE idp DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_idp_unique_resource_id') IS NOT NULL THEN
+					ALTER TABLE idp ADD CONSTRAINT idp_pkey PRIMARY KEY USING INDEX idx_idp_unique_resource_id;
+				ELSE
+					ALTER TABLE idp ADD PRIMARY KEY (resource_id);
+				END IF;
+			END $$;
+
+			ALTER TABLE role DROP CONSTRAINT IF EXISTS role_pkey;
+			ALTER TABLE role DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_role_unique_resource_id') IS NOT NULL THEN
+					ALTER TABLE role ADD CONSTRAINT role_pkey PRIMARY KEY USING INDEX idx_role_unique_resource_id;
+				ELSE
+					ALTER TABLE role ADD PRIMARY KEY (resource_id);
+				END IF;
+			END $$;
+
+			ALTER TABLE db_schema DROP CONSTRAINT IF EXISTS db_schema_pkey;
+			ALTER TABLE db_schema DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_db_schema_unique_instance_db_name') IS NOT NULL THEN
+					ALTER TABLE db_schema ADD CONSTRAINT db_schema_pkey PRIMARY KEY USING INDEX idx_db_schema_unique_instance_db_name;
+				ELSE
+					ALTER TABLE db_schema ADD PRIMARY KEY (instance, db_name);
+				END IF;
+			END $$;
+
+			ALTER TABLE db_group DROP CONSTRAINT IF EXISTS db_group_pkey;
+			ALTER TABLE db_group DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_db_group_unique_project_resource_id') IS NOT NULL THEN
+					ALTER TABLE db_group ADD CONSTRAINT db_group_pkey PRIMARY KEY USING INDEX idx_db_group_unique_project_resource_id;
+				ELSE
+					ALTER TABLE db_group ADD PRIMARY KEY (project, resource_id);
+				END IF;
+			END $$;
+
+			ALTER TABLE release DROP CONSTRAINT IF EXISTS release_pkey;
+			ALTER TABLE release DROP COLUMN IF EXISTS id;
+			DO $$
+			BEGIN
+				IF to_regclass('idx_release_project_train_iteration') IS NOT NULL THEN
+					ALTER TABLE release ADD CONSTRAINT release_pkey PRIMARY KEY USING INDEX idx_release_project_train_iteration;
+				ELSE
+					ALTER TABLE release ADD PRIMARY KEY (project, train, iteration);
+				END IF;
+			END $$;
+		`
 	_, err = db.ExecContext(ctx, migrate)
 	require.NoError(t, err, "migration 3.16.2 must reuse dependent natural-key indexes")
+
+	assertPromotedIndex := func(indexName, constraintName string) {
+		t.Helper()
+
+		var exists bool
+		err := db.QueryRowContext(ctx, `SELECT to_regclass($1) IS NOT NULL`, constraintName).Scan(&exists)
+		require.NoError(t, err)
+		assert.True(t, exists)
+
+		err = db.QueryRowContext(ctx, `SELECT to_regclass($1) IS NOT NULL`, indexName).Scan(&exists)
+		require.NoError(t, err)
+		assert.False(t, exists)
+	}
+
+	assertForeignKeyStillEnforced := func(insertSQL string, args ...any) {
+		t.Helper()
+
+		_, err := db.ExecContext(ctx, insertSQL, args...)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "foreign key")
+	}
 
 	var exists bool
 	err = db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'project' AND column_name = 'id')`).Scan(&exists)
 	require.NoError(t, err)
 	assert.False(t, exists)
 
-	err = db.QueryRowContext(ctx, `SELECT to_regclass('project_pkey') IS NOT NULL`).Scan(&exists)
-	require.NoError(t, err)
-	assert.True(t, exists)
-	_, err = db.ExecContext(ctx, `INSERT INTO project_child(project) VALUES ('projects/missing')`)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "foreign key")
+	assertPromotedIndex("idx_project_unique_resource_id", "project_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO project_child(project) VALUES ('projects/missing')`)
 
-	err = db.QueryRowContext(ctx, `SELECT to_regclass('instance_pkey') IS NOT NULL`).Scan(&exists)
-	require.NoError(t, err)
-	assert.True(t, exists)
-	_, err = db.ExecContext(ctx, `INSERT INTO instance_child(instance) VALUES ('instances/missing')`)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "foreign key")
+	assertPromotedIndex("idx_instance_unique_resource_id", "instance_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO instance_child(instance) VALUES ('instances/missing')`)
 
-	err = db.QueryRowContext(ctx, `SELECT to_regclass('db_pkey') IS NOT NULL`).Scan(&exists)
-	require.NoError(t, err)
-	assert.True(t, exists)
-	_, err = db.ExecContext(ctx, `INSERT INTO db_child(instance, db_name) VALUES ('instances/demo', 'missing')`)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "foreign key")
+	assertPromotedIndex("idx_db_unique_instance_name", "db_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO db_child(instance, db_name) VALUES ('instances/demo', 'missing')`)
+
+	assertPromotedIndex("idx_setting_unique_name", "setting_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO setting_child(setting_name) VALUES ('bb.missing')`)
+
+	assertPromotedIndex("idx_policy_unique_resource_type_resource_type", "policy_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO policy_child(resource_type, resource, policy_type) VALUES ('PROJECT', 'projects/demo', 'MISSING')`)
+
+	assertPromotedIndex("idx_idp_unique_resource_id", "idp_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO idp_child(idp) VALUES ('idps/missing')`)
+
+	assertPromotedIndex("idx_role_unique_resource_id", "role_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO role_child(role) VALUES ('roles/missing')`)
+
+	assertPromotedIndex("idx_db_schema_unique_instance_db_name", "db_schema_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO db_schema_child(instance, db_name) VALUES ('instances/demo', 'missing')`)
+
+	assertPromotedIndex("idx_db_group_unique_project_resource_id", "db_group_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO db_group_child(project, resource_id) VALUES ('projects/demo', 'groups/missing')`)
+
+	assertPromotedIndex("idx_release_project_train_iteration", "release_pkey")
+	assertForeignKeyStillEnforced(`INSERT INTO release_child(project, train, iteration) VALUES ('projects/demo', 'trains/demo', 2)`)
 }
