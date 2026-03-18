@@ -157,7 +157,7 @@ func validateMap(fd protoreflect.FieldDescriptor, m protoreflect.Map, path strin
 	m.Range(func(k protoreflect.MapKey, mv protoreflect.Value) bool {
 		ks := k.String()
 		if !utf8.ValidString(ks) {
-			*invalid = append(*invalid, path+".key="+ks)
+			*invalid = append(*invalid, path+".key="+strings.ToValidUTF8(ks, "\ufffd"))
 		}
 		switch {
 		case valueFD.Kind() == protoreflect.StringKind:
