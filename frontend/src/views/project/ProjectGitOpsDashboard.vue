@@ -244,13 +244,18 @@
                 </i18n-t>
               </NButton>
             </div>
-            <div v-show="showSqlReviewYaml" class="relative rounded-xs p-4 bg-gray-50">
+            <div
+              v-show="showSqlReviewYaml"
+              class="relative rounded-xs p-4 bg-gray-50"
+            >
               <div class="absolute top-2 right-2 p-2">
                 <CopyButton size="medium" :content="githubSqlReviewYaml" />
               </div>
-              <NConfigProvider :hljs="hljs">
-                <NCode language="yaml" :code="githubSqlReviewYaml" />
-              </NConfigProvider>
+              <div class="overflow-x-auto pr-12">
+                <NConfigProvider :hljs="hljs">
+                  <NCode language="yaml" :code="githubSqlReviewYaml" />
+                </NConfigProvider>
+              </div>
             </div>
           </div>
           <!-- release.yml -->
@@ -278,13 +283,18 @@
                 </i18n-t>
               </NButton>
             </div>
-            <div v-show="showReleaseYaml" class="relative rounded-xs p-4 bg-gray-50">
+            <div
+              v-show="showReleaseYaml"
+              class="relative rounded-xs p-4 bg-gray-50"
+            >
               <div class="absolute top-2 right-2 p-2">
                 <CopyButton size="medium" :content="githubReleaseYaml" />
               </div>
-              <NConfigProvider :hljs="hljs">
-                <NCode language="yaml" :code="githubReleaseYaml" />
-              </NConfigProvider>
+              <div class="overflow-x-auto pr-12">
+                <NConfigProvider :hljs="hljs">
+                  <NCode language="yaml" :code="githubReleaseYaml" />
+                </NConfigProvider>
+              </div>
             </div>
           </div>
         </NTabPane>
@@ -316,13 +326,18 @@
                 </i18n-t>
               </NButton>
             </div>
-            <div v-show="showGitlabCiYaml" class="relative rounded-xs p-4 bg-gray-50">
+            <div
+              v-show="showGitlabCiYaml"
+              class="relative rounded-xs p-4 bg-gray-50"
+            >
               <div class="absolute top-2 right-2 p-2">
                 <CopyButton size="medium" :content="gitlabCiYaml" />
               </div>
-              <NConfigProvider :hljs="hljs">
-                <NCode language="yaml" :code="gitlabCiYaml" />
-              </NConfigProvider>
+              <div class="overflow-x-auto pr-12">
+                <NConfigProvider :hljs="hljs">
+                  <NCode language="yaml" :code="gitlabCiYaml" />
+                </NConfigProvider>
+              </div>
             </div>
           </div>
         </NTabPane>
@@ -354,9 +369,11 @@
           <div class="absolute top-2 right-2 p-2">
             <CopyButton size="medium" :content="sampleSql" />
           </div>
-          <NConfigProvider :hljs="hljs">
-            <NCode language="sql" :code="sampleSql" />
-          </NConfigProvider>
+          <div class="overflow-x-auto pr-12">
+            <NConfigProvider :hljs="hljs">
+              <NCode language="sql" :code="sampleSql" />
+            </NConfigProvider>
+          </div>
         </div>
       </div>
 
