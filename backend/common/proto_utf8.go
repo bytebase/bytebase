@@ -123,42 +123,49 @@ func validateMessage(m protoreflect.Message, prefix string, invalid *[]string) {
 		path := prefix + string(fd.Name())
 		switch {
 		case fd.IsList():
-			list := v.List()
-			for i := 0; i < list.Len(); i++ {
-				el := list.Get(i)
-				elPath := fmt.Sprintf("%s[%d]", path, i)
-				switch {
-				case fd.Kind() == protoreflect.StringKind:
-					if !utf8.ValidString(el.String()) {
-						*invalid = append(*invalid, elPath)
-					}
-				case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
-					validateMessage(el.Message(), elPath+".", invalid)
-				}
-			}
+			validateList(fd, v.List(), path, invalid)
 		case fd.IsMap():
-			valueFD := fd.MapValue()
-			v.Map().Range(func(k protoreflect.MapKey, mv protoreflect.Value) bool {
-				ks := k.String()
-				if !utf8.ValidString(ks) {
-					*invalid = append(*invalid, path+".key="+ks)
-				}
-				switch {
-				case valueFD.Kind() == protoreflect.StringKind:
-					if !utf8.ValidString(mv.String()) {
-						*invalid = append(*invalid, path+"["+ks+"]")
-					}
-				case valueFD.Kind() == protoreflect.MessageKind || valueFD.Kind() == protoreflect.GroupKind:
-					validateMessage(mv.Message(), path+"["+ks+"].", invalid)
-				}
-				return true
-			})
+			validateMap(fd, v.Map(), path, invalid)
 		case fd.Kind() == protoreflect.StringKind:
 			if !utf8.ValidString(v.String()) {
 				*invalid = append(*invalid, path)
 			}
 		case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
 			validateMessage(v.Message(), path+".", invalid)
+		}
+		return true
+	})
+}
+
+func validateList(fd protoreflect.FieldDescriptor, list protoreflect.List, path string, invalid *[]string) {
+	for i := 0; i < list.Len(); i++ {
+		el := list.Get(i)
+		elPath := fmt.Sprintf("%s[%d]", path, i)
+		switch {
+		case fd.Kind() == protoreflect.StringKind:
+			if !utf8.ValidString(el.String()) {
+				*invalid = append(*invalid, elPath)
+			}
+		case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
+			validateMessage(el.Message(), elPath+".", invalid)
+		}
+	}
+}
+
+func validateMap(fd protoreflect.FieldDescriptor, m protoreflect.Map, path string, invalid *[]string) {
+	valueFD := fd.MapValue()
+	m.Range(func(k protoreflect.MapKey, mv protoreflect.Value) bool {
+		ks := k.String()
+		if !utf8.ValidString(ks) {
+			*invalid = append(*invalid, path+".key="+ks)
+		}
+		switch {
+		case valueFD.Kind() == protoreflect.StringKind:
+			if !utf8.ValidString(mv.String()) {
+				*invalid = append(*invalid, path+"["+ks+"]")
+			}
+		case valueFD.Kind() == protoreflect.MessageKind || valueFD.Kind() == protoreflect.GroupKind:
+			validateMessage(mv.Message(), path+"["+ks+"].", invalid)
 		}
 		return true
 	})
