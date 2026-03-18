@@ -745,6 +745,7 @@ var (
 		"information_schema":       true,
 		"pg_catalog":               true,
 		"pg_toast":                 true,
+		"pg_bitmapindex":           true,
 		"rw_catalog":               true,
 		"timescaledb_information":  true,
 		"timescaledb_experimental": true,
