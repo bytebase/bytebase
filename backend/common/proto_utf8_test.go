@@ -129,3 +129,79 @@ func TestSanitizeProtoStringFields_ValidDataUnchanged(t *testing.T) {
 	assert.Equal(t, "production", msg.GetLabels()["env"])
 	assert.Equal(t, "us-east-1", msg.GetLabels()["region"])
 }
+
+func TestValidateProtoUTF8_NoIssues(t *testing.T) {
+	msg := &storepb.DatabaseMetadata{
+		Labels: map[string]string{
+			"env": "production",
+		},
+		SyncError: "all good",
+	}
+	paths := ValidateProtoUTF8(msg)
+	assert.Empty(t, paths)
+}
+
+func TestValidateProtoUTF8_InvalidString(t *testing.T) {
+	msg := &storepb.DatabaseMetadata{
+		SyncError: "bad\xff",
+	}
+	paths := ValidateProtoUTF8(msg)
+	require.Len(t, paths, 1)
+	assert.Equal(t, "sync_error", paths[0])
+}
+
+func TestValidateProtoUTF8_InvalidMapValue(t *testing.T) {
+	msg := &storepb.DatabaseMetadata{
+		Labels: map[string]string{
+			"key": "val\xff",
+		},
+	}
+	paths := ValidateProtoUTF8(msg)
+	require.Len(t, paths, 1)
+	assert.Contains(t, paths[0], "labels")
+}
+
+func TestValidateProtoUTF8_InvalidMapKey(t *testing.T) {
+	msg := &storepb.DatabaseMetadata{
+		Labels: map[string]string{
+			"bad\xff": "value",
+		},
+	}
+	paths := ValidateProtoUTF8(msg)
+	require.Len(t, paths, 1)
+	assert.Contains(t, paths[0], "labels")
+}
+
+func TestValidateProtoUTF8_NestedFields(t *testing.T) {
+	msg := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:    "id",
+								Comment: "bad\xc0\xaf",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	paths := ValidateProtoUTF8(msg)
+	require.Len(t, paths, 1)
+	assert.Contains(t, paths[0], "comment")
+}
+
+func TestValidateProtoUTF8_Nil(t *testing.T) {
+	paths := ValidateProtoUTF8(nil)
+	assert.Nil(t, paths)
+
+	var msg *storepb.DatabaseMetadata
+	paths = ValidateProtoUTF8(msg)
+	assert.Nil(t, paths)
+}

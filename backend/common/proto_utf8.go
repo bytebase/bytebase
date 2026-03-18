@@ -2,6 +2,7 @@
 package common
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -99,4 +100,65 @@ func sanitizeMap(fd protoreflect.FieldDescriptor, m protoreflect.Map) {
 		m.Clear(bk.original)
 		m.Set(protoreflect.ValueOfString(bk.cleaned).MapKey(), val)
 	}
+}
+
+// ValidateProtoUTF8 returns field paths containing invalid UTF-8.
+// It is read-only and does not modify the message.
+func ValidateProtoUTF8(msg proto.Message) []string {
+	if msg == nil {
+		return nil
+	}
+	v := msg.ProtoReflect()
+	if !v.IsValid() {
+		return nil
+	}
+	var invalid []string
+	validateMessage(v, "", &invalid)
+	return invalid
+}
+
+func validateMessage(m protoreflect.Message, prefix string, invalid *[]string) {
+	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		path := prefix + string(fd.Name())
+		switch {
+		case fd.IsList():
+			list := v.List()
+			for i := 0; i < list.Len(); i++ {
+				el := list.Get(i)
+				elPath := fmt.Sprintf("%s[%d]", path, i)
+				switch {
+				case fd.Kind() == protoreflect.StringKind:
+					if !utf8.ValidString(el.String()) {
+						*invalid = append(*invalid, elPath)
+					}
+				case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
+					validateMessage(el.Message(), elPath+".", invalid)
+				}
+			}
+		case fd.IsMap():
+			valueFD := fd.MapValue()
+			v.Map().Range(func(k protoreflect.MapKey, mv protoreflect.Value) bool {
+				ks := k.String()
+				if !utf8.ValidString(ks) {
+					*invalid = append(*invalid, path+".key="+ks)
+				}
+				switch {
+				case valueFD.Kind() == protoreflect.StringKind:
+					if !utf8.ValidString(mv.String()) {
+						*invalid = append(*invalid, path+"["+ks+"]")
+					}
+				case valueFD.Kind() == protoreflect.MessageKind || valueFD.Kind() == protoreflect.GroupKind:
+					validateMessage(mv.Message(), path+"["+ks+"].", invalid)
+				}
+				return true
+			})
+		case fd.Kind() == protoreflect.StringKind:
+			if !utf8.ValidString(v.String()) {
+				*invalid = append(*invalid, path)
+			}
+		case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
+			validateMessage(v.Message(), path+".", invalid)
+		}
+		return true
+	})
 }
