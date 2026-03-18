@@ -181,6 +181,7 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 		return nil, err
 	}
 	common.SanitizeProtoStringFields(&databaseSchema)
+	// databaseConfig is not sanitized — it contains user/API-provided data, not external database sync data.
 	schema = []byte(strings.ToValidUTF8(string(schema), ""))
 	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {

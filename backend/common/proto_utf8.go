@@ -91,6 +91,7 @@ func sanitizeMap(fd protoreflect.FieldDescriptor, m protoreflect.Map) {
 	})
 
 	// Fix bad keys: remove old key and insert cleaned key.
+	// NOTE: if two bad keys sanitize to the same string, the second overwrites the first.
 	for _, bk := range badKeys {
 		val := bk.value
 		// Re-read the value in case it was also sanitized during the range.
