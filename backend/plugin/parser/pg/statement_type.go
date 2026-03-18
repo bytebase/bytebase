@@ -1,7 +1,8 @@
 package pg
 
 import (
-	"github.com/antlr4-go/antlr/v4"
+	"strings"
+
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,21 +26,35 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 
 	var allResults []StatementTypeWithPosition
 	for _, unifiedAST := range asts {
-		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
-			return nil, errors.New("expected ANTLR AST for PostgreSQL")
+			return nil, errors.New("expected OmniAST for PostgreSQL")
 		}
-		if antlrAST.Tree == nil {
-			return nil, errors.New("ANTLR tree is nil")
-		}
-
-		collector := &statementTypeCollectorWithPosition{
-			tokens:   antlrAST.Tokens,
-			baseLine: base.GetLineOffset(antlrAST.StartPosition),
+		if omniAST.Node == nil {
+			continue
 		}
 
-		antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)
-		allResults = append(allResults, collector.results...)
+		stmtType := classifyStatementType(omniAST.Node)
+		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
+			continue
+		}
+
+		line := 0
+		if omniAST.StartPosition != nil {
+			line = int(omniAST.StartPosition.Line)
+		}
+
+		// Compute end line from text
+		endLine := line
+		if omniAST.Text != "" {
+			endLine += strings.Count(omniAST.Text, "\n")
+		}
+
+		allResults = append(allResults, StatementTypeWithPosition{
+			Type: stmtType,
+			Line: endLine,
+			Text: omniAST.Text,
+		})
 	}
 
 	return allResults, nil
