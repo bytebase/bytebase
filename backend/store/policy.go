@@ -583,6 +583,9 @@ func (s *Store) CreatePolicy(ctx context.Context, create *PolicyMessage) (*Polic
 	}
 
 	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
+	if policy.Type == storepb.Policy_IAM {
+		s.iamPolicyCache.Remove(getIamPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource))
+	}
 
 	return policy, nil
 }
@@ -625,6 +628,10 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 	}
 
 	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
+
+	if policy.Type == storepb.Policy_IAM {
+		s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, policy.ResourceType, policy.Resource))
+	}
 
 	return policy, nil
 }
