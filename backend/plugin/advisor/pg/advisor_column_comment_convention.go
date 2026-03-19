@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -35,27 +32,25 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	rule := &columnCommentConventionRule{
-		level:   level,
-		title:   checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 		payload: commentPayload,
 	}
-
-	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	// Now validate all collected columns against comments
 	return rule.generateAdvice(), nil
 }
 
@@ -63,7 +58,7 @@ type columnInfo struct {
 	schema string
 	table  string
 	column string
-	line   int
+	line   int32
 }
 
 type commentInfo struct {
@@ -71,14 +66,12 @@ type commentInfo struct {
 	table   string
 	column  string
 	comment string
-	line    int
+	line    int32
 }
 
 type columnCommentConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
-	level   storepb.Advice_Status
-	title   string
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 
 	columns  []columnInfo
@@ -89,168 +82,124 @@ func (*columnCommentConventionRule) Name() string {
 	return "column_comment_convention"
 }
 
-func (r *columnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
-	case "Commentstmt":
-		r.handleCommentstmt(ctx.(*parser.CommentstmtContext))
+func (r *columnCommentConventionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
+	case *ast.CommentStmt:
+		r.handleCommentStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*columnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
+func (r *columnCommentConventionRule) handleCreateStmt(n *ast.CreateStmt) {
+	if n.Relation == nil {
+		return
+	}
+	tableName := n.Relation.Relname
+	cols, _ := omniTableElements(n)
+	for _, col := range cols {
+		r.columns = append(r.columns, columnInfo{
+			schema: "public",
+			table:  tableName,
+			column: col.Colname,
+			line:   r.absoluteLine(),
+		})
+	}
 }
 
-func (r *columnCommentConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnCommentConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	if n.Relation == nil {
 		return
 	}
-
-	tableName := r.extractTableName(ctx.AllQualified_name())
-	if tableName == "" {
-		return
-	}
-
-	// Extract all columns
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			if elem.ColumnDef() != nil && elem.ColumnDef().Colid() != nil {
-				columnName := pg.NormalizePostgreSQLColid(elem.ColumnDef().Colid())
+	tableName := n.Relation.Relname
+	for _, cmd := range omniAlterTableCmds(n) {
+		if cmd.Subtype == int(ast.AT_AddColumn) {
+			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
 				r.columns = append(r.columns, columnInfo{
-					schema: "public", // Default schema
+					schema: "public",
 					table:  tableName,
-					column: columnName,
-					line:   elem.ColumnDef().GetStart().GetLine(),
+					column: colDef.Colname,
+					line:   r.absoluteLine(),
 				})
 			}
 		}
 	}
 }
 
-func (r *columnCommentConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnCommentConventionRule) handleCommentStmt(n *ast.CommentStmt) {
+	if n.Objtype != ast.OBJECT_COLUMN {
 		return
 	}
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
+	list, ok := n.Object.(*ast.List)
+	if !ok || len(list.Items) < 2 {
 		return
 	}
 
-	tableName := ctx.Relation_expr().Qualified_name().GetText()
-	if tableName == "" {
+	var tableName, columnName string
+	items := list.Items
+	switch len(items) {
+	case 2:
+		tableName = omniStringVal(items[0])
+		columnName = omniStringVal(items[1])
+	case 3:
+		tableName = omniStringVal(items[1])
+		columnName = omniStringVal(items[2])
+	default:
 		return
-	}
-
-	// Check ALTER TABLE ADD COLUMN
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil && cmd.ColumnDef().Colid() != nil {
-				columnName := pg.NormalizePostgreSQLColid(cmd.ColumnDef().Colid())
-				r.columns = append(r.columns, columnInfo{
-					schema: "public", // Default schema
-					table:  tableName,
-					column: columnName,
-					line:   cmd.ColumnDef().GetStart().GetLine(),
-				})
-			}
-		}
-	}
-}
-
-func (r *columnCommentConventionRule) handleCommentstmt(ctx *parser.CommentstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is a COMMENT ON COLUMN statement
-	if ctx.COLUMN() == nil || ctx.Any_name() == nil {
-		return
-	}
-
-	// Extract table.column name from any_name
-	// any_name is like: table.column or schema.table.column
-	anyName := ctx.Any_name()
-	parts := pg.NormalizePostgreSQLAnyName(anyName)
-	if len(parts) < 2 {
-		return
-	}
-
-	tableName := parts[len(parts)-2]
-	columnName := parts[len(parts)-1]
-
-	// Extract comment text
-	comment := ""
-	if ctx.Comment_text() != nil && ctx.Comment_text().Sconst() != nil {
-		comment = extractStringConstant(ctx.Comment_text().Sconst())
 	}
 
 	r.comments = append(r.comments, commentInfo{
 		schema:  "public",
 		table:   tableName,
 		column:  columnName,
-		comment: comment,
-		line:    ctx.GetStart().GetLine(),
+		comment: n.Comment,
+		line:    r.absoluteLine(),
 	})
 }
 
-func (*columnCommentConventionRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
-	if len(qualifiedNames) == 0 {
-		return ""
-	}
-
-	// Return the last part (table name) from qualified name
-	return extractTableName(qualifiedNames[0])
+// absoluteLine returns the absolute 1-based line number for the current statement.
+func (r *columnCommentConventionRule) absoluteLine() int32 {
+	return r.ContentStartLine() + int32(r.BaseLine)
 }
 
 func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 	var adviceList []*storepb.Advice
 
-	// For each column, find its comment and validate
 	for _, col := range r.columns {
-		// Find the last matching comment for this column
 		var matchedComment *commentInfo
 		for i := range r.comments {
 			comment := &r.comments[i]
 			if comment.schema == col.schema && comment.table == col.table && comment.column == col.column {
 				matchedComment = comment
-				// Continue to find the last one
 			}
 		}
 
 		if matchedComment == nil || matchedComment.comment == "" {
 			if r.payload.Required {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  r.level,
+					Status:  r.Level,
 					Code:    code.CommentEmpty.Int32(),
-					Title:   r.title,
+					Title:   r.Title,
 					Content: fmt.Sprintf("Comment is required for column `%s.%s`", col.table, col.column),
 					StartPosition: &storepb.Position{
-						Line:   int32(col.line),
+						Line:   col.line,
 						Column: 0,
 					},
 				})
 			}
 		} else {
-			comment := matchedComment.comment
-
-			// Check max length
-			if r.payload.MaxLength > 0 && int32(len(comment)) > r.payload.MaxLength {
+			if r.payload.MaxLength > 0 && int32(len(matchedComment.comment)) > r.payload.MaxLength {
 				adviceList = append(adviceList, &storepb.Advice{
-					Status:  r.level,
+					Status:  r.Level,
 					Code:    code.CommentTooLong.Int32(),
-					Title:   r.title,
+					Title:   r.Title,
 					Content: fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", col.table, col.column, r.payload.MaxLength),
 					StartPosition: &storepb.Position{
-						Line:   int32(matchedComment.line),
+						Line:   matchedComment.line,
 						Column: 0,
 					},
 				})
@@ -259,4 +208,12 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 	}
 
 	return adviceList
+}
+
+// omniStringVal extracts a string value from a Node.
+func omniStringVal(n ast.Node) string {
+	if s, ok := n.(*ast.String); ok {
+		return s.Str
+	}
+	return ""
 }

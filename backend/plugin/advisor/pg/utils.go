@@ -104,6 +104,7 @@ func extractSchemaName(ctx parser.IQualified_nameContext) string {
 	return parts[0]
 }
 
+// nolint:unused
 // extractStringConstant extracts a string value from an Sconst context.
 // Removes surrounding quotes and handles basic escape sequences.
 func extractStringConstant(ctx parser.ISconstContext) string {
