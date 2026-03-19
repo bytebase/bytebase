@@ -364,14 +364,12 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 
 // signupAndLogin will signup and login as user demo@example.com.
 func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
-	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
-		User: &v1pb.User{
-			Email:    "demo@example.com",
-			Password: "1024bytebase",
-			Title:    "demo",
-		},
-	}))
-	if err != nil && !strings.Contains(err.Error(), "exist") {
+	// Use Signup API (creates principal + workspace) then Login to get a token.
+	if _, err := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+		Title:    "demo",
+	})); err != nil && !strings.Contains(err.Error(), "already registered") {
 		return "", err
 	}
 	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
@@ -381,6 +379,6 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ctl.principalName = userResp.Msg.Name
+	ctl.principalName = common.FormatUserEmail("demo@example.com")
 	return loginResp.Msg.Token, nil
 }

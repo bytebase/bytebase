@@ -68,7 +68,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 		if isSettingDisallowed(setting.Name) {
 			continue
 		}
-		settingMessage, err := convertToSettingMessage(setting, s.profile)
+		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 		}
@@ -116,7 +116,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// Only return whitelisted setting.
-	settingMessage, err := convertToSettingMessage(setting, s.profile)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
@@ -171,7 +171,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 	// audit log.
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
-		v1pbSetting, err := convertToSettingMessage(existedSetting, s.profile)
+		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
 		}
@@ -513,7 +513,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
 			}
 			if existedSetting != nil {
-				existedAISetting, err := convertToSettingMessage(existedSetting, s.profile)
+				existedAISetting, err := convertToSettingMessage(existedSetting)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
 				}
@@ -622,7 +622,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 	}
 
-	settingMessage, err := convertToSettingMessage(setting, s.profile)
+	settingMessage, err := convertToSettingMessage(setting)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}

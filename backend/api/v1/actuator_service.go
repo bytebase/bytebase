@@ -250,7 +250,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
 	}
-	if setting.DisallowSignup && !s.profile.SaaS {
+	if setting.DisallowSignup {
 		features = append(features, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP)
 	}
 	if setting.Require_2Fa {

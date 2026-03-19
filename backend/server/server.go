@@ -155,34 +155,33 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	sheetManager := sheet.NewManager()
 
 	if !s.profile.SaaS {
-		// TODO(ed): sample instance is only available for self-host
 		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
 
-		// Workspace may not exist yet on first boot (created during admin signup).
-		workspaceID, err := stores.GetWorkspaceID(ctx)
-		if err == nil && workspaceID != "" {
+		// Load workspace-dependent settings if workspace exists.
+		// On first boot (no workspace yet), these remain at defaults and get
+		// initialized when the workspace is created and settings are updated via API.
+		if workspaceID, _ := stores.GetWorkspaceID(ctx); workspaceID != "" {
 			if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
 				slog.Warn("failed to start sample instances", log.BBError(err))
 			}
 
-			// TODO(ed): EnableDebug should only be able to be configured in self-host
-			workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get workspace profile setting")
+			if workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID); err == nil {
+				profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
+				if workspaceProfile.EnableDebug {
+					log.LogLevel.Set(slog.LevelDebug)
+				}
+				if workspaceProfile.GetEnableAuditLogStdout() {
+					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err == nil {
+						s.profile.RuntimeEnableAuditLogStdout.Store(true)
+					}
+				}
+				telemetry.InitGlobalReporter(
+					workspaceID,
+					profile.Version,
+					profile.GitCommit,
+					workspaceProfile.GetEnableMetricCollection(),
+				)
 			}
-			profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
-			if workspaceProfile.EnableDebug {
-				log.LogLevel.Set(slog.LevelDebug)
-			}
-
-			// TODO(ed): EnableMetricCollection should only be able to be configured in self-host
-			// TODO(ed): refactor the telemetry, do NOT pass the workspaceID during initialization.
-			telemetry.InitGlobalReporter(
-				workspaceID,
-				profile.Version,
-				profile.GitCommit,
-				workspaceProfile.GetEnableMetricCollection(),
-			)
 		}
 	}
 
@@ -279,23 +278,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)
 	go mmm.Run(ctx, &s.runnerWG)
-
-	// TODO(ed): the GetEnableAuditLogStdout should only be able to be configured in self-host
-	if !s.profile.SaaS {
-		// Check workspace setting and set audit logger runtime flag
-		runWorkspaceID, _ := s.store.GetWorkspaceID(ctx)
-		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, runWorkspaceID)
-		if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
-			// Validate license before enabling (prevents usage after license downgrade/expiry)
-			if err := s.licenseService.IsFeatureEnabled(ctx, runWorkspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-				slog.Warn("audit logging enabled in workspace settings but license insufficient, keeping disabled",
-					log.BBError(err))
-			} else {
-				s.profile.RuntimeEnableAuditLogStdout.Store(true)
-				slog.Info("audit logging to stdout enabled via workspace setting")
-			}
-		}
-	}
 
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)

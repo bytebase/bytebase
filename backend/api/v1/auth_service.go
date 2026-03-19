@@ -232,10 +232,9 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		if err := validatePassword(ctx, s.store, workspaceID, request.Password); err != nil {
 			return nil, err
 		}
-	} else {
-		if len(request.Password) < 8 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should be no less than 8 characters"))
-		}
+	} else if len(request.Password) < 8 {
+		// TODO(ed): optimize this
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should be no less than 8 characters"))
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
