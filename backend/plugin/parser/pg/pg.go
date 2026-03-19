@@ -295,7 +295,9 @@ func normalizePostgreSQLSetTarget(ctx parser.ISet_targetContext) []string {
 func normalizePostgreSQLOptIndirection(ctx parser.IOpt_indirectionContext) []string {
 	var res []string
 	for _, child := range ctx.AllIndirection_el() {
-		res = append(res, normalizePostgreSQLIndirectionEl(child))
+		if part := normalizePostgreSQLIndirectionEl(child); part != "" {
+			res = append(res, part)
+		}
 	}
 	return res
 }
@@ -307,7 +309,9 @@ func normalizePostgreSQLIndirection(ctx parser.IIndirectionContext) []string {
 
 	var res []string
 	for _, child := range ctx.AllIndirection_el() {
-		res = append(res, normalizePostgreSQLIndirectionEl(child))
+		if part := normalizePostgreSQLIndirectionEl(child); part != "" {
+			res = append(res, part)
+		}
 	}
 	return res
 }
@@ -323,7 +327,9 @@ func normalizePostgreSQLIndirectionEl(ctx parser.IIndirection_elContext) string 
 		}
 		return normalizePostgreSQLAttrName(ctx.Attr_name())
 	}
-	return ctx.GetText()
+	// Array subscripts like col[expr] or col[start:end] are not part of the
+	// qualified column name — skip them so the base column name is preserved.
+	return ""
 }
 
 func normalizePostgreSQLAttrName(ctx parser.IAttr_nameContext) string {
