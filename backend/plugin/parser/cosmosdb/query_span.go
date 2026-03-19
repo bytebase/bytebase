@@ -80,11 +80,11 @@ func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
 	var originalContainerName string
 	var fromIdentifier string
 	fromClause := ctx.From_clause()
-	if i := fromClause.From_specification().From_source().Container_expression().Container_name().IDENTIFIER(); i != nil {
+	if i := fromClause.From_specification().From_source().Container_expression().Container_name().Identifier(); i != nil {
 		originalContainerName = i.GetText()
 	}
 	// Alias in the from source will shadow the original identifier.
-	if i := fromClause.From_specification().From_source().Container_expression().IDENTIFIER(); i != nil {
+	if i := fromClause.From_specification().From_source().Container_expression().Identifier(); i != nil {
 		fromIdentifier = i.GetText()
 	}
 
@@ -120,7 +120,7 @@ func extractPathFromObjectProperty(ctx parser.IObject_propertyContext, originalC
 	path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
 	var propertyName string
 	if ctx.Property_alias() != nil {
-		propertyName = ctx.Property_alias().IDENTIFIER().GetText()
+		propertyName = ctx.Property_alias().Identifier().GetText()
 	}
 
 	if propertyName == "" {
@@ -141,7 +141,7 @@ func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, origi
 
 	switch {
 	case ctx.Input_alias() != nil:
-		name := ctx.Input_alias().IDENTIFIER().GetText()
+		name := ctx.Input_alias().Identifier().GetText()
 		if fromAlias != "" && name == fromAlias {
 			name = originalContainerName
 		}
@@ -150,15 +150,21 @@ func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, origi
 		}
 	case ctx.DOT_SYMBOL() != nil:
 		// Most usual case like a.b.c.d.
-		path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
-		path = append(path, base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
+		path := extractPathFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		path = append(path, base.NewItemSelector(ctx.Property_name().Identifier().GetText()))
 
 		return path
 	case ctx.LS_BRACKET_SYMBOL() != nil:
-		path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
+		path := extractPathFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
 		switch {
 		case ctx.DOUBLE_QUOTE_STRING_LITERAL() != nil:
 			text := ctx.DOUBLE_QUOTE_STRING_LITERAL().GetText()
+			if len(text) > 1 {
+				text = text[1 : len(text)-1]
+			}
+			path = append(path, base.NewItemSelector(text))
+		case ctx.SINGLE_QUOTE_STRING_LITERAL() != nil:
+			text := ctx.SINGLE_QUOTE_STRING_LITERAL().GetText()
 			if len(text) > 1 {
 				text = text[1 : len(text)-1]
 			}
@@ -181,9 +187,9 @@ func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, origi
 
 		return path
 	case ctx.Unary_operator() != nil:
-		return extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
+		return extractPathFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
 	default:
-		// Unsupported scalar expression type
+		// Unsupported scalar expression type (functions, operators, constants, etc.)
 	}
 
 	return nil

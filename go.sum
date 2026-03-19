@@ -257,6 +257,8 @@ github.com/bytebase/omni v0.0.0-20260318035856-4f43b2c93e35 h1:1z0q0B8LS8bmuOd2C
 github.com/bytebase/omni v0.0.0-20260318035856-4f43b2c93e35/go.mod h1:sHnw/Do16VheYa+ThYDBzY98EbkwFwWBzxh2CQuOgD0=
 github.com/bytebase/parser v0.0.0-20260228025849-39c76b45c98a h1:hTyZhniv0HzQYM2K6mG1XpOEKibsfLJ7jYhBf/1sXLc=
 github.com/bytebase/parser v0.0.0-20260228025849-39c76b45c98a/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
+github.com/bytebase/parser v0.0.0-20260318084752-6c474df57697 h1:/WgqQxX/gLsHS1WOx1rs5M/8kE9ecQAsgnQmlSr7p3c=
+github.com/bytebase/parser v0.0.0-20260318084752-6c474df57697/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=

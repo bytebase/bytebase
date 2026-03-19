@@ -30,11 +30,11 @@ func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext)
 
 	var originalContainerName string
 	var fromIdentifier string
-	if i := fromClause.From_specification().From_source().Container_expression().Container_name().IDENTIFIER(); i != nil {
+	if i := fromClause.From_specification().From_source().Container_expression().Container_name().Identifier(); i != nil {
 		originalContainerName = i.GetText()
 	}
 	// Alias in the from source will shadow the original identifier.
-	if i := fromClause.From_specification().From_source().Container_expression().IDENTIFIER(); i != nil {
+	if i := fromClause.From_specification().From_source().Container_expression().Identifier(); i != nil {
 		fromIdentifier = i.GetText()
 	}
 
@@ -43,9 +43,9 @@ func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext)
 }
 
 func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) map[string]*base.PathAST {
-	scalarExpression := ctx.Scalar_expression_in_where()
+	scalarExpression := ctx.Scalar_expression()
 
-	paths := extractPredicateFieldsFromScalarExpressionInWhere(scalarExpression, originalContainerName, fromAlias)
+	paths := extractPredicateFieldsFromScalarExpression(scalarExpression, originalContainerName, fromAlias)
 
 	r := make(map[string]*base.PathAST)
 	for _, path := range paths {
@@ -70,14 +70,14 @@ func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, orig
 	return r
 }
 
-func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expression_in_whereContext, originalContainerName string, fromAlias string) [][]base.SelectorNode {
+func extractPredicateFieldsFromScalarExpression(ctx parser.IScalar_expressionContext, originalContainerName string, fromAlias string) [][]base.SelectorNode {
 	if ctx == nil {
 		return nil
 	}
 
 	switch {
 	case ctx.Input_alias() != nil:
-		name := ctx.Input_alias().IDENTIFIER().GetText()
+		name := ctx.Input_alias().Identifier().GetText()
 		if fromAlias != "" && name == fromAlias {
 			name = originalContainerName
 		}
@@ -86,28 +86,47 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 				base.NewItemSelector(name),
 			},
 		}
-	case ctx.AND_SYMBOL() != nil, ctx.OR_SYMBOL() != nil:
-		allScalarExpressionInWheres := ctx.AllScalar_expression_in_where()
+	case ctx.AND_SYMBOL() != nil && ctx.BETWEEN_SYMBOL() == nil:
+		// AND logical operator (not BETWEEN...AND)
+		allScalarExpressions := ctx.AllScalar_expression()
 		var allPaths [][]base.SelectorNode
-		for _, expr := range allScalarExpressionInWheres {
-			paths := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
+		for _, expr := range allScalarExpressions {
+			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
+			allPaths = append(allPaths, paths...)
+		}
+		return allPaths
+	case ctx.OR_SYMBOL() != nil:
+		allScalarExpressions := ctx.AllScalar_expression()
+		var allPaths [][]base.SelectorNode
+		for _, expr := range allScalarExpressions {
+			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
 			allPaths = append(allPaths, paths...)
 		}
 		return allPaths
 	case ctx.DOT_SYMBOL() != nil:
 		// Most usual case like a.b.c.d.
-		paths := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
+		paths := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
 		for i := range paths {
-			paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
+			paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().Identifier().GetText()))
 		}
 		return paths
-	case ctx.LS_BRACKET_SYMBOL() != nil:
-		paths := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
+	case ctx.LS_BRACKET_SYMBOL() != nil && ctx.IN_SYMBOL() == nil:
+		// Bracket access like a["b"] or a[0], but NOT IN expression
+		paths := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
 		for i := range paths {
 			switch {
-			case ctx.Property_name() != nil:
-				paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
-				paths[i] = append(paths[i], base.NewItemSelector(ctx.Array_index().GetText()))
+			case ctx.DOUBLE_QUOTE_STRING_LITERAL() != nil:
+				text := ctx.DOUBLE_QUOTE_STRING_LITERAL().GetText()
+				if len(text) > 1 {
+					text = text[1 : len(text)-1]
+				}
+				paths[i] = append(paths[i], base.NewItemSelector(text))
+			case ctx.SINGLE_QUOTE_STRING_LITERAL() != nil:
+				text := ctx.SINGLE_QUOTE_STRING_LITERAL().GetText()
+				if len(text) > 1 {
+					text = text[1 : len(text)-1]
+				}
+				paths[i] = append(paths[i], base.NewItemSelector(text))
 			case ctx.Array_index() != nil:
 				if len(paths[i]) == 0 {
 					break
@@ -126,42 +145,93 @@ func extractPredicateFieldsFromScalarExpressionInWhere(ctx parser.IScalar_expres
 		}
 		return paths
 	case ctx.Unary_operator() != nil:
-		return extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
-	case ctx.Binary_operator() != nil:
-		left := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(1), originalContainerName, fromAlias)
+		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+	case ctx.NOT_SYMBOL() != nil && len(ctx.AllScalar_expression()) == 1:
+		// NOT expression
+		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+	case ctx.Comparison_operator() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.Multiplicative_operator() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.Additive_operator() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.Shift_operator() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.BIT_AND_SYMBOL() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.BIT_XOR_SYMBOL() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.BIT_OR_SYMBOL() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.DOUBLE_BAR_SYMBOL() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		return append(left, right...)
+	case ctx.IN_SYMBOL() != nil:
+		// IN expression: scalar_expression [NOT] IN (scalar_expression, ...)
+		var allPaths [][]base.SelectorNode
+		for _, expr := range ctx.AllScalar_expression() {
+			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
+			allPaths = append(allPaths, paths...)
+		}
+		return allPaths
+	case ctx.BETWEEN_SYMBOL() != nil:
+		// BETWEEN expression: scalar_expression [NOT] BETWEEN scalar_expression AND scalar_expression
+		var allPaths [][]base.SelectorNode
+		for _, expr := range ctx.AllScalar_expression() {
+			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
+			allPaths = append(allPaths, paths...)
+		}
+		return allPaths
+	case ctx.LIKE_SYMBOL() != nil:
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
 		return append(left, right...)
 	case ctx.QUESTION_MARK_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
-		mid := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(1), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(2), originalContainerName, fromAlias)
+		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
+		mid := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
+		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(2), originalContainerName, fromAlias)
 		return append(append(left, mid...), right...)
 	case ctx.Scalar_function_expression() != nil:
 		switch {
 		case ctx.Scalar_function_expression().Udf_scalar_function_expression() != nil:
-			allScalarExpressionInWheres := ctx.Scalar_function_expression().Udf_scalar_function_expression().AllScalar_expression_in_where()
+			allScalarExpressions := ctx.Scalar_function_expression().Udf_scalar_function_expression().AllScalar_expression()
 			var paths [][]base.SelectorNode
-			for _, expr := range allScalarExpressionInWheres {
-				path := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
+			for _, expr := range allScalarExpressions {
+				path := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
 				paths = append(paths, path...)
 			}
 			return paths
 		case ctx.Scalar_function_expression().Builtin_function_expression() != nil:
-			allScalarExpressionInWheres := ctx.Scalar_function_expression().Builtin_function_expression().AllScalar_expression_in_where()
+			allScalarExpressions := ctx.Scalar_function_expression().Builtin_function_expression().AllScalar_expression()
 			var paths [][]base.SelectorNode
-			for _, expr := range allScalarExpressionInWheres {
-				path := extractPredicateFieldsFromScalarExpressionInWhere(expr, originalContainerName, fromAlias)
+			for _, expr := range allScalarExpressions {
+				path := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
 				paths = append(paths, path...)
 			}
 			return paths
 		default:
-			// Other scalar function expression types
 			return nil
 		}
-	case ctx.LR_BRACKET_SYMBOL() != nil:
-		return extractPredicateFieldsFromScalarExpressionInWhere(ctx.Scalar_expression_in_where(0), originalContainerName, fromAlias)
+	case ctx.LR_BRACKET_SYMBOL() != nil && ctx.Select_() == nil && ctx.EXISTS_SYMBOL() == nil:
+		// Parenthesized expression
+		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
 	default:
-		// Return nil for unhandled cases
+		// Return nil for unhandled cases (constants, parameters, subqueries, etc.)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-- description: Test for declare temp table
+- description: basic field projection with alias
   statement: select c.category, c.salary["value"] FROM container c
   querySpan:
     type: 0
@@ -15,3 +15,232 @@
     sourcecolumns: []
     predicatecolumns: []
     predicatepaths: []
+- description: SELECT TOP with star
+  statement: SELECT TOP 10 * FROM c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: true
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT TOP with field projection
+  statement: SELECT TOP 5 c.name, c.email FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: email
+              path: container.email
+            - name: name
+              path: container.name
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with ORDER BY
+  statement: SELECT c.name, c.population FROM container c ORDER BY c.population DESC
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: name
+              path: container.name
+            - name: population
+              path: container.population
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with OFFSET LIMIT
+  statement: SELECT c.name FROM container c ORDER BY c.name OFFSET 0 LIMIT 10
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: name
+              path: container.name
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with function in projection
+  statement: SELECT UPPER(c.name) AS upperName, c.email FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: email
+              path: container.email
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with aggregation
+  statement: SELECT COUNT(1) AS totalRecords FROM c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with GROUP BY
+  statement: SELECT c.country, COUNT(1) AS cnt FROM container c GROUP BY c.country
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: country
+              path: container.country
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT DISTINCT VALUE
+  statement: SELECT DISTINCT VALUE c.country FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: country
+              path: container.country
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT VALUE
+  statement: SELECT VALUE c.name FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: name
+              path: container.name
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: SELECT with underscore fields
+  statement: SELECT c._ts, c._etag, c.name FROM container c
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: _etag
+              path: container._etag
+            - name: _ts
+              path: container._ts
+            - name: name
+              path: container.name
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths: []
+- description: WHERE with not-equal operator
+  statement: SELECT * FROM container c WHERE c.status != "inactive"
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: true
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths:
+        - container.status
+- description: WHERE with IN operator
+  statement: SELECT * FROM container c WHERE c.country IN ("US", "UK", "CA")
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: true
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths:
+        - container.country
+- description: WHERE with BETWEEN operator
+  statement: SELECT * FROM container c WHERE c.population BETWEEN 100000 AND 5000000
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: true
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths:
+        - container.population
+- description: WHERE with compound condition using new operators
+  statement: SELECT c.name, c.email FROM container c WHERE c.country != "US" AND c._ts > 1000
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths:
+            - name: email
+              path: container.email
+            - name: name
+              path: container.name
+          selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths:
+        - container._ts
+        - container.country
+- description: WHERE with function call
+  statement: SELECT * FROM container c WHERE CONTAINS(c.name, "test")
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: true
+    sourcecolumns: []
+    predicatecolumns: []
+    predicatepaths:
+        - container.name
