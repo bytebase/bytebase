@@ -522,60 +522,61 @@ func flattenRowValue(raw json.RawMessage) any {
 	if json.Unmarshal(raw, &m) != nil {
 		return string(raw)
 	}
-
 	for key, val := range m {
-		switch key {
-		case "nullValue":
-			return nil
-		case "boolValue":
-			var b bool
-			if json.Unmarshal(val, &b) == nil {
-				return b
-			}
-		case "stringValue":
-			var s string
-			if json.Unmarshal(val, &s) == nil {
-				return s
-			}
-		case "int32Value":
-			var n int32
-			if json.Unmarshal(val, &n) == nil {
-				return n
-			}
-		case "int64Value":
-			var s string
-			if json.Unmarshal(val, &s) == nil {
-				return s
-			}
-			// Fallback: might be numeric.
-			var n int64
-			if json.Unmarshal(val, &n) == nil {
-				return n
-			}
-		case "doubleValue", "floatValue":
-			var f float64
-			if json.Unmarshal(val, &f) == nil {
-				return f
-			}
-		case "timestampValue", "timestampTzValue":
-			// These are objects with a "value" field containing a string.
-			var ts map[string]string
-			if json.Unmarshal(val, &ts) == nil {
-				if v, ok := ts["value"]; ok {
-					return v
-				}
-			}
-		default:
-			// Unknown type — return raw string.
-			var s string
-			if json.Unmarshal(val, &s) == nil {
-				return s
-			}
-			return string(val)
+		if v, ok := unmarshalRowField(key, val); ok {
+			return v
 		}
 	}
-
 	return string(raw)
+}
+
+// unmarshalRowField decodes a single protojson RowValue oneof field.
+func unmarshalRowField(key string, val json.RawMessage) (any, bool) {
+	switch key {
+	case "nullValue":
+		return nil, true
+	case "boolValue":
+		return unmarshalAs[bool](val)
+	case "stringValue":
+		return unmarshalAs[string](val)
+	case "int32Value":
+		return unmarshalAs[int32](val)
+	case "int64Value":
+		// protojson encodes int64 as string.
+		if v, ok := unmarshalAs[string](val); ok {
+			return v, true
+		}
+		return unmarshalAs[int64](val)
+	case "doubleValue", "floatValue":
+		return unmarshalAs[float64](val)
+	case "timestampValue", "timestampTzValue":
+		return unmarshalTimestamp(val)
+	default:
+		if v, ok := unmarshalAs[string](val); ok {
+			return v, true
+		}
+		return string(val), true
+	}
+}
+
+// unmarshalAs attempts to decode JSON into the given type.
+func unmarshalAs[T any](val json.RawMessage) (T, bool) {
+	var v T
+	if json.Unmarshal(val, &v) == nil {
+		return v, true
+	}
+	return v, false
+}
+
+// unmarshalTimestamp extracts the string value from a timestamp object.
+func unmarshalTimestamp(val json.RawMessage) (any, bool) {
+	var ts map[string]string
+	if json.Unmarshal(val, &ts) == nil {
+		if v, ok := ts["value"]; ok {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 // parseLatencyMs parses a duration string like "0.012s" into milliseconds.
