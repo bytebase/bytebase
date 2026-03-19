@@ -68,16 +68,20 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { isEqual } from "lodash-es";
 import { NButton, NInput, useDialog } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
-import { pushNotification, useActuatorV1Store, useWorkspaceV1Store } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useWorkspaceV1Store,
+} from "@/store";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";

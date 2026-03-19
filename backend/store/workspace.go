@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 )
 
@@ -64,10 +65,10 @@ func (s *Store) FindWorkspacesByMemberEmail(ctx context.Context, memberName stri
 			SELECT 1
 			FROM jsonb_array_elements(p.payload->'bindings') AS binding,
 			     jsonb_array_elements_text(binding->'members') AS member
-			WHERE member = ?
+			WHERE member = ? OR member = ?
 		  )
 		ORDER BY w.name
-	`, memberName)
+	`, memberName, common.AllUsers)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

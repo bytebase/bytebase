@@ -158,10 +158,10 @@ import RequireEnterpriseButton from "@/components/RequireEnterpriseButton.vue";
 import { CopyButton } from "@/components/v2";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import {
+  getWorkspaceId,
   pushNotification,
   useActuatorV1Store,
   useSubscriptionV1Store,
-  getWorkspaceId,
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
