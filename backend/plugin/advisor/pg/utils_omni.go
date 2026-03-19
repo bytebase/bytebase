@@ -118,6 +118,82 @@ func omniTypeName(tn *ast.TypeName) string {
 	return ""
 }
 
+// omniIndexColumns extracts column names from an IndexStmt's IndexParams list.
+func omniIndexColumns(idx *ast.IndexStmt) []string {
+	if idx == nil || idx.IndexParams == nil {
+		return nil
+	}
+	var cols []string
+	for _, item := range idx.IndexParams.Items {
+		if elem, ok := item.(*ast.IndexElem); ok && elem.Name != "" {
+			cols = append(cols, elem.Name)
+		}
+	}
+	return cols
+}
+
+// omniDropObjectNames extracts object names from a DropStmt.
+// Returns list of qualified name string slices.
+func omniDropObjectNames(drop *ast.DropStmt) [][]string {
+	if drop.Objects == nil {
+		return nil
+	}
+	var result [][]string
+	for _, item := range drop.Objects.Items {
+		list, ok := item.(*ast.List)
+		if !ok {
+			continue
+		}
+		var parts []string
+		for _, nameItem := range list.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				parts = append(parts, s.Str)
+			}
+		}
+		if len(parts) > 0 {
+			result = append(result, parts)
+		}
+	}
+	return result
+}
+
+// omniCollectFromClauseRangeVars recursively collects RangeVar nodes from a FROM clause list.
+func omniCollectFromClauseRangeVars(fromClause *ast.List) []*ast.RangeVar {
+	if fromClause == nil {
+		return nil
+	}
+	var result []*ast.RangeVar
+	for _, item := range fromClause.Items {
+		result = append(result, omniCollectRangeVars(item)...)
+	}
+	return result
+}
+
+// omniCollectRangeVars recursively collects RangeVar nodes from a node,
+// including those inside subqueries.
+func omniCollectRangeVars(node ast.Node) []*ast.RangeVar {
+	if node == nil {
+		return nil
+	}
+	switch n := node.(type) {
+	case *ast.RangeVar:
+		return []*ast.RangeVar{n}
+	case *ast.JoinExpr:
+		var result []*ast.RangeVar
+		result = append(result, omniCollectRangeVars(n.Larg)...)
+		result = append(result, omniCollectRangeVars(n.Rarg)...)
+		return result
+	case *ast.RangeSubselect:
+		// Recurse into subquery
+		if sel, ok := n.Subquery.(*ast.SelectStmt); ok {
+			return omniCollectFromClauseRangeVars(sel.FromClause)
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
 // nolint:unused
 // omniDropObjects extracts object names from a DropStmt.
 // Returns list of (schema, name) pairs.

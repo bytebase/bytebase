@@ -3,20 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -58,35 +53,20 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	rule := &namingFKConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingFKConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
 	format       string
 	maxLength    int
@@ -96,7 +76,6 @@ type namingFKConventionRule struct {
 type fkMetaData struct {
 	indexName string
 	tableName string
-	line      int
 	metaData  map[string]string
 }
 
@@ -104,146 +83,92 @@ func (*namingFKConventionRule) Name() string {
 	return "naming.table.fk"
 }
 
-func (r *namingFKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+func (r *namingFKConventionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*namingFKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
+func (r *namingFKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniTableName(n.Relation)
+	cols, constraints := omniTableElements(n)
 
-func (r *namingFKConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
+	// Check table-level FK constraints
+	for _, c := range constraints {
+		if md := r.extractFKMetaData(c, tableName); md != nil {
+			r.checkFKMetadata(md)
+		}
 	}
 
-	if ctx.Opttableelementlist() == nil {
-		return
-	}
-
-	allQualifiedNames := ctx.AllQualified_name()
-	if len(allQualifiedNames) == 0 {
-		return
-	}
-
-	tableName := extractTableName(allQualifiedNames[0])
-
-	// Check table-level and column-level constraints
-	if ctx.Opttableelementlist().Tableelementlist() != nil {
-		for _, element := range ctx.Opttableelementlist().Tableelementlist().AllTableelement() {
-			// Check table-level constraints
-			if element.Tableconstraint() != nil {
-				metadata := r.extractFKMetadata(element.Tableconstraint(), tableName, ctx.GetStart().GetLine())
-				if metadata != nil {
-					r.checkFKMetadata(metadata)
-				}
-			}
-
-			// Check column-level constraints
-			if element.ColumnDef() != nil {
-				columnDef := element.ColumnDef()
-				if columnDef.Colquallist() != nil {
-					allQuals := columnDef.Colquallist().AllColconstraint()
-					for _, qual := range allQuals {
-						metadata := r.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
-						if metadata != nil {
-							r.checkFKMetadata(metadata)
-						}
-					}
-				}
+	// Check column-level FK constraints
+	for _, col := range cols {
+		for _, c := range omniColumnConstraints(col) {
+			if md := r.extractColumnFKMetaData(c, tableName, col.Colname); md != nil {
+				r.checkFKMetadata(md)
 			}
 		}
 	}
 }
 
-func (r *namingFKConventionRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
+func (r *namingFKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Relation)
 
-	if ctx.Relation_expr() == nil {
-		return
-	}
-
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
-
-	if ctx.Alter_table_cmds() == nil {
-		return
-	}
-
-	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-	for _, cmd := range allCmds {
-		// Check for ADD + Tableconstraint
-		if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-			metadata := r.extractFKMetadata(cmd.Tableconstraint(), tableName, cmd.GetStart().GetLine())
-			if metadata != nil {
-				r.checkFKMetadata(metadata)
+	for _, cmd := range omniAlterTableCmds(n) {
+		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
+			c, ok := cmd.Def.(*ast.Constraint)
+			if !ok {
+				continue
+			}
+			if md := r.extractFKMetaData(c, tableName); md != nil {
+				r.checkFKMetadata(md)
 			}
 		}
 
-		// Check for ADD COLUMN with inline foreign key constraint
-		if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-			columnDef := cmd.ColumnDef()
-			if columnDef.Colquallist() != nil {
-				allQuals := columnDef.Colquallist().AllColconstraint()
-				for _, qual := range allQuals {
-					metadata := r.extractColumnFKMetadata(qual, tableName, columnDef, columnDef.GetStart().GetLine())
-					if metadata != nil {
-						r.checkFKMetadata(metadata)
-					}
+		// ADD COLUMN with inline FK constraint
+		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddColumn {
+			colDef, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok {
+				continue
+			}
+			for _, c := range omniColumnConstraints(colDef) {
+				if md := r.extractColumnFKMetaData(c, tableName, colDef.Colname); md != nil {
+					r.checkFKMetadata(md)
 				}
 			}
 		}
 	}
 }
 
-func (*namingFKConventionRule) extractFKMetadata(constraint parser.ITableconstraintContext, tableName string, line int) *fkMetaData {
-	if constraint.Constraintelem() == nil {
+func (*namingFKConventionRule) extractFKMetaData(c *ast.Constraint, tableName string) *fkMetaData {
+	if c.Contype != ast.CONSTR_FOREIGN {
 		return nil
 	}
 
-	elem := constraint.Constraintelem()
+	constraintName := c.Conname
 
-	// Check if this is a FOREIGN KEY constraint
-	if elem.FOREIGN() == nil || elem.KEY() == nil {
-		return nil
-	}
-
-	// Extract constraint name
-	constraintName := ""
-	if constraint.Name() != nil {
-		constraintName = pgparser.NormalizePostgreSQLName(constraint.Name())
-	}
-
-	// Extract referencing columns
+	// Extract referencing columns from FkAttrs
 	var referencingColumns []string
-	if elem.Columnlist() != nil {
-		for _, colElem := range elem.Columnlist().AllColumnElem() {
-			if colElem.Colid() != nil {
-				referencingColumns = append(referencingColumns, pgparser.NormalizePostgreSQLColid(colElem.Colid()))
+	if c.FkAttrs != nil {
+		for _, item := range c.FkAttrs.Items {
+			if s, ok := item.(*ast.String); ok {
+				referencingColumns = append(referencingColumns, s.Str)
 			}
 		}
 	}
 
-	// Extract referenced table and columns
-	var referencedTable string
-	var referencedColumns []string
-	if elem.Qualified_name() != nil {
-		referencedTable = extractTableName(elem.Qualified_name())
-	}
+	// Extract referenced table
+	referencedTable := omniTableName(c.Pktable)
 
-	if elem.Opt_column_list() != nil && elem.Opt_column_list().Columnlist() != nil {
-		for _, colElem := range elem.Opt_column_list().Columnlist().AllColumnElem() {
-			if colElem.Colid() != nil {
-				referencedColumns = append(referencedColumns, pgparser.NormalizePostgreSQLColid(colElem.Colid()))
+	// Extract referenced columns from PkAttrs
+	var referencedColumns []string
+	if c.PkAttrs != nil {
+		for _, item := range c.PkAttrs.Items {
+			if s, ok := item.(*ast.String); ok {
+				referencedColumns = append(referencedColumns, s.Str)
 			}
 		}
 	}
@@ -258,53 +183,31 @@ func (*namingFKConventionRule) extractFKMetadata(constraint parser.ITableconstra
 	return &fkMetaData{
 		indexName: constraintName,
 		tableName: tableName,
-		line:      line,
 		metaData:  metaData,
 	}
 }
 
-func (*namingFKConventionRule) extractColumnFKMetadata(qual parser.IColconstraintContext, tableName string, columnDef parser.IColumnDefContext, line int) *fkMetaData {
-	if qual.Colconstraintelem() == nil {
+func (*namingFKConventionRule) extractColumnFKMetaData(c *ast.Constraint, tableName, colName string) *fkMetaData {
+	if c.Contype != ast.CONSTR_FOREIGN {
 		return nil
 	}
 
-	elem := qual.Colconstraintelem()
+	constraintName := c.Conname
+	referencedTable := omniTableName(c.Pktable)
 
-	// Check if this is a REFERENCES constraint (inline foreign key)
-	if elem.REFERENCES() == nil {
-		return nil
-	}
-
-	// Extract constraint name
-	constraintName := ""
-	if qual.Name() != nil {
-		constraintName = pgparser.NormalizePostgreSQLName(qual.Name())
-	}
-
-	// Extract referencing column (the column being defined)
-	var referencingColumn string
-	if columnDef.Colid() != nil {
-		referencingColumn = pgparser.NormalizePostgreSQLColid(columnDef.Colid())
-	}
-
-	// Extract referenced table and columns
-	var referencedTable string
+	// Extract referenced columns from PkAttrs
 	var referencedColumns []string
-	if elem.Qualified_name() != nil {
-		referencedTable = extractTableName(elem.Qualified_name())
-	}
-
-	if elem.Opt_column_list() != nil && elem.Opt_column_list().Columnlist() != nil {
-		for _, colElem := range elem.Opt_column_list().Columnlist().AllColumnElem() {
-			if colElem.Colid() != nil {
-				referencedColumns = append(referencedColumns, pgparser.NormalizePostgreSQLColid(colElem.Colid()))
+	if c.PkAttrs != nil {
+		for _, item := range c.PkAttrs.Items {
+			if s, ok := item.(*ast.String); ok {
+				referencedColumns = append(referencedColumns, s.Str)
 			}
 		}
 	}
 
 	metaData := map[string]string{
 		advisor.ReferencingTableNameTemplateToken:  tableName,
-		advisor.ReferencingColumnNameTemplateToken: referencingColumn,
+		advisor.ReferencingColumnNameTemplateToken: colName,
 		advisor.ReferencedTableNameTemplateToken:   referencedTable,
 		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumns, "_"),
 	}
@@ -312,21 +215,22 @@ func (*namingFKConventionRule) extractColumnFKMetadata(qual parser.IColconstrain
 	return &fkMetaData{
 		indexName: constraintName,
 		tableName: tableName,
-		line:      line,
 		metaData:  metaData,
 	}
 }
 
 func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
-	regex, err := r.getTemplateRegexp(fkData.metaData)
+	line := r.FindLineByName(fkData.indexName)
+
+	regex, err := getTemplateRegexp(r.format, r.templateList, fkData.metaData)
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.Internal.Int32(),
 			Title:   "Internal error for foreign key naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %s", err.Error()),
 			StartPosition: &storepb.Position{
-				Line:   int32(fkData.line),
+				Line:   line,
 				Column: 0,
 			},
 		})
@@ -335,12 +239,12 @@ func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
 
 	if !regex.MatchString(fkData.indexName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingFKConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf(`Foreign key in table "%s" mismatches the naming convention, expect %q but found "%s"`, fkData.tableName, regex, fkData.indexName),
 			StartPosition: &storepb.Position{
-				Line:   int32(fkData.line),
+				Line:   line,
 				Column: 0,
 			},
 		})
@@ -348,25 +252,14 @@ func (r *namingFKConventionRule) checkFKMetadata(fkData *fkMetaData) {
 
 	if r.maxLength > 0 && len(fkData.indexName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingFKConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf(`Foreign key "%s" in table "%s" mismatches the naming convention, its length should be within %d characters`, fkData.indexName, fkData.tableName, r.maxLength),
 			StartPosition: &storepb.Position{
-				Line:   int32(fkData.line),
+				Line:   line,
 				Column: 0,
 			},
 		})
 	}
-}
-
-func (r *namingFKConventionRule) getTemplateRegexp(tokens map[string]string) (*regexp.Regexp, error) {
-	template := r.format
-	for _, key := range r.templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
 }

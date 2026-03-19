@@ -80,6 +80,43 @@ func (r *OmniBaseRule) ContentStartLine() int32 {
 	return pos.Line
 }
 
+// ContentEndLine returns the 1-based line number of the last non-whitespace
+// character in StmtText. This matches ANTLR's GetStop().GetLine() behavior.
+func (r *OmniBaseRule) ContentEndLine() int32 {
+	if r.StmtText == "" {
+		return 1
+	}
+	// Find last non-whitespace character
+	idx := -1
+	for i := len(r.StmtText) - 1; i >= 0; i-- {
+		c := r.StmtText[i]
+		if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != ';' {
+			idx = i
+			break
+		}
+	}
+	if idx <= 0 {
+		return 1
+	}
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	return pos.Line
+}
+
+// FindLineByName searches for an identifier name in the statement text and returns
+// its 1-based line number. Falls back to ContentStartLine() if not found.
+// This is useful when the AST node's Loc is unknown (-1) but we need a line number.
+func (r *OmniBaseRule) FindLineByName(name string) int32 {
+	if name == "" || r.StmtText == "" {
+		return r.ContentStartLine()
+	}
+	idx := strings.Index(r.StmtText, name)
+	if idx < 0 {
+		return r.ContentStartLine()
+	}
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	return pos.Line
+}
+
 // RunOmniRules iterates over parsed statements and dispatches each omni AST node to all rules.
 // Returns combined advice from all rules. Skips statements without omni AST.
 func RunOmniRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
