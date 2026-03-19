@@ -174,13 +174,15 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
 
 	createAuditLogCtx := context.WithoutCancel(ctx)
-	for _, resource := range authContext.Resources {
+	for _, authResource := range authContext.Resources {
 		var parent string
-		switch resource.Type {
+		var auditWorkspaceID string
+		switch authResource.Type {
 		case common.ResourceTypeProject:
-			parent = common.FormatProject(resource.ID)
+			parent = common.FormatProject(authResource.ID)
 		case common.ResourceTypeWorkspace:
-			parent = common.FormatWorkspace(resource.ID)
+			parent = common.FormatWorkspace(authResource.ID)
+			auditWorkspaceID = authResource.ID
 		default:
 			continue
 		}
@@ -211,7 +213,15 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
 		}
-		workspaceIDForAudit := common.GetWorkspaceIDFromContext(createAuditLogCtx)
+		// Resolve workspace for audit log.
+		workspaceIDForAudit := auditWorkspaceID
+		if workspaceIDForAudit == "" {
+			workspaceIDForAudit = common.GetWorkspaceIDFromContext(createAuditLogCtx)
+		}
+		if workspaceIDForAudit == "" {
+			// Skip audit log if no workspace can be determined (e.g., unauthenticated request).
+			continue
+		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
 			return err
 		}

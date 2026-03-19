@@ -39,20 +39,30 @@ LIMIT 1;
 ----------------------------------------------
 -- 2. Add workspace to root tables
 ----------------------------------------------
+-- Add workspace column to root tables using NOT NULL DEFAULT to avoid table rewrite.
+-- PostgreSQL 11+ stores the default in pg_attribute — instant for large tables like audit_log.
 DO $$
 DECLARE
     t text;
+    ws_id text;
 BEGIN
-    -- Add workspace column to root tables that don't have it yet.
+    SELECT resource_id INTO ws_id FROM workspace LIMIT 1;
+    IF ws_id IS NULL THEN
+        RAISE EXCEPTION 'no workspace found';
+    END IF;
+
     FOREACH t IN ARRAY ARRAY[
         'project', 'instance', 'setting', 'policy', 'role', 'idp',
         'review_config', 'user_group', 'export_archive', 'audit_log',
         'service_account', 'workload_identity', 'oauth2_client'
     ] LOOP
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = t AND column_name = 'workspace') THEN
-            EXECUTE format('ALTER TABLE %I ADD COLUMN workspace text REFERENCES workspace(resource_id)', t);
-            EXECUTE format('UPDATE %I SET workspace = (SELECT resource_id FROM workspace LIMIT 1)', t);
-            EXECUTE format('ALTER TABLE %I ALTER COLUMN workspace SET NOT NULL', t);
+            -- ADD COLUMN ... NOT NULL DEFAULT is instant in PG11+ (no table rewrite).
+            EXECUTE format('ALTER TABLE %I ADD COLUMN workspace text NOT NULL DEFAULT %L', t, ws_id);
+            -- Add FK constraint separately (doesn't require table rewrite).
+            EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (workspace) REFERENCES workspace(resource_id)', t, t || '_workspace_fkey');
+            -- Remove the default so future inserts must provide workspace explicitly.
+            EXECUTE format('ALTER TABLE %I ALTER COLUMN workspace DROP DEFAULT', t);
         END IF;
     END LOOP;
 END $$;
