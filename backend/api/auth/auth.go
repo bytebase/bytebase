@@ -248,6 +248,9 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 				if member == userMember {
 					return nil
 				}
+				if member == common.AllUsers && !in.profile.SaaS {
+					return nil
+				}
 			}
 		}
 		return errs.Errorf("user %q is not a member of workspace %q", account.Email, workspaceID)

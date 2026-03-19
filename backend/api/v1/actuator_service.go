@@ -189,6 +189,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		serverInfo.NeedAdminSetup = activeEndUserCount == 0
+		serverInfo.ActivatedUserCount = int32(activeEndUserCount)
 
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
 		if err != nil {
@@ -210,12 +211,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			externalURL = s.profile.ExternalURL
 		}
 		serverInfo.ExternalUrl = externalURL
-
-		activatedUserCount, err := s.store.CountActiveEndUsersPerWorkspace(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to stat users"))
-		}
-		serverInfo.ActivatedUserCount = int32(activatedUserCount)
 
 		activatedInstanceCount, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
 		if err != nil {

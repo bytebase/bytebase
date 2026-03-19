@@ -655,6 +655,9 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 	}
 
 	s.policyCache.Remove(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type))
+	if policy.Type == storepb.Policy_IAM {
+		s.iamPolicyCache.Remove(getIamPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource))
+	}
 	return nil
 }
 

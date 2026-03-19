@@ -235,7 +235,7 @@ type FindSettingMessage struct {
 
 // GetSetting returns the setting by name.
 func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
-	if v, ok := s.settingCache.Get(name); ok && s.enableCache {
+	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
 		return v, nil
 	}
 
@@ -311,7 +311,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	}
 
 	for _, setting := range settingMessages {
-		s.settingCache.Add(setting.Name, setting)
+		s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), setting)
 	}
 	return settingMessages, nil
 }
@@ -363,7 +363,7 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
-	s.settingCache.Add(setting.Name, &setting)
+	s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), &setting)
 	return &setting, nil
 }
 
@@ -379,6 +379,6 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 		return err
 	}
 
-	s.settingCache.Remove(name)
+	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
 }

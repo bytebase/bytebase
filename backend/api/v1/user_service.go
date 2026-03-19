@@ -540,14 +540,6 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
-	count, err := s.store.CountActiveEndUsersPerWorkspace(ctx, common.GetWorkspaceIDFromContext(ctx))
-	if err != nil {
-		return 0, connect.NewError(connect.CodeInternal, errors.Errorf("failed to stat users with error: %v", err.Error()))
-	}
-	return count, nil
-}
-
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
 	workspaceAdminRole := common.FormatRole(store.WorkspaceAdminRole)
 	userMember := common.FormatUserEmail(user.Email)
@@ -560,12 +552,14 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 			if member == userMember {
 				continue
 			}
-			if member == common.AllUsers {
-				activeEndUserCount, err := s.getActiveUserCount(ctx)
+			if member == common.AllUsers && !s.profile.SaaS {
+				// allUsers means every user is an admin. Count all active end users
+				// (not just workspace members) since allUsers includes everyone.
+				count, err := s.store.CountAllActivePrincipals(ctx)
 				if err != nil {
 					return false, err
 				}
-				return activeEndUserCount > 1, nil
+				return count > 1, nil
 			}
 			users := utils.GetUsersByMember(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member)
 			for _, user := range users {

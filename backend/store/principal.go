@@ -796,11 +796,14 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// Invalidate policy cache for updated policies
 	for _, p := range invalidatedPolicies {
 		s.policyCache.Remove(getPolicyCacheKey(p.Workspace, p.ResourceType, p.Resource, p.Type))
+		if p.Type == storepb.Policy_IAM {
+			s.iamPolicyCache.Remove(getIamPolicyCacheKey(p.Workspace, p.ResourceType, p.Resource))
+		}
 	}
 
-	// Invalidate group cache for updated groups
-	for _, email := range invalidatedGroupEmails {
-		s.groupCache.Remove(email)
+	// Purge all group caches — email change is rare and affects groups cross-workspace.
+	if len(invalidatedGroupEmails) > 0 {
+		s.PurgeGroupCaches()
 	}
 
 	// Re-populate user cache

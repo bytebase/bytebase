@@ -24,6 +24,17 @@ func (s *Store) CountActiveInstances(ctx context.Context, workspaceID string) (i
 	return count, nil
 }
 
+// CountAllActivePrincipals counts all active end users globally (cross-workspace).
+func (s *Store) CountAllActivePrincipals(ctx context.Context) (int, error) {
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx,
+		`SELECT count(*) FROM principal WHERE deleted = FALSE`,
+	).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // CountActiveEndUsersPerWorkspace counts active end users who are members of the given workspace
 // by joining principal with workspace IAM policy bindings.
 func (s *Store) CountActiveEndUsersPerWorkspace(ctx context.Context, workspaceID string) (int, error) {
