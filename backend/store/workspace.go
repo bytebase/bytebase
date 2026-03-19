@@ -133,16 +133,12 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		return nil, errors.Wrap(err, "failed to create workspace IAM policy")
 	}
 
-	// Create sample project with a globally unique resource_id.
-	projectID, err := common.RandomString(8)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate project ID")
-	}
+	// Create default project — used by schema sync to hold unassigned databases.
 	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO project (resource_id, workspace, name, setting) VALUES ($1, $2, 'Sample Project', '{}')`,
-		fmt.Sprintf("sample-project-%s", projectID), create.ResourceID,
+		`INSERT INTO project (resource_id, workspace, name, setting) VALUES ($1, $2, 'Default', '{}')`,
+		common.DefaultProjectID(create.ResourceID), create.ResourceID,
 	); err != nil {
-		return nil, errors.Wrap(err, "failed to create sample project")
+		return nil, errors.Wrap(err, "failed to create default project")
 	}
 
 	if err := tx.Commit(); err != nil {

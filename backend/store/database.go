@@ -522,7 +522,7 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("db.name = ?", value), nil
 		case "exclude_unassigned":
 			if excludeUnassigned, ok := value.(bool); excludeUnassigned && ok {
-				return qb.Q().Space("db.project != ?", common.DefaultProjectID), nil
+				return qb.Q().Space("NOT db.project LIKE ?", common.DefaultProjectPrefix+"%"), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "table":

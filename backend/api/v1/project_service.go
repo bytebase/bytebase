@@ -272,7 +272,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project.Name))
 	}
-	if project.ResourceID == common.DefaultProjectID {
+	if common.IsDefaultProject(project.ResourceID) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be updated"))
 	}
 
@@ -380,7 +380,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 
 	// Handle purge (hard delete)
 	if req.Msg.Purge {
-		if project.ResourceID == common.DefaultProjectID {
+		if common.IsDefaultProject(project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 		}
 
@@ -404,7 +404,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	}
 
 	// Regular soft delete (archive) flow
-	if project.ResourceID == common.DefaultProjectID {
+	if common.IsDefaultProject(project.ResourceID) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be deleted"))
 	}
 	// Idempotent: if already deleted, return success
@@ -463,7 +463,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			if err != nil {
 				return nil, err
 			}
-			if project.ResourceID == common.DefaultProjectID {
+			if common.IsDefaultProject(project.ResourceID) {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 			}
 			projectsToPurge = append(projectsToPurge, project)
@@ -503,7 +503,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		if err != nil {
 			return nil, err
 		}
-		if project.ResourceID == common.DefaultProjectID {
+		if common.IsDefaultProject(project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("default project cannot be deleted"))
 		}
 		// Idempotent: skip already deleted projects

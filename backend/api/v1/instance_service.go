@@ -460,7 +460,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 	if req.Msg.Force {
 		if len(databases) > 0 {
-			defaultProjectID := common.DefaultProjectID
+			defaultProjectID := common.DefaultProjectID(common.GetWorkspaceIDFromContext(ctx))
 			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
@@ -468,7 +468,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	} else {
 		var databaseNames []string
 		for _, database := range databases {
-			if database.ProjectID != common.DefaultProjectID {
+			if !common.IsDefaultProject(database.ProjectID) {
 				databaseNames = append(databaseNames, database.DatabaseName)
 			}
 		}

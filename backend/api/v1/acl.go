@@ -376,7 +376,7 @@ func getResourceFromRequest(request any, method string) ([]*rawResource, error) 
 				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
 			}
 			// Allow to transfer databases to the default project.
-			if projectID == common.DefaultProjectID {
+			if common.IsDefaultProject(projectID) {
 				continue
 			}
 			resources = append(resources, &rawResource{name: r.GetDatabase().GetProject()})

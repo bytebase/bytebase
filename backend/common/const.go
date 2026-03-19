@@ -1,6 +1,8 @@
 //nolint:revive
 package common
 
+import "strings"
+
 const (
 	// AllUsers is the email of the pseudo allUsers account.
 	AllUsers = "allUsers"
@@ -21,8 +23,22 @@ const (
 )
 
 const (
-	// DefaultProjectID is the resource ID for the default project.
-	DefaultProjectID = "default"
+	// DefaultProjectPrefix is the prefix for the default project resource ID.
+	// Each workspace has its own default project: "default-{workspaceID}".
+	DefaultProjectPrefix = "default-"
+)
+
+// DefaultProjectID returns the default project resource ID for a workspace.
+func DefaultProjectID(workspaceID string) string {
+	return DefaultProjectPrefix + workspaceID
+}
+
+// IsDefaultProject returns whether a project resource ID is a default project.
+func IsDefaultProject(projectID string) bool {
+	return strings.HasPrefix(projectID, DefaultProjectPrefix)
+}
+
+const (
 	// DefaultTestEnvironmentID is the initial resource ID for the test environment.
 	// This can be mutated by the user. But for now this is only used by onboarding flow to create
 	// a test instance after first signup, so it's safe to refer it.

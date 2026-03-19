@@ -50,8 +50,8 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
-			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND db.project != $3))`,
-			wantArgs: []any{"asia", "bytebase", common.DefaultProjectID},
+			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND NOT db.project LIKE $3))`,
+			wantArgs: []any{"asia", "bytebase", common.DefaultProjectPrefix + "%"},
 		},
 		{
 			input:    `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,

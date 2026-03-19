@@ -345,7 +345,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 
 	// Delete worksheets associated with this project
-	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", common.DefaultProjectID, resourceID)
+	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", common.DefaultProjectID(workspace), resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build worksheet update query")
@@ -478,7 +478,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 
 	// Move databases to the default project instead of deleting them
-	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", common.DefaultProjectID, resourceID)
+	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", common.DefaultProjectID(workspace), resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build db update query")
@@ -631,7 +631,7 @@ func GetListProjectFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("project.resource_id = ?", value.(string)), nil
 		case "exclude_default":
 			if excludeDefault, ok := value.(bool); excludeDefault && ok {
-				return qb.Q().Space("project.resource_id != ?", common.DefaultProjectID), nil
+				return qb.Q().Space("NOT project.resource_id LIKE ?", common.DefaultProjectPrefix+"%"), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "state":
