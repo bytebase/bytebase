@@ -11,7 +11,7 @@
             v-if="isCreating"
             v-model:value="state.memberList"
             :required="true"
-            :include-all-users="true"
+            :include-all-users="!isSaaSMode"
             :include-service-account="true"
             :include-workload-identity="true"
           />
@@ -68,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { isEqual } from "lodash-es";
 import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -76,7 +77,7 @@ import { BBButtonConfirm } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
-import { pushNotification, useWorkspaceV1Store } from "@/store";
+import { pushNotification, useActuatorV1Store, useWorkspaceV1Store } from "@/store";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
@@ -94,6 +95,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
+
+const { isSaaSMode } = storeToRefs(useActuatorV1Store());
 
 const initMemberList = () => {
   if (!props.member) {

@@ -3305,6 +3305,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
+| service_key | [string](#string) |  | The service key for service account authentication. |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
 | temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |

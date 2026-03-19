@@ -64,6 +64,11 @@ export const getNameParentTokens = (
   return tokens;
 };
 
+export const getWorkspaceId = (name: string): string => {
+  const tokens = getNameParentTokens(name, [workspaceNamePrefix]);
+  return tokens[0];
+};
+
 export const getEnvironmentId = (name: string): string => {
   const tokens = getNameParentTokens(name, [environmentNamePrefix]);
   const envId = tokens[0];

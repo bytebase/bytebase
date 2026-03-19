@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -22,13 +23,15 @@ type WorkspaceService struct {
 	v1connect.UnimplementedWorkspaceServiceHandler
 	store      *store.Store
 	iamManager *iam.Manager
+	profile    *config.Profile
 }
 
 // NewWorkspaceService creates a new WorkspaceService.
-func NewWorkspaceService(store *store.Store, iamManager *iam.Manager) *WorkspaceService {
+func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *WorkspaceService {
 	return &WorkspaceService{
 		store:      store,
 		iamManager: iamManager,
+		profile:    profile,
 	}
 }
 
@@ -60,6 +63,19 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 
 	if err := validateIAMPolicy(ctx, s.store, request, policyMessage); err != nil {
 		return nil, err
+	}
+
+	// In SaaS mode, allUsers is not allowed in workspace IAM policies.
+	// Members must be explicitly added.
+	if s.profile.SaaS {
+		for _, binding := range request.Policy.Bindings {
+			for _, member := range binding.Members {
+				if member == common.AllUsers {
+					return nil, connect.NewError(connect.CodeInvalidArgument,
+						errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
+				}
+			}
+		}
 	}
 
 	iamPolicy, err := convertToStoreIamPolicy(request.Policy)

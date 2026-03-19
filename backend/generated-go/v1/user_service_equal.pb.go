@@ -228,6 +228,9 @@ func (x *User) Equal(y *User) bool {
 	if x.Password != y.Password {
 		return false
 	}
+	if x.ServiceKey != y.ServiceKey {
+		return false
+	}
 	if x.MfaEnabled != y.MfaEnabled {
 		return false
 	}

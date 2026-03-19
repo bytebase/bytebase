@@ -204,7 +204,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrap(err, "failed to get auth secret")
 	}
 
-	s.iamManager, err = iam.NewManager(stores, s.licenseService)
+	s.iamManager, err = iam.NewManager(stores, s.licenseService, profile.SaaS)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, errors.Wrapf(err, "failed to reload iam cache")
 	}

@@ -109,7 +109,7 @@ func TestCheck(t *testing.T) {
 			}
 			return test.groupMembers[groupName]
 		}
-		got := check(testUser, test.permission, test.policy, getPermissions, getGroupMembers)
+		got := check(testUser, test.permission, test.policy, getPermissions, getGroupMembers, false)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

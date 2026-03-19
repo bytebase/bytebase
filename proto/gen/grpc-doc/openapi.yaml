@@ -28372,6 +28372,10 @@ components:
           title: password
           description: The password for authentication. Only used during user creation or password updates.
           writeOnly: true
+        serviceKey:
+          type: string
+          title: service_key
+          description: The service key for service account authentication.
         mfaEnabled:
           type: boolean
           title: mfa_enabled

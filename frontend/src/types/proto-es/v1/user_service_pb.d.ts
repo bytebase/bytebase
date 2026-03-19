@@ -340,6 +340,13 @@ export declare type User = Message<"bytebase.v1.User"> & {
   password: string;
 
   /**
+   * The service key for service account authentication.
+   *
+   * @generated from field: string service_key = 7;
+   */
+  serviceKey: string;
+
+  /**
    * The mfa_enabled flag means if the user has enabled MFA.
    *
    * @generated from field: bool mfa_enabled = 8;

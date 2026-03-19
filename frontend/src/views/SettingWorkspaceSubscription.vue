@@ -161,6 +161,7 @@ import {
   pushNotification,
   useActuatorV1Store,
   useSubscriptionV1Store,
+  getWorkspaceId,
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -199,7 +200,7 @@ const userLimit = computed((): string => {
 const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
-  return actuatorStore.serverInfo?.workspaceId ?? "";
+  return getWorkspaceId(actuatorStore.workspaceResourceName);
 });
 
 const selectWorkspaceId = () => {

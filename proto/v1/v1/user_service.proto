@@ -270,9 +270,8 @@ message User {
   // The password for authentication. Only used during user creation or password updates.
   string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
 
-  // Field 7 was service_key, now managed by ServiceAccountService.
-  reserved 7;
-  reserved "service_key";
+  // The service key for service account authentication.
+  string service_key = 7;
 
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 8;

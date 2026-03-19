@@ -18,12 +18,14 @@ import (
 type Manager struct {
 	store          *store.Store
 	licenseService *enterprise.LicenseService
+	saas           bool
 }
 
-func NewManager(store *store.Store, licenseService *enterprise.LicenseService) (*Manager, error) {
+func NewManager(store *store.Store, licenseService *enterprise.LicenseService, saas bool) (*Manager, error) {
 	m := &Manager{
 		store:          store,
 		licenseService: licenseService,
+		saas:           saas,
 	}
 	return m, nil
 }
@@ -45,7 +47,8 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 	if err != nil {
 		return false, err
 	}
-	if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers); ok {
+	// In SaaS mode, skip allUsers for workspace-level IAM (members must be explicit).
+	if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, m.saas); ok {
 		return true, nil
 	}
 
@@ -67,7 +70,8 @@ func (m *Manager) CheckPermission(ctx context.Context, p permission.Permission, 
 			if err != nil {
 				return false, err
 			}
-			if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers); !ok {
+			// Project-level: allUsers means "all workspace members", which is safe.
+			if ok := check(user, p, policyMessage.Policy, getPermissions, getGroupMembers, false); !ok {
 				allOK = false
 				break
 			}
@@ -100,7 +104,7 @@ func (m *Manager) GetUserGroups(ctx context.Context, workspaceID string, email s
 	return m.store.GetUserGroupsSnapshot(ctx, workspaceID, common.FormatUserEmail(email))
 }
 
-func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool) bool {
+func check(user *store.UserMessage, p permission.Permission, policy *storepb.IamPolicy, getPermissions func(role string) map[permission.Permission]bool, getGroupMembers func(groupName string) map[string]bool, skipAllUsers bool) bool {
 	userName := formatUserNameByType(user)
 
 	for _, binding := range policy.GetBindings() {
@@ -115,7 +119,7 @@ func check(user *store.UserMessage, p permission.Permission, policy *storepb.Iam
 			continue
 		}
 		for _, member := range binding.GetMembers() {
-			if member == common.AllUsers {
+			if member == common.AllUsers && !skipAllUsers {
 				return true
 			}
 			if member == userName {
