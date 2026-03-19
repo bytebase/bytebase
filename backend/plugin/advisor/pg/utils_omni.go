@@ -1,0 +1,149 @@
+package pg
+
+import (
+	"strings"
+
+	"github.com/bytebase/omni/pg/ast"
+)
+
+// nolint:unused
+// omniTableName extracts the table name from a RangeVar.
+func omniTableName(rv *ast.RangeVar) string {
+	if rv == nil {
+		return ""
+	}
+	return rv.Relname
+}
+
+// nolint:unused
+// omniSchemaName extracts the schema name from a RangeVar, defaulting to "public".
+func omniSchemaName(rv *ast.RangeVar) string {
+	if rv == nil || rv.Schemaname == "" {
+		return "public"
+	}
+	return rv.Schemaname
+}
+
+// nolint:unused
+// omniConstraintColumns extracts column names from a Constraint's Keys list.
+func omniConstraintColumns(c *ast.Constraint) []string {
+	if c == nil || c.Keys == nil {
+		return nil
+	}
+	var cols []string
+	for _, item := range c.Keys.Items {
+		if s, ok := item.(*ast.String); ok {
+			cols = append(cols, s.Str)
+		}
+	}
+	return cols
+}
+
+// nolint:unused
+// omniColumnConstraints iterates over a ColumnDef's constraint list.
+func omniColumnConstraints(col *ast.ColumnDef) []*ast.Constraint {
+	if col == nil || col.Constraints == nil {
+		return nil
+	}
+	var result []*ast.Constraint
+	for _, item := range col.Constraints.Items {
+		if c, ok := item.(*ast.Constraint); ok {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+// nolint:unused
+// omniTableElements iterates over a CreateStmt's table elements,
+// returning column defs and table constraints separately.
+func omniTableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
+	if create.TableElts == nil {
+		return nil, nil
+	}
+	var cols []*ast.ColumnDef
+	var cons []*ast.Constraint
+	for _, item := range create.TableElts.Items {
+		switch n := item.(type) {
+		case *ast.ColumnDef:
+			cols = append(cols, n)
+		case *ast.Constraint:
+			cons = append(cons, n)
+		default:
+		}
+	}
+	return cols, cons
+}
+
+// nolint:unused
+// omniAlterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
+func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
+	if alter.Cmds == nil {
+		return nil
+	}
+	var cmds []*ast.AlterTableCmd
+	for _, item := range alter.Cmds.Items {
+		if cmd, ok := item.(*ast.AlterTableCmd); ok {
+			cmds = append(cmds, cmd)
+		}
+	}
+	return cmds
+}
+
+// nolint:unused
+// omniIsRoleOrSearchPathSet checks if a VariableSetStmt is SET ROLE or SET search_path.
+func omniIsRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
+	if stmt == nil {
+		return false
+	}
+	name := strings.ToLower(stmt.Name)
+	return name == "role" || name == "search_path"
+}
+
+// nolint:unused
+// omniTypeName extracts the type name string from a TypeName node.
+func omniTypeName(tn *ast.TypeName) string {
+	if tn == nil || tn.Names == nil {
+		return ""
+	}
+	var parts []string
+	for _, item := range tn.Names.Items {
+		if s, ok := item.(*ast.String); ok {
+			parts = append(parts, s.Str)
+		}
+	}
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
+// nolint:unused
+// omniDropObjects extracts object names from a DropStmt.
+// Returns list of (schema, name) pairs.
+func omniDropObjects(drop *ast.DropStmt) [][2]string {
+	if drop.Objects == nil {
+		return nil
+	}
+	var result [][2]string
+	for _, item := range drop.Objects.Items {
+		list, ok := item.(*ast.List)
+		if !ok {
+			continue
+		}
+		var parts []string
+		for _, nameItem := range list.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				parts = append(parts, s.Str)
+			}
+		}
+		switch len(parts) {
+		case 1:
+			result = append(result, [2]string{"public", parts[0]})
+		case 2:
+			result = append(result, [2]string{parts[0], parts[1]})
+		default:
+		}
+	}
+	return result
+}
