@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -34,147 +31,79 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &insertDisallowOrderByRandRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens: antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
+	rule := &insertDisallowOrderByRandRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type insertDisallowOrderByRandRule struct {
-	BaseRule
-
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
 func (*insertDisallowOrderByRandRule) Name() string {
-	return "insert_disallow_order_by_rand"
+	return string(storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND)
 }
 
-func (r *insertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Insertstmt":
-		r.handleInsertstmt(ctx)
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*insertDisallowOrderByRandRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *insertDisallowOrderByRandRule) handleInsertstmt(ctx antlr.ParserRuleContext) {
-	insertstmtCtx, ok := ctx.(*parser.InsertstmtContext)
+func (r *insertDisallowOrderByRandRule) OnStatement(node ast.Node) {
+	ins, ok := node.(*ast.InsertStmt)
 	if !ok {
 		return
 	}
 
-	if !isTopLevel(insertstmtCtx.GetParent()) {
+	sel, ok := ins.SelectStmt.(*ast.SelectStmt)
+	if !ok || sel == nil {
 		return
 	}
 
-	// Check if this is INSERT...SELECT
-	if insertstmtCtx.Insert_rest() == nil || insertstmtCtx.Insert_rest().Selectstmt() == nil {
-		return
-	}
-
-	// Check for ORDER BY random() in the SELECT statement
-	if r.hasOrderByRandom(insertstmtCtx.Insert_rest().Selectstmt()) {
+	if r.hasOrderByRandom(sel) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.InsertUseOrderByRand.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", getTextFromTokens(r.tokens, insertstmtCtx)),
+			Title:   r.Title,
+			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", r.TrimmedStmtText()),
 			StartPosition: &storepb.Position{
-				Line:   int32(insertstmtCtx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
 }
 
-// hasOrderByRandom checks if a SELECT statement has ORDER BY random() or random_between()
-func (*insertDisallowOrderByRandRule) hasOrderByRandom(selectCtx parser.ISelectstmtContext) bool {
-	if selectCtx == nil {
+func (r *insertDisallowOrderByRandRule) hasOrderByRandom(sel *ast.SelectStmt) bool {
+	if sel == nil {
 		return false
 	}
 
-	// Check both Select_no_parens and Select_with_parens
-	if selectCtx.Select_no_parens() != nil {
-		if hasOrderByRandomInSelect(selectCtx.Select_no_parens()) {
-			return true
+	// For set operations, recurse into children.
+	if sel.Op != ast.SETOP_NONE {
+		return r.hasOrderByRandom(sel.Larg) || r.hasOrderByRandom(sel.Rarg)
+	}
+
+	if sel.SortClause == nil {
+		return false
+	}
+
+	for _, item := range sel.SortClause.Items {
+		sb, ok := item.(*ast.SortBy)
+		if !ok {
+			continue
 		}
-	}
-
-	if selectCtx.Select_with_parens() != nil {
-		// Select_with_parens might contain another Selectstmt
-		// We need to recursively check
-		return hasOrderByRandomInParens(selectCtx.Select_with_parens())
-	}
-
-	return false
-}
-
-// hasOrderByRandomInSelect checks Select_no_parens for ORDER BY random()
-func hasOrderByRandomInSelect(selectCtx parser.ISelect_no_parensContext) bool {
-	if selectCtx == nil {
-		return false
-	}
-
-	// Check Opt_sort_clause (ORDER BY clause)
-	if selectCtx.Opt_sort_clause() != nil && selectCtx.Opt_sort_clause().Sort_clause() != nil {
-		sortClause := selectCtx.Opt_sort_clause().Sort_clause()
-		// Get all sort by items via Sortby_list
-		if sortClause.Sortby_list() != nil {
-			allSortBy := sortClause.Sortby_list().AllSortby()
-			for _, sortBy := range allSortBy {
-				if sortBy.A_expr() != nil {
-					text := strings.ToLower(sortBy.A_expr().GetText())
-					if strings.Contains(text, "random()") || strings.Contains(text, "random_between()") {
-						return true
-					}
-				}
+		fc, ok := sb.Node.(*ast.FuncCall)
+		if !ok {
+			continue
+		}
+		funcName := omniListStrings(fc.Funcname)
+		for _, name := range funcName {
+			lower := strings.ToLower(name)
+			if lower == "random" || lower == "random_between" {
+				return true
 			}
 		}
-	}
-
-	return false
-}
-
-// hasOrderByRandomInParens checks Select_with_parens recursively
-func hasOrderByRandomInParens(selectCtx parser.ISelect_with_parensContext) bool {
-	if selectCtx == nil {
-		return false
-	}
-
-	// Select_with_parens can contain Select_no_parens or another Select_with_parens
-	if selectCtx.Select_no_parens() != nil {
-		return hasOrderByRandomInSelect(selectCtx.Select_no_parens())
-	}
-
-	if selectCtx.Select_with_parens() != nil {
-		return hasOrderByRandomInParens(selectCtx.Select_with_parens())
 	}
 
 	return false
