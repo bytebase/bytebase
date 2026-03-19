@@ -610,6 +610,7 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 	}
 
 	policy := &PolicyMessage{
+		Workspace:    patch.Workspace,
 		Resource:     patch.Resource,
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
@@ -627,10 +628,9 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
-
-	if policy.Type == storepb.Policy_IAM {
-		s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, policy.ResourceType, policy.Resource))
+	s.policyCache.Add(getPolicyCacheKey(patch.Workspace, patch.ResourceType, patch.Resource, patch.Type), policy)
+	if patch.Type == storepb.Policy_IAM {
+		s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, patch.ResourceType, patch.Resource))
 	}
 
 	return policy, nil
