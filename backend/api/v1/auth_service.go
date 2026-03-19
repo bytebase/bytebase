@@ -210,7 +210,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	}
 
 	// 5. Issue new tokens
-	workspaceID, err := s.store.FindWorkspaceIDByMemberEmail(ctx, common.FormatUserEmail(user.Email))
+	workspaceID, err := s.store.FindWorkspaceIDByMemberEmail(ctx, common.FormatUserEmail(user.Email), !s.profile.SaaS)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
 	}
@@ -800,7 +800,7 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 	}
 
 	// find workspaces by IAM policy membership.
-	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName)
+	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName, !s.profile.SaaS)
 }
 
 // finalizeLogin builds the response, sets cookies if needed, and updates the user profile.

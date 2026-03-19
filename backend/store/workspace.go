@@ -36,8 +36,8 @@ func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
 	return ws.ResourceID, nil
 }
 
-func (s *Store) FindWorkspaceIDByMemberEmail(ctx context.Context, memberName string) (string, error) {
-	workspaces, err := s.FindWorkspacesByMemberEmail(ctx, memberName)
+func (s *Store) FindWorkspaceIDByMemberEmail(ctx context.Context, memberName string, includeAllUser bool) (string, error) {
+	workspaces, err := s.findWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to find workspaces for user")
 	}
@@ -49,11 +49,16 @@ func (s *Store) FindWorkspaceIDByMemberEmail(ctx context.Context, memberName str
 	return workspaces[0].ResourceID, nil
 }
 
-// FindWorkspacesByMemberEmail finds all workspaces where the given email is a member
+// findWorkspacesByMemberEmail finds all workspaces where the given email is a member
 // in the workspace IAM policy bindings. The memberName should be in the format
 // "users/{email}", "serviceAccounts/{email}", etc.
 // Returns workspaces sorted by name.
-func (s *Store) FindWorkspacesByMemberEmail(ctx context.Context, memberName string) ([]*WorkspaceMessage, error) {
+func (s *Store) findWorkspacesByMemberEmail(ctx context.Context, memberName string, includeAllUser bool) ([]*WorkspaceMessage, error) {
+	memberFilter := qb.Q().Space("member = ?", memberName)
+	if includeAllUser {
+		memberFilter.Or("member = ?", common.AllUsers)
+	}
+
 	q := qb.Q().Space(`
 		SELECT DISTINCT w.resource_id, w.name
 		FROM workspace w
@@ -65,10 +70,10 @@ func (s *Store) FindWorkspacesByMemberEmail(ctx context.Context, memberName stri
 			SELECT 1
 			FROM jsonb_array_elements(p.payload->'bindings') AS binding,
 			     jsonb_array_elements_text(binding->'members') AS member
-			WHERE member = ? OR member = ?
+			WHERE ?
 		  )
 		ORDER BY w.name
-	`, memberName, common.AllUsers)
+	`, memberFilter)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
