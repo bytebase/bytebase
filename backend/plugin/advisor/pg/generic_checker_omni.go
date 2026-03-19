@@ -65,6 +65,13 @@ func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
 	return pos.Line
 }
 
+// TrimmedStmtText returns the statement text with leading/trailing whitespace
+// and trailing semicolons removed. This matches the behavior of the ANTLR
+// getTextFromTokens helper that did not include semicolons.
+func (r *OmniBaseRule) TrimmedStmtText() string {
+	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
+}
+
 // ContentStartLine returns the 1-based line number of the first non-whitespace
 // character in StmtText. This accounts for leading newlines that SplitSQL may
 // include in the statement text. Returns 1 if the text is empty or has no
