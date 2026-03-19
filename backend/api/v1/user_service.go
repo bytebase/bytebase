@@ -333,6 +333,11 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	if callerUser.ID != user.ID {
+		// In SaaS mode, only self-updates are allowed. A workspace admin should not
+		// edit another user's profile since the principal is global.
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("updating other users is not allowed in SaaS mode"))
+		}
 		ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdate, callerUser, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))

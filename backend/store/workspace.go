@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -21,23 +22,29 @@ type WorkspaceMessage struct {
 	Name       string
 }
 
-// getWorkspace returns the workspace. Store-internal only.
+// getWorkspace returns the workspace. Returns (nil, nil) if no workspace exists.
 func (s *Store) getWorkspace(ctx context.Context) (*WorkspaceMessage, error) {
 	var workspace WorkspaceMessage
 	if err := s.GetDB().QueryRowContext(ctx,
 		`SELECT resource_id, name FROM workspace WHERE deleted = FALSE LIMIT 1`,
 	).Scan(&workspace.ResourceID, &workspace.Name); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "failed to get workspace")
 	}
 	return &workspace, nil
 }
 
 // GetWorkspaceID returns the workspace resource ID.
-// Only used for OAuth2 token issuance and server startup.
+// Returns ("", nil) if no workspace exists.
 func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
 	ws, err := s.getWorkspace(ctx)
 	if err != nil {
 		return "", err
+	}
+	if ws == nil {
+		return "", nil
 	}
 	return ws.ResourceID, nil
 }
@@ -82,6 +89,7 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		{storepb.SettingName_WORKSPACE_PROFILE, &storepb.WorkspaceProfileSetting{
 			EnableMetricCollection: true,
 			DirectorySyncToken:     uuid.New().String(),
+			DisallowSignup:         true,
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
 		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{

@@ -195,8 +195,6 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	}
 
 	// Step 1: Resolve workspace — check if user belongs to an existing workspace.
-	// In self-hosted mode, allUsers memberships are included so the default workspace matches.
-	// In SaaS mode, only explicit invites (email directly in IAM) match.
 	memberName := common.FormatUserEmail(request.Email)
 	workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, !s.profile.SaaS)
 	if err != nil {
@@ -204,13 +202,21 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	}
 
 	var workspaceID string
-	if len(workspaces) > 0 {
+	isMember := len(workspaces) > 0
+	if isMember {
 		workspaceID = workspaces[0].ResourceID
+	} else if !s.profile.SaaS {
+		// Self-hosted: join the existing workspace (will be added as member in step 3).
+		// No workspace membership found. Check if any workspace exists.
+		existingWsID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check workspace"))
+		}
 
-		// "Disallow signup" is a self-hosted-only concept — it prevents self-service
-		// registration into the workspace (e.g., blocking allUsers-matched signups).
-		// In SaaS mode, admin invites via IAM are the only way to join, so this check
-		// is not applicable.
+		workspaceID = existingWsID
+	}
+
+	if workspaceID != "" {
 		if !s.profile.SaaS {
 			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
 				setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
@@ -223,13 +229,13 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 			}
 		}
 
-		// Validate password against workspace policy.
 		if err := validatePassword(ctx, s.store, workspaceID, request.Password); err != nil {
 			return nil, err
 		}
-	} else if len(request.Password) < 8 {
-		// New workspace — enforce a default minimum password length.
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should be no less than 8 characters"))
+	} else {
+		if len(request.Password) < 8 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should be no less than 8 characters"))
+		}
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -248,8 +254,9 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 
-	// Step 3: If no existing membership, create a new workspace with the user as admin.
+	// Step 3: Resolve workspace if not yet assigned.
 	if workspaceID == "" {
+		// Create a new workspace with the user as admin.
 		wsID, err := common.RandomString(16)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
@@ -262,6 +269,15 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
 		}
 		workspaceID = ws.ResourceID
+	} else if !isMember {
+		// Self-hosted: add user as workspace member to the existing workspace.
+		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+			Workspace: workspaceID,
+			Member:    common.FormatUserEmail(request.Email),
+			Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+		}); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+		}
 	}
 
 	// Step 4: Generate token and finalize login.

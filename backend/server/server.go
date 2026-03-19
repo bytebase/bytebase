@@ -160,7 +160,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 		// Workspace may not exist yet on first boot (created during admin signup).
 		workspaceID, err := stores.GetWorkspaceID(ctx)
-		if err == nil {
+		if err == nil && workspaceID != "" {
 			if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
 				slog.Warn("failed to start sample instances", log.BBError(err))
 			}

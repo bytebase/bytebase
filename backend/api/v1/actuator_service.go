@@ -196,7 +196,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.Restriction = &v1pb.Restriction{
 			PasswordRestriction:    convertPasswordRestriction(setting.GetPasswordRestriction()),
-			DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
+			DisallowSignup:         setting.DisallowSignup,
 			DisallowPasswordSignin: setting.DisallowPasswordSignin,
 		}
 
