@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
@@ -126,6 +127,46 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 		}
 	}
 	return result
+}
+
+// makeQueryResponse builds a mock SQL Query API response.
+func makeQueryResponse(columns, columnTypes []string, rows [][]any, latency string) map[string]any {
+	apiRows := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		values := make([]map[string]any, 0, len(row))
+		for _, v := range row {
+			values = append(values, map[string]any{"stringValue": v})
+		}
+		apiRows = append(apiRows, map[string]any{"values": values})
+	}
+	return map[string]any{
+		"results": []map[string]any{
+			{
+				"columnNames":     columns,
+				"columnTypeNames": columnTypes,
+				"rows":            apiRows,
+				"rowsCount":       fmt.Sprintf("%d", len(rows)),
+				"latency":         latency,
+				"error":           "",
+				"statement":       "SELECT ...",
+			},
+		},
+	}
+}
+
+// mockQueryServer returns an HTTP handler that routes to ListDatabases or Query
+// based on the request URL path.
+func mockQueryServer(databases []map[string]any, queryResp map[string]any) http.Handler {
+	listHandler := mockListDatabases(databases)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(queryResp)
+			return
+		}
+		listHandler.ServeHTTP(w, r)
+	})
 }
 
 func TestQueryDatabase_SingleMatch(t *testing.T) {
@@ -300,25 +341,24 @@ func TestQueryDatabase_HandleValidation(t *testing.T) {
 
 func TestQueryDatabase_LimitNormalization(t *testing.T) {
 	// Verify limit is capped at maxQueryLimit via the handler.
-	// We test the handler which calls resolveDatabase, so the database must not be found
-	// to avoid hitting the executeQuery stub. We just verify the handler doesn't panic.
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
-	s := newTestServerWithMock(t, mockListDatabases(databases))
+	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s")
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	// The handler resolves the database, then calls executeQuery which returns "not implemented".
-	// That's expected — we verify the handler doesn't error on limit normalization.
-	result, _, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT 1",
 		Limit:     2000,
 	})
-	// Should return IsError result from executeQuery stub, not a limit error.
+	// Should succeed — limit capped to 1000, but only 1 row returned.
 	require.NoError(t, err)
-	require.True(t, result.IsError)
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "not implemented")
+	require.False(t, result.IsError)
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, 1, output.RowCount)
+	require.False(t, output.Truncated)
 }
 
 func TestQueryDatabase_ExactMatchPriority(t *testing.T) {
@@ -334,4 +374,259 @@ func TestQueryDatabase_ExactMatchPriority(t *testing.T) {
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee", resolved.resourceName)
 	require.Equal(t, "ds-1", resolved.dataSourceID)
+}
+
+// --- Task 5 tests: query execution ---
+
+func TestQueryDatabase_FullFlow(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := makeQueryResponse(
+		[]string{"id", "name"},
+		[]string{"int4", "varchar"},
+		[][]any{{"1", "John"}, {"2", "Jane"}},
+		"0.012s",
+	)
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id, name FROM users",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, []string{"id", "name"}, output.Columns)
+	require.Equal(t, []string{"int4", "varchar"}, output.ColumnTypes)
+	require.Equal(t, 2, output.RowCount)
+	require.False(t, output.Truncated)
+	require.Equal(t, int64(12), output.LatencyMs)
+	require.Len(t, output.Rows, 2)
+	require.Equal(t, "1", output.Rows[0][0])
+	require.Equal(t, "John", output.Rows[0][1])
+
+	// Verify text header.
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Result: 2 rows")
+	require.NotContains(t, text, "Truncated")
+}
+
+func TestQueryDatabase_EmptyResult(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := makeQueryResponse(
+		[]string{"id", "name"},
+		[]string{"int4", "varchar"},
+		[][]any{},
+		"0.005s",
+	)
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT * FROM users WHERE id = -1",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Empty(t, output.Rows)
+	require.Equal(t, 0, output.RowCount)
+	require.False(t, output.Truncated)
+}
+
+func TestQueryDatabase_Truncation(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	// Generate 150 rows.
+	rows := make([][]any, 150)
+	for i := range rows {
+		rows[i] = []any{fmt.Sprintf("%d", i+1)}
+	}
+	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.050s")
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id FROM users",
+		// Default limit is 100.
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, 100, output.RowCount)
+	require.True(t, output.Truncated)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Truncated")
+}
+
+func TestQueryDatabase_CustomLimit(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	rows := make([][]any, 100)
+	for i := range rows {
+		rows[i] = []any{fmt.Sprintf("%d", i+1)}
+	}
+	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.020s")
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id FROM users",
+		Limit:     50,
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, 50, output.RowCount)
+	require.True(t, output.Truncated)
+}
+
+func TestQueryDatabase_LimitCappedAt1000(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	rows := make([][]any, 5)
+	for i := range rows {
+		rows[i] = []any{fmt.Sprintf("%d", i+1)}
+	}
+	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.003s")
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id FROM users",
+		Limit:     2000,
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, 5, output.RowCount)
+	require.False(t, output.Truncated)
+}
+
+func TestQueryDatabase_QueryError(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"message": "syntax error at or near \"SELEC\"",
+				"code":    "INVALID_ARGUMENT",
+			})
+			return
+		}
+		mockListDatabases(databases).ServeHTTP(w, r)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	result, _, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELEC * FROM users",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "syntax error")
+}
+
+func TestQueryDatabase_PermissionDenied(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"message": "permission denied",
+				"code":    "PERMISSION_DENIED",
+			})
+			return
+		}
+		mockListDatabases(databases).ServeHTTP(w, r)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	result, _, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT * FROM users",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "permission denied")
+}
+
+// --- Task 6 tests: masked values and timeout ---
+
+func TestQueryDatabase_MaskedValues(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := makeQueryResponse(
+		[]string{"id", "ssn", "name"},
+		[]string{"int4", "varchar", "varchar"},
+		[][]any{{"1", "******", "**rn**"}},
+		"0.010s",
+	)
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	_, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id, ssn, name FROM users",
+	})
+	require.NoError(t, err)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, "******", output.Rows[0][1])
+	require.Equal(t, "**rn**", output.Rows[0][2])
+}
+
+func TestQueryDatabase_Timeout(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			// Sleep longer than the context timeout.
+			time.Sleep(500 * time.Millisecond)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		mockListDatabases(databases).ServeHTTP(w, r)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	// Use a very short timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	resolved := &resolvedDatabase{
+		resourceName: "instances/prod-pg/databases/employee_db",
+		dataSourceID: "ds-admin-1",
+	}
+	_, err := s.executeQuery(ctx, resolved, "SELECT 1", 100)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "QUERY_ERROR")
 }
