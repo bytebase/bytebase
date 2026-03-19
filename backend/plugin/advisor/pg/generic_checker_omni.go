@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -57,9 +59,24 @@ func (r *OmniBaseRule) AddAdviceAbsolute(advice *storepb.Advice) {
 // relative to the current statement (suitable for AddAdvice which adds BaseLine).
 func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
 	if loc.Start < 0 || r.StmtText == "" {
-		return 1
+		return r.ContentStartLine()
 	}
 	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, loc.Start)
+	return pos.Line
+}
+
+// ContentStartLine returns the 1-based line number of the first non-whitespace
+// character in StmtText. This accounts for leading newlines that SplitSQL may
+// include in the statement text. Returns 1 if the text is empty or has no
+// leading newlines.
+func (r *OmniBaseRule) ContentStartLine() int32 {
+	idx := strings.IndexFunc(r.StmtText, func(c rune) bool {
+		return c != ' ' && c != '\t' && c != '\n' && c != '\r'
+	})
+	if idx <= 0 {
+		return 1
+	}
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
 }
 
