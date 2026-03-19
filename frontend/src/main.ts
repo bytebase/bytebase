@@ -45,7 +45,7 @@ migrateStorageKeys();
 
   app.use(pinia);
 
-  const currentUser = await useAuthStore().fetchCurrentUser()
+  const currentUser = await useAuthStore().fetchCurrentUser();
   // Initialize stores.
   await Promise.all([
     useActuatorV1Store().fetchServerInfo(currentUser?.workspace),

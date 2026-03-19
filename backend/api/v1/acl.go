@@ -217,8 +217,24 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	if len(authContext.Resources) == 0 {
 		return false, nil, errors.Errorf("no resource found for IAM auth method")
 	}
-	if authContext.HasWorkspaceResource() {
-		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, common.GetWorkspaceIDFromContext(ctx))
+
+	var hasWorkspaceResource bool
+	projectIDMap := make(map[string]bool)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	for _, resource := range authContext.Resources {
+		switch resource.Type {
+		case common.ResourceTypeWorkspace:
+			if workspaceID != resource.ID {
+				return false, nil, errors.Errorf("request workspace %v does not match the workspace %v in token", resource.ID, workspaceID)
+			}
+			hasWorkspaceResource = true
+		case common.ResourceTypeProject:
+			projectIDMap[resource.ID] = true
+		}
+	}
+
+	if hasWorkspaceResource {
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, workspaceID)
 		if err != nil {
 			return false, nil, err
 		}
@@ -226,9 +242,12 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 			return false, nil, nil
 		}
 	}
-	projectIDs := authContext.GetProjectResources()
-	if len(projectIDs) > 0 {
-		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, common.GetWorkspaceIDFromContext(ctx), projectIDs...)
+	if len(projectIDMap) > 0 {
+		var projectIDs []string
+		for projectID := range projectIDMap {
+			projectIDs = append(projectIDs, projectID)
+		}
+		ok, err := iamManager.CheckPermission(ctx, authContext.Permission, user, workspaceID, projectIDs...)
 		if err != nil {
 			return false, nil, err
 		}
@@ -248,25 +267,44 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
-	resources, err := getResourceFromRequest(request, method)
+	rawResources, err := getResourceFromRequest(request, method)
 	if err != nil {
 		return err
 	}
-	for _, resource := range resources {
+
+	var resources []*common.Resource
+	for _, raw := range rawResources {
 		switch {
+		case raw.isWorkspace:
+			resources = append(resources, &common.Resource{
+				Type: common.ResourceTypeWorkspace,
+				ID:   common.GetWorkspaceIDFromContext(ctx),
+			})
+		case strings.HasPrefix(raw.name, "workspaces/"):
+			wsID, err := common.GetWorkspaceID(raw.name)
+			if err != nil {
+				return err
+			}
+			resources = append(resources, &common.Resource{
+				Type: common.ResourceTypeWorkspace,
+				ID:   wsID,
+			})
 		// TODO(d): remove "projects/-" hack later.
-		case strings.HasPrefix(resource.Name, "projects/") && resource.Name != "projects/-":
-			project := projectRegex.FindString(resource.Name)
+		case strings.HasPrefix(raw.name, "projects/") && raw.name != "projects/-":
+			project := projectRegex.FindString(raw.name)
 			if project == "" {
-				return errors.Errorf("invalid project resource %q", resource.Name)
+				return errors.Errorf("invalid project resource %q", raw.name)
 			}
 			projectID, err := common.GetProjectID(project)
 			if err != nil {
 				return err
 			}
-			resource.ProjectID = projectID
-		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/") && !strings.HasPrefix(resource.Name, "instances/-/databases/"):
-			match := databaseRegex.FindString(resource.Name)
+			resources = append(resources, &common.Resource{
+				Type: common.ResourceTypeProject,
+				ID:   projectID,
+			})
+		case strings.HasPrefix(raw.name, "instances/") && strings.Contains(raw.name, "/databases/") && !strings.HasPrefix(raw.name, "instances/-/databases/"):
+			match := databaseRegex.FindString(raw.name)
 			if match != "" {
 				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
 				if err != nil {
@@ -283,17 +321,29 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				if database == nil {
 					return errors.Errorf("database %q not found", match)
 				}
-				resource.ProjectID = database.ProjectID
+				resources = append(resources, &common.Resource{
+					Type: common.ResourceTypeProject,
+					ID:   database.ProjectID,
+				})
 			}
 		default:
-			resource.Workspace = true
+			resources = append(resources, &common.Resource{
+				Type: common.ResourceTypeWorkspace,
+				ID:   common.GetWorkspaceIDFromContext(ctx),
+			})
 		}
 	}
 	authContext.Resources = resources
 	return nil
 }
 
-func getResourceFromRequest(request any, method string) ([]*common.Resource, error) {
+// rawResource is an intermediate type used during resource extraction from proto requests.
+type rawResource struct {
+	name        string
+	isWorkspace bool
+}
+
+func getResourceFromRequest(request any, method string) ([]*rawResource, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
 		return nil, errors.Errorf("invalid request for method %q", method)
@@ -306,7 +356,7 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 	}
 	shortMethod := methodTokens[2]
 
-	var resources []*common.Resource
+	var resources []*rawResource
 
 	// Transferring database projects needs to check both projects.
 	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
@@ -327,16 +377,14 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 			if projectID == common.DefaultProjectID {
 				continue
 			}
-			resources = append(resources, &common.Resource{Name: r.GetDatabase().GetProject()})
+			resources = append(resources, &rawResource{name: r.GetDatabase().GetProject()})
 		}
 	}
 
 	// HACK(p0ny): unfortunately, BatchUpdateIssuesStatus doesn't comply to aip.
 	if r, ok := request.(*v1pb.BatchUpdateIssuesStatusRequest); ok {
 		for _, issue := range r.Issues {
-			resources = append(resources, &common.Resource{
-				Name: issue,
-			})
+			resources = append(resources, &rawResource{name: issue})
 		}
 		return resources, nil
 	}
@@ -350,7 +398,7 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 				namesValueList := namesValue.List()
 				for i := 0; i < namesValueList.Len(); i++ {
 					v := namesValueList.Get(i)
-					resources = append(resources, &common.Resource{Name: v.String()})
+					resources = append(resources, &rawResource{name: v.String()})
 				}
 				return resources, nil
 			}
@@ -378,33 +426,33 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 	return resources, nil
 }
 
-func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *common.Resource {
+func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *rawResource {
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
 	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(parentDesc)
-		return &common.Resource{Name: v.String()}
+		return &rawResource{name: v.String()}
 	}
 	nameDesc := mr.Descriptor().Fields().ByName("name")
 	if nameDesc != nil && proto.HasExtension(nameDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(nameDesc)
-		return &common.Resource{Name: v.String()}
+		return &rawResource{name: v.String()}
 	}
 	// This is primarily used by Get/SetIAMPolicy().
 	resourceFieldDesc := mr.Descriptor().Fields().ByName("resource")
 	if resourceFieldDesc != nil && proto.HasExtension(resourceFieldDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(resourceFieldDesc)
-		return &common.Resource{Name: v.String()}
+		return &rawResource{name: v.String()}
 	}
 	// This is primarily used by AddWebhook().
 	projectFieldDesc := mr.Descriptor().Fields().ByName("project")
 	if projectFieldDesc != nil && proto.HasExtension(projectFieldDesc.Options(), annotationsproto.E_ResourceReference) {
 		v := mr.Get(projectFieldDesc)
-		return &common.Resource{Name: v.String()}
+		return &rawResource{name: v.String()}
 	}
 
 	// Listing top-level resources.
 	if strings.HasPrefix(shortMethod, "List") {
-		return &common.Resource{Workspace: true}
+		return &rawResource{isWorkspace: true}
 	}
 
 	isCreate := strings.HasPrefix(shortMethod, "Create")
@@ -428,21 +476,21 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
 	if resourceDesc == nil {
-		return &common.Resource{Workspace: true}
+		return &rawResource{isWorkspace: true}
 	}
 	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
 		// Parent-less resource. Return workspace resource for Create() method.
 		if isCreate {
-			return &common.Resource{Workspace: true}
+			return &rawResource{isWorkspace: true}
 		}
 		resourceValue := mr.Get(resourceDesc)
 		resourceNameDesc := resourceDesc.Message().Fields().ByName("name")
 		if resourceNameDesc != nil {
 			v := resourceValue.Message().Get(resourceNameDesc)
-			return &common.Resource{Name: v.String()}
+			return &rawResource{name: v.String()}
 		}
 	}
-	return &common.Resource{Workspace: true}
+	return &rawResource{isWorkspace: true}
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")

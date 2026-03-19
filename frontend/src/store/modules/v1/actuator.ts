@@ -155,18 +155,18 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const fetchActuatorInfo = async (workspace?: string) => {
     if (!workspace) {
-      return actuatorServiceClientConnect.getActuatorInfo({})
+      return actuatorServiceClientConnect.getActuatorInfo({});
     }
     return actuatorServiceClientConnect.getWorkspaceActuatorInfo({
-      name: workspace
-    })
-  }
+      name: workspace,
+    });
+  };
 
   const fetchServerInfo = async (workspace?: string) => {
     const [info, pkg] = await Promise.all([
       fetchActuatorInfo(workspace),
       actuatorServiceClientConnect.getResourcePackage({
-        name: workspace
+        name: workspace,
       }),
     ]);
     setServerInfo(info);

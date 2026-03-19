@@ -3,9 +3,10 @@ package store
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/pkg/errors"
 )
 
 // GetServerConfig returns the global server configuration.

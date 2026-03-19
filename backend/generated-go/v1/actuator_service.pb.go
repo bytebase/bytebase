@@ -559,15 +559,16 @@ var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"/\n" +
+	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"/\n" +
 	"\x19GetResourcePackageRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"%\n" +
 	"\x0fResourcePackage\x12\x12\n" +
 	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\":\n" +
-	"\x1fGetWorkspaceActuatorInfoRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x14\n" +
+	"\x16GetActuatorInfoRequest\"U\n" +
+	"\x1fGetWorkspaceActuatorInfoRequest\x122\n" +
+	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
+	"\x16bytebase.com/WorkspaceR\x04name\"\x14\n" +
 	"\x12DeleteCacheRequest\"\xec\x01\n" +
 	"\vRestriction\x12,\n" +
 	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
@@ -595,13 +596,13 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
 	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestrictionJ\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\xc5\x05\n" +
+	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\xe8\x05\n" +
 	"\x0fActuatorService\x12s\n" +
 	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/info\x12\x82\x01\n" +
 	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\":\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSample\x12f\n" +
 	"\vDeleteCache\x12\x1f.bytebase.v1.DeleteCacheRequest\x1a\x16.google.protobuf.Empty\"\x1e\x80\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/actuator/cache\x12\xaf\x01\n" +
-	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"S\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02FZ,\x12*/v1/{name=workspaces/*}/actuator/resources\x12\x16/v1/actuator/resources\x12\x9d\x01\n" +
-	"\x18GetWorkspaceActuatorInfo\x12,.bytebase.v1.GetWorkspaceActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\"8\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02'\x12%/v1/{name=workspaces/*}/actuator/infoB\xaa\x01\n" +
+	"\x12GetResourcePackage\x12&.bytebase.v1.GetResourcePackageRequest\x1a\x1c.bytebase.v1.ResourcePackage\"S\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02FZ,\x12*/v1/{name=workspaces/*}/actuator/resources\x12\x16/v1/actuator/resources\x12\xc0\x01\n" +
+	"\x18GetWorkspaceActuatorInfo\x12,.bytebase.v1.GetWorkspaceActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\"[\xdaA\x04name\x8a\xea0\x1fbb.settings.getWorkspaceProfile\x90\xea0\x01\x82\xd3\xe4\x93\x02'\x12%/v1/{name=workspaces/*}/actuator/infoB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14ActuatorServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

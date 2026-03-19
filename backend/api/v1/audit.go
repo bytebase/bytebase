@@ -173,17 +173,15 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
 
-	var parents []string
-	if authContext.HasWorkspaceResource() {
-		parents = append(parents, common.FormatWorkspace(common.GetWorkspaceIDFromContext(ctx)))
-	} else {
-		for _, projectID := range authContext.GetProjectResources() {
-			parents = append(parents, common.FormatProject(projectID))
-		}
-	}
-
 	createAuditLogCtx := context.WithoutCancel(ctx)
-	for _, parent := range parents {
+	for _, resource := range authContext.Resources {
+		var parent string
+		switch resource.Type {
+		case common.ResourceTypeProject:
+			parent = common.FormatProject(resource.ID)
+		case common.ResourceTypeWorkspace:
+			parent = common.FormatWorkspace(resource.ID)
+		}
 		resource := getRequestResource(request)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
 		// This handles MFA phase where request doesn't have email field.

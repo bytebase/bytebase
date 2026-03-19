@@ -43,13 +43,21 @@ const (
 	AuthMethodCustom
 )
 
-// TODO(ed): refactor this
-// Maybe only need resource fullname, like workspaces/{id} or projects/{id}
+// ResourceType indicates whether a resource is workspace-scoped or project-scoped.
+type ResourceType int
+
+const (
+	ResourceTypeWorkspace ResourceType = iota
+	ResourceTypeProject
+)
+
+// Resource represents a resource extracted from an API request for authorization and audit.
 type Resource struct {
-	Type      string
-	Name      string
-	ProjectID string
-	Workspace bool
+	Type ResourceType
+	// ID is the resource identifier:
+	// - For workspace: the workspace resource ID
+	// - For project: the project resource ID
+	ID string
 }
 
 type AuthContext struct {
@@ -63,27 +71,4 @@ type AuthContext struct {
 func GetAuthContextFromContext(ctx context.Context) (*AuthContext, bool) {
 	authCtx, ok := ctx.Value(AuthContextKey).(*AuthContext)
 	return authCtx, ok
-}
-
-func (c *AuthContext) HasWorkspaceResource() bool {
-	for _, r := range c.Resources {
-		if r.Workspace {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *AuthContext) GetProjectResources() []string {
-	projectIDMap := make(map[string]bool)
-	for _, r := range c.Resources {
-		if r.ProjectID != "" {
-			projectIDMap[r.ProjectID] = true
-		}
-	}
-	var projectIDs []string
-	for projectID := range projectIDMap {
-		projectIDs = append(projectIDs, projectID)
-	}
-	return projectIDs
 }

@@ -72,20 +72,12 @@ func (s *ActuatorService) GetActuatorInfo(
 }
 
 // GetWorkspaceActuatorInfo gets workspace-scoped actuator info. Requires authentication.
+// Workspace validation is handled by the ACL layer (resource_reference on name field).
 func (s *ActuatorService) GetWorkspaceActuatorInfo(
 	ctx context.Context,
-	req *connect.Request[v1pb.GetWorkspaceActuatorInfoRequest],
+	_ *connect.Request[v1pb.GetWorkspaceActuatorInfoRequest],
 ) (*connect.Response[v1pb.ActuatorInfo], error) {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	reqWorkspaceID, err := common.GetWorkspaceID(req.Msg.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	if reqWorkspaceID != workspaceID {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace %q does not match token workspace", reqWorkspaceID))
-	}
-
-	info, err := s.getServerInfo(ctx, workspaceID)
+	info, err := s.getServerInfo(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}

@@ -33,10 +33,6 @@ func NewWorkspaceService(store *store.Store, iamManager *iam.Manager) *Workspace
 }
 
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, req *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
-	if err := s.validateWorkspaceResource(ctx, req.Msg.Resource); err != nil {
-		return nil, err
-	}
-
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
@@ -50,23 +46,9 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(v1Policy), nil
 }
 
-func (*WorkspaceService) validateWorkspaceResource(ctx context.Context, resource string) error {
-	resourceWorkspaceID, err := common.GetWorkspaceID(resource)
-	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid workspace resource %q", resource))
-	}
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	if resourceWorkspaceID != workspaceID {
-		return connect.NewError(connect.CodeNotFound, errors.Errorf("workspace not match, expect %v but got %v", workspaceID, resourceWorkspaceID))
-	}
-	return nil
-}
-
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	request := req.Msg
-	if err := s.validateWorkspaceResource(ctx, request.Resource); err != nil {
-		return nil, err
-	}
+
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
