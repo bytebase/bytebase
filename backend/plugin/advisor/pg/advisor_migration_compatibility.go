@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,42 +30,19 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	lastCreateTable := ""
-
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &compatibilityRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens:          antlrAST.Tokens,
-			lastCreateTable: lastCreateTable,
-		}
-
-		checker := NewGenericChecker([]Rule{rule})
-		rule.SetBaseLine(stmtInfo.BaseLine())
-		checker.SetBaseLine(stmtInfo.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-
-		adviceList = append(adviceList, checker.GetAdviceList()...)
-		lastCreateTable = rule.lastCreateTable
+	rule := &compatibilityRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type compatibilityRule struct {
-	BaseRule
+	OmniBaseRule
 
-	tokens          *antlr.CommonTokenStream
 	lastCreateTable string
 }
 
@@ -76,232 +50,143 @@ func (*compatibilityRule) Name() string {
 	return "migration_compatibility"
 }
 
-func (r *compatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx)
-	case "Dropdbstmt":
-		r.handleDropdbstmt(ctx)
-	case "Dropstmt":
-		r.handleDropstmt(ctx)
-	case "Renamestmt":
-		r.handleRenamestmt(ctx)
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx)
-	case "Indexstmt":
-		r.handleIndexstmt(ctx)
+func (r *compatibilityRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.DropdbStmt:
+		r.handleDropdbStmt()
+	case *ast.DropStmt:
+		r.handleDropStmt(n)
+	case *ast.RenameStmt:
+		r.handleRenameStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
+	case *ast.IndexStmt:
+		r.handleIndexStmt(n)
 	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*compatibilityRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleCreatestmt tracks CREATE TABLE statements
-func (r *compatibilityRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
-	createstmtCtx, ok := ctx.(*parser.CreatestmtContext)
-	if !ok {
-		return
-	}
-
-	if !isTopLevel(createstmtCtx.GetParent()) {
-		return
-	}
-
-	qualifiedNames := createstmtCtx.AllQualified_name()
-	if len(qualifiedNames) > 0 {
-		r.lastCreateTable = extractTableName(qualifiedNames[0])
 	}
 }
 
-// handleDropdbstmt handles DROP DATABASE
-func (r *compatibilityRule) handleDropdbstmt(ctx antlr.ParserRuleContext) {
-	dropdbstmtCtx, ok := ctx.(*parser.DropdbstmtContext)
-	if !ok {
-		return
+func (r *compatibilityRule) handleCreateStmt(n *ast.CreateStmt) {
+	if n.Relation != nil {
+		r.lastCreateTable = omniTableName(n.Relation)
 	}
+}
 
-	if !isTopLevel(dropdbstmtCtx.GetParent()) {
-		return
-	}
-
+func (r *compatibilityRule) handleDropdbStmt() {
+	stmtText := r.TrimmedStmtText()
 	r.AddAdvice(&storepb.Advice{
-		Status:  r.level,
+		Status:  r.Level,
 		Code:    advisorcode.CompatibilityDropDatabase.Int32(),
-		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropdbstmtCtx)),
+		Title:   r.Title,
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 		StartPosition: &storepb.Position{
-			Line:   int32(dropdbstmtCtx.GetStart().GetLine()),
+			Line:   r.ContentStartLine(),
 			Column: 0,
 		},
 	})
 }
 
-// handleDropstmt handles DROP TABLE/MATERIALIZED VIEW
-func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
-	dropstmtCtx, ok := ctx.(*parser.DropstmtContext)
-	if !ok {
-		return
-	}
-
-	if !isTopLevel(dropstmtCtx.GetParent()) {
-		return
-	}
-
-	if dropstmtCtx.Object_type_any_name() == nil {
-		return
-	}
-	objType := dropstmtCtx.Object_type_any_name()
-
+func (r *compatibilityRule) handleDropStmt(n *ast.DropStmt) {
+	removeType := ast.ObjectType(n.RemoveType)
 	// Flag DROP TABLE and DROP MATERIALIZED VIEW (data loss risk).
-	// Skip non-materialized DROP VIEW — views hold no data.
-	isMaterializedView := objType.VIEW() != nil && objType.MATERIALIZED() != nil
-	if objType.TABLE() != nil || isMaterializedView {
+	// Skip non-materialized DROP VIEW -- views hold no data.
+	if removeType == ast.OBJECT_TABLE || removeType == ast.OBJECT_MATVIEW {
+		stmtText := r.TrimmedStmtText()
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    advisorcode.CompatibilityDropTable.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropstmtCtx)),
+			Title:   r.Title,
+			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 			StartPosition: &storepb.Position{
-				Line:   int32(dropstmtCtx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
 }
 
-// handleRenamestmt handles ALTER TABLE RENAME and RENAME COLUMN
-func (r *compatibilityRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
-	renamestmtCtx, ok := ctx.(*parser.RenamestmtContext)
-	if !ok {
-		return
-	}
-
-	if !isTopLevel(renamestmtCtx.GetParent()) {
-		return
-	}
-
+func (r *compatibilityRule) handleRenameStmt(n *ast.RenameStmt) {
 	code := advisorcode.Ok
 
-	// Check if this is a column rename
-	if renamestmtCtx.Opt_column() != nil && renamestmtCtx.Opt_column().COLUMN() != nil {
+	switch n.RenameType {
+	case ast.OBJECT_COLUMN:
 		// RENAME COLUMN - check if not on last created table
-		if renamestmtCtx.Relation_expr() != nil && renamestmtCtx.Relation_expr().Qualified_name() != nil {
-			tableName := extractTableName(renamestmtCtx.Relation_expr().Qualified_name())
+		if n.Relation != nil {
+			tableName := omniTableName(n.Relation)
 			if r.lastCreateTable != tableName {
 				code = advisorcode.CompatibilityRenameColumn
 			}
 		}
-	} else {
-		// RENAME TABLE/VIEW
+	case ast.OBJECT_TABLE:
 		code = advisorcode.CompatibilityRenameTable
+	default:
 	}
 
 	if code != advisorcode.Ok {
+		stmtText := r.TrimmedStmtText()
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, renamestmtCtx)),
+			Title:   r.Title,
+			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 			StartPosition: &storepb.Position{
-				Line:   int32(renamestmtCtx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
 }
 
-// handleAltertablestmt handles various ALTER TABLE commands
-func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
-	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
-	if !ok {
+func (r *compatibilityRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	if n.Relation == nil {
 		return
 	}
-
-	if !isTopLevel(altertablestmtCtx.GetParent()) {
-		return
-	}
-
-	if altertablestmtCtx.Relation_expr() == nil || altertablestmtCtx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-	tableName := extractTableName(altertablestmtCtx.Relation_expr().Qualified_name())
+	tableName := omniTableName(n.Relation)
 
 	// Skip if this is the table we just created
 	if r.lastCreateTable == tableName {
 		return
 	}
 
-	if altertablestmtCtx.Alter_table_cmds() == nil {
-		return
-	}
-
-	allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
-	for _, cmd := range allCmds {
+	for _, cmd := range omniAlterTableCmds(n) {
 		code := advisorcode.Ok
 
-		// DROP COLUMN
-		if cmd.DROP() != nil && cmd.COLUMN() != nil {
+		switch ast.AlterTableType(cmd.Subtype) {
+		case ast.AT_DropColumn:
 			code = advisorcode.CompatibilityDropColumn
-		}
-
-		// ALTER COLUMN TYPE
-		if cmd.ALTER() != nil && cmd.TYPE_P() != nil {
+		case ast.AT_AlterColumnType:
 			code = advisorcode.CompatibilityAlterColumn
-		}
-
-		// ADD CONSTRAINT
-		if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-			constraint := cmd.Tableconstraint()
-			if constraint.Constraintelem() != nil {
-				elem := constraint.Constraintelem()
-
-				// PRIMARY KEY
-				if elem.PRIMARY() != nil && elem.KEY() != nil {
+		case ast.AT_AddConstraint:
+			constraint, ok := cmd.Def.(*ast.Constraint)
+			if ok {
+				switch constraint.Contype {
+				case ast.CONSTR_PRIMARY:
 					code = advisorcode.CompatibilityAddPrimaryKey
-				}
-
-				// UNIQUE
-				if elem.UNIQUE() != nil {
+				case ast.CONSTR_UNIQUE:
 					code = advisorcode.CompatibilityAddUniqueKey
-				}
-
-				// FOREIGN KEY
-				if elem.FOREIGN() != nil && elem.KEY() != nil {
+				case ast.CONSTR_FOREIGN:
 					code = advisorcode.CompatibilityAddForeignKey
-				}
-
-				// CHECK - only if NOT VALID is not present
-				if elem.CHECK() != nil {
-					// Check if NOT VALID is present in constraint attributes
-					hasNotValid := false
-					if elem.Constraintattributespec() != nil {
-						allAttrs := elem.Constraintattributespec().AllConstraintattributeElem()
-						for _, attr := range allAttrs {
-							if attr.NOT() != nil && attr.VALID() != nil {
-								hasNotValid = true
-								break
-							}
-						}
-					}
-					if !hasNotValid {
+				case ast.CONSTR_CHECK:
+					if !constraint.SkipValidation {
 						code = advisorcode.CompatibilityAddCheck
 					}
+				default:
 				}
 			}
+		default:
 		}
 
 		if code != advisorcode.Ok {
+			stmtText := r.TrimmedStmtText()
 			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
+				Status:  r.Level,
 				Code:    code.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, altertablestmtCtx)),
+				Title:   r.Title,
+				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 				StartPosition: &storepb.Position{
-					Line:   int32(altertablestmtCtx.GetStart().GetLine()),
+					Line:   r.ContentStartLine(),
 					Column: 0,
 				},
 			})
@@ -310,40 +195,31 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 	}
 }
 
-// handleIndexstmt handles CREATE UNIQUE INDEX
-func (r *compatibilityRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
-	indexstmtCtx, ok := ctx.(*parser.IndexstmtContext)
-	if !ok {
-		return
-	}
-
-	if !isTopLevel(indexstmtCtx.GetParent()) {
-		return
-	}
-
+func (r *compatibilityRule) handleIndexStmt(n *ast.IndexStmt) {
 	// Check if this is CREATE UNIQUE INDEX
-	if indexstmtCtx.Opt_unique() == nil || indexstmtCtx.Opt_unique().UNIQUE() == nil {
+	if !n.Unique {
 		return
 	}
 
 	// Get table name
-	if indexstmtCtx.Relation_expr() == nil || indexstmtCtx.Relation_expr().Qualified_name() == nil {
+	if n.Relation == nil {
 		return
 	}
-	tableName := extractTableName(indexstmtCtx.Relation_expr().Qualified_name())
+	tableName := omniTableName(n.Relation)
 
 	// Skip if this is the table we just created
 	if r.lastCreateTable == tableName {
 		return
 	}
 
+	stmtText := r.TrimmedStmtText()
 	r.AddAdvice(&storepb.Advice{
-		Status:  r.level,
+		Status:  r.Level,
 		Code:    advisorcode.CompatibilityAddUniqueKey.Int32(),
-		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, indexstmtCtx)),
+		Title:   r.Title,
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
 		StartPosition: &storepb.Position{
-			Line:   int32(indexstmtCtx.GetStart().GetLine()),
+			Line:   r.ContentStartLine(),
 			Column: 0,
 		},
 	})

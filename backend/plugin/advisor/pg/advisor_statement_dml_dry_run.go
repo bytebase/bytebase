@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -45,46 +43,26 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, nil
 	}
 
-	var adviceList []*storepb.Advice
-	var preExecutions []string
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &statementDMLDryRunRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			ctx:           ctx,
-			driver:        checkCtx.Driver,
-			tenantMode:    checkCtx.TenantMode,
-			preExecutions: preExecutions,
-			tokens:        antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
-		preExecutions = rule.preExecutions
+	rule := &statementDMLDryRunRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		ctx:        ctx,
+		driver:     checkCtx.Driver,
+		tenantMode: checkCtx.TenantMode,
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDMLDryRunRule struct {
-	BaseRule
+	OmniBaseRule
 	driver        *sql.DB
 	ctx           context.Context
 	explainCount  int
 	preExecutions []string
 	tenantMode    bool
-	tokens        *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -92,61 +70,19 @@ func (*statementDMLDryRunRule) Name() string {
 	return "statement.dml-dry-run"
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *statementDMLDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Variablesetstmt":
-		r.handleVariablesetstmt(ctx.(*parser.VariablesetstmtContext))
-	case "Insertstmt":
-		r.handleInsertstmt(ctx.(*parser.InsertstmtContext))
-	case "Updatestmt":
-		r.handleUpdatestmt(ctx.(*parser.UpdatestmtContext))
-	case "Deletestmt":
-		r.handleDeletestmt(ctx.(*parser.DeletestmtContext))
+func (r *statementDMLDryRunRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.VariableSetStmt:
+		if omniIsRoleOrSearchPathSet(n) {
+			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
+		}
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+		r.checkDMLDryRun()
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-// OnExit is called when the parser exits a rule context.
-func (*statementDMLDryRunRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
-}
-
-func (r *statementDMLDryRunRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.checkDMLDryRun(ctx)
-}
-
-func (r *statementDMLDryRunRule) handleUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.checkDMLDryRun(ctx)
-}
-
-func (r *statementDMLDryRunRule) handleDeletestmt(ctx *parser.DeletestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.checkDMLDryRun(ctx)
-}
-
-func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
+func (r *statementDMLDryRunRule) checkDMLDryRun() {
 	// Check if we've hit the maximum number of EXPLAIN queries
 	if r.explainCount >= common.MaximumLintExplainSize {
 		return
@@ -154,7 +90,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 
 	r.explainCount++
 
-	statementText := getTextFromTokens(r.tokens, ctx)
+	statementText := r.TrimmedStmtText()
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
@@ -164,12 +100,12 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.StatementDMLDryRunFailed.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
