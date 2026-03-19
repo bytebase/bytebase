@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
@@ -116,6 +117,50 @@ func omniTypeName(tn *ast.TypeName) string {
 		return parts[len(parts)-1]
 	}
 	return ""
+}
+
+// omniTypeNameFull extracts the full type name with modifiers from a TypeName node.
+// For example, "character varying(20)" instead of just "character varying".
+func omniTypeNameFull(tn *ast.TypeName) string {
+	name := omniTypeName(tn)
+	if name == "" {
+		return ""
+	}
+	if tn.Typmods != nil && len(tn.Typmods.Items) > 0 {
+		var mods []string
+		for _, item := range tn.Typmods.Items {
+			switch v := item.(type) {
+			case *ast.Integer:
+				mods = append(mods, fmt.Sprintf("%d", v.Ival))
+			case *ast.A_Const:
+				if iv, ok := v.Val.(*ast.Integer); ok {
+					mods = append(mods, fmt.Sprintf("%d", iv.Ival))
+				}
+			default:
+			}
+		}
+		if len(mods) > 0 {
+			name += "(" + strings.Join(mods, ",") + ")"
+		}
+	}
+	if tn.ArrayBounds != nil && len(tn.ArrayBounds.Items) > 0 {
+		name += "[]"
+	}
+	return name
+}
+
+// omniListStrings extracts string values from an ast.List.
+func omniListStrings(list *ast.List) []string {
+	if list == nil {
+		return nil
+	}
+	var result []string
+	for _, item := range list.Items {
+		if s, ok := item.(*ast.String); ok {
+			result = append(result, s.Str)
+		}
+	}
+	return result
 }
 
 // omniIndexColumns extracts column names from an IndexStmt's IndexParams list.
