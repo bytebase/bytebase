@@ -39,7 +39,7 @@ type oauth2ClaimsMessage struct {
 }
 
 // GenerateAPIToken generates an API token.
-func GenerateAPIToken(userEmail string, workspaceID string, secret string) (string, error) {
+func GenerateAPIToken(userEmail string, workspaceID, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
 	return generateToken(userEmail, workspaceID, AccessTokenAudience, expirationTime, []byte(secret))
 }

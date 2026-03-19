@@ -489,8 +489,10 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	// Handle sample instance deletion if applicable
-	if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
-		slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
+	if s.sampleInstanceManager != nil {
+		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
+			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -521,8 +523,10 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	// Handle sample instance undelete (restart) if applicable
-	if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
-		slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
+	if s.sampleInstanceManager != nil {
+		if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+			slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
+		}
 	}
 
 	result := convertToV1Instance(ins)

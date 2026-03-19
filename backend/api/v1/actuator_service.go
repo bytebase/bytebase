@@ -133,19 +133,22 @@ func (s *ActuatorService) SetupSample(
 	_ *connect.Request[v1pb.SetupSampleRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	if s.profile.SaaS {
-		// TODO(ed): should also skip the setup in SaaS
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("sample is not available for SaaS"))
+		// skip sample setup in SaaS
+		slog.Debug("sample is not available for SaaS")
+		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, common.GetWorkspaceIDFromContext(ctx), user, s.schemaSyncer); err != nil {
-		// When running inside docker on mac, we sometimes get database does not exist error.
-		// This is due to the docker overlay storage incompatibility with mac OS file system.
-		// Onboarding error is not critical, so we just emit an error log.
-		slog.Error("failed to prepare onboarding data", log.BBError(err))
+	if s.sampleInstanceManager != nil {
+		if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, common.GetWorkspaceIDFromContext(ctx), user, s.schemaSyncer); err != nil {
+			// When running inside docker on mac, we sometimes get database does not exist error.
+			// This is due to the docker overlay storage incompatibility with mac OS file system.
+			// Onboarding error is not critical, so we just emit an error log.
+			slog.Error("failed to prepare onboarding data", log.BBError(err))
+		}
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
