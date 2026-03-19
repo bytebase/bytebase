@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -37,170 +32,104 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	}
 
 	rule := &columnRequireDefaultRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnRequireDefaultRule struct {
-	BaseRule
+	OmniBaseRule
 }
 
 func (*columnRequireDefaultRule) Name() string {
 	return "column_require_default"
 }
 
-func (r *columnRequireDefaultRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		if c, ok := ctx.(*parser.CreatestmtContext); ok {
-			r.handleCreatestmt(c)
-		}
-	case "Altertablestmt":
-		if c, ok := ctx.(*parser.AltertablestmtContext); ok {
-			r.handleAltertablestmt(c)
-		}
+func (r *columnRequireDefaultRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*columnRequireDefaultRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *columnRequireDefaultRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	qualifiedNames := ctx.AllQualified_name()
-	if len(qualifiedNames) == 0 {
-		return
-	}
-
-	tableName := extractTableName(qualifiedNames[0])
+func (r *columnRequireDefaultRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	// Check all columns for DEFAULT clause
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			if elem.ColumnDef() != nil {
-				colDef := elem.ColumnDef()
-				if colDef.Colid() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					// Check if column has DEFAULT
-					if !r.hasDefault(colDef) {
-						r.AddAdvice(&storepb.Advice{
-							Status:  r.level,
-							Code:    code.NoDefault.Int32(),
-							Title:   r.title,
-							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
-							StartPosition: &storepb.Position{
-								Line:   int32(colDef.GetStart().GetLine()),
-								Column: 0,
-							},
-						})
-					}
-				}
-			}
+	cols, _ := omniTableElements(n)
+	for _, col := range cols {
+		if !r.hasDefault(col) {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    code.NoDefault.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, col.Colname, "public"),
+				StartPosition: &storepb.Position{
+					Line:   r.FindLineByName(col.Colname),
+					Column: 0,
+				},
+			})
 		}
 	}
 }
 
-func (r *columnRequireDefaultRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+func (r *columnRequireDefaultRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	// Check ALTER TABLE ADD COLUMN
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				colDef := cmd.ColumnDef()
-				if colDef.Colid() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					// Check if column has DEFAULT
-					if !r.hasDefault(colDef) {
-						r.AddAdvice(&storepb.Advice{
-							Status:  r.level,
-							Code:    code.NoDefault.Int32(),
-							Title:   r.title,
-							Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, columnName, "public"),
-							StartPosition: &storepb.Position{
-								Line:   int32(colDef.GetStart().GetLine()),
-								Column: 0,
-							},
-						})
-					}
-				}
-			}
+	for _, cmd := range omniAlterTableCmds(n) {
+		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
+			continue
+		}
+		colDef, ok := cmd.Def.(*ast.ColumnDef)
+		if !ok || colDef == nil {
+			continue
+		}
+		if !r.hasDefault(colDef) {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    code.NoDefault.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, colDef.Colname, "public"),
+				StartPosition: &storepb.Position{
+					Line:   r.FindLineByName(colDef.Colname),
+					Column: 0,
+				},
+			})
 		}
 	}
 }
 
 // hasDefault checks if a column definition has a DEFAULT clause
-// or uses a type that implicitly includes a default (like serial, bigserial, smallserial)
-func (*columnRequireDefaultRule) hasDefault(colDef parser.IColumnDefContext) bool {
+// or uses a serial type (which has an implicit default).
+func (*columnRequireDefaultRule) hasDefault(col *ast.ColumnDef) bool {
+	// Check if ColumnDef has RawDefault set directly
+	if col.RawDefault != nil {
+		return true
+	}
+
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
-	if colDef.Typename() != nil && colDef.Typename().Simpletypename() != nil {
-		simpleType := colDef.Typename().Simpletypename()
-		typeText := strings.ToLower(simpleType.GetText())
-		// serial, bigserial, smallserial all have implicit DEFAULT nextval()
-		if typeText == "serial" || typeText == "bigserial" || typeText == "smallserial" {
-			return true
-		}
+	typeName := omniTypeName(col.TypeName)
+	lower := strings.ToLower(typeName)
+	if lower == "serial" || lower == "bigserial" || lower == "smallserial" ||
+		lower == "serial4" || lower == "serial8" || lower == "serial2" {
+		return true
 	}
 
-	// Check for explicit DEFAULT constraint
-	if colDef.Colquallist() == nil {
-		return false
-	}
-
-	allConstraints := colDef.Colquallist().AllColconstraint()
-	for _, constraint := range allConstraints {
-		if constraint.Colconstraintelem() == nil {
-			continue
-		}
-
-		elem := constraint.Colconstraintelem()
-
-		// Check for DEFAULT constraint
-		if elem.DEFAULT() != nil {
+	// Check for explicit DEFAULT constraint in the constraints list
+	for _, c := range omniColumnConstraints(col) {
+		if c.Contype == ast.CONSTR_DEFAULT {
 			return true
 		}
 	}

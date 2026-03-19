@@ -3,19 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -46,33 +42,18 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	rule := &columnMaximumCharacterLengthRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		maximum: int(numberPayload.Number),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnMaximumCharacterLengthRule struct {
-	BaseRule
+	OmniBaseRule
 
 	maximum int
 }
@@ -81,178 +62,115 @@ func (*columnMaximumCharacterLengthRule) Name() string {
 	return "column-maximum-character-length"
 }
 
-func (r *columnMaximumCharacterLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*columnMaximumCharacterLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *columnMaximumCharacterLengthRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnMaximumCharacterLengthRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniFormatTableName(n.Relation)
+	if tableName == "" {
 		return
 	}
 
-	tableName := r.extractTableName(ctx.AllQualified_name())
-
-	// Check all columns
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			if elem.ColumnDef() != nil {
-				colDef := elem.ColumnDef()
-				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					charLength := r.getCharLength(colDef.Typename())
-					if charLength > r.maximum {
-						r.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
-						return // Only report first violation
-					}
-				}
-			}
+	cols, _ := omniTableElements(n)
+	for _, col := range cols {
+		if col.TypeName == nil {
+			continue
+		}
+		charLength := r.getCharLength(col.TypeName)
+		if charLength > r.maximum {
+			r.addAdvice(tableName, col.Colname, col.Colname)
+			return // Only report first violation
 		}
 	}
 }
 
-func (r *columnMaximumCharacterLengthRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnMaximumCharacterLengthRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniFormatTableName(n.Relation)
+	if tableName == "" {
 		return
 	}
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-
-	parts := pg.NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
-	if len(parts) == 0 {
-		return
-	}
-
-	var tableName string
-	// Format: schema.table or just table (always with quotes)
-	if len(parts) == 1 {
-		tableName = fmt.Sprintf("%q", parts[0])
-	} else {
-		tableName = fmt.Sprintf("%q.%q", parts[0], parts[1])
-	}
-
-	// Check ALTER TABLE commands
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				colDef := cmd.ColumnDef()
-				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					charLength := r.getCharLength(colDef.Typename())
-					if charLength > r.maximum {
-						r.addAdvice(tableName, columnName, colDef.GetStart().GetLine())
-						return
-					}
-				}
+	for _, cmd := range omniAlterTableCmds(n) {
+		switch ast.AlterTableType(cmd.Subtype) {
+		case ast.AT_AddColumn:
+			colDef, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok || colDef == nil || colDef.TypeName == nil {
+				continue
 			}
-
-			// ALTER COLUMN TYPE
-			if cmd.ALTER() != nil && cmd.TYPE_P() != nil && cmd.Typename() != nil {
-				// Get column name
-				allColids := cmd.AllColid()
-				if len(allColids) > 0 {
-					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					charLength := r.getCharLength(cmd.Typename())
-					if charLength > r.maximum {
-						r.addAdvice(tableName, columnName, cmd.GetStart().GetLine())
-						return
-					}
-				}
+			charLength := r.getCharLength(colDef.TypeName)
+			if charLength > r.maximum {
+				r.addAdvice(tableName, colDef.Colname, colDef.Colname)
+				return
 			}
+		case ast.AT_AlterColumnType:
+			typeName, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok || typeName == nil || typeName.TypeName == nil {
+				continue
+			}
+			charLength := r.getCharLength(typeName.TypeName)
+			if charLength > r.maximum {
+				r.addAdvice(tableName, cmd.Name, cmd.Name)
+				return
+			}
+		default:
 		}
 	}
 }
 
-func (*columnMaximumCharacterLengthRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
-	if len(qualifiedNames) == 0 {
-		return ""
-	}
+// getCharLength returns the character length if the type is CHAR/CHARACTER/NCHAR (without VARYING).
+// Returns 0 for non-character types or VARCHAR types.
+func (*columnMaximumCharacterLengthRule) getCharLength(tn *ast.TypeName) int {
+	name := strings.ToLower(omniTypeName(tn))
 
-	parts := pg.NormalizePostgreSQLQualifiedName(qualifiedNames[0])
-	if len(parts) == 0 {
-		return ""
-	}
-
-	// Format: schema.table or just table (always with quotes)
-	if len(parts) == 1 {
-		return fmt.Sprintf("%q", parts[0])
-	}
-	return fmt.Sprintf("%q.%q", parts[0], parts[1])
-}
-
-func (*columnMaximumCharacterLengthRule) getCharLength(typename parser.ITypenameContext) int {
-	if typename == nil {
+	// Only check fixed-length char types (char, character, bpchar, nchar)
+	// Skip varchar, character varying, text
+	switch name {
+	case "char", "character", "bpchar", "nchar":
+		// OK, continue
+	default:
 		return 0
 	}
 
-	// Check if this is a character type
-	if typename.Simpletypename() == nil {
+	// Get the length from Typmods
+	if tn.Typmods == nil || len(tn.Typmods.Items) == 0 {
 		return 0
 	}
 
-	simpleType := typename.Simpletypename()
-
-	// Check if it's a character type
-	if simpleType.Character() == nil {
-		return 0
-	}
-
-	character := simpleType.Character()
-	if character.Character_c() == nil {
-		return 0
-	}
-
-	characterC := character.Character_c()
-
-	// Skip VARCHAR - we only check CHAR types
-	if characterC.VARCHAR() != nil {
-		return 0
-	}
-
-	// Skip CHARACTER VARYING, CHAR VARYING, etc.
-	// Only check CHAR/CHARACTER/NCHAR without VARYING
-	if (characterC.CHARACTER() != nil || characterC.CHAR_P() != nil || characterC.NCHAR() != nil) && characterC.Opt_varying() != nil {
-		return 0
-	}
-
-	// Now check if it has a size
-	if character.Iconst() != nil {
-		size, err := extractIntegerConstant(character.Iconst())
-		if err != nil {
-			// If parsing fails, return 0 (no length limit to check)
-			return 0
-		}
-		return size
+	// First typmod item is the length
+	if intVal, ok := tn.Typmods.Items[0].(*ast.Integer); ok {
+		return int(intVal.Ival)
 	}
 
 	return 0
 }
 
-func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName string, line int) {
+func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName, searchName string) {
 	r.AddAdvice(&storepb.Advice{
-		Status:  r.level,
+		Status:  r.Level,
 		Code:    code.CharLengthExceedsLimit.Int32(),
-		Title:   r.title,
+		Title:   r.Title,
 		Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", columnName, tableName, r.maximum),
 		StartPosition: &storepb.Position{
-			Line:   int32(line),
+			Line:   r.FindLineByName(searchName),
 			Column: 0,
 		},
 	})
+}
+
+// omniFormatTableName formats a RangeVar as a quoted table name string for display.
+func omniFormatTableName(rv *ast.RangeVar) string {
+	if rv == nil || rv.Relname == "" {
+		return ""
+	}
+	if rv.Schemaname != "" {
+		return fmt.Sprintf("%q.%q", rv.Schemaname, rv.Relname)
+	}
+	return fmt.Sprintf("%q", rv.Relname)
 }

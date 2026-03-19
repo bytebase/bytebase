@@ -2,12 +2,10 @@ package pg
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
@@ -104,20 +102,6 @@ func extractSchemaName(ctx parser.IQualified_nameContext) string {
 		return ""
 	}
 	return parts[0]
-}
-
-// extractIntegerConstant extracts an integer value from an Iconst context.
-// Returns the integer value and an error if parsing fails.
-func extractIntegerConstant(ctx parser.IIconstContext) (int, error) {
-	if ctx == nil {
-		return 0, errors.New("iconst context is nil")
-	}
-	text := ctx.GetText()
-	val, err := strconv.Atoi(text)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to parse integer constant: %s", text)
-	}
-	return val, nil
 }
 
 // extractStringConstant extracts a string value from an Sconst context.
