@@ -181,6 +181,8 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			parent = common.FormatProject(resource.ID)
 		case common.ResourceTypeWorkspace:
 			parent = common.FormatWorkspace(resource.ID)
+		default:
+			continue
 		}
 		resource := getRequestResource(request)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.

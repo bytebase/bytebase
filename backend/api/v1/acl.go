@@ -230,6 +230,8 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 			hasWorkspaceResource = true
 		case common.ResourceTypeProject:
 			projectIDMap[resource.ID] = true
+		default:
+			return false, nil, errors.Errorf("unknown resource type %v", resource.Type)
 		}
 	}
 
