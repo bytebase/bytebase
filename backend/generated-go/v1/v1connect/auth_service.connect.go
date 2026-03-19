@@ -41,6 +41,8 @@ const (
 	// AuthServiceExchangeTokenProcedure is the fully-qualified name of the AuthService's ExchangeToken
 	// RPC.
 	AuthServiceExchangeTokenProcedure = "/bytebase.v1.AuthService/ExchangeToken"
+	// AuthServiceSignupProcedure is the fully-qualified name of the AuthService's Signup RPC.
+	AuthServiceSignupProcedure = "/bytebase.v1.AuthService/Signup"
 	// AuthServiceRefreshProcedure is the fully-qualified name of the AuthService's Refresh RPC.
 	AuthServiceRefreshProcedure = "/bytebase.v1.AuthService/Refresh"
 )
@@ -57,6 +59,11 @@ type AuthServiceClient interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
+	// Registers a new user account. Creates a principal and assigns a workspace:
+	// - If the user's email was pre-invited to a workspace, joins that workspace.
+	// - Otherwise, creates a new workspace with the user as admin.
+	// Returns access tokens so the user is logged in immediately after signup.
+	Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
@@ -91,6 +98,12 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
 			connect.WithClientOptions(opts...),
 		),
+		signup: connect.NewClient[v1.SignupRequest, v1.LoginResponse](
+			httpClient,
+			baseURL+AuthServiceSignupProcedure,
+			connect.WithSchema(authServiceMethods.ByName("Signup")),
+			connect.WithClientOptions(opts...),
+		),
 		refresh: connect.NewClient[v1.RefreshRequest, v1.RefreshResponse](
 			httpClient,
 			baseURL+AuthServiceRefreshProcedure,
@@ -105,6 +118,7 @@ type authServiceClient struct {
 	login         *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	logout        *connect.Client[v1.LogoutRequest, emptypb.Empty]
 	exchangeToken *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	signup        *connect.Client[v1.SignupRequest, v1.LoginResponse]
 	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
 }
 
@@ -121,6 +135,11 @@ func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.
 // ExchangeToken calls bytebase.v1.AuthService.ExchangeToken.
 func (c *authServiceClient) ExchangeToken(ctx context.Context, req *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error) {
 	return c.exchangeToken.CallUnary(ctx, req)
+}
+
+// Signup calls bytebase.v1.AuthService.Signup.
+func (c *authServiceClient) Signup(ctx context.Context, req *connect.Request[v1.SignupRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return c.signup.CallUnary(ctx, req)
 }
 
 // Refresh calls bytebase.v1.AuthService.Refresh.
@@ -140,6 +159,11 @@ type AuthServiceHandler interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
+	// Registers a new user account. Creates a principal and assigns a workspace:
+	// - If the user's email was pre-invited to a workspace, joins that workspace.
+	// - Otherwise, creates a new workspace with the user as admin.
+	// Returns access tokens so the user is logged in immediately after signup.
+	Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
@@ -170,6 +194,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceSignupHandler := connect.NewUnaryHandler(
+		AuthServiceSignupProcedure,
+		svc.Signup,
+		connect.WithSchema(authServiceMethods.ByName("Signup")),
+		connect.WithHandlerOptions(opts...),
+	)
 	authServiceRefreshHandler := connect.NewUnaryHandler(
 		AuthServiceRefreshProcedure,
 		svc.Refresh,
@@ -184,6 +214,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceExchangeTokenProcedure:
 			authServiceExchangeTokenHandler.ServeHTTP(w, r)
+		case AuthServiceSignupProcedure:
+			authServiceSignupHandler.ServeHTTP(w, r)
 		case AuthServiceRefreshProcedure:
 			authServiceRefreshHandler.ServeHTTP(w, r)
 		default:
@@ -205,6 +237,10 @@ func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.ExchangeToken is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) Signup(context.Context, *connect.Request[v1.SignupRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Signup is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {

@@ -156,36 +156,34 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	if !s.profile.SaaS {
 		// TODO(ed): sample instance is only available for self-host
-		workspaceID, err := stores.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get workspace ID")
-		}
-
-		// Initialize sample instance manager and start sample instances if they exist
 		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
-		if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
-			slog.Warn("failed to start sample instances", log.BBError(err))
-		}
 
-		// TODO(ed): EnableDebug should only be able to be configured in self-host
-		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get workspace profile setting")
-		}
-		profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
-		if workspaceProfile.EnableDebug {
-			log.LogLevel.Set(slog.LevelDebug)
-		}
+		// Workspace may not exist yet on first boot (created during admin signup).
+		workspaceID, err := stores.GetWorkspaceID(ctx)
+		if err == nil {
+			if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
+				slog.Warn("failed to start sample instances", log.BBError(err))
+			}
 
-		// TODO(ed): EnableMetricCollection should only be able to be configured in self-host
-		// TODO(ed): refactor the telemetry, do NOT pass the workspaceID during initialization.
-		// Initialize telemetry reporter for hub.bytebase.com event reporting.
-		telemetry.InitGlobalReporter(
-			workspaceID,
-			profile.Version,
-			profile.GitCommit,
-			workspaceProfile.GetEnableMetricCollection(),
-		)
+			// TODO(ed): EnableDebug should only be able to be configured in self-host
+			workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get workspace profile setting")
+			}
+			profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
+			if workspaceProfile.EnableDebug {
+				log.LogLevel.Set(slog.LevelDebug)
+			}
+
+			// TODO(ed): EnableMetricCollection should only be able to be configured in self-host
+			// TODO(ed): refactor the telemetry, do NOT pass the workspaceID during initialization.
+			telemetry.InitGlobalReporter(
+				workspaceID,
+				profile.Version,
+				profile.GitCommit,
+				workspaceProfile.GetEnableMetricCollection(),
+			)
+		}
 	}
 
 	s.bus, err = bus.New()

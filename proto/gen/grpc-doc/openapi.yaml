@@ -209,6 +209,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RefreshResponse'
+  /v1/auth/signup:
+    post:
+      tags:
+        - AuthService
+      summary: Signup
+      description: |-
+        Registers a new user account. Creates a principal and assigns a workspace:
+         - If the user's email was pre-invited to a workspace, joins that workspace.
+         - Otherwise, creates a new workspace with the user as admin.
+         Returns access tokens so the user is logged in immediately after signup.
+      operationId: AuthService_Signup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SignupRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /v1/auth:exchangeToken:
     post:
       tags:
@@ -14235,8 +14259,9 @@ paths:
         - UserService
       summary: CreateUser
       description: |-
-        Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-         Permissions required: bb.users.create (only when Disallow Signup is enabled)
+        Creates a user in the caller's workspace (admin action, self-hosted only).
+         In SaaS mode, admins should add users via workspace IAM policy instead.
+         Permissions required: bb.users.create
       operationId: UserService_CreateUser
       requestBody:
         description: The user to create.
@@ -26165,6 +26190,23 @@ components:
       required:
         - name
         - content
+      additionalProperties: false
+    bytebase.v1.SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email for the new account.
+        password:
+          type: string
+          title: password
+          description: The password for the new account.
+        title:
+          type: string
+          title: title
+          description: The display name of the user.
+      title: SignupRequest
       additionalProperties: false
     bytebase.v1.SpatialIndexConfig:
       type: object

@@ -195,6 +195,7 @@
     - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
     - [RefreshRequest](#bytebase-v1-RefreshRequest)
     - [RefreshResponse](#bytebase-v1-RefreshResponse)
+    - [SignupRequest](#bytebase-v1-SignupRequest)
   
     - [AuthService](#bytebase-v1-AuthService)
   
@@ -3354,7 +3355,7 @@ UserService manages user accounts and authentication.
 | BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user in the caller&#39;s workspace (admin action, self-hosted only). In SaaS mode, admins should add users via workspace IAM policy instead. Permissions required: bb.users.create |
 | UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
@@ -3517,6 +3518,23 @@ Response from refreshing the access token.
 
 
 
+
+<a name="bytebase-v1-SignupRequest"></a>
+
+### SignupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | The email for the new account. |
+| password | [string](#string) |  | The password for the new account. |
+| title | [string](#string) |  | The display name of the user. |
+
+
+
+
+
  
 
  
@@ -3534,6 +3552,7 @@ AuthService handles user authentication operations.
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
+| Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 
  

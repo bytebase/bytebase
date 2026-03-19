@@ -54,16 +54,17 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-  // Permissions required: bb.users.create (only when Disallow Signup is enabled)
+  // Creates a user in the caller's workspace (admin action, self-hosted only).
+  // In SaaS mode, admins should add users via workspace IAM policy instead.
+  // Permissions required: bb.users.create
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
       body: "user"
     };
     option (google.api.method_signature) = "user";
-    option (bytebase.v1.allow_without_credential) = true;
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.permission) = "bb.users.create";
     option (bytebase.v1.audit) = true;
   }
 

@@ -564,6 +564,9 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 
 // CreatePolicy creates a policy.
 func (s *Store) CreatePolicy(ctx context.Context, create *PolicyMessage) (*PolicyMessage, error) {
+	if create.Workspace == "" {
+		return nil, errors.Errorf("workspace is required to create policy (resource_type=%s, resource=%s, type=%s)", create.ResourceType, create.Resource, create.Type)
+	}
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

@@ -52,8 +52,9 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
+	// Creates a user in the caller's workspace (admin action, self-hosted only).
+	// In SaaS mode, admins should add users via workspace IAM policy instead.
+	// Permissions required: bb.users.create
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
 	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
@@ -189,8 +190,9 @@ type UserServiceServer interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
+	// Creates a user in the caller's workspace (admin action, self-hosted only).
+	// In SaaS mode, admins should add users via workspace IAM policy instead.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
 	// Note: Email updates are not supported through this API. Use UpdateEmail instead.

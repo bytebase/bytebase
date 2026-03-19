@@ -897,14 +897,14 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
-	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x102\xd3\b\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\x0f\x10\x102\xe2\b\n" +
 	"\vUserService\x12p\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"5\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x86\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\".\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12Y\n" +
 	"\x0eGetCurrentUser\x12\x16.google.protobuf.Empty\x1a\x11.bytebase.v1.User\"\x1c\x80\xea0\x01\x90\xea0\x02\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/users/me\x12{\n" +
-	"\tListUsers\x12\x1d.bytebase.v1.ListUsersRequest\x1a\x1e.bytebase.v1.ListUsersResponse\"/\xdaA\x06parent\x8a\xea0\rbb.users.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12k\n" +
+	"\tListUsers\x12\x1d.bytebase.v1.ListUsersRequest\x1a\x1e.bytebase.v1.ListUsersResponse\"/\xdaA\x06parent\x8a\xea0\rbb.users.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\v\x12\t/v1/users\x12z\n" +
 	"\n" +
-	"CreateUser\x12\x1e.bytebase.v1.CreateUserRequest\x1a\x11.bytebase.v1.User\"*\xdaA\x04user\x80\xea0\x01\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04user\"\t/v1/users\x12\x81\x01\n" +
+	"CreateUser\x12\x1e.bytebase.v1.CreateUserRequest\x1a\x11.bytebase.v1.User\"9\xdaA\x04user\x8a\xea0\x0fbb.users.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x11:\x04user\"\t/v1/users\x12\x81\x01\n" +
 	"\n" +
 	"UpdateUser\x12\x1e.bytebase.v1.UpdateUserRequest\x1a\x11.bytebase.v1.User\"@\xdaA\x10user,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04user2\x17/v1/{user.name=users/*}\x12o\n" +
 	"\n" +

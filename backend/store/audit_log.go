@@ -59,8 +59,11 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 			created_at,
 			payload
 		FROM audit_log
-		WHERE workspace = ?
-	`, find.Workspace)
+		WHERE TRUE
+	`)
+	if find.Workspace != "" {
+		q.And("workspace = ?", find.Workspace)
+	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)

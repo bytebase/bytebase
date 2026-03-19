@@ -912,6 +912,10 @@
                   <a href="#bytebase.v1.RefreshResponse"><span class="badge">M</span>RefreshResponse</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.SignupRequest"><span class="badge">M</span>SignupRequest</a>
+                </li>
+              
               
               
               
@@ -9862,8 +9866,9 @@ Permissions required: bb.users.list</p></td>
                 <td>CreateUser</td>
                 <td><a href="#bytebase.v1.CreateUserRequest">CreateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p>Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-Permissions required: bb.users.create (only when Disallow Signup is enabled)</p></td>
+                <td><p>Creates a user in the caller&#39;s workspace (admin action, self-hosted only).
+In SaaS mode, admins should add users via workspace IAM policy instead.
+Permissions required: bb.users.create</p></td>
               </tr>
             
               <tr>
@@ -10296,6 +10301,44 @@ Only returned when web=false. For web=true, the token is set as an HTTP-only coo
 
         
       
+        <h3 id="bytebase.v1.SignupRequest">SignupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email for the new account. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The password for the new account. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The display name of the user. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
 
@@ -10333,6 +10376,16 @@ Permissions required: None</p></td>
                 <td><p>Exchanges an external OIDC token for a Bytebase access token.
 Used by CI/CD pipelines with Workload Identity Federation.
 Permissions required: None (validates via OIDC token)</p></td>
+              </tr>
+            
+              <tr>
+                <td>Signup</td>
+                <td><a href="#bytebase.v1.SignupRequest">SignupRequest</a></td>
+                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
+                <td><p>Registers a new user account. Creates a principal and assigns a workspace:
+- If the user&#39;s email was pre-invited to a workspace, joins that workspace.
+- Otherwise, creates a new workspace with the user as admin.
+Returns access tokens so the user is logged in immediately after signup.</p></td>
               </tr>
             
               <tr>
@@ -10387,6 +10440,16 @@ Permissions required: None (validates via refresh token cookie)</p></td>
                 <td>ExchangeToken</td>
                 <td>POST</td>
                 <td>/v1/auth:exchangeToken</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>Signup</td>
+                <td>POST</td>
+                <td>/v1/auth/signup</td>
                 <td>*</td>
               </tr>
               

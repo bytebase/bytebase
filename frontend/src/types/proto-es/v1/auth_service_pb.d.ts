@@ -254,6 +254,38 @@ export declare type ExchangeTokenResponse = Message<"bytebase.v1.ExchangeTokenRe
 export declare const ExchangeTokenResponseSchema: GenMessage<ExchangeTokenResponse>;
 
 /**
+ * @generated from message bytebase.v1.SignupRequest
+ */
+export declare type SignupRequest = Message<"bytebase.v1.SignupRequest"> & {
+  /**
+   * The email for the new account.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * The password for the new account.
+   *
+   * @generated from field: string password = 2;
+   */
+  password: string;
+
+  /**
+   * The display name of the user.
+   *
+   * @generated from field: string title = 3;
+   */
+  title: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SignupRequest.
+ * Use `create(SignupRequestSchema)` to create a new message.
+ */
+export declare const SignupRequestSchema: GenMessage<SignupRequest>;
+
+/**
  * Request to refresh the access token.
  *
  * @generated from message bytebase.v1.RefreshRequest
@@ -320,6 +352,19 @@ export declare const AuthService: GenService<{
     methodKind: "unary";
     input: typeof ExchangeTokenRequestSchema;
     output: typeof ExchangeTokenResponseSchema;
+  },
+  /**
+   * Registers a new user account. Creates a principal and assigns a workspace:
+   * - If the user's email was pre-invited to a workspace, joins that workspace.
+   * - Otherwise, creates a new workspace with the user as admin.
+   * Returns access tokens so the user is logged in immediately after signup.
+   *
+   * @generated from rpc bytebase.v1.AuthService.Signup
+   */
+  signup: {
+    methodKind: "unary";
+    input: typeof SignupRequestSchema;
+    output: typeof LoginResponseSchema;
   },
   /**
    * Refreshes the access token using the refresh token cookie.

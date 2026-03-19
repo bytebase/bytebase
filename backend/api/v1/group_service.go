@@ -131,7 +131,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, groupMessage.Email, true); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, common.GetWorkspaceIDFromContext(ctx), groupMessage.Email, true); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", groupMessage.Email))
 	}
 

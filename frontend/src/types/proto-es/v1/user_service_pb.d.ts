@@ -498,8 +498,9 @@ export declare const UserService: GenService<{
     output: typeof ListUsersResponseSchema;
   },
   /**
-   * Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-   * Permissions required: bb.users.create (only when Disallow Signup is enabled)
+   * Creates a user in the caller's workspace (admin action, self-hosted only).
+   * In SaaS mode, admins should add users via workspace IAM policy instead.
+   * Permissions required: bb.users.create
    *
    * @generated from rpc bytebase.v1.UserService.CreateUser
    */

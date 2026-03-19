@@ -672,6 +672,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RefreshResponse'
+  /bytebase.v1.AuthService/Signup:
+    post:
+      tags:
+        - bytebase.v1.AuthService
+      summary: Signup
+      description: |-
+        Registers a new user account. Creates a principal and assigns a workspace:
+         - If the user's email was pre-invited to a workspace, joins that workspace.
+         - Otherwise, creates a new workspace with the user as admin.
+         Returns access tokens so the user is logged in immediately after signup.
+      operationId: bytebase.v1.AuthService.Signup
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SignupRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /bytebase.v1.CelService/BatchDeparse:
     post:
       tags:
@@ -6052,8 +6092,9 @@ paths:
         - bytebase.v1.UserService
       summary: CreateUser
       description: |-
-        Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-         Permissions required: bb.users.create (only when Disallow Signup is enabled)
+        Creates a user in the caller's workspace (admin action, self-hosted only).
+         In SaaS mode, admins should add users via workspace IAM policy instead.
+         Permissions required: bb.users.create
       operationId: bytebase.v1.UserService.CreateUser
       parameters:
         - name: Connect-Protocol-Version
@@ -16653,6 +16694,23 @@ components:
           format: int64
           description: content_size is the full size of the content, may not match the size of the `content` field.
       title: Sheet
+      additionalProperties: false
+    bytebase.v1.SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email for the new account.
+        password:
+          type: string
+          title: password
+          description: The password for the new account.
+        title:
+          type: string
+          title: title
+          description: The display name of the user.
+      title: SignupRequest
       additionalProperties: false
     bytebase.v1.SpatialIndexConfig:
       type: object

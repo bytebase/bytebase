@@ -83,7 +83,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 // BatchGetUsersByEmails gets users (of any type) by emails in batch.
-func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*UserMessage, error) {
+func (s *Store) BatchGetUsersByEmails(ctx context.Context, workspace string, emails []string) ([]*UserMessage, error) {
 	if len(emails) == 0 {
 		return nil, nil
 	}
@@ -96,9 +96,18 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 	var users []*UserMessage
 
 	q := qb.Q().Space(`
-			SELECT id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
-			FROM principal WHERE email = ANY(?) ORDER BY created_at ASC
-		`, normalizedEmails)
+			SELECT p.id, p.deleted, p.email, p.name, p.password_hash, p.mfa_config, p.phone, p.profile, p.created_at
+			FROM principal p
+			JOIN policy pol ON pol.workspace = ? AND pol.resource_type = 'WORKSPACE' AND pol.type = 'IAM'
+			WHERE p.email = ANY(?)
+			  AND EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(pol.payload->'bindings') AS binding,
+				     jsonb_array_elements_text(binding->'members') AS member
+				WHERE member = 'users/' || p.email OR member = ?
+			  )
+			ORDER BY p.created_at ASC
+		`, workspace, normalizedEmails, common.AllUsers)
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")

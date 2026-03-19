@@ -618,42 +618,17 @@ CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
 -- Seed data
 -----------------------
 
--- Generate a workspace once, then use it everywhere.
+-- Global server config (auth secret only).
+-- Workspace and its settings/policies/project are created by the Go signup flow (store.CreateWorkspace).
 DO $$
 DECLARE
-  ws_id text := gen_random_uuid()::text;
   auth_secret text;
 BEGIN
-  -- Generate random alphanumeric auth_secret (0-9, a-z, A-Z) compatible with Go's common.RandomString
   SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
     INTO auth_secret
     FROM generate_series(1, 32);
 
-  -- Global server config (auth secret only).
   INSERT INTO server_config (payload) VALUES (
     json_build_object('authSecret', auth_secret)
   );
-
-  -- Create the default workspace.
-  INSERT INTO workspace (resource_id, name) VALUES (ws_id, 'Default Workspace');
-
-  -- Default project.
-  INSERT INTO project (name, resource_id, workspace) VALUES ('Default', 'default', ws_id);
-
-  -- Initialize settings.
-  INSERT INTO setting (name, workspace, value) VALUES ('SYSTEM', ws_id,
-    json_build_object('license', ''));
-  INSERT INTO setting (name, workspace, value) VALUES ('APP_IM', ws_id, '{}'::jsonb);
-  INSERT INTO setting (name, workspace, value) VALUES ('DATA_CLASSIFICATION', ws_id, '{}'::jsonb);
-  INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_APPROVAL', ws_id,
-    '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}'::jsonb);
-  INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', ws_id,
-    ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '","passwordRestriction":{"minLength":8}}')::jsonb);
-  INSERT INTO setting (name, workspace, value) VALUES ('ENVIRONMENT', ws_id,
-    '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}'::jsonb);
-
-  -- Initialize workspace IAM policy — grant workspace member role to allUsers.
-  INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent, enforce)
-  VALUES (ws_id, 'WORKSPACE', 'workspaces/' || ws_id, 'IAM',
-    '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);
 END $$;
