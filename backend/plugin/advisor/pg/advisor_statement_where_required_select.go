@@ -3,14 +3,13 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -32,182 +31,164 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &statementWhereRequiredSelectRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens: antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
+	rule := &statementWhereRequiredSelectRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementWhereRequiredSelectRule struct {
-	BaseRule
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
-// Name returns the rule name.
 func (*statementWhereRequiredSelectRule) Name() string {
-	return "statement.where-required-select"
+	return string(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT)
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *statementWhereRequiredSelectRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Selectstmt":
-		r.handleSelectstmt(ctx.(*parser.SelectstmtContext))
-	case "Select_with_parens":
-		r.handleSelectWithParens(ctx.(*parser.Select_with_parensContext))
-	default:
-		// Do nothing for other node types
+func (r *statementWhereRequiredSelectRule) OnStatement(node ast.Node) {
+	sel, ok := node.(*ast.SelectStmt)
+	if !ok {
+		return
 	}
-	return nil
+	r.checkSelectStmt(sel, true)
 }
 
-// OnExit is called when the parser exits a rule context.
-func (*statementWhereRequiredSelectRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementWhereRequiredSelectRule) handleSelectstmt(ctx *parser.SelectstmtContext) {
-	r.checkSelect(ctx, func() (bool, bool) {
-		return r.checkSelectClauses(ctx)
-	})
-}
-
-func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Select_with_parensContext) {
-	// Skip if this is the top-level statement (already handled by handleSelectstmt)
-	if isTopLevel(ctx.GetParent()) {
+// checkSelectStmt recursively checks a SelectStmt for WHERE clause requirement.
+// isTopLevel indicates whether this is the top-level statement (for text extraction).
+func (r *statementWhereRequiredSelectRule) checkSelectStmt(sel *ast.SelectStmt, isTopLevel bool) {
+	if sel == nil {
 		return
 	}
 
-	r.checkSelect(ctx, func() (bool, bool) {
-		return r.checkSelectWithParensForWhere(ctx)
-	})
-}
-
-// checkSelect is a common function to check for WHERE clause requirement
-func (r *statementWhereRequiredSelectRule) checkSelect(
-	ctx antlr.ParserRuleContext,
-	checkFunc func() (hasWhere bool, hasFrom bool),
-) {
-	// Check if this SELECT has a WHERE clause and FROM clause
-	hasWhere, hasFrom := checkFunc()
-
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1
-	if !hasFrom {
+	// For set operations (UNION/INTERSECT/EXCEPT), recurse into children.
+	if sel.Op != ast.SETOP_NONE {
+		r.checkSelectStmt(sel.Larg, false)
+		r.checkSelectStmt(sel.Rarg, false)
 		return
 	}
 
-	// If there's a WHERE clause, all good
-	if hasWhere {
+	// Walk into subqueries in all expressions before checking this SELECT.
+	r.walkSubqueries(sel)
+
+	// Skip SELECTs without FROM clause (e.g. SELECT 1).
+	if sel.FromClause == nil || len(sel.FromClause.Items) == 0 {
 		return
 	}
 
-	// Get clean statement text from token stream
-	stmtText := getTextFromTokens(r.tokens, ctx)
-	if stmtText == "" {
-		stmtText = "<unknown statement>"
+	// If there's a WHERE clause, it's fine.
+	if sel.WhereClause != nil {
+		return
 	}
+
+	stmtText := r.extractSelectText(sel, isTopLevel)
 
 	r.AddAdvice(&storepb.Advice{
-		Status:  r.level,
+		Status:  r.Level,
 		Code:    code.StatementNoWhere.Int32(),
-		Title:   r.title,
+		Title:   r.Title,
 		Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 		StartPosition: &storepb.Position{
-			Line:   int32(ctx.GetStart().GetLine()),
+			Line:   r.ContentStartLine(),
 			Column: 0,
 		},
 	})
 }
 
-// checkSelectWithParensForWhere checks a select_with_parens for WHERE and FROM
-func (r *statementWhereRequiredSelectRule) checkSelectWithParensForWhere(ctx parser.ISelect_with_parensContext) (hasWhere bool, hasFrom bool) {
-	if ctx == nil {
-		return false, false
+// extractSelectText returns the text representation of a SelectStmt.
+func (r *statementWhereRequiredSelectRule) extractSelectText(sel *ast.SelectStmt, isTopLevel bool) string {
+	if isTopLevel {
+		return strings.TrimSpace(r.StmtText)
 	}
-
-	// select_with_parens can contain either select_no_parens or another select_with_parens
-	if ctx.Select_no_parens() != nil {
-		selectNoParens := ctx.Select_no_parens()
-		if selectNoParens.Select_clause() != nil {
-			return r.checkSelectClause(selectNoParens.Select_clause())
+	// For nested subqueries, extract from StmtText using Loc byte offsets.
+	loc := sel.Loc
+	if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(r.StmtText) {
+		start := loc.Start
+		end := loc.End
+		// Include surrounding parentheses if present.
+		if start > 0 && r.StmtText[start-1] == '(' && end < len(r.StmtText) && r.StmtText[end] == ')' {
+			start--
+			end++
 		}
+		return r.StmtText[start:end]
 	}
-
-	if ctx.Select_with_parens() != nil {
-		return r.checkSelectWithParensForWhere(ctx.Select_with_parens())
-	}
-
-	return false, false
+	return strings.TrimSpace(r.StmtText)
 }
 
-// checkSelectClauses checks if a SELECT statement has WHERE and FROM clauses
-func (r *statementWhereRequiredSelectRule) checkSelectClauses(ctx *parser.SelectstmtContext) (hasWhere bool, hasFrom bool) {
-	// Try Select_no_parens first
-	if ctx.Select_no_parens() != nil {
-		selectNoParens := ctx.Select_no_parens()
-		if selectNoParens.Select_clause() != nil {
-			return r.checkSelectClause(selectNoParens.Select_clause())
-		}
-	}
-
-	// Try Select_with_parens
-	if ctx.Select_with_parens() != nil {
-		// For a selectstmt that directly contains select_with_parens,
-		// delegate to the recursive handler
-		return r.checkSelectWithParensForWhere(ctx.Select_with_parens())
-	}
-
-	return false, false
+// walkSubqueries walks the AST nodes within a SelectStmt to find nested subqueries.
+func (r *statementWhereRequiredSelectRule) walkSubqueries(sel *ast.SelectStmt) {
+	// Check target list expressions for subqueries.
+	r.walkNodeList(sel.TargetList)
+	// Check FROM clause for subqueries (e.g., subqueries in FROM).
+	r.walkNodeList(sel.FromClause)
+	// Check WHERE clause for subqueries.
+	r.walkNode(sel.WhereClause)
+	// Check HAVING clause for subqueries.
+	r.walkNode(sel.HavingClause)
+	// Check GROUP BY clause.
+	r.walkNodeList(sel.GroupClause)
+	// Check sort clause.
+	r.walkNodeList(sel.SortClause)
+	// Check limit/offset.
+	r.walkNode(sel.LimitCount)
+	r.walkNode(sel.LimitOffset)
 }
 
-// checkSelectClause checks a select_clause for WHERE and FROM
-func (*statementWhereRequiredSelectRule) checkSelectClause(selectClause parser.ISelect_clauseContext) (hasWhere bool, hasFrom bool) {
-	if selectClause == nil {
-		return false, false
+func (r *statementWhereRequiredSelectRule) walkNodeList(list *ast.List) {
+	if list == nil {
+		return
 	}
-
-	// Get all simple_select_intersect
-	allIntersects := selectClause.AllSimple_select_intersect()
-	for _, intersect := range allIntersects {
-		if intersect == nil {
-			continue
-		}
-		// Get all simple_select_pramary (note: typo in parser, it's "pramary" not "primary")
-		allPrimary := intersect.AllSimple_select_pramary()
-		for _, primary := range allPrimary {
-			if primary == nil {
-				continue
-			}
-			// Check for WHERE clause
-			if primary.Where_clause() != nil {
-				hasWhere = true
-			}
-			// Check for FROM clause
-			if primary.From_clause() != nil {
-				hasFrom = true
-			}
-		}
+	for _, item := range list.Items {
+		r.walkNode(item)
 	}
+}
 
-	return hasWhere, hasFrom
+func (r *statementWhereRequiredSelectRule) walkNode(node ast.Node) {
+	if node == nil {
+		return
+	}
+	switch n := node.(type) {
+	case *ast.SubLink:
+		if sub, ok := n.Subselect.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sub, false)
+		}
+	case *ast.RangeSubselect:
+		if sub, ok := n.Subquery.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sub, false)
+		}
+	case *ast.List:
+		r.walkNodeList(n)
+	case *ast.ResTarget:
+		r.walkNode(n.Val)
+	case *ast.FuncCall:
+		r.walkNodeList(n.Args)
+	case *ast.A_Expr:
+		r.walkNode(n.Lexpr)
+		r.walkNode(n.Rexpr)
+	case *ast.BoolExpr:
+		r.walkNodeList(n.Args)
+	case *ast.CoalesceExpr:
+		r.walkNodeList(n.Args)
+	case *ast.CaseExpr:
+		r.walkNode(n.Arg)
+		r.walkNodeList(n.Args)
+		r.walkNode(n.Defresult)
+	case *ast.CaseWhen:
+		r.walkNode(n.Expr)
+		r.walkNode(n.Result)
+	case *ast.NullTest:
+		r.walkNode(n.Arg)
+	case *ast.TypeCast:
+		r.walkNode(n.Arg)
+	case *ast.JoinExpr:
+		r.walkNode(n.Larg)
+		r.walkNode(n.Rarg)
+		r.walkNode(n.Quals)
+	case *ast.SortBy:
+		r.walkNode(n.Node)
+	default:
+	}
 }
