@@ -53,7 +53,13 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 
 // ListIdentityProviders lists all identity providers.
 func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
-	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
+	// allow_without_credential: workspace may not be in context (login page).
+	// In self-hosted (single workspace), fall back to store lookup.
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" && !s.profile.SaaS {
+		workspaceID, _ = s.store.GetWorkspaceID(ctx)
+	}
+	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: workspaceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

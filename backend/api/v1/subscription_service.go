@@ -31,6 +31,7 @@ func NewSubscriptionService(
 }
 
 // GetSubscription gets the subscription.
+// allow_without_credential: if no workspace in context, falls back to free subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
 	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
