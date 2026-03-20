@@ -95,7 +95,10 @@ CREATE INDEX IF NOT EXISTS idx_instance_workspace ON instance(workspace);
 CREATE INDEX IF NOT EXISTS idx_setting_workspace ON setting(workspace);
 CREATE INDEX IF NOT EXISTS idx_policy_workspace ON policy(workspace);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_policy_unique_workspace_resource ON policy(workspace, resource_type, resource, type);
-CREATE INDEX IF NOT EXISTS idx_audit_log_workspace ON audit_log(workspace);
+-- Replace separate workspace and created_at indexes with a composite index.
+DROP INDEX IF EXISTS idx_audit_log_workspace;
+DROP INDEX IF EXISTS idx_audit_log_created_at;
+CREATE INDEX IF NOT EXISTS idx_audit_log_workspace_created_at ON audit_log(workspace, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_service_account_workspace ON service_account(workspace);
 CREATE INDEX IF NOT EXISTS idx_workload_identity_workspace ON workload_identity(workspace);
 CREATE INDEX IF NOT EXISTS idx_oauth2_client_workspace ON oauth2_client(workspace);

@@ -135,8 +135,9 @@ CREATE TABLE audit_log (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_audit_log_workspace ON audit_log(workspace);
-CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
+-- Composite index for the most common query: filter by workspace, order/range by time.
+CREATE INDEX idx_audit_log_workspace_created_at ON audit_log(workspace, created_at DESC);
+-- JSONB indexes for filtering by specific fields within a workspace.
 CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
 CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
 CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
