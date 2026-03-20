@@ -51,6 +51,9 @@ type UpdateDatabaseMessage struct {
 
 // BatchUpdateDatabases is the message for batch updating databases.
 type BatchUpdateDatabases struct {
+	// Workspace scopes the update to databases whose instance belongs to this workspace.
+	// Empty string skips filtering (cross-workspace).
+	Workspace           string
 	ProjectID           *string
 	FindByEnvironmentID *string
 	// Empty string will unset the environment.
@@ -59,6 +62,9 @@ type BatchUpdateDatabases struct {
 
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
+	// Workspace filters databases by the parent instance's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace              string
 	ProjectID              *string
 	EffectiveEnvironmentID *string
 	InstanceID             *string
@@ -115,6 +121,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 	from.Space("LEFT JOIN instance ON db.instance = instance.resource_id")
 
+	if find.Workspace != "" {
+		where.And("instance.workspace = ?", find.Workspace)
+	}
 	if v := find.ProjectID; v != nil {
 		where.And("db.project = ?", *v)
 	}
@@ -404,6 +413,10 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 
 	if where.Len() == 0 {
 		return errors.Errorf("empty where")
+	}
+
+	if update.Workspace != "" {
+		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
 
 	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)

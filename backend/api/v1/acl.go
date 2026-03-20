@@ -308,6 +308,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 					return errors.Wrapf(err, "failed to parse %q", match)
 				}
 				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
 					ShowDeleted:  true,

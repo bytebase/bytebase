@@ -55,6 +55,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		// Handle database target.
 		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
 			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   &instanceID,
 				DatabaseName: &databaseName,
 			})
@@ -93,6 +94,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", databaseGroupResourceID))
 			}
 			groupDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+				Workspace: common.GetWorkspaceIDFromContext(ctx),
 				ProjectID: &projectResourceID,
 			})
 			if err != nil {

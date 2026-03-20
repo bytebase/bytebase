@@ -626,7 +626,7 @@ func queryRetry(
 	// Sync database metadata.
 	for accessDatabaseName := range syncDatabaseMap {
 		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
-		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
 		if err != nil {
 			return nil, nil, duration, err
 		}
@@ -1328,6 +1328,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 	return func(ctx context.Context, instanceID string, linkedDatabaseName string, schemaName string) (string, string, *model.DatabaseMetadata, error) {
 		// Find the linked database metadata.
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			InstanceID: &instanceID,
 		})
 		if err != nil {
@@ -1357,6 +1358,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			databaseName = schemaName
 		}
 		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			DatabaseName: &databaseName,
 			Engine:       &engine,
 		})
@@ -1419,6 +1421,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatabaseNamesFunc {
 	return func(ctx context.Context, instanceID string) ([]string, error) {
 		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			InstanceID: &instanceID,
 		})
 		if err != nil {
@@ -1616,6 +1619,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse %q", requestName))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})

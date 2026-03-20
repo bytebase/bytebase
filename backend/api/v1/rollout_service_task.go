@@ -38,7 +38,7 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 						return nil, errors.Errorf("database group %q not found", config.Targets[0])
 					}
 
-					allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+					allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &projectID})
 					if err != nil {
 						return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
 					}
@@ -261,6 +261,7 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
 				}
 				database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
 				})
@@ -278,6 +279,7 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				return nil, errors.Wrapf(err, "failed to parse %q", target)
 			}
 			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   &instanceID,
 				DatabaseName: &databaseName,
 			})

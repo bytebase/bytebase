@@ -670,6 +670,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
 		}
 		db, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   &instanceID,
 			DatabaseName: &dbName,
 		})
