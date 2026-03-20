@@ -219,16 +219,16 @@ Identifier handling, error recovery, and special scenarios.
 
 ### 4.2 Partial Prefix Completion
 
-- [ ] `SELECT * FROM t|` — partial table name prefix "t" matches t1, t2
-- [ ] `SELECT * FROM public.t|` — partial schema-qualified prefix
-- [ ] `SELECT t1.c|` — partial column name prefix
-- [ ] `SELECT * FROM test.a|` — partial prefix in non-default schema
-- [ ] `SELECT * FROM tes|` — partial schema name prefix
-- [ ] `SELECT | FROM t1 WHERE t1.c|` — partial column in WHERE
-- [ ] `INSERT INTO t|` — partial table name in INSERT
-- [ ] `UPDATE t|` — partial table name in UPDATE
-- [ ] `DELETE FROM t|` — partial table name in DELETE
-- [ ] `SELECT * FROM t1 JOIN t|` — partial table name in JOIN
+- [x] `SELECT * FROM t|` — partial table name prefix "t" matches t1, t2
+- [x] `SELECT * FROM public.t|` — partial schema-qualified prefix
+- [x] `SELECT t1.c|` — partial column name prefix
+- [x] `SELECT * FROM test.a|` — partial prefix in non-default schema
+- [x] `SELECT * FROM tes|` — partial schema name prefix
+- [x] `SELECT * FROM t1 WHERE t1.c|` — partial column in WHERE
+- [x] `INSERT INTO t|` — partial table name in INSERT
+- [x] `UPDATE t|` — partial table name in UPDATE
+- [x] `DELETE FROM t|` — partial table name in DELETE
+- [x] `SELECT * FROM t1 JOIN t|` — partial table name in JOIN
 
 ### 4.3 Multi-Statement and Error Recovery
 

@@ -204,6 +204,17 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	// Use omni parser to collect grammar candidates instead of C3.
 	candidates := omniParser.Collect(c.sql, c.cursorByteOffset)
 
+	// If Collect returned no rule candidates and the cursor is at the end of a
+	// partial identifier token (prefix), retry Collect at the start of that
+	// token.  This enables completion for "SELECT * FROM t|" style inputs
+	// where the parser sees a complete token and doesn't know what grammar
+	// rule to suggest.
+	if len(candidates.Rules) == 0 {
+		if prefixTok, ok := c.prefixToken(); ok {
+			candidates = omniParser.Collect(c.sql, prefixTok.Loc)
+		}
+	}
+
 	for _, rc := range candidates.Rules {
 		if rc.Rule == "columnref" {
 			c.collectLeadingTableReferences(caretIndex)
@@ -215,6 +226,40 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	}
 
 	return c.convertCandidates(candidates)
+}
+
+// prefixToken returns the token immediately before (or containing) the cursor
+// position when that token is an identifier-like token that the user is still
+// typing.  Returns false if no such token exists.
+func (c *Completer) prefixToken() (omniParser.Token, bool) {
+	// caretTokenIndex points to the first token at or past cursorByteOffset.
+	// The partial-prefix token is the one just before it (when the cursor is
+	// right after it) or the token itself (when the cursor is inside it).
+	idx := c.caretTokenIndex
+
+	// Check if the cursor is inside the token at caretTokenIndex.
+	if idx < len(c.tokens) {
+		tok := c.tokens[idx]
+		if tok.Loc < c.cursorByteOffset && c.cursorByteOffset <= tok.End && isIdentLikeToken(tok.Type) {
+			return tok, true
+		}
+	}
+
+	// Check the token before caretTokenIndex (cursor is right after it).
+	if idx > 0 {
+		tok := c.tokens[idx-1]
+		if tok.End == c.cursorByteOffset && isIdentLikeToken(tok.Type) {
+			return tok, true
+		}
+	}
+
+	return omniParser.Token{}, false
+}
+
+// isIdentLikeToken returns true for token types that represent identifiers or
+// unreserved keywords that a user might be partially typing.
+func isIdentLikeToken(tokenType int) bool {
+	return omniParser.IsIdentifierTokenType(tokenType)
 }
 
 type CompletionMap map[string]base.Candidate
