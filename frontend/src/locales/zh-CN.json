@@ -2966,13 +2966,16 @@
   },
   "agent": {
     "assistant-title": "Bytebase 助手",
-<<<<<<< HEAD
     "self": "助手",
     "resize": "调整大小",
-    "new-chat": "新对话",
-||||||| parent of 6da599158e (feat(agent): add thread-aware local state)
-    "new-chat": "新对话",
-=======
+    "minimize": "最小化",
+    "close": "关闭",
+    "input-placeholder": "输入任何问题...",
+    "send": "发送",
+    "args": "参数：",
+    "result": "结果：",
+    "stop": "停止",
+    "interrupted": "已中断",
     "new-thread": "新线程",
     "reset-thread": "重置线程",
     "thread-select-label": "线程",
@@ -2982,15 +2985,6 @@
     "thread-status-awaiting-user": "等待输入",
     "thread-status-error": "错误",
     "thread-status-interrupted": "已中断",
->>>>>>> 6da599158e (feat(agent): add thread-aware local state)
-    "minimize": "最小化",
-    "close": "关闭",
-    "input-placeholder": "输入任何问题...",
-    "send": "发送",
-    "args": "参数：",
-    "result": "结果：",
-    "stop": "停止",
-    "interrupted": "已中断",
     "reply": "回复",
     "confirm": "确认",
     "cancel": "取消",

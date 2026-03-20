@@ -153,7 +153,9 @@ const dragOffset = ref({ x: 0, y: 0 });
 function startDrag(event: MouseEvent) {
   if (
     event.target instanceof HTMLElement &&
-    event.target.closest("[data-agent-window-action], [data-agent-window-resize]")
+    event.target.closest(
+      "[data-agent-window-action], [data-agent-window-resize]"
+    )
   ) {
     return;
   }
