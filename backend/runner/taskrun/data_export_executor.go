@@ -76,7 +76,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
-	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID, ShowDeleted: true})
+	instance, err := exec.store.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance")
 	}
@@ -94,16 +94,22 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	statement := sheet.Statement
 
 	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
-	creatorUser, err := exec.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
+	creatorAccount, err := exec.store.GetAccountByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
 	}
-	if creatorUser == nil {
+	if creatorAccount == nil {
 		return nil, errors.Errorf("creator user not found for issue %d", issue.UID)
 	}
 
 	// Execute the export without masking.
 	// For approved DATABASE_EXPORT tasks, the approval itself authorizes access to the data.
+	creatorUser := &store.UserMessage{
+		Email:         creatorAccount.Email,
+		Name:          creatorAccount.Name,
+		Type:          creatorAccount.Type,
+		MemberDeleted: creatorAccount.MemberDeleted,
+	}
 	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
 	if exportErr != nil {
 		slog.Error("failed to export",
@@ -115,12 +121,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return nil, exportErr
 	}
 
-	workspace, err := exec.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get workspace")
-	}
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
-		Workspace: workspace.ResourceID,
+		Workspace: instance.Workspace,
 		Bytes:     bytes,
 		Payload: &storepb.ExportArchivePayload{
 			FileFormat: exportConfig.Format,
@@ -173,8 +175,8 @@ func (exec *DataExportExecutor) executeExport(
 	}
 
 	// 2. Get query restrictions from workspace policy
-	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx)
-	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx)
+	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx, instance.Workspace)
+	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx, instance.Workspace)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
@@ -214,8 +216,9 @@ func (exec *DataExportExecutor) executeExport(
 // getSQLResultSizeLimit gets the sql result size limit.
 func (exec *DataExportExecutor) getSQLResultSizeLimit(
 	ctx context.Context,
+	workspace string,
 ) int64 {
-	maximumResultSize, err := exec.store.GetSQLResultSize(ctx)
+	maximumResultSize, err := exec.store.GetSQLResultSize(ctx, workspace)
 	if err != nil {
 		slog.Error("failed to get the sql result size limit", log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
@@ -226,8 +229,9 @@ func (exec *DataExportExecutor) getSQLResultSizeLimit(
 // getQueryTimeoutInSeconds gets the query timeout limit.
 func (exec *DataExportExecutor) getQueryTimeoutInSeconds(
 	ctx context.Context,
+	workspace string,
 ) int64 {
-	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx)
+	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx, workspace)
 	if err != nil {
 		slog.Error("failed to get the sql timeout limit", log.BBError(err))
 		return math.MaxInt64

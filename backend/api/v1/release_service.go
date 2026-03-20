@@ -60,7 +60,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
@@ -190,7 +190,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
@@ -456,7 +456,7 @@ func (s *ReleaseService) ListReleaseCategories(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
 
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}

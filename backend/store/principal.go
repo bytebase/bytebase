@@ -24,6 +24,8 @@ type FindUserMessage struct {
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
+	// Workspace is required when ProjectID is set, for the project member CTE query.
+	Workspace string
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -37,7 +39,7 @@ type UpdateUserMessage struct {
 	Phone        *string
 }
 
-// UserMessage is the message for an user.
+// UserMessage is the message for an end user (principal table).
 type UserMessage struct {
 	ID int
 	// Email must be lower case.
@@ -81,7 +83,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*UserMessage,
 }
 
 // BatchGetUsersByEmails gets users (of any type) by emails in batch.
-func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*UserMessage, error) {
+func (s *Store) BatchGetUsersByEmails(ctx context.Context, workspace string, emails []string) ([]*UserMessage, error) {
 	if len(emails) == 0 {
 		return nil, nil
 	}
@@ -94,9 +96,18 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, emails []string) ([]*
 	var users []*UserMessage
 
 	q := qb.Q().Space(`
-			SELECT id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
-			FROM principal WHERE email = ANY(?) ORDER BY created_at ASC
-		`, normalizedEmails)
+			SELECT p.id, p.deleted, p.email, p.name, p.password_hash, p.mfa_config, p.phone, p.profile, p.created_at
+			FROM principal p
+			JOIN policy pol ON pol.workspace = ? AND pol.resource_type = 'WORKSPACE' AND pol.type = 'IAM'
+			WHERE p.email = ANY(?)
+			  AND EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(pol.payload->'bindings') AS binding,
+				     jsonb_array_elements_text(binding->'members') AS member
+				WHERE member = 'users/' || p.email OR member = ?
+			  )
+			ORDER BY p.created_at ASC
+		`, workspace, normalizedEmails, common.AllUsers)
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -193,11 +204,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
-			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
+			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ? AND policy.workspace = ?
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	}
 
@@ -546,6 +557,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// Update IAM policies: bindings->members array contains user references
 	// Update MASKING_EXEMPTION policies: exemptions->members field contains user references
 	var invalidatedPolicies []struct {
+		Workspace    string
 		ResourceType storepb.Policy_Resource
 		Resource     string
 		Type         storepb.Policy_Type
@@ -589,7 +601,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 				   jsonb_array_elements_text(binding->'members') AS member
 			  WHERE member = $1
 		  )
-		RETURNING resource_type, resource, type`
+		RETURNING workspace, resource_type, resource, type`
 
 	rows, err := tx.QueryContext(ctx, iamPolicySQL, oldUserRef, newUserRef, storepb.Policy_IAM.String())
 	if err != nil {
@@ -598,16 +610,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	defer rows.Close()
 
 	for rows.Next() {
-		var resourceTypeStr, resource, typeStr string
-		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+		var workspace, resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&workspace, &resourceTypeStr, &resource, &typeStr); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan updated IAM policy")
 		}
 
 		var invalidation struct {
+			Workspace    string
 			ResourceType storepb.Policy_Resource
 			Resource     string
 			Type         storepb.Policy_Type
 		}
+		invalidation.Workspace = workspace
 		invalidation.Resource = resource
 
 		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
@@ -665,7 +679,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 			       jsonb_array_elements_text(exemption->'members') AS member
 			  WHERE member = $1
 		  )
-		RETURNING resource_type, resource, type`
+		RETURNING workspace, resource_type, resource, type`
 
 	rows, err = tx.QueryContext(ctx, maskingPolicySQL, oldUserRef, newUserRef, storepb.Policy_MASKING_EXEMPTION.String())
 	if err != nil {
@@ -674,16 +688,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	defer rows.Close()
 
 	for rows.Next() {
-		var resourceTypeStr, resource, typeStr string
-		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+		var workspace, resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&workspace, &resourceTypeStr, &resource, &typeStr); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan updated MASKING_EXEMPTION policy")
 		}
 
 		var invalidation struct {
+			Workspace    string
 			ResourceType storepb.Policy_Resource
 			Resource     string
 			Type         storepb.Policy_Type
 		}
+		invalidation.Workspace = workspace
 		invalidation.Resource = resource
 
 		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
@@ -779,12 +795,15 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 
 	// Invalidate policy cache for updated policies
 	for _, p := range invalidatedPolicies {
-		s.policyCache.Remove(getPolicyCacheKey(p.ResourceType, p.Resource, p.Type))
+		s.policyCache.Remove(getPolicyCacheKey(p.Workspace, p.ResourceType, p.Resource, p.Type))
+		if p.Type == storepb.Policy_IAM {
+			s.iamPolicyCache.Remove(getIamPolicyCacheKey(p.Workspace, p.ResourceType, p.Resource))
+		}
 	}
 
-	// Invalidate group cache for updated groups
-	for _, email := range invalidatedGroupEmails {
-		s.groupCache.Remove(email)
+	// Purge all group caches — email change is rare and affects groups cross-workspace.
+	if len(invalidatedGroupEmails) > 0 {
+		s.PurgeGroupCaches()
 	}
 
 	// Re-populate user cache

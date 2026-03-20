@@ -144,7 +144,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return // Already sent
 	}
 
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
 	if err != nil || project == nil {
 		slog.Error("failed to get project for completion webhook", log.BBError(err))
 		return

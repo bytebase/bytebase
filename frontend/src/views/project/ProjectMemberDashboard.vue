@@ -7,7 +7,7 @@ import { computed } from "vue";
 import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -20,7 +20,7 @@ const { project } = useProjectByName(
 );
 
 const allowEdit = computed(() => {
-  if (project.value.name === DEFAULT_PROJECT_NAME) {
+  if (isDefaultProject(project.value.name)) {
     return false;
   }
 

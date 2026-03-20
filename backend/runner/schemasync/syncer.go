@@ -89,7 +89,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					slog.Warn("Database sync checker skipped due to HA license restriction", log.BBError(err))
 					continue
 				}
-				instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
+				instances, err := s.store.ListAllInstances(ctx, false)
 				if err != nil {
 					slog.Error("Failed to list instance", log.BBError(err))
 					return
@@ -170,7 +170,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}()
 
 	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
-	instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
+	instances, err := s.store.ListAllInstances(ctx, false)
 	if err != nil {
 		slog.Error("Failed to retrieve instances", log.BBError(err))
 		return
@@ -308,6 +308,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Metadata:   metadata,
 	}
 	if instanceMeta.Version != instance.Metadata.GetVersion() {
@@ -334,10 +335,14 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 		if idx < 0 {
 			// Create the database in the default project.
+			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, instance.Workspace)
+			if err != nil {
+				return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
+			}
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				ProjectID:    common.DefaultProjectID,
+				ProjectID:    defaultProjectID,
 			})
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
@@ -367,7 +372,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
 func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryResourceID string, retErr error) {
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 	}
@@ -393,6 +398,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	rawDump := schemaBuf.Bytes()
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})

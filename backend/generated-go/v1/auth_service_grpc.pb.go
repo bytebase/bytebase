@@ -23,6 +23,7 @@ const (
 	AuthService_Login_FullMethodName         = "/bytebase.v1.AuthService/Login"
 	AuthService_Logout_FullMethodName        = "/bytebase.v1.AuthService/Logout"
 	AuthService_ExchangeToken_FullMethodName = "/bytebase.v1.AuthService/ExchangeToken"
+	AuthService_Signup_FullMethodName        = "/bytebase.v1.AuthService/Signup"
 	AuthService_Refresh_FullMethodName       = "/bytebase.v1.AuthService/Refresh"
 )
 
@@ -42,6 +43,11 @@ type AuthServiceClient interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*ExchangeTokenResponse, error)
+	// Registers a new user account. Creates a principal and assigns a workspace:
+	// - If the user's email was pre-invited to a workspace, joins that workspace.
+	// - Otherwise, creates a new workspace with the user as admin.
+	// Returns access tokens so the user is logged in immediately after signup.
+	Signup(ctx context.Context, in *SignupRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -85,6 +91,16 @@ func (c *authServiceClient) ExchangeToken(ctx context.Context, in *ExchangeToken
 	return out, nil
 }
 
+func (c *authServiceClient) Signup(ctx context.Context, in *SignupRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_Signup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RefreshResponse)
@@ -111,6 +127,11 @@ type AuthServiceServer interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(context.Context, *ExchangeTokenRequest) (*ExchangeTokenResponse, error)
+	// Registers a new user account. Creates a principal and assigns a workspace:
+	// - If the user's email was pre-invited to a workspace, joins that workspace.
+	// - Otherwise, creates a new workspace with the user as admin.
+	// Returns access tokens so the user is logged in immediately after signup.
+	Signup(context.Context, *SignupRequest) (*LoginResponse, error)
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -132,6 +153,9 @@ func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*
 }
 func (UnimplementedAuthServiceServer) ExchangeToken(context.Context, *ExchangeTokenRequest) (*ExchangeTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExchangeToken not implemented")
+}
+func (UnimplementedAuthServiceServer) Signup(context.Context, *SignupRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Signup not implemented")
 }
 func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
@@ -211,6 +235,24 @@ func _AuthService_ExchangeToken_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Signup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Signup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Signup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Signup(ctx, req.(*SignupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RefreshRequest)
 	if err := dec(in); err != nil {
@@ -247,6 +289,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExchangeToken",
 			Handler:    _AuthService_ExchangeToken_Handler,
+		},
+		{
+			MethodName: "Signup",
+			Handler:    _AuthService_Signup_Handler,
 		},
 		{
 			MethodName: "Refresh",

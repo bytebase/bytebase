@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -89,7 +90,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, err := in.getUserConnect(ctx, accessTokenStr)
+		user, workspaceID, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
@@ -98,6 +99,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
+		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
 		return next(ctx, req)
 	}
 }
@@ -133,6 +135,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 
 		in.profile.LastActiveTS.Store(time.Now().Unix())
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
+		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, claims.WorkspaceID)
 
 		var tokenExpiry time.Time
 		if claims.ExpiresAt != nil {
@@ -194,40 +197,112 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		)
 	}
 
-	// GetPrincipalByEmail handles all principal types (user, service account, workload identity)
-	user, err := in.store.GetPrincipalByEmail(ctx, claims.Subject)
+	account, err := in.store.GetAccountByEmail(ctx, claims.Subject)
 	if err != nil {
 		return nil, nil, errs.Errorf("failed to find principal %q in the access token", claims.Subject)
 	}
-	if user == nil {
+	if account == nil {
 		return nil, nil, errs.Errorf("principal %q not exists in the access token", claims.Subject)
 	}
-	if user.MemberDeleted {
-		return nil, nil, errs.Errorf("principal %q has been deactivated by administrators", user.Email)
+	if account.MemberDeleted {
+		return nil, nil, errs.Errorf("principal %q has been deactivated by administrators", account.Email)
+	}
+
+	// Verify workspace membership.
+	// We always require workspace_id in the claims even for non-SaaS (single workspace) mode
+	if claims.WorkspaceID == "" {
+		return nil, nil, errs.New("empty workspace in the token")
+	}
+	if err := in.verifyWorkspaceMembership(ctx, claims.WorkspaceID, account); err != nil {
+		return nil, nil, err
+	}
+
+	// Convert to UserMessage for context storage.
+	user, err := in.accountToUser(ctx, account)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return user, claims, nil
 }
 
-// authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
-	user, _, err := in.authenticate(ctx, accessTokenStr)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+// verifyWorkspaceMembership checks that the account is a member of the workspace.
+func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, workspaceID string, account *store.AccountMessage) error {
+	switch account.Type {
+	case storepb.PrincipalType_SERVICE_ACCOUNT, storepb.PrincipalType_WORKLOAD_IDENTITY:
+		// Service accounts and workload identities have workspace on their record.
+		if account.Workspace != workspaceID {
+			return errs.Errorf("principal %q does not belong to workspace %q", account.Email, workspaceID)
+		}
+		return nil
+
+	case storepb.PrincipalType_END_USER:
+		// END_USER membership is verified via workspace IAM policy.
+		iamPolicy, err := in.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+		if err != nil {
+			return errs.Wrap(err, "failed to get workspace IAM policy")
+		}
+		userMember := common.FormatUserEmail(account.Email)
+		for _, binding := range iamPolicy.Policy.Bindings {
+			for _, member := range binding.Members {
+				if member == userMember {
+					return nil
+				}
+				if member == common.AllUsers && !in.profile.SaaS {
+					return nil
+				}
+			}
+		}
+		return errs.Errorf("user %q is not a member of workspace %q", account.Email, workspaceID)
+
+	default:
+		return errs.Errorf("unknown principal type %v", account.Type)
 	}
-	return user, nil
+}
+
+// accountToUser converts an AccountMessage to a UserMessage for context storage.
+// For END_USER, loads the full user record. For SA/WI, constructs a minimal UserMessage.
+func (in *APIAuthInterceptor) accountToUser(ctx context.Context, account *store.AccountMessage) (*store.UserMessage, error) {
+	if account.Type == storepb.PrincipalType_END_USER {
+		user, err := in.store.GetUserByEmail(ctx, account.Email)
+		if err != nil {
+			return nil, errs.Errorf("failed to get user %q", account.Email)
+		}
+		if user == nil {
+			return nil, errs.Errorf("user %q not found", account.Email)
+		}
+		return user, nil
+	}
+
+	// SA/WI: construct a minimal UserMessage with the fields available from AccountMessage.
+	return &store.UserMessage{
+		Email:         account.Email,
+		Name:          account.Name,
+		Type:          account.Type,
+		MemberDeleted: account.MemberDeleted,
+	}, nil
+}
+
+// authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
+func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
+	user, claims, err := in.authenticate(ctx, accessTokenStr)
+	if err != nil {
+		return nil, nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+	return user, claims, nil
 }
 
 // getUserConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, error) {
-	user, err := in.authenticateConnect(ctx, accessTokenStr)
+// Returns the user and workspace ID from the token claims.
+func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, error) {
+	user, claims, err := in.authenticateConnect(ctx, accessTokenStr)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Only update for authorized request.
 	in.profile.LastActiveTS.Store(time.Now().Unix())
-	return user, nil
+	return user, claims.WorkspaceID, nil
 }
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
@@ -255,10 +330,10 @@ func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
 
 // AuthenticateToken validates a JWT access token and returns the user and token expiry.
 // This is a non-ConnectRPC version that returns regular errors instead of ConnectRPC errors.
-func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessTokenStr string) (*store.UserMessage, time.Time, error) {
+func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, time.Time, error) {
 	user, claims, err := in.authenticate(ctx, accessTokenStr)
 	if err != nil {
-		return nil, time.Time{}, err
+		return nil, "", time.Time{}, err
 	}
 
 	var tokenExpiry time.Time
@@ -266,7 +341,7 @@ func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessToken
 		tokenExpiry = claims.ExpiresAt.Time
 	}
 
-	return user, tokenExpiry, nil
+	return user, claims.WorkspaceID, tokenExpiry, nil
 }
 
 // GetTokenFromHeaders extracts the access token from HTTP headers for ConnectRPC.

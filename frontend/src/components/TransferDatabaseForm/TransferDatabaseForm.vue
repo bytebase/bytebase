@@ -81,14 +81,11 @@ import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, toRef, watchEffect } from "vue";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
-import {
-  DEFAULT_PROJECT_NAME,
-  formatEnvironmentName,
-  isValidProjectName,
-} from "@/types";
+import { formatEnvironmentName, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -128,6 +125,7 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
+const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
@@ -141,14 +139,18 @@ const state = reactive<LocalState>({
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
+const defaultProjectName = computed(
+  () => actuatorStore.serverInfo?.defaultProject ?? ""
+);
+
 const sourceProjectName = computed(() => {
   if (state.transferSource === "DEFAULT") {
-    return DEFAULT_PROJECT_NAME;
+    return defaultProjectName.value;
   }
   if (state.fromProjectName) {
     return state.fromProjectName;
   }
-  return DEFAULT_PROJECT_NAME;
+  return defaultProjectName.value;
 });
 
 const { project: sourceProject } = useProjectByName(sourceProjectName);

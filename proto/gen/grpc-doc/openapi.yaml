@@ -42,6 +42,18 @@ paths:
         Gets custom branding resources such as logos.
          Permissions required: None
       operationId: ActuatorService_GetResourcePackage
+      parameters:
+        - name: name
+          in: query
+          description: |-
+            Optional workspace name, format: workspaces/{workspace}.
+             Set when using the workspace-scoped URL pattern.
+          schema:
+            type: string
+            title: name
+            description: |-
+              Optional workspace name, format: workspaces/{workspace}.
+               Set when using the workspace-scoped URL pattern.
       responses:
         "200":
           description: Success
@@ -197,6 +209,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RefreshResponse'
+  /v1/auth/signup:
+    post:
+      tags:
+        - AuthService
+      summary: Signup
+      description: |-
+        Registers a new user account. Creates a principal and assigns a workspace:
+         - If the user's email was pre-invited to a workspace, joins that workspace.
+         - Otherwise, creates a new workspace with the user as admin.
+         Returns access tokens so the user is logged in immediately after signup.
+      operationId: AuthService_Signup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SignupRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /v1/auth:exchangeToken:
     post:
       tags:
@@ -14223,8 +14259,9 @@ paths:
         - UserService
       summary: CreateUser
       description: |-
-        Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-         Permissions required: bb.users.create (only when Disallow Signup is enabled)
+        Creates a user in the caller's workspace (admin action, self-hosted only).
+         In SaaS mode, admins should add users via workspace IAM policy instead.
+         Permissions required: bb.users.create
       operationId: UserService_CreateUser
       requestBody:
         description: The user to create.
@@ -15012,6 +15049,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerResponse'
+  /v1/workspaces/{workspace}/actuator/info:
+    get:
+      tags:
+        - ActuatorService
+      summary: GetWorkspaceActuatorInfo
+      description: Gets workspace-scoped actuator info. Requires authentication.
+      operationId: ActuatorService_GetWorkspaceActuatorInfo
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
+  /v1/workspaces/{workspace}/actuator/resources:
+    get:
+      tags:
+        - ActuatorService
+      summary: GetResourcePackage
+      description: |-
+        Gets custom branding resources such as logos.
+         Permissions required: None
+      operationId: ActuatorService_GetResourcePackage2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ResourcePackage'
   /v1/workspaces/{workspace}/databases:
     get:
       tags:
@@ -16375,10 +16456,12 @@ components:
           description: The last time any API call was made, refreshed on each request.
           readOnly: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        workspaceId:
+        workspace:
           type: string
-          title: workspace_id
-          description: The unique identifier for the workspace.
+          title: workspace
+          description: |-
+            The unique identifier for the workspace.
+             Format: workspaces/{id}
           readOnly: true
         unlicensedFeatures:
           type: array
@@ -16431,6 +16514,13 @@ components:
           title: restriction
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.Restriction'
+        defaultProject:
+          type: string
+          title: default_project
+          description: |-
+            The default project for unassigned databases.
+             Format: projects/{id}
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -20289,6 +20379,13 @@ components:
       additionalProperties: false
     bytebase.v1.GetResourcePackageRequest:
       type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            Optional workspace name, format: workspaces/{workspace}.
+             Set when using the workspace-scoped URL pattern.
       title: GetResourcePackageRequest
       additionalProperties: false
       description: Request message for getting branding resources.
@@ -20525,6 +20622,18 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.GetWorkspaceActuatorInfoRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'The workspace name, format: workspaces/{workspace}.'
+      title: GetWorkspaceActuatorInfoRequest
+      required:
+        - name
+      additionalProperties: false
+      description: Request message for getting workspace-scoped actuator information.
     bytebase.v1.GridLevel:
       type: object
       properties:
@@ -26089,6 +26198,23 @@ components:
         - name
         - content
       additionalProperties: false
+    bytebase.v1.SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email for the new account.
+        password:
+          type: string
+          title: password
+          description: The password for the new account.
+        title:
+          type: string
+          title: title
+          description: The display name of the user.
+      title: SignupRequest
+      additionalProperties: false
     bytebase.v1.SpatialIndexConfig:
       type: object
       properties:
@@ -28298,8 +28424,7 @@ components:
         serviceKey:
           type: string
           title: service_key
-          description: The service key for service account authentication. Only used for service accounts.
-          writeOnly: true
+          description: The service key for service account authentication.
         mfaEnabled:
           type: boolean
           title: mfa_enabled
@@ -28337,6 +28462,13 @@ components:
           description: |-
             The groups for the user.
              Format: groups/{email}
+          readOnly: true
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The current workspace.
+             Format: workspaces/{id}
           readOnly: true
       title: User
       additionalProperties: false

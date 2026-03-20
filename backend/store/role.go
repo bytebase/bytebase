@@ -25,6 +25,7 @@ type RoleMessage struct {
 // UpdateRoleMessage is the message for updating roles.
 type UpdateRoleMessage struct {
 	ResourceID string
+	Workspace  string
 
 	Name        *string
 	Description *string
@@ -33,6 +34,7 @@ type UpdateRoleMessage struct {
 
 // FindRoleMessage is the message for finding roles.
 type FindRoleMessage struct {
+	Workspace  string
 	ResourceID *string
 }
 
@@ -41,16 +43,17 @@ type RoleUsedByResource struct {
 	Resource     string
 }
 
-func (s *Store) GetResourcesUsedByRole(ctx context.Context, role string) ([]*RoleUsedByResource, error) {
+func (s *Store) GetResourcesUsedByRole(ctx context.Context, workspace string, role string) ([]*RoleUsedByResource, error) {
 	q := qb.Q().Space(`
 		SELECT resource, resource_type FROM policy
 		CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
 		WHERE
 			type = ? AND
+			workspace = ? AND
 			COALESCE(jsonb_array_length(binding->'members'), 0) > 0 AND
 			binding->>'role' = ?
 		GROUP BY resource, resource_type
-	`, storepb.Policy_IAM.String(), role)
+	`, storepb.Policy_IAM.String(), workspace, role)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -135,11 +138,11 @@ func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessag
 
 // GetRoleSnapshot returns a role by ID with snapshot reads (with cache).
 // Trades consistency for performance.
-func (s *Store) GetRoleSnapshot(ctx context.Context, resourceID string) (*RoleMessage, error) {
+func (s *Store) GetRoleSnapshot(ctx context.Context, workspaceID string, resourceID string) (*RoleMessage, error) {
 	if v, ok := s.rolesCache.Get(resourceID); ok {
 		return v, nil
 	}
-	return s.GetRole(ctx, &FindRoleMessage{ResourceID: &resourceID})
+	return s.GetRole(ctx, &FindRoleMessage{Workspace: workspaceID, ResourceID: &resourceID})
 }
 
 // ListRoles returns a list of roles.
@@ -155,8 +158,8 @@ func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMe
 		SELECT
 			resource_id, workspace, name, description, permissions
 		FROM role
-		WHERE TRUE
-	`)
+		WHERE workspace = ?
+	`, find.Workspace)
 
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -232,9 +235,9 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	q := qb.Q().Space(`
 		UPDATE role
 		SET ?
-		WHERE resource_id = ?
+		WHERE resource_id = ? AND workspace = ?
 		RETURNING name, description, permissions
-	`, set, patch.ResourceID)
+	`, set, patch.ResourceID, patch.Workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -263,11 +266,11 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 }
 
 // DeleteRole deletes an existing role.
-func (s *Store) DeleteRole(ctx context.Context, resourceID string) error {
+func (s *Store) DeleteRole(ctx context.Context, workspace string, resourceID string) error {
 	q := qb.Q().Space(`
 		DELETE FROM role
-		WHERE resource_id = ?
-	`, resourceID)
+		WHERE resource_id = ? AND workspace = ?
+	`, resourceID, workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

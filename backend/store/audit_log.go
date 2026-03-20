@@ -25,6 +25,7 @@ type AuditLog struct {
 }
 
 type AuditLogFind struct {
+	Workspace   string
 	Project     *string
 	FilterQ     *qb.Query
 	Limit       *int
@@ -60,6 +61,9 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		FROM audit_log
 		WHERE TRUE
 	`)
+	if find.Workspace != "" {
+		q.And("workspace = ?", find.Workspace)
+	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)

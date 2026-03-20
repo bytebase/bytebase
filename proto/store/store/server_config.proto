@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// ServerConfigPayload stores global server-level infrastructure configuration.
+// Only contains settings that are truly cross-workspace and cannot be derived
+// from any workspace context (e.g., JWT signing secret).
+// All other settings live in per-workspace WORKSPACE_PROFILE.
+message ServerConfigPayload {
+  // Authentication secret for token signing (32-character random string).
+  string auth_secret = 1;
+}

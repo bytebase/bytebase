@@ -173,21 +173,19 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
 
-	var parents []string
-	if authContext.HasWorkspaceResource() {
-		workspace, err := storage.GetWorkspace(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace")
-		}
-		parents = append(parents, common.FormatWorkspace(workspace.ResourceID))
-	} else {
-		for _, projectID := range authContext.GetProjectResources() {
-			parents = append(parents, common.FormatProject(projectID))
-		}
-	}
-
 	createAuditLogCtx := context.WithoutCancel(ctx)
-	for _, parent := range parents {
+	for _, authResource := range authContext.Resources {
+		var parent string
+		var auditWorkspaceID string
+		switch authResource.Type {
+		case common.ResourceTypeProject:
+			parent = common.FormatProject(authResource.ID)
+		case common.ResourceTypeWorkspace:
+			parent = common.FormatWorkspace(authResource.ID)
+			auditWorkspaceID = authResource.ID
+		default:
+			continue
+		}
 		resource := getRequestResource(request)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
 		// This handles MFA phase where request doesn't have email field.
@@ -215,11 +213,16 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
 		}
-		workspaceForAudit, err := storage.GetWorkspace(createAuditLogCtx)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace for audit log")
+		// Resolve workspace for audit log.
+		workspaceIDForAudit := auditWorkspaceID
+		if workspaceIDForAudit == "" {
+			workspaceIDForAudit = common.GetWorkspaceIDFromContext(createAuditLogCtx)
 		}
-		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceForAudit.ResourceID, p); err != nil {
+		if workspaceIDForAudit == "" {
+			// Skip audit log if no workspace can be determined (e.g., unauthenticated request).
+			continue
+		}
+		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
 			return err
 		}
 

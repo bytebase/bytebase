@@ -109,7 +109,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			// Ignore database not in the specified project.
 			continue
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesGet, user, databaseMessage.ProjectID)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesGet, user, common.GetWorkspaceIDFromContext(ctx), databaseMessage.ProjectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -196,7 +196,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	}
 	find.OrderByKeys = orderByKeys
 
-	filterQ, err := store.GetListDatabaseFilter(req.Msg.Filter)
+	filterQ, err := store.GetListDatabaseFilter(common.GetWorkspaceIDFromContext(ctx), req.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -208,7 +208,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q", req.Msg.Parent))
 		}
-		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, p)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), p)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -217,7 +217,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		}
 		find.ProjectID = &p
 	case strings.HasPrefix(req.Msg.Parent, common.WorkspacePrefix):
-		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -225,7 +225,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
 		}
 	case strings.HasPrefix(req.Msg.Parent, common.InstanceNamePrefix):
-		ok, err := s.iamManager.CheckPermission(ctx, permission.InstancesGet, user)
+		ok, err := s.iamManager.CheckPermission(ctx, permission.InstancesGet, user, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -309,6 +309,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 			}
 			project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
+				Workspace:   common.GetWorkspaceIDFromContext(ctx),
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
@@ -332,7 +333,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 				}
-				environment, err := s.store.GetEnvironmentByID(ctx, environmentID)
+				environment, err := s.store.GetEnvironmentByID(ctx, common.GetWorkspaceIDFromContext(ctx), environmentID)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 				}
@@ -350,7 +351,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
 			}
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &databaseMessage.InstanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+				Workspace:  common.GetWorkspaceIDFromContext(ctx),
+				ResourceID: &databaseMessage.InstanceID,
+			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get instance for format version")
 			}
@@ -546,6 +550,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -557,6 +562,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", name, err))
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
@@ -597,6 +603,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -608,6 +615,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
@@ -642,6 +650,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})
@@ -653,6 +662,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to sync database schema for database %q, error %v", databaseName, err))
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
@@ -752,7 +762,10 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 			}
 
 			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+				Workspace:  common.GetWorkspaceIDFromContext(ctx),
+				ResourceID: &instanceID,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -771,6 +784,7 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 
 		// Fallback to current database schema if no sync history
 		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
@@ -789,6 +803,7 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 	}
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})
@@ -833,7 +848,10 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 			}
 
 			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+				Workspace:  common.GetWorkspaceIDFromContext(ctx),
+				ResourceID: &instanceID,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -852,6 +870,7 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 
 		// Fallback to current database schema if no sync history
 		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
@@ -884,7 +903,10 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 		if err != nil {
 			return nil, err
 		}
-		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
+			ResourceID: &instanceID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -922,7 +944,10 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		instanceID = insID
 	}
 
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &instanceID,
+	})
 	if err != nil {
 		return storepb.Engine_ENGINE_UNSPECIFIED, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
@@ -935,6 +960,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
@@ -1005,6 +1031,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})

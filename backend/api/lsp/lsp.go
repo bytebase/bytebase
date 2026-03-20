@@ -24,8 +24,8 @@ import (
 
 var (
 	upgrader   = websocket.Upgrader{CheckOrigin: func(_ *http.Request) bool { return true }}
-	newHandler = func(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, tokenExpiry time.Time) (jsonrpc2.Handler, io.Closer) {
-		return NewHandlerWithAuth(s, profile, iamManager, user, tokenExpiry), io.NopCloser(strings.NewReader(""))
+	newHandler = func(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, workspaceID string, tokenExpiry time.Time) (jsonrpc2.Handler, io.Closer) {
+		return NewHandlerWithAuth(s, profile, iamManager, user, workspaceID, tokenExpiry), io.NopCloser(strings.NewReader(""))
 	}
 )
 
@@ -37,7 +37,7 @@ func (s *Server) Router(c *echo.Context) error {
 	}
 
 	// Authenticate user using server's auth interceptor
-	user, tokenExpiry, err := s.authInterceptor.AuthenticateToken(c.Request().Context(), accessTokenStr)
+	user, workspaceID, tokenExpiry, err := s.authInterceptor.AuthenticateToken(c.Request().Context(), accessTokenStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
@@ -50,7 +50,7 @@ func (s *Server) Router(c *echo.Context) error {
 	defer connection.Close()
 	connectionID := s.connectionCount.Add(1)
 
-	handler, closer := newHandler(s.store, s.profile, s.iamManager, user, tokenExpiry)
+	handler, closer := newHandler(s.store, s.profile, s.iamManager, user, workspaceID, tokenExpiry)
 	ctx := c.Request().Context()
 	<-jsonrpc2.NewConn(ctx, wsjsonrpc2.NewObjectStream(connection), handler, nil /* connOpt */).DisconnectNotify()
 	err = closer.Close()

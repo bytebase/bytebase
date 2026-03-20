@@ -19,7 +19,6 @@ import {
   STORAGE_KEY_RELEASE,
   semverCompare,
 } from "@/utils";
-import { workspaceNamePrefix } from "./common";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://docs.bytebase.com/get-started/self-host/external-url";
@@ -82,7 +81,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const isSaaSMode = computed(() => serverInfo.value?.saas || false);
 
   const workspaceResourceName = computed(
-    () => `${workspaceNamePrefix}${serverInfo.value?.workspaceId ?? ""}`
+    () => serverInfo.value?.workspace ?? ""
   );
 
   const needAdminSetup = computed(
@@ -154,10 +153,21 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     serverInfoTs.value = Date.now();
   };
 
-  const fetchServerInfo = async () => {
+  const fetchActuatorInfo = async (workspace?: string) => {
+    if (!workspace) {
+      return actuatorServiceClientConnect.getActuatorInfo({});
+    }
+    return actuatorServiceClientConnect.getWorkspaceActuatorInfo({
+      name: workspace,
+    });
+  };
+
+  const fetchServerInfo = async (workspace?: string) => {
     const [info, pkg] = await Promise.all([
-      actuatorServiceClientConnect.getActuatorInfo({}),
-      actuatorServiceClientConnect.getResourcePackage({}),
+      fetchActuatorInfo(workspace),
+      actuatorServiceClientConnect.getResourcePackage({
+        name: workspace,
+      }),
     ]);
     setServerInfo(info);
     resourcePackage.value = pkg;
@@ -215,7 +225,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
 
   const tryToRemindRefresh = async (): Promise<boolean> => {
     if (Date.now() - serverInfoTs.value >= 1000 * 60 * 30) {
-      await fetchServerInfo();
+      await fetchServerInfo(workspaceResourceName.value);
     }
     if (gitCommitBE.value === "unknown" || gitCommitFE.value === "unknown") {
       return false;

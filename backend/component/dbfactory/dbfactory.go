@@ -44,7 +44,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // GetDataSourceDriver returns the database driver for a data source.
 func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, connectionContext db.ConnectionContext) (db.Driver, error) {
 	password := dataSource.GetPassword()
-	if err := d.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err == nil {
+	if err := d.licenseService.IsFeatureEnabledForInstance(ctx, instance.Workspace, v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err == nil {
 		p, err := secretlib.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 		if err != nil {
 			return nil, err

@@ -26,7 +26,7 @@ type Store struct {
 	databaseCache     *lru.Cache[string, *DatabaseMessage]
 	projectCache      *lru.Cache[string, *ProjectMessage]
 	policyCache       *lru.Cache[string, *PolicyMessage]
-	settingCache      *lru.Cache[storepb.SettingName, *SettingMessage]
+	settingCache      *lru.Cache[string, *SettingMessage]
 	rolesCache        *expirable.LRU[string, *RoleMessage]
 	groupCache        *expirable.LRU[string, *GroupMessage]
 	groupMembersCache *expirable.LRU[string, map[string]bool]
@@ -61,7 +61,7 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	settingCache, err := lru.New[storepb.SettingName, *SettingMessage](64)
+	settingCache, err := lru.New[string, *SettingMessage](64)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +137,24 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
-	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
+func getSettingCacheKey(workspace string, name storepb.SettingName) string {
+	return fmt.Sprintf("workspaces/%s/settings/%s", workspace, name)
+}
+
+func getGroupCacheKey(workspace, email string) string {
+	return fmt.Sprintf("workspaces/%s/groups/%s", workspace, email)
+}
+
+func getGroupMembersCacheKey(workspace, groupName string) string {
+	return fmt.Sprintf("workspaces/%s/%s", workspace, groupName)
+}
+
+func getMemberGroupsCacheKey(workspace, userName string) string {
+	return fmt.Sprintf("workspaces/%s/memberGroups/%s", workspace, userName)
+}
+
+func getPolicyCacheKey(workspace string, resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
+	return fmt.Sprintf("workspaces/%s/policies/%s/%s/%s", workspace, resourceType, resource, policyType)
 }
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {

@@ -65,7 +65,7 @@ import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapp
 import RequiredStar from "@/components/RequiredStar.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useProjectV1Store } from "@/store";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   convertKVListToLabels,
@@ -103,7 +103,7 @@ watch(
 
 const allowSave = computed((): boolean => {
   const titleChanged =
-    props.project.name !== DEFAULT_PROJECT_NAME &&
+    !isDefaultProject(props.project.name) &&
     !isEmpty(state.title) &&
     state.title !== props.project.title;
 

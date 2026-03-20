@@ -48,6 +48,7 @@ import sqlEditorRoutes, {
 } from "@/router/sqlEditor";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
   useSQLEditorStore,
@@ -56,7 +57,6 @@ import {
 } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
-  DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   isValidDatabaseName,
   isValidInstanceName,
@@ -84,6 +84,7 @@ import {
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
@@ -111,7 +112,7 @@ const fallbackToFirstProject = async () => {
       excludeDefault: true,
     },
   });
-  return head(projects)?.name ?? DEFAULT_PROJECT_NAME;
+  return head(projects)?.name ?? actuatorStore.serverInfo?.defaultProject ?? "";
 };
 
 const initializeProject = async () => {

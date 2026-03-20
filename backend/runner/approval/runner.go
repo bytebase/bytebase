@@ -64,7 +64,14 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 // This is a utility function that can be called synchronously (from issue creation)
 // or asynchronously (from the event handler).
 func FindAndApplyApprovalTemplate(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService, issue *store.IssueMessage) error {
-	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx)
+	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %s not found", issue.ProjectID)
+	}
+	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
 	if err != nil {
 		return errors.Wrap(err, "failed to get workspace approval setting")
 	}
@@ -90,7 +97,16 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 		return // Issue deleted, nothing to do
 	}
 
-	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
+	project, err := r.store.GetProjectByResourceID(ctx, ref.ProjectID)
+	if err != nil {
+		slog.Error("failed to get project", log.BBError(err))
+		return
+	}
+	if project == nil {
+		slog.Error("project not found", slog.String("project", ref.ProjectID))
+		return
+	}
+	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx, project.Workspace)
 	if err != nil {
 		slog.Error("failed to get workspace approval setting", log.BBError(err))
 		return
@@ -138,7 +154,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 		return nil
 	}
 
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get project")
 	}
@@ -148,7 +164,7 @@ func findApprovalTemplateForIssue(ctx context.Context, stores *store.Store, webh
 
 	approvalTemplate, celVarsList, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, bool, error) {
 		// no need to find if feature is not enabled
-		if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
+		if licenseService.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
 			// nolint:nilerr
 			return nil, nil, true, nil
 		}
@@ -694,7 +710,14 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 
 	// If no specific databases, create one entry per environment
 	if len(factors.Databases) == 0 {
-		environments, err := stores.GetEnvironment(ctx)
+		issueProject, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
+		if err != nil {
+			return nil, false, err
+		}
+		if issueProject == nil {
+			return nil, false, errors.Errorf("project %s not found", issue.ProjectID)
+		}
+		environments, err := stores.GetEnvironment(ctx, issueProject.Workspace)
 		if err != nil {
 			return nil, false, err
 		}
@@ -917,20 +940,29 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 // for the given project. It queries both project and workspace IAM policies.
 // Only returns END_USER type principals (excludes service accounts, system bots, etc).
 func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
+	// Get project to determine workspace
+	project, err := stores.GetProjectByResourceID(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get project")
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %s not found", projectID)
+	}
+
 	// Get project IAM policy
-	projectIAM, err := stores.GetProjectIamPolicy(ctx, projectID)
+	projectIAM, err := stores.GetProjectIamPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project IAM policy")
 	}
 
 	// Get workspace IAM policy
-	workspaceIAM, err := stores.GetWorkspaceIamPolicy(ctx)
+	workspaceIAM, err := stores.GetWorkspaceIamPolicy(ctx, project.Workspace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
 	}
 
 	// Get all users with the specified role
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, stores, role, projectIAM.Policy, workspaceIAM.Policy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, stores, project.Workspace, role, projectIAM.Policy, workspaceIAM.Policy)
 
 	// Convert to webhook.User format, filtering by END_USER principal type
 	approvers := make([]webhook.User, 0, len(users))
@@ -961,7 +993,7 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	}
 
 	// Get issue creator as actor
-	creator, err := stores.GetPrincipalByEmail(ctx, issue.CreatorEmail)
+	creatorAccount, err := stores.GetAccountByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		slog.Warn("failed to get issue creator", log.BBError(err))
 		return
@@ -980,8 +1012,8 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 		Project: webhook.NewProject(project),
 		ApprovalRequested: &webhook.EventIssueApprovalRequested{
 			Creator: &webhook.User{
-				Name:  creator.Name,
-				Email: creator.Email,
+				Name:  creatorAccount.Name,
+				Email: creatorAccount.Email,
 			},
 			Issue:     webhook.NewIssue(issue),
 			Approvers: approvers,

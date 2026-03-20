@@ -132,13 +132,14 @@ import {
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useGracefulRequest,
   useProjectV1Store,
 } from "@/store";
 import type { Permission } from "@/types";
-import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -195,6 +196,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
@@ -203,8 +205,12 @@ const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
 });
 
+const hasDefaultProjectSelected = computed(() => {
+  return [...selectedProjectNames.value].some((name) => isDefaultProject(name));
+});
+
 const assignedDatabases = computed(() => {
-  return props.databases.filter((db) => db.project !== DEFAULT_PROJECT_NAME);
+  return props.databases.filter((db) => !isDefaultProject(db.project));
 });
 
 const getDisabledTooltip = (action: string) => {
@@ -213,7 +219,7 @@ const getDisabledTooltip = (action: string) => {
       action: action.toLowerCase(),
     });
   }
-  if (selectedProjectNames.value.has(DEFAULT_PROJECT_NAME)) {
+  if (hasDefaultProjectSelected.value) {
     return t("database.batch-action-disabled-for-unassigned", {
       action: action.toLowerCase(),
     });
@@ -339,7 +345,7 @@ const unAssignDatabases = async () => {
           return create(UpdateDatabaseRequestSchema, {
             database: create(DatabaseSchema$, {
               name: database.name,
-              project: DEFAULT_PROJECT_NAME,
+              project: actuatorStore.serverInfo?.defaultProject ?? "",
             }),
             updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
           });
@@ -365,9 +371,7 @@ const unAssignDatabases = async () => {
 
 const operationsInProjectDetail = computed(() => !!props.projectName);
 
-const isInDefaultProject = computed(
-  () => props.projectName === DEFAULT_PROJECT_NAME
-);
+const isInDefaultProject = computed(() => isDefaultProject(props.projectName));
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
@@ -392,7 +396,7 @@ const actions = computed((): DatabaseAction[] => {
             disabled:
               !selectedProjectName.value ||
               selectedDatabaseNameList.value.length < 1 ||
-              selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+              hasDefaultProjectSelected.value,
             click: () => {
               preCreateIssue(
                 selectedProjectName.value,
@@ -411,7 +415,7 @@ const actions = computed((): DatabaseAction[] => {
             disabled:
               !selectedProjectName.value ||
               props.databases.length < 1 ||
-              selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+              hasDefaultProjectSelected.value,
             click: () => generateMultiDb("bb.plan.export-data"),
             requiredPermissions: [...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE],
           });

@@ -932,13 +932,17 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	// Create another project owner who can approve
 	approverEmail := fmt.Sprintf("approver-%s@example.com", projectID)
 	approverPassword := "1024bytebase"
-	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+	newUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    approverEmail,
 			Password: approverPassword,
 			Title:    "Approver",
 		},
 	}))
+	a.NoError(err)
+
+	// Add to workspace IAM so the user can login.
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, newUser.Msg.Workspace, fmt.Sprintf("user:%s", approverEmail), "roles/workspaceMember")
 	a.NoError(err)
 
 	// Grant approver projectOwner role via project IAM

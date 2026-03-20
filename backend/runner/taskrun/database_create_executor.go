@@ -48,7 +48,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return nil, errors.Errorf("empty create database statement")
 	}
 
-	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := exec.store.GetInstanceByResourceID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, err
 	}

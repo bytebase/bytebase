@@ -34,6 +34,7 @@ type UpdateInstanceMessage struct {
 	// allow batch update
 	ResourceID          *string
 	FindByEnvironmentID *string
+	Workspace           string
 
 	Deleted       *bool
 	EnvironmentID *string
@@ -42,7 +43,7 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
-	Workspace   *string
+	Workspace   string
 	ResourceID  *string
 	ResourceIDs *[]string
 	ShowDeleted bool
@@ -81,13 +82,11 @@ func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*In
 
 // ListInstances lists all instance.
 func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
-	where := qb.Q().Space("TRUE")
+	where := qb.Q().Space("instance.workspace = ?", find.Workspace)
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 	}
-	if v := find.Workspace; v != nil {
-		where.And("instance.workspace = ?", *v)
-	}
+
 	if v := find.ResourceID; v != nil {
 		where.And("instance.resource_id = ?", *v)
 	}
@@ -257,6 +256,9 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	if v := patch.FindByEnvironmentID; v != nil {
 		where.And("environment = ?", *v)
 	}
+	if patch.Workspace != "" {
+		where.And("workspace = ?", patch.Workspace)
+	}
 
 	if where.Len() == 0 {
 		return nil, errors.Errorf("empty where")
@@ -276,15 +278,15 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 
 	if v := patch.ResourceID; v != nil {
 		s.instanceCache.Remove(getInstanceCacheKey(*v))
-		return s.GetInstance(ctx, &FindInstanceMessage{ResourceID: v})
+		return s.GetInstance(ctx, &FindInstanceMessage{Workspace: patch.Workspace, ResourceID: v})
 	}
 
 	return nil, nil
 }
 
 // GetActivatedInstanceCount gets the number of activated instances.
-func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
-	q := qb.Q().Space("SELECT COUNT(1) FROM instance WHERE (metadata ?? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE")
+func (s *Store) GetActivatedInstanceCount(ctx context.Context, workspaceID string) (int, error) {
+	q := qb.Q().Space("SELECT COUNT(1) FROM instance WHERE workspace = ?", workspaceID).And("(metadata ?? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE")
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to build sql")
@@ -332,11 +334,10 @@ func IsObjectCaseSensitive(instance *InstanceMessage) bool {
 }
 
 func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instance) (*storepb.Instance, error) {
-	systemSetting, err := s.GetSystemSetting(ctx)
+	secret, err := s.GetAuthSecret(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get system setting")
+		return nil, errors.Wrap(err, "failed to get auth secret")
 	}
-	secret := systemSetting.AuthSecret
 
 	redacted := proto.CloneOf(instance)
 	for _, ds := range redacted.GetDataSources() {
@@ -391,11 +392,10 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 
 // deobfuscateInstances deobfuscate in-place.
 func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceMessage) error {
-	systemSetting, err := s.GetSystemSetting(ctx)
+	secret, err := s.GetAuthSecret(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to get system setting")
+		return errors.Wrap(err, "failed to get auth secret")
 	}
-	secret := systemSetting.AuthSecret
 
 	for _, instance := range instances {
 		for _, ds := range instance.Metadata.GetDataSources() {
@@ -514,8 +514,9 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 }
 
 // HasSampleInstances checks if there are sample instances in the database.
-func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
+func (s *Store) HasSampleInstances(ctx context.Context, workspaceID string) (bool, error) {
 	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
+		Workspace:   workspaceID,
 		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
 		ShowDeleted: false,
 	})
@@ -530,7 +531,7 @@ func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
 // - Administrative cleanup of old soft-deleted instances
 // - Test cleanup
 // Following AIP-164/165, this only works on instances where deleted = TRUE.
-func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
+func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID string) error {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -672,8 +673,8 @@ func (s *Store) DeleteInstance(ctx context.Context, resourceID string) error {
 	// Finally, delete the instance itself (only if it's marked as deleted)
 	q = qb.Q().Space(`
 		DELETE FROM instance
-		WHERE resource_id = ? AND deleted = TRUE
-	`, resourceID)
+		WHERE resource_id = ? AND deleted = TRUE AND workspace = ?
+	`, resourceID, workspace)
 	query, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")

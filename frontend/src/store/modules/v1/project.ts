@@ -8,8 +8,8 @@ import { projectServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import type { MaybeRef, ResourceId } from "@/types";
 import {
-  DEFAULT_PROJECT_NAME,
   defaultProject,
+  isDefaultProject,
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -100,7 +100,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
   const getProjectByName = (name: string) => {
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
-    if (name === DEFAULT_PROJECT_NAME) return defaultProject();
+    if (isDefaultProject(name)) return defaultProject(name);
     return projectMapByName.get(name) ?? unknownProject();
   };
   const fetchProjectByName = async (name: string, silent = false) => {
@@ -208,7 +208,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       if (
         !projectName ||
         !isValidProjectName(projectName) ||
-        projectName === DEFAULT_PROJECT_NAME
+        isDefaultProject(projectName)
       ) {
         return false;
       }

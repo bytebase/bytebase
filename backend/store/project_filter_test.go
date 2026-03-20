@@ -39,8 +39,8 @@ func TestGetListProjectFilter(t *testing.T) {
 		{
 			name:     "exclude_default filter - true",
 			filter:   `exclude_default == true`,
-			wantSQL:  "(project.resource_id != $1)",
-			wantArgs: []any{"default"},
+			wantSQL:  "(project.resource_id != $1 AND project.resource_id != 'default')",
+			wantArgs: []any{"default-test-workspace"},
 			wantErr:  false,
 		},
 		{
@@ -109,8 +109,8 @@ func TestGetListProjectFilter(t *testing.T) {
 		{
 			name:     "complex nested AND/OR",
 			filter:   `(name == "p1" || name == "p2") && exclude_default == true`,
-			wantSQL:  "(((project.name = $1 OR project.name = $2) AND project.resource_id != $3))",
-			wantArgs: []any{"p1", "p2", "default"},
+			wantSQL:  "(((project.name = $1 OR project.name = $2) AND project.resource_id != $3 AND project.resource_id != 'default'))",
+			wantArgs: []any{"p1", "p2", "default-test-workspace"},
 			wantErr:  false,
 		},
 		{
@@ -135,7 +135,7 @@ func TestGetListProjectFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := GetListProjectFilter(tt.filter)
+			q, err := GetListProjectFilter("test-workspace", tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -69,7 +69,7 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	email := common.BuildWorkloadIdentityEmail(workloadIdentityID, projectIDStr)
 
 	// Check for duplicate email
-	existingWI, err := s.store.GetWorkloadIdentityByEmail(ctx, email)
+	existingWI, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check for existing workload identity"))
 	}
@@ -84,12 +84,8 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	}
 
 	// Create the workload identity
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
 	createdWI, err := s.store.CreateWorkloadIdentity(ctx, &store.CreateWorkloadIdentityMessage{
-		Workspace: workspace.ResourceID,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		Email:     email,
 		Name:      wi.Title,
 		Project:   projectID,
@@ -109,7 +105,7 @@ func (s *WorkloadIdentityService) GetWorkloadIdentity(ctx context.Context, reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, email)
+	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workload identity"))
 	}
@@ -159,6 +155,7 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 
 	// List workload identities using the store method with project filtering
 	wis, err := s.store.ListWorkloadIdentities(ctx, &store.FindWorkloadIdentityMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -201,7 +198,7 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, email)
+	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workload identity"))
 	}
@@ -244,7 +241,7 @@ func (s *WorkloadIdentityService) DeleteWorkloadIdentity(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, email)
+	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workload identity"))
 	}
@@ -270,7 +267,7 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	wi, err := s.store.GetWorkloadIdentityByEmail(ctx, email)
+	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workload identity"))
 	}

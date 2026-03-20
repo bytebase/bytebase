@@ -123,7 +123,7 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 
 // CreateAccessGrant creates an access grant.
 func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *connect.Request[v1pb.CreateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_JIT); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	req := request.Msg
@@ -154,7 +154,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", ag.Targets[0]))
 	}
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
 	}
@@ -237,7 +238,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 
 	// Step 4: Post-create: webhook, approval finding, auto-approve.
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
 	}
@@ -262,7 +263,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 
 // ActivateAccessGrant activates a pending access grant.
 func (s *AccessGrantService) ActivateAccessGrant(ctx context.Context, request *connect.Request[v1pb.ActivateAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_JIT); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
@@ -312,7 +313,7 @@ func activateAccessGrant(ctx context.Context, stores *store.Store, accessGrantNa
 
 // RevokeAccessGrant revokes an active access grant.
 func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *connect.Request[v1pb.RevokeAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_JIT); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_JIT); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	req := request.Msg

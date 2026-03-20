@@ -38,7 +38,8 @@ type protectedResourceMetadata struct {
 func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile)
+	workspaceID, _ := s.getWorkspaceFromRequest(c)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
 	}
@@ -63,10 +64,10 @@ func (s *Service) handleDiscovery(c *echo.Context) error {
 	baseURL := s.getBaseURL(c)
 	metadata := &authorizationServerMetadata{
 		Issuer:                            baseURL,
-		AuthorizationEndpoint:             fmt.Sprintf("%s/api/oauth2/authorize", baseURL),
-		TokenEndpoint:                     fmt.Sprintf("%s/api/oauth2/token", baseURL),
-		RegistrationEndpoint:              fmt.Sprintf("%s/api/oauth2/register", baseURL),
-		RevocationEndpoint:                fmt.Sprintf("%s/api/oauth2/revoke", baseURL),
+		AuthorizationEndpoint:             fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2/authorize", baseURL),
+		TokenEndpoint:                     fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2/token", baseURL),
+		RegistrationEndpoint:              fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2/register", baseURL),
+		RevocationEndpoint:                fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2/revoke", baseURL),
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		CodeChallengeMethodsSupported:     []string{"S256"},

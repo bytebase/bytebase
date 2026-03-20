@@ -23,20 +23,23 @@ type ReviewConfigMessage struct {
 
 // FindReviewConfigMessage is the API message for finding sql review.
 type FindReviewConfigMessage struct {
-	ID *string
+	Workspace string
+	ID        *string
 }
 
 // PatchReviewConfigMessage is the message to patch a sql review.
 type PatchReviewConfigMessage struct {
-	ID      string
-	Name    *string
-	Enforce *bool
-	Payload *storepb.ReviewConfigPayload
+	ID        string
+	Workspace string
+	Name      *string
+	Enforce   *bool
+	Payload   *storepb.ReviewConfigPayload
 }
 
 // GetReviewConfig gets sql review by id.
-func (s *Store) GetReviewConfig(ctx context.Context, id string) (*ReviewConfigMessage, error) {
-	list, err := s.ListReviewConfigs(ctx, &FindReviewConfigMessage{ID: &id})
+// Pass workspace="" for cross-workspace lookup.
+func (s *Store) GetReviewConfig(ctx context.Context, workspace string, id string) (*ReviewConfigMessage, error) {
+	list, err := s.ListReviewConfigs(ctx, &FindReviewConfigMessage{Workspace: workspace, ID: &id})
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +63,8 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 			name,
 			payload
 		FROM review_config
-		WHERE TRUE
-	`)
+		WHERE workspace = ?
+	`, find.Workspace)
 
 	if v := find.ID; v != nil {
 		q.And("id = ?", *v)
@@ -146,8 +149,8 @@ func (s *Store) CreateReviewConfig(ctx context.Context, create *ReviewConfigMess
 }
 
 // DeleteReviewConfig deletes sql review by ID.
-func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
-	q := qb.Q().Space("DELETE FROM review_config WHERE id = ?", id)
+func (s *Store) DeleteReviewConfig(ctx context.Context, workspace string, id string) error {
+	q := qb.Q().Space("DELETE FROM review_config WHERE id = ? AND workspace = ?", id, workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -184,14 +187,14 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 	q := qb.Q().Space(`
 		UPDATE review_config
 		SET ?
-		WHERE id = ?
+		WHERE id = ? AND workspace = ?
 		RETURNING
 			id,
 			workspace,
 			enabled,
 			name,
 			payload
-	`, set, patch.ID)
+	`, set, patch.ID, patch.Workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

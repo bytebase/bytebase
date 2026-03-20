@@ -51,6 +51,7 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseResourceName))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -89,6 +90,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 	}
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -101,7 +103,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types setting"))
 	}

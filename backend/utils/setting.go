@@ -14,11 +14,11 @@ const setupExternalURLError = "external URL isn't setup yet, see https://docs.by
 
 // GetEffectiveExternalURL returns the external URL to use, preferring the command-line flag over the database setting.
 // This ensures that when the --external-url flag is set, it takes precedence over any value stored in the database.
-func GetEffectiveExternalURL(ctx context.Context, stores *store.Store, profile *config.Profile) (string, error) {
+func GetEffectiveExternalURL(ctx context.Context, stores *store.Store, profile *config.Profile, workspaceID string) (string, error) {
 	// Use command-line flag value if set, otherwise use database value
 	externalURL := profile.ExternalURL
 	if externalURL == "" {
-		setting, err := stores.GetWorkspaceProfileSetting(ctx)
+		setting, err := stores.GetWorkspaceProfileSetting(ctx, workspaceID)
 		if err != nil {
 			return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 		}

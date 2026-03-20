@@ -15,6 +15,7 @@ const (
 	UserContextKey ContextKey = iota
 	AuthContextKey
 	ServiceDataKey
+	WorkspaceIDContextKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -26,6 +27,14 @@ func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool
 	return setServiceData, ok
 }
 
+// GetWorkspaceIDFromContext returns the workspace ID from the request context.
+func GetWorkspaceIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(WorkspaceIDContextKey).(string); ok {
+		return v
+	}
+	return ""
+}
+
 type AuthMethod int
 
 const (
@@ -34,11 +43,21 @@ const (
 	AuthMethodCustom
 )
 
+// ResourceType indicates whether a resource is workspace-scoped or project-scoped.
+type ResourceType int
+
+const (
+	ResourceTypeWorkspace ResourceType = iota
+	ResourceTypeProject
+)
+
+// Resource represents a resource extracted from an API request for authorization and audit.
 type Resource struct {
-	Type      string
-	Name      string
-	ProjectID string
-	Workspace bool
+	Type ResourceType
+	// ID is the resource identifier:
+	// - For workspace: the workspace resource ID
+	// - For project: the project resource ID
+	ID string
 }
 
 type AuthContext struct {
@@ -52,27 +71,4 @@ type AuthContext struct {
 func GetAuthContextFromContext(ctx context.Context) (*AuthContext, bool) {
 	authCtx, ok := ctx.Value(AuthContextKey).(*AuthContext)
 	return authCtx, ok
-}
-
-func (c *AuthContext) HasWorkspaceResource() bool {
-	for _, r := range c.Resources {
-		if r.Workspace {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *AuthContext) GetProjectResources() []string {
-	projectIDMap := make(map[string]bool)
-	for _, r := range c.Resources {
-		if r.ProjectID != "" {
-			projectIDMap[r.ProjectID] = true
-		}
-	}
-	var projectIDs []string
-	for projectID := range projectIDMap {
-		projectIDs = append(projectIDs, projectID)
-	}
-	return projectIDs
 }

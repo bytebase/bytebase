@@ -101,6 +101,7 @@ func getResourcesForMySQL(
 	}
 
 	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -129,6 +130,7 @@ func getResourcesForMySQL(
 					continue
 				}
 				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+					Workspace:    instance.Workspace,
 					InstanceID:   resourceDB.InstanceID,
 					DatabaseName: resourceDB.DatabaseName,
 				})
@@ -188,6 +190,7 @@ func getResourcesForPostgres(
 	}
 
 	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -258,6 +261,7 @@ func getResourcesForRedshift(
 	}
 
 	dbMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})

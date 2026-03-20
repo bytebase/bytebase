@@ -49,7 +49,7 @@ func NewUserService(store *store.Store, licenseService *enterprise.LicenseServic
 	}
 }
 
-// GetUser gets a user.
+// GetUser gets a user. Only returns the user if they are a member of the caller's workspace.
 func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb.GetUserRequest]) (*connect.Response[v1pb.User], error) {
 	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
@@ -59,14 +59,15 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 		return nil, err
 	}
 
-	user, err := s.store.GetUserByEmail(ctx, email)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	users, err := s.store.BatchGetUsersByEmails(ctx, workspaceID, []string{email})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
-	if user == nil {
+	if len(users) == 0 {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
-	v1User, err := convertToUser(ctx, s.iamManager, user)
+	v1User, err := convertToUser(ctx, s.iamManager, users[0])
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 	}
@@ -88,8 +89,8 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 		emails = append(emails, email)
 	}
 
-	// Batch get from store
-	users, err := s.store.BatchGetUsersByEmails(ctx, emails)
+	// Batch get from store — scoped to the caller's workspace.
+	users, err := s.store.BatchGetUsersByEmails(ctx, common.GetWorkspaceIDFromContext(ctx), emails)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
 	}
@@ -136,6 +137,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 	}
 	filterResult, err := store.GetAccountListFilter(request.Msg.Filter)
 	if err != nil {
@@ -149,7 +151,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 		}
-		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, *v)
+		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), *v)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check user permission"))
 		}
@@ -184,27 +186,13 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	return connect.NewResponse(response), nil
 }
 
-// CreateUser creates a user.
+// CreateUser creates a user in the caller's workspace (admin action, self-hosted only).
+// In SaaS mode, admins should add users via workspace IAM policy instead.
 func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v1pb.CreateUserRequest]) (*connect.Response[v1pb.User], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
-		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
-		}
-		if setting.DisallowSignup || s.profile.SaaS {
-			callerUser, ok := GetUserFromContext(ctx)
-			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed"))
-			}
-			ok, err := s.iamManager.CheckPermission(ctx, permission.UsersCreate, callerUser)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-			}
-			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersCreate))
-			}
-		}
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
 	}
+
 	if request.Msg.User == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user must be set"))
 	}
@@ -214,38 +202,35 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if request.Msg.User.Title == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user title must be set"))
 	}
-
-	if err := s.userCountGuard(ctx); err != nil {
-		return nil, err
-	}
-
-	count, err := s.store.CountActiveEndUsers(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count users"))
-	}
-	firstEndUser := count == 0
-
 	if request.Msg.User.Phone != "" {
 		if err := common.ValidatePhone(request.Msg.User.Phone); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid phone %q", request.Msg.User.Phone))
 		}
 	}
 
-	// Skip domain restrictions for service accounts and workload identities
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, false); err != nil {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	email := request.Msg.User.Email
+
+	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
 		return nil, err
 	}
-	existingUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
+
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
+		return nil, err
+	}
+
+	existingUser, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
 	if existingUser != nil {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s exists", request.Msg.User.Email))
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s exists", email))
 	}
 
+	// Validate password.
 	password := request.Msg.User.Password
 	if password != "" {
-		if err := s.validatePassword(ctx, password); err != nil {
+		if err := validatePassword(ctx, s.store, workspaceID, password); err != nil {
 			return nil, err
 		}
 	} else {
@@ -255,45 +240,32 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		}
 		password = pwd
 	}
-
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 	}
 
-	userMessage := &store.UserMessage{
-		Email:        request.Msg.User.Email,
+	user, err := s.store.CreateUser(ctx, &store.UserMessage{
+		Email:        email,
 		Name:         request.Msg.User.Title,
 		Phone:        request.Msg.User.Phone,
 		PasswordHash: string(passwordHash),
 		Profile:      &storepb.UserProfile{},
-	}
-
-	user, err := s.store.CreateUser(ctx, userMessage)
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
-	}
-
-	if firstEndUser {
-		// The first end user should be workspace admin.
-		updateRole := &store.PatchIamPolicyMessage{
-			Member: common.FormatUserEmail(user.Email),
-			Roles:  []string{common.FormatRole(store.WorkspaceAdminRole)},
-		}
-		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
 	}
 
 	userResponse, err := convertToUser(ctx, s.iamManager, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 	}
+	userResponse.Workspace = common.FormatWorkspace(workspaceID)
 	return connect.NewResponse(userResponse), nil
 }
 
-func (s *UserService) validatePassword(ctx context.Context, password string) error {
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+func validatePassword(ctx context.Context, store *store.Store, workspace, password string) error {
+	setting, err := store.GetWorkspaceProfileSetting(ctx, workspace)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get password restriction with error: %v", err))
 	}
@@ -343,7 +315,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 	if user == nil {
 		if request.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, permission.UsersCreate, callerUser)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.UsersCreate, callerUser, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 			}
@@ -361,7 +333,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	if callerUser.ID != user.ID {
-		ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdate, callerUser)
+		// In SaaS mode, only self-updates are allowed. A workspace admin should not
+		// edit another user's profile since the principal is global.
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("updating other users is not allowed in SaaS mode"))
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdate, callerUser, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
@@ -383,7 +360,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			if user.Type != storepb.PrincipalType_END_USER {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password can be mutated for end users only"))
 			}
-			if err := s.validatePassword(ctx, request.Msg.User.Password); err != nil {
+			if err := validatePassword(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), request.Msg.User.Password); err != nil {
 				return nil, err
 			}
 			passwordPatch = &request.Msg.User.Password
@@ -404,12 +381,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 					TempOtpSecretCreatedTime: nil,
 				}
 			} else {
-				setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+				setting, err := s.store.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 				}
 				if setting.Require_2Fa {
-					isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser)
+					isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser, common.GetWorkspaceIDFromContext(ctx))
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
 					}
@@ -510,11 +487,15 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 
 // DeleteUser deletes a user.
 func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v1pb.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+	}
+
 	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersDelete, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersDelete, callerUser, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -541,7 +522,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	}
 
 	// Check if there is still workspace admin if the current user is deleted.
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -559,14 +540,6 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
-	count, err := s.store.CountActiveEndUsers(ctx)
-	if err != nil {
-		return 0, connect.NewError(connect.CodeInternal, errors.Errorf("failed to stat users with error: %v", err.Error()))
-	}
-	return count, nil
-}
-
 func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
 	workspaceAdminRole := common.FormatRole(store.WorkspaceAdminRole)
 	userMember := common.FormatUserEmail(user.Email)
@@ -579,14 +552,16 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 			if member == userMember {
 				continue
 			}
-			if member == common.AllUsers {
-				activeEndUserCount, err := s.getActiveUserCount(ctx)
+			if member == common.AllUsers && !s.profile.SaaS {
+				// allUsers means every user is an admin. Count all active end users
+				// (not just workspace members) since allUsers includes everyone.
+				count, err := s.store.CountAllActivePrincipals(ctx)
 				if err != nil {
 					return false, err
 				}
-				return activeEndUserCount > 1, nil
+				return count > 1, nil
 			}
-			users := utils.GetUsersByMember(ctx, s.store, member)
+			users := utils.GetUsersByMember(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member)
 			for _, user := range users {
 				if !user.MemberDeleted && user.Type == storepb.PrincipalType_END_USER {
 					return true, nil
@@ -599,11 +574,16 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 
 // UndeleteUser undeletes a user.
 func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request[v1pb.UndeleteUserRequest]) (*connect.Response[v1pb.User], error) {
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+	}
+
 	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUndelete, callerUser)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUndelete, callerUser, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -629,7 +609,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
 	if user.Type == storepb.PrincipalType_END_USER {
-		if err := s.userCountGuard(ctx); err != nil {
+		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
 			return nil, err
 		}
 	}
@@ -647,11 +627,15 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 
 // UpdateEmail updates a user's email address.
 func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[v1pb.UpdateEmailRequest]) (*connect.Response[v1pb.User], error) {
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+	}
+
 	callerUser, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdateEmail, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdateEmail, callerUser, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -681,7 +665,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	}
 
 	// Validate email format and domain restrictions
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.Email, false); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, common.GetWorkspaceIDFromContext(ctx), request.Msg.Email, false); err != nil {
 		return nil, err
 	}
 
@@ -708,10 +692,12 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 }
 
 func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
-	groups, err := iamManager.GetUserGroups(ctx, user.Email)
+	groups, err := iamManager.GetUserGroups(ctx, common.GetWorkspaceIDFromContext(ctx), user.Email)
 	if err != nil {
 		return nil, err
 	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	convertedUser := &v1pb.User{
 		Name:  common.FormatUserEmail(user.Email),
 		State: convertDeletedToState(user.MemberDeleted),
@@ -723,7 +709,8 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,
 			Source:                 user.Profile.Source,
 		},
-		Groups: groups,
+		Groups:    groups,
+		Workspace: common.FormatWorkspace(workspaceID),
 	}
 
 	if user.MFAConfig != nil {
@@ -748,11 +735,11 @@ func validateEndUserEmail(email string) error {
 	return nil
 }
 
-func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, email string, checkDomainSetting bool) error {
+func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.LicenseService, stores *store.Store, workspaceID, email string, checkDomainSetting bool) error {
 	if err := validateEndUserEmail(email); err != nil {
 		return err
 	}
-	if licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
+	if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION) != nil {
 		// nolint:nilerr
 		// feature not enabled, only validate email and skip domain restriction.
 		if err := common.ValidateEmail(email); err != nil {
@@ -760,7 +747,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 		}
 		return nil
 	}
-	setting, err := stores.GetWorkspaceProfileSetting(ctx)
+	setting, err := stores.GetWorkspaceProfileSetting(ctx, workspaceID)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
@@ -849,10 +836,10 @@ func generateRecoveryCodes(n int) ([]string, error) {
 	return recoveryCodes, nil
 }
 
-func (s *UserService) userCountGuard(ctx context.Context) error {
-	userLimit := s.licenseService.GetUserLimit(ctx)
+func userCountGuard(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService, workspaceID string) error {
+	userLimit := licenseService.GetUserLimit(ctx, workspaceID)
 
-	count, err := s.store.CountActiveEndUsers(ctx)
+	count, err := store.CountActiveEndUsersPerWorkspace(ctx, workspaceID)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
@@ -862,11 +849,11 @@ func (s *UserService) userCountGuard(ctx context.Context) error {
 	return nil
 }
 
-func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.UserMessage) (bool, error) {
-	workspacePolicy, err := stores.GetWorkspaceIamPolicy(ctx)
+func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.UserMessage, workspaceID string) (bool, error) {
+	workspacePolicy, err := stores.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
 		return false, err
 	}
-	roles := utils.GetUserFormattedRolesMap(ctx, stores, user, workspacePolicy.Policy)
+	roles := utils.GetUserFormattedRolesMap(ctx, stores, workspaceID, user, workspacePolicy.Policy)
 	return roles[common.FormatRole(store.WorkspaceAdminRole)], nil
 }

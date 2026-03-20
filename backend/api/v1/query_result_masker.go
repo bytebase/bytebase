@@ -28,17 +28,18 @@ func NewQueryResultMasker(store *store.Store) *QueryResultMasker {
 
 // MaskResults masks the result in-place based on the dynamic masking policy, query-span, instance and action.
 func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage) error {
-	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
+	maskerWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
+	classificationSetting, err := s.store.GetDataClassificationSetting(ctx, maskerWorkspaceID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find classification setting")
 	}
 
-	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
+	maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx, maskerWorkspaceID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
+	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, maskerWorkspaceID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
 	}
@@ -152,7 +153,7 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 		"bb.default":         masker.NewDefaultFullMasker(),
 		"bb.default-partial": masker.NewDefaultRangeMasker(),
 	}
-	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx)
+	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
@@ -255,6 +256,7 @@ func newMaskingDataProviderFromDBNames(ctx context.Context, s *store.Store, inst
 			projectIDs = append(projectIDs, id)
 		}
 		projects, err := s.ListProjects(ctx, &store.FindProjectMessage{
+			Workspace:   common.GetWorkspaceIDFromContext(ctx),
 			ResourceIDs: projectIDs,
 			ShowDeleted: true,
 		})
@@ -267,7 +269,7 @@ func newMaskingDataProviderFromDBNames(ctx context.Context, s *store.Store, inst
 	}
 
 	for dbName := range p.databases {
-		schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{InstanceID: instance.ResourceID, DatabaseName: dbName})
+		schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: instance.ResourceID, DatabaseName: dbName})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get db schema for %q", dbName)
 		}
@@ -277,7 +279,7 @@ func newMaskingDataProviderFromDBNames(ctx context.Context, s *store.Store, inst
 	}
 
 	for projectID := range projectIDSet {
-		policy, err := s.GetMaskingExemptionPolicyByProject(ctx, projectID)
+		policy, err := s.GetMaskingExemptionPolicyByProject(ctx, common.GetWorkspaceIDFromContext(ctx), projectID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get masking exemption policy for project %q", projectID)
 		}
@@ -451,7 +453,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
 		for _, e := range policy.Exemptions {
 			for _, member := range e.Members {
-				if utils.MemberContainsUser(ctx, s.store, member, currentPrincipal) {
+				if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
 					exemptions = append(exemptions, e)
 					break
 				}

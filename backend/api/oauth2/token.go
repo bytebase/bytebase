@@ -47,7 +47,12 @@ func (s *Service) handleToken(c *echo.Context) error {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client authentication required")
 	}
 
-	client, err := s.store.GetOAuth2Client(ctx, clientID)
+	workspaceID, err := s.getWorkspaceFromRequest(c)
+	if err != nil {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
+	}
+
+	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}
@@ -103,7 +108,7 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "code is required")
 	}
 
-	authCode, err := s.store.GetOAuth2AuthorizationCode(ctx, req.Code)
+	authCode, err := s.store.GetOAuth2AuthorizationCode(ctx, client.ClientID, req.Code)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup code")
 	}
@@ -120,7 +125,7 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 	// Validate code not expired
 	if time.Now().After(authCode.ExpiresAt) {
 		// Delete expired code
-		if err := s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code); err != nil {
+		if err := s.store.DeleteOAuth2AuthorizationCode(ctx, client.ClientID, req.Code); err != nil {
 			slog.Warn("failed to delete expired OAuth2 authorization code", slog.String("code", req.Code), log.BBError(err))
 		}
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "code has expired")
@@ -140,7 +145,7 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 	}
 
 	// Delete code after all validations pass (single use)
-	if err := s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code); err != nil {
+	if err := s.store.DeleteOAuth2AuthorizationCode(ctx, client.ClientID, req.Code); err != nil {
 		slog.Warn("failed to delete OAuth2 authorization code after use", slog.String("code", req.Code), log.BBError(err))
 	}
 
@@ -168,7 +173,7 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 	}
 
 	tokenHash := auth.HashToken(req.RefreshToken)
-	refreshToken, err := s.store.GetOAuth2RefreshToken(ctx, tokenHash)
+	refreshToken, err := s.store.GetOAuth2RefreshToken(ctx, client.ClientID, tokenHash)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup refresh token")
 	}
@@ -185,14 +190,14 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 	// Validate not expired
 	if time.Now().After(refreshToken.ExpiresAt) {
 		// Delete expired token
-		if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
+		if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
 			slog.Warn("failed to delete expired OAuth2 refresh token", log.BBError(err))
 		}
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token has expired")
 	}
 
 	// Delete token after validations pass (single use, will issue new one)
-	if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
+	if err := s.store.DeleteOAuth2RefreshToken(ctx, client.ClientID, tokenHash); err != nil {
 		slog.Warn("failed to delete OAuth2 refresh token after use", log.BBError(err))
 	}
 
@@ -210,7 +215,7 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 	ctx := c.Request().Context()
 
 	// Generate access token (JWT)
-	accessToken, err := auth.GenerateOAuth2AccessToken(userEmail, client.ClientID, s.secret, accessTokenExpiry)
+	accessToken, err := auth.GenerateOAuth2AccessToken(userEmail, client.ClientID, client.Workspace, s.secret, accessTokenExpiry)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", fmt.Sprintf("failed to generate access token with error: %v", err))
 	}
@@ -237,7 +242,7 @@ func (s *Service) issueTokens(c *echo.Context, client *store.OAuth2ClientMessage
 	}
 
 	// Update client last active
-	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.ClientID); err != nil {
+	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.Workspace, client.ClientID); err != nil {
 		slog.Warn("failed to update OAuth2 client last active", slog.String("clientID", client.ClientID), log.BBError(err))
 	}
 

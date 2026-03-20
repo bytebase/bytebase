@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -22,22 +23,20 @@ type WorkspaceService struct {
 	v1connect.UnimplementedWorkspaceServiceHandler
 	store      *store.Store
 	iamManager *iam.Manager
+	profile    *config.Profile
 }
 
 // NewWorkspaceService creates a new WorkspaceService.
-func NewWorkspaceService(store *store.Store, iamManager *iam.Manager) *WorkspaceService {
+func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *WorkspaceService {
 	return &WorkspaceService{
 		store:      store,
 		iamManager: iamManager,
+		profile:    profile,
 	}
 }
 
-func (s *WorkspaceService) GetIamPolicy(ctx context.Context, req *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
-	if err := s.validateWorkspaceResource(ctx, req.Msg.Resource); err != nil {
-		return nil, err
-	}
-
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
+func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}
@@ -50,27 +49,11 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(v1Policy), nil
 }
 
-func (s *WorkspaceService) validateWorkspaceResource(ctx context.Context, resource string) error {
-	workspaceID, err := common.GetWorkspaceID(resource)
-	if err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid workspace resource %q", resource))
-	}
-	workspaceResourceName, err := s.store.GetWorkspaceResourceName(ctx)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace resource name"))
-	}
-	if resource != workspaceResourceName {
-		return connect.NewError(connect.CodeNotFound, errors.Errorf("workspace %q not found", workspaceID))
-	}
-	return nil
-}
-
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	request := req.Msg
-	if err := s.validateWorkspaceResource(ctx, request.Resource); err != nil {
-		return nil, err
-	}
-	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx)
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
@@ -82,11 +65,24 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
+	// In SaaS mode, allUsers is not allowed in workspace IAM policies.
+	// Members must be explicitly added.
+	if s.profile.SaaS {
+		for _, binding := range request.Policy.Bindings {
+			for _, member := range binding.Members {
+				if member == common.AllUsers {
+					return nil, connect.NewError(connect.CodeInvalidArgument,
+						errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
+				}
+			}
+		}
+	}
+
 	iamPolicy, err := convertToStoreIamPolicy(request.Policy)
 	if err != nil {
 		return nil, err
 	}
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, store.WorkspaceAdminRole, iamPolicy)
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), store.WorkspaceAdminRole, iamPolicy)
 	if !containsActiveEndUser(users) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
 	}
@@ -100,6 +96,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		ResourceType: storepb.Policy_WORKSPACE,
 		Resource:     request.Resource,
 		Type:         storepb.Policy_IAM,
+		Workspace:    workspaceID,
 		Payload:      &payloadStr,
 	}
 
@@ -111,7 +108,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}

@@ -21,8 +21,23 @@ const (
 )
 
 const (
-	// DefaultProjectID is the resource ID for the default project.
-	DefaultProjectID = "default"
+	// defaultProjectPrefix is the prefix for the default project resource ID.
+	// Each workspace has its own default project: "default-{workspaceID}".
+	defaultProjectPrefix = "default-"
+)
+
+// DefaultProjectID returns the default project resource ID for a workspace.
+func DefaultProjectID(workspaceID string) string {
+	return defaultProjectPrefix + workspaceID
+}
+
+// IsDefaultProject returns whether a project resource ID is the default project.
+// Handles both new format ("default-{workspaceID}") and legacy format ("default").
+func IsDefaultProject(workspaceID, projectID string) bool {
+	return projectID == DefaultProjectID(workspaceID) || projectID == "default"
+}
+
+const (
 	// DefaultTestEnvironmentID is the initial resource ID for the test environment.
 	// This can be mutated by the user. But for now this is only used by onboarding flow to create
 	// a test instance after first signup, so it's safe to refer it.

@@ -212,7 +212,7 @@ const updateAssignment = async () => {
   }
 
   // refresh activatedInstanceCount
-  await actuatorStore.fetchServerInfo();
+  await actuatorStore.fetchServerInfo(actuatorStore.workspaceResourceName);
 
   pushNotification({
     module: "bytebase",

@@ -75,10 +75,11 @@ import { BBSpin } from "@/bbkit";
 import { DrawerContent, ProjectSelect } from "@/components/v2";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -106,6 +107,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
@@ -128,9 +130,7 @@ const selectedDatabaseList = computed(() => {
 });
 
 const showUnassignOption = computed(() => {
-  return selectedDatabaseList.value.some(
-    (db) => db.project !== DEFAULT_PROJECT_NAME
-  );
+  return selectedDatabaseList.value.some((db) => !isDefaultProject(db.project));
 });
 
 const targetProjectName = ref<string>();
@@ -139,7 +139,7 @@ watch(
   () => transfer.value,
   (transfer) => {
     if (transfer === "unassign") {
-      targetProjectName.value = DEFAULT_PROJECT_NAME;
+      targetProjectName.value = actuatorStore.serverInfo?.defaultProject ?? "";
     } else {
       targetProjectName.value = undefined;
     }

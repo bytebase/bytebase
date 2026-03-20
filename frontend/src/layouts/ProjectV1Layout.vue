@@ -54,7 +54,10 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
+import {
+  isDefaultProject as checkIsDefaultProject,
+  UNKNOWN_PROJECT_NAME,
+} from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2, setDocumentTitle } from "@/utils";
 
@@ -107,7 +110,7 @@ const initialized = computed(
 );
 
 const isDefaultProject = computed((): boolean => {
-  return project.value.name === DEFAULT_PROJECT_NAME;
+  return checkIsDefaultProject(project.value.name);
 });
 
 const allowEdit = computed(() => {

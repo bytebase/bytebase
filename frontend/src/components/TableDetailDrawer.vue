@@ -329,7 +329,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import { defaultProject, isDefaultProject } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   SchemaCatalogSchema,
@@ -522,8 +522,11 @@ const instanceEngineNew = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(defaultProject(), "bb.sql.select");
+  if (isDefaultProject(database.value.project)) {
+    return hasProjectPermissionV2(
+      defaultProject(database.value.project),
+      "bb.sql.select"
+    );
   }
   return isDatabaseV1Queryable(database.value);
 });

@@ -362,14 +362,19 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid empty creator identifier"))
 	}
-	user, err := s.store.GetPrincipalByEmail(ctx, email)
+	account, err := s.store.GetAccountByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf(`failed to find user "%s" with error: %v`, email, err.Error()))
 	}
-	if user == nil {
+	if account == nil {
 		return nil, errors.Errorf("cannot found user %s", email)
 	}
-	return user, nil
+	return &store.UserMessage{
+		Email:         account.Email,
+		Name:          account.Name,
+		Type:          account.Type,
+		MemberDeleted: account.MemberDeleted,
+	}, nil
 }
 
 // CreateIssue creates a issue.
@@ -379,6 +384,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -433,7 +439,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		}
 
 		// Check if role grant workflow feature is enabled.
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied,
 				errors.Errorf("role request requires approval workflow feature (available in Enterprise plan)"))
 		}
@@ -546,7 +552,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
@@ -653,7 +659,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
@@ -724,8 +730,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	// Get issue creator for webhook event
-	creator, err := s.store.GetPrincipalByEmail(ctx, issue.CreatorEmail)
+	creatorAccount, err := s.store.GetAccountByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		slog.Warn("failed to get issue creator", log.BBError(err))
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get issue creator"))
@@ -741,8 +746,8 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 				Email: user.Email,
 			},
 			Creator: &webhook.User{
-				Name:  creator.Name,
-				Email: creator.Email,
+				Name:  creatorAccount.Name,
+				Email: creatorAccount.Email,
 			},
 			Issue:  webhook.NewIssue(issue),
 			Reason: req.Msg.Comment,
@@ -762,7 +767,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
@@ -851,7 +856,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeNotFound && req.Msg.AllowMissing {
 			// When allow_missing is true and issue doesn't exist, create a new one
-			ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesCreate, user)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.IssuesCreate, user, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
@@ -873,7 +878,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		return nil, err
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
@@ -1002,7 +1007,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 	}
 
 	// Get project early for webhooks.
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project: %v", err))
 	}
@@ -1110,7 +1115,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &issue.ProjectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
@@ -1161,7 +1166,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	}
 	if issueComment == nil {
 		if req.Msg.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, permission.IssueCommentsCreate, user)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.IssueCommentsCreate, user, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}

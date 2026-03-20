@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -36,7 +37,7 @@ func (s *ReleaseService) runAIPoweredLintBatch(ctx context.Context, files []file
 
 	slog.Info("Starting batch AI-powered linting", "filesCount", len(files), "rulesLength", len(customRules))
 
-	aiSetting, err := s.store.GetAISetting(ctx)
+	aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		slog.Error("Failed to get AI setting", "error", err)
 		return nil, errors.Wrap(err, "failed to get AI setting")

@@ -68,7 +68,7 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
 	}
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}

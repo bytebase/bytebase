@@ -26,7 +26,7 @@ import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { useProjectV1Store } from "@/store";
 import {
-  DEFAULT_PROJECT_NAME,
+  isDefaultProject,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
@@ -62,10 +62,9 @@ const projectStore = useProjectV1Store();
 const getOption = (project: Project): ResourceSelectOption<Project> => ({
   resource: project,
   value: project.name,
-  label:
-    project.name === DEFAULT_PROJECT_NAME
-      ? t("common.unassigned")
-      : project.title,
+  label: isDefaultProject(project.name)
+    ? t("common.unassigned")
+    : project.title,
 });
 
 const additionalOptions = computedAsync(async () => {

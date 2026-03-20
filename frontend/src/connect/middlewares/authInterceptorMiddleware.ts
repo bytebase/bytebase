@@ -31,7 +31,11 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
       if (ignoredCodes?.includes(code)) {
         // omit specified errors
       } else {
-        if (code === Code.Unauthenticated && req.method.name !== "Login") {
+        if (
+          code === Code.Unauthenticated &&
+          req.method.name !== "Login" &&
+          req.method.name !== "Signup"
+        ) {
           // Don't retry refresh endpoint failures - just propagate error
           // The caller (refreshTokens catch block) will handle the notification
           if (req.method.name === "Refresh") {

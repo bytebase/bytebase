@@ -37,7 +37,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   workspaceID,
 		ResourceID:  &projectID,
 		ShowDeleted: true,
 	})
@@ -68,6 +70,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		// Handle database group target. Extract all matched databases in the database group.
 		if projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+				Workspace:  workspaceID,
 				ResourceID: &projectResourceID,
 			})
 			if err != nil {
@@ -152,6 +155,7 @@ func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *sto
 loop:
 	for _, database := range databases {
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &database.InstanceID,
 		})
 		if err != nil {
@@ -164,6 +168,7 @@ loop:
 		engine := instance.Metadata.GetEngine()
 		// Get the database metadata
 		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   database.InstanceID,
 			DatabaseName: database.DatabaseName,
 		})
@@ -350,6 +355,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 	var errorAdviceCount, warningAdviceCount int
 	for _, database := range databases {
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &database.InstanceID,
 		})
 		if err != nil {
@@ -439,6 +445,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			if err == nil {
 				// Get current database schema
 				dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   database.InstanceID,
 					DatabaseName: database.DatabaseName,
 				})
@@ -629,6 +636,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -660,7 +668,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		IsObjectCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
 
-	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
+	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, common.GetWorkspaceIDFromContext(ctx), database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			// Continue to check the builtin rules.
