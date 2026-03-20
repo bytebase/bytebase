@@ -95,7 +95,7 @@ func isLocalhostEndpoint(endpoint string) bool {
 		return false
 	}
 	host := u.Hostname()
-	return host == "localhost" || host == "127.0.0.1"
+	return host == "localhost" || host == "127.0.0.1" || host == "host.docker.internal"
 }
 
 // Close closes the CosmosDB driver.
@@ -105,11 +105,23 @@ func (*Driver) Close(_ context.Context) error {
 
 // Ping pings the database.
 func (d *Driver) Ping(ctx context.Context) error {
+	endpoint := d.connCfg.DataSource.Host
+	if common.IsDev() && isLocalhostEndpoint(endpoint) {
+		client, err := newEmulatorRESTClient(endpoint)
+		if err != nil {
+			return errors.Wrap(err, "failed to create emulator REST client")
+		}
+		// List databases as a connectivity check.
+		if _, err := client.listDatabases(); err != nil {
+			return errors.Wrap(err, "failed to ping CosmosDB emulator")
+		}
+		return nil
+	}
+
 	queryPager := d.client.NewQueryDatabasesPager("select 1", nil)
 	for queryPager.More() {
 		_, err := queryPager.NextPage(ctx)
 		if err != nil {
-			// TODO(zp): Deserialize the error into azcore.ResponseError
 			return errors.Wrapf(err, "failed to ping CosmosDB")
 		}
 	}
