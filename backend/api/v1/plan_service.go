@@ -55,6 +55,7 @@ func (s *PlanService) GetPlan(ctx context.Context, request *connect.Request[v1pb
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		UID:       &planID,
 		ProjectID: projectID,
 	})
@@ -90,6 +91,7 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		Limit:     &limitPlusOne,
 		Offset:    &offset.offset,
 		ProjectID: projectID,
@@ -238,7 +240,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
-	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &planID})
+	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: projectID, UID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan %q: %v", req.Plan.Name, err))
 	}
@@ -324,7 +326,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			planCheckRunsTrigger = true
 
 			// Evict approvals if issue exists to request re-approval.
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, PlanUID: &oldPlan.UID})
+			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{projectID}, PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
@@ -423,6 +425,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		UID:       &planID,
 		ProjectID: projectID,
 	})
@@ -771,7 +774,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		planUIDs[i] = int64(p.UID)
 	}
 
-	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: []string{plans[0].ProjectID}, PlanUIDs: &planUIDs})
+	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{plans[0].ProjectID}, PlanUIDs: &planUIDs})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
@@ -800,7 +803,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{plan.ProjectID}, PlanUID: &plan.UID})
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{plan.ProjectID}, PlanUID: &plan.UID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}

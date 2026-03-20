@@ -34,6 +34,9 @@ type TaskRunMessage struct {
 
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
+	// Workspace filters task runs by the parent project's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace   string
 	UID         *int64
 	UIDs        *[]int64
 	ProjectID   string
@@ -77,6 +80,10 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
 		WHERE task_run.project = ?
 	`, find.ProjectID)
+
+	if find.Workspace != "" {
+		q.And("task_run.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
 
 	if v := find.UID; v != nil {
 		q.And("task_run.id = ?", *v)

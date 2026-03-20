@@ -58,6 +58,9 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
+	// Workspace filters issues by the parent project's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace string
 	// Required field
 	ProjectIDs []string
 
@@ -257,6 +260,10 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("issue.project = ?", find.ProjectIDs[0])
 	} else {
 		where.And("issue.project = ANY(?)", find.ProjectIDs)
+	}
+	if find.Workspace != "" {
+		from.Space("JOIN project ON issue.project = project.resource_id")
+		where.And("project.workspace = ?", find.Workspace)
 	}
 
 	if v := find.UID; v != nil {

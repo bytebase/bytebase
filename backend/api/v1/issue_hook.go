@@ -59,7 +59,7 @@ func postCreateIssue(
 		// Refresh issue to get updated approval payload.
 		uid := issue.UID
 		var err error
-		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{issue.ProjectID}, UID: &uid})
+		issue, err = stores.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{issue.ProjectID}, UID: &uid})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to refresh issue")
 		}
