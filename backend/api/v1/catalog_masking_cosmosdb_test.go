@@ -250,6 +250,94 @@ func TestCosmosDBMaskingGeospatial(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Test: Expression projections
+// ---------------------------------------------------------------------------
+
+func TestCosmosDBMaskingArithmeticProjection(t *testing.T) {
+	// Arithmetic expression: c.population / 1000 AS popK.
+	// Expression path is nil, alias "popK" not in schema, so not masked.
+	query := `SELECT c.name, c.population / 1000 AS popK FROM c`
+	input := `{"name":"Alice","popK":1}`
+	want := `{"name":"Alice","popK":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingStringConcatProjection(t *testing.T) {
+	// String concatenation: c.name || " - " || c.country AS label.
+	// Expression path is nil, alias "label" not in schema, so not masked.
+	query := `SELECT c.name || " - " || c.country AS label FROM c`
+	input := `{"label":"Alice - US"}`
+	want := `{"label":"Alice - US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingNestedFunctionProjection(t *testing.T) {
+	// Nested function calls: ROUND(StringToNumber(c.population)).
+	// Expression path is nil, computed value not masked.
+	query := `SELECT c.name, ROUND(StringToNumber(c.population)) AS rounded FROM c`
+	input := `{"name":"Alice","rounded":1000}`
+	want := `{"name":"Alice","rounded":1000}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingArithmeticOnFunctionProjection(t *testing.T) {
+	// Arithmetic on function result: StringToNumber(c.population) / 1000.
+	// Expression path is nil, alias not in schema, not masked.
+	query := `SELECT CONCAT(c.name, " - ", c.country) AS label, StringToNumber(c.population) / 1000 AS populationInThousands FROM c`
+	input := `{"label":"Alice - US","populationInThousands":1}`
+	want := `{"label":"Alice - US","populationInThousands":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
+	// Edge case: expression alias matches a sensitive schema field name.
+	// UPPER(c.name) AS email -- alias "email" is sensitive in the schema.
+	// The expression has no trackable path, so the masker falls back to
+	// looking up "email" in the schema and finds it is sensitive.
+	// Current behavior: the computed value IS masked because the alias
+	// collides with a sensitive field name.
+	query := `SELECT UPPER(c.name) AS email FROM c`
+	input := `{"email":"ALICE"}`
+	want := `{"email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
+	// Mix of direct field references and expressions.
+	// Direct sensitive field (email) should be masked.
+	// Expression results (upperName, popK) should not be masked.
+	query := `SELECT c.email, UPPER(c.name) AS upperName, c.population / 1000 AS popK FROM c`
+	input := `{"email":"alice@example.com","upperName":"ALICE","popK":1}`
+	want := `{"email":"******","upperName":"ALICE","popK":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprOnSensitiveFieldNonMatchingAlias(t *testing.T) {
+	// Function wrapping a sensitive field with a non-matching alias.
+	// UPPER(c.email) AS upperEmail -- "upperEmail" is NOT in the schema.
+	// The expression path is nil, and the alias doesn't match any schema field,
+	// so the computed value is NOT masked even though it derives from a sensitive field.
+	query := `SELECT UPPER(c.email) AS upperEmail FROM c`
+	input := `{"upperEmail":"ALICE@EXAMPLE.COM"}`
+	want := `{"upperEmail":"ALICE@EXAMPLE.COM"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+// ---------------------------------------------------------------------------
 // Test: Predicate blocking with new WHERE operators
 // ---------------------------------------------------------------------------
 
