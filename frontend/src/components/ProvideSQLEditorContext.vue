@@ -58,7 +58,6 @@ import {
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  getDefaultProjectName,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -113,10 +112,7 @@ const fallbackToFirstProject = async () => {
       excludeDefault: true,
     },
   });
-  return (
-    head(projects)?.name ??
-    getDefaultProjectName(actuatorStore.workspaceResourceName)
-  );
+  return head(projects)?.name ?? actuatorStore.serverInfo?.defaultProject ?? "";
 };
 
 const initializeProject = async () => {

@@ -28,7 +28,6 @@ import {
   UpdateProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useActuatorV1Store } from "./actuator";
 import { projectNamePrefix } from "./common";
 import { getLabelFilter } from "./database";
 
@@ -101,8 +100,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
   const getProjectByName = (name: string) => {
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
-    const workspace = useActuatorV1Store().serverInfo?.workspace ?? "";
-    if (isDefaultProject(name, workspace)) return defaultProject(name);
+    if (isDefaultProject(name)) return defaultProject(name);
     return projectMapByName.get(name) ?? unknownProject();
   };
   const fetchProjectByName = async (name: string, silent = false) => {
@@ -206,12 +204,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const batchGetOrFetchProjects = async (projectNames: string[]) => {
-    const workspace = useActuatorV1Store().serverInfo?.workspace ?? "";
     const validProjectList = uniq(projectNames).filter((projectName) => {
       if (
         !projectName ||
         !isValidProjectName(projectName) ||
-        isDefaultProject(projectName, workspace)
+        isDefaultProject(projectName)
       ) {
         return false;
       }

@@ -379,10 +379,13 @@ type ActuatorInfo struct {
 	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
 	ExternalUrlFromFlag bool `protobuf:"varint,23,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
 	// The number of active replicas (servers sharing the same database).
-	ReplicaCount  int32        `protobuf:"varint,24,opt,name=replica_count,json=replicaCount,proto3" json:"replica_count,omitempty"`
-	Restriction   *Restriction `protobuf:"bytes,25,opt,name=restriction,proto3" json:"restriction,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ReplicaCount int32        `protobuf:"varint,24,opt,name=replica_count,json=replicaCount,proto3" json:"replica_count,omitempty"`
+	Restriction  *Restriction `protobuf:"bytes,25,opt,name=restriction,proto3" json:"restriction,omitempty"`
+	// The default project for unassigned databases.
+	// Format: projects/{id}
+	DefaultProject string `protobuf:"bytes,26,opt,name=default_project,json=defaultProject,proto3" json:"default_project,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -555,6 +558,13 @@ func (x *ActuatorInfo) GetRestriction() *Restriction {
 	return nil
 }
 
+func (x *ActuatorInfo) GetDefaultProject() string {
+	if x != nil {
+		return x.DefaultProject
+	}
+	return ""
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
@@ -573,7 +583,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vRestriction\x12,\n" +
 	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\x88\a\n" +
+	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\xb6\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -595,7 +605,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\renable_sample\x18\x16 \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
 	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
-	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestrictionJ\x04\b\n" +
+	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x12,\n" +
+	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProjectJ\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\xe8\x05\n" +
 	"\x0fActuatorService\x12s\n" +
 	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/info\x12\x82\x01\n" +

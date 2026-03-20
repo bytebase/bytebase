@@ -173,6 +173,12 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
 
+		defaultProjectID, err := s.store.GetDefaultProjectID(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get default project"))
+		}
+		serverInfo.DefaultProject = common.FormatProject(defaultProjectID)
+
 		usedFeatures, err := s.getUsedFeatures(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get used features"))

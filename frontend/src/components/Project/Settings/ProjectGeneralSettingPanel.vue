@@ -64,7 +64,7 @@ import { LabelListEditor } from "@/components/Label";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { useActuatorV1Store, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -81,7 +81,6 @@ const props = defineProps<{
   project: Project;
 }>();
 
-const actuatorStore = useActuatorV1Store();
 const projectV1Store = useProjectV1Store();
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
 
@@ -104,10 +103,7 @@ watch(
 
 const allowSave = computed((): boolean => {
   const titleChanged =
-    !isDefaultProject(
-      props.project.name,
-      actuatorStore.serverInfo?.workspace ?? ""
-    ) &&
+    !isDefaultProject(props.project.name) &&
     !isEmpty(state.title) &&
     state.title !== props.project.title;
 

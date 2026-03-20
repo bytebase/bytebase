@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide } from "vue";
-import { useActuatorV1Store, useDatabaseV1ByName } from "@/store";
+import { useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -27,7 +27,6 @@ export const provideDatabaseDetailContext = (
   instanceId: Ref<string>,
   databaseName: Ref<string>
 ) => {
-  const actuatorStore = useActuatorV1Store();
   const { database } = useDatabaseV1ByName(
     computed(
       () =>
@@ -36,10 +35,7 @@ export const provideDatabaseDetailContext = (
   );
 
   const isDefaultProjectRef = computed(() =>
-    isDefaultProject(
-      database.value.project,
-      actuatorStore.serverInfo?.workspace ?? ""
-    )
+    isDefaultProject(database.value.project)
   );
 
   const allowAlterSchema = computed(() => {

@@ -73,11 +73,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import {
-  defaultProject,
-  getDefaultProjectName,
-  isValidProjectName,
-} from "@/types";
+import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AccessPane from "./AccessPane";
@@ -97,7 +93,7 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
 const allowAccessDefaultProject = computed(() => {
-  const name = getDefaultProjectName(actuatorStore.serverInfo?.workspace ?? "");
+  const name = actuatorStore.serverInfo?.defaultProject ?? "";
   return hasProjectPermissionV2(defaultProject(name), "bb.projects.get");
 });
 const allowCreateProject = computed(() => {

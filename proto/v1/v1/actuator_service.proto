@@ -167,4 +167,8 @@ message ActuatorInfo {
   int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   Restriction restriction = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The default project for unassigned databases.
+  // Format: projects/{id}
+  string default_project = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

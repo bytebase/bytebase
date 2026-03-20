@@ -29,7 +29,6 @@ import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
-import { useActuatorV1Store } from "@/store";
 import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -42,13 +41,9 @@ interface ProjectSidebarItem extends SidebarItem {
 
 export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const route = useRoute();
-  const actuatorStore = useActuatorV1Store();
 
   const isDefault = computed((): boolean => {
-    return isDefaultProject(
-      unref(project).name,
-      actuatorStore.serverInfo?.workspace ?? ""
-    );
+    return isDefaultProject(unref(project).name);
   });
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {

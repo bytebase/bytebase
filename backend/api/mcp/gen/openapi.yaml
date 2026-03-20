@@ -7398,6 +7398,12 @@ components:
         restriction:
           title: restriction
           $ref: '#/components/schemas/bytebase.v1.Restriction'
+        defaultProject:
+          type: string
+          title: default_project
+          description: |-
+            The default project for unassigned databases.
+             Format: projects/{id}
       title: ActuatorInfo
       additionalProperties: false
       description: |-

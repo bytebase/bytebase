@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
-import { useActuatorV1Store, useProjectByName } from "@/store";
+import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { isDefaultProject } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -15,18 +15,12 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-const actuatorStore = useActuatorV1Store();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
 const allowEdit = computed(() => {
-  if (
-    isDefaultProject(
-      project.value.name,
-      actuatorStore.serverInfo?.workspace ?? ""
-    )
-  ) {
+  if (isDefaultProject(project.value.name)) {
     return false;
   }
 

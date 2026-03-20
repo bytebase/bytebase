@@ -2561,6 +2561,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
+| default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 
 
 

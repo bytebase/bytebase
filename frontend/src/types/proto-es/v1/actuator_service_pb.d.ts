@@ -292,6 +292,14 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bytebase.v1.Restriction restriction = 25;
    */
   restriction?: Restriction;
+
+  /**
+   * The default project for unassigned databases.
+   * Format: projects/{id}
+   *
+   * @generated from field: string default_project = 26;
+   */
+  defaultProject: string;
 };
 
 /**

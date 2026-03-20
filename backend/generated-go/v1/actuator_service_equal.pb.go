@@ -163,5 +163,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if !x.Restriction.Equal(y.Restriction) {
 		return false
 	}
+	if x.DefaultProject != y.DefaultProject {
+		return false
+	}
 	return true
 }

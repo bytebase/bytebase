@@ -79,11 +79,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import {
-  getDefaultProjectName,
-  isDefaultProject,
-  isValidProjectName,
-} from "@/types";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -134,10 +130,7 @@ const selectedDatabaseList = computed(() => {
 });
 
 const showUnassignOption = computed(() => {
-  return selectedDatabaseList.value.some(
-    (db) =>
-      !isDefaultProject(db.project, actuatorStore.serverInfo?.workspace ?? "")
-  );
+  return selectedDatabaseList.value.some((db) => !isDefaultProject(db.project));
 });
 
 const targetProjectName = ref<string>();
@@ -146,9 +139,7 @@ watch(
   () => transfer.value,
   (transfer) => {
     if (transfer === "unassign") {
-      targetProjectName.value = getDefaultProjectName(
-        actuatorStore.workspaceResourceName
-      );
+      targetProjectName.value = actuatorStore.serverInfo?.defaultProject ?? "";
     } else {
       targetProjectName.value = undefined;
     }

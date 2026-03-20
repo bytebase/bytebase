@@ -23,7 +23,6 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { useActuatorV1Store } from "@/store";
 import { defaultProject, isDefaultProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
@@ -60,7 +59,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const actuatorStore = useActuatorV1Store();
 
 const disabled = computed(() => props.disabled || !props.database);
 
@@ -84,12 +82,7 @@ const gotoSQLEditor = () => {
   }
 
   const database = props.database;
-  if (
-    isDefaultProject(
-      database.project,
-      actuatorStore.serverInfo?.workspace ?? ""
-    )
-  ) {
+  if (isDefaultProject(database.project)) {
     if (
       !hasProjectPermissionV2(defaultProject(database.project), "bb.sql.select")
     ) {

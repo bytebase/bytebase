@@ -139,11 +139,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { Permission } from "@/types";
-import {
-  getDefaultProjectName,
-  isDefaultProject,
-  isValidProjectName,
-} from "@/types";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -210,17 +206,11 @@ const selectedProjectNames = computed(() => {
 });
 
 const hasDefaultProjectSelected = computed(() => {
-  const workspace = actuatorStore.serverInfo?.workspace ?? "";
-  return [...selectedProjectNames.value].some((name) =>
-    isDefaultProject(name, workspace)
-  );
+  return [...selectedProjectNames.value].some((name) => isDefaultProject(name));
 });
 
 const assignedDatabases = computed(() => {
-  const workspace = actuatorStore.serverInfo?.workspace ?? "";
-  return props.databases.filter(
-    (db) => !isDefaultProject(db.project, workspace)
-  );
+  return props.databases.filter((db) => !isDefaultProject(db.project));
 });
 
 const getDisabledTooltip = (action: string) => {
@@ -355,9 +345,7 @@ const unAssignDatabases = async () => {
           return create(UpdateDatabaseRequestSchema, {
             database: create(DatabaseSchema$, {
               name: database.name,
-              project: getDefaultProjectName(
-                actuatorStore.workspaceResourceName
-              ),
+              project: actuatorStore.serverInfo?.defaultProject ?? "",
             }),
             updateMask: create(FieldMaskProtoEsSchema, { paths: ["project"] }),
           });
@@ -383,9 +371,7 @@ const unAssignDatabases = async () => {
 
 const operationsInProjectDetail = computed(() => !!props.projectName);
 
-const isInDefaultProject = computed(() =>
-  isDefaultProject(props.projectName, actuatorStore.serverInfo?.workspace ?? "")
-);
+const isInDefaultProject = computed(() => isDefaultProject(props.projectName));
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];

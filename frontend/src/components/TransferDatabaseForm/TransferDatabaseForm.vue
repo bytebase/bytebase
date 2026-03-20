@@ -85,11 +85,7 @@ import {
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
-import {
-  formatEnvironmentName,
-  getDefaultProjectName,
-  isValidProjectName,
-} from "@/types";
+import { formatEnvironmentName, isValidProjectName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
@@ -143,8 +139,8 @@ const state = reactive<LocalState>({
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
-const defaultProjectName = computed(() =>
-  getDefaultProjectName(actuatorStore.workspaceResourceName)
+const defaultProjectName = computed(
+  () => actuatorStore.serverInfo?.defaultProject ?? ""
 );
 
 const sourceProjectName = computed(() => {

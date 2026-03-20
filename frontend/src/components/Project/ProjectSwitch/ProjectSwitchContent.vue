@@ -80,7 +80,7 @@ import { PagedProjectTable, ProjectV1Table, SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useActuatorV1Store, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -110,7 +110,6 @@ const state = reactive<LocalState>({
   loading: true,
 });
 
-const actuatorStore = useActuatorV1Store();
 const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
@@ -127,10 +126,7 @@ onMounted(() => {
 });
 
 const getFilteredProjectList = (projectList: Project[]): Project[] => {
-  const list = projectList.filter(
-    (project) =>
-      !isDefaultProject(project.name, actuatorStore.serverInfo?.workspace ?? "")
-  );
+  const list = projectList.filter((project) => !isDefaultProject(project.name));
   return filterProjectV1ListByKeyword(list, state.searchText);
 };
 

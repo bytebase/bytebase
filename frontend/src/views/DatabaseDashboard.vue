@@ -81,7 +81,7 @@ import {
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { getDefaultProjectName, isValidDatabaseName } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { SearchParams } from "@/utils";
@@ -116,7 +116,7 @@ const defaultSearchParams = () => {
       {
         id: "project",
         value: extractProjectResourceName(
-          getDefaultProjectName(actuatorStore.workspaceResourceName)
+          actuatorStore.serverInfo?.defaultProject ?? ""
         ),
       },
     ],

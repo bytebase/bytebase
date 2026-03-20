@@ -324,7 +324,6 @@ import {
 import {
   getTableCatalog,
   pushNotification,
-  useActuatorV1Store,
   useDatabaseCatalog,
   useDatabaseCatalogV1Store,
   useDatabaseV1Store,
@@ -384,7 +383,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const actuatorStore = useActuatorV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const catalogStore = useDatabaseCatalogV1Store();
@@ -524,12 +522,7 @@ const instanceEngineNew = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (
-    isDefaultProject(
-      database.value.project,
-      actuatorStore.serverInfo?.workspace ?? ""
-    )
-  ) {
+  if (isDefaultProject(database.value.project)) {
     return hasProjectPermissionV2(
       defaultProject(database.value.project),
       "bb.sql.select"
