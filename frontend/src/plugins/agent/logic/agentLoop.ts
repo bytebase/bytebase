@@ -176,6 +176,16 @@ export async function runAgentLoop(
             };
           }
 
+          const doneResult = JSON.stringify({
+            text: executionResult.text,
+            success: executionResult.success,
+          });
+          callbacks?.onToolResult?.(tc.id, doneResult);
+          conversation.push({
+            role: "tool",
+            content: doneResult,
+            toolCallId: tc.id,
+          });
           callbacks?.onText?.(executionResult.text);
           return {
             kind: "completed",

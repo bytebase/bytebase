@@ -10,11 +10,13 @@ const {
   mockBuildSystemPrompt,
   mockCreateToolExecutor,
   mockGetToolDefinitions,
+  mockRoute,
 } = vi.hoisted(() => ({
   mockRunAgentLoop: vi.fn(),
   mockBuildSystemPrompt: vi.fn(() => "system-prompt"),
   mockCreateToolExecutor: vi.fn(() => vi.fn()),
   mockGetToolDefinitions: vi.fn(() => []),
+  mockRoute: { fullPath: "/projects/demo" },
 }));
 
 vi.mock("../logic/agentLoop", () => ({
@@ -31,10 +33,13 @@ vi.mock("../logic/tools", () => ({
 }));
 
 vi.mock("vue-router", () => ({
-  useRoute: () => ({ fullPath: "/projects/demo" }),
+  useRoute: () => mockRoute,
   useRouter: () => ({}),
 }));
 
+const getTextareaValue = (wrapper: ReturnType<typeof mount>) => {
+  return (wrapper.find("textarea").element as HTMLTextAreaElement).value;
+};
 const flushPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
@@ -73,6 +78,11 @@ describe("AgentInput", () => {
     mockBuildSystemPrompt.mockClear();
     mockCreateToolExecutor.mockClear();
     mockGetToolDefinitions.mockClear();
+  });
+
+  beforeEach(() => {
+    mockRoute.fullPath = "/projects/demo";
+    document.title = "Demo Page";
   });
 
   test("submits pending input as a tool result and resumes the same thread", async () => {
@@ -149,6 +159,107 @@ describe("AgentInput", () => {
         }),
       ])
     );
+  });
+
+  test("resumes pending asks with the saved thread page snapshot", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+    });
+
+    mockRoute.fullPath = "/projects/other";
+    document.title = "Other Page";
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Using project demo.",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("demo-project");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/original",
+      title: "Original Page",
+    });
+  });
+
+  test("clears stale composer input when pending asks disappear", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.awaitUser(threadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+      defaultValue: "demo-project",
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
+    await wrapper.find("textarea").setValue("stale input");
+
+    store.clearPendingAsk(threadId);
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("");
+  });
+
+  test("clears stale composer input when switching threads", async () => {
+    const store = useAgentStore();
+    const firstThreadId = store.currentThreadId!;
+
+    store.awaitUser(firstThreadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+      defaultValue: "demo-project",
+    });
+
+    const secondThread = store.createThread({ title: "Second" });
+    store.setCurrentThread(firstThreadId);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
+    await wrapper.find("textarea").setValue("stale input");
+
+    store.setCurrentThread(secondThread.id);
+    await flushPromises();
+    expect(getTextareaValue(wrapper)).toBe("");
+
+    store.setCurrentThread(firstThreadId);
+    await flushPromises();
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
   });
 
   test("uses choose buttons to answer pending choose prompts", async () => {

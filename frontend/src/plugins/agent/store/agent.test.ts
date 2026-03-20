@@ -139,6 +139,30 @@ describe("useAgentStore", () => {
     expect(rehydratedStore.getThread(secondThread.id)?.status).toBe("idle");
   });
 
+  test("preserves an existing thread page when resuming a run", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+
+    store.ensureCurrentThread({
+      path: "/projects/other",
+      title: "Other Page",
+    });
+    store.startRun(threadId, {
+      path: "/projects/other",
+      title: "Other Page",
+    });
+
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/original",
+      title: "Original Page",
+    });
+  });
+
   test("persists pending choose asks for awaiting-user threads", async () => {
     const store = createStore();
     const threadId = store.currentThreadId!;

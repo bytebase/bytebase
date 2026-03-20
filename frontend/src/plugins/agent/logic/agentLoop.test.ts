@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { aiServiceClientConnect } from "@/connect";
+import { AIChatMessageRole } from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
 import type { ToolExecutor } from "./types";
 
@@ -39,12 +40,13 @@ describe("runAgentLoop", () => {
     );
     const onText = vi.fn();
     const onAssistantMessage = vi.fn();
+    const onToolResult = vi.fn();
 
     const outcome = await runAgentLoop(
       [{ role: "system", content: "system" }],
       [],
       executeTool,
-      { onText, onAssistantMessage }
+      { onText, onAssistantMessage, onToolResult }
     );
 
     expect(outcome).toEqual({
@@ -53,6 +55,13 @@ describe("runAgentLoop", () => {
       success: true,
       explicit: true,
     });
+    expect(onToolResult).toHaveBeenCalledWith(
+      "tool-1",
+      JSON.stringify({
+        text: "Finished successfully",
+        success: true,
+      })
+    );
     expect(onText).toHaveBeenCalledWith("Finished successfully");
     expect(onAssistantMessage).toHaveBeenCalledWith({
       role: "assistant",
@@ -71,6 +80,100 @@ describe("runAgentLoop", () => {
     });
   });
 
+  test("replays completed tool flows with matched tool results", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-1",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "Finished successfully",
+              success: true,
+            }),
+            metadata: "",
+          },
+        ],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "Follow-up answer",
+        toolCalls: [],
+      } as never);
+
+    const executeTool: ToolExecutor = vi.fn(
+      async (_name, args: Record<string, unknown>) => ({
+        kind: "done" as const,
+        text: String(args.text),
+        success: args.success !== false,
+      })
+    );
+
+    const completed = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool
+    );
+    expect(completed.kind).toBe("completed");
+
+    await runAgentLoop(
+      [
+        { role: "system", content: "system" },
+        {
+          role: "assistant",
+          content: "",
+          toolCalls: [
+            {
+              id: "tool-1",
+              name: "done",
+              arguments: JSON.stringify({
+                text: "Finished successfully",
+                success: true,
+              }),
+              metadata: "",
+            },
+          ],
+        },
+        {
+          role: "tool",
+          toolCallId: "tool-1",
+          content: JSON.stringify({
+            text: "Finished successfully",
+            success: true,
+          }),
+        },
+        { role: "assistant", content: "Finished successfully" },
+        { role: "user", content: "What next?" },
+      ],
+      [],
+      vi.fn()
+    );
+
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(2);
+    const secondCallMessages = vi.mocked(aiServiceClientConnect.chat).mock
+      .calls[1]?.[0].messages;
+    expect(secondCallMessages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_ASSISTANT,
+          toolCalls: [
+            expect.objectContaining({
+              id: "tool-1",
+              name: "done",
+            }),
+          ],
+        }),
+        expect.objectContaining({
+          role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_TOOL,
+          toolCallId: "tool-1",
+          content: JSON.stringify({
+            text: "Finished successfully",
+            success: true,
+          }),
+        }),
+      ])
+    );
+  });
   test("keeps plain assistant text as a compatibility fallback", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "Here is the answer",

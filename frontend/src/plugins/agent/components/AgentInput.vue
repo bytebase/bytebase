@@ -56,6 +56,17 @@ const isSendDisabled = computed(() => {
   return !input.value.trim();
 });
 
+const getThreadPageSnapshot = (threadId: string) => {
+  return agentStore.getThread(threadId)?.page;
+};
+
+const resolveThreadPageSnapshot = (
+  threadId: string,
+  fallbackPage: { path: string; title: string }
+) => {
+  return getThreadPageSnapshot(threadId) ?? fallbackPage;
+};
+
 const getCurrentPageSnapshot = () => ({
   path: route.fullPath,
   title: document.title,
@@ -183,9 +194,10 @@ async function send() {
     return;
   }
 
-  const page = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(page);
+  const currentPage = getCurrentPageSnapshot();
+  const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
+  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
 
@@ -205,7 +217,7 @@ async function send() {
           value: answer,
         },
         {
-          route: page.path,
+          route: currentPage.path,
         }
       );
     } else if (currentPendingAsk.value.kind === "input") {
@@ -216,14 +228,14 @@ async function send() {
           answer,
         },
         {
-          route: page.path,
+          route: currentPage.path,
         }
       );
     } else {
       return;
     }
-    agentStore.startRun(threadId, page);
-    await runThread(threadId, page);
+    agentStore.startRun(threadId, threadPage);
+    await runThread(threadId, threadPage);
     return;
   }
 
@@ -238,11 +250,11 @@ async function send() {
     role: "user",
     content: text,
     metadata: {
-      route: page.path,
+      route: currentPage.path,
     },
   });
-  agentStore.startRun(threadId, page);
-  await runThread(threadId, page);
+  agentStore.startRun(threadId, threadPage);
+  await runThread(threadId, threadPage);
 }
 
 async function submitConfirmation(confirmed: boolean) {
@@ -255,9 +267,10 @@ async function submitConfirmation(confirmed: boolean) {
     return;
   }
 
-  const page = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(page);
+  const currentPage = getCurrentPageSnapshot();
+  const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
+  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
   const answer = confirmed ? confirmLabel.value : cancelLabel.value;
 
   agentStore.clearError(threadId);
@@ -269,11 +282,11 @@ async function submitConfirmation(confirmed: boolean) {
       confirmed,
     },
     {
-      route: page.path,
+      route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, page);
-  await runThread(threadId, page);
+  agentStore.startRun(threadId, threadPage);
+  await runThread(threadId, threadPage);
 }
 
 async function submitChoice(option: AgentAskUserOption) {
@@ -286,9 +299,10 @@ async function submitChoice(option: AgentAskUserOption) {
     return;
   }
 
-  const page = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(page);
+  const currentPage = getCurrentPageSnapshot();
+  const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
+  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
   agentStore.answerPendingAsk(
@@ -299,27 +313,29 @@ async function submitChoice(option: AgentAskUserOption) {
       value: option.value,
     },
     {
-      route: page.path,
+      route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, page);
-  await runThread(threadId, page);
+  agentStore.startRun(threadId, threadPage);
+  await runThread(threadId, threadPage);
 }
 
 watch(
-  () => currentPendingAsk.value?.toolCallId,
+  () => [
+    agentStore.currentThreadId,
+    currentPendingAsk.value?.toolCallId,
+    currentPendingAsk.value?.kind,
+    currentPendingAsk.value?.defaultValue,
+  ],
   () => {
-    if (currentPendingAsk.value?.kind === "input") {
+    if (
+      currentPendingAsk.value?.kind === "input" ||
+      currentPendingAsk.value?.kind === "choose"
+    ) {
       input.value = currentPendingAsk.value.defaultValue ?? "";
       return;
     }
-    if (currentPendingAsk.value?.kind === "choose") {
-      input.value = currentPendingAsk.value.defaultValue ?? "";
-      return;
-    }
-    if (currentPendingAsk.value?.kind === "confirm") {
-      input.value = "";
-    }
+    input.value = "";
   },
   { immediate: true }
 );

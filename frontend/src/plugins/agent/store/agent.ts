@@ -424,7 +424,7 @@ export const useAgentStore = defineStore("agent", () => {
   const ensureCurrentThread = (page?: AgentThreadSnapshot) => {
     const existing = getThread(currentThreadId.value);
     if (existing) {
-      if (page) {
+      if (page && !existing.page) {
         existing.page = page;
         touchThread(existing.id);
       }
@@ -556,7 +556,10 @@ export const useAgentStore = defineStore("agent", () => {
   };
 
   const startRun = (threadId: string, page?: AgentThreadSnapshot) => {
-    setThreadStatus(threadId, "running", { page });
+    const thread = getThread(threadId);
+    setThreadStatus(threadId, "running", {
+      page: thread?.page ?? page,
+    });
   };
 
   const finishRun = (
