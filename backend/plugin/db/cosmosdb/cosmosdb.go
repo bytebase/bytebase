@@ -3,16 +3,21 @@ package cosmosdb
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"io"
+	"net/http"
+	"net/url"
 	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -37,15 +42,44 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
+// cosmosDBEmulatorKey is the well-known master key for the CosmosDB emulator.
+// https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
+const cosmosDBEmulatorKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+
 // Open opens a CosmosDB driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.DataSource.Host
-	credential, err := util.GetAzureConnectionConfig(connCfg)
-	if err != nil {
-		return nil, err
+
+	var client *azcosmos.Client
+	var err error
+
+	if common.IsDev() && isLocalhostEndpoint(endpoint) {
+		cred, credErr := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
+		if credErr != nil {
+			return nil, errors.Wrapf(credErr, "failed to create emulator key credential")
+		}
+		// The emulator uses a self-signed certificate, skip TLS verification in dev mode.
+		options := &azcosmos.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				Transport: &http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							MinVersion:         tls.VersionTLS12,
+							InsecureSkipVerify: true, //nolint:gosec
+						},
+					},
+				},
+			},
+		}
+		client, err = azcosmos.NewClientWithKey(endpoint, cred, options)
+	} else {
+		credential, credErr := util.GetAzureConnectionConfig(connCfg)
+		if credErr != nil {
+			return nil, credErr
+		}
+		client, err = azcosmos.NewClient(endpoint, credential, nil)
 	}
 
-	client, err := azcosmos.NewClient(endpoint, credential, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create CosmosDB client")
 	}
@@ -55,6 +89,15 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Connection
 	return d, nil
 }
 
+func isLocalhostEndpoint(endpoint string) bool {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	return host == "localhost" || host == "127.0.0.1" || host == "host.docker.internal"
+}
+
 // Close closes the CosmosDB driver.
 func (*Driver) Close(_ context.Context) error {
 	return nil
@@ -62,11 +105,23 @@ func (*Driver) Close(_ context.Context) error {
 
 // Ping pings the database.
 func (d *Driver) Ping(ctx context.Context) error {
+	endpoint := d.connCfg.DataSource.Host
+	if common.IsDev() && isLocalhostEndpoint(endpoint) {
+		client, err := newEmulatorRESTClient(endpoint)
+		if err != nil {
+			return errors.Wrap(err, "failed to create emulator REST client")
+		}
+		// List databases as a connectivity check.
+		if _, err := client.listDatabases(); err != nil {
+			return errors.Wrap(err, "failed to ping CosmosDB emulator")
+		}
+		return nil
+	}
+
 	queryPager := d.client.NewQueryDatabasesPager("select 1", nil)
 	for queryPager.More() {
 		_, err := queryPager.NextPage(ctx)
 		if err != nil {
-			// TODO(zp): Deserialize the error into azcore.ResponseError
 			return errors.Wrapf(err, "failed to ping CosmosDB")
 		}
 	}
