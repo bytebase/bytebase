@@ -265,11 +265,23 @@ func TestCosmosDBMaskingArithmeticProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingStringConcatProjection(t *testing.T) {
-	// String concatenation: c.name || " - " || c.country AS label.
-	// Expression path is nil, alias "label" not in schema, so not masked.
+	// String concatenation of non-sensitive fields: c.name || " - " || c.country AS label.
+	// Source fields (name, country) are not sensitive, so result is not masked.
 	query := `SELECT c.name || " - " || c.country AS label FROM c`
 	input := `{"label":"Alice - US"}`
 	want := `{"label":"Alice - US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingStringConcatWithSensitiveField(t *testing.T) {
+	// String concatenation that includes a sensitive field.
+	// c.name || " - " || c.email AS label -- c.email is sensitive.
+	// Result must be masked because it derives from sensitive data.
+	query := `SELECT c.name || " - " || c.email AS label FROM c`
+	input := `{"label":"Alice - alice@example.com"}`
+	want := `{"label":"******"}`
 
 	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
 	requireJSONEqual(t, want, got)
@@ -298,15 +310,14 @@ func TestCosmosDBMaskingArithmeticOnFunctionProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
-	// Edge case: expression alias matches a sensitive schema field name.
-	// UPPER(c.name) AS email -- alias "email" is sensitive in the schema.
-	// The expression has no trackable path, so the masker falls back to
-	// looking up "email" in the schema and finds it is sensitive.
-	// Current behavior: the computed value IS masked because the alias
-	// collides with a sensitive field name.
+	// Expression alias matches a sensitive schema field name.
+	// UPPER(c.name) AS email -- source field c.name is NOT sensitive.
+	// Even though alias "email" is sensitive in the schema, the masking
+	// should be driven by the source field (c.name), not the alias.
+	// Since c.name is not sensitive, the result is NOT masked.
 	query := `SELECT UPPER(c.name) AS email FROM c`
 	input := `{"email":"ALICE"}`
-	want := `{"email":"******"}`
+	want := `{"email":"ALICE"}`
 
 	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
 	requireJSONEqual(t, want, got)
@@ -315,7 +326,7 @@ func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
 func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
 	// Mix of direct field references and expressions.
 	// Direct sensitive field (email) should be masked.
-	// Expression results (upperName, popK) should not be masked.
+	// Expression results from non-sensitive fields (upperName, popK) should not be masked.
 	query := `SELECT c.email, UPPER(c.name) AS upperName, c.population / 1000 AS popK FROM c`
 	input := `{"email":"alice@example.com","upperName":"ALICE","popK":1}`
 	want := `{"email":"******","upperName":"ALICE","popK":1}`
@@ -326,12 +337,24 @@ func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
 
 func TestCosmosDBMaskingExprOnSensitiveFieldNonMatchingAlias(t *testing.T) {
 	// Function wrapping a sensitive field with a non-matching alias.
-	// UPPER(c.email) AS upperEmail -- "upperEmail" is NOT in the schema.
-	// The expression path is nil, and the alias doesn't match any schema field,
-	// so the computed value is NOT masked even though it derives from a sensitive field.
+	// UPPER(c.email) AS upperEmail -- c.email IS sensitive.
+	// The result must be masked because it derives from sensitive data,
+	// regardless of the alias name.
 	query := `SELECT UPPER(c.email) AS upperEmail FROM c`
 	input := `{"upperEmail":"ALICE@EXAMPLE.COM"}`
-	want := `{"upperEmail":"ALICE@EXAMPLE.COM"}`
+	want := `{"upperEmail":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingConcatWithSensitiveArg(t *testing.T) {
+	// CONCAT with a sensitive field argument.
+	// CONCAT(c.name, " <", c.email, ">") AS display -- c.email is sensitive.
+	// Result must be masked because it contains sensitive data.
+	query := `SELECT CONCAT(c.name, " <", c.email, ">") AS display FROM c`
+	input := `{"display":"Alice <alice@example.com>"}`
+	want := `{"display":"******"}`
 
 	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
 	requireJSONEqual(t, want, got)

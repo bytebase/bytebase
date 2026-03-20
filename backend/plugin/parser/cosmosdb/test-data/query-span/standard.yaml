@@ -88,6 +88,8 @@
           sourcefieldpaths:
             - name: email
               path: container.email
+            - name: upperName
+              path: container.name
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
