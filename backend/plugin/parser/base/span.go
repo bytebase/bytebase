@@ -83,8 +83,9 @@ type QuerySpanResult struct {
 	SourceColumns SourceColumnSet
 	// IsPlainField indicates whether the field is a plain column reference (true) or an expression (false).
 	IsPlainField bool
-	// SourceFieldPaths is used for Cosmos DB only, to store the path of the field, the root is the container name.
-	SourceFieldPaths map[string]*PathAST
+	// SourceFieldPaths is used for Cosmos DB only, to store the source field paths for each projected output name.
+	// Multiple paths per key support expression projections (e.g., CONCAT(c.name, c.email) references two fields).
+	SourceFieldPaths map[string][]*PathAST
 	// SelectAsterisk indicates whether the field is selected by asterisk, used by Cosmos DB.
 	SelectAsterisk bool
 }
@@ -375,12 +376,14 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 			}
 			return 0
 		})
-		for k, v := range result.SourceFieldPaths {
-			s, _ := v.String()
-			yamlResult.SourceFieldPaths = append(yamlResult.SourceFieldPaths, YamlQuerySpanResultSourceFieldPaths{
-				Name: k,
-				Path: s,
-			})
+		for k, paths := range result.SourceFieldPaths {
+			for _, v := range paths {
+				s, _ := v.String()
+				yamlResult.SourceFieldPaths = append(yamlResult.SourceFieldPaths, YamlQuerySpanResultSourceFieldPaths{
+					Name: k,
+					Path: s,
+				})
+			}
 		}
 		slices.SortFunc(yamlResult.SourceFieldPaths, func(i, j YamlQuerySpanResultSourceFieldPaths) int {
 			if i.Name < j.Name {
