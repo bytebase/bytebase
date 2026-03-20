@@ -130,16 +130,16 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 
 ### 2.4 COMMENT and GRANT Statements
 
-- [ ] `COMMENT ON TABLE |` — table completion in COMMENT ON
-- [ ] `COMMENT ON TABLE public.|` — schema-qualified table in COMMENT ON
-- [ ] `COMMENT ON COLUMN t1.|` — column completion in COMMENT ON COLUMN
-- [ ] `COMMENT ON COLUMN public.t1.|` — schema-qualified column in COMMENT ON COLUMN
-- [ ] `GRANT SELECT ON |` — table completion in GRANT
-- [ ] `GRANT SELECT ON public.|` — schema-qualified table in GRANT
-- [ ] `GRANT ALL ON ALL TABLES IN SCHEMA |` — schema completion in GRANT
-- [ ] `REVOKE SELECT ON |` — table completion in REVOKE
-- [ ] `REVOKE SELECT ON public.|` — schema-qualified table in REVOKE
-- [ ] `GRANT USAGE ON SEQUENCE |` — sequence completion in GRANT
+- [x] `COMMENT ON TABLE |` — table completion in COMMENT ON
+- [x] `COMMENT ON TABLE public.|` — schema-qualified table in COMMENT ON
+- [~] `COMMENT ON COLUMN t1.|` — column completion in COMMENT ON COLUMN (no candidates returned; parser does not emit columnref rule in COMMENT ON COLUMN context)
+- [~] `COMMENT ON COLUMN public.t1.|` — schema-qualified column in COMMENT ON COLUMN (no candidates returned; parser does not emit columnref rule in COMMENT ON COLUMN context)
+- [x] `GRANT SELECT ON |` — table completion in GRANT
+- [x] `GRANT SELECT ON public.|` — schema-qualified table in GRANT
+- [~] `GRANT ALL ON ALL TABLES IN SCHEMA |` — schema completion in GRANT (no candidates returned; parser does not emit schema_name rule in GRANT ... IN SCHEMA context)
+- [x] `REVOKE SELECT ON |` — table completion in REVOKE
+- [x] `REVOKE SELECT ON public.|` — schema-qualified table in REVOKE
+- [x] `GRANT USAGE ON SEQUENCE |` — sequence completion in GRANT
 
 ---
 
