@@ -2966,6 +2966,8 @@
   },
   "agent": {
     "assistant-title": "Bytebase Assistant",
+    "self": "Agent",
+    "resize": "Resize",
     "new-chat": "New chat",
     "minimize": "Minimize",
     "close": "Close",
