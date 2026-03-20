@@ -117,16 +117,16 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 
 ### 2.3 DROP and TRUNCATE Statements
 
-- [ ] `DROP TABLE |` — table completion in DROP TABLE
-- [ ] `DROP TABLE public.|` — schema-qualified table in DROP
-- [ ] `DROP TABLE IF EXISTS |` — table completion after IF EXISTS
-- [ ] `DROP VIEW |` — view completion in DROP VIEW
-- [ ] `DROP VIEW public.|` — schema-qualified view in DROP VIEW
-- [ ] `DROP INDEX |` — index completion in DROP INDEX
-- [ ] `DROP SEQUENCE |` — sequence completion in DROP SEQUENCE
-- [ ] `DROP MATERIALIZED VIEW |` — materialized view in DROP
-- [ ] `TRUNCATE |` — table completion in TRUNCATE
-- [ ] `TRUNCATE public.|` — schema-qualified table in TRUNCATE
+- [x] `DROP TABLE |` — table completion in DROP TABLE
+- [x] `DROP TABLE public.|` — schema-qualified table in DROP
+- [x] `DROP TABLE IF EXISTS |` — table completion after IF EXISTS
+- [x] `DROP VIEW |` — view completion in DROP VIEW
+- [x] `DROP VIEW public.|` — schema-qualified view in DROP VIEW
+- [x] `DROP INDEX |` — index completion in DROP INDEX
+- [x] `DROP SEQUENCE |` — sequence completion in DROP SEQUENCE
+- [x] `DROP MATERIALIZED VIEW |` — materialized view in DROP
+- [x] `TRUNCATE |` — table completion in TRUNCATE
+- [x] `TRUNCATE public.|` — schema-qualified table in TRUNCATE
 
 ### 2.4 COMMENT and GRANT Statements
 

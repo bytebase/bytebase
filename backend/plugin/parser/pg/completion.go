@@ -523,7 +523,7 @@ func (c *Completer) convertCandidates(candidates *omniParser.CandidateSet) ([]ba
 		switch rc.Rule {
 		case "func_name":
 			runtimeFunctionEntries.insertFunctions()
-		case "relation_expr", "qualified_name":
+		case "relation_expr", "qualified_name", "any_name":
 			qualifier, flags := c.determineQualifiedName()
 
 			if flags&ObjectFlagsShowFirst != 0 {
