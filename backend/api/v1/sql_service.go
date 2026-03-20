@@ -67,7 +67,7 @@ func NewSQLService(
 
 // AdminExecute executes the SQL statement.
 func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStream[v1pb.AdminExecuteRequest, v1pb.AdminExecuteResponse]) error {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE); err != nil {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	}
 	var driver db.Driver
@@ -167,6 +167,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 // and expiry, then prefers the grant with unmask=true if available.
 func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
 	})
 	if err != nil {
@@ -384,8 +385,8 @@ func getEffectiveQueryDataPolicy(
 		MaximumResultSize: common.DefaultMaximumSQLResultSize,
 		MaximumResultRows: math.MaxInt32,
 	}
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
-		policy, err := stores.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(projectID))
+	if err := licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err == nil {
+		policy, err := stores.GetEffectiveQueryDataPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), common.FormatProject(projectID))
 		if err != nil {
 			slog.Error("failed to get the query data policy", log.BBError(err))
 			return value
@@ -449,6 +450,7 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 		}
 	}
 	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -573,7 +575,7 @@ func queryRetry(
 			}
 			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
@@ -584,7 +586,7 @@ func queryRetry(
 	}
 
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
-		licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
+		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
 
 	if maskingEnabled {
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
@@ -658,7 +660,7 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
 			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
@@ -943,7 +945,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		if exportArchiveID == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue %v has no export archive", requestName))
 		}
-		exportArchive, err := s.store.GetExportArchive(ctx, exportArchiveID)
+		exportArchive, err := s.store.GetExportArchive(ctx, common.GetWorkspaceIDFromContext(ctx), exportArchiveID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get export archive: %v", err))
 		}
@@ -1070,7 +1072,7 @@ func doExport(
 		return nil, duration, queryErr
 	}
 
-	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+	if licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 			return nil, duration, err
@@ -1334,6 +1336,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		var linkedMeta *storepb.LinkedDatabaseMetadata
 		for _, database := range databases {
 			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   database.InstanceID,
 				DatabaseName: database.DatabaseName,
 			})
@@ -1361,7 +1364,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			return "", "", nil, err
 		}
 		for _, database := range databaseList {
-			instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.InstanceID})
 			if err != nil {
 				return "", "", nil, err
 			}
@@ -1382,6 +1385,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		}
 		// Get the linked database metadata.
 		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   linkedDatabase.InstanceID,
 			DatabaseName: linkedDatabase.DatabaseName,
 		})
@@ -1398,6 +1402,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
@@ -1436,7 +1441,7 @@ func (s *SQLService) accessCheck(
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
 ) error {
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.ProjectID})
 	if err != nil {
 		return err
 	}
@@ -1444,12 +1449,12 @@ func (s *SQLService) accessCheck(
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q not found", database.ProjectID))
 	}
 
-	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace iam policy"))
 	}
 
-	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
+	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), project.ResourceID)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
@@ -1622,6 +1627,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
@@ -1672,9 +1678,9 @@ func (s *SQLService) hasDatabaseAccessRights(
 	attributes map[string]any,
 	iamPolicies ...*storepb.IamPolicy,
 ) (bool, error) {
-	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, iamPolicies...)
 	for _, binding := range bindings {
-		permissions, err := s.iamManager.GetPermissions(ctx, binding.Role)
+		permissions, err := s.iamManager.GetPermissions(ctx, common.GetWorkspaceIDFromContext(ctx), binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
@@ -1771,7 +1777,7 @@ func checkAndGetDataSourceQueriable(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data source id is required"))
 	}
 
-	instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %v with error: %v", database.InstanceID, err.Error()))
 	}
@@ -1792,18 +1798,18 @@ func checkAndGetDataSourceQueriable(
 
 	// Always allow non-admin data source.
 	if dataSource.GetType() != storepb.DataSourceType_ADMIN {
-		if err := licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+		if err := licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.New(err.Error()))
 		}
 		return dataSource, nil
 	}
 
 	//nolint:nilerr
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
+	if err := licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 		return dataSource, nil
 	}
 
-	queryDataPolicy, err := storeInstance.GetEffectiveQueryDataPolicy(ctx, common.FormatProject(database.ProjectID))
+	queryDataPolicy, err := storeInstance.GetEffectiveQueryDataPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), common.FormatProject(database.ProjectID))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get query data policy with error: %v", err.Error()))
 	}

@@ -35,6 +35,7 @@ func NewIssue(i *store.IssueMessage) *Issue {
 func NewProject(p *store.ProjectMessage) *Project {
 	return &Project{
 		ResourceID: p.ResourceID,
+		Workspace:  p.Workspace,
 		Title:      p.Title,
 	}
 }
@@ -58,6 +59,7 @@ type Issue struct {
 
 type Project struct {
 	ResourceID string
+	Workspace  string
 	Title      string
 }
 

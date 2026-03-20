@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
@@ -43,14 +44,29 @@ service ActuatorService {
   // Gets custom branding resources such as logos.
   // Permissions required: None
   rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
-    option (google.api.http) = {get: "/v1/actuator/resources"};
+    option (google.api.http) = {
+      get: "/v1/actuator/resources"
+      additional_bindings: {get: "/v1/{name=workspaces/*}/actuator/resources"}
+    };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
+  }
+
+  // Gets workspace-scoped actuator info. Requires authentication.
+  rpc GetWorkspaceActuatorInfo(GetWorkspaceActuatorInfoRequest) returns (ActuatorInfo) {
+    option (google.api.http) = {get: "/v1/{name=workspaces/*}/actuator/info"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.settings.getWorkspaceProfile";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
 // Request message for getting branding resources.
-message GetResourcePackageRequest {}
+message GetResourcePackageRequest {
+  // Optional workspace name, format: workspaces/{workspace}.
+  // Set when using the workspace-scoped URL pattern.
+  string name = 1;
+}
 
 // Custom branding resources for the Bytebase instance.
 message ResourcePackage {
@@ -63,6 +79,15 @@ message SetupSampleRequest {}
 
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}
+
+// Request message for getting workspace-scoped actuator information.
+message GetWorkspaceActuatorInfoRequest {
+  // The workspace name, format: workspaces/{workspace}.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Workspace"}
+  ];
+}
 
 // Request message for deleting cache.
 message DeleteCacheRequest {}
@@ -114,7 +139,8 @@ message ActuatorInfo {
   google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The unique identifier for the workspace.
-  string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Format: workspaces/{id}
+  string workspace = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // List of features that are not licensed.
   repeated string unlicensed_features = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -141,4 +167,8 @@ message ActuatorInfo {
   int32 replica_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   Restriction restriction = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The default project for unassigned databases.
+  // Format: projects/{id}
+  string default_project = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

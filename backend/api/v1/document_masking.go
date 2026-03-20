@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -1337,6 +1338,7 @@ func checkElasticsearchRequestBlocked(analysis *parserbase.ElasticsearchAnalysis
 // databases (CosmosDB containers, MongoDB collections, Elasticsearch indices).
 func getTableObjectSchema(ctx context.Context, stores *store.Store, instanceID, databaseName, tableName string) (*storepb.ObjectSchema, error) {
 	dbMetadata, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
 	})

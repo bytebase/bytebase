@@ -74,8 +74,9 @@ type UserServiceClient interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
+	// Creates a user in the caller's workspace (admin action, self-hosted only).
+	// In SaaS mode, admins should add users via workspace IAM policy instead.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
 	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
@@ -235,8 +236,9 @@ type UserServiceHandler interface {
 	// Any authenticated user can list users.
 	// Permissions required: bb.users.list
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
+	// Creates a user in the caller's workspace (admin action, self-hosted only).
+	// In SaaS mode, admins should add users via workspace IAM policy instead.
+	// Permissions required: bb.users.create
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
 	// Note: Email updates are not supported through this API. Use UpdateEmail instead.

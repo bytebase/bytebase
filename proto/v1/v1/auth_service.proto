@@ -45,6 +45,19 @@ service AuthService {
     option (bytebase.v1.audit) = true;
   }
 
+  // Registers a new user account. Creates a principal and assigns a workspace:
+  // - If the user's email was pre-invited to a workspace, joins that workspace.
+  // - Otherwise, creates a new workspace with the user as admin.
+  // Returns access tokens so the user is logged in immediately after signup.
+  rpc Signup(SignupRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/signup"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
+  }
+
   // Refreshes the access token using the refresh token cookie.
   // Permissions required: None (validates via refresh token cookie)
   rpc Refresh(RefreshRequest) returns (RefreshResponse) {
@@ -136,6 +149,17 @@ message ExchangeTokenRequest {
 message ExchangeTokenResponse {
   // Bytebase access token.
   string access_token = 1;
+}
+
+message SignupRequest {
+  // The email for the new account.
+  string email = 1;
+
+  // The password for the new account.
+  string password = 2;
+
+  // The display name of the user.
+  string title = 3;
 }
 
 // Request to refresh the access token.

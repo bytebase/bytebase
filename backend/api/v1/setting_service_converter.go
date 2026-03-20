@@ -7,13 +7,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func convertToSettingMessage(setting *store.SettingMessage, profile *config.Profile) (*v1pb.Setting, error) {
+func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, error) {
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, convertStoreSettingNameToV1(setting.Name).String())
 	switch setting.Name {
 	case storepb.SettingName_APP_IM:
@@ -36,7 +35,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		v1Value := convertToWorkspaceProfileSetting(storeValue)
-		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.SettingValue{

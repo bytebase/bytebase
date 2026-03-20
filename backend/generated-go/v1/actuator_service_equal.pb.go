@@ -10,6 +10,9 @@ func (x *GetResourcePackageRequest) Equal(y *GetResourcePackageRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Name != y.Name {
+		return false
+	}
 	return true
 }
 
@@ -42,6 +45,19 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *GetWorkspaceActuatorInfoRequest) Equal(y *GetWorkspaceActuatorInfoRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
 	}
 	return true
 }
@@ -112,7 +128,7 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if p, q := x.LastActiveTime, y.LastActiveTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.WorkspaceId != y.WorkspaceId {
+	if x.Workspace != y.Workspace {
 		return false
 	}
 	if len(x.UnlicensedFeatures) != len(y.UnlicensedFeatures) {
@@ -145,6 +161,9 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if !x.Restriction.Equal(y.Restriction) {
+		return false
+	}
+	if x.DefaultProject != y.DefaultProject {
 		return false
 	}
 	return true

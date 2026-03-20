@@ -49,18 +49,18 @@ func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID str
 		return map[string]bool{}
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, projectResourceID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), projectResourceID)
 	if err != nil {
 		slog.Error("failed to get project iam policy", log.BBError(err), slog.String("project", projectResourceID))
 		return map[string]bool{}
 	}
-	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		slog.Error("failed to get workspace iam policy", log.BBError(err))
 		return map[string]bool{}
 	}
 
-	return utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy, workspacePolicy.Policy)
+	return utils.GetUserFormattedRolesMap(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), user, policy.Policy, workspacePolicy.Policy)
 }
 
 func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, user *store.UserMessage) bool {

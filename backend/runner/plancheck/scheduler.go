@@ -108,7 +108,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid i
 		return
 	}
 
-	project, err := s.store.GetProject(ctxWithCancel, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := s.store.GetProjectByResourceID(ctxWithCancel, plan.ProjectID)
 	if err != nil {
 		s.markPlanCheckRunFailed(ctxWithCancel, projectID, uid, err.Error())
 		return

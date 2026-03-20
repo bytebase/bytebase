@@ -34,12 +34,12 @@ func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2Refr
 	return create, nil
 }
 
-func (s *Store) GetOAuth2RefreshToken(ctx context.Context, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
+func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
 		SELECT token_hash, client_id, user_email, expires_at
 		FROM oauth2_refresh_token
-		WHERE token_hash = ?
-	`, tokenHash)
+		WHERE token_hash = ? AND client_id = ?
+	`, tokenHash, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -58,11 +58,11 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, tokenHash string) (*O
 	return msg, nil
 }
 
-func (s *Store) DeleteOAuth2RefreshToken(ctx context.Context, tokenHash string) error {
+func (s *Store) DeleteOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_refresh_token
-		WHERE token_hash = ?
-	`, tokenHash)
+		WHERE token_hash = ? AND client_id = ?
+	`, tokenHash, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Store) DeleteOAuth2RefreshToken(ctx context.Context, tokenHash string) 
 	return nil
 }
 
-func (s *Store) DeleteOAuth2RefreshTokensByUserAndClient(ctx context.Context, userEmail string, clientID string) error {
+func (s *Store) DeleteOAuth2RefreshTokensByUserAndClient(ctx context.Context, userEmail, clientID string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_refresh_token
 		WHERE user_email = ? AND client_id = ?

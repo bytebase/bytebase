@@ -236,6 +236,9 @@
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
+- [store/server_config.proto](#store_server_config-proto)
+    - [ServerConfigPayload](#bytebase-store-ServerConfigPayload)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AISetting](#bytebase-store-AISetting)
     - [Algorithm](#bytebase-store-Algorithm)
@@ -3969,6 +3972,40 @@ The severity level for SQL review rules.
 
 
 
+<a name="store_server_config-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/server_config.proto
+
+
+
+<a name="bytebase-store-ServerConfigPayload"></a>
+
+### ServerConfigPayload
+ServerConfigPayload stores global server-level infrastructure configuration.
+Only contains settings that are truly cross-workspace and cannot be derived
+from any workspace context (e.g., JWT signing secret).
+All other settings live in per-workspace WORKSPACE_PROFILE.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| auth_secret | [string](#string) |  | Authentication secret for token signing (32-character random string). |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_setting-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4404,7 +4441,6 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| auth_secret | [string](#string) |  | Authentication secret for token signing (32-character random string). |
 | license | [string](#string) |  | Enterprise license JWT token. |
 
 

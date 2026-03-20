@@ -66,7 +66,7 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
 	}
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
@@ -120,6 +120,7 @@ func (e *StatementAdviseExecutor) runReview(
 	enableGhost bool,
 ) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbMetadata, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -133,7 +134,7 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
-	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
+	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, instance.Workspace, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			// Continue to check the builtin rules.
@@ -153,7 +154,7 @@ func (e *StatementAdviseExecutor) runReview(
 	}
 	finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
-	project, err := e.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := e.store.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to get project")
 	}

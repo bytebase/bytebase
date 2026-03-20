@@ -70,7 +70,7 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 	email := common.BuildServiceAccountEmail(serviceAccountID, projectIDStr)
 
 	// Check for duplicate email
-	existingSA, err := s.store.GetServiceAccountByEmail(ctx, email)
+	existingSA, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check for existing service account"))
 	}
@@ -91,12 +91,8 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash service key"))
 	}
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
 	createdSA, err := s.store.CreateServiceAccount(ctx, &store.CreateServiceAccountMessage{
-		Workspace:      workspace.ResourceID,
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
 		Email:          email,
 		Name:           sa.Title,
 		ServiceKeyHash: string(passwordHash),
@@ -120,7 +116,7 @@ func (s *ServiceAccountService) GetServiceAccount(ctx context.Context, request *
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	sa, err := s.store.GetServiceAccountByEmail(ctx, email)
+	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get service account"))
 	}
@@ -170,6 +166,7 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 
 	// List service accounts using the store method with project filtering
 	sas, err := s.store.ListServiceAccounts(ctx, &store.FindServiceAccountMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		Project:     projectID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -212,7 +209,7 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	sa, err := s.store.GetServiceAccountByEmail(ctx, email)
+	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get service account"))
 	}
@@ -269,7 +266,7 @@ func (s *ServiceAccountService) DeleteServiceAccount(ctx context.Context, reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	sa, err := s.store.GetServiceAccountByEmail(ctx, email)
+	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get service account"))
 	}
@@ -295,7 +292,7 @@ func (s *ServiceAccountService) UndeleteServiceAccount(ctx context.Context, requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	sa, err := s.store.GetServiceAccountByEmail(ctx, email)
+	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get service account"))
 	}

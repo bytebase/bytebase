@@ -49,11 +49,12 @@ const (
 )
 
 // NewHandlerWithAuth creates a new Language Server Protocol handler with authentication.
-func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, tokenExpiry time.Time) jsonrpc2.Handler {
+func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, workspaceID string, tokenExpiry time.Time) jsonrpc2.Handler {
 	handler := &Handler{
 		store:                s,
 		profile:              profile,
 		user:                 user,
+		workspaceID:          workspaceID,
 		tokenExpiry:          tokenExpiry,
 		iamManager:           iamManager,
 		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
@@ -84,6 +85,7 @@ type Handler struct {
 
 	// Auth-related fields
 	user        *store.UserMessage
+	workspaceID string
 	tokenExpiry time.Time
 	iamManager  *iam.Manager
 
@@ -166,6 +168,7 @@ func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
 	}
 
 	instance, err := h.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:  h.workspaceID,
 		ResourceID: &instanceID,
 	})
 	if err != nil {
@@ -229,7 +232,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 
 		// Check bb.databases.getSchema permission
-		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, h.user, database.ProjectID)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, h.user, h.workspaceID, database.ProjectID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}
@@ -238,7 +241,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
 		// If only instance is specified, check instance get permission
-		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, h.user)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, h.user, h.workspaceID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}

@@ -54,7 +54,7 @@ type DatabaseMigrateExecutor struct {
 // RunOnce will run the database migration task executor once.
 func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
 	// Fetch instance, database, and project (common to all migration types)
-	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := exec.store.GetInstanceByResourceID(ctx, task.InstanceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get instance")
 	}
@@ -70,7 +70,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 		return nil, errors.Errorf("database not found for task %v", task.ID)
 	}
 
-	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project")
 	}
@@ -776,7 +776,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		defer backupDriver.Close(driverCtx)
 	}
 
-	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get project")
 	}
@@ -790,7 +790,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 
 	tc := parserbase.TransformContext{
 		InstanceID:              instance.ResourceID,
-		GetDatabaseMetadataFunc: buildGetDatabaseMetadataFunc(exec.store),
+		GetDatabaseMetadataFunc: buildGetDatabaseMetadataFunc(exec.store, instance.Workspace),
 		ListDatabaseNamesFunc:   buildListDatabaseNamesFunc(exec.store),
 		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		DatabaseName:            database.DatabaseName,
@@ -906,7 +906,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	return priorBackupDetail, nil
 }
 
-func buildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
+func buildGetDatabaseMetadataFunc(storeInstance *store.Store, workspace string) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
@@ -919,6 +919,7 @@ func buildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetData
 			return "", nil, nil
 		}
 		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+			Workspace:    workspace,
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
 		})
@@ -1070,6 +1071,7 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 	}
 
 	dbMetadata, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})

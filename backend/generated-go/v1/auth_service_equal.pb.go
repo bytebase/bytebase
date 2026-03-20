@@ -140,6 +140,25 @@ func (x *ExchangeTokenResponse) Equal(y *ExchangeTokenResponse) bool {
 	return true
 }
 
+func (x *SignupRequest) Equal(y *SignupRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	if x.Password != y.Password {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	return true
+}
+
 func (x *RefreshRequest) Equal(y *RefreshRequest) bool {
 	if x == y {
 		return true

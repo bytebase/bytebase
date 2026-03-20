@@ -262,5 +262,8 @@ func (x *User) Equal(y *User) bool {
 			return false
 		}
 	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
 	return true
 }

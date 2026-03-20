@@ -47,11 +47,13 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
-	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, &connect.Request[v1pb.GetActuatorInfoRequest]{})
+	actuator, err := ctl.actuatorServiceClient.GetWorkspaceActuatorInfo(ctx, connect.NewRequest(&v1pb.GetWorkspaceActuatorInfoRequest{
+		Name: memberResp.Msg.Workspace,
+	}))
 	a.NoError(err)
 
 	serviceAccountResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
-		Parent:           fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
+		Parent:           actuator.Msg.Workspace,
 		ServiceAccountId: "bot",
 		ServiceAccount: &v1pb.ServiceAccount{
 			Title: "bot",
@@ -60,26 +62,8 @@ func TestDeleteUser(t *testing.T) {
 	a.NoError(err)
 	serviceAccount := serviceAccountResp.Msg
 
-	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
-		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
-	}))
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, actuator.Msg.Workspace, fmt.Sprintf("serviceAccount:%v", serviceAccount.Email), "roles/workspaceAdmin")
 	a.NoError(err)
-	policy := policyResp.Msg
-
-	// Test: only count the end user.
-	for _, binding := range policy.Bindings {
-		if binding.Role == "roles/workspaceAdmin" {
-			binding.Members = append(binding.Members, fmt.Sprintf("serviceAccount:%s", serviceAccount.Email))
-			break
-		}
-	}
-	updatedPolicyResp, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:     policy.Etag,
-		Policy:   policy,
-		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
-	}))
-	a.NoError(err)
-	updatedPolicy := updatedPolicyResp.Msg
 
 	_, err = ctl.userServiceClient.DeleteUser(ctx, connect.NewRequest(&v1pb.DeleteUserRequest{
 		Name: ctl.principalName,
@@ -93,19 +77,8 @@ func TestDeleteUser(t *testing.T) {
 	a.NoError(err)
 
 	// Test: can delete the admin if member count > 1
-	for _, binding := range updatedPolicy.Bindings {
-		if binding.Role == "roles/workspaceAdmin" {
-			binding.Members = append(binding.Members, fmt.Sprintf("user:%s", member.Email))
-			break
-		}
-	}
-	newPolicyResp, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:     updatedPolicy.Etag,
-		Policy:   updatedPolicy,
-		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
-	}))
+	newPolicy, err := ctl.addMemberToWorkspaceIAM(ctx, actuator.Msg.Workspace, fmt.Sprintf("user:%v", member.Email), "roles/workspaceAdmin")
 	a.NoError(err)
-	newPolicy := newPolicyResp.Msg
 
 	_, err = ctl.userServiceClient.DeleteUser(ctx, connect.NewRequest(&v1pb.DeleteUserRequest{
 		Name: ctl.principalName,
@@ -130,7 +103,7 @@ func TestDeleteUser(t *testing.T) {
 	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
 		Etag:     newPolicy.Etag,
 		Policy:   newPolicy,
-		Resource: fmt.Sprintf("workspaces/%s", actuator.Msg.WorkspaceId),
+		Resource: actuator.Msg.Workspace,
 	}))
 	a.NoError(err)
 
@@ -171,6 +144,10 @@ func TestUpdateUserEmail(t *testing.T) {
 	}))
 	a.NoError(err)
 	user := userResp.Msg
+
+	// Add the created user to workspace IAM as member so they can login.
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, user.Workspace, fmt.Sprintf("user:%v", user.Email), "roles/workspaceMember")
+	a.NoError(err)
 
 	// 1.5 Grant user permission to create issues in the project
 	projectID := "test-project"

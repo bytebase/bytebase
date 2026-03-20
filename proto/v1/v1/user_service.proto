@@ -54,16 +54,17 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-  // Permissions required: bb.users.create (only when Disallow Signup is enabled)
+  // Creates a user in the caller's workspace (admin action, self-hosted only).
+  // In SaaS mode, admins should add users via workspace IAM policy instead.
+  // Permissions required: bb.users.create
   rpc CreateUser(CreateUserRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/users"
       body: "user"
     };
     option (google.api.method_signature) = "user";
-    option (bytebase.v1.allow_without_credential) = true;
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.permission) = "bb.users.create";
     option (bytebase.v1.audit) = true;
   }
 
@@ -270,8 +271,8 @@ message User {
   // The password for authentication. Only used during user creation or password updates.
   string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
 
-  // The service key for service account authentication. Only used for service accounts.
-  string service_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  // The service key for service account authentication.
+  string service_key = 7;
 
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 8;
@@ -304,4 +305,8 @@ message User {
   // The groups for the user.
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The current workspace.
+  // Format: workspaces/{id}
+  string workspace = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

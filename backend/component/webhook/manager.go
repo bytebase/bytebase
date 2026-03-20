@@ -57,7 +57,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 		return
 	}
 	// Call external webhook endpoint in Go routine to avoid blocking web serving thread.
-	go m.postWebhookList(ctx, webhookCtx, webhookList)
+	go m.postWebhookList(ctx, webhookCtx, webhookList, e.Project.Workspace)
 }
 
 func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, eventType storepb.Activity_Type) (*webhook.Context, error) {
@@ -65,7 +65,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	var mentionUsers []*store.UserMessage
 
 	// Use command-line flag value if set, otherwise use database value
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, m.store, m.profile)
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, m.store, m.profile, e.Project.Workspace)
 	if err != nil {
 		return nil, err
 	}
@@ -182,13 +182,13 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set issue information if available
 	if issue != nil {
 		creatorName := issue.Title // Fallback
-		creatorUser, err := m.store.GetPrincipalByEmail(ctx, actor.Email)
+		creatorAccount, err := m.store.GetAccountByEmail(ctx, actor.Email)
 		if err != nil {
 			slog.Warn("failed to get creator user for webhook context",
 				slog.String("issue_title", issue.Title),
 				log.BBError(err))
-		} else {
-			creatorName = creatorUser.Name
+		} else if creatorAccount != nil {
+			creatorName = creatorAccount.Name
 		}
 		webhookCtx.Issue = &webhook.Issue{
 			ID:          issue.UID,
@@ -214,9 +214,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	return &webhookCtx, nil
 }
 
-func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage) {
+func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Context, webhookList []*store.ProjectWebhookMessage, workspaceID string) {
 	ctx = context.WithoutCancel(ctx)
-	setting, err := m.store.GetAppIMSetting(ctx)
+	setting, err := m.store.GetAppIMSetting(ctx, workspaceID)
 	if err != nil {
 		slog.Error("failed to get app im setting", log.BBError(err))
 	} else {

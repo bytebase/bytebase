@@ -127,6 +127,7 @@
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
+    - [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest)
     - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
@@ -194,6 +195,7 @@
     - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
     - [RefreshRequest](#bytebase-v1-RefreshRequest)
     - [RefreshResponse](#bytebase-v1-RefreshResponse)
+    - [SignupRequest](#bytebase-v1-SignupRequest)
   
     - [AuthService](#bytebase-v1-AuthService)
   
@@ -2549,7 +2551,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
 | need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
-| workspace_id | [string](#string) |  | The unique identifier for the workspace. |
+| workspace | [string](#string) |  | The unique identifier for the workspace. Format: workspaces/{id} |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
 | activated_user_count | [int32](#int32) |  | The number of activated users. |
@@ -2559,6 +2561,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
+| default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 
 
 
@@ -2589,6 +2592,26 @@ Request message for getting actuator information.
 
 ### GetResourcePackageRequest
 Request message for getting branding resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Optional workspace name, format: workspaces/{workspace}. Set when using the workspace-scoped URL pattern. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetWorkspaceActuatorInfoRequest"></a>
+
+### GetWorkspaceActuatorInfoRequest
+Request message for getting workspace-scoped actuator information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. |
 
 
 
@@ -2654,6 +2677,7 @@ ActuatorService manages system health and operational information.
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
 | GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
+| GetWorkspaceActuatorInfo | [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets workspace-scoped actuator info. Requires authentication. |
 
  
 
@@ -3283,7 +3307,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| service_key | [string](#string) |  | The service key for service account authentication. Only used for service accounts. |
+| service_key | [string](#string) |  | The service key for service account authentication. |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
 | temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
@@ -3291,6 +3315,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+| workspace | [string](#string) |  | The current workspace. Format: workspaces/{id} |
 
 
 
@@ -3331,7 +3356,7 @@ UserService manages user accounts and authentication.
 | BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user in the caller&#39;s workspace (admin action, self-hosted only). In SaaS mode, admins should add users via workspace IAM policy instead. Permissions required: bb.users.create |
 | UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
@@ -3494,6 +3519,23 @@ Response from refreshing the access token.
 
 
 
+
+<a name="bytebase-v1-SignupRequest"></a>
+
+### SignupRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | The email for the new account. |
+| password | [string](#string) |  | The password for the new account. |
+| title | [string](#string) |  | The display name of the user. |
+
+
+
+
+
  
 
  
@@ -3511,6 +3553,7 @@ AuthService handles user authentication operations.
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
+| Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 
  

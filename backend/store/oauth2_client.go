@@ -14,13 +14,15 @@ import (
 
 type OAuth2ClientMessage struct {
 	ClientID         string
+	Workspace        string
 	ClientSecretHash string
 	Config           *storepb.OAuth2ClientConfig
 	LastActiveAt     time.Time
 }
 
 type FindOAuth2ClientMessage struct {
-	ClientID *string
+	ClientID  *string
+	Workspace string
 }
 
 func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMessage) (*OAuth2ClientMessage, error) {
@@ -30,10 +32,10 @@ func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMess
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_client (client_id, client_secret_hash, config, last_active_at)
-		VALUES (?, ?, ?, NOW())
+		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config, last_active_at)
+		VALUES (?, ?, ?, ?, NOW())
 		RETURNING last_active_at
-	`, create.ClientID, create.ClientSecretHash, configBytes)
+	`, create.ClientID, create.Workspace, create.ClientSecretHash, configBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -46,8 +48,8 @@ func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMess
 	return create, nil
 }
 
-func (s *Store) GetOAuth2Client(ctx context.Context, clientID string) (*OAuth2ClientMessage, error) {
-	clients, err := s.ListOAuth2Clients(ctx, &FindOAuth2ClientMessage{ClientID: &clientID})
+func (s *Store) GetOAuth2Client(ctx context.Context, workspace, clientID string) (*OAuth2ClientMessage, error) {
+	clients, err := s.listOAuth2Clients(ctx, &FindOAuth2ClientMessage{ClientID: &clientID, Workspace: workspace})
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +59,12 @@ func (s *Store) GetOAuth2Client(ctx context.Context, clientID string) (*OAuth2Cl
 	return clients[0], nil
 }
 
-func (s *Store) ListOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMessage) ([]*OAuth2ClientMessage, error) {
+func (s *Store) listOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMessage) ([]*OAuth2ClientMessage, error) {
 	q := qb.Q().Space(`
-		SELECT client_id, client_secret_hash, config, last_active_at
+		SELECT client_id, workspace, client_secret_hash, config, last_active_at
 		FROM oauth2_client
-		WHERE TRUE
-	`)
+		WHERE workspace = ?
+	`, find.Workspace)
 
 	if v := find.ClientID; v != nil {
 		q.And("client_id = ?", *v)
@@ -83,7 +85,7 @@ func (s *Store) ListOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMes
 	for rows.Next() {
 		client := &OAuth2ClientMessage{}
 		var configBytes []byte
-		if err := rows.Scan(&client.ClientID, &client.ClientSecretHash, &configBytes, &client.LastActiveAt); err != nil {
+		if err := rows.Scan(&client.ClientID, &client.Workspace, &client.ClientSecretHash, &configBytes, &client.LastActiveAt); err != nil {
 			return nil, errors.Wrap(err, "failed to scan OAuth2 client")
 		}
 		client.Config = &storepb.OAuth2ClientConfig{}
@@ -98,12 +100,12 @@ func (s *Store) ListOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMes
 	return clients, nil
 }
 
-func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, clientID string) error {
+func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, workspace, clientID string) error {
 	q := qb.Q().Space(`
 		UPDATE oauth2_client
 		SET last_active_at = NOW()
-		WHERE client_id = ?
-	`, clientID)
+		WHERE client_id = ? AND workspace = ?
+	`, clientID, workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -116,11 +118,11 @@ func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, clientID str
 	return nil
 }
 
-func (s *Store) DeleteOAuth2Client(ctx context.Context, clientID string) error {
+func (s *Store) DeleteOAuth2Client(ctx context.Context, workspace, clientID string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_client
-		WHERE client_id = ?
-	`, clientID)
+		WHERE client_id = ? AND workspace = ?
+	`, clientID, workspace)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

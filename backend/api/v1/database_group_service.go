@@ -33,7 +33,7 @@ func NewDatabaseGroupService(store *store.Store, licenseService *enterprise.Lice
 
 // CreateDatabaseGroup creates a database group.
 func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *connect.Request[v1pb.CreateDatabaseGroupRequest]) (*connect.Response[v1pb.DatabaseGroup], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
@@ -41,6 +41,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -93,7 +94,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 
 // UpdateDatabaseGroup updates a database group.
 func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *connect.Request[v1pb.UpdateDatabaseGroupRequest]) (*connect.Response[v1pb.DatabaseGroup], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATABASE_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(req.Msg.DatabaseGroup.Name)
@@ -101,6 +102,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -169,6 +171,7 @@ func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, req *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -206,6 +209,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -257,7 +261,9 @@ func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGr
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {

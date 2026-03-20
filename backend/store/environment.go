@@ -9,8 +9,8 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func (s *Store) GetEnvironmentByID(ctx context.Context, id string) (*storepb.EnvironmentSetting_Environment, error) {
-	environments, err := s.GetEnvironment(ctx)
+func (s *Store) GetEnvironmentByID(ctx context.Context, workspaceID string, id string) (*storepb.EnvironmentSetting_Environment, error) {
+	environments, err := s.GetEnvironment(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

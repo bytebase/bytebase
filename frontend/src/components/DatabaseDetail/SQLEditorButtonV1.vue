@@ -23,7 +23,7 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import { defaultProject, isDefaultProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { VueClass } from "@/utils";
 import {
@@ -82,8 +82,10 @@ const gotoSQLEditor = () => {
   }
 
   const database = props.database;
-  if (database.project === DEFAULT_PROJECT_NAME) {
-    if (!hasProjectPermissionV2(defaultProject(), "bb.sql.select")) {
+  if (isDefaultProject(database.project)) {
+    if (
+      !hasProjectPermissionV2(defaultProject(database.project), "bb.sql.select")
+    ) {
       // For unassigned databases, only high-privileged users
       // are accessible via SQL Editor.
       emit("failed", database);

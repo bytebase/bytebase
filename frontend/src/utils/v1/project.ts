@@ -1,4 +1,4 @@
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export const extractProjectResourceName = (name: string) => {
@@ -8,7 +8,7 @@ export const extractProjectResourceName = (name: string) => {
 };
 
 export function projectV1Name(project: Project) {
-  if (project.name === DEFAULT_PROJECT_NAME) {
+  if (isDefaultProject(project.name)) {
     return "Unassigned";
   }
 

@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -33,7 +34,7 @@ func NewAIService(store *store.Store) *AIService {
 
 // Chat sends a conversation with tool definitions to the configured AI provider and returns the response.
 func (s *AIService) Chat(ctx context.Context, req *connect.Request[v1pb.AIChatRequest]) (*connect.Response[v1pb.AIChatResponse], error) {
-	aiSetting, err := s.store.GetAISetting(ctx)
+	aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}

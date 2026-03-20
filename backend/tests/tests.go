@@ -363,15 +363,49 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 }
 
 // signupAndLogin will signup and login as user demo@example.com.
-func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
-	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
-		User: &v1pb.User{
-			Email:    "demo@example.com",
-			Password: "1024bytebase",
-			Title:    "demo",
-		},
+// addMemberToWorkspaceIAM adds a member as workspace role to the current workspace.
+func (ctl *controller) addMemberToWorkspaceIAM(ctx context.Context, workspace, member, role string) (*v1pb.IamPolicy, error) {
+	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: workspace,
 	}))
-	if err != nil && !strings.Contains(err.Error(), "exist") {
+	if err != nil {
+		return nil, err
+	}
+
+	policy := policyResp.Msg
+	found := false
+	for _, binding := range policy.Bindings {
+		if binding.Role == role {
+			binding.Members = append(binding.Members, member)
+			found = true
+			break
+		}
+	}
+	if !found {
+		policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+			Role:    role,
+			Members: []string{member},
+		})
+	}
+
+	updated, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Etag:     policy.Etag,
+		Policy:   policy,
+		Resource: workspace,
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return updated.Msg, nil
+}
+
+func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
+	// Use Signup API (creates principal + workspace) then Login to get a token.
+	if _, err := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+		Title:    "demo",
+	})); err != nil && !strings.Contains(err.Error(), "already registered") {
 		return "", err
 	}
 	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
@@ -381,6 +415,6 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ctl.principalName = userResp.Msg.Name
+	ctl.principalName = common.FormatUserEmail("demo@example.com")
 	return loginResp.Msg.Token, nil
 }

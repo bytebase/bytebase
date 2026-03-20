@@ -189,8 +189,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			if err != nil || plan == nil {
 				slog.Error("failed to get plan for failure webhook", log.BBError(err))
 			} else {
-				project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-				if err != nil || project == nil {
+				if project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID); err != nil || project == nil {
 					slog.Error("failed to get project for failure webhook", log.BBError(err))
 				} else {
 					// Send PIPELINE_FAILED webhook

@@ -90,6 +90,10 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	}
 
 	// Store client
+	workspaceID, err := s.getWorkspaceFromRequest(c)
+	if err != nil {
+		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to get workspace")
+	}
 	config := &storepb.OAuth2ClientConfig{
 		ClientName:              req.ClientName,
 		RedirectUris:            req.RedirectURIs,
@@ -98,6 +102,7 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	}
 	if _, err := s.store.CreateOAuth2Client(ctx, &store.OAuth2ClientMessage{
 		ClientID:         clientID,
+		Workspace:        workspaceID,
 		ClientSecretHash: secretHash,
 		Config:           config,
 	}); err != nil {

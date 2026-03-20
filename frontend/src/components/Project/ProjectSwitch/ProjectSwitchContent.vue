@@ -82,7 +82,7 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import { useCurrentProjectV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
+import { isDefaultProject, isValidProjectName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   filterProjectV1ListByKeyword,
@@ -126,9 +126,7 @@ onMounted(() => {
 });
 
 const getFilteredProjectList = (projectList: Project[]): Project[] => {
-  const list = projectList.filter(
-    (project) => project.name !== DEFAULT_PROJECT_NAME
-  );
+  const list = projectList.filter((project) => !isDefaultProject(project.name));
   return filterProjectV1ListByKeyword(list, state.searchText);
 };
 

@@ -5,7 +5,7 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 
@@ -34,8 +34,8 @@ export const provideDatabaseDetailContext = (
     )
   );
 
-  const isDefaultProject = computed(
-    () => database.value.project === DEFAULT_PROJECT_NAME
+  const isDefaultProjectRef = computed(() =>
+    isDefaultProject(database.value.project)
   );
 
   const allowAlterSchema = computed(() => {
@@ -45,7 +45,7 @@ export const provideDatabaseDetailContext = (
   const context: DatabaseDetailContext = {
     database,
     allowAlterSchema,
-    isDefaultProject,
+    isDefaultProject: isDefaultProjectRef,
   };
 
   provide(KEY, context);

@@ -340,7 +340,7 @@ export declare type User = Message<"bytebase.v1.User"> & {
   password: string;
 
   /**
-   * The service key for service account authentication. Only used for service accounts.
+   * The service key for service account authentication.
    *
    * @generated from field: string service_key = 7;
    */
@@ -396,6 +396,14 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * @generated from field: repeated string groups = 14;
    */
   groups: string[];
+
+  /**
+   * The current workspace.
+   * Format: workspaces/{id}
+   *
+   * @generated from field: string workspace = 16;
+   */
+  workspace: string;
 };
 
 /**
@@ -490,8 +498,9 @@ export declare const UserService: GenService<{
     output: typeof ListUsersResponseSchema;
   },
   /**
-   * Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up.
-   * Permissions required: bb.users.create (only when Disallow Signup is enabled)
+   * Creates a user in the caller's workspace (admin action, self-hosted only).
+   * In SaaS mode, admins should add users via workspace IAM policy instead.
+   * Permissions required: bb.users.create
    *
    * @generated from rpc bytebase.v1.UserService.CreateUser
    */

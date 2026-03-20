@@ -68,7 +68,11 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
+import {
+  useActuatorV1Store,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+} from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
@@ -80,6 +84,7 @@ import SchemaPane from "./SchemaPane";
 import WorksheetPane from "./WorksheetPane";
 
 const editorStore = useSQLEditorStore();
+const actuatorStore = useActuatorV1Store();
 const { asidePanelTab, maybeSwitchProject } = useSQLEditorContext();
 const { isDisconnected } = storeToRefs(useSQLEditorTabStore());
 
@@ -88,7 +93,8 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
 const allowAccessDefaultProject = computed(() => {
-  return hasProjectPermissionV2(defaultProject(), "bb.projects.get");
+  const name = actuatorStore.serverInfo?.defaultProject ?? "";
+  return hasProjectPermissionV2(defaultProject(name), "bb.projects.get");
 });
 const allowCreateProject = computed(() => {
   return hasWorkspacePermissionV2("bb.projects.create");

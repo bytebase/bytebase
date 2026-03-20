@@ -158,6 +158,7 @@ import RequireEnterpriseButton from "@/components/RequireEnterpriseButton.vue";
 import { CopyButton } from "@/components/v2";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import {
+  getWorkspaceId,
   pushNotification,
   useActuatorV1Store,
   useSubscriptionV1Store,
@@ -199,7 +200,7 @@ const userLimit = computed((): string => {
 const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const workspaceId = computed(() => {
-  return actuatorStore.serverInfo?.workspaceId ?? "";
+  return getWorkspaceId(actuatorStore.workspaceResourceName);
 });
 
 const selectWorkspaceId = () => {

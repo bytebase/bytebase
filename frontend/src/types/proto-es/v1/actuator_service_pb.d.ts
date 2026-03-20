@@ -18,6 +18,13 @@ export declare const file_v1_actuator_service: GenFile;
  * @generated from message bytebase.v1.GetResourcePackageRequest
  */
 export declare type GetResourcePackageRequest = Message<"bytebase.v1.GetResourcePackageRequest"> & {
+  /**
+   * Optional workspace name, format: workspaces/{workspace}.
+   * Set when using the workspace-scoped URL pattern.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
 };
 
 /**
@@ -73,6 +80,26 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
  * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
+
+/**
+ * Request message for getting workspace-scoped actuator information.
+ *
+ * @generated from message bytebase.v1.GetWorkspaceActuatorInfoRequest
+ */
+export declare type GetWorkspaceActuatorInfoRequest = Message<"bytebase.v1.GetWorkspaceActuatorInfoRequest"> & {
+  /**
+   * The workspace name, format: workspaces/{workspace}.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetWorkspaceActuatorInfoRequest.
+ * Use `create(GetWorkspaceActuatorInfoRequestSchema)` to create a new message.
+ */
+export declare const GetWorkspaceActuatorInfoRequestSchema: GenMessage<GetWorkspaceActuatorInfoRequest>;
 
 /**
  * Request message for deleting cache.
@@ -199,10 +226,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
 
   /**
    * The unique identifier for the workspace.
+   * Format: workspaces/{id}
    *
-   * @generated from field: string workspace_id = 13;
+   * @generated from field: string workspace = 13;
    */
-  workspaceId: string;
+  workspace: string;
 
   /**
    * List of features that are not licensed.
@@ -264,6 +292,14 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bytebase.v1.Restriction restriction = 25;
    */
   restriction?: Restriction;
+
+  /**
+   * The default project for unassigned databases.
+   * Format: projects/{id}
+   *
+   * @generated from field: string default_project = 26;
+   */
+  defaultProject: string;
 };
 
 /**
@@ -321,6 +357,16 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof GetResourcePackageRequestSchema;
     output: typeof ResourcePackageSchema;
+  },
+  /**
+   * Gets workspace-scoped actuator info. Requires authentication.
+   *
+   * @generated from rpc bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo
+   */
+  getWorkspaceActuatorInfo: {
+    methodKind: "unary";
+    input: typeof GetWorkspaceActuatorInfoRequestSchema;
+    output: typeof ActuatorInfoSchema;
   },
 }>;
 

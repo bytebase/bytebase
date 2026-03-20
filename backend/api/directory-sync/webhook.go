@@ -50,7 +50,8 @@ func (s *Service) scimAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusUnauthorized, err.Error())
 		}
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+		workspaceID := c.Param("workspaceID")
+		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
 			return c.String(http.StatusForbidden, err.Error())
 		}
 		return next(c)
@@ -471,7 +472,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			members = append(members, member)
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(scimGroup.ExternalID))
+		group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(scimGroup.ExternalID))
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
@@ -481,12 +482,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			if email == "" && strings.Contains(scimGroup.ExternalID, "@") {
 				email = scimGroup.ExternalID
 			}
-			workspace, err := s.store.GetWorkspace(ctx)
-			if err != nil {
-				return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get workspace, error %v", err))
-			}
 			newGroup, err := s.store.CreateGroup(ctx, &store.GroupMessage{
-				Workspace: workspace.ResourceID,
+				Workspace: c.Param("workspaceID"),
 				ID:        scimGroup.ExternalID,
 				Email:     email,
 				Title:     scimGroup.DisplayName,
@@ -502,8 +499,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		}
 
 		patch := &store.UpdateGroupMessage{
-			ID:    group.ID,
-			Title: &scimGroup.DisplayName,
+			ID:        group.ID,
+			Workspace: group.Workspace,
+			Title:     &scimGroup.DisplayName,
 		}
 		email := scimGroup.Email
 		if email != "" {
@@ -584,7 +582,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			groupName = expr.Value
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(groupName))
+		group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
@@ -615,7 +613,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			})
 		}
 
-		if err := s.store.DeleteGroup(ctx, group.ID); err != nil {
+		if err := s.store.DeleteGroup(ctx, group.Workspace, group.ID); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete group, error %v", err))
 		}
 
@@ -697,8 +695,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		}
 
 		updateGroup := &store.UpdateGroupMessage{
-			ID:      group.ID,
-			Payload: group.Payload,
+			ID:        group.ID,
+			Workspace: group.Workspace,
+			Payload:   group.Payload,
 		}
 		if group.Payload.Source != source {
 			updateGroup.Payload.Source = source
@@ -846,15 +845,8 @@ func (s *Service) validRequestURL(ctx context.Context, c *echo.Context) error {
 	}
 
 	workspaceID := c.Param("workspaceID")
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to get workspace")
-	}
-	if workspace.ResourceID != workspaceID {
-		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, workspace.ResourceID)
-	}
 
-	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get workspace profile setting")
 	}
@@ -887,7 +879,7 @@ func (s *Service) getGroup(ctx context.Context, c *echo.Context) (*store.GroupMe
 	if err != nil {
 		return nil, errors.Errorf("failed to parse group %v, error %v", c.Param("groupID"), err)
 	}
-	group, err := utils.GetGroupByName(ctx, s.store, common.FormatGroupEmail(groupName))
+	group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
 	if err != nil {
 		return nil, errors.Errorf("failed to find group, error %v", err)
 	}
@@ -962,8 +954,9 @@ func (s *Service) updateGroupFromSCIM(ctx context.Context, group *store.GroupMes
 	}
 
 	return s.store.UpdateGroup(ctx, &store.UpdateGroupMessage{
-		ID:    group.ID,
-		Title: &scimGroup.DisplayName,
+		ID:        group.ID,
+		Workspace: group.Workspace,
+		Title:     &scimGroup.DisplayName,
 		Payload: &storepb.GroupPayload{
 			Source:  source,
 			Members: members,

@@ -19,6 +19,7 @@ type UpdateDBSchemaMessage struct {
 }
 
 type FindDBSchemaMessage struct {
+	Workspace    string
 	InstanceID   string
 	DatabaseName string
 }
@@ -50,7 +51,7 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 		return nil, err
 	}
 
-	dbMetadata, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, find.InstanceID)
+	dbMetadata, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, find.Workspace, find.InstanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +62,12 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 }
 
 // GetDBSchemaSnapshot gets the schema for a database with cache.
-func (s *Store) GetDBSchemaSnapshot(ctx context.Context, instanceID, databaseName string) (*model.DatabaseMetadata, error) {
+func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, instanceID, databaseName string) (*model.DatabaseMetadata, error) {
 	cacheKey := getDBSchemaCacheKey(instanceID, databaseName)
 	if v, ok := s.dbSchemaCache.Get(cacheKey); ok {
 		return v, nil
 	}
-	return s.GetDBSchema(ctx, &FindDBSchemaMessage{InstanceID: instanceID, DatabaseName: databaseName})
+	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
 // UpsertDBSchema upserts a database schema.
@@ -157,7 +158,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	return nil
 }
 
-func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseMetadata, error) {
+func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, workspaceID string, instanceID string) (*model.DatabaseMetadata, error) {
 	var databaseSchema storepb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig
 	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &databaseSchema); err != nil {
@@ -166,7 +167,7 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, &databaseConfig); err != nil {
 		return nil, err
 	}
-	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.GetInstance(ctx, &FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
 	if err != nil {
 		return nil, err
 	}

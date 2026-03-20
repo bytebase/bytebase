@@ -129,21 +129,22 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 }
 
 func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission permission.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
-	ok, err := iamManager.CheckPermission(ctx, permission, user)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	ok, err := iamManager.CheckPermission(ctx, permission, user, workspaceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
 	}
 	if ok {
 		return nil, nil
 	}
-	projects, err := stores.ListProjects(ctx, &store.FindProjectMessage{})
+	projects, err := stores.ListProjects(ctx, &store.FindProjectMessage{Workspace: workspaceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list projects")
 	}
 
 	var projectIDs []string
 	for _, project := range projects {
-		ok, err := iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
+		ok, err := iamManager.CheckPermission(ctx, permission, user, workspaceID, project.ResourceID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check permission %q", permission)
 		}
@@ -166,6 +167,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -229,7 +231,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project %q, err: %v", projectID, err))
 	}
@@ -242,7 +244,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 	if oldPlan == nil {
 		if req.AllowMissing {
-			ok, err := s.iamManager.CheckPermission(ctx, permission.PlansCreate, user, projectID)
+			ok, err := s.iamManager.CheckPermission(ctx, permission.PlansCreate, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
@@ -270,7 +272,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		if oldPlan.Creator == user.Email {
 			return true, nil
 		}
-		return s.iamManager.CheckPermission(ctx, permission.PlansUpdate, user, oldPlan.ProjectID)
+		return s.iamManager.CheckPermission(ctx, permission.PlansUpdate, user, common.GetWorkspaceIDFromContext(ctx), oldPlan.ProjectID)
 	}()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
@@ -411,6 +413,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -475,6 +478,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -629,6 +633,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	if len(instanceIDs) == 1 {
 		instanceID := instanceIDs[0]
 		instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &instanceID,
 		})
 		if err != nil {

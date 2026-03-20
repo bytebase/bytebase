@@ -24,6 +24,7 @@ export const DEFAULT_MAX_RESULT_SIZE_IN_MB = 100;
 
 export const useSettingV1Store = defineStore("setting_v1", () => {
   const settingMapByName = reactive(new Map<string, Setting>());
+  const actuatorStore = useActuatorV1Store();
 
   const workspaceProfile = computed((): WorkspaceProfileSetting => {
     const setting = settingMapByName.get(
@@ -147,7 +148,7 @@ export const useSettingV1Store = defineStore("setting_v1", () => {
       updateMask: updateMask,
     });
     // Refresh the latest server info.
-    await useActuatorV1Store().fetchServerInfo();
+    await actuatorStore.fetchServerInfo(actuatorStore.workspaceResourceName);
   };
 
   return {

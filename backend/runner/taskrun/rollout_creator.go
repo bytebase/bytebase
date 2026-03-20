@@ -108,7 +108,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		return
 	}
 
-	project, err := rc.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := rc.store.GetProjectByResourceID(ctx, plan.ProjectID)
 	if err != nil {
 		slog.Error("failed to get project for rollout creation",
 			slog.String("project_id", plan.ProjectID),

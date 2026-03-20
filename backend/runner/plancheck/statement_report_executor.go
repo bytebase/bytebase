@@ -71,7 +71,7 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
 	}
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %v", instanceID)
 	}
@@ -136,7 +136,15 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 
 // GetSQLSummaryReport gets the SQL summary report for the given statement and database.
 func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, database *store.DatabaseMessage, statement string) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, error) {
+	instance, err := stores.GetInstanceByResourceID(ctx, database.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
+	}
 	databaseSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 	})
@@ -149,13 +157,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if databaseSchema.GetProto() == nil {
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
-	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
-	}
 
 	stmts, syntaxAdvices := sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
@@ -167,7 +168,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []storepb.StatementType
 	var defaultSchema string
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, err
 	}

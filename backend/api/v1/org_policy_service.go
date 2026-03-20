@@ -109,6 +109,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, req *connect.Reques
 	}
 
 	find := &store.FindPolicyMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		ResourceType: &resourceType,
 		Resource:     resource,
 		ShowAll:      req.Msg.ShowDeleted,
@@ -151,7 +152,7 @@ func (s *OrgPolicyService) CreatePolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("policy must be set"))
 	}
 
-	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(ctx, req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 
@@ -169,7 +170,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("policy must be set"))
 	}
 
-	if err := s.checkPolicyFeatureGuard(req.Msg.Policy.Type); err != nil {
+	if err := s.checkPolicyFeatureGuard(ctx, req.Msg.Policy.Type); err != nil {
 		return nil, err
 	}
 
@@ -210,6 +211,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		ResourceType: policy.ResourceType,
 		Type:         policy.Type,
 		Resource:     policy.Resource,
+		Workspace:    policy.Workspace,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -231,7 +233,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 			}
-			payloadStr, err := s.convertPolicyPayloadToString(req.Msg.Policy)
+			payloadStr, err := s.convertPolicyPayloadToString(ctx, req.Msg.Policy)
 			if err != nil {
 				return nil, err
 			}
@@ -374,6 +376,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	}
 
 	policy, err := s.store.GetPolicy(ctx, &store.FindPolicyMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		ResourceType: &resourceType,
 		Type:         &policyType,
 		Resource:     resource,
@@ -410,17 +413,13 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 	}
 
-	payloadStr, err := s.convertPolicyPayloadToString(policy)
+	payloadStr, err := s.convertPolicyPayloadToString(ctx, policy)
 	if err != nil {
 		return nil, err
 	}
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
 	create := &store.PolicyMessage{
-		Workspace:         workspace.ResourceID,
+		Workspace:         common.GetWorkspaceIDFromContext(ctx),
 		ResourceType:      resourceType,
 		Resource:          parent,
 		Payload:           payloadStr,
@@ -471,7 +470,7 @@ func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connec
 		projectIDs = append(projectIDs, projectID)
 	}
 
-	ok, err := s.iamManager.CheckPermission(ctx, perm, user, projectIDs...)
+	ok, err := s.iamManager.CheckPermission(ctx, perm, user, common.GetWorkspaceIDFromContext(ctx), projectIDs...)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -499,9 +498,9 @@ func validatePolicyType(policyType storepb.Policy_Type, policyResourceType store
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy %v is not allowed in resource %v", policyType, policyResourceType))
 }
 
-func (s *OrgPolicyService) checkPolicyFeatureGuard(policyType v1pb.PolicyType) error {
+func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyType v1pb.PolicyType) error {
 	if policyType == v1pb.PolicyType_DATA_QUERY {
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return connect.NewError(connect.CodePermissionDenied, err)
 		}
 	}
@@ -549,7 +548,7 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 	return nil
 }
 
-func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (string, error) {
+func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, policy *v1pb.Policy) (string, error) {
 	switch policy.Type {
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
@@ -570,11 +569,11 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 	case v1pb.PolicyType_DATA_QUERY:
 		// Check license for both query policy and restrict copying data features
 		if policy.GetQueryDataPolicy() != nil && policy.GetQueryDataPolicy().DisableCopyData {
-			if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
+			if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
 				return "", connect.NewError(connect.CodePermissionDenied, err)
 			}
 		}
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
 		payload := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
@@ -584,7 +583,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_RULE:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
 		payload := convertToStorePBMskingRulePolicy(policy.GetMaskingRulePolicy())
@@ -594,7 +593,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_EXEMPTION:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
 		payload, err := convertToStorePBMaskingExemptionPolicyPayload(policy.GetMaskingExemptionPolicy())

@@ -37,6 +37,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -69,6 +70,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -115,6 +117,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {

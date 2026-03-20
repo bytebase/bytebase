@@ -32,7 +32,8 @@ func NewAuditLogService(store *store.Store, licenseService *enterprise.LicenseSe
 }
 
 func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.Request[v1pb.SearchAuditLogsRequest]) (*connect.Response[v1pb.SearchAuditLogsResponse], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	filterQ, err := store.GetSearchAuditLogsFilter(request.Msg.Filter)
@@ -41,7 +42,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	}
 
 	// Apply retention-based filtering based on the plan
-	retentionCutoff := s.licenseService.GetAuditLogRetentionCutoff()
+	retentionCutoff := s.licenseService.GetAuditLogRetentionCutoff(ctx, workspaceID)
 	if retentionCutoff != nil {
 		filterQ = store.ApplyRetentionFilter(filterQ, retentionCutoff)
 	}
@@ -66,6 +67,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 		project = &request.Msg.Parent
 	}
 	auditLogFind := &store.AuditLogFind{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		Project:     project,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -93,7 +95,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 }
 
 func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.Request[v1pb.ExportAuditLogsRequest]) (*connect.Response[v1pb.ExportAuditLogsResponse], error) {
-	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 	if request.Msg.Filter == "" {

@@ -21,7 +21,7 @@ type ExportArchiveMessage struct {
 }
 
 // GetExportArchive gets a export archive.
-func (s *Store) GetExportArchive(ctx context.Context, resourceID string) (*ExportArchiveMessage, error) {
+func (s *Store) GetExportArchive(ctx context.Context, workspaceID string, resourceID string) (*ExportArchiveMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			resource_id,
@@ -31,7 +31,7 @@ func (s *Store) GetExportArchive(ctx context.Context, resourceID string) (*Expor
 			payload
 		FROM export_archive
 		WHERE resource_id = ?
-	`, resourceID)
+	`, resourceID).And("workspace = ?", workspaceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -93,10 +93,10 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 
 // DeleteExpiredExportArchives deletes export archives older than the specified retention period.
 // Returns the number of archives deleted.
-func (s *Store) DeleteExpiredExportArchives(ctx context.Context, retentionPeriod time.Duration) (int64, error) {
+func (s *Store) DeleteExpiredExportArchives(ctx context.Context, workspaceID string, retentionPeriod time.Duration) (int64, error) {
 	cutoffTime := time.Now().Add(-retentionPeriod)
 
-	q := qb.Q().Space("DELETE FROM export_archive WHERE created_at < ?", cutoffTime)
+	q := qb.Q().Space("DELETE FROM export_archive WHERE workspace = ?", workspaceID).And("created_at < ?", cutoffTime)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to build sql")

@@ -135,19 +135,15 @@ const hasPermission = computed(() =>
   hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile")
 );
 
-const workspaceId = computed(() => {
-  return actuatorStore.serverInfo?.workspaceId ?? "";
-});
-
 const externalUrl = computed(() => {
   return actuatorStore.serverInfo?.externalUrl;
 });
 
 const scimUrl = computed(() => {
-  if (!workspaceId.value || !externalUrl.value) {
+  if (!actuatorStore.workspaceResourceName || !externalUrl.value) {
     return "";
   }
-  return `${externalUrl.value}/hook/scim/workspaces/${workspaceId.value}`;
+  return `${externalUrl.value}/hook/scim/${actuatorStore.workspaceResourceName}`;
 });
 
 const scimToken = computed(() => {

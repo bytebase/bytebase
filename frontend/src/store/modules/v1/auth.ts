@@ -4,7 +4,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { uniqueId } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { authServiceClientConnect, userServiceClientConnect } from "@/connect";
+import { authServiceClientConnect } from "@/connect";
 import { ignoredCodesContextKey } from "@/connect/context-key";
 import { router } from "@/router";
 import {
@@ -19,13 +19,10 @@ import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import {
   type LoginRequest,
   LoginRequestSchema,
+  SignupRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import {
-  CreateUserRequestSchema,
-  UserSchema,
-} from "@/types/proto-es/v1/user_service_pb";
 import { storageKeyResetPassword } from "@/utils";
 import { extractUserEmail } from "./common";
 
@@ -119,17 +116,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     setRequireResetPassword(resp.requireResetPassword);
-    const needAdminSetup = actuatorStore.needAdminSetup;
-    await actuatorStore.fetchServerInfo();
+    await actuatorStore.fetchServerInfo(user?.workspace);
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
-    if (needAdminSetup) {
-      actuatorStore.onboardingState.isOnboarding = true;
-      return router.replace({
-        name: SETUP_MODULE,
-      });
-    }
+
     const mode = useAppFeature("bb.feature.database-change-mode");
     if (mode.value === DatabaseChangeMode.EDITOR) {
       const route = router.resolve({
@@ -151,23 +142,36 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const signup = async (request: Partial<User>) => {
-    const user = create(UserSchema, {
-      email: request.email,
-      title: request.name,
-      password: request.password,
-    });
-    const createRequest = create(CreateUserRequestSchema, {
-      user: user,
-    });
-    await userServiceClientConnect.createUser(createRequest);
-    await login({
-      request: create(LoginRequestSchema, {
+    await authServiceClientConnect.signup(
+      create(SignupRequestSchema, {
         email: request.email,
+        title: request.name,
         password: request.password,
-        web: true,
-      }),
-      redirect: true,
-    });
+      })
+    );
+
+    // Signup sets HTTP-only cookies automatically.
+    // Fetch the current user and proceed with post-login flow.
+    const user = await fetchCurrentUser();
+    unauthenticatedOccurred.value = !user;
+    if (unauthenticatedOccurred.value) {
+      return;
+    }
+
+    await actuatorStore.fetchServerInfo(user?.workspace);
+    authSessionKey.value = uniqueId();
+
+    if (actuatorStore.needAdminSetup) {
+      actuatorStore.onboardingState.isOnboarding = true;
+      return router.replace({ name: SETUP_MODULE });
+    }
+
+    const mode = useAppFeature("bb.feature.database-change-mode");
+    let nextPage = getRedirectQuery() || "/";
+    if (mode.value === DatabaseChangeMode.EDITOR) {
+      nextPage = router.resolve({ name: SQL_EDITOR_HOME_MODULE }).fullPath;
+    }
+    router.replace(nextPage);
   };
 
   const cleanupUserStorage = (email: string) => {

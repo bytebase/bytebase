@@ -52,6 +52,7 @@ func (s *WorksheetService) CreateWorksheet(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -412,7 +413,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	if worksheet.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -449,7 +450,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	if worksheet.Creator == user.Email {
 		return true, nil
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user)
+	ok, err := s.iamManager.CheckPermission(ctx, permission.WorksheetsManage, user, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
@@ -474,13 +475,15 @@ func (s *WorksheetService) checkWorksheetPermission(
 	user *store.UserMessage,
 	permission permission.Permission,
 ) (bool, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
 		ResourceID: &projectID,
 	})
 	if err != nil {
 		return false, err
 	}
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
+	ok, err := s.iamManager.CheckPermission(ctx, permission, user, workspaceID, project.ResourceID)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}

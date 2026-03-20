@@ -29,7 +29,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -42,8 +42,8 @@ interface ProjectSidebarItem extends SidebarItem {
 export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const route = useRoute();
 
-  const isDefaultProject = computed((): boolean => {
-    return unref(project).name === DEFAULT_PROJECT_NAME;
+  const isDefault = computed((): boolean => {
+    return isDefaultProject(unref(project).name);
   });
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
@@ -53,7 +53,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         icon: () => h(Workflow),
         type: "div",
         expand: true,
-        hide: isDefaultProject.value,
+        hide: isDefault.value,
         children: [
           {
             title: t("plan.plans"),
@@ -111,7 +111,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         path: PROJECT_V1_ROUTE_ISSUES,
         icon: () => h(CircleDot),
         type: "div",
-        hide: isDefaultProject.value,
+        hide: isDefault.value,
       },
       ...cicdRoutes,
       ...databaseRoutes,
@@ -119,7 +119,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         title: t("settings.sidebar.data-access"),
         icon: () => h(ShieldCheck),
         type: "div",
-        hide: isDefaultProject.value,
+        hide: isDefault.value,
         expand: true,
         children: [
           {
@@ -143,7 +143,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         title: t("common.manage"),
         icon: () => h(Users),
         type: "div",
-        hide: isDefaultProject.value,
+        hide: isDefault.value,
         expand: true,
         children: [
           {
@@ -178,7 +178,7 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
         icon: () => h(Settings),
         path: PROJECT_V1_ROUTE_SETTINGS,
         type: "div",
-        hide: isDefaultProject.value,
+        hide: isDefault.value,
       },
     ];
 

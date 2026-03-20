@@ -71,6 +71,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindInstanceMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		ShowDeleted: req.Msg.ShowDeleted,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
@@ -193,9 +194,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(result), nil
 	}
 
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
 	if instanceMessage.Metadata.GetActivation() {
-		count, err := s.store.GetActivatedInstanceCount(ctx)
+		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -204,16 +206,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	if err := s.checkInstanceDataSources(instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
+	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
 
-	workspace, err := s.store.GetWorkspace(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
-	}
-	instanceMessage.Workspace = workspace.ResourceID
-
+	instanceMessage.Workspace = workspaceID
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -238,10 +235,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(result), nil
 }
 
-func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
+func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
 	dsIDMap := map[string]bool{}
 	for _, ds := range dataSources {
-		if err := s.checkDataSource(instance, ds); err != nil {
+		if err := s.checkDataSource(ctx, instance, ds); err != nil {
 			return err
 		}
 		if dsIDMap[ds.GetId()] {
@@ -255,7 +252,7 @@ func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessa
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
 
-func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
+func (s *InstanceService) checkDataSource(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("data source id is required"))
 	}
@@ -265,7 +262,7 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 		return err
 	}
 
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER, instance); err != nil {
 		missingFeatureError := connect.NewError(connect.CodePermissionDenied, err)
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
@@ -340,6 +337,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	metadata := proto.CloneOf(instance.Metadata)
 	patch := &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Metadata:   metadata,
 	}
 	updateActivation := false
@@ -358,7 +356,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, err)
 				}
-				environment, err := s.store.GetEnvironmentByID(ctx, envID)
+				environment, err := s.store.GetEnvironmentByID(ctx, common.GetWorkspaceIDFromContext(ctx), envID)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, err)
 				}
@@ -374,7 +372,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			if err := s.checkInstanceDataSources(instance, dataSources); err != nil {
+			if err := s.checkInstanceDataSources(ctx, instance, dataSources); err != nil {
 				return nil, err
 			}
 			patch.Metadata.DataSources = dataSources
@@ -403,14 +401,15 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if updateSyncInterval {
 		patchedInstance := *instance
 		patchedInstance.Metadata = patch.Metadata
-		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, &patchedInstance); err != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_SYNC_TIME, &patchedInstance); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 	}
 
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
 	if updateActivation {
-		count, err := s.store.GetActivatedInstanceCount(ctx)
+		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -442,7 +441,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		}
 
 		// Permanently delete the instance and all related resources
-		if err := s.store.DeleteInstance(ctx, instance.ResourceID); err != nil {
+		if err := s.store.DeleteInstance(ctx, instance.Workspace, instance.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge instance"))
 		}
 
@@ -461,7 +460,10 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 	if req.Msg.Force {
 		if len(databases) > 0 {
-			defaultProjectID := common.DefaultProjectID
+			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
+			}
 			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
@@ -469,7 +471,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	} else {
 		var databaseNames []string
 		for _, database := range databases {
-			if database.ProjectID != common.DefaultProjectID {
+			if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
 				databaseNames = append(databaseNames, database.DatabaseName)
 			}
 		}
@@ -482,6 +484,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	metadata.Activation = false
 	if _, err := s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Deleted:    &deletePatch,
 		Metadata:   metadata,
 	}); err != nil {
@@ -489,8 +492,10 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	// Handle sample instance deletion if applicable
-	if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, instance.ResourceID); err != nil {
-		slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
+	if s.sampleInstanceManager != nil {
+		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
+			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
+		}
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -513,6 +518,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 
 	ins, err := s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
@@ -520,8 +526,10 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	// Handle sample instance undelete (restart) if applicable
-	if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
-		slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
+	if s.sampleInstanceManager != nil {
+		if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+			slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
+		}
 	}
 
 	result := convertToV1Instance(ins)
@@ -622,7 +630,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeNotFound, errors.New("data source already exists with the same name"))
 		}
 	}
-	if err := s.checkDataSource(instance, dataSource); err != nil {
+	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
 
@@ -654,7 +662,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
 	}
-	if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+	if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
@@ -662,6 +670,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Metadata:   metadata,
 	})
 	if err != nil {
@@ -707,7 +716,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 
 	if dataSource.GetType() == storepb.DataSourceType_READ_ONLY {
-		if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+		if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
 		}
 	}
@@ -836,7 +845,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	clearDataSourceAuthentication(dataSource)
 
-	if err := s.checkDataSource(instance, dataSource); err != nil {
+	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
 
@@ -865,6 +874,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Metadata:   metadata,
 	})
 	if err != nil {
@@ -910,6 +920,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 	metadata.DataSources = updatedDataSources
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
+		Workspace:  instance.Workspace,
 		Metadata:   metadata,
 	})
 	if err != nil {
@@ -927,6 +938,7 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 
 	find := &store.FindInstanceMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &instanceID,
 	}
 	instance, err := stores.GetInstance(ctx, find)
@@ -963,9 +975,10 @@ func buildEnvironmentName(environmentID *string) *string {
 }
 
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
-	instanceLimit := s.licenseService.GetInstanceLimit(ctx)
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instanceLimit := s.licenseService.GetInstanceLimit(ctx, workspaceID)
 
-	count, err := s.store.CountActiveInstances(ctx)
+	count, err := s.store.CountActiveInstances(ctx, workspaceID)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
