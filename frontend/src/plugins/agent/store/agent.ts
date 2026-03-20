@@ -2,7 +2,9 @@ import { defineStore } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import type {
+  AgentAskUserResponse,
   AgentMessage,
+  AgentPendingAsk,
   AgentThread,
   AgentThreadSnapshot,
   AgentThreadStatus,
@@ -18,6 +20,7 @@ interface PersistedAgentState {
   currentThreadId: string | null;
   threads: AgentThread[];
   messagesByThreadId: Record<string, AgentMessage[]>;
+  pendingAskByThreadId: Record<string, AgentPendingAsk>;
 }
 
 interface CreateThreadOptions {
@@ -89,6 +92,34 @@ const normalizeMessage = (
   };
 };
 
+const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
+  const pendingAsk = isRecord(raw) ? raw : {};
+  if (
+    typeof pendingAsk.toolCallId !== "string" ||
+    typeof pendingAsk.prompt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    toolCallId: pendingAsk.toolCallId,
+    prompt: pendingAsk.prompt,
+    kind: pendingAsk.kind === "confirm" ? "confirm" : "input",
+    defaultValue:
+      typeof pendingAsk.defaultValue === "string"
+        ? pendingAsk.defaultValue
+        : undefined,
+    confirmLabel:
+      typeof pendingAsk.confirmLabel === "string"
+        ? pendingAsk.confirmLabel
+        : undefined,
+    cancelLabel:
+      typeof pendingAsk.cancelLabel === "string"
+        ? pendingAsk.cancelLabel
+        : undefined,
+  };
+};
+
 const normalizeThread = (raw: unknown): AgentThread => {
   const thread = isRecord(raw) ? raw : {};
   const now = Date.now();
@@ -148,6 +179,7 @@ const migrateLegacyState = (legacyMessages: unknown[]): PersistedAgentState => {
     messagesByThreadId: {
       [thread.id]: messages,
     },
+    pendingAskByThreadId: {},
   };
 };
 
@@ -157,6 +189,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       currentThreadId: null,
       threads: [],
       messagesByThreadId: {},
+      pendingAskByThreadId: {},
     };
   }
 
@@ -164,12 +197,18 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
   const rawMessagesByThreadId = isRecord(raw.messagesByThreadId)
     ? raw.messagesByThreadId
     : {};
+  const rawPendingAskByThreadId = isRecord(raw.pendingAskByThreadId)
+    ? raw.pendingAskByThreadId
+    : {};
 
   const threads = rawThreads.map((thread) => normalizeThread(thread));
   const messagesByThreadId: Record<string, AgentMessage[]> = {};
+  const pendingAskByThreadId: Record<string, AgentPendingAsk> = {};
 
   for (const thread of threads) {
-    const rawMessages: unknown[] = Array.isArray(rawMessagesByThreadId[thread.id])
+    const rawMessages: unknown[] = Array.isArray(
+      rawMessagesByThreadId[thread.id]
+    )
       ? (rawMessagesByThreadId[thread.id] as unknown[])
       : [];
     const messages = sortMessages(
@@ -195,6 +234,15 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       thread.lastError = null;
     }
 
+    const pendingAsk = normalizePendingAsk(rawPendingAskByThreadId[thread.id]);
+    if (thread.status === "awaiting_user") {
+      if (pendingAsk) {
+        pendingAskByThreadId[thread.id] = pendingAsk;
+      } else {
+        thread.status = DEFAULT_THREAD_STATUS;
+      }
+    }
+
     messagesByThreadId[thread.id] = messages;
   }
 
@@ -208,6 +256,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     currentThreadId,
     threads,
     messagesByThreadId,
+    pendingAskByThreadId,
   };
 };
 
@@ -222,6 +271,7 @@ export const useAgentStore = defineStore("agent", () => {
 
   const threads = ref<AgentThread[]>([]);
   const messagesByThreadId = ref<Record<string, AgentMessage[]>>({});
+  const pendingAskByThreadId = ref<Record<string, AgentPendingAsk>>({});
   const currentThreadId = ref<string | null>(null);
   const abortController = ref<AbortController | null>(null);
 
@@ -238,6 +288,12 @@ export const useAgentStore = defineStore("agent", () => {
       (currentThreadId.value
         ? messagesByThreadId.value[currentThreadId.value]
         : undefined) ?? []
+  );
+  const currentPendingAsk = computed(
+    () =>
+      (currentThreadId.value
+        ? pendingAskByThreadId.value[currentThreadId.value]
+        : undefined) ?? null
   );
   const runningThread = computed(
     () => threads.value.find((thread) => thread.status === "running") ?? null
@@ -261,6 +317,13 @@ export const useAgentStore = defineStore("agent", () => {
     return messagesByThreadId.value[threadId] ?? [];
   };
 
+  const getPendingAsk = (threadId = currentThreadId.value) => {
+    if (!threadId) {
+      return null;
+    }
+    return pendingAskByThreadId.value[threadId] ?? null;
+  };
+
   const touchThread = (threadId: string) => {
     const thread = getThread(threadId);
     if (!thread) {
@@ -268,6 +331,20 @@ export const useAgentStore = defineStore("agent", () => {
     }
     thread.updatedTs = Date.now();
     return thread;
+  };
+
+  const clearPendingAsk = (threadId = currentThreadId.value) => {
+    if (!threadId || !pendingAskByThreadId.value[threadId]) {
+      return;
+    }
+    delete pendingAskByThreadId.value[threadId];
+    touchThread(threadId);
+  };
+
+  const setPendingAsk = (threadId: string, pendingAsk: AgentPendingAsk) => {
+    pendingAskByThreadId.value[threadId] = pendingAsk;
+    touchThread(threadId);
+    return pendingAsk;
   };
 
   const setThreadStatus = (
@@ -288,6 +365,9 @@ export const useAgentStore = defineStore("agent", () => {
     thread.lastError = options.lastError ?? null;
     if (options.page) {
       thread.page = options.page;
+    }
+    if (status !== "awaiting_user") {
+      delete pendingAskByThreadId.value[threadId];
     }
     touchThread(threadId);
     return thread;
@@ -370,12 +450,38 @@ export const useAgentStore = defineStore("agent", () => {
     return message;
   };
 
+  const awaitUser = (threadId: string, pendingAsk: AgentPendingAsk) => {
+    setThreadStatus(threadId, "awaiting_user");
+    return setPendingAsk(threadId, pendingAsk);
+  };
+
+  const answerPendingAsk = (
+    threadId: string,
+    response: AgentAskUserResponse,
+    metadata?: AgentMessage["metadata"]
+  ) => {
+    const pendingAsk = getPendingAsk(threadId);
+    if (!pendingAsk) {
+      return null;
+    }
+    const toolMessage = addMessage({
+      threadId,
+      role: "tool",
+      toolCallId: pendingAsk.toolCallId,
+      content: JSON.stringify(response),
+      metadata,
+    });
+    clearPendingAsk(threadId);
+    return toolMessage;
+  };
+
   const clearMessages = (threadId = currentThreadId.value) => {
     const thread = getThread(threadId);
     if (!thread) {
       return;
     }
     messagesByThreadId.value[thread.id] = [];
+    delete pendingAskByThreadId.value[thread.id];
     thread.title = "";
     thread.status = DEFAULT_THREAD_STATUS;
     thread.lastError = null;
@@ -440,6 +546,7 @@ export const useAgentStore = defineStore("agent", () => {
       currentThreadId: currentThreadId.value,
       threads: threads.value,
       messagesByThreadId: messagesByThreadId.value,
+      pendingAskByThreadId: pendingAskByThreadId.value,
     };
     localStorage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
   };
@@ -451,6 +558,7 @@ export const useAgentStore = defineStore("agent", () => {
         const state = normalizePersistedState(JSON.parse(saved));
         threads.value = state.threads;
         messagesByThreadId.value = state.messagesByThreadId;
+        pendingAskByThreadId.value = state.pendingAskByThreadId;
         currentThreadId.value = state.currentThreadId;
       } catch {
         localStorage.removeItem(AGENT_STATE_KEY);
@@ -464,6 +572,7 @@ export const useAgentStore = defineStore("agent", () => {
             const state = migrateLegacyState(parsed);
             threads.value = state.threads;
             messagesByThreadId.value = state.messagesByThreadId;
+            pendingAskByThreadId.value = state.pendingAskByThreadId;
             currentThreadId.value = state.currentThreadId;
           }
         } catch {
@@ -506,9 +615,13 @@ export const useAgentStore = defineStore("agent", () => {
     }
   };
 
-  watch([threads, messagesByThreadId, currentThreadId], saveState, {
-    deep: true,
-  });
+  watch(
+    [threads, messagesByThreadId, pendingAskByThreadId, currentThreadId],
+    saveState,
+    {
+      deep: true,
+    }
+  );
 
   loadState();
 
@@ -522,6 +635,7 @@ export const useAgentStore = defineStore("agent", () => {
     currentThreadId,
     currentThread,
     messages,
+    currentPendingAsk,
     loading,
     error,
     hasRunningThread,
@@ -541,13 +655,18 @@ export const useAgentStore = defineStore("agent", () => {
     },
     getThread,
     getMessages,
+    getPendingAsk,
     createThread,
     ensureCurrentThread,
     setCurrentThread,
     updateThreadPage,
+    setPendingAsk,
+    clearPendingAsk,
     setThreadStatus,
     startRun,
     finishRun,
+    awaitUser,
+    answerPendingAsk,
     touchThread,
     addMessage,
     appendToolCall,

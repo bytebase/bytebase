@@ -2990,6 +2990,20 @@
     "args": "参数：",
     "result": "结果：",
     "stop": "停止",
-    "interrupted": "已中断"
+    "interrupted": "已中断",
+    "reply": "回复",
+    "confirm": "确认",
+    "cancel": "取消",
+    "pending-input-hint": "请在下方回复以继续当前线程。",
+    "pending-confirm-hint": "请选择确认或取消以继续当前线程。",
+    "tool-ask-user": "等待你的回复",
+    "tool-ask-user-input": "需要输入",
+    "tool-ask-user-confirm": "需要确认",
+    "tool-response-submitted": "已提交回复",
+    "tool-prompt": "提示：",
+    "tool-default-value": "默认值：",
+    "tool-answer": "回答：",
+    "tool-completed": "已完成",
+    "tool-failed": "已完成，但存在问题"
   }
 }

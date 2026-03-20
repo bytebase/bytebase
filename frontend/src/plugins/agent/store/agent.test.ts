@@ -102,6 +102,7 @@ describe("useAgentStore", () => {
             },
           ],
         },
+        pendingAskByThreadId: {},
       })
     );
 
@@ -136,5 +137,60 @@ describe("useAgentStore", () => {
 
     expect(rehydratedStore.getMessages(secondThread.id)).toEqual([]);
     expect(rehydratedStore.getThread(secondThread.id)?.status).toBe("idle");
+  });
+
+  test("persists pending ask state for awaiting-user threads", async () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.awaitUser(threadId, {
+      toolCallId: "tool-1",
+      prompt: "Which database should I use?",
+      kind: "input",
+      defaultValue: "prod-db",
+    });
+
+    await nextTick();
+
+    const rehydratedStore = createStore();
+    expect(rehydratedStore.getThread(threadId)?.status).toBe("awaiting_user");
+    expect(rehydratedStore.getPendingAsk(threadId)).toEqual({
+      toolCallId: "tool-1",
+      prompt: "Which database should I use?",
+      kind: "input",
+      defaultValue: "prod-db",
+      confirmLabel: undefined,
+      cancelLabel: undefined,
+    });
+  });
+
+  test("answerPendingAsk appends a synthetic tool result and clears pending state", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.awaitUser(threadId, {
+      toolCallId: "tool-1",
+      prompt: "Proceed?",
+      kind: "confirm",
+      confirmLabel: "Proceed",
+      cancelLabel: "Cancel",
+    });
+
+    store.answerPendingAsk(threadId, {
+      kind: "confirm",
+      answer: "Proceed",
+      confirmed: true,
+    });
+
+    const messages = store.getMessages(threadId);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe("tool");
+    expect(messages[0].toolCallId).toBe("tool-1");
+    expect(JSON.parse(messages[0].content ?? "{}")).toEqual({
+      kind: "confirm",
+      answer: "Proceed",
+      confirmed: true,
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
   });
 });

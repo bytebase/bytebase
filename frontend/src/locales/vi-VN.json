@@ -2499,7 +2499,21 @@
     "args": "Args:",
     "result": "Result:",
     "stop": "Stop",
-    "interrupted": "Interrupted"
+    "interrupted": "Interrupted",
+    "reply": "Reply",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "pending-input-hint": "Reply below to continue this thread.",
+    "pending-confirm-hint": "Choose confirm or cancel to continue this thread.",
+    "tool-ask-user": "Awaiting your response",
+    "tool-ask-user-input": "Input requested",
+    "tool-ask-user-confirm": "Confirmation requested",
+    "tool-response-submitted": "Response submitted",
+    "tool-prompt": "Prompt:",
+    "tool-default-value": "Default:",
+    "tool-answer": "Answer:",
+    "tool-completed": "Completed",
+    "tool-failed": "Completed with issues"
   },
   "audit-log": {
     "export-finished": "Xuất hoàn tất",

@@ -51,7 +51,59 @@ export interface AgentThread {
   interrupted?: boolean;
 }
 
+export type AgentAskUserKind = "input" | "confirm";
+
+export interface AgentPendingAsk {
+  toolCallId: string;
+  prompt: string;
+  kind: AgentAskUserKind;
+  defaultValue?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+export interface AgentAskUserResponse {
+  kind: AgentAskUserKind;
+  answer: string;
+  confirmed?: boolean;
+}
+
+export type ToolExecutionResult =
+  | {
+      kind: "tool_result";
+      result: string;
+    }
+  | {
+      kind: "done";
+      text: string;
+      success: boolean;
+    }
+  | {
+      kind: "ask_user";
+      ask: AgentPendingAsk;
+    };
+
+export type AgentLoopOutcome =
+  | {
+      kind: "completed";
+      text: string;
+      success: boolean;
+      explicit: boolean;
+    }
+  | {
+      kind: "awaiting_user";
+      ask: AgentPendingAsk;
+    }
+  | {
+      kind: "aborted";
+    }
+  | {
+      kind: "error";
+      error: Error;
+    };
+
 export type ToolExecutor = (
   name: string,
-  args: Record<string, unknown>
-) => Promise<string>;
+  args: Record<string, unknown>,
+  toolCallId: string
+) => Promise<ToolExecutionResult>;

@@ -11,7 +11,13 @@ import {
   AIChatMessageSchema,
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
-import type { Message, ToolCall, ToolDefinition, ToolExecutor } from "./types";
+import type {
+  AgentLoopOutcome,
+  Message,
+  ToolCall,
+  ToolDefinition,
+  ToolExecutor,
+} from "./types";
 
 const MAX_ITERATIONS = 50;
 const MAX_RETRIES = 2;
@@ -85,7 +91,9 @@ function toolDefToProto(tool: ToolDefinition): AIChatToolDefinition {
 }
 
 export interface AgentCallbacks {
-  onToolCall?: (toolCall: ToolCall) => void;
+  onAssistantMessage?: (
+    message: Pick<Message, "content" | "toolCalls">
+  ) => void;
   onToolResult?: (toolCallId: string, result: string) => void;
   onText?: (text: string) => void;
   onError?: (error: Error) => void;
@@ -97,75 +105,111 @@ export async function runAgentLoop(
   executeTool: ToolExecutor,
   callbacks?: AgentCallbacks,
   signal?: AbortSignal
-): Promise<string> {
+): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
 
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    if (signal?.aborted) {
-      throw new DOMException("Agent loop aborted", "AbortError");
-    }
-
-    const protoMessages = conversation.map(messageToProto);
-
-    const response = await callWithRetry(
-      () =>
-        aiServiceClientConnect.chat(
-          { messages: protoMessages, toolDefinitions: protoTools },
-          {
-            signal,
-            contextValues: createContextValues().set(silentContextKey, true),
-          }
-        ),
-      signal
-    );
-
-    if (response.toolCalls.length > 0) {
-      const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
-        id: tc.id,
-        name: tc.name,
-        arguments: tc.arguments,
-        metadata: tc.metadata,
-      }));
-
-      // Append assistant message with tool calls
-      conversation.push({
-        role: "assistant",
-        content: response.content,
-        toolCalls,
-      });
-
-      // Execute each tool call and append results
-      for (const tc of toolCalls) {
-        callbacks?.onToolCall?.(tc);
-
-        let result: string;
-        try {
-          const args = JSON.parse(tc.arguments) as Record<string, unknown>;
-          result = await executeTool(tc.name, args);
-        } catch (err) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          callbacks?.onError?.(error);
-          result = `Error: ${error.message}`;
-        }
-
-        callbacks?.onToolResult?.(tc.id, result);
-
-        conversation.push({
-          role: "tool",
-          content: result,
-          toolCallId: tc.id,
-        });
+  try {
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      if (signal?.aborted) {
+        return { kind: "aborted" };
       }
 
-      continue;
+      const protoMessages = conversation.map(messageToProto);
+
+      const response = await callWithRetry(
+        () =>
+          aiServiceClientConnect.chat(
+            { messages: protoMessages, toolDefinitions: protoTools },
+            {
+              signal,
+              contextValues: createContextValues().set(silentContextKey, true),
+            }
+          ),
+        signal
+      );
+
+      if (response.toolCalls.length > 0) {
+        const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments,
+          metadata: tc.metadata,
+        }));
+
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: response.content,
+          toolCalls,
+        };
+        conversation.push(assistantMessage);
+        callbacks?.onAssistantMessage?.(assistantMessage);
+
+        for (const tc of toolCalls) {
+          let executionResult;
+          try {
+            const args = JSON.parse(tc.arguments) as Record<string, unknown>;
+            executionResult = await executeTool(tc.name, args, tc.id);
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            callbacks?.onError?.(error);
+            executionResult = {
+              kind: "tool_result" as const,
+              result: `Error: ${error.message}`,
+            };
+          }
+
+          if (executionResult.kind === "tool_result") {
+            callbacks?.onToolResult?.(tc.id, executionResult.result);
+            conversation.push({
+              role: "tool",
+              content: executionResult.result,
+              toolCallId: tc.id,
+            });
+            continue;
+          }
+
+          if (executionResult.kind === "ask_user") {
+            return {
+              kind: "awaiting_user",
+              ask: executionResult.ask,
+            };
+          }
+
+          callbacks?.onText?.(executionResult.text);
+          return {
+            kind: "completed",
+            text: executionResult.text,
+            success: executionResult.success,
+            explicit: true,
+          };
+        }
+
+        continue;
+      }
+
+      const text = response.content ?? "";
+      callbacks?.onText?.(text);
+      return {
+        kind: "completed",
+        text,
+        success: true,
+        explicit: false,
+      };
     }
 
-    // Text-only response — return final answer
-    const text = response.content ?? "";
-    callbacks?.onText?.(text);
-    return text;
+    return {
+      kind: "error",
+      error: new Error("Agent loop exceeded maximum iterations"),
+    };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    if (error.name === "AbortError") {
+      return { kind: "aborted" };
+    }
+    return {
+      kind: "error",
+      error,
+    };
   }
-
-  throw new Error("Agent loop exceeded maximum iterations");
 }

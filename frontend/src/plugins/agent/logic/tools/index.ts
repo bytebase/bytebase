@@ -1,11 +1,67 @@
 import type { Router } from "vue-router";
-import type { ToolDefinition, ToolExecutor } from "../types";
 import { getSkill, type GetSkillArgs } from "../skills";
+import type {
+  AgentAskUserKind,
+  AgentPendingAsk,
+  ToolDefinition,
+  ToolExecutionResult,
+  ToolExecutor,
+} from "../types";
 import { callApi, type CallApiArgs } from "./callApi";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
 import { searchApi, type SearchApiArgs } from "./searchApi";
+
+const toToolResult = (result: string): ToolExecutionResult => ({
+  kind: "tool_result",
+  result,
+});
+
+const parseAskUserKind = (value: unknown): AgentAskUserKind => {
+  return value === "confirm" ? "confirm" : "input";
+};
+
+const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
+  if (typeof args.text !== "string" || !args.text.trim()) {
+    throw new Error("done requires a non-empty text string");
+  }
+  return {
+    kind: "done",
+    text: args.text,
+    success: args.success !== false,
+  };
+};
+
+const parseAskUserArgs = (
+  args: Record<string, unknown>,
+  toolCallId: string
+): ToolExecutionResult => {
+  if (typeof args.prompt !== "string" || !args.prompt.trim()) {
+    throw new Error("ask_user requires a non-empty prompt string");
+  }
+
+  const ask: AgentPendingAsk = {
+    toolCallId,
+    prompt: args.prompt,
+    kind: parseAskUserKind(args.kind),
+  };
+
+  if (typeof args.defaultValue === "string") {
+    ask.defaultValue = args.defaultValue;
+  }
+  if (typeof args.confirmLabel === "string") {
+    ask.confirmLabel = args.confirmLabel;
+  }
+  if (typeof args.cancelLabel === "string") {
+    ask.cancelLabel = args.cancelLabel;
+  }
+
+  return {
+    kind: "ask_user",
+    ask,
+  };
+};
 
 export function getToolDefinitions(): ToolDefinition[] {
   return [
@@ -176,6 +232,59 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
         },
       },
     },
+    {
+      name: "ask_user",
+      description:
+        "Ask the user for missing information or confirmation. Use kind='input' for free-form text and kind='confirm' for confirm/cancel decisions.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "The question to show to the user.",
+          },
+          kind: {
+            type: "string",
+            enum: ["input", "confirm"],
+            description: 'Defaults to "input" when omitted.',
+          },
+          defaultValue: {
+            type: "string",
+            description:
+              "Optional default answer to prefill for input prompts.",
+          },
+          confirmLabel: {
+            type: "string",
+            description: "Optional confirm button label for confirm prompts.",
+          },
+          cancelLabel: {
+            type: "string",
+            description: "Optional cancel button label for confirm prompts.",
+          },
+        },
+        required: ["prompt"],
+      },
+    },
+    {
+      name: "done",
+      description:
+        "Complete the current task explicitly. Provide the final user-visible text and whether the task succeeded.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "Final assistant response shown to the user.",
+          },
+          success: {
+            type: "boolean",
+            description:
+              "Set to false when the task could not be completed successfully.",
+          },
+        },
+        required: ["text"],
+      },
+    },
   ];
 }
 
@@ -186,23 +295,32 @@ export function createToolExecutor(router: Router): ToolExecutor {
 
   return async (
     name: string,
-    args: Record<string, unknown>
-  ): Promise<string> => {
+    args: Record<string, unknown>,
+    toolCallId: string
+  ): Promise<ToolExecutionResult> => {
     switch (name) {
       case "search_api":
-        return searchApi(args as SearchApiArgs);
+        return toToolResult(await searchApi(args as SearchApiArgs));
       case "call_api":
-        return callApi(args as unknown as CallApiArgs);
+        return toToolResult(await callApi(args as unknown as CallApiArgs));
       case "navigate":
-        return navigateTool(args as { path?: string; list?: boolean });
+        return toToolResult(
+          await navigateTool(args as { path?: string; list?: boolean })
+        );
       case "get_page_state":
-        return pageStateTool(args as PageStateArgs);
+        return toToolResult(await pageStateTool(args as PageStateArgs));
       case "dom_action":
-        return domActionTool(args as unknown as DomActionArgs);
+        return toToolResult(
+          await domActionTool(args as unknown as DomActionArgs)
+        );
       case "get_skill":
-        return getSkill(args as GetSkillArgs);
+        return toToolResult(await getSkill(args as GetSkillArgs));
+      case "ask_user":
+        return parseAskUserArgs(args, toolCallId);
+      case "done":
+        return parseDoneArgs(args);
       default:
-        return JSON.stringify({ error: `Unknown tool: ${name}` });
+        return toToolResult(JSON.stringify({ error: `Unknown tool: ${name}` }));
     }
   };
 }
