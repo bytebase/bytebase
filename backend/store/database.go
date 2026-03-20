@@ -81,8 +81,11 @@ type FindDatabaseMessage struct {
 	OrderByKeys []*OrderByKey
 }
 
-// removeDatabaseCache invalidates the database cache entry by looking up the instance's workspace.
+// removeDatabaseCache invalidates both workspace-scoped and unscoped cache entries for a database.
 func (s *Store) removeDatabaseCache(ctx context.Context, instanceID, databaseName string) {
+	// Remove unscoped (runner) cache entry.
+	s.databaseCache.Remove(getDatabaseCacheKey("", instanceID, databaseName))
+	// Remove workspace-scoped (API) cache entry.
 	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil || instance == nil {
 		return
@@ -92,7 +95,7 @@ func (s *Store) removeDatabaseCache(ctx context.Context, instanceID, databaseNam
 
 // GetDatabase gets a database.
 func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
-	if find.Workspace != "" && find.InstanceID != nil && find.DatabaseName != nil {
+	if find.InstanceID != nil && find.DatabaseName != nil {
 		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(find.Workspace, *find.InstanceID, *find.DatabaseName)); ok && s.enableCache {
 			return v, nil
 		}
@@ -110,9 +113,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 	}
 	database := databases[0]
 
-	if find.Workspace != "" {
-		s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
-	}
+	s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
 	return database, nil
 }
 
@@ -246,10 +247,8 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		return nil, err
 	}
 
-	if find.Workspace != "" {
-		for _, database := range databases {
-			s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
-		}
+	for _, database := range databases {
+		s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
 	}
 	return databases, nil
 }
