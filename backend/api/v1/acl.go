@@ -402,16 +402,12 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 			shortMethodWithoutBatch := strings.TrimSuffix(strings.TrimPrefix(shortMethod, "Batch"), "s")
 			for i := 0; i < requestsValueList.Len(); i++ {
 				r := requestsValueList.Get(i).Message()
-				if resource := getResourceFromSingleRequest(r, shortMethodWithoutBatch); resource != "" {
-					resources = append(resources, resource)
-				}
+				resources = append(resources, getResourceFromSingleRequest(r, shortMethodWithoutBatch))
 			}
 			return resources, nil
 		}
 	}
-	if resource := getResourceFromSingleRequest(mr, shortMethod); resource != "" {
-		resources = append(resources, resource)
-	}
+	resources = append(resources, getResourceFromSingleRequest(mr, shortMethod))
 	return resources, nil
 }
 
