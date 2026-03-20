@@ -78,9 +78,8 @@ func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
 	sourceFieldPaths := make(map[string][]*base.PathAST)
 	for _, property := range ctx.Select_clause().Select_specification().Object_property_list().AllObject_property() {
 		paths, name := extractPathsFromObjectProperty(property, containerName, fromAlias)
-		if name == "" {
-			continue
-		}
+		// For VALUE expressions without an alias (e.g., SELECT VALUE CONCAT(c.name, c.email) FROM c),
+		// the name is empty but we still store paths so scalar masking can detect sensitive fields.
 		for _, path := range paths {
 			if len(path) == 0 {
 				continue
