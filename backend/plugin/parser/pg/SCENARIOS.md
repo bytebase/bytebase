@@ -132,8 +132,8 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 
 - [x] `COMMENT ON TABLE |` — table completion in COMMENT ON
 - [x] `COMMENT ON TABLE public.|` — schema-qualified table in COMMENT ON
-- [~] `COMMENT ON COLUMN t1.|` — column completion in COMMENT ON COLUMN (no candidates returned; parser does not emit columnref rule in COMMENT ON COLUMN context)
-- [~] `COMMENT ON COLUMN public.t1.|` — schema-qualified column in COMMENT ON COLUMN (no candidates returned; parser does not emit columnref rule in COMMENT ON COLUMN context)
+- [x] `COMMENT ON COLUMN t1.|` — column completion in COMMENT ON COLUMN
+- [x] `COMMENT ON COLUMN public.t1.|` — schema-qualified column in COMMENT ON COLUMN
 - [x] `GRANT SELECT ON |` — table completion in GRANT
 - [x] `GRANT SELECT ON public.|` — schema-qualified table in GRANT
 - [x] `GRANT ALL ON ALL TABLES IN SCHEMA |` — schema completion in GRANT

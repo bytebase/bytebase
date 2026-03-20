@@ -7740,8 +7740,18 @@
       priority: 0
 - input: COMMENT ON COLUMN t1.|
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
 - input: COMMENT ON COLUMN public.t1.|
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
 - input: GRANT SELECT ON |
   want:
     - text: ft1
