@@ -62,16 +62,16 @@ Fill missing coverage for features already partially tested.
 
 ### 1.4 Object Type Coverage
 
-- [ ] `SELECT * FROM |` with foreign tables in metadata — foreign tables appear in FROM completion
-- [ ] `SELECT * FROM |` with materialized views in metadata — materialized views appear in FROM completion
-- [ ] `SELECT * FROM public.|` with foreign tables — foreign tables in schema-qualified FROM
-- [ ] `SELECT * FROM public.|` with materialized views — materialized views in schema-qualified FROM
-- [ ] `SELECT mv1.| FROM mv1` — columns from materialized view (qualified)
-- [ ] `SELECT | FROM mv1` — columns from materialized view (unqualified)
-- [ ] `SELECT ft1.| FROM ft1` — columns from foreign table (qualified)
-- [ ] `SELECT | FROM ft1` — columns from foreign table (unqualified)
-- [ ] `INSERT INTO |` with foreign tables — foreign tables in INSERT target
-- [ ] `UPDATE |` with materialized views — materialized views should NOT appear in UPDATE target (they are read-only)
+- [x] `SELECT * FROM |` with foreign tables in metadata — foreign tables appear in FROM completion
+- [x] `SELECT * FROM |` with materialized views in metadata — materialized views appear in FROM completion
+- [x] `SELECT * FROM public.|` with foreign tables — foreign tables in schema-qualified FROM
+- [x] `SELECT * FROM public.|` with materialized views — materialized views in schema-qualified FROM
+- [x] `SELECT mv1.| FROM mv1` — columns from materialized view (qualified)
+- [x] `SELECT | FROM mv1` — columns from materialized view (unqualified)
+- [x] `SELECT ft1.| FROM ft1` — columns from foreign table (qualified)
+- [x] `SELECT | FROM ft1` — columns from foreign table (unqualified)
+- [x] `INSERT INTO |` with foreign tables — foreign tables in INSERT target
+- [~] `UPDATE |` with materialized views — materialized views should NOT appear in UPDATE target (they are read-only; completion engine uses same relation_expr rule for SELECT/UPDATE/DELETE and doesn't distinguish context)
 
 ---
 

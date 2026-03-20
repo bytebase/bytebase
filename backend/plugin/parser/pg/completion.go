@@ -93,15 +93,15 @@ func isNoSeparatorRequired(tokenType int) bool {
 }
 
 type Completer struct {
-	ctx              context.Context
-	scene            base.SceneType
-	sql              string              // the SQL statement (after skipHeadingSQLs)
-	cursorByteOffset int                  // byte offset in sql for omni Collect
-	tokens           []omniParser.Token   // omni tokens for the SQL
-	caretTokenIndex  int                  // index in tokens at/near the caret
-	instanceID       string
-	defaultDatabase  string
-	defaultSchema    string
+	ctx               context.Context
+	scene             base.SceneType
+	sql               string             // the SQL statement (after skipHeadingSQLs)
+	cursorByteOffset  int                // byte offset in sql for omni Collect
+	tokens            []omniParser.Token // omni tokens for the SQL
+	caretTokenIndex   int                // index in tokens at/near the caret
+	instanceID        string
+	defaultDatabase   string
+	defaultSchema     string
 	schemaNotSelected bool
 	getMetadata       base.GetDatabaseMetadataFunc
 	listDatabaseNames base.ListDatabaseNamesFunc
@@ -360,20 +360,44 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 		}
 		for table := range tables {
 			tableMeta := schemaMeta.GetTable(table)
-			if tableMeta == nil {
+			if tableMeta != nil {
+				for _, column := range tableMeta.GetProto().GetColumns() {
+					definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					m.Insert(base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    column.Comment,
+					})
+				}
 				continue
 			}
-			for _, column := range tableMeta.GetProto().GetColumns() {
-				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
-				if !column.Nullable {
-					definition += ", NOT NULL"
+			// Check foreign tables.
+			if extMeta := schemaMeta.GetExternalTable(table); extMeta != nil {
+				for _, column := range extMeta.GetProto().GetColumns() {
+					definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					m.Insert(base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    column.Comment,
+					})
 				}
-				m.Insert(base.Candidate{
-					Type:       base.CandidateTypeColumn,
-					Text:       c.quotedIdentifierIfNeeded(column.Name),
-					Definition: definition,
-					Comment:    column.Comment,
-				})
+				continue
+			}
+			// Check materialized views by resolving their definitions.
+			if mvMeta := schemaMeta.GetMaterializedView(table); mvMeta != nil {
+				if columns, err := c.resolveMaterializedViewColumns(mvMeta.GetDefinition(), schema, table); err == nil {
+					for _, col := range columns {
+						m.Insert(col)
+					}
+				}
 			}
 		}
 	}
@@ -410,6 +434,35 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 					Definition: definition,
 					Comment:    column.Comment,
 				})
+			}
+		}
+		for _, ft := range schemaMeta.ListForeignTableNames() {
+			extMeta := schemaMeta.GetExternalTable(ft)
+			if extMeta == nil {
+				continue
+			}
+			for _, column := range extMeta.GetProto().GetColumns() {
+				definition := fmt.Sprintf("%s.%s | %s", schema, ft, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    column.Comment,
+				})
+			}
+		}
+		for _, mv := range schemaMeta.ListMaterializedViewNames() {
+			mvMeta := schemaMeta.GetMaterializedView(mv)
+			if mvMeta == nil {
+				continue
+			}
+			if columns, err := c.resolveMaterializedViewColumns(mvMeta.GetDefinition(), schema, mv); err == nil {
+				for _, col := range columns {
+					m.Insert(col)
+				}
 			}
 		}
 	}
@@ -1286,6 +1339,36 @@ func (c *Completer) listMaterializedViews(schema string) []string {
 		return nil
 	}
 	return schemaMeta.ListMaterializedViewNames()
+}
+
+func (c *Completer) resolveMaterializedViewColumns(definition, schema, table string) ([]base.Candidate, error) {
+	if len(definition) == 0 {
+		return nil, nil
+	}
+	span, err := GetQuerySpan(
+		c.ctx,
+		base.GetQuerySpanContext{
+			InstanceID:              c.instanceID,
+			GetDatabaseMetadataFunc: c.getMetadata,
+			ListDatabaseNamesFunc:   c.listDatabaseNames,
+		},
+		base.Statement{Text: definition + ";"},
+		c.defaultDatabase,
+		"",
+		false,
+	)
+	if err != nil || span.NotFoundError != nil {
+		return nil, err
+	}
+	var candidates []base.Candidate
+	for _, col := range span.Results {
+		candidates = append(candidates, base.Candidate{
+			Type:       base.CandidateTypeColumn,
+			Text:       c.quotedIdentifierIfNeeded(col.Name),
+			Definition: fmt.Sprintf("%s.%s", schema, table),
+		})
+	}
+	return candidates, nil
 }
 
 func (c *Completer) listViews(schema string) []string {

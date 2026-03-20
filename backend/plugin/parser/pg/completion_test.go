@@ -140,6 +140,27 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						`,
 					},
 				},
+				ExternalTables: []*storepb.ExternalTableMetadata{
+					{
+						Name: "ft1",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name: "f1",
+								Type: "int",
+							},
+							{
+								Name: "f2",
+								Type: "varchar",
+							},
+						},
+					},
+				},
+				MaterializedViews: []*storepb.MaterializedViewMetadata{
+					{
+						Name:       "mv1",
+						Definition: "SELECT c1, c2 FROM t2",
+					},
+				},
 				Sequences: []*storepb.SequenceMetadata{
 					{
 						Name: "seq1",

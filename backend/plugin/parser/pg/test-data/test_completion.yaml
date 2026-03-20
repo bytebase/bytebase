@@ -1,5 +1,15 @@
 - input: SELECT * FROM |
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -52,6 +62,16 @@
       priority: 0
 - input: SELECT * FROM public.|
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: seq1
       type: SEQUENCE
       definition: ""
@@ -101,6 +121,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -131,6 +161,16 @@
     - text: c1
       type: COLUMN
       definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -170,6 +210,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -205,6 +255,16 @@
     - text: name
       type: COLUMN
       definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -297,6 +357,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -372,6 +442,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -422,6 +502,16 @@
     - text: name
       type: COLUMN
       definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -493,6 +583,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -542,6 +642,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -587,6 +697,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -655,6 +775,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -694,6 +824,16 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
       definition: ""
       comment: ""
       priority: 0
@@ -746,6 +886,16 @@
       priority: 0
 - input: WITH x AS (SELECT c1 FROM t1) SELECT | FROM (SELECT * FROM x) sub1
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -788,6 +938,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -823,6 +983,16 @@
     - text: name
       type: COLUMN
       definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -879,6 +1049,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -919,6 +1099,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -980,6 +1170,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1022,6 +1222,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1057,6 +1267,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -1096,6 +1316,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1130,6 +1360,16 @@
       priority: 0
     - text: eid
       type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
       definition: ""
       comment: ""
       priority: 0
@@ -1180,6 +1420,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1214,6 +1464,16 @@
       priority: 0
     - text: eid
       type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
       definition: ""
       comment: ""
       priority: 0
@@ -1261,6 +1521,16 @@
       priority: 0
     - text: xid
       type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
       definition: ""
       comment: ""
       priority: 0
@@ -1332,6 +1602,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1357,9 +1637,18 @@
       definition: ""
       comment: ""
       priority: 0
-# TODO: SELECT vv.| FROM v1 vv — view alias columns not resolved (view metadata not expanded)
 - input: INSERT INTO |
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1431,6 +1720,11 @@
   want:
     - text: c1
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
@@ -1441,7 +1735,22 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
       comment: ""
       priority: 0
     - text: id
@@ -1462,6 +1771,16 @@
     - text: username
       type: COLUMN
       definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -1511,6 +1830,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1538,6 +1867,16 @@
       priority: 0
 - input: UPDATE |
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1609,6 +1948,11 @@
   want:
     - text: c1
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
@@ -1619,7 +1963,22 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
       comment: ""
       priority: 0
     - text: id
@@ -1640,6 +1999,16 @@
     - text: username
       type: COLUMN
       definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -1681,6 +2050,11 @@
   want:
     - text: c1
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
@@ -1691,7 +2065,22 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
       comment: ""
       priority: 0
     - text: id
@@ -1712,6 +2101,16 @@
     - text: username
       type: COLUMN
       definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -1753,6 +2152,11 @@
   want:
     - text: c1
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
@@ -1763,7 +2167,22 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
       comment: ""
       priority: 0
     - text: id
@@ -1784,6 +2203,16 @@
     - text: username
       type: COLUMN
       definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -1823,6 +2252,16 @@
       priority: 0
 - input: DELETE FROM |
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1897,6 +2336,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1924,6 +2373,16 @@
       priority: 0
 - input: SELECT 1;SELECT * FROM |
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -1981,6 +2440,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2010,6 +2479,16 @@
     select count(1) from t1 where id; SELECT * FROM |
     select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2077,6 +2556,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2119,6 +2608,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2146,6 +2645,16 @@
       priority: 0
 - input: SELECT | FROM v1
   want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2193,6 +2702,16 @@
       definition: test.auto | varchar, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2232,6 +2751,16 @@
   want:
     - text: c1
       type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
       definition: ""
       comment: ""
       priority: 0
@@ -2294,6 +2823,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2334,6 +2873,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2378,6 +2927,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2418,6 +2977,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2505,6 +3074,16 @@
       definition: test.auto | varchar, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2559,6 +3138,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2596,6 +3185,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2631,6 +3230,16 @@
     - text: name
       type: COLUMN
       definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2680,6 +3289,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2715,6 +3334,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2754,6 +3383,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2789,6 +3428,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2828,6 +3477,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2863,6 +3522,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2907,6 +3576,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -2947,6 +3626,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -2991,6 +3680,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3026,6 +3725,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3065,6 +3774,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3100,6 +3819,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3139,6 +3868,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3174,6 +3913,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3213,6 +3962,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3248,6 +4007,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3287,6 +4056,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3316,6 +4095,11 @@
   want:
     - text: c1
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
@@ -3326,7 +4110,22 @@
       priority: 0
     - text: c2
       type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
       comment: ""
       priority: 0
     - text: id
@@ -3347,6 +4146,16 @@
     - text: username
       type: COLUMN
       definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3396,6 +4205,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3431,6 +4250,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3470,6 +4299,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3505,6 +4344,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3544,6 +4393,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3579,6 +4438,16 @@
     - text: c2
       type: COLUMN
       definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
       comment: ""
       priority: 0
     - text: public
@@ -3618,6 +4487,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3655,6 +4534,16 @@
       definition: public.t2 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
     - text: public
       type: SCHEMA
       definition: ""
@@ -3671,6 +4560,466 @@
       comment: ""
       priority: 0
     - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM ft1 WHERE |
+  want:
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM mv1 WHERE |
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM public.ft1 WHERE |
+  want:
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM public.mv1 WHERE |
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT ft1.| FROM ft1
+  want:
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT | FROM ft1
+  want:
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT mv1.| FROM mv1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+- input: SELECT | FROM mv1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: INSERT INTO |
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: UPDATE | SET c1 = 1
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
       type: TABLE
       definition: ""
       comment: ""
