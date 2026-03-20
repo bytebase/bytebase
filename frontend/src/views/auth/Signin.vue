@@ -236,7 +236,7 @@ const state = reactive<LocalState>({
 });
 const initialized = ref(false);
 const { isDemo } = storeToRefs(actuatorStore);
-const { serverInfo } = storeToRefs(actuatorStore);
+const { serverInfo, isSaaSMode } = storeToRefs(actuatorStore);
 
 const disallowSignup = computed(
   () => !props.allowSignup || serverInfo.value?.restriction?.disallowSignup
@@ -274,7 +274,11 @@ watchEffect(() => {
   // Navigate to signup if needs admin setup.
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
-  if (actuatorStore.needAdminSetup && !disallowSignup.value) {
+  if (
+    actuatorStore.needAdminSetup &&
+    !disallowSignup.value &&
+    !isSaaSMode.value
+  ) {
     router.push({ name: AUTH_SIGNUP_MODULE, replace: true });
   }
 });

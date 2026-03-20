@@ -116,17 +116,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     setRequireResetPassword(resp.requireResetPassword);
-    const needAdminSetup = actuatorStore.needAdminSetup;
     await actuatorStore.fetchServerInfo(user?.workspace);
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
-    if (needAdminSetup) {
-      actuatorStore.onboardingState.isOnboarding = true;
-      return router.replace({
-        name: SETUP_MODULE,
-      });
-    }
+
     const mode = useAppFeature("bb.feature.database-change-mode");
     if (mode.value === DatabaseChangeMode.EDITOR) {
       const route = router.resolve({
@@ -164,11 +158,10 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return;
     }
 
-    const needAdminSetup = actuatorStore.needAdminSetup;
     await actuatorStore.fetchServerInfo(user?.workspace);
     authSessionKey.value = uniqueId();
 
-    if (needAdminSetup) {
+    if (actuatorStore.needAdminSetup) {
       actuatorStore.onboardingState.isOnboarding = true;
       return router.replace({ name: SETUP_MODULE });
     }
