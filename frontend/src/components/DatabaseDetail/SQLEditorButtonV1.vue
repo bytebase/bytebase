@@ -84,8 +84,15 @@ const gotoSQLEditor = () => {
   }
 
   const database = props.database;
-  if (isDefaultProject(database.project, actuatorStore.serverInfo?.workspace ?? "")) {
-    if (!hasProjectPermissionV2(defaultProject(database.project), "bb.sql.select")) {
+  if (
+    isDefaultProject(
+      database.project,
+      actuatorStore.serverInfo?.workspace ?? ""
+    )
+  ) {
+    if (
+      !hasProjectPermissionV2(defaultProject(database.project), "bb.sql.select")
+    ) {
       // For unassigned databases, only high-privileged users
       // are accessible via SQL Editor.
       emit("failed", database);

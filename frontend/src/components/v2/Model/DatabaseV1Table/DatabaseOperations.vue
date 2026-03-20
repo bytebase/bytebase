@@ -218,7 +218,9 @@ const hasDefaultProjectSelected = computed(() => {
 
 const assignedDatabases = computed(() => {
   const workspace = actuatorStore.serverInfo?.workspace ?? "";
-  return props.databases.filter((db) => !isDefaultProject(db.project, workspace));
+  return props.databases.filter(
+    (db) => !isDefaultProject(db.project, workspace)
+  );
 });
 
 const getDisabledTooltip = (action: string) => {
@@ -381,8 +383,8 @@ const unAssignDatabases = async () => {
 
 const operationsInProjectDetail = computed(() => !!props.projectName);
 
-const isInDefaultProject = computed(
-  () => isDefaultProject(props.projectName, actuatorStore.serverInfo?.workspace ?? "")
+const isInDefaultProject = computed(() =>
+  isDefaultProject(props.projectName, actuatorStore.serverInfo?.workspace ?? "")
 );
 
 const actions = computed((): DatabaseAction[] => {

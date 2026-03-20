@@ -36,7 +36,10 @@ export const provideDatabaseDetailContext = (
   );
 
   const isDefaultProjectRef = computed(() =>
-    isDefaultProject(database.value.project, actuatorStore.serverInfo?.workspace ?? "")
+    isDefaultProject(
+      database.value.project,
+      actuatorStore.serverInfo?.workspace ?? ""
+    )
   );
 
   const allowAlterSchema = computed(() => {

@@ -138,7 +138,11 @@ import {
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";
-import { useActuatorV1Store, useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import {
+  useActuatorV1Store,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
 import { defaultProject, isDefaultProject } from "@/types";
 import { TableMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -215,8 +219,16 @@ const instanceEngine = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (isDefaultProject(database.value.project, actuatorStore.serverInfo?.workspace ?? "")) {
-    return hasProjectPermissionV2(defaultProject(database.value.project), "bb.sql.select");
+  if (
+    isDefaultProject(
+      database.value.project,
+      actuatorStore.serverInfo?.workspace ?? ""
+    )
+  ) {
+    return hasProjectPermissionV2(
+      defaultProject(database.value.project),
+      "bb.sql.select"
+    );
   }
   return isDatabaseV1Queryable(database.value);
 });

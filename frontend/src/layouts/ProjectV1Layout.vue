@@ -55,7 +55,10 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { isDefaultProject as checkIsDefaultProject, UNKNOWN_PROJECT_NAME } from "@/types";
+import {
+  isDefaultProject as checkIsDefaultProject,
+  UNKNOWN_PROJECT_NAME,
+} from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2, setDocumentTitle } from "@/utils";
 
@@ -109,7 +112,10 @@ const initialized = computed(
 );
 
 const isDefaultProject = computed((): boolean => {
-  return checkIsDefaultProject(project.value.name, actuatorStore.serverInfo?.workspace ?? "");
+  return checkIsDefaultProject(
+    project.value.name,
+    actuatorStore.serverInfo?.workspace ?? ""
+  );
 });
 
 const allowEdit = computed(() => {

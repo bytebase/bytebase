@@ -104,7 +104,10 @@ watch(
 
 const allowSave = computed((): boolean => {
   const titleChanged =
-    !isDefaultProject(props.project.name, actuatorStore.serverInfo?.workspace ?? "") &&
+    !isDefaultProject(
+      props.project.name,
+      actuatorStore.serverInfo?.workspace ?? ""
+    ) &&
     !isEmpty(state.title) &&
     state.title !== props.project.title;
 

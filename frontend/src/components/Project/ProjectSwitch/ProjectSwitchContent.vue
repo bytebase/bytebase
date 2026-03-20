@@ -128,7 +128,8 @@ onMounted(() => {
 
 const getFilteredProjectList = (projectList: Project[]): Project[] => {
   const list = projectList.filter(
-    (project) => !isDefaultProject(project.name, actuatorStore.serverInfo?.workspace ?? "")
+    (project) =>
+      !isDefaultProject(project.name, actuatorStore.serverInfo?.workspace ?? "")
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
 };

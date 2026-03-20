@@ -8,7 +8,6 @@ import {
 } from "lucide-vue-next";
 import { computed, h, type MaybeRef, unref } from "vue";
 import { useRoute } from "vue-router";
-import { useActuatorV1Store } from "@/store";
 import type { SidebarItem } from "@/components/v2/Sidebar/type";
 import { t } from "@/plugins/i18n";
 import {
@@ -30,6 +29,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
+import { useActuatorV1Store } from "@/store";
 import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -45,7 +45,10 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
   const actuatorStore = useActuatorV1Store();
 
   const isDefault = computed((): boolean => {
-    return isDefaultProject(unref(project).name, actuatorStore.serverInfo?.workspace ?? "");
+    return isDefaultProject(
+      unref(project).name,
+      actuatorStore.serverInfo?.workspace ?? ""
+    );
   });
 
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {

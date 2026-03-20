@@ -135,7 +135,8 @@ const selectedDatabaseList = computed(() => {
 
 const showUnassignOption = computed(() => {
   return selectedDatabaseList.value.some(
-    (db) => !isDefaultProject(db.project, actuatorStore.serverInfo?.workspace ?? "")
+    (db) =>
+      !isDefaultProject(db.project, actuatorStore.serverInfo?.workspace ?? "")
   );
 });
 

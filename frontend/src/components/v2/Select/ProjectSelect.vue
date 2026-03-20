@@ -63,10 +63,12 @@ const projectStore = useProjectV1Store();
 const getOption = (project: Project): ResourceSelectOption<Project> => ({
   resource: project,
   value: project.name,
-  label:
-    isDefaultProject(project.name, actuatorStore.serverInfo?.workspace ?? "")
-      ? t("common.unassigned")
-      : project.title,
+  label: isDefaultProject(
+    project.name,
+    actuatorStore.serverInfo?.workspace ?? ""
+  )
+    ? t("common.unassigned")
+    : project.title,
 });
 
 const additionalOptions = computedAsync(async () => {

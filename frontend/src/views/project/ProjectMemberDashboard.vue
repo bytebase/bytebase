@@ -21,7 +21,12 @@ const { project } = useProjectByName(
 );
 
 const allowEdit = computed(() => {
-  if (isDefaultProject(project.value.name, actuatorStore.serverInfo?.workspace ?? "")) {
+  if (
+    isDefaultProject(
+      project.value.name,
+      actuatorStore.serverInfo?.workspace ?? ""
+    )
+  ) {
     return false;
   }
 

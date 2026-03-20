@@ -7,10 +7,7 @@ export const extractProjectResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export function projectV1Name(
-  project: Project,
-  workspaceResourceName: string
-) {
+export function projectV1Name(project: Project, workspaceResourceName: string) {
   if (isDefaultProject(project.name, workspaceResourceName)) {
     return "Unassigned";
   }

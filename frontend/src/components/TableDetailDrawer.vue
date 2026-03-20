@@ -524,8 +524,16 @@ const instanceEngineNew = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (isDefaultProject(database.value.project, actuatorStore.serverInfo?.workspace ?? "")) {
-    return hasProjectPermissionV2(defaultProject(database.value.project), "bb.sql.select");
+  if (
+    isDefaultProject(
+      database.value.project,
+      actuatorStore.serverInfo?.workspace ?? ""
+    )
+  ) {
+    return hasProjectPermissionV2(
+      defaultProject(database.value.project),
+      "bb.sql.select"
+    );
   }
   return isDatabaseV1Queryable(database.value);
 });

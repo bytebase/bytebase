@@ -97,9 +97,7 @@ const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 
 const allowAccessDefaultProject = computed(() => {
-  const name = getDefaultProjectName(
-    actuatorStore.serverInfo?.workspace ?? ""
-  );
+  const name = getDefaultProjectName(actuatorStore.serverInfo?.workspace ?? "");
   return hasProjectPermissionV2(defaultProject(name), "bb.projects.get");
 });
 const allowCreateProject = computed(() => {

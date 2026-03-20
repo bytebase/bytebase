@@ -101,8 +101,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
   const getProjectByName = (name: string) => {
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
-    const workspace =
-      useActuatorV1Store().serverInfo?.workspace ?? "";
+    const workspace = useActuatorV1Store().serverInfo?.workspace ?? "";
     if (isDefaultProject(name, workspace)) return defaultProject(name);
     return projectMapByName.get(name) ?? unknownProject();
   };
@@ -207,8 +206,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const batchGetOrFetchProjects = async (projectNames: string[]) => {
-    const workspace =
-      useActuatorV1Store().serverInfo?.workspace ?? "";
+    const workspace = useActuatorV1Store().serverInfo?.workspace ?? "";
     const validProjectList = uniq(projectNames).filter((projectName) => {
       if (
         !projectName ||
