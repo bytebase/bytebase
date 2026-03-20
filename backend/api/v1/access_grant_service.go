@@ -49,6 +49,7 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 	}
 
 	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -81,6 +82,7 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ProjectID: &projectID,
 		Limit:     &limitPlusOne,
 		Offset:    &offset.offset,
@@ -250,7 +252,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		if issue.Status == storepb.Issue_DONE {
 			// Refresh the grant if issue is completed.
 			grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-				ID: &grant.ID,
+				Workspace: common.GetWorkspaceIDFromContext(ctx),
+				ID:        &grant.ID,
 			})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant %v", grant.ID))
@@ -282,6 +285,7 @@ func activateAccessGrant(ctx context.Context, stores *store.Store, accessGrantNa
 	}
 
 	grant, err := stores.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -323,6 +327,7 @@ func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *con
 	}
 
 	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -371,6 +376,7 @@ func (s *AccessGrantService) SearchMyAccessGrants(ctx context.Context, request *
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ProjectID: &projectID,
 		Creator:   &user.Email,
 		Limit:     &limitPlusOne,

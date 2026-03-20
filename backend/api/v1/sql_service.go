@@ -204,6 +204,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	}
 
 	grants, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ProjectID: &database.ProjectID,
 		Creator:   &user.Email,
 		FilterQ:   filterQ,

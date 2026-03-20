@@ -141,6 +141,28 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return nil
 	}
 
+	// Verify all project resources belong to the caller's workspace.
+	// This is the central workspace isolation check — catches any API that
+	// forgot to pass workspace in its store queries.
+	if workspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != "" {
+		for _, resource := range authContext.Resources {
+			switch resource.Type {
+			case common.ResourceTypeWorkspace:
+				if resource.ID != workspaceID {
+					return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+				}
+			case common.ResourceTypeProject:
+				project, err := in.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &resource.ID})
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+				}
+				if project == nil || project.Workspace != workspaceID {
+					return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
+				}
+			}
+		}
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("user not found"))
@@ -230,9 +252,6 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	for _, resource := range authContext.Resources {
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
-			if workspaceID != resource.ID {
-				return false, nil, errors.Errorf("request workspace %v does not match the workspace %v in token", resource.ID, workspaceID)
-			}
 			hasWorkspaceResource = true
 		case common.ResourceTypeProject:
 			projectIDMap[resource.ID] = true
