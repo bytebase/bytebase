@@ -3,16 +3,20 @@ package cosmosdb
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"io"
+	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -37,15 +41,44 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
+// cosmosDBEmulatorKey is the well-known master key for the CosmosDB emulator.
+// https://learn.microsoft.com/en-us/azure/cosmos-db/emulator
+const cosmosDBEmulatorKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+
 // Open opens a CosmosDB driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.DataSource.Host
-	credential, err := util.GetAzureConnectionConfig(connCfg)
-	if err != nil {
-		return nil, err
+
+	var client *azcosmos.Client
+	var err error
+
+	if common.IsDev() {
+		cred, credErr := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
+		if credErr != nil {
+			return nil, errors.Wrapf(credErr, "failed to create emulator key credential")
+		}
+		// The emulator uses a self-signed certificate, skip TLS verification in dev mode.
+		options := &azcosmos.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				Transport: &http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							MinVersion:         tls.VersionTLS12,
+							InsecureSkipVerify: true, //nolint:gosec
+						},
+					},
+				},
+			},
+		}
+		client, err = azcosmos.NewClientWithKey(endpoint, cred, options)
+	} else {
+		credential, credErr := util.GetAzureConnectionConfig(connCfg)
+		if credErr != nil {
+			return nil, credErr
+		}
+		client, err = azcosmos.NewClient(endpoint, credential, nil)
 	}
 
-	client, err := azcosmos.NewClient(endpoint, credential, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create CosmosDB client")
 	}
