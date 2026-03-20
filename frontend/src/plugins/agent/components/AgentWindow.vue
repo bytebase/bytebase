@@ -11,51 +11,87 @@ const MIN_HEIGHT = 400;
 const WINDOW_MARGIN = 16;
 
 const windowRef = ref<HTMLElement | null>(null);
-
-const windowStyle = computed(() => ({
-  left: `${agentStore.position.x}px`,
-  top: `${agentStore.position.y}px`,
-  width: `${agentStore.size.width}px`,
-  height: `${agentStore.size.height}px`,
-}));
+const viewportSize = ref({
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
+const isViewportResizing = ref(false);
+let viewportResizeFrame = 0;
 
 const maxWidth = () =>
-  Math.max(MIN_WIDTH, window.innerWidth - WINDOW_MARGIN * 2);
+  Math.max(MIN_WIDTH, viewportSize.value.width - WINDOW_MARGIN * 2);
 const maxHeight = () =>
-  Math.max(MIN_HEIGHT, window.innerHeight - WINDOW_MARGIN * 2);
+  Math.max(MIN_HEIGHT, viewportSize.value.height - WINDOW_MARGIN * 2);
 
 const clampWidth = (width: number) =>
   Math.min(maxWidth(), Math.max(MIN_WIDTH, Math.round(width)));
 const clampHeight = (height: number) =>
   Math.min(maxHeight(), Math.max(MIN_HEIGHT, Math.round(height)));
 
-function syncSize(width: number, height: number) {
-  agentStore.size.width = clampWidth(width);
-  agentStore.size.height = clampHeight(height);
+function getDisplaySize(width: number, height: number) {
+  return {
+    width: clampWidth(width),
+    height: clampHeight(height),
+  };
 }
 
-function syncPosition() {
+function getDisplayPosition(
+  x: number,
+  y: number,
+  size = getDisplaySize(agentStore.size.width, agentStore.size.height)
+) {
   const maxX = Math.max(
     WINDOW_MARGIN,
-    window.innerWidth - agentStore.size.width - WINDOW_MARGIN
+    viewportSize.value.width - size.width - WINDOW_MARGIN
   );
   const maxY = Math.max(
     WINDOW_MARGIN,
-    window.innerHeight - agentStore.size.height - WINDOW_MARGIN
+    viewportSize.value.height - size.height - WINDOW_MARGIN
   );
-  agentStore.position.x = Math.min(
-    maxX,
-    Math.max(WINDOW_MARGIN, Math.round(agentStore.position.x))
-  );
-  agentStore.position.y = Math.min(
-    maxY,
-    Math.max(WINDOW_MARGIN, Math.round(agentStore.position.y))
-  );
+  return {
+    x: Math.min(maxX, Math.max(WINDOW_MARGIN, Math.round(x))),
+    y: Math.min(maxY, Math.max(WINDOW_MARGIN, Math.round(y))),
+  };
 }
 
-function syncWindowState() {
-  syncSize(agentStore.size.width, agentStore.size.height);
-  syncPosition();
+const displayWindowState = computed(() => {
+  const size = getDisplaySize(agentStore.size.width, agentStore.size.height);
+  const position = getDisplayPosition(
+    agentStore.position.x,
+    agentStore.position.y,
+    size
+  );
+  return { position, size };
+});
+
+const windowStyle = computed(() => ({
+  left: `${displayWindowState.value.position.x}px`,
+  top: `${displayWindowState.value.position.y}px`,
+  width: `${displayWindowState.value.size.width}px`,
+  height: `${displayWindowState.value.size.height}px`,
+}));
+
+function syncSize(width: number, height: number) {
+  const size = getDisplaySize(width, height);
+  agentStore.size.width = size.width;
+  agentStore.size.height = size.height;
+}
+
+function syncPosition() {
+  const position = getDisplayPosition(
+    agentStore.position.x,
+    agentStore.position.y,
+    getDisplaySize(agentStore.size.width, agentStore.size.height)
+  );
+  agentStore.position.x = position.x;
+  agentStore.position.y = position.y;
+}
+
+function syncStoreToDisplayState() {
+  agentStore.size.width = displayWindowState.value.size.width;
+  agentStore.size.height = displayWindowState.value.size.height;
+  agentStore.position.x = displayWindowState.value.position.x;
+  agentStore.position.y = displayWindowState.value.position.y;
 }
 
 // Drag logic
@@ -70,6 +106,7 @@ function startDrag(e: MouseEvent) {
     return;
   }
 
+  syncStoreToDisplayState();
   isDragging.value = true;
   dragOffset.value = {
     x: e.clientX - agentStore.position.x,
@@ -101,6 +138,7 @@ let resizeObserver: ResizeObserver | null = null;
 function startResize(e: MouseEvent) {
   e.preventDefault();
   e.stopPropagation();
+  syncStoreToDisplayState();
   isResizing.value = true;
   resizeStart.value = {
     x: e.clientX,
@@ -132,7 +170,7 @@ function observeWindowSize() {
   if (!windowRef.value) return;
 
   resizeObserver = new ResizeObserver(([entry]) => {
-    if (!entry || isResizing.value) return;
+    if (!entry || isResizing.value || isViewportResizing.value) return;
 
     // `contentRect` excludes borders, but the inline width/height we persist are
     // border-box dimensions. Reading the content box here creates a feedback loop
@@ -153,8 +191,15 @@ function observeWindowSize() {
 }
 
 function handleViewportResize() {
-  syncWindowState();
-  agentStore.saveWindowState();
+  isViewportResizing.value = true;
+  viewportSize.value = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+  cancelAnimationFrame(viewportResizeFrame);
+  viewportResizeFrame = window.requestAnimationFrame(() => {
+    isViewportResizing.value = false;
+  });
 }
 
 watch(windowRef, () => {
@@ -163,7 +208,7 @@ watch(windowRef, () => {
 
 onMounted(() => {
   agentStore.loadWindowState();
-  syncWindowState();
+  handleViewportResize();
   observeWindowSize();
   window.addEventListener("resize", handleViewportResize);
 });
@@ -172,6 +217,7 @@ onBeforeUnmount(() => {
   stopDrag();
   stopResize();
   resizeObserver?.disconnect();
+  cancelAnimationFrame(viewportResizeFrame);
   window.removeEventListener("resize", handleViewportResize);
 });
 </script>
