@@ -51,8 +51,11 @@ func NewService(store *store.Store, profile *config.Profile, secret string) *Ser
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Workspace-scoped OAuth2 routes (SaaS and self-hosted).
-	e.GET("/.well-known/oauth-authorization-server/workspaces/:workspaceID", s.handleDiscovery)
-	e.GET("/.well-known/oauth-protected-resource/workspaces/:workspaceID", s.handleProtectedResourceMetadata)
+	e.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
+	e.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
+	e.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
+	e.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
+
 	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister)
 	e.GET("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizeGet)
 	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost)
@@ -62,10 +65,6 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	// Legacy routes (self-hosted only, disabled in SaaS mode).
 	if !s.profile.SaaS {
-		e.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
-		e.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
-		e.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
-		e.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
 		e.POST("/api/oauth2/register", s.handleRegister)
 		e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
 		e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
