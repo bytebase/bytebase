@@ -81,21 +81,21 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 
 ### 2.1 CREATE Statements
 
-- [ ] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES |)` — table completion in FK reference
-- [ ] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES public.|)` — schema-qualified FK reference
-- [ ] `CREATE TABLE test_tbl (id int REFERENCES |)` — inline FK reference
-- [ ] `CREATE TABLE test_tbl (id int REFERENCES t1(|))` — column completion in FK reference
-- [ ] `CREATE INDEX idx ON |` — table completion in CREATE INDEX
-- [ ] `CREATE INDEX idx ON public.|` — schema-qualified table in CREATE INDEX
-- [ ] `CREATE INDEX idx ON t1 (|)` — column completion in index expression
-- [ ] `CREATE INDEX idx ON t2 (c1, |)` — second column in composite index
-- [ ] `CREATE VIEW v2 AS SELECT | FROM t1` — completion in CREATE VIEW body
-- [ ] `CREATE VIEW v2 AS SELECT * FROM |` — FROM completion in CREATE VIEW body
-- [ ] `CREATE MATERIALIZED VIEW mv AS SELECT | FROM t1` — completion in CREATE MATERIALIZED VIEW body
-- [ ] `CREATE TABLE test_tbl AS SELECT | FROM t1` — completion in CREATE TABLE AS SELECT
-- [ ] `CREATE TABLE test_tbl (LIKE |)` — table completion in LIKE clause
-- [ ] `CREATE TRIGGER trig AFTER INSERT ON |` — table completion in CREATE TRIGGER
-- [ ] `CREATE TRIGGER trig AFTER INSERT ON public.|` — schema-qualified table in CREATE TRIGGER
+- [x] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES |)` — table completion in FK reference
+- [x] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES public.|)` — schema-qualified FK reference
+- [x] `CREATE TABLE test_tbl (id int REFERENCES |)` — inline FK reference
+- [~] `CREATE TABLE test_tbl (id int REFERENCES t1(|))` — column completion in FK reference (no candidates returned; parser does not emit columnref rule inside FK column parentheses)
+- [x] `CREATE INDEX idx ON |` — table completion in CREATE INDEX
+- [x] `CREATE INDEX idx ON public.|` — schema-qualified table in CREATE INDEX
+- [~] `CREATE INDEX idx ON t1 (|)` — column completion in index expression (no candidates returned; parser does not emit columnref rule inside index column parentheses)
+- [~] `CREATE INDEX idx ON t2 (c1, |)` — second column in composite index (no candidates returned; same parser limitation as above)
+- [x] `CREATE VIEW v2 AS SELECT | FROM t1` — completion in CREATE VIEW body
+- [x] `CREATE VIEW v2 AS SELECT * FROM |` — FROM completion in CREATE VIEW body
+- [x] `CREATE MATERIALIZED VIEW mv AS SELECT | FROM t1` — completion in CREATE MATERIALIZED VIEW body
+- [x] `CREATE TABLE test_tbl AS SELECT | FROM t1` — completion in CREATE TABLE AS SELECT
+- [x] `CREATE TABLE test_tbl (LIKE |)` — table completion in LIKE clause
+- [x] `CREATE TRIGGER trig AFTER INSERT ON |` — table completion in CREATE TRIGGER
+- [x] `CREATE TRIGGER trig AFTER INSERT ON public.|` — schema-qualified table in CREATE TRIGGER
 
 ### 2.2 ALTER Statements
 

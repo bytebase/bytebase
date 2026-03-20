@@ -5029,3 +5029,618 @@
       definition: ""
       comment: ""
       priority: 0
+- input: CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES |)
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES public.|)
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TABLE test_tbl (id int REFERENCES |)
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TABLE test_tbl (id int REFERENCES t1(|))
+  want:
+- input: CREATE INDEX idx ON |
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE INDEX idx ON public.|
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE INDEX idx ON t1 (|)
+  want:
+- input: CREATE INDEX idx ON t2 (c1, |)
+  want:
+- input: CREATE VIEW v2 AS SELECT | FROM t1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE VIEW v2 AS SELECT * FROM |
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE MATERIALIZED VIEW mv AS SELECT | FROM t1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TABLE test_tbl AS SELECT | FROM t1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TABLE test_tbl (LIKE |)
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TRIGGER trig AFTER INSERT ON |
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: CREATE TRIGGER trig AFTER INSERT ON public.|
+  want:
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
