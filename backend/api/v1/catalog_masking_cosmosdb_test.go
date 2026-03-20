@@ -1,0 +1,648 @@
+package v1
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/component/masker"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	cosmosdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
+)
+
+// cosmosDBTestSchema returns a schema for a container with:
+//
+//	name (string), email (string, masked), country (string), population (number),
+//	_ts (number), location (object, masked), contact.phone (string, masked), contact.city (string)
+func cosmosDBTestSchema() *storepb.ObjectSchema {
+	return &storepb.ObjectSchema{
+		Type: storepb.ObjectSchema_OBJECT,
+		Kind: &storepb.ObjectSchema_StructKind_{
+			StructKind: &storepb.ObjectSchema_StructKind{
+				Properties: map[string]*storepb.ObjectSchema{
+					"name":       {Type: storepb.ObjectSchema_STRING},
+					"email":      {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+					"country":    {Type: storepb.ObjectSchema_STRING},
+					"population": {Type: storepb.ObjectSchema_NUMBER},
+					"status":     {Type: storepb.ObjectSchema_STRING},
+					"age":        {Type: storepb.ObjectSchema_NUMBER},
+					"score":      {Type: storepb.ObjectSchema_NUMBER},
+					"_ts":        {Type: storepb.ObjectSchema_NUMBER},
+					"_etag":      {Type: storepb.ObjectSchema_STRING},
+					"location": {
+						Type:         storepb.ObjectSchema_OBJECT,
+						SemanticType: "bb.default",
+						Kind: &storepb.ObjectSchema_StructKind_{
+							StructKind: &storepb.ObjectSchema_StructKind{
+								Properties: map[string]*storepb.ObjectSchema{
+									"type":        {Type: storepb.ObjectSchema_STRING},
+									"coordinates": {Type: storepb.ObjectSchema_ARRAY},
+								},
+							},
+						},
+					},
+					"contact": {
+						Type: storepb.ObjectSchema_OBJECT,
+						Kind: &storepb.ObjectSchema_StructKind_{
+							StructKind: &storepb.ObjectSchema_StructKind{
+								Properties: map[string]*storepb.ObjectSchema{
+									"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+									"city":  {Type: storepb.ObjectSchema_STRING},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func cosmosDBMaskers() map[string]masker.Masker {
+	return map[string]masker.Masker{
+		"bb.default": masker.NewDefaultFullMasker(),
+	}
+}
+
+// getCosmosDBQuerySpan parses a CosmosDB SQL query and returns the query span.
+func getCosmosDBQuerySpan(t *testing.T, query string) *base.QuerySpan {
+	t.Helper()
+	span, err := cosmosdbparser.GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, base.Statement{Text: query}, "", "", false)
+	require.NoError(t, err)
+	return span
+}
+
+// maskCosmosDBResultsForTest replicates the maskResults logic without store/database dependencies.
+// It handles both object and scalar (VALUE query) results.
+func maskCosmosDBResultsForTest(span *base.QuerySpan, results []*v1pb.QueryResult, schema *storepb.ObjectSchema, maskers map[string]masker.Masker) error {
+	if len(span.Results) != 1 {
+		return errors.Errorf("expected 1 span result, got %d", len(span.Results))
+	}
+	for _, result := range results {
+		for _, row := range result.Rows {
+			if len(row.Values) != 1 {
+				continue
+			}
+			value := row.Values[0].GetStringValue()
+			if value == "" {
+				continue
+			}
+			doc := make(map[string]any)
+			if err := json.Unmarshal([]byte(value), &doc); err != nil {
+				// VALUE query: the result is a scalar, not an object.
+				// Check if any source field path is sensitive and mask the scalar directly.
+				masked, maskErr := maskCosmosDBScalarValue(span, value, schema, maskers)
+				if maskErr != nil {
+					return maskErr
+				}
+				row.Values[0] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{StringValue: masked},
+				}
+				continue
+			}
+			maskedDoc, err := maskCosmosDB(span, doc, schema, maskers)
+			if err != nil {
+				return err
+			}
+			maskedValue, err := json.Marshal(maskedDoc)
+			if err != nil {
+				return err
+			}
+			row.Values[0] = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: string(maskedValue)},
+			}
+		}
+	}
+	return nil
+}
+
+// maskCosmosDBDoc parses the query, gets span, and masks the document.
+func maskCosmosDBDoc(t *testing.T, query string, inputJSON string, schema *storepb.ObjectSchema, maskers map[string]masker.Masker) string {
+	t.Helper()
+	span := getCosmosDBQuerySpan(t, query)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal([]byte(inputJSON), &doc))
+
+	masked, err := maskCosmosDB(span, doc, schema, maskers)
+	require.NoError(t, err)
+
+	out, err := json.Marshal(masked)
+	require.NoError(t, err)
+	return string(out)
+}
+
+// ---------------------------------------------------------------------------
+// Test: Result masking with new syntax
+// ---------------------------------------------------------------------------
+
+func TestCosmosDBMaskingSelectTop(t *testing.T) {
+	// SELECT TOP N should mask sensitive fields just like regular SELECT.
+	query := `SELECT TOP 10 c.name, c.email FROM c`
+	input := `{"name":"Alice","email":"alice@example.com"}`
+	want := `{"name":"Alice","email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingSelectStar(t *testing.T) {
+	// SELECT * masks all fields based on schema.
+	query := `SELECT * FROM c`
+	input := `{"name":"Alice","email":"alice@example.com","country":"US"}`
+	want := `{"name":"Alice","email":"******","country":"US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingSelectTopStar(t *testing.T) {
+	// SELECT TOP N * masks like SELECT *.
+	query := `SELECT TOP 5 * FROM c`
+	input := `{"name":"Alice","email":"alice@example.com"}`
+	want := `{"name":"Alice","email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingFunctionsInSelect(t *testing.T) {
+	// Functions in SELECT produce computed values. The function result column
+	// (aliased) shouldn't match any schema field, so it should pass through unmasked.
+	// Direct field references should still be masked.
+	query := `SELECT c.name, c.email, UPPER(c.country) AS upperCountry FROM c`
+	input := `{"name":"Alice","email":"alice@example.com","upperCountry":"US"}`
+	want := `{"name":"Alice","email":"******","upperCountry":"US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingAggregation(t *testing.T) {
+	// Aggregation result: COUNT(1) AS totalRecords.
+	// The result is a computed value, not a direct field reference.
+	query := `SELECT COUNT(1) AS totalRecords FROM c`
+	input := `{"totalRecords":42}`
+	want := `{"totalRecords":42}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingGroupBy(t *testing.T) {
+	// GROUP BY with aggregation. Direct field (country) + function result (cnt).
+	query := `SELECT c.country, COUNT(1) AS cnt FROM c GROUP BY c.country`
+	input := `{"country":"US","cnt":5}`
+	want := `{"country":"US","cnt":5}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingOrderBy(t *testing.T) {
+	// ORDER BY doesn't affect masking.
+	query := `SELECT c.name, c.email FROM c ORDER BY c.name ASC`
+	input := `{"name":"Alice","email":"alice@example.com"}`
+	want := `{"name":"Alice","email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingOffsetLimit(t *testing.T) {
+	// OFFSET LIMIT doesn't affect masking.
+	query := `SELECT c.name, c.email FROM c ORDER BY c.name OFFSET 0 LIMIT 10`
+	input := `{"name":"Alice","email":"alice@example.com"}`
+	want := `{"name":"Alice","email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingStringFunctions(t *testing.T) {
+	// String functions in SELECT: UPPER, LOWER, LENGTH.
+	query := `SELECT UPPER(c.name) AS upperName, LOWER(c.country) AS lowerCountry, LENGTH(c.name) AS nameLen FROM c`
+	input := `{"upperName":"ALICE","lowerCountry":"us","nameLen":5}`
+	want := `{"upperName":"ALICE","lowerCountry":"us","nameLen":5}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingMathFunctions(t *testing.T) {
+	// Math functions in SELECT.
+	query := `SELECT c.name, ROUND(c.score) AS roundedScore FROM c`
+	input := `{"name":"Alice","roundedScore":95}`
+	want := `{"name":"Alice","roundedScore":95}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingTypeCheckFunctions(t *testing.T) {
+	// Type-check functions in SELECT.
+	query := `SELECT c.name, IS_STRING(c.name) AS isStr, IS_NUMBER(c.population) AS isNum FROM c`
+	input := `{"name":"Alice","isStr":true,"isNum":true}`
+	want := `{"name":"Alice","isStr":true,"isNum":true}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingUnderscoreFields(t *testing.T) {
+	// Underscore-prefixed fields like _ts, _etag should work with the new IDENTIFIER rule.
+	query := `SELECT c._ts, c._etag, c.name FROM c`
+	input := `{"_ts":1743702439,"_etag":"abc123","name":"Alice"}`
+	want := `{"_ts":1743702439,"_etag":"abc123","name":"Alice"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingNestedFieldProjection(t *testing.T) {
+	// Projecting nested sensitive field.
+	query := `SELECT c.name, c.contact.phone AS phone FROM c`
+	input := `{"name":"Alice","phone":"123-456"}`
+	want := `{"name":"Alice","phone":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingDistinctValue(t *testing.T) {
+	// SELECT DISTINCT VALUE returns scalar values, not objects.
+	// The result is just a plain value like "US" instead of {"country":"US"}.
+	// CosmosDB returns each value as a single-field JSON, but the masking
+	// code needs to handle this correctly.
+	query := `SELECT DISTINCT VALUE c.country FROM c`
+	input := `{"country":"US"}`
+	want := `{"country":"US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingDistinctValueSensitive(t *testing.T) {
+	// SELECT DISTINCT VALUE on a sensitive field.
+	query := `SELECT DISTINCT VALUE c.email FROM c`
+	input := `{"email":"alice@example.com"}`
+	want := `{"email":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingGeospatial(t *testing.T) {
+	// Geospatial function with JSON object literal where source field IS sensitive.
+	// ST_DISTANCE(c.location, ...) -- c.location is tagged with bb.default.
+	// The distance result must be masked because it derives from sensitive location data.
+	query := `SELECT c.name, ST_DISTANCE(c.location, {"type": "Point", "coordinates": [55.2708, 25.2048]}) AS dist FROM c`
+	input := `{"name":"Alice","dist":1234.5}`
+	want := `{"name":"Alice","dist":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingValueSensitive(t *testing.T) {
+	// SELECT VALUE c.email returns scalar values from CosmosDB, not objects.
+	// The driver returns each result as a raw JSON string (e.g., "\"alice@example.com\"").
+	// maskResults must handle non-object JSON values for VALUE queries.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE c.email FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	// Simulate the driver result: a scalar JSON string.
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"alice@example.com"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"******"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueNonSensitive(t *testing.T) {
+	// SELECT VALUE c.name returns scalar values; c.name is not sensitive.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE c.name FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"Alice"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueCount(t *testing.T) {
+	// SELECT VALUE COUNT(1) returns a number. No source field, not masked.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE COUNT(1) FROM c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `42`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `42`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueConcatSensitive(t *testing.T) {
+	// SELECT VALUE CONCAT(c.name, " <", c.email, ">") -- no alias, expression has sensitive c.email.
+	// The expression has no output name, but source paths must still be tracked so
+	// findMaskerForScalarValue can detect that c.email is sensitive and mask the result.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE CONCAT(c.name, " <", c.email, ">") FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice <alice@example.com>"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"******"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueConcatNonSensitive(t *testing.T) {
+	// SELECT VALUE CONCAT(c.name, " - ", c.country) -- no alias, no sensitive fields.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE CONCAT(c.name, " - ", c.country) FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice - US"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"Alice - US"`, row.Values[0].GetStringValue())
+}
+
+// ---------------------------------------------------------------------------
+// Test: Expression projections
+// ---------------------------------------------------------------------------
+
+func TestCosmosDBMaskingArithmeticProjection(t *testing.T) {
+	// Arithmetic expression: c.population / 1000 AS popK.
+	// Expression path is nil, alias "popK" not in schema, so not masked.
+	query := `SELECT c.name, c.population / 1000 AS popK FROM c`
+	input := `{"name":"Alice","popK":1}`
+	want := `{"name":"Alice","popK":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingStringConcatProjection(t *testing.T) {
+	// String concatenation of non-sensitive fields: c.name || " - " || c.country AS label.
+	// Source fields (name, country) are not sensitive, so result is not masked.
+	query := `SELECT c.name || " - " || c.country AS label FROM c`
+	input := `{"label":"Alice - US"}`
+	want := `{"label":"Alice - US"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingStringConcatWithSensitiveField(t *testing.T) {
+	// String concatenation that includes a sensitive field.
+	// c.name || " - " || c.email AS label -- c.email is sensitive.
+	// Result must be masked because it derives from sensitive data.
+	query := `SELECT c.name || " - " || c.email AS label FROM c`
+	input := `{"label":"Alice - alice@example.com"}`
+	want := `{"label":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingNestedFunctionProjection(t *testing.T) {
+	// Nested function calls: ROUND(StringToNumber(c.population)).
+	// Expression path is nil, computed value not masked.
+	query := `SELECT c.name, ROUND(StringToNumber(c.population)) AS rounded FROM c`
+	input := `{"name":"Alice","rounded":1000}`
+	want := `{"name":"Alice","rounded":1000}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingArithmeticOnFunctionProjection(t *testing.T) {
+	// Arithmetic on function result: StringToNumber(c.population) / 1000.
+	// Expression path is nil, alias not in schema, not masked.
+	query := `SELECT CONCAT(c.name, " - ", c.country) AS label, StringToNumber(c.population) / 1000 AS populationInThousands FROM c`
+	input := `{"label":"Alice - US","populationInThousands":1}`
+	want := `{"label":"Alice - US","populationInThousands":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
+	// Expression alias matches a sensitive schema field name.
+	// UPPER(c.name) AS email -- source field c.name is NOT sensitive.
+	// Even though alias "email" is sensitive in the schema, the masking
+	// should be driven by the source field (c.name), not the alias.
+	// Since c.name is not sensitive, the result is NOT masked.
+	query := `SELECT UPPER(c.name) AS email FROM c`
+	input := `{"email":"ALICE"}`
+	want := `{"email":"ALICE"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
+	// Mix of direct field references and expressions.
+	// Direct sensitive field (email) should be masked.
+	// Expression results from non-sensitive fields (upperName, popK) should not be masked.
+	query := `SELECT c.email, UPPER(c.name) AS upperName, c.population / 1000 AS popK FROM c`
+	input := `{"email":"alice@example.com","upperName":"ALICE","popK":1}`
+	want := `{"email":"******","upperName":"ALICE","popK":1}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingExprOnSensitiveFieldNonMatchingAlias(t *testing.T) {
+	// Function wrapping a sensitive field with a non-matching alias.
+	// UPPER(c.email) AS upperEmail -- c.email IS sensitive.
+	// The result must be masked because it derives from sensitive data,
+	// regardless of the alias name.
+	query := `SELECT UPPER(c.email) AS upperEmail FROM c`
+	input := `{"upperEmail":"ALICE@EXAMPLE.COM"}`
+	want := `{"upperEmail":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingConcatWithSensitiveArg(t *testing.T) {
+	// CONCAT with a sensitive field argument.
+	// CONCAT(c.name, " <", c.email, ">") AS display -- c.email is sensitive.
+	// Result must be masked because it contains sensitive data.
+	query := `SELECT CONCAT(c.name, " <", c.email, ">") AS display FROM c`
+	input := `{"display":"Alice <alice@example.com>"}`
+	want := `{"display":"******"}`
+
+	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
+	requireJSONEqual(t, want, got)
+}
+
+// ---------------------------------------------------------------------------
+// Test: Predicate blocking with new WHERE operators
+// ---------------------------------------------------------------------------
+
+func TestCosmosDBPredicateNotEqual(t *testing.T) {
+	// WHERE with != on a sensitive field should be detected.
+	query := `SELECT * FROM c WHERE c.email != "test@example.com"`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.email"]
+	require.True(t, ok, "expected c.email in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
+	require.Equal(t, "bb.default", semanticType, "email should be sensitive in predicate")
+}
+
+func TestCosmosDBPredicateIn(t *testing.T) {
+	// WHERE with IN on a sensitive field should be detected.
+	query := `SELECT * FROM c WHERE c.email IN ("alice@example.com", "bob@example.com")`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.email"]
+	require.True(t, ok, "expected c.email in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
+	require.Equal(t, "bb.default", semanticType, "email should be sensitive in predicate")
+}
+
+func TestCosmosDBPredicateBetween(t *testing.T) {
+	// WHERE with BETWEEN on a non-sensitive field should NOT be blocked.
+	query := `SELECT * FROM c WHERE c.age BETWEEN 18 AND 65`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.age"]
+	require.True(t, ok, "expected c.age in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.age"], schema)
+	require.Equal(t, "", semanticType, "age should not be sensitive")
+}
+
+func TestCosmosDBPredicateInNonSensitive(t *testing.T) {
+	// WHERE with IN on a non-sensitive field should NOT be blocked.
+	query := `SELECT * FROM c WHERE c.country IN ("US", "UK", "CA")`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.country"]
+	require.True(t, ok, "expected c.country in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.country"], schema)
+	require.Equal(t, "", semanticType, "country should not be sensitive")
+}
+
+func TestCosmosDBPredicateNotEqualNonSensitive(t *testing.T) {
+	// WHERE with != on a non-sensitive field should NOT be blocked.
+	query := `SELECT * FROM c WHERE c.status != "inactive"`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.status"]
+	require.True(t, ok, "expected c.status in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.status"], schema)
+	require.Equal(t, "", semanticType, "status should not be sensitive")
+}
+
+func TestCosmosDBPredicateNestedSensitive(t *testing.T) {
+	// WHERE with nested sensitive field c.contact.phone.
+	query := `SELECT * FROM c WHERE c.contact.phone = "123-456"`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.contact.phone"]
+	require.True(t, ok, "expected c.contact.phone in predicate paths")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.contact.phone"], schema)
+	require.Equal(t, "bb.default", semanticType, "contact.phone should be sensitive")
+}
+
+func TestCosmosDBPredicateFunctionInWhere(t *testing.T) {
+	// Function used in WHERE clause should extract fields from arguments.
+	query := `SELECT * FROM c WHERE CONTAINS(c.email, "example")`
+	span := getCosmosDBQuerySpan(t, query)
+	schema := cosmosDBTestSchema()
+
+	_, ok := span.PredicatePaths["c.email"]
+	require.True(t, ok, "expected c.email in predicate paths from function argument")
+
+	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
+	require.Equal(t, "bb.default", semanticType, "email should be sensitive even in function")
+}
+
+func TestCosmosDBPredicateCompoundWhere(t *testing.T) {
+	// Compound WHERE with multiple operators including new ones.
+	query := `SELECT * FROM c WHERE c.country != "US" AND c._ts > 1743702439`
+	span := getCosmosDBQuerySpan(t, query)
+
+	_, ok := span.PredicatePaths["c.country"]
+	require.True(t, ok, "expected c.country in predicate paths")
+
+	_, ok = span.PredicatePaths["c._ts"]
+	require.True(t, ok, "expected c._ts in predicate paths")
+}

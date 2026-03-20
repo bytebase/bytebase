@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -415,7 +416,179 @@ func formatAmbiguousResult(database string, candidates []Candidate) *mcp.CallToo
 	}
 }
 
+// queryResponse is the typed response from the SQL Query API.
+type queryResponse struct {
+	Results []queryResult `json:"results"`
+}
+
+// queryResult represents a single result set from a query.
+type queryResult struct {
+	ColumnNames     []string    `json:"columnNames"`
+	ColumnTypeNames []string    `json:"columnTypeNames"`
+	Rows            []queryRow  `json:"rows"`
+	RowsCount       json.Number `json:"rowsCount"`
+	Latency         string      `json:"latency"`
+	Error           string      `json:"error"`
+	Statement       string      `json:"statement"`
+}
+
+// queryRow represents a row of values from a query result.
+type queryRow struct {
+	Values []json.RawMessage `json:"values"`
+}
+
 // executeQuery executes a SQL query against the resolved database.
-func (*Server) executeQuery(_ context.Context, _ *resolvedDatabase, _ string, _ int) (*QueryOutput, error) {
-	return nil, errors.New("not implemented")
+func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, statement string, limit int) (*QueryOutput, error) {
+	body := map[string]any{
+		"name":         resolved.resourceName,
+		"dataSourceId": resolved.dataSourceID,
+		"statement":    statement,
+	}
+	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
+	if err != nil {
+		return nil, &toolError{
+			Code:       "QUERY_ERROR",
+			Message:    fmt.Sprintf("query request failed: %s", err.Error()),
+			Suggestion: "check network connectivity and try again",
+		}
+	}
+	if resp.Status >= 400 {
+		errMsg := parseError(resp.Body)
+		if errMsg == "" {
+			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
+		}
+		suggestion := "check your SQL syntax and try again"
+		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
+			suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+		}
+		return nil, &toolError{
+			Code:       "QUERY_ERROR",
+			Message:    errMsg,
+			Suggestion: suggestion,
+		}
+	}
+
+	var qr queryResponse
+	if err := json.Unmarshal(resp.Body, &qr); err != nil {
+		return nil, errors.Wrap(err, "failed to parse query response")
+	}
+	if len(qr.Results) == 0 {
+		return &QueryOutput{
+			Columns:     []string{},
+			ColumnTypes: []string{},
+			Rows:        [][]any{},
+		}, nil
+	}
+
+	result := qr.Results[0]
+	if result.Error != "" {
+		return nil, &toolError{
+			Code:       "QUERY_ERROR",
+			Message:    result.Error,
+			Suggestion: "check your SQL syntax and try again",
+		}
+	}
+
+	// Flatten rows.
+	rows := make([][]any, 0, len(result.Rows))
+	for _, row := range result.Rows {
+		flat := make([]any, 0, len(row.Values))
+		for _, v := range row.Values {
+			flat = append(flat, flattenRowValue(v))
+		}
+		rows = append(rows, flat)
+	}
+
+	// Truncation.
+	truncated := len(rows) > limit
+	if truncated {
+		rows = rows[:limit]
+	}
+
+	return &QueryOutput{
+		Columns:     result.ColumnNames,
+		ColumnTypes: result.ColumnTypeNames,
+		Rows:        rows,
+		RowCount:    len(rows),
+		Truncated:   truncated,
+		LatencyMs:   parseLatencyMs(result.Latency),
+	}, nil
+}
+
+// flattenRowValue extracts a plain Go value from a protojson RowValue oneof.
+// Each value is a JSON object with exactly one key like {"stringValue": "x"}.
+func flattenRowValue(raw json.RawMessage) any {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(raw, &m) != nil {
+		return string(raw)
+	}
+	for key, val := range m {
+		if v, ok := unmarshalRowField(key, val); ok {
+			return v
+		}
+	}
+	return string(raw)
+}
+
+// unmarshalRowField decodes a single protojson RowValue oneof field.
+func unmarshalRowField(key string, val json.RawMessage) (any, bool) {
+	switch key {
+	case "nullValue":
+		return nil, true
+	case "boolValue":
+		return unmarshalAs[bool](val)
+	case "stringValue":
+		return unmarshalAs[string](val)
+	case "int32Value":
+		return unmarshalAs[int32](val)
+	case "int64Value":
+		// protojson encodes int64 as string.
+		if v, ok := unmarshalAs[string](val); ok {
+			return v, true
+		}
+		return unmarshalAs[int64](val)
+	case "doubleValue", "floatValue":
+		return unmarshalAs[float64](val)
+	case "timestampValue", "timestampTzValue":
+		return unmarshalTimestamp(val)
+	default:
+		if v, ok := unmarshalAs[string](val); ok {
+			return v, true
+		}
+		return string(val), true
+	}
+}
+
+// unmarshalAs attempts to decode JSON into the given type.
+func unmarshalAs[T any](val json.RawMessage) (T, bool) {
+	var v T
+	if json.Unmarshal(val, &v) == nil {
+		return v, true
+	}
+	return v, false
+}
+
+// unmarshalTimestamp extracts the string value from a timestamp object.
+func unmarshalTimestamp(val json.RawMessage) (any, bool) {
+	var ts map[string]string
+	if json.Unmarshal(val, &ts) == nil {
+		if v, ok := ts["value"]; ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+// parseLatencyMs parses a duration string like "0.012s" into milliseconds.
+func parseLatencyMs(latency string) int64 {
+	latency = strings.TrimSpace(latency)
+	if latency == "" {
+		return 0
+	}
+	latency = strings.TrimSuffix(latency, "s")
+	d, err := time.ParseDuration(latency + "s")
+	if err != nil {
+		return 0
+	}
+	return d.Milliseconds()
 }

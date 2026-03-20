@@ -183,7 +183,7 @@ $$ LANGUAGE plpgsql;`,
 		{
 			name:     "Malformed DO block",
 			stmt:     `DO $$ BEGIN`,
-			expected: true, // omni parser treats unterminated dollar-quote as consuming to EOF, producing a valid DoStmt
+			expected: false, // omni parser returns error for unterminated dollar-quote
 		},
 		{
 			name: "Multiple statements with DO block",

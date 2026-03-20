@@ -30,6 +30,8 @@ type skillMeta struct {
 // getSkillDescription is the description for the get_skill tool.
 const getSkillDescription = `Get step-by-step guides for Bytebase tasks.
 
+**Tip:** Use query_database tool for SQL queries — it handles database resolution automatically.
+
 **Workflow:** get_skill("task") → search_api(operationId) → call_api(...)
 
 Skills: query, database-change, grant-permission`

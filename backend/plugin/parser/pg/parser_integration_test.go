@@ -1,16 +1,14 @@
 package pg
 
 import (
+	"errors"
 	"testing"
 
+	omniparser "github.com/bytebase/omni/pg/parser"
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestParsePostgresErrorLine tests that the ANTLR parser correctly reports error line numbers.
-// This test is in the pg package (not pg/legacy) to ensure the ANTLR parser is registered via init().
+// TestParsePostgresErrorLine tests that the omni parser correctly reports error line numbers.
 func TestParsePostgresErrorLine(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -47,13 +45,28 @@ FRAM t1;`,
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := base.ParseStatements(storepb.Engine_POSTGRES, test.statement)
-			require.Error(t, err)
-			syntaxErr, ok := err.(*base.SyntaxError)
-			require.True(t, ok, "expected *base.SyntaxError, got %T", err)
-			require.NotNil(t, syntaxErr.Position)
-			require.Equal(t, test.expectedLine, syntaxErr.Position.Line,
-				"incorrect error line for statement:\n%s", test.statement)
+			stmts, err := SplitSQL(test.statement)
+			require.NoError(t, err)
+
+			for _, stmt := range stmts {
+				if stmt.Empty {
+					continue
+				}
+				_, parseErr := ParsePg(stmt.Text)
+				if parseErr != nil {
+					var pe *omniparser.ParseError
+					require.True(t, errors.As(parseErr, &pe), "expected *ParseError, got %T", parseErr)
+					pos := byteOffsetToRunePosition(stmt.Text, pe.Position)
+					// Adjust line by the statement's base line.
+					if stmt.Start != nil {
+						pos.Line += stmt.Start.Line - 1
+					}
+					require.Equal(t, test.expectedLine, pos.Line,
+						"incorrect error line for statement:\n%s", test.statement)
+					return
+				}
+			}
+			t.Fatalf("expected parse error for statement:\n%s", test.statement)
 		})
 	}
 }

@@ -2966,6 +2966,8 @@
   },
   "agent": {
     "assistant-title": "Bytebase 助手",
+    "self": "助手",
+    "resize": "调整大小",
     "new-chat": "新对话",
     "minimize": "最小化",
     "close": "关闭",

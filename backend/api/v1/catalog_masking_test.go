@@ -444,7 +444,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 		err := json.Unmarshal([]byte(tc.input), &input)
 		require.NoError(t, err, tc.description)
 
-		fieldPaths := make(map[string]*base.PathAST)
+		fieldPaths := make(map[string][]*base.PathAST)
 		if len(tc.fieldPathsElements) > 0 {
 			for field, e := range tc.fieldPathsElements {
 				ast := base.NewPathAST(base.NewItemSelector("container"))
@@ -453,7 +453,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 					next.SetNext(e[i])
 					next = next.GetNext()
 				}
-				fieldPaths[field] = ast
+				fieldPaths[field] = []*base.PathAST{ast}
 			}
 		}
 		got, err := walkAndMaskJSON(input, fieldPaths, tc.objectSchema, tc.semanticTypeToMasker)

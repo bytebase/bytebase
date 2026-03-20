@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useAgentStore } from "../store/agent";
 import AgentChat from "./AgentChat.vue";
 import AgentInput from "./AgentInput.vue";
@@ -8,21 +8,105 @@ const agentStore = useAgentStore();
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 400;
-const MAX_WIDTH = 800;
-const MAX_HEIGHT = 800;
+const WINDOW_MARGIN = 16;
+
+const windowRef = ref<HTMLElement | null>(null);
+const viewportSize = ref({
+  width: window.innerWidth,
+  height: window.innerHeight,
+});
+const isViewportResizing = ref(false);
+let viewportResizeFrame = 0;
+
+const maxWidth = () =>
+  Math.max(MIN_WIDTH, viewportSize.value.width - WINDOW_MARGIN * 2);
+const maxHeight = () =>
+  Math.max(MIN_HEIGHT, viewportSize.value.height - WINDOW_MARGIN * 2);
+
+const clampWidth = (width: number) =>
+  Math.min(maxWidth(), Math.max(MIN_WIDTH, Math.round(width)));
+const clampHeight = (height: number) =>
+  Math.min(maxHeight(), Math.max(MIN_HEIGHT, Math.round(height)));
+
+function getDisplaySize(width: number, height: number) {
+  return {
+    width: clampWidth(width),
+    height: clampHeight(height),
+  };
+}
+
+function getDisplayPosition(
+  x: number,
+  y: number,
+  size = getDisplaySize(agentStore.size.width, agentStore.size.height)
+) {
+  const maxX = Math.max(
+    WINDOW_MARGIN,
+    viewportSize.value.width - size.width - WINDOW_MARGIN
+  );
+  const maxY = Math.max(
+    WINDOW_MARGIN,
+    viewportSize.value.height - size.height - WINDOW_MARGIN
+  );
+  return {
+    x: Math.min(maxX, Math.max(WINDOW_MARGIN, Math.round(x))),
+    y: Math.min(maxY, Math.max(WINDOW_MARGIN, Math.round(y))),
+  };
+}
+
+const displayWindowState = computed(() => {
+  const size = getDisplaySize(agentStore.size.width, agentStore.size.height);
+  const position = getDisplayPosition(
+    agentStore.position.x,
+    agentStore.position.y,
+    size
+  );
+  return { position, size };
+});
 
 const windowStyle = computed(() => ({
-  left: `${agentStore.position.x}px`,
-  top: `${agentStore.position.y}px`,
-  width: `${agentStore.size.width}px`,
-  height: `${agentStore.size.height}px`,
+  left: `${displayWindowState.value.position.x}px`,
+  top: `${displayWindowState.value.position.y}px`,
+  width: `${displayWindowState.value.size.width}px`,
+  height: `${displayWindowState.value.size.height}px`,
 }));
+
+function syncSize(width: number, height: number) {
+  const size = getDisplaySize(width, height);
+  agentStore.size.width = size.width;
+  agentStore.size.height = size.height;
+}
+
+function syncPosition() {
+  const position = getDisplayPosition(
+    agentStore.position.x,
+    agentStore.position.y,
+    getDisplaySize(agentStore.size.width, agentStore.size.height)
+  );
+  agentStore.position.x = position.x;
+  agentStore.position.y = position.y;
+}
+
+function syncStoreToDisplayState() {
+  agentStore.size.width = displayWindowState.value.size.width;
+  agentStore.size.height = displayWindowState.value.size.height;
+  agentStore.position.x = displayWindowState.value.position.x;
+  agentStore.position.y = displayWindowState.value.position.y;
+}
 
 // Drag logic
 const isDragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
 
 function startDrag(e: MouseEvent) {
+  if (
+    e.target instanceof HTMLElement &&
+    e.target.closest("[data-agent-window-action], [data-agent-window-resize]")
+  ) {
+    return;
+  }
+
+  syncStoreToDisplayState();
   isDragging.value = true;
   dragOffset.value = {
     x: e.clientX - agentStore.position.x,
@@ -36,6 +120,7 @@ function onDrag(e: MouseEvent) {
   if (!isDragging.value) return;
   agentStore.position.x = e.clientX - dragOffset.value.x;
   agentStore.position.y = e.clientY - dragOffset.value.y;
+  syncPosition();
 }
 
 function stopDrag() {
@@ -48,9 +133,12 @@ function stopDrag() {
 // Resize logic
 const isResizing = ref(false);
 const resizeStart = ref({ x: 0, y: 0, w: 0, h: 0 });
+let resizeObserver: ResizeObserver | null = null;
 
 function startResize(e: MouseEvent) {
   e.preventDefault();
+  e.stopPropagation();
+  syncStoreToDisplayState();
   isResizing.value = true;
   resizeStart.value = {
     x: e.clientX,
@@ -66,14 +154,8 @@ function onResize(e: MouseEvent) {
   if (!isResizing.value) return;
   const dx = e.clientX - resizeStart.value.x;
   const dy = e.clientY - resizeStart.value.y;
-  agentStore.size.width = Math.min(
-    MAX_WIDTH,
-    Math.max(MIN_WIDTH, resizeStart.value.w + dx)
-  );
-  agentStore.size.height = Math.min(
-    MAX_HEIGHT,
-    Math.max(MIN_HEIGHT, resizeStart.value.h + dy)
-  );
+  syncSize(resizeStart.value.w + dx, resizeStart.value.h + dy);
+  syncPosition();
 }
 
 function stopResize() {
@@ -83,8 +165,60 @@ function stopResize() {
   agentStore.saveWindowState();
 }
 
+function observeWindowSize() {
+  resizeObserver?.disconnect();
+  if (!windowRef.value) return;
+
+  resizeObserver = new ResizeObserver(([entry]) => {
+    if (!entry || isResizing.value || isViewportResizing.value) return;
+
+    // `contentRect` excludes borders, but the inline width/height we persist are
+    // border-box dimensions. Reading the content box here creates a feedback loop
+    // where every observer callback writes a slightly smaller size back.
+    const target = entry.target as HTMLElement;
+    const width = clampWidth(target.offsetWidth);
+    const height = clampHeight(target.offsetHeight);
+    if (width === agentStore.size.width && height === agentStore.size.height) {
+      return;
+    }
+
+    syncSize(width, height);
+    syncPosition();
+    agentStore.saveWindowState();
+  });
+
+  resizeObserver.observe(windowRef.value);
+}
+
+function handleViewportResize() {
+  isViewportResizing.value = true;
+  viewportSize.value = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+  cancelAnimationFrame(viewportResizeFrame);
+  viewportResizeFrame = window.requestAnimationFrame(() => {
+    isViewportResizing.value = false;
+  });
+}
+
+watch(windowRef, () => {
+  observeWindowSize();
+});
+
 onMounted(() => {
   agentStore.loadWindowState();
+  handleViewportResize();
+  observeWindowSize();
+  window.addEventListener("resize", handleViewportResize);
+});
+
+onBeforeUnmount(() => {
+  stopDrag();
+  stopResize();
+  resizeObserver?.disconnect();
+  cancelAnimationFrame(viewportResizeFrame);
+  window.removeEventListener("resize", handleViewportResize);
 });
 </script>
 
@@ -94,7 +228,7 @@ onMounted(() => {
     <div
       v-if="agentStore.visible && agentStore.minimized"
       data-agent-window
-      class="fixed z-[1999] bottom-4 right-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600"
+      class="fixed bottom-4 right-4 z-[1999] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600"
       @click="agentStore.restore()"
     >
       <svg
@@ -114,63 +248,86 @@ onMounted(() => {
     <!-- Full window -->
     <div
       v-if="agentStore.visible && !agentStore.minimized"
+      ref="windowRef"
       data-agent-window
-      class="fixed z-[1999] flex flex-col rounded-lg border border-gray-200 shadow-xl bg-white overflow-hidden"
+      class="fixed z-[1999] flex resize flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
       :style="windowStyle"
     >
       <!-- Title bar -->
       <div
-        class="flex items-center justify-between px-3 py-2 border-b bg-gray-50 cursor-move select-none"
+        class="cursor-move select-none border-b bg-gray-50 px-3 py-2"
         @mousedown="startDrag"
       >
-        <span class="text-sm font-medium">{{ $t("agent.assistant-title") }}</span>
-        <div class="flex items-center gap-x-1">
-          <button
-            class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            :title="$t('agent.new-chat')"
-            @click.stop="agentStore.clearMessages()"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-3.5 w-3.5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+        <div class="flex items-center justify-between gap-x-2">
+          <span class="text-sm font-medium">{{ $t("agent.assistant-title") }}</span>
+          <div class="flex items-center gap-x-1">
+            <button
+              data-agent-window-action
+              class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              :title="$t('agent.new-chat')"
+              @click.stop="agentStore.clearMessages()"
             >
-              <path
-                fill-rule="evenodd"
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </button>
-          <button
-            class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            :title="$t('agent.minimize')"
-            @click.stop="agentStore.minimize()"
-          >
-            &#8722;
-          </button>
-          <button
-            class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            :title="$t('agent.close')"
-            @click.stop="agentStore.toggle()"
-          >
-            &#10005;
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-3.5 w-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+            <button
+              data-agent-window-action
+              class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              :title="$t('agent.minimize')"
+              @click.stop="agentStore.minimize()"
+            >
+              &#8722;
+            </button>
+            <button
+              data-agent-window-action
+              class="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              :title="$t('agent.close')"
+              @click.stop="agentStore.toggle()"
+            >
+              &#10005;
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Chat -->
-      <AgentChat class="flex-1 min-h-0" />
+      <AgentChat class="min-h-0 flex-1" />
 
       <!-- Input -->
       <AgentInput />
 
       <!-- Resize handle -->
-      <div
-        class="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize"
+      <button
+        type="button"
+        data-agent-window-resize
+        class="absolute bottom-0 right-0 flex h-5 w-5 cursor-se-resize items-end justify-end pr-0.5 pb-0.5 text-gray-300 hover:text-gray-400"
+        :title="$t('agent.resize')"
         @mousedown="startResize"
-      />
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-3 w-3"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+        >
+          <path d="M3.5 8.5h.01M6 6h.01M8.5 3.5h.01" />
+          <path d="M3.5 11 11 3.5" />
+        </svg>
+      </button>
     </div>
   </Teleport>
 </template>

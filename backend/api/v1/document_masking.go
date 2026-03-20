@@ -275,45 +275,75 @@ func maskDocumentString(document string, objectSchema *storepb.ObjectSchema, sem
 	return string(out), nil
 }
 
-func walkAndMaskJSON(data map[string]any, fieldPaths map[string]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
+func walkAndMaskJSON(data map[string]any, fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
 	result := make(map[string]any)
 	for key, value := range data {
-		o := objectSchema
-		var ast *parserbase.PathAST
-		if fieldPaths != nil {
-			// Relocate the object schema cursor to the path position.
-			// Skip the first node because it always represents the container.
-			if path, ok := fieldPaths[key]; ok {
-				if path != nil && path.Root != nil {
-					astWoutContainer := parserbase.NewPathAST(path.Root.GetNext())
-					ast = astWoutContainer
-				}
-			}
+		masked, err := maskJSONField(key, value, fieldPaths, objectSchema, semanticTypeToMasker)
+		if err != nil {
+			return nil, err
 		}
-		if ast == nil || ast.Root == nil {
-			ast = parserbase.NewPathAST(parserbase.NewItemSelector(key))
-		}
+		result[key] = masked
+	}
+	return result, nil
+}
 
-		var parentSemanticType string
-		o, parentSemanticType = getObjectSchemaByPath(o, ast)
+// maskJSONField masks a single field value based on its source field paths or direct schema lookup.
+func maskJSONField(key string, value any, fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if paths, ok := fieldPaths[key]; ok && len(paths) > 0 {
+		return maskFieldBySourcePaths(value, paths, objectSchema, semanticTypeToMasker)
+	}
+	return maskFieldByDirectLookup(key, value, objectSchema, semanticTypeToMasker)
+}
+
+// maskFieldBySourcePaths checks all source paths for sensitivity, then falls back to recursive walk.
+func maskFieldBySourcePaths(value any, paths []*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if maskedValue, masked, err := maskBySourcePaths(value, paths, objectSchema, semanticTypeToMasker); err != nil {
+		return nil, err
+	} else if masked {
+		return maskedValue, nil
+	}
+	ast := stripContainerFromPath(paths[0])
+	o, _ := getObjectSchemaByPath(objectSchema, ast)
+	return walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
+}
+
+// maskFieldByDirectLookup looks up the key directly in the schema (used when no field paths are recorded).
+func maskFieldByDirectLookup(key string, value any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	ast := parserbase.NewPathAST(parserbase.NewItemSelector(key))
+	o, semanticType := getObjectSchemaByPath(objectSchema, ast)
+	if semanticType != "" {
+		if m, ok := semanticTypeToMasker[semanticType]; ok {
+			return applyMaskerToJSONMember(value, m)
+		}
+	}
+	return walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
+}
+
+// stripContainerFromPath returns a PathAST with the first node (container) removed.
+func stripContainerFromPath(path *parserbase.PathAST) *parserbase.PathAST {
+	if path != nil && path.Root != nil {
+		return parserbase.NewPathAST(path.Root.GetNext())
+	}
+	return parserbase.NewPathAST(nil)
+}
+
+// maskBySourcePaths checks if any source field path resolves to a sensitive semantic type.
+// Returns (maskedValue, true, nil) if masked, or (nil, false, nil) if no path is sensitive.
+func maskBySourcePaths(value any, paths []*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, bool, error) {
+	for _, path := range paths {
+		ast := stripContainerFromPath(path)
+		_, parentSemanticType := getObjectSchemaByPath(objectSchema, ast)
 		if parentSemanticType != "" {
 			if m, ok := semanticTypeToMasker[parentSemanticType]; ok {
 				maskedValue, err := applyMaskerToJSONMember(value, m)
 				if err != nil {
-					return nil, err
+					return nil, false, err
 				}
-				result[key] = maskedValue
-				continue
+				return maskedValue, true, nil
 			}
 		}
-
-		fieldValue, err := walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
-		if err != nil {
-			return nil, err
-		}
-		result[key] = fieldValue
 	}
-	return result, nil
+	return nil, false, nil
 }
 
 func getObjectSchemaByPath(objectSchema *storepb.ObjectSchema, path *parserbase.PathAST) (*storepb.ObjectSchema, string) {
@@ -589,7 +619,15 @@ func (*cosmosDBMasker) maskResults(
 			}
 			doc := make(map[string]any)
 			if err := json.Unmarshal([]byte(value), &doc); err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal document: %v", err))
+				// VALUE query: result is a scalar, not a JSON object.
+				masked, maskErr := maskCosmosDBScalarValue(spans[0], value, objectSchema, semanticTypeToMaskerMap)
+				if maskErr != nil {
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask scalar value: %v", maskErr))
+				}
+				row.Values[0] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{StringValue: masked},
+				}
+				continue
 			}
 			maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
 			if err != nil {
@@ -614,6 +652,55 @@ func maskCosmosDB(span *parserbase.QuerySpan, data map[string]any, objectSchema 
 		return nil, errors.Errorf("expected 1 result, but got %d", len(span.Results))
 	}
 	return walkAndMaskJSON(data, span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
+}
+
+// maskCosmosDBScalarValue handles VALUE query results where the JSON is a scalar
+// (string, number, bool) rather than an object. It checks if any projected source
+// field path resolves to a sensitive semantic type and masks the raw JSON accordingly.
+func maskCosmosDBScalarValue(span *parserbase.QuerySpan, rawJSON string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+	if len(span.Results) != 1 {
+		return rawJSON, nil
+	}
+	m := findMaskerForScalarValue(span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
+	if m == nil {
+		return rawJSON, nil
+	}
+	return applyMaskerToScalarJSON(rawJSON, m)
+}
+
+// findMaskerForScalarValue checks all source field paths across all projected fields
+// and returns the first masker found for a sensitive semantic type, or nil.
+func findMaskerForScalarValue(fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) masker.Masker {
+	for _, paths := range fieldPaths {
+		for _, path := range paths {
+			ast := stripContainerFromPath(path)
+			_, semanticType := getObjectSchemaByPath(objectSchema, ast)
+			if semanticType == "" {
+				continue
+			}
+			if m, ok := semanticTypeToMasker[semanticType]; ok {
+				return m
+			}
+		}
+	}
+	return nil
+}
+
+// applyMaskerToScalarJSON parses a raw JSON scalar, masks it, and re-serializes.
+func applyMaskerToScalarJSON(rawJSON string, m masker.Masker) (string, error) {
+	var parsed any
+	if err := json.Unmarshal([]byte(rawJSON), &parsed); err != nil {
+		return rawJSON, nil //nolint:nilerr // Unparseable JSON: pass through as-is.
+	}
+	masked, err := applyMaskerToJSONMember(parsed, m)
+	if err != nil {
+		return "", err
+	}
+	out, err := json.Marshal(masked)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 // ---------------------------------------------------------------------------
