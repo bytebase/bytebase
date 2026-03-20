@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
-	omniParser "github.com/bytebase/omni/pg/parser"
+	pgparser "github.com/bytebase/omni/pg/parser"
 	pg "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
@@ -83,10 +83,10 @@ func isNoSeparatorRequired(tokenType int) bool {
 	switch tokenType {
 	case '$', '(', ')', '[', ']', ',', ';', ':', '=', '.',
 		'+', '-', '/', '^', '<', '>', '%', '*',
-		omniParser.TYPECAST, omniParser.DOT_DOT, omniParser.COLON_EQUALS,
-		omniParser.EQUALS_GREATER, omniParser.LESS_EQUALS,
-		omniParser.GREATER_EQUALS, omniParser.NOT_EQUALS, omniParser.PARAM,
-		omniParser.Op:
+		pgparser.TYPECAST, pgparser.DOT_DOT, pgparser.COLON_EQUALS,
+		pgparser.EQUALS_GREATER, pgparser.LESS_EQUALS,
+		pgparser.GREATER_EQUALS, pgparser.NOT_EQUALS, pgparser.PARAM,
+		pgparser.Op:
 		return true
 	}
 	return false
@@ -97,7 +97,7 @@ type Completer struct {
 	scene             base.SceneType
 	sql               string             // the SQL statement (after skipHeadingSQLs)
 	cursorByteOffset  int                // byte offset in sql for omni Collect
-	tokens            []omniParser.Token // omni tokens for the SQL
+	tokens            []pgparser.Token // omni tokens for the SQL
 	caretTokenIndex   int                // index in tokens at/near the caret
 	instanceID        string
 	defaultDatabase   string
@@ -119,7 +119,7 @@ type Completer struct {
 
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, true /* tricky */)
-	tokens := omniParser.Tokenize(sql)
+	tokens := pgparser.Tokenize(sql)
 	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	defaultSchema := cCtx.DefaultSchema
 	schemaNotSelected := defaultSchema == ""
@@ -146,7 +146,7 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
-	tokens := omniParser.Tokenize(sql)
+	tokens := pgparser.Tokenize(sql)
 	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	defaultSchema := cCtx.DefaultSchema
 	schemaNotSelected := defaultSchema == ""
@@ -177,7 +177,7 @@ func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, stat
 // Uses >= so that when the cursor is exactly at a token boundary, we pick
 // that token (not the one before it).
 // Returns len(tokens) if all tokens are before byteOffset.
-func findCaretTokenIndex(tokens []omniParser.Token, byteOffset int) int {
+func findCaretTokenIndex(tokens []pgparser.Token, byteOffset int) int {
 	for i, tok := range tokens {
 		if tok.Loc >= byteOffset {
 			return i
@@ -190,7 +190,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	// Check if the caret token is quoted.
 	if c.caretTokenIndex < len(c.tokens) {
 		tok := c.tokens[c.caretTokenIndex]
-		if tok.Type == omniParser.IDENT && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '"' {
+		if tok.Type == pgparser.IDENT && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '"' {
 			c.caretTokenIsQuoted = true
 		}
 	}
@@ -202,7 +202,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 
 	// Use omni parser to collect grammar candidates instead of C3.
-	candidates := omniParser.Collect(c.sql, c.cursorByteOffset)
+	candidates := pgparser.Collect(c.sql, c.cursorByteOffset)
 
 	// If Collect returned no rule candidates and the cursor is at the end of a
 	// partial identifier token (prefix), retry Collect at the start of that
@@ -211,7 +211,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	// rule to suggest.
 	if len(candidates.Rules) == 0 {
 		if prefixTok, ok := c.prefixToken(); ok {
-			candidates = omniParser.Collect(c.sql, prefixTok.Loc)
+			candidates = pgparser.Collect(c.sql, prefixTok.Loc)
 		}
 	}
 
@@ -231,7 +231,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 // prefixToken returns the token immediately before (or containing) the cursor
 // position when that token is an identifier-like token that the user is still
 // typing.  Returns false if no such token exists.
-func (c *Completer) prefixToken() (omniParser.Token, bool) {
+func (c *Completer) prefixToken() (pgparser.Token, bool) {
 	// caretTokenIndex points to the first token at or past cursorByteOffset.
 	// The partial-prefix token is the one just before it (when the cursor is
 	// right after it) or the token itself (when the cursor is inside it).
@@ -253,13 +253,13 @@ func (c *Completer) prefixToken() (omniParser.Token, bool) {
 		}
 	}
 
-	return omniParser.Token{}, false
+	return pgparser.Token{}, false
 }
 
 // isIdentLikeToken returns true for token types that represent identifiers or
 // unreserved keywords that a user might be partially typing.
 func isIdentLikeToken(tokenType int) bool {
-	return omniParser.IsIdentifierTokenType(tokenType)
+	return pgparser.IsIdentifierTokenType(tokenType)
 }
 
 type CompletionMap map[string]base.Candidate
@@ -536,7 +536,7 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	return result
 }
 
-func (c *Completer) convertCandidates(candidates *omniParser.CandidateSet) ([]base.Candidate, error) {
+func (c *Completer) convertCandidates(candidates *pgparser.CandidateSet) ([]base.Candidate, error) {
 	keywordEntries := make(CompletionMap)
 	runtimeFunctionEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
@@ -551,7 +551,7 @@ func (c *Completer) convertCandidates(candidates *omniParser.CandidateSet) ([]ba
 		if tok > 0 && tok < 256 {
 			continue
 		}
-		name := omniParser.TokenName(tok)
+		name := pgparser.TokenName(tok)
 		if name == "" {
 			continue
 		}
@@ -838,15 +838,16 @@ func (c *Completer) isInAliasAllowedContext() bool {
 			} else {
 				return false // inside a subquery — don't look further
 			}
+		default:
 		}
 		if level > 0 {
 			continue // skip tokens inside nested parens
 		}
 		switch c.tokens[i].Type {
-		case omniParser.ORDER, omniParser.GROUP_P, omniParser.HAVING:
+		case pgparser.ORDER, pgparser.GROUP_P, pgparser.HAVING:
 			return true
-		case omniParser.WHERE, omniParser.ON, omniParser.FROM, omniParser.SELECT,
-			omniParser.LIMIT, omniParser.OFFSET, omniParser.WINDOW, omniParser.FOR:
+		case pgparser.WHERE, pgparser.ON, pgparser.FROM, pgparser.SELECT,
+			pgparser.LIMIT, pgparser.OFFSET, pgparser.WINDOW, pgparser.FOR:
 			return false
 		}
 	}
@@ -925,7 +926,7 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 	// Otherwise we might be right after the trailing identifier (e.g. after a dot).
 	if idx < len(c.tokens) {
 		tt := c.tokens[idx].Type
-		if tt != omniParser.ONLY && !omniParser.IsIdentifierTokenType(tt) {
+		if tt != pgparser.ONLY && !pgparser.IsIdentifierTokenType(tt) {
 			idx--
 		}
 	} else {
@@ -937,16 +938,16 @@ func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
 	}
 
 	// Check if there's a dot before the current identifier, indicating a qualifier.
-	if idx >= 2 && omniParser.IsIdentifierTokenType(c.tokens[idx].Type) &&
+	if idx >= 2 && pgparser.IsIdentifierTokenType(c.tokens[idx].Type) &&
 		c.tokens[idx-1].Type == '.' &&
-		omniParser.IsIdentifierTokenType(c.tokens[idx-2].Type) {
+		pgparser.IsIdentifierTokenType(c.tokens[idx-2].Type) {
 		qualifier := normalizeIdentifier(c.tokens[idx-2].Str)
 		return qualifier, ObjectFlagsShowSecond
 	}
 
 	// If caret is right after a dot (e.g. "schema.|"), the dot is at idx
 	if idx >= 1 && c.tokens[idx].Type == '.' &&
-		omniParser.IsIdentifierTokenType(c.tokens[idx-1].Type) {
+		pgparser.IsIdentifierTokenType(c.tokens[idx-1].Type) {
 		qualifier := normalizeIdentifier(c.tokens[idx-1].Str)
 		return qualifier, ObjectFlagsShowSecond
 	}
@@ -961,7 +962,7 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	// If the caret token is not a dot and not an identifier, step back.
 	if idx < len(c.tokens) {
 		tt := c.tokens[idx].Type
-		if tt != '.' && !omniParser.IsIdentifierTokenType(tt) {
+		if tt != '.' && !pgparser.IsIdentifierTokenType(tt) {
 			idx--
 		}
 	} else {
@@ -985,13 +986,13 @@ func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlag
 	pos := idx
 
 	// If current position is an identifier, collect it and move left.
-	if pos >= 0 && omniParser.IsIdentifierTokenType(c.tokens[pos].Type) {
+	if pos >= 0 && pgparser.IsIdentifierTokenType(c.tokens[pos].Type) {
 		parts = append(parts, normalizeIdentifier(c.tokens[pos].Str))
 		pos--
 	}
 
 	// Check for dot + identifier patterns going left.
-	for pos >= 1 && c.tokens[pos].Type == '.' && omniParser.IsIdentifierTokenType(c.tokens[pos-1].Type) {
+	for pos >= 1 && c.tokens[pos].Type == '.' && pgparser.IsIdentifierTokenType(c.tokens[pos-1].Type) {
 		parts = append(parts, normalizeIdentifier(c.tokens[pos-1].Str))
 		pos -= 2
 	}
@@ -1068,10 +1069,11 @@ func (c *Completer) collectRemainingTableReferences() {
 			if level > 0 {
 				level--
 			}
-		case omniParser.FROM:
+		case pgparser.FROM:
 			if level == 0 {
 				c.parseTableReferences(c.sql[c.tokens[i].Loc:])
 			}
+		default:
 		}
 	}
 }
@@ -1089,8 +1091,9 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 			}
 			level--
 			c.referencesStack = c.referencesStack[1:]
-		case omniParser.FROM:
+		case pgparser.FROM:
 			c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+		default:
 		}
 	}
 }
@@ -1287,7 +1290,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	tokens := omniParser.Tokenize(statement)
+	tokens := pgparser.Tokenize(statement)
 	caretByteOff := lineColumnToByteOffset(statement, caretLine, caretOffset)
 
 	latestSelectOffset := -1
@@ -1298,7 +1301,7 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 		if tok.Loc >= caretByteOff {
 			break
 		}
-		if tok.Type == omniParser.SELECT {
+		if tok.Type == pgparser.SELECT {
 			// Check that this SELECT starts at column 0 of its line.
 			// Either it's the first byte of the string, or the byte immediately
 			// before it is a newline.
@@ -1455,7 +1458,7 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if strings.ToLower(s) != s {
 		return fmt.Sprintf(`"%s"`, s)
 	}
-	if omniParser.IsReservedKeyword(strings.ToUpper(s)) {
+	if pgparser.IsReservedKeyword(strings.ToUpper(s)) {
 		return fmt.Sprintf(`"%s"`, s)
 	}
 	// PostgreSQL requires double quotes for identifiers with special characters or start with digits
