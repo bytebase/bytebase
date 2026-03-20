@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { runAgentLoop } from "../logic/agentLoop";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
-import type { Message } from "../logic/types";
+import type { AgentAskUserOption, Message } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 
 const { t } = useI18n();
@@ -15,14 +15,26 @@ const agentStore = useAgentStore();
 const input = ref("");
 
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
+const chooseOptions = computed(() =>
+  currentPendingAsk.value?.kind === "choose"
+    ? (currentPendingAsk.value.options ?? [])
+    : []
+);
 const isAwaitingConfirm = computed(
   () => currentPendingAsk.value?.kind === "confirm"
+);
+const isAwaitingChoose = computed(
+  () =>
+    currentPendingAsk.value?.kind === "choose" && chooseOptions.value.length > 0
 );
 const sendLabel = computed(() =>
   currentPendingAsk.value ? t("agent.reply") : t("agent.send")
 );
 const inputPlaceholder = computed(() => {
   if (currentPendingAsk.value?.kind === "input") {
+    return currentPendingAsk.value.prompt;
+  }
+  if (currentPendingAsk.value?.kind === "choose") {
     return currentPendingAsk.value.prompt;
   }
   return t("agent.input-placeholder");
@@ -34,7 +46,11 @@ const cancelLabel = computed(
   () => currentPendingAsk.value?.cancelLabel ?? t("agent.cancel")
 );
 const isSendDisabled = computed(() => {
-  if (agentStore.hasRunningThread || isAwaitingConfirm.value) {
+  if (
+    agentStore.hasRunningThread ||
+    isAwaitingConfirm.value ||
+    isAwaitingChoose.value
+  ) {
     return true;
   }
   return !input.value.trim();
@@ -179,16 +195,33 @@ async function send() {
       return;
     }
     input.value = "";
-    agentStore.answerPendingAsk(
-      threadId,
-      {
-        kind: currentPendingAsk.value.kind,
-        answer,
-      },
-      {
-        route: page.path,
-      }
-    );
+
+    if (currentPendingAsk.value.kind === "choose") {
+      agentStore.answerPendingAsk(
+        threadId,
+        {
+          kind: "choose",
+          answer,
+          value: answer,
+        },
+        {
+          route: page.path,
+        }
+      );
+    } else if (currentPendingAsk.value.kind === "input") {
+      agentStore.answerPendingAsk(
+        threadId,
+        {
+          kind: "input",
+          answer,
+        },
+        {
+          route: page.path,
+        }
+      );
+    } else {
+      return;
+    }
     agentStore.startRun(threadId, page);
     await runThread(threadId, page);
     return;
@@ -243,10 +276,44 @@ async function submitConfirmation(confirmed: boolean) {
   await runThread(threadId, page);
 }
 
+async function submitChoice(option: AgentAskUserOption) {
+  const pendingAsk = currentPendingAsk.value;
+  if (
+    !pendingAsk ||
+    pendingAsk.kind !== "choose" ||
+    agentStore.hasRunningThread
+  ) {
+    return;
+  }
+
+  const page = getCurrentPageSnapshot();
+  const thread = agentStore.ensureCurrentThread(page);
+  const threadId = thread.id;
+
+  agentStore.clearError(threadId);
+  agentStore.answerPendingAsk(
+    threadId,
+    {
+      kind: "choose",
+      answer: option.label,
+      value: option.value,
+    },
+    {
+      route: page.path,
+    }
+  );
+  agentStore.startRun(threadId, page);
+  await runThread(threadId, page);
+}
+
 watch(
   () => currentPendingAsk.value?.toolCallId,
   () => {
     if (currentPendingAsk.value?.kind === "input") {
+      input.value = currentPendingAsk.value.defaultValue ?? "";
+      return;
+    }
+    if (currentPendingAsk.value?.kind === "choose") {
       input.value = currentPendingAsk.value.defaultValue ?? "";
       return;
     }
@@ -267,9 +334,11 @@ watch(
       <div class="font-medium">{{ currentPendingAsk.prompt }}</div>
       <div class="mt-1">
         {{
-          isAwaitingConfirm
+          currentPendingAsk.kind === "confirm"
             ? $t("agent.pending-confirm-hint")
-            : $t("agent.pending-input-hint")
+            : currentPendingAsk.kind === "choose"
+              ? $t("agent.pending-choose-hint")
+              : $t("agent.pending-input-hint")
         }}
       </div>
     </div>
@@ -288,6 +357,21 @@ watch(
         @click="submitConfirmation(false)"
       >
         {{ cancelLabel }}
+      </button>
+    </div>
+
+    <div v-else-if="isAwaitingChoose" class="flex flex-col gap-y-2">
+      <button
+        v-for="option in chooseOptions"
+        :key="option.value"
+        class="rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
+        :disabled="agentStore.hasRunningThread"
+        @click="submitChoice(option)"
+      >
+        <div class="font-medium text-gray-800">{{ option.label }}</div>
+        <div v-if="option.description" class="mt-1 text-xs text-gray-500">
+          {{ option.description }}
+        </div>
       </button>
     </div>
 

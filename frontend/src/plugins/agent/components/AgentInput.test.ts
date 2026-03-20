@@ -56,6 +56,7 @@ const i18n = createI18n({
         "pending-input-hint": "Reply below to continue this thread.",
         "pending-confirm-hint":
           "Choose confirm or cancel to continue this thread.",
+        "pending-choose-hint": "Choose an option to continue this thread.",
       },
     },
   },
@@ -148,6 +149,83 @@ describe("AgentInput", () => {
         }),
       ])
     );
+  });
+
+  test("uses choose buttons to answer pending choose prompts", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "tool-choose",
+          name: "ask_user",
+          arguments: JSON.stringify({
+            prompt: "Which environment should I use?",
+            kind: "choose",
+            options: [
+              {
+                label: "Production",
+                value: "prod",
+                description: "Use the production environment",
+              },
+              {
+                label: "Staging",
+                value: "staging",
+              },
+            ],
+          }),
+        },
+      ],
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-choose",
+      prompt: "Which environment should I use?",
+      kind: "choose",
+      options: [
+        {
+          label: "Production",
+          value: "prod",
+          description: "Use the production environment",
+        },
+        {
+          label: "Staging",
+          value: "staging",
+        },
+      ],
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Using production.",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const buttons = wrapper.findAll("button");
+    expect(buttons).toHaveLength(2);
+    await buttons[0].trigger("click");
+    await flushPromises();
+
+    const toolMessages = store
+      .getMessages(threadId)
+      .filter((message) => message.role === "tool");
+    expect(toolMessages).toHaveLength(1);
+    expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
+      kind: "choose",
+      answer: "Production",
+      value: "prod",
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
   });
 
   test("uses confirm buttons to answer pending confirmation prompts", async () => {

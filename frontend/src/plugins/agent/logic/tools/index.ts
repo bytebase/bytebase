@@ -2,6 +2,7 @@ import type { Router } from "vue-router";
 import { getSkill, type GetSkillArgs } from "../skills";
 import type {
   AgentAskUserKind,
+  AgentAskUserOption,
   AgentPendingAsk,
   ToolDefinition,
   ToolExecutionResult,
@@ -18,8 +19,56 @@ const toToolResult = (result: string): ToolExecutionResult => ({
   result,
 });
 
-const parseAskUserKind = (value: unknown): AgentAskUserKind => {
-  return value === "confirm" ? "confirm" : "input";
+const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const option = value as Record<string, unknown>;
+  const label =
+    typeof option.label === "string"
+      ? option.label.trim()
+      : typeof option.value === "string"
+        ? option.value.trim()
+        : "";
+  const optionValue =
+    typeof option.value === "string" ? option.value.trim() : "";
+
+  if (!label || !optionValue) {
+    return null;
+  }
+
+  return {
+    label,
+    value: optionValue,
+    description:
+      typeof option.description === "string" && option.description.trim()
+        ? option.description.trim()
+        : undefined,
+  };
+};
+
+const parseAskUserOptions = (value: unknown): AgentAskUserOption[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((option) => parseAskUserOption(option))
+    .filter((option): option is AgentAskUserOption => !!option);
+};
+
+const parseAskUserKind = (
+  value: unknown,
+  options: AgentAskUserOption[]
+): AgentAskUserKind => {
+  if (value === "confirm") {
+    return "confirm";
+  }
+  if (value === "choose" && options.length > 0) {
+    return "choose";
+  }
+  return "input";
 };
 
 const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
@@ -41,10 +90,11 @@ const parseAskUserArgs = (
     throw new Error("ask_user requires a non-empty prompt string");
   }
 
+  const options = parseAskUserOptions(args.options);
   const ask: AgentPendingAsk = {
     toolCallId,
     prompt: args.prompt,
-    kind: parseAskUserKind(args.kind),
+    kind: parseAskUserKind(args.kind, options),
   };
 
   if (typeof args.defaultValue === "string") {
@@ -55,6 +105,9 @@ const parseAskUserArgs = (
   }
   if (typeof args.cancelLabel === "string") {
     ask.cancelLabel = args.cancelLabel;
+  }
+  if (ask.kind === "choose") {
+    ask.options = options;
   }
 
   return {
@@ -235,7 +288,7 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
     {
       name: "ask_user",
       description:
-        "Ask the user for missing information or confirmation. Use kind='input' for free-form text and kind='confirm' for confirm/cancel decisions.",
+        "Ask the user for missing information, confirmation, or an explicit choice. Use kind='input' for free-form text, kind='confirm' for confirm/cancel decisions, and kind='choose' with options=[{label,value}] when the user must pick from explicit options.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -245,13 +298,14 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
           },
           kind: {
             type: "string",
-            enum: ["input", "confirm"],
-            description: 'Defaults to "input" when omitted.',
+            enum: ["input", "confirm", "choose"],
+            description:
+              'Defaults to "input" when omitted. kind="choose" requires a non-empty options array.',
           },
           defaultValue: {
             type: "string",
             description:
-              "Optional default answer to prefill for input prompts.",
+              "Optional default answer to prefill for input prompts, or the default option value for choose prompts.",
           },
           confirmLabel: {
             type: "string",
@@ -260,6 +314,29 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
           cancelLabel: {
             type: "string",
             description: "Optional cancel button label for confirm prompts.",
+          },
+          options: {
+            type: "array",
+            description:
+              "Required for choose prompts. Each option should include a user-visible label and a stable value.",
+            items: {
+              type: "object",
+              properties: {
+                label: {
+                  type: "string",
+                  description: "User-visible option label.",
+                },
+                value: {
+                  type: "string",
+                  description: "Stable option value returned to the model.",
+                },
+                description: {
+                  type: "string",
+                  description: "Optional helper text shown with the option.",
+                },
+              },
+              required: ["label", "value"],
+            },
           },
         },
         required: ["prompt"],

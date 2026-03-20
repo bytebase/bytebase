@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { AgentAskUserResponse, ToolCall } from "../logic/types";
+import type {
+  AgentAskUserOption,
+  AgentAskUserResponse,
+  ToolCall,
+} from "../logic/types";
 
 const props = defineProps<{
   toolCall: ToolCall;
@@ -31,6 +35,35 @@ const formatJson = (value?: string): string => {
   }
 };
 
+const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const option = value as Record<string, unknown>;
+  const label =
+    typeof option.label === "string"
+      ? option.label.trim()
+      : typeof option.value === "string"
+        ? option.value.trim()
+        : "";
+  const optionValue =
+    typeof option.value === "string" ? option.value.trim() : "";
+
+  if (!label || !optionValue) {
+    return null;
+  }
+
+  return {
+    label,
+    value: optionValue,
+    description:
+      typeof option.description === "string" && option.description.trim()
+        ? option.description.trim()
+        : undefined,
+  };
+};
+
 const resultText = computed(() => props.result ?? "");
 const parsedArguments = computed(() => parseJson(props.toolCall.arguments));
 const parsedResult = computed(() => parseJson(resultText.value));
@@ -51,10 +84,14 @@ const askKind = computed(() => {
   if (
     typeof parsedArguments.value === "object" &&
     parsedArguments.value &&
-    "kind" in parsedArguments.value &&
-    parsedArguments.value.kind === "confirm"
+    "kind" in parsedArguments.value
   ) {
-    return "confirm";
+    if (parsedArguments.value.kind === "confirm") {
+      return "confirm";
+    }
+    if (parsedArguments.value.kind === "choose") {
+      return "choose";
+    }
   }
   return "input";
 });
@@ -69,17 +106,52 @@ const askDefaultValue = computed(() => {
   }
   return "";
 });
+const askOptions = computed<AgentAskUserOption[]>(() => {
+  if (
+    typeof parsedArguments.value !== "object" ||
+    !parsedArguments.value ||
+    !("options" in parsedArguments.value) ||
+    !Array.isArray(parsedArguments.value.options)
+  ) {
+    return [];
+  }
+
+  return parsedArguments.value.options
+    .map((option) => parseAskUserOption(option))
+    .filter((option): option is AgentAskUserOption => !!option);
+});
 const askResponse = computed<AgentAskUserResponse | null>(() => {
   if (
-    typeof parsedResult.value === "object" &&
-    parsedResult.value &&
-    "kind" in parsedResult.value &&
-    typeof parsedResult.value.kind === "string" &&
-    "answer" in parsedResult.value &&
-    typeof parsedResult.value.answer === "string"
+    typeof parsedResult.value !== "object" ||
+    !parsedResult.value ||
+    !("kind" in parsedResult.value) ||
+    typeof parsedResult.value.kind !== "string" ||
+    !("answer" in parsedResult.value) ||
+    typeof parsedResult.value.answer !== "string"
   ) {
-    return parsedResult.value as AgentAskUserResponse;
+    return null;
   }
+
+  const response = parsedResult.value as Record<string, unknown>;
+
+  if (response.kind === "confirm") {
+    if (typeof response.confirmed !== "boolean") {
+      return null;
+    }
+    return response as AgentAskUserResponse;
+  }
+
+  if (response.kind === "choose") {
+    if (typeof response.value !== "string") {
+      return null;
+    }
+    return response as AgentAskUserResponse;
+  }
+
+  if (response.kind === "input") {
+    return response as AgentAskUserResponse;
+  }
+
   return null;
 });
 const doneText = computed(() => {
@@ -136,7 +208,9 @@ const doneSuccess = computed(() => {
           {{
             askKind === "confirm"
               ? $t("agent.tool-ask-user-confirm")
-              : $t("agent.tool-ask-user-input")
+              : askKind === "choose"
+                ? $t("agent.tool-ask-user-choose")
+                : $t("agent.tool-ask-user-input")
           }}
         </div>
         <div class="text-gray-500">{{ $t("agent.tool-prompt") }}</div>
@@ -147,11 +221,33 @@ const doneSuccess = computed(() => {
             askDefaultValue
           }}</pre>
         </template>
+        <template v-if="askKind === 'choose' && askOptions.length > 0">
+          <div class="text-gray-500">{{ $t("agent.tool-options") }}</div>
+          <div class="space-y-1">
+            <div
+              v-for="option in askOptions"
+              :key="option.value"
+              class="rounded border border-gray-200 bg-white px-2 py-1"
+            >
+              <div class="font-medium text-gray-700">{{ option.label }}</div>
+              <div class="text-gray-500">{{ option.value }}</div>
+              <div v-if="option.description" class="text-gray-500">
+                {{ option.description }}
+              </div>
+            </div>
+          </div>
+        </template>
         <template v-if="askResponse">
           <div class="text-gray-500">{{ $t("agent.tool-answer") }}</div>
           <pre class="whitespace-pre-wrap break-all text-gray-700">{{
             askResponse.answer
           }}</pre>
+          <template v-if="askResponse.kind === 'choose'">
+            <div class="text-gray-500">{{ $t("agent.tool-value") }}</div>
+            <pre class="whitespace-pre-wrap break-all text-gray-700">{{
+              askResponse.value
+            }}</pre>
+          </template>
         </template>
       </template>
 

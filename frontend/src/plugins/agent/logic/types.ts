@@ -51,7 +51,13 @@ export interface AgentThread {
   interrupted?: boolean;
 }
 
-export type AgentAskUserKind = "input" | "confirm";
+export type AgentAskUserKind = "input" | "confirm" | "choose";
+
+export interface AgentAskUserOption {
+  label: string;
+  value: string;
+  description?: string;
+}
 
 export interface AgentPendingAsk {
   toolCallId: string;
@@ -60,13 +66,24 @@ export interface AgentPendingAsk {
   defaultValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  options?: AgentAskUserOption[];
 }
 
-export interface AgentAskUserResponse {
-  kind: AgentAskUserKind;
-  answer: string;
-  confirmed?: boolean;
-}
+export type AgentAskUserResponse =
+  | {
+      kind: "input";
+      answer: string;
+    }
+  | {
+      kind: "confirm";
+      answer: string;
+      confirmed: boolean;
+    }
+  | {
+      kind: "choose";
+      answer: string;
+      value: string;
+    };
 
 export type ToolExecutionResult =
   | {

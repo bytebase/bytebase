@@ -139,15 +139,26 @@ describe("useAgentStore", () => {
     expect(rehydratedStore.getThread(secondThread.id)?.status).toBe("idle");
   });
 
-  test("persists pending ask state for awaiting-user threads", async () => {
+  test("persists pending choose asks for awaiting-user threads", async () => {
     const store = createStore();
     const threadId = store.currentThreadId!;
 
     store.awaitUser(threadId, {
       toolCallId: "tool-1",
       prompt: "Which database should I use?",
-      kind: "input",
+      kind: "choose",
       defaultValue: "prod-db",
+      options: [
+        {
+          label: "Production",
+          value: "prod-db",
+          description: "Primary production database",
+        },
+        {
+          label: "Staging",
+          value: "staging-db",
+        },
+      ],
     });
 
     await nextTick();
@@ -157,10 +168,62 @@ describe("useAgentStore", () => {
     expect(rehydratedStore.getPendingAsk(threadId)).toEqual({
       toolCallId: "tool-1",
       prompt: "Which database should I use?",
-      kind: "input",
+      kind: "choose",
       defaultValue: "prod-db",
       confirmLabel: undefined,
       cancelLabel: undefined,
+      options: [
+        {
+          label: "Production",
+          value: "prod-db",
+          description: "Primary production database",
+        },
+        {
+          label: "Staging",
+          value: "staging-db",
+        },
+      ],
+    });
+  });
+
+  test("normalizes invalid persisted choose asks to input", () => {
+    localStorage.setItem(
+      AGENT_STATE_KEY,
+      JSON.stringify({
+        currentThreadId: "thread-1",
+        threads: [
+          {
+            id: "thread-1",
+            title: "Existing thread",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "awaiting_user",
+          },
+        ],
+        messagesByThreadId: {
+          "thread-1": [],
+        },
+        pendingAskByThreadId: {
+          "thread-1": {
+            toolCallId: "tool-1",
+            prompt: "Choose a database",
+            kind: "choose",
+            options: [{ label: "Broken option" }],
+          },
+        },
+      })
+    );
+
+    const store = createStore();
+
+    expect(store.getPendingAsk("thread-1")).toEqual({
+      toolCallId: "tool-1",
+      prompt: "Choose a database",
+      kind: "input",
+      defaultValue: undefined,
+      confirmLabel: undefined,
+      cancelLabel: undefined,
+      options: undefined,
     });
   });
 
@@ -190,6 +253,38 @@ describe("useAgentStore", () => {
       kind: "confirm",
       answer: "Proceed",
       confirmed: true,
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
+  });
+
+  test("answerPendingAsk stores choose labels and values", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.awaitUser(threadId, {
+      toolCallId: "tool-choose",
+      prompt: "Choose an environment",
+      kind: "choose",
+      options: [
+        { label: "Production", value: "prod" },
+        { label: "Staging", value: "staging" },
+      ],
+    });
+
+    store.answerPendingAsk(threadId, {
+      kind: "choose",
+      answer: "Production",
+      value: "prod",
+    });
+
+    const messages = store.getMessages(threadId);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe("tool");
+    expect(messages[0].toolCallId).toBe("tool-choose");
+    expect(JSON.parse(messages[0].content ?? "{}")).toEqual({
+      kind: "choose",
+      answer: "Production",
+      value: "prod",
     });
     expect(store.getPendingAsk(threadId)).toBeNull();
   });

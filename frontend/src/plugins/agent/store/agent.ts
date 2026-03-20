@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import type {
+  AgentAskUserOption,
   AgentAskUserResponse,
   AgentMessage,
   AgentPendingAsk,
@@ -92,6 +93,30 @@ const normalizeMessage = (
   };
 };
 
+const normalizeAskUserOption = (raw: unknown): AgentAskUserOption | null => {
+  const option = isRecord(raw) ? raw : {};
+  const label =
+    typeof option.label === "string"
+      ? option.label.trim()
+      : typeof option.value === "string"
+        ? option.value.trim()
+        : "";
+  const value = typeof option.value === "string" ? option.value.trim() : "";
+
+  if (!label || !value) {
+    return null;
+  }
+
+  return {
+    label,
+    value,
+    description:
+      typeof option.description === "string" && option.description.trim()
+        ? option.description.trim()
+        : undefined,
+  };
+};
+
 const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
   const pendingAsk = isRecord(raw) ? raw : {};
   if (
@@ -101,10 +126,22 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
     return null;
   }
 
+  const options = Array.isArray(pendingAsk.options)
+    ? pendingAsk.options
+        .map((option) => normalizeAskUserOption(option))
+        .filter((option): option is AgentAskUserOption => !!option)
+    : [];
+  const kind =
+    pendingAsk.kind === "confirm"
+      ? "confirm"
+      : pendingAsk.kind === "choose" && options.length > 0
+        ? "choose"
+        : "input";
+
   return {
     toolCallId: pendingAsk.toolCallId,
     prompt: pendingAsk.prompt,
-    kind: pendingAsk.kind === "confirm" ? "confirm" : "input",
+    kind,
     defaultValue:
       typeof pendingAsk.defaultValue === "string"
         ? pendingAsk.defaultValue
@@ -117,6 +154,7 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
       typeof pendingAsk.cancelLabel === "string"
         ? pendingAsk.cancelLabel
         : undefined,
+    options: kind === "choose" ? options : undefined,
   };
 };
 

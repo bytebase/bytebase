@@ -105,8 +105,12 @@ describe("runAgentLoop", () => {
           id: "tool-ask",
           name: "ask_user",
           arguments: JSON.stringify({
-            prompt: "What project should I use?",
-            kind: "input",
+            prompt: "Which environment should I use?",
+            kind: "choose",
+            options: [
+              { label: "Production", value: "prod" },
+              { label: "Staging", value: "staging" },
+            ],
           }),
           metadata: "",
         },
@@ -118,8 +122,12 @@ describe("runAgentLoop", () => {
         kind: "ask_user" as const,
         ask: {
           toolCallId,
-          prompt: "What project should I use?",
-          kind: "input" as const,
+          prompt: "Which environment should I use?",
+          kind: "choose" as const,
+          options: [
+            { label: "Production", value: "prod" },
+            { label: "Staging", value: "staging" },
+          ],
         },
       })
     );
@@ -136,8 +144,12 @@ describe("runAgentLoop", () => {
       kind: "awaiting_user",
       ask: {
         toolCallId: "tool-ask",
-        prompt: "What project should I use?",
-        kind: "input",
+        prompt: "Which environment should I use?",
+        kind: "choose",
+        options: [
+          { label: "Production", value: "prod" },
+          { label: "Staging", value: "staging" },
+        ],
       },
     });
     expect(onToolResult).not.toHaveBeenCalled();
