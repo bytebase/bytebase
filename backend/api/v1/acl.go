@@ -269,21 +269,16 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
-	rawResources, err := getResourceFromRequest(ctx, request, method)
+	rawNames, err := getResourceFromRequest(ctx, request, method)
 	if err != nil {
 		return err
 	}
 
 	var resources []*common.Resource
-	for _, raw := range rawResources {
+	for _, name := range rawNames {
 		switch {
-		case raw.isWorkspace:
-			resources = append(resources, &common.Resource{
-				Type: common.ResourceTypeWorkspace,
-				ID:   common.GetWorkspaceIDFromContext(ctx),
-			})
-		case strings.HasPrefix(raw.name, "workspaces/"):
-			wsID, err := common.GetWorkspaceID(raw.name)
+		case strings.HasPrefix(name, "workspaces/"):
+			wsID, err := common.GetWorkspaceID(name)
 			if err != nil {
 				return err
 			}
@@ -292,10 +287,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				ID:   wsID,
 			})
 		// TODO(d): remove "projects/-" hack later.
-		case strings.HasPrefix(raw.name, "projects/") && raw.name != "projects/-":
-			project := projectRegex.FindString(raw.name)
+		case strings.HasPrefix(name, "projects/") && name != "projects/-":
+			project := projectRegex.FindString(name)
 			if project == "" {
-				return errors.Errorf("invalid project resource %q", raw.name)
+				return errors.Errorf("invalid project resource %q", name)
 			}
 			projectID, err := common.GetProjectID(project)
 			if err != nil {
@@ -305,8 +300,8 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				Type: common.ResourceTypeProject,
 				ID:   projectID,
 			})
-		case strings.HasPrefix(raw.name, "instances/") && strings.Contains(raw.name, "/databases/") && !strings.HasPrefix(raw.name, "instances/-/databases/"):
-			match := databaseRegex.FindString(raw.name)
+		case strings.HasPrefix(name, "instances/") && strings.Contains(name, "/databases/") && !strings.HasPrefix(name, "instances/-/databases/"):
+			match := databaseRegex.FindString(name)
 			if match != "" {
 				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
 				if err != nil {
@@ -339,13 +334,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 	return nil
 }
 
-// rawResource is an intermediate type used during resource extraction from proto requests.
-type rawResource struct {
-	name        string
-	isWorkspace bool
-}
-
-func getResourceFromRequest(ctx context.Context, request any, method string) ([]*rawResource, error) {
+func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
 		return nil, errors.Errorf("invalid request for method %q", method)
@@ -358,7 +347,7 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 	}
 	shortMethod := methodTokens[2]
 
-	var resources []*rawResource
+	var resources []string
 
 	// Transferring database projects needs to check both projects.
 	var updateDatabaseRequests []*v1pb.UpdateDatabaseRequest
@@ -379,14 +368,14 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 			if common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
 				continue
 			}
-			resources = append(resources, &rawResource{name: r.GetDatabase().GetProject()})
+			resources = append(resources, r.GetDatabase().GetProject())
 		}
 	}
 
 	// HACK(p0ny): unfortunately, BatchUpdateIssuesStatus doesn't comply to aip.
 	if r, ok := request.(*v1pb.BatchUpdateIssuesStatusRequest); ok {
 		for _, issue := range r.Issues {
-			resources = append(resources, &rawResource{name: issue})
+			resources = append(resources, issue)
 		}
 		return resources, nil
 	}
@@ -400,7 +389,7 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 				namesValueList := namesValue.List()
 				for i := 0; i < namesValueList.Len(); i++ {
 					v := namesValueList.Get(i)
-					resources = append(resources, &rawResource{name: v.String()})
+					resources = append(resources, v.String())
 				}
 				return resources, nil
 			}
@@ -413,48 +402,42 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 			shortMethodWithoutBatch := strings.TrimSuffix(strings.TrimPrefix(shortMethod, "Batch"), "s")
 			for i := 0; i < requestsValueList.Len(); i++ {
 				r := requestsValueList.Get(i).Message()
-				resource := getResourceFromSingleRequest(r, shortMethodWithoutBatch)
-				if resource != nil {
+				if resource := getResourceFromSingleRequest(r, shortMethodWithoutBatch); resource != "" {
 					resources = append(resources, resource)
 				}
 			}
 			return resources, nil
 		}
 	}
-	resource := getResourceFromSingleRequest(mr, shortMethod)
-	if resource != nil {
+	if resource := getResourceFromSingleRequest(mr, shortMethod); resource != "" {
 		resources = append(resources, resource)
 	}
 	return resources, nil
 }
 
-func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *rawResource {
+func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) string {
 	parentDesc := mr.Descriptor().Fields().ByName("parent")
 	if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) {
-		v := mr.Get(parentDesc)
-		return &rawResource{name: v.String()}
+		return mr.Get(parentDesc).String()
 	}
 	nameDesc := mr.Descriptor().Fields().ByName("name")
 	if nameDesc != nil && proto.HasExtension(nameDesc.Options(), annotationsproto.E_ResourceReference) {
-		v := mr.Get(nameDesc)
-		return &rawResource{name: v.String()}
+		return mr.Get(nameDesc).String()
 	}
 	// This is primarily used by Get/SetIAMPolicy().
 	resourceFieldDesc := mr.Descriptor().Fields().ByName("resource")
 	if resourceFieldDesc != nil && proto.HasExtension(resourceFieldDesc.Options(), annotationsproto.E_ResourceReference) {
-		v := mr.Get(resourceFieldDesc)
-		return &rawResource{name: v.String()}
+		return mr.Get(resourceFieldDesc).String()
 	}
 	// This is primarily used by AddWebhook().
 	projectFieldDesc := mr.Descriptor().Fields().ByName("project")
 	if projectFieldDesc != nil && proto.HasExtension(projectFieldDesc.Options(), annotationsproto.E_ResourceReference) {
-		v := mr.Get(projectFieldDesc)
-		return &rawResource{name: v.String()}
+		return mr.Get(projectFieldDesc).String()
 	}
 
 	// Listing top-level resources.
 	if strings.HasPrefix(shortMethod, "List") {
-		return &rawResource{isWorkspace: true}
+		return ""
 	}
 
 	isCreate := strings.HasPrefix(shortMethod, "Create")
@@ -478,21 +461,20 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
 	if resourceDesc == nil {
-		return &rawResource{isWorkspace: true}
+		return ""
 	}
 	if proto.HasExtension(resourceDesc.Message().Options(), annotationsproto.E_Resource) {
-		// Parent-less resource. Return workspace resource for Create() method.
+		// Parent-less resource. Return empty for Create() method (workspace resource).
 		if isCreate {
-			return &rawResource{isWorkspace: true}
+			return ""
 		}
 		resourceValue := mr.Get(resourceDesc)
 		resourceNameDesc := resourceDesc.Message().Fields().ByName("name")
 		if resourceNameDesc != nil {
-			v := resourceValue.Message().Get(resourceNameDesc)
-			return &rawResource{name: v.String()}
+			return resourceValue.Message().Get(resourceNameDesc).String()
 		}
 	}
-	return &rawResource{isWorkspace: true}
+	return ""
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
