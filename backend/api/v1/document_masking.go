@@ -277,48 +277,45 @@ func maskDocumentString(document string, objectSchema *storepb.ObjectSchema, sem
 func walkAndMaskJSON(data map[string]any, fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (map[string]any, error) {
 	result := make(map[string]any)
 	for key, value := range data {
-		// Check all source field paths for this key. If ANY resolves to a sensitive
-		// semantic type, mask the value. This handles expressions like UPPER(c.email)
-		// or CONCAT(c.name, c.email) where the result derives from sensitive fields.
-		if paths, ok := fieldPaths[key]; ok && len(paths) > 0 {
-			if maskedValue, masked, err := maskBySourcePaths(value, paths, objectSchema, semanticTypeToMasker); err != nil {
-				return nil, err
-			} else if masked {
-				result[key] = maskedValue
-				continue
-			}
-			// No source path was sensitive; use the first path's schema for recursive walk.
-			ast := stripContainerFromPath(paths[0])
-			o, _ := getObjectSchemaByPath(objectSchema, ast)
-			fieldValue, err := walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
-			if err != nil {
-				return nil, err
-			}
-			result[key] = fieldValue
-			continue
-		}
-
-		// No field paths recorded: fall back to direct key lookup in schema.
-		ast := parserbase.NewPathAST(parserbase.NewItemSelector(key))
-		o, parentSemanticType := getObjectSchemaByPath(objectSchema, ast)
-		if parentSemanticType != "" {
-			if m, ok := semanticTypeToMasker[parentSemanticType]; ok {
-				maskedValue, err := applyMaskerToJSONMember(value, m)
-				if err != nil {
-					return nil, err
-				}
-				result[key] = maskedValue
-				continue
-			}
-		}
-
-		fieldValue, err := walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
+		masked, err := maskJSONField(key, value, fieldPaths, objectSchema, semanticTypeToMasker)
 		if err != nil {
 			return nil, err
 		}
-		result[key] = fieldValue
+		result[key] = masked
 	}
 	return result, nil
+}
+
+// maskJSONField masks a single field value based on its source field paths or direct schema lookup.
+func maskJSONField(key string, value any, fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if paths, ok := fieldPaths[key]; ok && len(paths) > 0 {
+		return maskFieldBySourcePaths(value, paths, objectSchema, semanticTypeToMasker)
+	}
+	return maskFieldByDirectLookup(key, value, objectSchema, semanticTypeToMasker)
+}
+
+// maskFieldBySourcePaths checks all source paths for sensitivity, then falls back to recursive walk.
+func maskFieldBySourcePaths(value any, paths []*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	if maskedValue, masked, err := maskBySourcePaths(value, paths, objectSchema, semanticTypeToMasker); err != nil {
+		return nil, err
+	} else if masked {
+		return maskedValue, nil
+	}
+	ast := stripContainerFromPath(paths[0])
+	o, _ := getObjectSchemaByPath(objectSchema, ast)
+	return walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
+}
+
+// maskFieldByDirectLookup looks up the key directly in the schema (used when no field paths are recorded).
+func maskFieldByDirectLookup(key string, value any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
+	ast := parserbase.NewPathAST(parserbase.NewItemSelector(key))
+	o, semanticType := getObjectSchemaByPath(objectSchema, ast)
+	if semanticType != "" {
+		if m, ok := semanticTypeToMasker[semanticType]; ok {
+			return applyMaskerToJSONMember(value, m)
+		}
+	}
+	return walkAndMaskJSONRecursive(value, o, semanticTypeToMasker)
 }
 
 // stripContainerFromPath returns a PathAST with the first node (container) removed.
@@ -663,33 +660,46 @@ func maskCosmosDBScalarValue(span *parserbase.QuerySpan, rawJSON string, objectS
 	if len(span.Results) != 1 {
 		return rawJSON, nil
 	}
-	// Collect all source field paths across all projected fields.
-	for _, paths := range span.Results[0].SourceFieldPaths {
+	m := findMaskerForScalarValue(span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
+	if m == nil {
+		return rawJSON, nil
+	}
+	return applyMaskerToScalarJSON(rawJSON, m)
+}
+
+// findMaskerForScalarValue checks all source field paths across all projected fields
+// and returns the first masker found for a sensitive semantic type, or nil.
+func findMaskerForScalarValue(fieldPaths map[string][]*parserbase.PathAST, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) masker.Masker {
+	for _, paths := range fieldPaths {
 		for _, path := range paths {
 			ast := stripContainerFromPath(path)
 			_, semanticType := getObjectSchemaByPath(objectSchema, ast)
-			if semanticType != "" {
-				if m, ok := semanticTypeToMasker[semanticType]; ok {
-					// Parse the scalar JSON value, mask it, and re-serialize.
-					var parsed any
-					if unmarshalErr := json.Unmarshal([]byte(rawJSON), &parsed); unmarshalErr != nil {
-						// Unparseable JSON: pass through as-is.
-						return rawJSON, nil //nolint:nilerr
-					}
-					masked, err := applyMaskerToJSONMember(parsed, m)
-					if err != nil {
-						return "", err
-					}
-					out, err := json.Marshal(masked)
-					if err != nil {
-						return "", err
-					}
-					return string(out), nil
-				}
+			if semanticType == "" {
+				continue
+			}
+			if m, ok := semanticTypeToMasker[semanticType]; ok {
+				return m
 			}
 		}
 	}
-	return rawJSON, nil
+	return nil
+}
+
+// applyMaskerToScalarJSON parses a raw JSON scalar, masks it, and re-serializes.
+func applyMaskerToScalarJSON(rawJSON string, m masker.Masker) (string, error) {
+	var parsed any
+	if err := json.Unmarshal([]byte(rawJSON), &parsed); err != nil {
+		return rawJSON, nil //nolint:nilerr // Unparseable JSON: pass through as-is.
+	}
+	masked, err := applyMaskerToJSONMember(parsed, m)
+	if err != nil {
+		return "", err
+	}
+	out, err := json.Marshal(masked)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,6 @@ package cosmosdb
 
 import (
 	"log/slog"
-	"strconv"
 
 	parser "github.com/bytebase/parser/cosmosdb"
 
@@ -18,7 +17,6 @@ type querySpanPredicatePathsListener struct {
 }
 
 func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext) {
-	// Extracting predicate fields from where clause.
 	whereClause := ctx.Where_clause()
 	if whereClause == nil {
 		return
@@ -28,211 +26,122 @@ func (l *querySpanPredicatePathsListener) EnterSelect(ctx *parser.SelectContext)
 		return
 	}
 
-	var originalContainerName string
-	var fromIdentifier string
-	if i := fromClause.From_specification().From_source().Container_expression().Container_name().Identifier(); i != nil {
-		originalContainerName = i.GetText()
-	}
-	// Alias in the from source will shadow the original identifier.
-	if i := fromClause.From_specification().From_source().Container_expression().Identifier(); i != nil {
-		fromIdentifier = i.GetText()
-	}
-
-	predicateFields := extractPredicateFieldsFromWhereClause(whereClause, originalContainerName, fromIdentifier)
-	l.predicatePaths = predicateFields
+	originalContainerName, fromIdentifier := extractFromNames(fromClause)
+	l.predicatePaths = buildPredicatePaths(whereClause.Scalar_expression(), originalContainerName, fromIdentifier)
 }
 
-func extractPredicateFieldsFromWhereClause(ctx parser.IWhere_clauseContext, originalContainerName string, fromAlias string) map[string]*base.PathAST {
-	scalarExpression := ctx.Scalar_expression()
-
-	paths := extractPredicateFieldsFromScalarExpression(scalarExpression, originalContainerName, fromAlias)
-
+func buildPredicatePaths(expr parser.IScalar_expressionContext, containerName, fromAlias string) map[string]*base.PathAST {
+	paths := extractPredicateFields(expr, containerName, fromAlias)
 	r := make(map[string]*base.PathAST)
 	for _, path := range paths {
 		if len(path) == 0 {
 			continue
 		}
-
-		ast := base.NewPathAST(path[0])
-		current := ast.Root
-		for i := 1; i < len(path); i++ {
-			current.SetNext(path[i])
-			current = current.GetNext()
-		}
-
+		ast := buildPathAST(path)
 		str, err := ast.String()
 		if err != nil {
 			slog.Warn("failed to convert path ast to string", log.BBError(err))
 		}
 		r[str] = ast
 	}
-
 	return r
 }
 
-func extractPredicateFieldsFromScalarExpression(ctx parser.IScalar_expressionContext, originalContainerName string, fromAlias string) [][]base.SelectorNode {
+// extractPredicateFields collects all field paths referenced in a scalar expression used as a predicate.
+func extractPredicateFields(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
 	if ctx == nil {
 		return nil
 	}
 
-	switch {
-	case ctx.Input_alias() != nil:
-		name := ctx.Input_alias().Identifier().GetText()
-		if fromAlias != "" && name == fromAlias {
-			name = originalContainerName
-		}
-		return [][]base.SelectorNode{
-			{
-				base.NewItemSelector(name),
-			},
-		}
-	case ctx.AND_SYMBOL() != nil && ctx.BETWEEN_SYMBOL() == nil:
-		// AND logical operator (not BETWEEN...AND)
-		allScalarExpressions := ctx.AllScalar_expression()
-		var allPaths [][]base.SelectorNode
-		for _, expr := range allScalarExpressions {
-			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-			allPaths = append(allPaths, paths...)
-		}
-		return allPaths
-	case ctx.OR_SYMBOL() != nil:
-		allScalarExpressions := ctx.AllScalar_expression()
-		var allPaths [][]base.SelectorNode
-		for _, expr := range allScalarExpressions {
-			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-			allPaths = append(allPaths, paths...)
-		}
-		return allPaths
-	case ctx.DOT_SYMBOL() != nil:
-		// Most usual case like a.b.c.d.
-		paths := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		for i := range paths {
-			paths[i] = append(paths[i], base.NewItemSelector(ctx.Property_name().Identifier().GetText()))
-		}
-		return paths
-	case ctx.LS_BRACKET_SYMBOL() != nil && ctx.IN_SYMBOL() == nil:
-		// Bracket access like a["b"] or a[0], but NOT IN expression
-		paths := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		for i := range paths {
-			switch {
-			case ctx.DOUBLE_QUOTE_STRING_LITERAL() != nil:
-				text := ctx.DOUBLE_QUOTE_STRING_LITERAL().GetText()
-				if len(text) > 1 {
-					text = text[1 : len(text)-1]
-				}
-				paths[i] = append(paths[i], base.NewItemSelector(text))
-			case ctx.SINGLE_QUOTE_STRING_LITERAL() != nil:
-				text := ctx.SINGLE_QUOTE_STRING_LITERAL().GetText()
-				if len(text) > 1 {
-					text = text[1 : len(text)-1]
-				}
-				paths[i] = append(paths[i], base.NewItemSelector(text))
-			case ctx.Array_index() != nil:
-				if len(paths[i]) == 0 {
-					break
-				}
-				index, err := strconv.Atoi(ctx.Array_index().GetText())
-				if err != nil {
-					slog.Warn("cannot convert array index to int", slog.String("index", ctx.Array_index().GetText()))
-					break
-				}
-				// Rebuild the ast because of the different level of array index and array name.
-				last := paths[i][len(paths[i])-1]
-				paths[i][len(paths[i])-1] = base.NewArraySelector(last.GetIdentifier(), index)
-			default:
-				// Do nothing for other cases
-			}
-		}
-		return paths
-	case ctx.Unary_operator() != nil:
-		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-	case ctx.NOT_SYMBOL() != nil && len(ctx.AllScalar_expression()) == 1:
-		// NOT expression
-		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-	case ctx.Comparison_operator() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.Multiplicative_operator() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.Additive_operator() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.Shift_operator() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.BIT_AND_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.BIT_XOR_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.BIT_OR_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.DOUBLE_BAR_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.IN_SYMBOL() != nil:
-		// IN expression: scalar_expression [NOT] IN (scalar_expression, ...)
-		var allPaths [][]base.SelectorNode
-		for _, expr := range ctx.AllScalar_expression() {
-			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-			allPaths = append(allPaths, paths...)
-		}
-		return allPaths
-	case ctx.BETWEEN_SYMBOL() != nil:
-		// BETWEEN expression: scalar_expression [NOT] BETWEEN scalar_expression AND scalar_expression
-		var allPaths [][]base.SelectorNode
-		for _, expr := range ctx.AllScalar_expression() {
-			paths := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-			allPaths = append(allPaths, paths...)
-		}
-		return allPaths
-	case ctx.LIKE_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		return append(left, right...)
-	case ctx.QUESTION_MARK_SYMBOL() != nil:
-		left := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-		mid := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(1), originalContainerName, fromAlias)
-		right := extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(2), originalContainerName, fromAlias)
-		return append(append(left, mid...), right...)
-	case ctx.Scalar_function_expression() != nil:
-		switch {
-		case ctx.Scalar_function_expression().Udf_scalar_function_expression() != nil:
-			allScalarExpressions := ctx.Scalar_function_expression().Udf_scalar_function_expression().AllScalar_expression()
-			var paths [][]base.SelectorNode
-			for _, expr := range allScalarExpressions {
-				path := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-				paths = append(paths, path...)
-			}
-			return paths
-		case ctx.Scalar_function_expression().Builtin_function_expression() != nil:
-			allScalarExpressions := ctx.Scalar_function_expression().Builtin_function_expression().AllScalar_expression()
-			var paths [][]base.SelectorNode
-			for _, expr := range allScalarExpressions {
-				path := extractPredicateFieldsFromScalarExpression(expr, originalContainerName, fromAlias)
-				paths = append(paths, path...)
-			}
-			return paths
-		default:
-			return nil
-		}
-	case ctx.LR_BRACKET_SYMBOL() != nil && ctx.Select_() == nil && ctx.EXISTS_SYMBOL() == nil:
-		// Parenthesized expression
-		return extractPredicateFieldsFromScalarExpression(ctx.Scalar_expression(0), originalContainerName, fromAlias)
-	default:
-		// Return nil for unhandled cases (constants, parameters, subqueries, etc.)
+	// Input alias (leaf field reference).
+	if ctx.Input_alias() != nil {
+		return resolveInputAlias(ctx, containerName, fromAlias)
 	}
-
+	// Property access: a.b.c
+	if ctx.DOT_SYMBOL() != nil {
+		return extractPredicateDotAccess(ctx, containerName, fromAlias)
+	}
+	// Bracket access: a["b"] or a[0] (but not IN expression which also uses brackets).
+	if ctx.LS_BRACKET_SYMBOL() != nil && ctx.IN_SYMBOL() == nil {
+		return extractPredicateBracketAccess(ctx, containerName, fromAlias)
+	}
+	// Unary operator or standalone NOT.
+	if ctx.Unary_operator() != nil || (ctx.NOT_SYMBOL() != nil && len(ctx.AllScalar_expression()) == 1) {
+		return extractPredicateFields(ctx.Scalar_expression(0), containerName, fromAlias)
+	}
+	// Parenthesized expression (not subquery, not EXISTS).
+	if ctx.LR_BRACKET_SYMBOL() != nil && ctx.Select_() == nil && ctx.EXISTS_SYMBOL() == nil {
+		return extractPredicateFields(ctx.Scalar_expression(0), containerName, fromAlias)
+	}
+	// Function calls.
+	if ctx.Scalar_function_expression() != nil {
+		return extractPredicateFieldsFromFunction(ctx.Scalar_function_expression(), containerName, fromAlias)
+	}
+	// Ternary operator: cond ? a : b
+	if ctx.QUESTION_MARK_SYMBOL() != nil {
+		return collectPredicateFieldsFromAll(ctx.AllScalar_expression(), containerName, fromAlias)
+	}
+	// Binary operators (comparison, arithmetic, bitwise, logical, IN, BETWEEN, LIKE, concat).
+	// All share the same logic: collect fields from all child expressions.
+	if isBinaryOrMultiChildExpression(ctx) {
+		return collectPredicateFieldsFromAll(ctx.AllScalar_expression(), containerName, fromAlias)
+	}
 	return nil
+}
+
+func extractPredicateDotAccess(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	paths := extractPredicateFields(ctx.Scalar_expression(0), containerName, fromAlias)
+	propName := ctx.Property_name().Identifier().GetText()
+	for i := range paths {
+		paths[i] = append(paths[i], base.NewItemSelector(propName))
+	}
+	return paths
+}
+
+func extractPredicateBracketAccess(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	paths := extractPredicateFields(ctx.Scalar_expression(0), containerName, fromAlias)
+	for i := range paths {
+		appendBracketSelector(ctx, paths, i)
+	}
+	return paths
+}
+
+func extractPredicateFieldsFromFunction(ctx parser.IScalar_function_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	var exprs []parser.IScalar_expressionContext
+	switch {
+	case ctx.Udf_scalar_function_expression() != nil:
+		exprs = ctx.Udf_scalar_function_expression().AllScalar_expression()
+	case ctx.Builtin_function_expression() != nil:
+		exprs = ctx.Builtin_function_expression().AllScalar_expression()
+	default:
+		return nil
+	}
+	return collectPredicateFieldsFromAll(exprs, containerName, fromAlias)
+}
+
+// isBinaryOrMultiChildExpression returns true for binary operators and multi-child expressions
+// that all share the same extraction logic: collect fields from all child scalar expressions.
+func isBinaryOrMultiChildExpression(ctx parser.IScalar_expressionContext) bool {
+	return ctx.Comparison_operator() != nil ||
+		ctx.Multiplicative_operator() != nil ||
+		ctx.Additive_operator() != nil ||
+		ctx.Shift_operator() != nil ||
+		ctx.BIT_AND_SYMBOL() != nil ||
+		ctx.BIT_XOR_SYMBOL() != nil ||
+		ctx.BIT_OR_SYMBOL() != nil ||
+		ctx.DOUBLE_BAR_SYMBOL() != nil ||
+		ctx.LIKE_SYMBOL() != nil ||
+		ctx.IN_SYMBOL() != nil ||
+		ctx.BETWEEN_SYMBOL() != nil ||
+		// AND/OR logical operators. BETWEEN also sets AND_SYMBOL, but BETWEEN is checked above.
+		ctx.AND_SYMBOL() != nil ||
+		ctx.OR_SYMBOL() != nil
+}
+
+func collectPredicateFieldsFromAll(exprs []parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	var all [][]base.SelectorNode
+	for _, expr := range exprs {
+		all = append(all, extractPredicateFields(expr, containerName, fromAlias)...)
+	}
+	return all
 }
