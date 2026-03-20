@@ -243,10 +243,10 @@ Identifier handling, error recovery, and special scenarios.
 
 ### 4.4 Whitespace and Formatting Variations
 
-- [ ] Multi-line SELECT: `SELECT\n  |\nFROM t1` — completion works across line breaks
-- [ ] Multi-line FROM: `SELECT *\nFROM\n  |` — FROM on separate line
-- [ ] Tab-indented: `SELECT\t|\tFROM t1` — tab characters in SQL
-- [ ] Extra whitespace: `SELECT   *   FROM   |` — multiple spaces between tokens
-- [ ] Trailing whitespace: `SELECT * FROM t1 WHERE | ` — space after cursor
-- [ ] Comment before cursor: `SELECT * FROM /* comment */ |` — completion after block comment
-- [ ] Line comment: `SELECT * FROM t1 -- comment\nWHERE |` — completion after line comment
+- [x] Multi-line SELECT: `SELECT\n  |\nFROM t1` — completion works across line breaks
+- [x] Multi-line FROM: `SELECT *\nFROM\n  |` — FROM on separate line
+- [x] Tab-indented: `SELECT\t|\tFROM t1` — tab characters in SQL
+- [x] Extra whitespace: `SELECT   *   FROM   |` — multiple spaces between tokens
+- [x] Trailing whitespace: `SELECT * FROM t1 WHERE | ` — space after cursor
+- [x] Comment before cursor: `SELECT * FROM /* comment */ |` — completion after block comment
+- [x] Line comment: `SELECT * FROM t1 -- comment\nWHERE |` — completion after line comment
