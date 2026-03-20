@@ -232,14 +232,14 @@ Identifier handling, error recovery, and special scenarios.
 
 ### 4.3 Multi-Statement and Error Recovery
 
-- [ ] `SELECT 1; INSERT INTO |` — completion in second statement (INSERT)
-- [ ] `SELECT 1; UPDATE |` — completion in second statement (UPDATE)
-- [ ] `SELECT 1; DELETE FROM |` — completion in second statement (DELETE)
-- [ ] `INVALID SQL; SELECT * FROM |` — recovery after invalid first statement
-- [ ] `SELECT * FROM t1; SELECT * FROM t2 WHERE |` — columns from correct table in second statement
-- [ ] `SELECT; SELECT | FROM t1` — recovery after incomplete SELECT
-- [ ] `SELECT * FROM t1 WHERE; SELECT | FROM t2` — recovery after incomplete WHERE
-- [ ] `CREATE TABLE x (id int); SELECT | FROM t1` — DDL then DML multi-statement
+- [x] `SELECT 1; INSERT INTO |` — completion in second statement (INSERT)
+- [x] `SELECT 1; UPDATE |` — completion in second statement (UPDATE)
+- [x] `SELECT 1; DELETE FROM |` — completion in second statement (DELETE)
+- [x] `INVALID SQL; SELECT * FROM |` — recovery after invalid first statement
+- [x] `SELECT * FROM t1; SELECT * FROM t2 WHERE |` — columns from correct table in second statement
+- [x] `SELECT; SELECT | FROM t1` — recovery after incomplete SELECT
+- [x] `SELECT * FROM t1 WHERE; SELECT | FROM t2` — recovery after incomplete WHERE
+- [x] `CREATE TABLE x (id int); SELECT | FROM t1` — DDL then DML multi-statement
 
 ### 4.4 Whitespace and Formatting Variations
 
