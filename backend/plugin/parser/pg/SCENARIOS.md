@@ -162,15 +162,15 @@ Complex query structures and nesting. Independent of Phase 2. Sections 3.1 and 3
 
 ### 3.2 LATERAL Joins and Table Functions
 
-- [ ] `SELECT * FROM t1, LATERAL (SELECT | FROM t2 WHERE t2.c1 = t1.c1) sub` — LATERAL subquery referencing outer table
-- [ ] `SELECT sub.| FROM t1, LATERAL (SELECT c1, c2 FROM t2 WHERE t2.c1 = t1.c1) sub` — columns from LATERAL subquery alias
-- [ ] `SELECT | FROM t1 LEFT JOIN LATERAL (SELECT * FROM t2 WHERE t2.c1 = t1.c1) sub ON true` — LATERAL with LEFT JOIN
-- [ ] `SELECT * FROM t1, LATERAL (SELECT t1.| FROM t2) sub` — outer table column access in LATERAL
-- [ ] `SELECT * FROM t2 x, LATERAL (SELECT x.| FROM t1) sub` — alias-qualified outer reference in LATERAL
-- [ ] `SELECT | FROM generate_series(1, 10) g` — table function in FROM clause
-- [ ] `SELECT g.| FROM generate_series(1, 10) g` — qualified column from table function alias
-- [ ] `SELECT | FROM t1, generate_series(1, 10) g` — table function with regular table
-- [ ] `SELECT | FROM t2 x, LATERAL (SELECT * FROM t1 WHERE t1.c1 = x.c1) sub` — complex LATERAL with alias
+- [x] `SELECT * FROM t1, LATERAL (SELECT | FROM t2 WHERE t2.c1 = t1.c1) sub` — LATERAL subquery referencing outer table
+- [x] `SELECT sub.| FROM t1, LATERAL (SELECT c1, c2 FROM t2 WHERE t2.c1 = t1.c1) sub` — columns from LATERAL subquery alias
+- [x] `SELECT | FROM t1 LEFT JOIN LATERAL (SELECT * FROM t2 WHERE t2.c1 = t1.c1) sub ON true` — LATERAL with LEFT JOIN
+- [x] `SELECT * FROM t1, LATERAL (SELECT t1.| FROM t2) sub` — outer table column access in LATERAL
+- [x] `SELECT * FROM t2 x, LATERAL (SELECT x.| FROM t1) sub` — alias-qualified outer reference in LATERAL
+- [x] `SELECT | FROM generate_series(1, 10) g` — table function in FROM clause
+- [~] `SELECT g.| FROM generate_series(1, 10) g` — qualified column from table function alias (no candidates returned; table functions have no column metadata in the completion engine)
+- [x] `SELECT | FROM t1, generate_series(1, 10) g` — table function with regular table
+- [x] `SELECT | FROM t2 x, LATERAL (SELECT * FROM t1 WHERE t1.c1 = x.c1) sub` — complex LATERAL with alias
 
 ### 3.3 Nested Subqueries and Expressions
 
