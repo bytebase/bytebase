@@ -128,6 +128,12 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
+		// If the error is already a connect error (e.g., NotFound for cross-workspace resources),
+		// return it directly instead of wrapping as Internal.
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return connectErr
+		}
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
 
@@ -317,7 +323,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 					return errors.Wrapf(err, "failed to get database")
 				}
 				if database == nil {
-					return errors.Errorf("database %q not found", match)
+					return connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", match))
 				}
 				resources = append(resources, &common.Resource{
 					Type: common.ResourceTypeProject,
