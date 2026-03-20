@@ -376,9 +376,7 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 
 	// HACK(p0ny): unfortunately, BatchUpdateIssuesStatus doesn't comply to aip.
 	if r, ok := request.(*v1pb.BatchUpdateIssuesStatusRequest); ok {
-		for _, issue := range r.Issues {
-			resources = append(resources, issue)
-		}
+		resources = append(resources, r.Issues...)
 		return resources, nil
 	}
 
