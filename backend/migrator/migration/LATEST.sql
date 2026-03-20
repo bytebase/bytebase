@@ -233,7 +233,6 @@ CREATE INDEX idx_plan_project ON plan(project);
 CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
 
-
 CREATE TABLE plan_check_run (
     id bigint NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -249,8 +248,6 @@ CREATE TABLE plan_check_run (
 
 CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(project, plan_id);
 CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status IN ('AVAILABLE', 'RUNNING');
-
-
 
 -- Tracks webhook delivery for pipeline events (PIPELINE_FAILED or PIPELINE_COMPLETED).
 -- One row per plan at any time - mutually exclusive events.
@@ -290,8 +287,6 @@ CREATE INDEX idx_issue_project ON issue(project);
 CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
 CREATE INDEX idx_issue_creator ON issue(creator);
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
-
-
 
 CREATE TABLE issue_comment (
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
@@ -518,8 +513,6 @@ CREATE TABLE task (
 
 CREATE INDEX idx_task_plan_id_environment ON task(project, plan_id, environment);
 
-
-
 -- task run table stores the task run
 CREATE TABLE task_run (
     id bigint NOT NULL,
@@ -549,8 +542,6 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run(project, task_id, at
 -- index is more efficient than a full index on status - smaller size, faster maintenance, better cache efficiency.
 CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'AVAILABLE', 'RUNNING');
 CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
-
-
 
 -- replica_heartbeat tracks active replicas in HA deployments.
 -- Used to detect and clean up stale RUNNING task runs from crashed replicas.
