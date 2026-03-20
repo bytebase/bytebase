@@ -2,8 +2,6 @@ package cosmosdb
 
 import (
 	"context"
-	"log/slog"
-	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/cosmosdb"
@@ -65,126 +63,127 @@ type querySpanResultListener struct {
 }
 
 func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
-	// TODO(zp): Considering the case of multiple from sources once we support it.
 	if ctx.Select_clause().Select_specification().MULTIPLY_OPERATOR() != nil || ctx.From_clause() == nil {
 		l.result = []base.QuerySpanResult{
 			{
 				Name:             "",
-				SourceFieldPaths: make(map[string]*base.PathAST),
+				SourceFieldPaths: make(map[string][]*base.PathAST),
 				SelectAsterisk:   true,
 			},
 		}
 		return
 	}
 
-	var originalContainerName string
-	var fromIdentifier string
-	fromClause := ctx.From_clause()
-	if i := fromClause.From_specification().From_source().Container_expression().Container_name().IDENTIFIER(); i != nil {
-		originalContainerName = i.GetText()
-	}
-	// Alias in the from source will shadow the original identifier.
-	if i := fromClause.From_specification().From_source().Container_expression().IDENTIFIER(); i != nil {
-		fromIdentifier = i.GetText()
-	}
-
-	sourceFieldPath := make(map[string]*base.PathAST)
-	objectProperties := ctx.Select_clause().Select_specification().Object_property_list().AllObject_property()
-	for _, property := range objectProperties {
-		path, name := extractPathFromObjectProperty(property, originalContainerName, fromIdentifier)
-		if len(path) == 0 {
+	containerName, fromAlias := extractFromNames(ctx.From_clause())
+	sourceFieldPaths := make(map[string][]*base.PathAST)
+	for _, property := range ctx.Select_clause().Select_specification().Object_property_list().AllObject_property() {
+		paths, name := extractPathsFromObjectProperty(property, containerName, fromAlias)
+		if name == "" {
 			continue
 		}
-		ast := base.NewPathAST(path[0])
-		next := ast.Root
-		for i := 1; i < len(path); i++ {
-			next.SetNext(path[i])
-			next = next.GetNext()
+		for _, path := range paths {
+			if len(path) == 0 {
+				continue
+			}
+			sourceFieldPaths[name] = append(sourceFieldPaths[name], buildPathAST(path))
 		}
-		sourceFieldPath[name] = ast
 	}
 	l.result = []base.QuerySpanResult{
 		{
 			Name:             "",
-			SourceFieldPaths: sourceFieldPath,
+			SourceFieldPaths: sourceFieldPaths,
 			SelectAsterisk:   false,
 		},
 	}
 }
 
-func extractPathFromObjectProperty(ctx parser.IObject_propertyContext, originalContainerName string, fromAlias string) ([]base.SelectorNode, string) {
+// extractPathsFromObjectProperty extracts all source field paths and the output name
+// from a SELECT object_property.
+func extractPathsFromObjectProperty(ctx parser.IObject_propertyContext, containerName, fromAlias string) ([][]base.SelectorNode, string) {
 	if ctx == nil {
 		return nil, ""
 	}
-
-	path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
+	paths := extractAllFieldPaths(ctx.Scalar_expression(), containerName, fromAlias)
 	var propertyName string
 	if ctx.Property_alias() != nil {
-		propertyName = ctx.Property_alias().IDENTIFIER().GetText()
+		propertyName = ctx.Property_alias().Identifier().GetText()
 	}
-
-	if propertyName == "" {
-		// If the property alias is not specified, we will use the last path element as the property name.
-		if len(path) > 0 {
-			last := path[len(path)-1]
-			propertyName = last.GetIdentifier()
-		}
+	if propertyName == "" && len(paths) == 1 && len(paths[0]) > 0 {
+		propertyName = paths[0][len(paths[0])-1].GetIdentifier()
 	}
-
-	return path, propertyName
+	return paths, propertyName
 }
 
-func extractPathFromScalarExpression(ctx parser.IScalar_expressionContext, originalContainerName string, fromAlias string) []base.SelectorNode {
+// extractAllFieldPaths recursively collects ALL field paths referenced in a scalar expression.
+func extractAllFieldPaths(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
 	if ctx == nil {
 		return nil
 	}
 
-	switch {
-	case ctx.Input_alias() != nil:
-		name := ctx.Input_alias().IDENTIFIER().GetText()
-		if fromAlias != "" && name == fromAlias {
-			name = originalContainerName
-		}
-		return []base.SelectorNode{
-			base.NewItemSelector(name),
-		}
-	case ctx.DOT_SYMBOL() != nil:
-		// Most usual case like a.b.c.d.
-		path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
-		path = append(path, base.NewItemSelector(ctx.Property_name().IDENTIFIER().GetText()))
-
-		return path
-	case ctx.LS_BRACKET_SYMBOL() != nil:
-		path := extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
-		switch {
-		case ctx.DOUBLE_QUOTE_STRING_LITERAL() != nil:
-			text := ctx.DOUBLE_QUOTE_STRING_LITERAL().GetText()
-			if len(text) > 1 {
-				text = text[1 : len(text)-1]
-			}
-			path = append(path, base.NewItemSelector(text))
-		case ctx.Array_index() != nil:
-			if len(path) == 0 {
-				break
-			}
-			index, err := strconv.Atoi(ctx.Array_index().GetText())
-			if err != nil {
-				slog.Warn("cannot convert array index to int", slog.String("index", ctx.Array_index().GetText()))
-				break
-			}
-			// Rebuild the ast because of the different level of array index and array name.
-			last := path[len(path)-1]
-			path[len(path)-1] = base.NewArraySelector(last.GetIdentifier(), index)
-		default:
-			// Unsupported bracket expression type
-		}
-
-		return path
-	case ctx.Unary_operator() != nil:
-		return extractPathFromScalarExpression(ctx.Scalar_expression(), originalContainerName, fromAlias)
-	default:
-		// Unsupported scalar expression type
+	// Input alias (leaf).
+	if ctx.Input_alias() != nil {
+		return resolveInputAlias(ctx, containerName, fromAlias)
 	}
-
+	// Property access: a.b
+	if ctx.DOT_SYMBOL() != nil {
+		return extractFieldPathsDot(ctx, containerName, fromAlias)
+	}
+	// Bracket access: a["b"] or a[0]
+	if ctx.LS_BRACKET_SYMBOL() != nil && ctx.IN_SYMBOL() == nil {
+		return extractFieldPathsBracket(ctx, containerName, fromAlias)
+	}
+	// Unary / NOT
+	if ctx.Unary_operator() != nil || (ctx.NOT_SYMBOL() != nil && len(ctx.AllScalar_expression()) == 1) {
+		return extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
+	}
+	// Function calls
+	if ctx.Scalar_function_expression() != nil {
+		return extractFieldPathsFromFunction(ctx.Scalar_function_expression(), containerName, fromAlias)
+	}
+	// Binary/multi-child expressions: collect from all children.
+	if allExprs := ctx.AllScalar_expression(); len(allExprs) >= 2 {
+		return collectFieldPathsFromAll(allExprs, containerName, fromAlias)
+	}
 	return nil
+}
+
+func extractFieldPathsDot(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	paths := extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
+	propName := ctx.Property_name().Identifier().GetText()
+	for i := range paths {
+		paths[i] = append(paths[i], base.NewItemSelector(propName))
+	}
+	return paths
+}
+
+func extractFieldPathsBracket(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	paths := extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
+	for i := range paths {
+		appendBracketSelector(ctx, paths, i)
+	}
+	return paths
+}
+
+func extractFieldPathsFromFunction(ctx parser.IScalar_function_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	if ctx == nil {
+		return nil
+	}
+	var exprs []parser.IScalar_expressionContext
+	switch {
+	case ctx.Udf_scalar_function_expression() != nil:
+		exprs = ctx.Udf_scalar_function_expression().AllScalar_expression()
+	case ctx.Builtin_function_expression() != nil:
+		exprs = ctx.Builtin_function_expression().AllScalar_expression()
+	default:
+		return nil
+	}
+	return collectFieldPathsFromAll(exprs, containerName, fromAlias)
+}
+
+func collectFieldPathsFromAll(exprs []parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
+	var all [][]base.SelectorNode
+	for _, expr := range exprs {
+		all = append(all, extractAllFieldPaths(expr, containerName, fromAlias)...)
+	}
+	return all
 }

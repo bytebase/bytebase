@@ -24,7 +24,7 @@
       {
         "status":  "ERROR",
         "title":  "Syntax error",
-        "content":  "Syntax error at line 1: unexpected token in statement",
+        "content":  "Syntax error at line 1: syntax error at or near \"user\"",
         "code":  201,
         "sqlReviewReport":  {
           "startPosition":  {

@@ -22,8 +22,8 @@ ALTER TABLE plan_check_run ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE plan_check_run ALTER COLUMN id SET DATA TYPE bigint;
 ALTER TABLE issue ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE issue ALTER COLUMN id SET DATA TYPE bigint;
-ALTER TABLE worksheet ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE worksheet ALTER COLUMN id SET DATA TYPE bigint;
+-- Worksheet id is unused (PK is resource_id since migration 0003). Drop it entirely.
+ALTER TABLE worksheet DROP COLUMN IF EXISTS id;
 
 DROP SEQUENCE IF EXISTS plan_id_seq;
 DROP SEQUENCE IF EXISTS task_id_seq;

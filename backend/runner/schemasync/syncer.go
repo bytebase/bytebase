@@ -431,7 +431,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		database.InstanceID, database.DatabaseName,
 		syncedDatabaseMetadata, dbConfig, rawDump,
 	); err != nil {
-		if strings.Contains(err.Error(), "escape sequence") {
+		if strings.Contains(err.Error(), "escape sequence") || strings.Contains(err.Error(), "invalid byte sequence") {
 			if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {
 				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
 			}
