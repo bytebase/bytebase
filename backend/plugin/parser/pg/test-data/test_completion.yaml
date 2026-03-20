@@ -6147,6 +6147,106 @@
       priority: 0
 - input: ALTER TABLE t1 DROP COLUMN |
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: test.auto | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: test.users | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: username
+      type: COLUMN
+      definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
 - input: ALTER TABLE t1 RENAME COLUMN | TO new_name
   want:
     - text: c1
@@ -6251,8 +6351,208 @@
       priority: 0
 - input: ALTER TABLE t1 ALTER COLUMN |
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: test.auto | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: test.users | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: username
+      type: COLUMN
+      definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
 - input: ALTER TABLE t1 ALTER COLUMN | SET NOT NULL
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.mv1
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f1
+      type: COLUMN
+      definition: public.ft1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: f2
+      type: COLUMN
+      definition: public.ft1 | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: test.auto | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: user_id
+      type: COLUMN
+      definition: test.users | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: username
+      type: COLUMN
+      definition: test.users | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test.users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
 - input: ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2
   want:
     - text: c1
@@ -9005,6 +9305,51 @@
       priority: 0
 - input: (SELECT c1 FROM t1) UNION (SELECT | FROM t2)
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
 - input: SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2 ORDER BY |
   want:
     - text: c1

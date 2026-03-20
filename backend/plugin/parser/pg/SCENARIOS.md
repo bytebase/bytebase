@@ -102,10 +102,10 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 - [x] `ALTER TABLE |` — table completion in ALTER TABLE
 - [x] `ALTER TABLE public.|` — schema-qualified table in ALTER TABLE
 - [x] `ALTER TABLE t1 ADD COLUMN c2 int REFERENCES |` — FK reference in ALTER ADD COLUMN
-- [~] `ALTER TABLE t1 DROP COLUMN |` — column completion for existing columns (no candidates returned; parser does not emit columnref rule in ALTER TABLE DROP COLUMN context)
+- [x] `ALTER TABLE t1 DROP COLUMN |` — column completion for existing columns
 - [x] `ALTER TABLE t1 RENAME COLUMN | TO new_name` — column completion in RENAME
-- [~] `ALTER TABLE t1 ALTER COLUMN |` — column completion in ALTER COLUMN (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
-- [~] `ALTER TABLE t1 ALTER COLUMN | SET NOT NULL` — column completion with SET NOT NULL (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
+- [x] `ALTER TABLE t1 ALTER COLUMN |` — column completion in ALTER COLUMN
+- [x] `ALTER TABLE t1 ALTER COLUMN | SET NOT NULL` — column completion with SET NOT NULL
 - [x] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2` — column in FK constraint
 - [x] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (c1) REFERENCES t2(|)` — referenced column
 - [x] `ALTER INDEX | RENAME TO new_name` — index completion in ALTER INDEX
@@ -190,7 +190,7 @@ Complex query structures and nesting. Independent of Phase 2. Sections 3.1 and 3
 - [x] `SELECT c1 FROM t1 INTERSECT SELECT | FROM t2` — SELECT list in INTERSECT
 - [x] `SELECT c1 FROM t1 EXCEPT SELECT | FROM t2` — SELECT list in EXCEPT
 - [x] `SELECT c1 FROM t1 UNION SELECT c1 FROM t1 UNION SELECT | FROM t2` — triple UNION
-- [~] `(SELECT c1 FROM t1) UNION (SELECT | FROM t2)` — parenthesized set operation (no candidates returned; parser does not resolve completion inside parenthesized SELECT branches of set operations)
+- [x] `(SELECT c1 FROM t1) UNION (SELECT | FROM t2)` — parenthesized set operation
 - [x] `SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2 ORDER BY |` — ORDER BY on UNION result
 - [x] `SELECT * FROM (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) x WHERE x.|` — WHERE on UNION subquery
 - [x] `WITH x AS (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) SELECT x.| FROM x` — CTE with UNION body
