@@ -42,23 +42,23 @@ Fill missing coverage for features already partially tested.
 
 ### 1.3 Advanced SELECT Features
 
-- [ ] `SELECT DISTINCT | FROM t2` — columns after DISTINCT
-- [ ] `SELECT DISTINCT ON (|) c1, c2 FROM t2` — columns in DISTINCT ON
-- [ ] `SELECT | FROM t2 LIMIT 10` — columns in SELECT with LIMIT present
-- [ ] `SELECT * FROM t2 LIMIT |` — completion in LIMIT expression
-- [ ] `SELECT * FROM t2 OFFSET |` — completion in OFFSET expression
-- [ ] `SELECT * FROM t2 ORDER BY c1 LIMIT |` — completion in LIMIT after ORDER BY
-- [ ] `SELECT c1, | FROM t2` — completion for second column in select list
-- [ ] `DELETE FROM t2 WHERE c1 > 0 RETURNING |` — completion in RETURNING clause (DML)
-- [ ] `UPDATE t2 SET c1 = 1 RETURNING |` — completion in UPDATE RETURNING clause
-- [ ] `SELECT c1, SUM(c2) OVER (PARTITION BY |) FROM t2` — column in window PARTITION BY
-- [ ] `SELECT c1, SUM(c2) OVER (ORDER BY |) FROM t2` — column in window ORDER BY
-- [ ] `SELECT c1, ROW_NUMBER() OVER (PARTITION BY | ORDER BY c1) FROM t2` — column in window function
-- [ ] `SELECT COALESCE(|, 0) FROM t2` — completion in COALESCE first argument
-- [ ] `SELECT COALESCE(c1, |) FROM t2` — completion in COALESCE second argument
-- [ ] `SELECT NULLIF(|, 0) FROM t2` — completion in NULLIF
-- [ ] `SELECT CAST(| AS int) FROM t2` — completion in CAST expression
-- [ ] `SELECT | FROM t2 FOR UPDATE` — columns with FOR UPDATE locking clause
+- [x] `SELECT DISTINCT | FROM t2` — columns after DISTINCT
+- [x] `SELECT DISTINCT ON (|) c1, c2 FROM t2` — columns in DISTINCT ON
+- [x] `SELECT | FROM t2 LIMIT 10` — columns in SELECT with LIMIT present
+- [x] `SELECT * FROM t2 LIMIT |` — completion in LIMIT expression
+- [x] `SELECT * FROM t2 OFFSET |` — completion in OFFSET expression
+- [x] `SELECT * FROM t2 ORDER BY c1 LIMIT |` — completion in LIMIT after ORDER BY
+- [x] `SELECT c1, | FROM t2` — completion for second column in select list
+- [x] `DELETE FROM t2 WHERE c1 > 0 RETURNING |` — completion in RETURNING clause (DML)
+- [x] `UPDATE t2 SET c1 = 1 RETURNING |` — completion in UPDATE RETURNING clause
+- [x] `SELECT c1, SUM(c2) OVER (PARTITION BY |) FROM t2` — column in window PARTITION BY
+- [x] `SELECT c1, SUM(c2) OVER (ORDER BY |) FROM t2` — column in window ORDER BY
+- [x] `SELECT c1, ROW_NUMBER() OVER (PARTITION BY | ORDER BY c1) FROM t2` — column in window function
+- [x] `SELECT COALESCE(|, 0) FROM t2` — completion in COALESCE first argument
+- [x] `SELECT COALESCE(c1, |) FROM t2` — completion in COALESCE second argument
+- [x] `SELECT NULLIF(|, 0) FROM t2` — completion in NULLIF
+- [x] `SELECT CAST(| AS int) FROM t2` — completion in CAST expression
+- [x] `SELECT | FROM t2 FOR UPDATE` — columns with FOR UPDATE locking clause
 
 ### 1.4 Object Type Coverage
 
