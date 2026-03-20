@@ -324,10 +324,12 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				})
 			}
 		default:
-			resources = append(resources, &common.Resource{
-				Type: common.ResourceTypeWorkspace,
-				ID:   common.GetWorkspaceIDFromContext(ctx),
-			})
+			if workspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != "" {
+				resources = append(resources, &common.Resource{
+					Type: common.ResourceTypeWorkspace,
+					ID:   workspaceID,
+				})
+			}
 		}
 	}
 	authContext.Resources = resources
