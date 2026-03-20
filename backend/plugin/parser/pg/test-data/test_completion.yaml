@@ -7847,3 +7847,348 @@
       definition: ""
       comment: ""
       priority: 0
+- input: SELECT (SELECT | FROM t1) FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT (SELECT t1.| FROM t1) FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 WHERE c1 = ANY(SELECT | FROM t2)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 WHERE c1 = ALL(SELECT | FROM t2)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 WHERE c1 > (SELECT MAX(|) FROM t2)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM (SELECT * FROM (SELECT | FROM t1) a) b
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: a
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: b
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT b.| FROM (SELECT * FROM (SELECT c1 FROM t1) a) b
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1 = t1.|)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT | FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: sub
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT sub.| FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0

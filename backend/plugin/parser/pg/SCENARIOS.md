@@ -174,16 +174,16 @@ Complex query structures and nesting. Independent of Phase 2. Sections 3.1 and 3
 
 ### 3.3 Nested Subqueries and Expressions
 
-- [ ] `SELECT (SELECT | FROM t1) FROM t2` — scalar subquery in SELECT list
-- [ ] `SELECT (SELECT t1.| FROM t1) FROM t2` — qualified column in scalar subquery
-- [ ] `SELECT * FROM t1 WHERE c1 = ANY(SELECT | FROM t2)` — ANY subquery
-- [ ] `SELECT * FROM t1 WHERE c1 = ALL(SELECT | FROM t2)` — ALL subquery
-- [ ] `SELECT * FROM t1 WHERE c1 > (SELECT MAX(|) FROM t2)` — aggregate in scalar subquery
-- [ ] `SELECT * FROM (SELECT * FROM (SELECT | FROM t1) a) b` — triple-nested subquery
-- [ ] `SELECT b.| FROM (SELECT * FROM (SELECT c1 FROM t1) a) b` — qualified column from triple-nested
-- [ ] `SELECT * FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1 = t1.|)` — correlated subquery referencing outer column
-- [ ] `SELECT | FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub` — subquery with UNION
-- [ ] `SELECT sub.| FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub` — qualified columns from UNION subquery
+- [x] `SELECT (SELECT | FROM t1) FROM t2` — scalar subquery in SELECT list
+- [x] `SELECT (SELECT t1.| FROM t1) FROM t2` — qualified column in scalar subquery
+- [x] `SELECT * FROM t1 WHERE c1 = ANY(SELECT | FROM t2)` — ANY subquery
+- [x] `SELECT * FROM t1 WHERE c1 = ALL(SELECT | FROM t2)` — ALL subquery
+- [x] `SELECT * FROM t1 WHERE c1 > (SELECT MAX(|) FROM t2)` — aggregate in scalar subquery
+- [x] `SELECT * FROM (SELECT * FROM (SELECT | FROM t1) a) b` — triple-nested subquery
+- [x] `SELECT b.| FROM (SELECT * FROM (SELECT c1 FROM t1) a) b` — qualified column from triple-nested
+- [x] `SELECT * FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.c1 = t1.|)` — correlated subquery referencing outer column
+- [x] `SELECT | FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub` — subquery with UNION
+- [x] `SELECT sub.| FROM (SELECT c1, c2 FROM t2 UNION SELECT c1, c2 FROM t2) sub` — qualified columns from UNION subquery
 
 ### 3.4 Set Operations
 
