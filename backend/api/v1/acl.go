@@ -152,13 +152,14 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 					return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
 				}
 			case common.ResourceTypeProject:
-				project, err := in.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &resource.ID})
+				project, err := in.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &resource.ID})
 				if err != nil {
 					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 				}
 				if project == nil || project.Workspace != workspaceID {
 					return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
 				}
+			default:
 			}
 		}
 	}

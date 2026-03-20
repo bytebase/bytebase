@@ -86,11 +86,14 @@ func (s *Store) removeDatabaseCache(ctx context.Context, instanceID, databaseNam
 	// Remove unscoped (runner) cache entry.
 	s.databaseCache.Remove(getDatabaseCacheKey("", instanceID, databaseName))
 	// Remove workspace-scoped (API) cache entry.
-	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil || instance == nil {
+	// Query workspace directly from instance table to avoid workspace-filtering issues with GetInstance.
+	var workspace string
+	if err := s.GetDB().QueryRowContext(ctx,
+		"SELECT workspace FROM instance WHERE resource_id = $1", instanceID,
+	).Scan(&workspace); err != nil {
 		return
 	}
-	s.databaseCache.Remove(getDatabaseCacheKey(instance.Workspace, instanceID, databaseName))
+	s.databaseCache.Remove(getDatabaseCacheKey(workspace, instanceID, databaseName))
 }
 
 // GetDatabase gets a database.
