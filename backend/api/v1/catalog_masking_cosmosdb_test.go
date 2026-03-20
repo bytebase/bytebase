@@ -381,6 +381,54 @@ func TestCosmosDBMaskingValueCount(t *testing.T) {
 	require.Equal(t, `42`, row.Values[0].GetStringValue())
 }
 
+func TestCosmosDBMaskingValueConcatSensitive(t *testing.T) {
+	// SELECT VALUE CONCAT(c.name, " <", c.email, ">") -- no alias, expression has sensitive c.email.
+	// The expression has no output name, but source paths must still be tracked so
+	// findMaskerForScalarValue can detect that c.email is sensitive and mask the result.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE CONCAT(c.name, " <", c.email, ">") FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice <alice@example.com>"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"******"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueConcatNonSensitive(t *testing.T) {
+	// SELECT VALUE CONCAT(c.name, " - ", c.country) -- no alias, no sensitive fields.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE CONCAT(c.name, " - ", c.country) FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice - US"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"Alice - US"`, row.Values[0].GetStringValue())
+}
+
 // ---------------------------------------------------------------------------
 // Test: Expression projections
 // ---------------------------------------------------------------------------
