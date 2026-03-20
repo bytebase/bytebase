@@ -206,16 +206,16 @@ Identifier handling, error recovery, and special scenarios.
 
 ### 4.1 Quoted Identifiers and Reserved Keywords
 
-- [ ] `SELECT | FROM "t1"` — quoted table name in FROM (should resolve t1 columns)
-- [ ] `SELECT "t1".| FROM t1` — quoted table qualifier
-- [ ] `SELECT * FROM "public".|` — quoted schema name
-- [ ] `SELECT * FROM |` with table named using reserved keyword (metadata has table named "order") — reserved keyword table appears quoted
-- [ ] `SELECT | FROM "order"` — columns from reserved-keyword-named table
-- [ ] `SELECT "order".| FROM "order"` — qualified columns from reserved-keyword table
-- [ ] `SELECT * FROM |` with mixed-case table name (metadata has "MyTable") — mixed-case name appears quoted
-- [ ] `SELECT | FROM "MyTable"` — columns from mixed-case table
-- [ ] `SELECT * FROM |` with table containing special chars (metadata has "my-table") — special char name appears quoted
-- [ ] `SELECT * FROM public."t1" WHERE |` — columns after quoted schema-qualified table
+- [x] `SELECT | FROM "t1"` — quoted table name in FROM (should resolve t1 columns)
+- [x] `SELECT "t1".| FROM t1` — quoted table qualifier
+- [x] `SELECT * FROM "public".|` — quoted schema name
+- [x] `SELECT * FROM |` with table named using reserved keyword (metadata has table named "order") — reserved keyword table appears quoted
+- [x] `SELECT | FROM "order"` — columns from reserved-keyword-named table
+- [x] `SELECT "order".| FROM "order"` — qualified columns from reserved-keyword table
+- [x] `SELECT * FROM |` with mixed-case table name (metadata has "MyTable") — mixed-case name appears quoted
+- [x] `SELECT | FROM "MyTable"` — columns from mixed-case table
+- [x] `SELECT * FROM |` with table containing special chars (metadata has "my-table") — special char name appears quoted
+- [x] `SELECT * FROM public."t1" WHERE |` — columns after quoted schema-qualified table
 
 ### 4.2 Partial Prefix Completion
 

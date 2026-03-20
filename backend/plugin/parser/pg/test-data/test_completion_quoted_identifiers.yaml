@@ -1,0 +1,113 @@
+- input: SELECT * FROM |
+  want:
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"MyTable"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"my-table"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"order"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT | FROM "order"
+  want:
+    - text: amount
+      type: COLUMN
+      definition: public.order | numeric, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: public.order | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"MyTable"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"my-table"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"order"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT "order".| FROM "order"
+  want:
+    - text: amount
+      type: COLUMN
+      definition: public.order | numeric, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: public.order | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT | FROM "MyTable"
+  want:
+    - text: '"Id"'
+      type: COLUMN
+      definition: public.MyTable | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: '"Value"'
+      type: COLUMN
+      definition: public.MyTable | text, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"MyTable"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"my-table"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: '"order"'
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
