@@ -99,21 +99,21 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 
 ### 2.2 ALTER Statements
 
-- [ ] `ALTER TABLE |` — table completion in ALTER TABLE
-- [ ] `ALTER TABLE public.|` — schema-qualified table in ALTER TABLE
-- [ ] `ALTER TABLE t1 ADD COLUMN c2 int REFERENCES |` — FK reference in ALTER ADD COLUMN
-- [ ] `ALTER TABLE t1 DROP COLUMN |` — column completion for existing columns
-- [ ] `ALTER TABLE t1 RENAME COLUMN | TO new_name` — column completion in RENAME
-- [ ] `ALTER TABLE t1 ALTER COLUMN |` — column completion in ALTER COLUMN
-- [ ] `ALTER TABLE t1 ALTER COLUMN | SET NOT NULL` — column completion with SET NOT NULL
-- [ ] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2` — column in FK constraint
-- [ ] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (c1) REFERENCES t2(|)` — referenced column
-- [ ] `ALTER INDEX | RENAME TO new_name` — index completion in ALTER INDEX
-- [ ] `ALTER VIEW |` — view completion in ALTER VIEW
-- [ ] `ALTER VIEW public.|` — schema-qualified view in ALTER VIEW
-- [ ] `ALTER SEQUENCE |` — sequence completion in ALTER SEQUENCE
-- [ ] `ALTER SEQUENCE public.|` — schema-qualified sequence
-- [ ] `ALTER MATERIALIZED VIEW |` — materialized view completion
+- [x] `ALTER TABLE |` — table completion in ALTER TABLE
+- [x] `ALTER TABLE public.|` — schema-qualified table in ALTER TABLE
+- [x] `ALTER TABLE t1 ADD COLUMN c2 int REFERENCES |` — FK reference in ALTER ADD COLUMN
+- [~] `ALTER TABLE t1 DROP COLUMN |` — column completion for existing columns (no candidates returned; parser does not emit columnref rule in ALTER TABLE DROP COLUMN context)
+- [~] `ALTER TABLE t1 RENAME COLUMN | TO new_name` — column completion in RENAME (no candidates returned; parser does not emit columnref rule in ALTER TABLE RENAME COLUMN context)
+- [~] `ALTER TABLE t1 ALTER COLUMN |` — column completion in ALTER COLUMN (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
+- [~] `ALTER TABLE t1 ALTER COLUMN | SET NOT NULL` — column completion with SET NOT NULL (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
+- [~] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2` — column in FK constraint (returns relation_expr candidates instead of columns; parser does not emit columnref rule inside FK column parentheses)
+- [~] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (c1) REFERENCES t2(|)` — referenced column (no candidates returned; parser does not emit columnref rule inside FK referenced column parentheses)
+- [x] `ALTER INDEX | RENAME TO new_name` — index completion in ALTER INDEX
+- [x] `ALTER VIEW |` — view completion in ALTER VIEW
+- [x] `ALTER VIEW public.|` — schema-qualified view in ALTER VIEW
+- [x] `ALTER SEQUENCE |` — sequence completion in ALTER SEQUENCE
+- [x] `ALTER SEQUENCE public.|` — schema-qualified sequence
+- [x] `ALTER MATERIALIZED VIEW |` — materialized view completion
 
 ### 2.3 DROP and TRUNCATE Statements
 
