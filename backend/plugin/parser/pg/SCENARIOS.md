@@ -21,7 +21,7 @@ Fill missing coverage for features already partially tested.
 - [x] `SELECT * FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.| ` — qualified column in RIGHT JOIN ON condition
 - [x] `SELECT * FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.|` — qualified column in FULL OUTER JOIN ON condition
 - [x] `SELECT * FROM t1 CROSS JOIN t2 WHERE t1.|` — qualified column in WHERE after CROSS JOIN
-- [~] `SELECT * FROM t1 JOIN t2 USING (|)` — columns common to both tables in USING clause (no candidates returned; USING clause not supported by completion engine)
+- [x] `SELECT * FROM t1 JOIN t2 USING (|)` — columns common to both tables in USING clause
 - [x] `SELECT | FROM t1 JOIN t2 ON t1.c1 = t2.c1 LEFT JOIN test.auto ON t2.c1 = test.auto.id` — mixed join types with cross-schema
 - [x] `SELECT a.| FROM t1 a NATURAL JOIN t2 b` — alias-qualified columns after NATURAL JOIN
 
@@ -84,11 +84,11 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 - [x] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES |)` — table completion in FK reference
 - [x] `CREATE TABLE test_tbl (id int, FOREIGN KEY (id) REFERENCES public.|)` — schema-qualified FK reference
 - [x] `CREATE TABLE test_tbl (id int REFERENCES |)` — inline FK reference
-- [~] `CREATE TABLE test_tbl (id int REFERENCES t1(|))` — column completion in FK reference (no candidates returned; parser does not emit columnref rule inside FK column parentheses)
+- [x] `CREATE TABLE test_tbl (id int REFERENCES t1(|))` — column completion in FK reference
 - [x] `CREATE INDEX idx ON |` — table completion in CREATE INDEX
 - [x] `CREATE INDEX idx ON public.|` — schema-qualified table in CREATE INDEX
-- [~] `CREATE INDEX idx ON t1 (|)` — column completion in index expression (no candidates returned; parser does not emit columnref rule inside index column parentheses)
-- [~] `CREATE INDEX idx ON t2 (c1, |)` — second column in composite index (no candidates returned; same parser limitation as above)
+- [x] `CREATE INDEX idx ON t1 (|)` — column completion in index expression
+- [x] `CREATE INDEX idx ON t2 (c1, |)` — second column in composite index
 - [x] `CREATE VIEW v2 AS SELECT | FROM t1` — completion in CREATE VIEW body
 - [x] `CREATE VIEW v2 AS SELECT * FROM |` — FROM completion in CREATE VIEW body
 - [x] `CREATE MATERIALIZED VIEW mv AS SELECT | FROM t1` — completion in CREATE MATERIALIZED VIEW body
@@ -103,11 +103,11 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 - [x] `ALTER TABLE public.|` — schema-qualified table in ALTER TABLE
 - [x] `ALTER TABLE t1 ADD COLUMN c2 int REFERENCES |` — FK reference in ALTER ADD COLUMN
 - [~] `ALTER TABLE t1 DROP COLUMN |` — column completion for existing columns (no candidates returned; parser does not emit columnref rule in ALTER TABLE DROP COLUMN context)
-- [~] `ALTER TABLE t1 RENAME COLUMN | TO new_name` — column completion in RENAME (no candidates returned; parser does not emit columnref rule in ALTER TABLE RENAME COLUMN context)
+- [x] `ALTER TABLE t1 RENAME COLUMN | TO new_name` — column completion in RENAME
 - [~] `ALTER TABLE t1 ALTER COLUMN |` — column completion in ALTER COLUMN (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
 - [~] `ALTER TABLE t1 ALTER COLUMN | SET NOT NULL` — column completion with SET NOT NULL (no candidates returned; parser does not emit columnref rule in ALTER TABLE ALTER COLUMN context)
-- [~] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2` — column in FK constraint (returns relation_expr candidates instead of columns; parser does not emit columnref rule inside FK column parentheses)
-- [~] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (c1) REFERENCES t2(|)` — referenced column (no candidates returned; parser does not emit columnref rule inside FK referenced column parentheses)
+- [x] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (|) REFERENCES t2` — column in FK constraint
+- [x] `ALTER TABLE t1 ADD CONSTRAINT fk FOREIGN KEY (c1) REFERENCES t2(|)` — referenced column
 - [x] `ALTER INDEX | RENAME TO new_name` — index completion in ALTER INDEX
 - [x] `ALTER VIEW |` — view completion in ALTER VIEW
 - [x] `ALTER VIEW public.|` — schema-qualified view in ALTER VIEW
@@ -136,7 +136,7 @@ Completion in DDL statements. Independent of Phase 1 — can run in parallel. Ma
 - [~] `COMMENT ON COLUMN public.t1.|` — schema-qualified column in COMMENT ON COLUMN (no candidates returned; parser does not emit columnref rule in COMMENT ON COLUMN context)
 - [x] `GRANT SELECT ON |` — table completion in GRANT
 - [x] `GRANT SELECT ON public.|` — schema-qualified table in GRANT
-- [~] `GRANT ALL ON ALL TABLES IN SCHEMA |` — schema completion in GRANT (no candidates returned; parser does not emit schema_name rule in GRANT ... IN SCHEMA context)
+- [x] `GRANT ALL ON ALL TABLES IN SCHEMA |` — schema completion in GRANT
 - [x] `REVOKE SELECT ON |` — table completion in REVOKE
 - [x] `REVOKE SELECT ON public.|` — schema-qualified table in REVOKE
 - [x] `GRANT USAGE ON SEQUENCE |` — sequence completion in GRANT
