@@ -10,12 +10,16 @@ export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 const DEFAULT_PROJECT_PREFIX = "projects/default-";
 
 // Check if a project name is the default project for the given workspace.
+// Handles both new format ("projects/default-{workspaceID}") and legacy ("projects/default").
 // workspaceResourceName is "workspaces/{workspaceID}".
 export const isDefaultProject = (
   name: string,
   workspaceResourceName: string
 ): boolean => {
-  return name === getDefaultProjectName(workspaceResourceName);
+  return (
+    name === getDefaultProjectName(workspaceResourceName) ||
+    name === "projects/default"
+  );
 };
 
 // Derive the default project name from the workspace resource name.

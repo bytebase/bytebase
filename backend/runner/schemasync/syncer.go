@@ -335,10 +335,14 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 		if idx < 0 {
 			// Create the database in the default project.
+			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, instance.Workspace)
+			if err != nil {
+				return nil, nil, nil, errors.Wrapf(err, "failed to get default project ID for instance %q", instance.ResourceID)
+			}
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				ProjectID:    common.DefaultProjectID(instance.Workspace),
+				ProjectID:    defaultProjectID,
 			})
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)

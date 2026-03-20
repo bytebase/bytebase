@@ -210,6 +210,9 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 	if !isValidResourceID(req.Msg.ProjectId) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid project ID %v", req.Msg.ProjectId))
 	}
+	if req.Msg.ProjectId == "default" || strings.HasPrefix(req.Msg.ProjectId, "default-") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project ID %q is reserved", req.Msg.ProjectId))
+	}
 
 	if req.Msg.Project != nil && req.Msg.Project.Labels != nil {
 		if err := validateLabels(req.Msg.Project.Labels); err != nil {

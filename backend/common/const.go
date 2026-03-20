@@ -31,9 +31,10 @@ func DefaultProjectID(workspaceID string) string {
 	return defaultProjectPrefix + workspaceID
 }
 
-// IsDefaultProject returns whether a project resource ID is the default project for the given workspace.
+// IsDefaultProject returns whether a project resource ID is the default project.
+// Handles both new format ("default-{workspaceID}") and legacy format ("default").
 func IsDefaultProject(workspaceID, projectID string) bool {
-	return projectID == DefaultProjectID(workspaceID)
+	return projectID == DefaultProjectID(workspaceID) || projectID == "default"
 }
 
 const (

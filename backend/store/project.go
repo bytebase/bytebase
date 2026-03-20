@@ -56,6 +56,30 @@ type UpdateProjectMessage struct {
 }
 
 // GetProject gets project by resource ID.
+// GetDefaultProjectID returns the default project resource ID for the given workspace.
+// Checks for new format ("default-{workspaceID}") first, falls back to legacy ("default").
+func (s *Store) GetDefaultProjectID(ctx context.Context, workspace string) (string, error) {
+	newID := common.DefaultProjectID(workspace)
+	resourceID := newID
+	project, err := s.GetProject(ctx, &FindProjectMessage{Workspace: workspace, ResourceID: &resourceID})
+	if err != nil {
+		return "", err
+	}
+	if project != nil {
+		return newID, nil
+	}
+	// Legacy fallback.
+	legacyID := "default"
+	project, err = s.GetProject(ctx, &FindProjectMessage{Workspace: workspace, ResourceID: &legacyID})
+	if err != nil {
+		return "", err
+	}
+	if project != nil {
+		return legacyID, nil
+	}
+	return newID, nil
+}
+
 func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
 		if v, ok := s.projectCache.Get(*find.ResourceID); ok && s.enableCache {
@@ -316,6 +340,11 @@ func (s *Store) removeProjectCache(resourceID string) {
 // - Test cleanup
 // Following AIP-164/165, this only works on projects where deleted = TRUE.
 func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID string) error {
+	defaultProjectID, err := s.GetDefaultProjectID(ctx, workspace)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default project ID")
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -345,7 +374,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 
 	// Delete worksheets associated with this project
-	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", common.DefaultProjectID(workspace), resourceID)
+	q = qb.Q().Space("UPDATE worksheet SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build worksheet update query")
@@ -478,7 +507,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 
 	// Move databases to the default project instead of deleting them
-	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", common.DefaultProjectID(workspace), resourceID)
+	q = qb.Q().Space("UPDATE db SET project = ? WHERE project = ?", defaultProjectID, resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build db update query")
@@ -631,7 +660,7 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 			return qb.Q().Space("project.resource_id = ?", value.(string)), nil
 		case "exclude_default":
 			if excludeDefault, ok := value.(bool); excludeDefault && ok {
-				return qb.Q().Space("project.resource_id != ?", common.DefaultProjectID(workspace)), nil
+				return qb.Q().Space("project.resource_id != ? AND project.resource_id != 'default'", common.DefaultProjectID(workspace)), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "state":
