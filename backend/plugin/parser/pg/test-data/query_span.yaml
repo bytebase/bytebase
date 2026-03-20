@@ -3066,3 +3066,62 @@
           table: t
           column: ""
     predicatecolumns: []
+- description: array subscript in select list
+  statement: |-
+    SELECT
+      c.id,
+      c.scores[array_length(c.scores, 1)] AS last_score
+    FROM t1 c
+    WHERE c.finished_at IS NOT NULL
+    ORDER BY c.finished_at DESC
+    LIMIT 10;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {"name":  "id"},
+                {"name":  "scores"},
+                {"name":  "finished_at"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: id
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: id
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: last_score
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: scores
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
+    predicatecolumns: []
