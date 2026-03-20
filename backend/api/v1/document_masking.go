@@ -621,7 +621,15 @@ func (*cosmosDBMasker) maskResults(
 			}
 			doc := make(map[string]any)
 			if err := json.Unmarshal([]byte(value), &doc); err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal document: %v", err))
+				// VALUE query: result is a scalar, not a JSON object.
+				masked, maskErr := maskCosmosDBScalarValue(spans[0], value, objectSchema, semanticTypeToMaskerMap)
+				if maskErr != nil {
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to mask scalar value: %v", maskErr))
+				}
+				row.Values[0] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{StringValue: masked},
+				}
+				continue
 			}
 			maskedDoc, err := maskCosmosDB(spans[0], doc, objectSchema, semanticTypeToMaskerMap)
 			if err != nil {
@@ -646,6 +654,42 @@ func maskCosmosDB(span *parserbase.QuerySpan, data map[string]any, objectSchema 
 		return nil, errors.Errorf("expected 1 result, but got %d", len(span.Results))
 	}
 	return walkAndMaskJSON(data, span.Results[0].SourceFieldPaths, objectSchema, semanticTypeToMasker)
+}
+
+// maskCosmosDBScalarValue handles VALUE query results where the JSON is a scalar
+// (string, number, bool) rather than an object. It checks if any projected source
+// field path resolves to a sensitive semantic type and masks the raw JSON accordingly.
+func maskCosmosDBScalarValue(span *parserbase.QuerySpan, rawJSON string, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (string, error) {
+	if len(span.Results) != 1 {
+		return rawJSON, nil
+	}
+	// Collect all source field paths across all projected fields.
+	for _, paths := range span.Results[0].SourceFieldPaths {
+		for _, path := range paths {
+			ast := stripContainerFromPath(path)
+			_, semanticType := getObjectSchemaByPath(objectSchema, ast)
+			if semanticType != "" {
+				if m, ok := semanticTypeToMasker[semanticType]; ok {
+					// Parse the scalar JSON value, mask it, and re-serialize.
+					var parsed any
+					if unmarshalErr := json.Unmarshal([]byte(rawJSON), &parsed); unmarshalErr != nil {
+						// Unparseable JSON: pass through as-is.
+						return rawJSON, nil //nolint:nilerr
+					}
+					masked, err := applyMaskerToJSONMember(parsed, m)
+					if err != nil {
+						return "", err
+					}
+					out, err := json.Marshal(masked)
+					if err != nil {
+						return "", err
+					}
+					return string(out), nil
+				}
+			}
+		}
+	}
+	return rawJSON, nil
 }
 
 // ---------------------------------------------------------------------------

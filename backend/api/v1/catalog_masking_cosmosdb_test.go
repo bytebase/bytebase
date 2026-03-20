@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	cosmosdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
 )
@@ -16,7 +18,7 @@ import (
 // cosmosDBTestSchema returns a schema for a container with:
 //
 //	name (string), email (string, masked), country (string), population (number),
-//	_ts (number), contact.phone (string, masked), contact.city (string)
+//	_ts (number), location (object, masked), contact.phone (string, masked), contact.city (string)
 func cosmosDBTestSchema() *storepb.ObjectSchema {
 	return &storepb.ObjectSchema{
 		Type: storepb.ObjectSchema_OBJECT,
@@ -32,6 +34,18 @@ func cosmosDBTestSchema() *storepb.ObjectSchema {
 					"score":      {Type: storepb.ObjectSchema_NUMBER},
 					"_ts":        {Type: storepb.ObjectSchema_NUMBER},
 					"_etag":      {Type: storepb.ObjectSchema_STRING},
+					"location": {
+						Type:         storepb.ObjectSchema_OBJECT,
+						SemanticType: "bb.default",
+						Kind: &storepb.ObjectSchema_StructKind_{
+							StructKind: &storepb.ObjectSchema_StructKind{
+								Properties: map[string]*storepb.ObjectSchema{
+									"type":        {Type: storepb.ObjectSchema_STRING},
+									"coordinates": {Type: storepb.ObjectSchema_ARRAY},
+								},
+							},
+						},
+					},
 					"contact": {
 						Type: storepb.ObjectSchema_OBJECT,
 						Kind: &storepb.ObjectSchema_StructKind_{
@@ -61,6 +75,50 @@ func getCosmosDBQuerySpan(t *testing.T, query string) *base.QuerySpan {
 	span, err := cosmosdbparser.GetQuerySpan(context.TODO(), base.GetQuerySpanContext{}, base.Statement{Text: query}, "", "", false)
 	require.NoError(t, err)
 	return span
+}
+
+// maskCosmosDBResultsForTest replicates the maskResults logic without store/database dependencies.
+// It handles both object and scalar (VALUE query) results.
+func maskCosmosDBResultsForTest(span *base.QuerySpan, results []*v1pb.QueryResult, schema *storepb.ObjectSchema, maskers map[string]masker.Masker) error {
+	if len(span.Results) != 1 {
+		return errors.Errorf("expected 1 span result, got %d", len(span.Results))
+	}
+	for _, result := range results {
+		for _, row := range result.Rows {
+			if len(row.Values) != 1 {
+				continue
+			}
+			value := row.Values[0].GetStringValue()
+			if value == "" {
+				continue
+			}
+			doc := make(map[string]any)
+			if err := json.Unmarshal([]byte(value), &doc); err != nil {
+				// VALUE query: the result is a scalar, not an object.
+				// Check if any source field path is sensitive and mask the scalar directly.
+				masked, maskErr := maskCosmosDBScalarValue(span, value, schema, maskers)
+				if maskErr != nil {
+					return maskErr
+				}
+				row.Values[0] = &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{StringValue: masked},
+				}
+				continue
+			}
+			maskedDoc, err := maskCosmosDB(span, doc, schema, maskers)
+			if err != nil {
+				return err
+			}
+			maskedValue, err := json.Marshal(maskedDoc)
+			if err != nil {
+				return err
+			}
+			row.Values[0] = &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{StringValue: string(maskedValue)},
+			}
+		}
+	}
+	return nil
 }
 
 // maskCosmosDBDoc parses the query, gets span, and masks the document.
@@ -240,13 +298,87 @@ func TestCosmosDBMaskingDistinctValueSensitive(t *testing.T) {
 }
 
 func TestCosmosDBMaskingGeospatial(t *testing.T) {
-	// Geospatial function with JSON object literal.
+	// Geospatial function with JSON object literal where source field IS sensitive.
+	// ST_DISTANCE(c.location, ...) -- c.location is tagged with bb.default.
+	// The distance result must be masked because it derives from sensitive location data.
 	query := `SELECT c.name, ST_DISTANCE(c.location, {"type": "Point", "coordinates": [55.2708, 25.2048]}) AS dist FROM c`
 	input := `{"name":"Alice","dist":1234.5}`
-	want := `{"name":"Alice","dist":1234.5}`
+	want := `{"name":"Alice","dist":"******"}`
 
 	got := maskCosmosDBDoc(t, query, input, cosmosDBTestSchema(), cosmosDBMaskers())
 	requireJSONEqual(t, want, got)
+}
+
+func TestCosmosDBMaskingValueSensitive(t *testing.T) {
+	// SELECT VALUE c.email returns scalar values from CosmosDB, not objects.
+	// The driver returns each result as a raw JSON string (e.g., "\"alice@example.com\"").
+	// maskResults must handle non-object JSON values for VALUE queries.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE c.email FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	// Simulate the driver result: a scalar JSON string.
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"alice@example.com"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"******"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueNonSensitive(t *testing.T) {
+	// SELECT VALUE c.name returns scalar values; c.name is not sensitive.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE c.name FROM container c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `"Alice"`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `"Alice"`, row.Values[0].GetStringValue())
+}
+
+func TestCosmosDBMaskingValueCount(t *testing.T) {
+	// SELECT VALUE COUNT(1) returns a number. No source field, not masked.
+	schema := cosmosDBTestSchema()
+	maskers := cosmosDBMaskers()
+	query := `SELECT VALUE COUNT(1) FROM c`
+	span := getCosmosDBQuerySpan(t, query)
+
+	row := &v1pb.QueryRow{
+		Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: `42`}},
+		},
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"result"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows:            []*v1pb.QueryRow{row},
+	}
+
+	err := maskCosmosDBResultsForTest(span, []*v1pb.QueryResult{result}, schema, maskers)
+	require.NoError(t, err)
+	require.Equal(t, `42`, row.Values[0].GetStringValue())
 }
 
 // ---------------------------------------------------------------------------
