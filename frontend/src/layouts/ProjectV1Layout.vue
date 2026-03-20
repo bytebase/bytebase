@@ -49,12 +49,13 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   pushNotification,
+  useActuatorV1Store,
   useProjectByName,
   useProjectIamPolicy,
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
+import { isDefaultProject as checkIsDefaultProject, UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { hasProjectPermissionV2, setDocumentTitle } from "@/utils";
 
@@ -63,6 +64,7 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const actuatorStore = useActuatorV1Store();
 const recentProjects = useRecentProjects();
 const projectStore = useProjectV1Store();
 const { remove: removeVisit } = useRecentVisit();
@@ -107,7 +109,7 @@ const initialized = computed(
 );
 
 const isDefaultProject = computed((): boolean => {
-  return project.value.name === DEFAULT_PROJECT_NAME;
+  return checkIsDefaultProject(project.value.name, actuatorStore.serverInfo?.workspace ?? "");
 });
 
 const allowEdit = computed(() => {

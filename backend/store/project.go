@@ -584,7 +584,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	return nil
 }
 
-func GetListProjectFilter(filter string) (*qb.Query, error) {
+func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -631,7 +631,7 @@ func GetListProjectFilter(filter string) (*qb.Query, error) {
 			return qb.Q().Space("project.resource_id = ?", value.(string)), nil
 		case "exclude_default":
 			if excludeDefault, ok := value.(bool); excludeDefault && ok {
-				return qb.Q().Space("NOT project.resource_id LIKE ?", common.DefaultProjectPrefix+"%"), nil
+				return qb.Q().Space("project.resource_id != ?", common.DefaultProjectID(workspace)), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "state":

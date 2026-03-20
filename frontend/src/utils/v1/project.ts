@@ -1,4 +1,4 @@
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export const extractProjectResourceName = (name: string) => {
@@ -7,8 +7,11 @@ export const extractProjectResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export function projectV1Name(project: Project) {
-  if (project.name === DEFAULT_PROJECT_NAME) {
+export function projectV1Name(
+  project: Project,
+  workspaceResourceName: string
+) {
+  if (isDefaultProject(project.name, workspaceResourceName)) {
     return "Unassigned";
   }
 

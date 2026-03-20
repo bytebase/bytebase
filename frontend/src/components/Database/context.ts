@@ -1,11 +1,11 @@
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide } from "vue";
-import { useDatabaseV1ByName } from "@/store";
+import { useActuatorV1Store, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { isDefaultProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 
@@ -27,6 +27,7 @@ export const provideDatabaseDetailContext = (
   instanceId: Ref<string>,
   databaseName: Ref<string>
 ) => {
+  const actuatorStore = useActuatorV1Store();
   const { database } = useDatabaseV1ByName(
     computed(
       () =>
@@ -34,8 +35,8 @@ export const provideDatabaseDetailContext = (
     )
   );
 
-  const isDefaultProject = computed(
-    () => database.value.project === DEFAULT_PROJECT_NAME
+  const isDefaultProjectRef = computed(() =>
+    isDefaultProject(database.value.project, actuatorStore.serverInfo?.workspace ?? "")
   );
 
   const allowAlterSchema = computed(() => {
@@ -45,7 +46,7 @@ export const provideDatabaseDetailContext = (
   const context: DatabaseDetailContext = {
     database,
     allowAlterSchema,
-    isDefaultProject,
+    isDefaultProject: isDefaultProjectRef,
   };
 
   provide(KEY, context);

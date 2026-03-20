@@ -24,9 +24,9 @@ import { computedAsync } from "@vueuse/core";
 import { computed, type VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
-import { useProjectV1Store } from "@/store";
+import { useActuatorV1Store, useProjectV1Store } from "@/store";
 import {
-  DEFAULT_PROJECT_NAME,
+  isDefaultProject,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
@@ -57,13 +57,14 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const projectStore = useProjectV1Store();
 
 const getOption = (project: Project): ResourceSelectOption<Project> => ({
   resource: project,
   value: project.name,
   label:
-    project.name === DEFAULT_PROJECT_NAME
+    isDefaultProject(project.name, actuatorStore.serverInfo?.workspace ?? "")
       ? t("common.unassigned")
       : project.title,
 });

@@ -196,7 +196,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	}
 	find.OrderByKeys = orderByKeys
 
-	filterQ, err := store.GetListDatabaseFilter(req.Msg.Filter)
+	filterQ, err := store.GetListDatabaseFilter(common.GetWorkspaceIDFromContext(ctx), req.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

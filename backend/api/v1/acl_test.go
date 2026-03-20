@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -184,7 +185,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, _ := getResourceFromRequest(tt.request, tt.method)
+		got, _ := getResourceFromRequest(context.Background(), tt.request, tt.method)
 		require.Equal(t, tt.want, got, tt.method)
 	}
 }

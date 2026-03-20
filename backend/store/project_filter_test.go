@@ -135,7 +135,7 @@ func TestGetListProjectFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := GetListProjectFilter(tt.filter)
+			q, err := GetListProjectFilter("test-workspace", tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)

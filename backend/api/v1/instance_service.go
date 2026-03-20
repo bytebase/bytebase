@@ -468,7 +468,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	} else {
 		var databaseNames []string
 		for _, database := range databases {
-			if !common.IsDefaultProject(database.ProjectID) {
+			if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
 				databaseNames = append(databaseNames, database.DatabaseName)
 			}
 		}

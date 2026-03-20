@@ -50,8 +50,8 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
-			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND NOT db.project LIKE $3))`,
-			wantArgs: []any{"asia", "bytebase", common.DefaultProjectPrefix + "%"},
+			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND db.project != $3))`,
+			wantArgs: []any{"asia", "bytebase", common.DefaultProjectID("test-workspace")},
 		},
 		{
 			input:    `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,
@@ -61,7 +61,7 @@ func TestListDatabaseFilter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		filterQ, err := store.GetListDatabaseFilter(tc.input)
+		filterQ, err := store.GetListDatabaseFilter("test-workspace", tc.input)
 		if tc.error != nil {
 			require.Error(t, err)
 			require.Equal(t, tc.error.Message(), err.Error())

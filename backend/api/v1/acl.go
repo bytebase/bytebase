@@ -269,7 +269,7 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
-	rawResources, err := getResourceFromRequest(request, method)
+	rawResources, err := getResourceFromRequest(ctx, request, method)
 	if err != nil {
 		return err
 	}
@@ -345,7 +345,7 @@ type rawResource struct {
 	isWorkspace bool
 }
 
-func getResourceFromRequest(request any, method string) ([]*rawResource, error) {
+func getResourceFromRequest(ctx context.Context, request any, method string) ([]*rawResource, error) {
 	pm, ok := request.(proto.Message)
 	if !ok {
 		return nil, errors.Errorf("invalid request for method %q", method)
@@ -376,7 +376,7 @@ func getResourceFromRequest(request any, method string) ([]*rawResource, error) 
 				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
 			}
 			// Allow to transfer databases to the default project.
-			if common.IsDefaultProject(projectID) {
+			if common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
 				continue
 			}
 			resources = append(resources, &rawResource{name: r.GetDatabase().GetProject()})

@@ -8,8 +8,8 @@ import { projectServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import type { MaybeRef, ResourceId } from "@/types";
 import {
-  DEFAULT_PROJECT_NAME,
   defaultProject,
+  isDefaultProject,
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
@@ -28,6 +28,7 @@ import {
   UpdateProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { useActuatorV1Store } from "./actuator";
 import { projectNamePrefix } from "./common";
 import { getLabelFilter } from "./database";
 
@@ -100,7 +101,9 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
   const getProjectByName = (name: string) => {
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
-    if (name === DEFAULT_PROJECT_NAME) return defaultProject();
+    const workspace =
+      useActuatorV1Store().serverInfo?.workspace ?? "";
+    if (isDefaultProject(name, workspace)) return defaultProject(name);
     return projectMapByName.get(name) ?? unknownProject();
   };
   const fetchProjectByName = async (name: string, silent = false) => {
@@ -204,11 +207,13 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const batchGetOrFetchProjects = async (projectNames: string[]) => {
+    const workspace =
+      useActuatorV1Store().serverInfo?.workspace ?? "";
     const validProjectList = uniq(projectNames).filter((projectName) => {
       if (
         !projectName ||
         !isValidProjectName(projectName) ||
-        projectName === DEFAULT_PROJECT_NAME
+        isDefaultProject(projectName, workspace)
       ) {
         return false;
       }

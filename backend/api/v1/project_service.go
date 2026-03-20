@@ -96,7 +96,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filterQ, err := store.GetListProjectFilter(req.Msg.Filter)
+	filterQ, err := store.GetListProjectFilter(common.GetWorkspaceIDFromContext(ctx), req.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -153,7 +153,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 	}
-	filterQ, err := store.GetListProjectFilter(req.Msg.Filter)
+	filterQ, err := store.GetListProjectFilter(common.GetWorkspaceIDFromContext(ctx), req.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -272,7 +272,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	if project.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Project.Name))
 	}
-	if common.IsDefaultProject(project.ResourceID) {
+	if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be updated"))
 	}
 
@@ -380,7 +380,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 
 	// Handle purge (hard delete)
 	if req.Msg.Purge {
-		if common.IsDefaultProject(project.ResourceID) {
+		if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 		}
 
@@ -404,7 +404,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 	}
 
 	// Regular soft delete (archive) flow
-	if common.IsDefaultProject(project.ResourceID) {
+	if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be deleted"))
 	}
 	// Idempotent: if already deleted, return success
@@ -463,7 +463,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			if err != nil {
 				return nil, err
 			}
-			if common.IsDefaultProject(project.ResourceID) {
+			if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 			}
 			projectsToPurge = append(projectsToPurge, project)
@@ -503,7 +503,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		if err != nil {
 			return nil, err
 		}
-		if common.IsDefaultProject(project.ResourceID) {
+		if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("default project cannot be deleted"))
 		}
 		// Idempotent: skip already deleted projects

@@ -1,8 +1,6 @@
 //nolint:revive
 package common
 
-import "strings"
-
 const (
 	// AllUsers is the email of the pseudo allUsers account.
 	AllUsers = "allUsers"
@@ -23,19 +21,19 @@ const (
 )
 
 const (
-	// DefaultProjectPrefix is the prefix for the default project resource ID.
+	// defaultProjectPrefix is the prefix for the default project resource ID.
 	// Each workspace has its own default project: "default-{workspaceID}".
-	DefaultProjectPrefix = "default-"
+	defaultProjectPrefix = "default-"
 )
 
 // DefaultProjectID returns the default project resource ID for a workspace.
 func DefaultProjectID(workspaceID string) string {
-	return DefaultProjectPrefix + workspaceID
+	return defaultProjectPrefix + workspaceID
 }
 
-// IsDefaultProject returns whether a project resource ID is a default project.
-func IsDefaultProject(projectID string) bool {
-	return strings.HasPrefix(projectID, DefaultProjectPrefix)
+// IsDefaultProject returns whether a project resource ID is the default project for the given workspace.
+func IsDefaultProject(workspaceID, projectID string) bool {
+	return projectID == DefaultProjectID(workspaceID)
 }
 
 const (

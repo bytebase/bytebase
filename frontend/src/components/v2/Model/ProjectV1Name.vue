@@ -6,7 +6,7 @@
     :class="link && !plain && 'normal-link'"
   >
     <NPerformantEllipsis :line-clamp="1" :tooltip="true">
-      <HighlightLabelText :text="projectV1Name(project)" :keyword="keyword" />
+      <HighlightLabelText :text="projectV1Name(project, actuatorStore.serverInfo?.workspace ?? '')" :keyword="keyword" />
     </NPerformantEllipsis>
   </component>
 </template>
@@ -14,9 +14,12 @@
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { useActuatorV1Store } from "@/store";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { autoProjectRoute, projectV1Name } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
+
+const actuatorStore = useActuatorV1Store();
 
 const props = withDefaults(
   defineProps<{

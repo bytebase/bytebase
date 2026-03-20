@@ -6,7 +6,26 @@ import { ProjectSchema } from "../proto-es/v1/project_service_pb";
 
 export const DEFAULT_PROJECT_UID = 1;
 export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
-export const DEFAULT_PROJECT_NAME = "projects/default";
+// Default project resource_id is "default-{workspaceID}", so we match by prefix.
+const DEFAULT_PROJECT_PREFIX = "projects/default-";
+
+// Check if a project name is the default project for the given workspace.
+// workspaceResourceName is "workspaces/{workspaceID}".
+export const isDefaultProject = (
+  name: string,
+  workspaceResourceName: string
+): boolean => {
+  return name === getDefaultProjectName(workspaceResourceName);
+};
+
+// Derive the default project name from the workspace resource name.
+// workspaceResourceName is "workspaces/{workspaceID}".
+export const getDefaultProjectName = (
+  workspaceResourceName: string
+): string => {
+  const id = workspaceResourceName.replace(/^workspaces\//, "");
+  return `${DEFAULT_PROJECT_PREFIX}${id}`;
+};
 
 export const unknownProject = (): Project => {
   return createProto(ProjectSchema, {
@@ -20,10 +39,10 @@ export const unknownProject = (): Project => {
   });
 };
 
-export const defaultProject = (): Project => {
+export const defaultProject = (name: string): Project => {
   return {
     ...unknownProject(),
-    name: DEFAULT_PROJECT_NAME,
+    name,
     title: "Default project",
   };
 };
