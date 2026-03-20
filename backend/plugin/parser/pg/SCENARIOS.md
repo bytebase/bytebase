@@ -27,18 +27,18 @@ Fill missing coverage for features already partially tested.
 
 ### 1.2 Advanced WHERE Expressions
 
-- [ ] `SELECT * FROM t2 WHERE c1 BETWEEN | AND c2` — completion after BETWEEN
-- [ ] `SELECT * FROM t2 WHERE c1 BETWEEN c2 AND |` — completion after AND in BETWEEN
-- [ ] `SELECT * FROM test.auto WHERE name LIKE |` — completion after LIKE
-- [ ] `SELECT * FROM t2 WHERE c1 IS NOT NULL AND |` — completion after IS NOT NULL condition
-- [ ] `SELECT * FROM t2 WHERE c1 IS NULL OR |` — completion after IS NULL condition
-- [ ] `SELECT * FROM t2 WHERE NOT |` — completion after NOT
-- [ ] `SELECT * FROM t2 WHERE c1 > | ` — completion after comparison operator
-- [ ] `SELECT * FROM t2 WHERE c1 + | > 0` — completion in arithmetic expression
-- [ ] `SELECT * FROM t2 WHERE c1 IN (1, 2) AND |` — completion after IN list
-- [ ] `SELECT * FROM t1 WHERE c1 = (SELECT MAX(|) FROM t2)` — completion inside aggregate in scalar subquery
-- [ ] `SELECT * FROM t1 x WHERE x.c1 IN (SELECT c1 FROM t2 WHERE |)` — completion in correlated subquery WHERE
-- [ ] `SELECT * FROM t2 WHERE CASE WHEN c1 > 0 THEN | END = 1` — completion in CASE WHEN THEN
+- [x] `SELECT * FROM t2 WHERE c1 BETWEEN | AND c2` — completion after BETWEEN
+- [x] `SELECT * FROM t2 WHERE c1 BETWEEN c2 AND |` — completion after AND in BETWEEN
+- [x] `SELECT * FROM test.auto WHERE name LIKE |` — completion after LIKE
+- [x] `SELECT * FROM t2 WHERE c1 IS NOT NULL AND |` — completion after IS NOT NULL condition
+- [x] `SELECT * FROM t2 WHERE c1 IS NULL OR |` — completion after IS NULL condition
+- [x] `SELECT * FROM t2 WHERE NOT |` — completion after NOT
+- [x] `SELECT * FROM t2 WHERE c1 > | ` — completion after comparison operator
+- [x] `SELECT * FROM t2 WHERE c1 + | > 0` — completion in arithmetic expression
+- [x] `SELECT * FROM t2 WHERE c1 IN (1, 2) AND |` — completion after IN list
+- [x] `SELECT * FROM t1 WHERE c1 = (SELECT MAX(|) FROM t2)` — completion inside aggregate in scalar subquery
+- [x] `SELECT * FROM t1 x WHERE x.c1 IN (SELECT c1 FROM t2 WHERE |)` — completion in correlated subquery WHERE
+- [x] `SELECT * FROM t2 WHERE CASE WHEN c1 > 0 THEN | END = 1` — completion in CASE WHEN THEN
 
 ### 1.3 Advanced SELECT Features
 
