@@ -95,10 +95,10 @@ func isNoSeparatorRequired(tokenType int) bool {
 type Completer struct {
 	ctx               context.Context
 	scene             base.SceneType
-	sql               string             // the SQL statement (after skipHeadingSQLs)
-	cursorByteOffset  int                // byte offset in sql for omni Collect
+	sql               string           // the SQL statement (after skipHeadingSQLs)
+	cursorByteOffset  int              // byte offset in sql for omni Collect
 	tokens            []pgparser.Token // omni tokens for the SQL
-	caretTokenIndex   int                // index in tokens at/near the caret
+	caretTokenIndex   int              // index in tokens at/near the caret
 	instanceID        string
 	defaultDatabase   string
 	defaultSchema     string
