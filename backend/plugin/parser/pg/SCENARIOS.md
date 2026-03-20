@@ -187,16 +187,16 @@ Complex query structures and nesting. Independent of Phase 2. Sections 3.1 and 3
 
 ### 3.4 Set Operations
 
-- [ ] `SELECT c1 FROM t1 INTERSECT SELECT | FROM t2` — SELECT list in INTERSECT
-- [ ] `SELECT c1 FROM t1 EXCEPT SELECT | FROM t2` — SELECT list in EXCEPT
-- [ ] `SELECT c1 FROM t1 UNION SELECT c1 FROM t1 UNION SELECT | FROM t2` — triple UNION
-- [ ] `(SELECT c1 FROM t1) UNION (SELECT | FROM t2)` — parenthesized set operation
-- [ ] `SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2 ORDER BY |` — ORDER BY on UNION result
-- [ ] `SELECT * FROM (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) x WHERE x.|` — WHERE on UNION subquery
-- [ ] `WITH x AS (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) SELECT x.| FROM x` — CTE with UNION body
-- [ ] `SELECT c1 FROM t1 EXCEPT ALL SELECT | FROM t2` — EXCEPT ALL variant
-- [ ] `SELECT c1 FROM t1 INTERSECT ALL SELECT | FROM t2` — INTERSECT ALL variant
-- [ ] `SELECT | FROM t2 UNION SELECT * FROM t1` — first branch of UNION
+- [x] `SELECT c1 FROM t1 INTERSECT SELECT | FROM t2` — SELECT list in INTERSECT
+- [x] `SELECT c1 FROM t1 EXCEPT SELECT | FROM t2` — SELECT list in EXCEPT
+- [x] `SELECT c1 FROM t1 UNION SELECT c1 FROM t1 UNION SELECT | FROM t2` — triple UNION
+- [~] `(SELECT c1 FROM t1) UNION (SELECT | FROM t2)` — parenthesized set operation (no candidates returned; parser does not resolve completion inside parenthesized SELECT branches of set operations)
+- [x] `SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2 ORDER BY |` — ORDER BY on UNION result
+- [x] `SELECT * FROM (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) x WHERE x.|` — WHERE on UNION subquery
+- [x] `WITH x AS (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) SELECT x.| FROM x` — CTE with UNION body
+- [x] `SELECT c1 FROM t1 EXCEPT ALL SELECT | FROM t2` — EXCEPT ALL variant
+- [x] `SELECT c1 FROM t1 INTERSECT ALL SELECT | FROM t2` — INTERSECT ALL variant
+- [x] `SELECT | FROM t2 UNION SELECT * FROM t1` — first branch of UNION
 
 ---
 

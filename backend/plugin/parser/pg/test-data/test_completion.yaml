@@ -8192,3 +8192,383 @@
       definition: ""
       comment: ""
       priority: 0
+- input: SELECT c1 FROM t1 INTERSECT SELECT | FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT c1 FROM t1 EXCEPT SELECT | FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT c1 FROM t1 UNION SELECT c1 FROM t1 UNION SELECT | FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: (SELECT c1 FROM t1) UNION (SELECT | FROM t2)
+  want:
+- input: SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2 ORDER BY |
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) x WHERE x.|
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+- input: WITH x AS (SELECT c1 FROM t1 UNION SELECT c1 FROM t2) SELECT x.| FROM x
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT c1 FROM t1 EXCEPT ALL SELECT | FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT c1 FROM t1 INTERSECT ALL SELECT | FROM t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT | FROM t2 UNION SELECT * FROM t1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: ft1
+      type: FOREIGNTABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: mv1
+      type: MATERIALIZEDVIEW
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
