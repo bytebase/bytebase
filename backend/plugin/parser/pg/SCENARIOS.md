@@ -14,16 +14,16 @@ Fill missing coverage for features already partially tested.
 
 ### 1.1 Join Variants
 
-- [ ] `SELECT | FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.c1` — columns from both tables visible in RIGHT JOIN
-- [ ] `SELECT | FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.c1` — columns from both tables visible in FULL OUTER JOIN
-- [ ] `SELECT | FROM t1 CROSS JOIN t2` — columns from both tables visible in CROSS JOIN (no ON clause)
-- [ ] `SELECT | FROM t1 NATURAL JOIN t2` — columns from both tables visible in NATURAL JOIN
-- [ ] `SELECT * FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.| ` — qualified column in RIGHT JOIN ON condition
-- [ ] `SELECT * FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.|` — qualified column in FULL OUTER JOIN ON condition
-- [ ] `SELECT * FROM t1 CROSS JOIN t2 WHERE t1.|` — qualified column in WHERE after CROSS JOIN
-- [ ] `SELECT * FROM t1 JOIN t2 USING (|)` — columns common to both tables in USING clause
-- [ ] `SELECT | FROM t1 JOIN t2 ON t1.c1 = t2.c1 LEFT JOIN test.auto ON t2.c1 = test.auto.id` — mixed join types with cross-schema
-- [ ] `SELECT a.| FROM t1 a NATURAL JOIN t2 b` — alias-qualified columns after NATURAL JOIN
+- [x] `SELECT | FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.c1` — columns from both tables visible in RIGHT JOIN
+- [x] `SELECT | FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.c1` — columns from both tables visible in FULL OUTER JOIN
+- [x] `SELECT | FROM t1 CROSS JOIN t2` — columns from both tables visible in CROSS JOIN (no ON clause)
+- [x] `SELECT | FROM t1 NATURAL JOIN t2` — columns from both tables visible in NATURAL JOIN
+- [x] `SELECT * FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.| ` — qualified column in RIGHT JOIN ON condition
+- [x] `SELECT * FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.|` — qualified column in FULL OUTER JOIN ON condition
+- [x] `SELECT * FROM t1 CROSS JOIN t2 WHERE t1.|` — qualified column in WHERE after CROSS JOIN
+- [~] `SELECT * FROM t1 JOIN t2 USING (|)` — columns common to both tables in USING clause (no candidates returned; USING clause not supported by completion engine)
+- [x] `SELECT | FROM t1 JOIN t2 ON t1.c1 = t2.c1 LEFT JOIN test.auto ON t2.c1 = test.auto.id` — mixed join types with cross-schema
+- [x] `SELECT a.| FROM t1 a NATURAL JOIN t2 b` — alias-qualified columns after NATURAL JOIN
 
 ### 1.2 Advanced WHERE Expressions
 

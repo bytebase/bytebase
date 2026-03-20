@@ -2277,3 +2277,273 @@
       definition: test.auto | varchar, NOT NULL
       comment: ""
       priority: 0
+- input: SELECT | FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.c1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT | FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.c1
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT | FROM t1 CROSS JOIN t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT | FROM t1 NATURAL JOIN t2
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 RIGHT JOIN t2 ON t1.c1 = t2.|
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 FULL OUTER JOIN t2 ON t1.c1 = t2.|
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 CROSS JOIN t2 WHERE t1.|
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+- input: SELECT * FROM t1 JOIN t2 USING (|)
+  want:
+- input: SELECT | FROM t1 JOIN t2 ON t1.c1 = t2.c1 LEFT JOIN test.auto ON t2.c1 = test.auto.id
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: id
+      type: COLUMN
+      definition: test.auto | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: name
+      type: COLUMN
+      definition: test.auto | varchar, NOT NULL
+      comment: ""
+      priority: 0
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: test
+      type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: auto
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: users
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT a.| FROM t1 a NATURAL JOIN t2 b
+  want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
+      priority: 0
