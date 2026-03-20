@@ -327,8 +327,6 @@ CREATE TABLE worksheet (
 CREATE INDEX idx_worksheet_project ON worksheet(project);
 CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
 
-ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
-
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
     worksheet text NOT NULL REFERENCES worksheet(resource_id) ON DELETE CASCADE,
