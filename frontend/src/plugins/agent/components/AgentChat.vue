@@ -4,6 +4,7 @@ import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { computed, nextTick, ref, watch } from "vue";
 import AstToMarkdown from "@/plugins/ai/components/ChatView/Markdown/AstToVNode.vue";
+import type { AgentMessage } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import ToolCallCard from "./ToolCallCard.vue";
 
@@ -18,29 +19,32 @@ const chatContainer = ref<HTMLElement | null>(null);
 
 const displayMessages = computed(() =>
   agentStore.messages.filter(
-    (msg) => msg.role === "user" || msg.role === "assistant"
+    (message): message is AgentMessage =>
+      message.role === "user" || message.role === "assistant"
   )
 );
 
 function getToolResult(
-  displayIndex: number,
+  messageId: string,
   toolCallId: string
 ): string | undefined {
-  // Map display index back to the full messages array
-  const msg = displayMessages.value[displayIndex];
-  if (!msg) return undefined;
+  const fullIndex = agentStore.messages.findIndex(
+    (message) => message.id === messageId
+  );
+  if (fullIndex < 0) {
+    return undefined;
+  }
 
-  const fullIndex = agentStore.messages.indexOf(msg);
-  if (fullIndex < 0) return undefined;
-
-  // Look forward in the full messages array for the tool result
-  for (let i = fullIndex + 1; i < agentStore.messages.length; i++) {
-    const m = agentStore.messages[i];
-    if (m.role === "tool" && m.toolCallId === toolCallId) {
-      return m.content;
+  for (let index = fullIndex + 1; index < agentStore.messages.length; index++) {
+    const message = agentStore.messages[index];
+    if (message.role === "tool" && message.toolCallId === toolCallId) {
+      return message.content;
     }
-    // Stop if we hit another assistant message (new turn)
-    if (m.role === "assistant" && m.content && !m.toolCalls?.length) {
+    if (
+      message.role === "assistant" &&
+      message.content &&
+      !message.toolCalls?.length
+    ) {
       break;
     }
   }
@@ -48,50 +52,45 @@ function getToolResult(
 }
 
 watch(
-  () => agentStore.messages.length,
+  [() => agentStore.currentThreadId, () => agentStore.messages.length],
   async () => {
     await nextTick();
     if (chatContainer.value) {
-      const el = chatContainer.value;
-      el.scrollTop = el.scrollHeight;
+      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
     }
   }
 );
 </script>
 
 <template>
-  <div ref="chatContainer" class="overflow-y-auto p-3 space-y-3">
-    <template v-for="(msg, i) in displayMessages" :key="i">
-      <!-- User message -->
+  <div ref="chatContainer" class="overflow-y-auto space-y-3 p-3">
+    <template v-for="msg in displayMessages" :key="msg.id">
       <div v-if="msg.role === 'user'" class="flex justify-end">
-        <div class="max-w-[80%] rounded-lg px-3 py-2 bg-blue-50 text-sm">
+        <div class="max-w-[80%] rounded-lg bg-blue-50 px-3 py-2 text-sm">
           {{ msg.content }}
         </div>
       </div>
-      <!-- Assistant message -->
-      <div v-else-if="msg.role === 'assistant'" class="flex flex-col gap-y-2">
+      <div v-else class="flex flex-col gap-y-2">
         <div
           v-if="msg.content"
-          class="max-w-[80%] rounded-lg px-3 py-2 bg-gray-50 text-sm markdown-content"
+          class="max-w-[80%] rounded-lg bg-gray-50 px-3 py-2 text-sm markdown-content"
         >
           <AstToMarkdown :ast="parseMarkdown(msg.content)" />
         </div>
         <ToolCallCard
-          v-for="tc in msg.toolCalls"
-          :key="tc.id"
-          :tool-call="tc"
-          :result="getToolResult(i, tc.id)"
+          v-for="toolCall in msg.toolCalls"
+          :key="toolCall.id"
+          :tool-call="toolCall"
+          :result="getToolResult(msg.id, toolCall.id)"
         />
       </div>
     </template>
-    <!-- Loading -->
     <div
       v-if="agentStore.loading"
       class="flex items-center gap-x-2 text-sm text-gray-400"
     >
       <span class="animate-pulse">&#9679;</span> {{ $t("common.loading") }}
     </div>
-    <!-- Error -->
     <div
       v-if="agentStore.error"
       class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
@@ -112,10 +111,10 @@ watch(
   @apply mb-0;
 }
 .markdown-content :deep(pre) {
-  @apply my-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto;
+  @apply my-1 overflow-x-auto rounded bg-gray-100 p-2 text-xs;
 }
 .markdown-content :deep(code) {
-  @apply bg-gray-200 px-1 rounded text-xs;
+  @apply rounded bg-gray-200 px-1 text-xs;
 }
 .markdown-content :deep(pre code) {
   @apply bg-transparent px-0;
@@ -136,13 +135,13 @@ watch(
 .markdown-content :deep(h1),
 .markdown-content :deep(h2),
 .markdown-content :deep(h3) {
-  @apply font-semibold my-1;
+  @apply my-1 font-semibold;
 }
 .markdown-content :deep(a) {
   @apply text-blue-600 underline;
 }
 .markdown-content :deep(blockquote) {
-  @apply border-l-2 border-gray-300 pl-2 my-1 text-gray-600;
+  @apply my-1 border-l-2 border-gray-300 pl-2 text-gray-600;
 }
 .markdown-content :deep(table) {
   @apply my-1 border-collapse text-xs;

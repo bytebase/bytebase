@@ -2475,9 +2475,23 @@
   },
   "agent": {
     "assistant-title": "Bytebase Assistant",
+<<<<<<< HEAD
     "self": "Agent",
     "resize": "Resize",
     "new-chat": "New chat",
+||||||| parent of 6da599158e (feat(agent): add thread-aware local state)
+    "new-chat": "New chat",
+=======
+    "new-thread": "New thread",
+    "reset-thread": "Reset thread",
+    "thread-select-label": "Thread",
+    "thread-default-title": "New thread",
+    "thread-status-idle": "Idle",
+    "thread-status-running": "Running",
+    "thread-status-awaiting-user": "Awaiting input",
+    "thread-status-error": "Error",
+    "thread-status-interrupted": "Interrupted",
+>>>>>>> 6da599158e (feat(agent): add thread-aware local state)
     "minimize": "Minimize",
     "close": "Close",
     "input-placeholder": "Ask anything...",

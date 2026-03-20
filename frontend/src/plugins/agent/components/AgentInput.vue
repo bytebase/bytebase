@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { runAgentLoop } from "../logic/agentLoop";
@@ -14,26 +14,45 @@ const route = useRoute();
 const agentStore = useAgentStore();
 const input = ref("");
 
+const isSendDisabled = computed(() => {
+  return !input.value.trim() || agentStore.hasRunningThread;
+});
+
+const getCurrentPageSnapshot = () => ({
+  path: route.fullPath,
+  title: document.title,
+});
+
 async function send() {
   const text = input.value.trim();
-  if (!text || agentStore.loading) return;
-  agentStore.clearError();
+  if (!text || agentStore.hasRunningThread) {
+    return;
+  }
+
+  const page = getCurrentPageSnapshot();
+  const thread = agentStore.ensureCurrentThread(page);
+  const threadId = thread.id;
+
+  agentStore.clearError(threadId);
   input.value = "";
 
-  agentStore.addMessage({ role: "user", content: text });
-  agentStore.loading = true;
+  agentStore.addMessage({
+    threadId,
+    role: "user",
+    content: text,
+    metadata: {
+      route: page.path,
+    },
+  });
+  agentStore.startRun(threadId, page);
 
   const controller = new AbortController();
   agentStore.abortController = controller;
 
-  const systemPrompt = buildSystemPrompt({
-    path: route.fullPath,
-    title: document.title,
-  });
-
+  const systemPrompt = buildSystemPrompt(page);
   const allMessages: Message[] = [
     { role: "system", content: systemPrompt },
-    ...agentStore.messages,
+    ...agentStore.getMessages(threadId),
   ];
 
   const tools = getToolDefinitions();
@@ -45,63 +64,88 @@ async function send() {
       tools,
       executor,
       {
-        onToolCall: (tc) => {
-          // The agent loop calls onToolCall for each tool call in an assistant
-          // turn. All tool calls from the same turn arrive before any
-          // onToolResult. We batch them into one assistant message.
-          const lastMsg = agentStore.messages[agentStore.messages.length - 1];
+        onToolCall: (toolCall) => {
+          const threadMessages = agentStore.getMessages(threadId);
+          const lastMessage = threadMessages.at(-1);
           if (
-            lastMsg?.role === "assistant" &&
-            lastMsg.toolCalls &&
-            !agentStore.messages.some(
-              (m) =>
-                m.role === "tool" &&
-                lastMsg.toolCalls!.some((t) => t.id === m.toolCallId)
+            lastMessage?.role === "assistant" &&
+            lastMessage.toolCalls &&
+            !threadMessages.some(
+              (message) =>
+                message.role === "tool" &&
+                lastMessage.toolCalls?.some((existingToolCall) => {
+                  return existingToolCall.id === message.toolCallId;
+                })
             )
           ) {
-            // Same turn — append to existing assistant message
-            lastMsg.toolCalls.push(tc);
-          } else {
-            agentStore.addMessage({
-              role: "assistant",
-              toolCalls: [tc],
-            });
+            agentStore.appendToolCall(threadId, lastMessage.id, toolCall);
+            return;
           }
+
+          agentStore.addMessage({
+            threadId,
+            role: "assistant",
+            toolCalls: [toolCall],
+            metadata: {
+              route: page.path,
+            },
+          });
         },
         onToolResult: (toolCallId, result) => {
           agentStore.addMessage({
+            threadId,
             role: "tool",
             toolCallId,
             content: result,
+            metadata: {
+              route: page.path,
+            },
           });
         },
         onText: (text) => {
           agentStore.addMessage({
+            threadId,
             role: "assistant",
             content: text,
+            metadata: {
+              route: page.path,
+            },
           });
         },
       },
       controller.signal
     );
+    agentStore.finishRun(threadId);
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
-    // AbortError from DOMException or ConnectError with "[canceled]"
     const isAbort =
       error.name === "AbortError" || error.message.includes("[canceled]");
     if (isAbort) {
       agentStore.addMessage({
+        threadId,
         role: "assistant",
         content: `_${t("agent.interrupted")}_`,
+        metadata: {
+          route: page.path,
+        },
       });
+      agentStore.finishRun(threadId);
     } else {
       agentStore.addMessage({
+        threadId,
         role: "assistant",
         content: `Error: ${error.message}`,
+        metadata: {
+          route: page.path,
+          error: error.message,
+        },
+      });
+      agentStore.finishRun(threadId, {
+        status: "error",
+        lastError: error.message,
       });
     }
   } finally {
-    agentStore.loading = false;
     agentStore.abortController = null;
   }
 }
@@ -114,7 +158,8 @@ async function send() {
         v-model="input"
         rows="1"
         :placeholder="$t('agent.input-placeholder')"
-        class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+        class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+        :disabled="agentStore.hasRunningThread && !agentStore.loading"
         @keydown.enter.exact.prevent="send"
       />
       <button
@@ -127,7 +172,7 @@ async function send() {
       <button
         v-else
         class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        :disabled="!input.trim()"
+        :disabled="isSendDisabled"
         @click="send"
       >
         {{ $t("agent.send") }}

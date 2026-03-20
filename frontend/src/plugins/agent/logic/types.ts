@@ -18,6 +18,39 @@ export interface Message {
   toolCallId?: string;
 }
 
+export type AgentThreadStatus = "idle" | "running" | "awaiting_user" | "error";
+
+export interface AgentThreadSnapshot {
+  path: string;
+  title: string;
+}
+
+export interface AgentMessageMetadata {
+  route?: string;
+  pending?: boolean;
+  hidden?: boolean;
+  error?: string;
+  runId?: string;
+}
+
+export interface AgentMessage extends Message {
+  id: string;
+  threadId: string;
+  createdTs: number;
+  metadata?: AgentMessageMetadata;
+}
+
+export interface AgentThread {
+  id: string;
+  title: string;
+  createdTs: number;
+  updatedTs: number;
+  status: AgentThreadStatus;
+  page?: AgentThreadSnapshot;
+  lastError?: string | null;
+  interrupted?: boolean;
+}
+
 export type ToolExecutor = (
   name: string,
   args: Record<string, unknown>
