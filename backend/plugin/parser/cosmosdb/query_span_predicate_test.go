@@ -32,6 +32,63 @@ func TestPredicateInWhere(t *testing.T) {
 				"container.age":                  true,
 			},
 		},
+		{
+			statement: `SELECT * FROM container c WHERE c.status != "inactive"`,
+			predicatePaths: map[string]bool{
+				"container.status": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.country IN ("US", "UK", "CA")`,
+			predicatePaths: map[string]bool{
+				"container.country": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.population BETWEEN 100000 AND 5000000`,
+			predicatePaths: map[string]bool{
+				"container.population": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.country != "US" AND c._ts > 1000`,
+			predicatePaths: map[string]bool{
+				"container.country": true,
+				"container._ts":     true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE CONTAINS(c.name, "test")`,
+			predicatePaths: map[string]bool{
+				"container.name": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.name LIKE "Alice%"`,
+			predicatePaths: map[string]bool{
+				"container.name": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE NOT c.active`,
+			predicatePaths: map[string]bool{
+				"container.active": true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.email = "x" OR c.name = "y"`,
+			predicatePaths: map[string]bool{
+				"container.email": true,
+				"container.name":  true,
+			},
+		},
+		{
+			statement: `SELECT * FROM container c WHERE c.firstName || " " || c.lastName = "Alice Smith"`,
+			predicatePaths: map[string]bool{
+				"container.firstName": true,
+				"container.lastName":  true,
+			},
+		},
 	}
 
 	a := require.New(t)
