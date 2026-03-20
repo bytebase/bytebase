@@ -16,6 +16,13 @@
     <ProjectSwitchPopover />
 
     <div class="flex-1 flex justify-end items-center gap-x-2 sm:gap-x-3">
+      <NButton size="small" @click="agentStore.toggle()">
+        <template #icon>
+          <BotIcon class="w-4 h-4" />
+        </template>
+        <span v-if="windowWidth >= 640">{{ $t("agent.self") }}</span>
+      </NButton>
+
       <NButton
         v-if="currentPlan === PlanType.FREE"
         size="small"
@@ -52,13 +59,6 @@
           <span v-if="windowWidth >= 640">{{ $t("issue.my-issues") }}</span>
         </NButton>
       </router-link>
-
-      <NButton size="small" @click="agentStore.toggle()">
-        <template #icon>
-          <BotIcon class="w-4 h-4" />
-        </template>
-        <span v-if="windowWidth >= 640">Agent</span>
-      </NButton>
 
       <ProfileBrandingLogo>
         <ProfileDropdown :link="true" />
