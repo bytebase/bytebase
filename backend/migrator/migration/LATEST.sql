@@ -213,7 +213,7 @@ CREATE TABLE sheet_blob (
 
 -- plan table stores the plan for a project
 CREATE TABLE plan (
-    id bigserial,
+    id bigint NOT NULL,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -230,10 +230,9 @@ CREATE INDEX idx_plan_project ON plan(project);
 CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
 
-ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
 CREATE TABLE plan_check_run (
-    id serial,
+    id bigint NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -248,7 +247,7 @@ CREATE TABLE plan_check_run (
 CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(project, plan_id);
 CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status IN ('AVAILABLE', 'RUNNING');
 
-ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
+
 
 -- Tracks webhook delivery for pipeline events (PIPELINE_FAILED or PIPELINE_COMPLETED).
 -- One row per plan at any time - mutually exclusive events.
@@ -265,7 +264,7 @@ CREATE TABLE plan_webhook_delivery (
 
 -- issue
 CREATE TABLE issue (
-    id serial,
+    id bigint NOT NULL,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -289,7 +288,7 @@ CREATE UNIQUE INDEX idx_issue_unique_plan_id ON issue(project, plan_id);
 CREATE INDEX idx_issue_creator ON issue(creator);
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
-ALTER SEQUENCE issue_id_seq RESTART WITH 101;
+
 
 CREATE TABLE issue_comment (
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
@@ -309,7 +308,6 @@ CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resour
 
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
-    id serial,
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -328,8 +326,6 @@ CREATE TABLE worksheet (
 
 CREATE INDEX idx_worksheet_project ON worksheet(project);
 CREATE INDEX idx_worksheet_creator_project ON worksheet(creator, project);
-
-ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 
 -- worksheet_organizer table stores the sheet status for a principal.
 CREATE TABLE worksheet_organizer (
@@ -505,7 +501,7 @@ ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
 -- task table stores the task for a plan
 CREATE TABLE task (
-    id serial,
+    id bigint NOT NULL,
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint NOT NULL,
     instance text NOT NULL REFERENCES instance(resource_id),
@@ -520,11 +516,11 @@ CREATE TABLE task (
 
 CREATE INDEX idx_task_plan_id_environment ON task(project, plan_id, environment);
 
-ALTER SEQUENCE task_id_seq RESTART WITH 101;
+
 
 -- task run table stores the task run
 CREATE TABLE task_run (
-    id serial,
+    id bigint NOT NULL,
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -552,7 +548,7 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run(project, task_id, at
 CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'AVAILABLE', 'RUNNING');
 CREATE INDEX idx_task_run_running_replica ON task_run(replica_id) WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
-ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
+
 
 -- replica_heartbeat tracks active replicas in HA deployments.
 -- Used to detect and clean up stale RUNNING task runs from crashed replicas.
