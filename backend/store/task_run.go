@@ -186,17 +186,12 @@ func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*Ta
 		return nil, err
 	}
 	if len(taskRuns) == 0 {
-		return nil, errors.Errorf("task run not found")
+		return nil, nil
 	}
 	if len(taskRuns) > 1 {
 		return nil, errors.Errorf("expected to get one task run, but got %d", len(taskRuns))
 	}
 	return taskRuns[0], nil
-}
-
-// GetTaskRunByUID gets a task run by uid.
-func (s *Store) GetTaskRunByUID(ctx context.Context, projectID string, uid int64) (*TaskRunMessage, error) {
-	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{ProjectID: projectID, UID: &uid})
 }
 
 // UpdateTaskRunStatus updates task run status.

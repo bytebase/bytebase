@@ -170,12 +170,18 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	var priorBackupDetail *storepb.PriorBackupDetail
 	if task.Payload.GetEnablePriorBackup() {
 		// Check if this specific task run wants to skip backup.
-		taskRun, err := exec.store.GetTaskRunByUID(ctx, database.ProjectID, taskRunUID)
+		taskRun, err := exec.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
+			ProjectID: database.ProjectID,
+			UID:       &taskRunUID,
+		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get task run")
 		}
-		skipBackup := taskRun.PayloadProto.GetSkipPriorBackup()
+		if taskRun == nil {
+			return nil, errors.Errorf("task run %d not found in project %s", taskRunUID, database.ProjectID)
+		}
 
+		skipBackup := taskRun.PayloadProto.GetSkipPriorBackup()
 		if !skipBackup {
 			exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 				Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,

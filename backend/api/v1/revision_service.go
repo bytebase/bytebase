@@ -208,6 +208,9 @@ func (s *RevisionService) createRevisions(
 				UID:       &taskRunID,
 			})
 			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
+			}
+			if taskRun == nil {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 			if taskRun.ProjectID != projectID ||
