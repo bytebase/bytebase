@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"connectrpc.com/connect"
@@ -52,7 +53,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Connection
 	var client *azcosmos.Client
 	var err error
 
-	if common.IsDev() {
+	if common.IsDev() && isLocalhostEndpoint(endpoint) {
 		cred, credErr := azcosmos.NewKeyCredential(cosmosDBEmulatorKey)
 		if credErr != nil {
 			return nil, errors.Wrapf(credErr, "failed to create emulator key credential")
@@ -86,6 +87,15 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Connection
 	d.databaseName = connCfg.ConnectionContext.DatabaseName
 	d.connCfg = connCfg
 	return d, nil
+}
+
+func isLocalhostEndpoint(endpoint string) bool {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	return host == "localhost" || host == "127.0.0.1"
 }
 
 // Close closes the CosmosDB driver.
