@@ -149,16 +149,16 @@ Complex query structures and nesting. Independent of Phase 2. Sections 3.1 and 3
 
 ### 3.1 Recursive CTEs and CTEs in DML
 
-- [ ] `WITH RECURSIVE x AS (SELECT c1 FROM t1 UNION ALL SELECT | FROM x JOIN t1 ON x.c1 = t1.c1) SELECT * FROM x` — completion in recursive branch
-- [ ] `WITH RECURSIVE x AS (SELECT c1 FROM t1 UNION ALL SELECT x.| FROM x JOIN t1 ON x.c1 = t1.c1) SELECT * FROM x` — qualified columns from recursive CTE reference
-- [ ] `WITH x AS (SELECT * FROM t2) INSERT INTO t1 SELECT | FROM x` — CTE used in INSERT...SELECT
-- [ ] `WITH x AS (SELECT c1, c2 FROM t2) UPDATE t1 SET c1 = (SELECT | FROM x)` — CTE in UPDATE scalar subquery
-- [ ] `WITH x AS (SELECT * FROM t2) DELETE FROM t1 WHERE c1 IN (SELECT | FROM x)` — CTE in DELETE subquery
-- [ ] `WITH a AS (SELECT c1 FROM t1), b AS (SELECT * FROM a) SELECT | FROM b` — chained CTEs (CTE referencing another CTE)
-- [ ] `WITH a AS (SELECT c1 FROM t1), b AS (SELECT a.| FROM a) SELECT * FROM b` — qualified column in chained CTE
-- [ ] `WITH x AS (SELECT c1 FROM t1) SELECT | FROM x, t2` — CTE mixed with regular table in FROM
-- [ ] `WITH x AS (SELECT c1 FROM t1) SELECT x.| FROM x JOIN t2 ON x.c1 = t2.c1` — CTE qualified columns in JOIN
-- [ ] `WITH x(a, b) AS (SELECT c1, c2 FROM t2) SELECT | FROM x JOIN t1 ON x.a = t1.c1` — named CTE columns in JOIN
+- [~] `WITH RECURSIVE x AS (SELECT c1 FROM t1 UNION ALL SELECT | FROM x JOIN t1 ON x.c1 = t1.c1) SELECT * FROM x` — completion in recursive branch (only t1 columns resolve; recursive self-reference x does not contribute its own columns)
+- [~] `WITH RECURSIVE x AS (SELECT c1 FROM t1 UNION ALL SELECT x.| FROM x JOIN t1 ON x.c1 = t1.c1) SELECT * FROM x` — qualified columns from recursive CTE reference (no candidates returned; recursive self-reference columns not resolvable)
+- [x] `WITH x AS (SELECT * FROM t2) INSERT INTO t1 SELECT | FROM x` — CTE used in INSERT...SELECT
+- [x] `WITH x AS (SELECT c1, c2 FROM t2) UPDATE t1 SET c1 = (SELECT | FROM x)` — CTE in UPDATE scalar subquery
+- [x] `WITH x AS (SELECT * FROM t2) DELETE FROM t1 WHERE c1 IN (SELECT | FROM x)` — CTE in DELETE subquery
+- [~] `WITH a AS (SELECT c1 FROM t1), b AS (SELECT * FROM a) SELECT | FROM b` — chained CTEs (CTE referencing another CTE) (b's columns not resolved; query span cannot resolve SELECT * FROM a where a is a CTE)
+- [x] `WITH a AS (SELECT c1 FROM t1), b AS (SELECT a.| FROM a) SELECT * FROM b` — qualified column in chained CTE
+- [x] `WITH x AS (SELECT c1 FROM t1) SELECT | FROM x, t2` — CTE mixed with regular table in FROM
+- [x] `WITH x AS (SELECT c1 FROM t1) SELECT x.| FROM x JOIN t2 ON x.c1 = t2.c1` — CTE qualified columns in JOIN
+- [x] `WITH x(a, b) AS (SELECT c1, c2 FROM t2) SELECT | FROM x JOIN t1 ON x.a = t1.c1` — named CTE columns in JOIN
 
 ### 3.2 LATERAL Joins and Table Functions
 
