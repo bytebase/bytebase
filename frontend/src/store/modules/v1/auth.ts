@@ -161,7 +161,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     await actuatorStore.fetchServerInfo(user?.workspace);
     authSessionKey.value = uniqueId();
 
-    if (actuatorStore.needAdminSetup) {
+    if (actuatorStore.activeUserCount === 1) {
       actuatorStore.onboardingState.isOnboarding = true;
       return router.replace({ name: SETUP_MODULE });
     }

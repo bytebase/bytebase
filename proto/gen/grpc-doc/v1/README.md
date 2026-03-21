@@ -2549,7 +2549,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | host | [string](#string) |  | The host address of the Bytebase instance. |
 | port | [string](#string) |  | The port number of the Bytebase instance. |
 | external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
-| need_admin_setup | [bool](#bool) |  | Whether the Bytebase instance requires initial admin setup. |
 | last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
 | workspace | [string](#string) |  | The unique identifier for the workspace. Format: workspaces/{id} |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |

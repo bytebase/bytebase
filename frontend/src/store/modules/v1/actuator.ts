@@ -84,10 +84,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     () => serverInfo.value?.workspace ?? ""
   );
 
-  const needAdminSetup = computed(
-    () => serverInfo.value?.needAdminSetup || false
-  );
-
   const needConfigureExternalUrl = computed(() => {
     if (!serverInfo.value) return false;
     const url = serverInfo.value?.externalUrl ?? "";
@@ -261,7 +257,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     isDocker,
     isSaaSMode,
     workspaceResourceName,
-    needAdminSetup,
     needConfigureExternalUrl,
     hasNewRelease,
     activatedInstanceCount,

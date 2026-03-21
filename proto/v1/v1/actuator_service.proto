@@ -106,7 +106,7 @@ message Restriction {
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 10, 12, 16, 17, 14;
+  reserved 9, 10, 12, 16, 17, 14;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -131,9 +131,6 @@ message ActuatorInfo {
 
   // The external URL where users or webhook callbacks access Bytebase.
   string external_url = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether the Bytebase instance requires initial admin setup.
-  bool need_admin_setup = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last time any API call was made, refreshed on each request.
   google.protobuf.Timestamp last_active_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];

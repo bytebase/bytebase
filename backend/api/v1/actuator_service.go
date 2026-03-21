@@ -168,7 +168,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 				MinLength: 8,
 			},
 		},
-		NeedAdminSetup: true,
 	}
 
 	if workspaceID != "" {
@@ -195,7 +194,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
-		serverInfo.NeedAdminSetup = activeEndUserCount <= 1
 		serverInfo.ActivatedUserCount = int32(activeEndUserCount)
 
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)

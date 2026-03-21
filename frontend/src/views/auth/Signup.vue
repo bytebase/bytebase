@@ -176,7 +176,9 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 
-const { needAdminSetup, serverInfo } = storeToRefs(actuatorStore);
+const { activeUserCount, serverInfo } = storeToRefs(actuatorStore);
+
+const needAdminSetup = computed(() => activeUserCount.value === 0)
 
 const allowSignup = computed(() => {
   return (

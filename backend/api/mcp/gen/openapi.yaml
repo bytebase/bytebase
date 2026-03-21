@@ -7343,10 +7343,6 @@ components:
           type: string
           title: external_url
           description: The external URL where users or webhook callbacks access Bytebase.
-        needAdminSetup:
-          type: boolean
-          title: need_admin_setup
-          description: Whether the Bytebase instance requires initial admin setup.
         lastActiveTime:
           title: last_active_time
           description: The last time any API call was made, refreshed on each request.

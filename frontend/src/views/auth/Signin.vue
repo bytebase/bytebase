@@ -275,7 +275,7 @@ watchEffect(() => {
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
   if (
-    actuatorStore.needAdminSetup &&
+    actuatorStore.activeUserCount === 0 &&
     !disallowSignup.value &&
     !isSaaSMode.value
   ) {
