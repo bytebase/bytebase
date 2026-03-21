@@ -141,29 +141,6 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return nil
 	}
 
-	// Verify all project resources belong to the caller's workspace.
-	// This is the central workspace isolation check — catches any API that
-	// forgot to pass workspace in its store queries.
-	if workspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != "" {
-		for _, resource := range authContext.Resources {
-			switch resource.Type {
-			case common.ResourceTypeWorkspace:
-				if resource.ID != workspaceID {
-					return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
-				}
-			case common.ResourceTypeProject:
-				project, err := in.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &resource.ID})
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-				}
-				if project == nil || project.Workspace != workspaceID {
-					return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
-				}
-			default:
-			}
-		}
-	}
-
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("user not found"))
@@ -171,6 +148,32 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 	if user == nil {
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" {
+		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("empty workspace id"))
+	}
+
+	// Verify all project resources belong to the caller's workspace.
+	// Runs after authentication so unauthenticated requests get 401 first,
+	// preventing resource existence probing.
+	for _, resource := range authContext.Resources {
+		switch resource.Type {
+		case common.ResourceTypeWorkspace:
+			if resource.ID != workspaceID {
+				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+			}
+		case common.ResourceTypeProject:
+			project, err := in.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &resource.ID})
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+			}
+			if project == nil || project.Workspace != workspaceID {
+				return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
+			}
+		default:
+		}
 	}
 
 	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
