@@ -127,15 +127,11 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
-	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
-		// If the error is already a connect error (e.g., NotFound for cross-workspace resources),
-		// return it directly instead of wrapping as Internal.
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) {
-			return connectErr
-		}
+	resources, err := populateRawResources(ctx, in.store, request, fullMethod)
+	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
+	authContext.Resources = resources
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
@@ -297,10 +293,10 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
-func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
+func populateRawResources(ctx context.Context, stores *store.Store, request any, method string) ([]*common.Resource, error) {
 	rawNames, err := getResourceFromRequest(ctx, request, method)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var resources []*common.Resource
@@ -309,7 +305,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 		case strings.HasPrefix(name, "workspaces/"):
 			wsID, err := common.GetWorkspaceID(name)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			resources = append(resources, &common.Resource{
 				Type: common.ResourceTypeWorkspace,
@@ -319,11 +315,11 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 		case strings.HasPrefix(name, "projects/") && name != "projects/-":
 			project := projectRegex.FindString(name)
 			if project == "" {
-				return errors.Errorf("invalid project resource %q", name)
+				return nil, errors.Errorf("invalid project resource %q", name)
 			}
 			projectID, err := common.GetProjectID(project)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			resources = append(resources, &common.Resource{
 				Type: common.ResourceTypeProject,
@@ -334,7 +330,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 			if match != "" {
 				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
 				if err != nil {
-					return errors.Wrapf(err, "failed to parse %q", match)
+					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
 				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
 					Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -343,10 +339,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 					ShowDeleted:  true,
 				})
 				if err != nil {
-					return errors.Wrapf(err, "failed to get database")
+					return nil, errors.Wrapf(err, "failed to get database")
 				}
 				if database == nil {
-					return connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", match))
+					return nil, errors.Errorf("database %q not found", match)
 				}
 				resources = append(resources, &common.Resource{
 					Type: common.ResourceTypeProject,
@@ -362,8 +358,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 			}
 		}
 	}
-	authContext.Resources = resources
-	return nil
+	return resources, nil
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
