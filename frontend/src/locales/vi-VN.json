@@ -1861,11 +1861,6 @@
       "success-updated": "Đã cập nhật thành công cài đặt dự án.",
       "update-failed": "Không cập nhật được cài đặt dự án.",
       "success-member-added-prompt": "Đã thêm thành công vào dự án.",
-      "archive": {
-        "title": "Lưu trữ dự án",
-        "description": "Các dự án đã lưu trữ sẽ không được hiển thị.",
-        "btn-text": "Lưu trữ @.lower:{'common.project'} này"
-      },
       "restore": {
         "title": "Khôi phục dự án",
         "btn-text": "Khôi phục @.lower:{'common.project'} này"

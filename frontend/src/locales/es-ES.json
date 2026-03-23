@@ -1861,11 +1861,6 @@
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
       "update-failed": "No se pudo actualizar la configuración del proyecto.",
       "success-member-added-prompt": "Se agregó correctamente al proyecto.",
-      "archive": {
-        "title": "Archivar proyecto",
-        "description": "Proyectos archivados no se mostrarán.",
-        "btn-text": "Archivar este @.lower:{'common.project'}"
-      },
       "restore": {
         "title": "Restaurar proyecto",
         "btn-text": "Restaurar este @.lower:{'common.project'}"
