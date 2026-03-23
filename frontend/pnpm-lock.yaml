@@ -6,6 +6,11 @@ settings:
 
 pnpmfileChecksum: sha256-D+Oiltjq0mI5+T73et/+VdZYEDWjB/193i1+mwbpq0Y=
 
+patchedDependencies:
+  naive-ui@2.44.1:
+    hash: 7792d0f673a1ab04f4c1ec54d7186880f3a3136b2b0a8335fbd5b62cc43eee31
+    path: patches/naive-ui@2.44.1.patch
+
 importers:
 
   .:
@@ -120,7 +125,7 @@ importers:
         version: 10.7.0
       naive-ui:
         specifier: 2.44.1
-        version: 2.44.1(vue@3.5.29(typescript@5.9.3))
+        version: 2.44.1(patch_hash=7792d0f673a1ab04f4c1ec54d7186880f3a3136b2b0a8335fbd5b62cc43eee31)(vue@3.5.29(typescript@5.9.3))
       normalize-wheel:
         specifier: ^1.0.1
         version: 1.0.1
@@ -8777,7 +8782,7 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  naive-ui@2.44.1(vue@3.5.29(typescript@5.9.3)):
+  naive-ui@2.44.1(patch_hash=7792d0f673a1ab04f4c1ec54d7186880f3a3136b2b0a8335fbd5b62cc43eee31)(vue@3.5.29(typescript@5.9.3)):
     dependencies:
       '@css-render/plugin-bem': 0.15.14(css-render@0.15.14)
       '@css-render/vue3-ssr': 0.15.14(vue@3.5.29(typescript@5.9.3))
