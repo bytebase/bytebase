@@ -6,10 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -53,9 +52,11 @@ func (t *TableReference) String() string {
 type statementInfo struct {
 	offset    int
 	statement string
-	tree      antlr.ParserRuleContext
+	node      ast.Node
 	table     *TableReference
-	baseLine  int
+	startPos  *storepb.Position
+	endPos    *storepb.Position
+	fullSQL   string
 }
 
 func init() {
@@ -136,7 +137,7 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 	}
 
 	// In PostgreSQL, WITH clause must appear once before the first SELECT.
-	cteClause := extractCTE(statementInfoList[0].tree)
+	cteClause := extractCTE(statementInfoList[0].node, statementInfoList[0].fullSQL)
 	if cteClause != "" {
 		if _, err := fmt.Fprintf(&buf, "%s\n", cteClause); err != nil {
 			return nil, errors.Wrap(err, "failed to write to buffer")
@@ -159,7 +160,7 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 			}
 		}
 
-		if err := writeSuffixSelectClause(&buf, item.tree); err != nil {
+		if err := writeSuffixSelectClause(&buf, item.node, item.fullSQL); err != nil {
 			return nil, errors.Wrap(err, "failed to write string with new line")
 		}
 	}
@@ -173,98 +174,106 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 		SourceSchema:    table.Schema,
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
-		StartPosition: &storepb.Position{
-			Line:   int32(statementInfoList[0].tree.GetStart().GetLine() + statementInfoList[0].baseLine),
-			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-		},
-		EndPosition: common.ConvertANTLRTokenToExclusiveEndPosition(
-			int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()+statementInfoList[len(statementInfoList)-1].baseLine),
-			int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-			statementInfoList[len(statementInfoList)-1].tree.GetStop().GetText(),
-		),
+		StartPosition:   statementInfoList[0].startPos,
+		EndPosition:     statementInfoList[len(statementInfoList)-1].endPos,
 	}, nil
 }
 
-func extractCTE(ctx antlr.ParserRuleContext) string {
-	switch node := ctx.(type) {
-	case *parser.UpdatestmtContext:
-		if optWith := node.Opt_with_clause(); optWith != nil {
-			if withClause := optWith.With_clause(); withClause != nil {
-				return node.GetParser().GetTokenStream().GetTextFromRuleContext(withClause)
-			}
-		}
-	case *parser.DeletestmtContext:
-		if optWith := node.Opt_with_clause(); optWith != nil {
-			if withClause := optWith.With_clause(); withClause != nil {
-				return node.GetParser().GetTokenStream().GetTextFromRuleContext(withClause)
-			}
-		}
+func extractCTE(node ast.Node, fullSQL string) string {
+	var wc *ast.WithClause
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		wc = n.WithClause
+	case *ast.DeleteStmt:
+		wc = n.WithClause
 	default:
 	}
-	return ""
+	if wc == nil {
+		return ""
+	}
+	return extractNodeText(wc.Loc, fullSQL)
 }
 
-func writeSuffixSelectClause(buf *strings.Builder, tree antlr.Tree) error {
-	extractor := &suffixSelectClauseExtractor{
-		buf: buf,
+func writeSuffixSelectClause(buf *strings.Builder, node ast.Node, fullSQL string) error {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return writeUpdateSuffix(buf, n, fullSQL)
+	case *ast.DeleteStmt:
+		return writeDeleteSuffix(buf, n, fullSQL)
 	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-	return extractor.err
+	return nil
 }
 
-type suffixSelectClauseExtractor struct {
-	*parser.BasePostgreSQLParserListener
-
-	buf *strings.Builder
-	err error
-}
-
-func (e *suffixSelectClauseExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if e.err != nil || !isTopLevel(ctx.GetParent()) {
-		return
+func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) error {
+	if n.Relation == nil {
+		return nil
 	}
 
-	if _, err := fmt.Fprintf(e.buf, "FROM %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Relation_expr_opt_alias())); err != nil {
-		e.err = errors.Wrap(err, "failed to write to buffer")
+	relText := extractNodeText(n.Relation.Loc, sql)
+	if _, err := fmt.Fprintf(buf, "FROM %s", relText); err != nil {
+		return errors.Wrap(err, "failed to write to buffer")
 	}
 
-	if ctx.From_clause() != nil {
-		if _, err := fmt.Fprintf(e.buf, ", %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.From_clause().From_list())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
+	if n.FromClause != nil && n.FromClause.Len() > 0 {
+		fromText := extractNodeText(ast.ListSpan(n.FromClause), sql)
+		if fromText != "" {
+			if _, err := fmt.Fprintf(buf, ", %s", fromText); err != nil {
+				return errors.Wrap(err, "failed to write to buffer")
+			}
 		}
 	}
 
-	if ctx.Where_or_current_clause() != nil {
-		if _, err := fmt.Fprintf(e.buf, " %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_or_current_clause())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
+	if n.WhereClause != nil {
+		whereText := extractNodeText(ast.NodeLoc(n.WhereClause), sql)
+		if whereText != "" {
+			if _, err := fmt.Fprintf(buf, " WHERE %s", whereText); err != nil {
+				return errors.Wrap(err, "failed to write to buffer")
+			}
 		}
 	}
+	return nil
 }
 
-func (e *suffixSelectClauseExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if e.err != nil || !isTopLevel(ctx.GetParent()) {
-		return
+func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) error {
+	if n.Relation == nil {
+		return nil
 	}
 
-	if _, err := fmt.Fprintf(e.buf, "FROM %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Relation_expr_opt_alias())); err != nil {
-		e.err = errors.Wrap(err, "failed to write to buffer")
+	relText := extractNodeText(n.Relation.Loc, sql)
+	if _, err := fmt.Fprintf(buf, "FROM %s", relText); err != nil {
+		return errors.Wrap(err, "failed to write to buffer")
 	}
 
-	if ctx.Using_clause() != nil {
-		if _, err := fmt.Fprintf(e.buf, ", %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Using_clause().From_list())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
+	if n.UsingClause != nil && n.UsingClause.Len() > 0 {
+		usingText := extractNodeText(ast.ListSpan(n.UsingClause), sql)
+		if usingText != "" {
+			if _, err := fmt.Fprintf(buf, ", %s", usingText); err != nil {
+				return errors.Wrap(err, "failed to write to buffer")
+			}
 		}
 	}
 
-	if ctx.Where_or_current_clause() != nil {
-		if _, err := fmt.Fprintf(e.buf, " %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Where_or_current_clause())); err != nil {
-			e.err = errors.Wrap(err, "failed to write to buffer")
+	if n.WhereClause != nil {
+		whereText := extractNodeText(ast.NodeLoc(n.WhereClause), sql)
+		if whereText != "" {
+			if _, err := fmt.Fprintf(buf, " WHERE %s", whereText); err != nil {
+				return errors.Wrap(err, "failed to write to buffer")
+			}
 		}
 	}
+	return nil
+}
+
+// extractNodeText extracts trimmed text from SQL using a Loc range.
+func extractNodeText(loc ast.Loc, sql string) string {
+	if loc.Start < 0 || loc.End < 0 || loc.Start >= loc.End || loc.End > len(sql) {
+		return ""
+	}
+	return strings.TrimSpace(sql[loc.Start:loc.End])
 }
 
 func prepareTransformation(ctx context.Context, tCtx base.TransformContext, statement string) ([]statementInfo, error) {
-	parseResults, err := ParsePostgreSQL(statement)
+	stmts, err := ParsePg(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -278,178 +287,111 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 		return nil, errors.Wrap(err, "failed to get database metadata")
 	}
 
-	extractor := &dmlExtractor{
-		metadata:   metadata,
-		searchPath: metadata.GetSearchPath(),
-	}
+	searchPath := metadata.GetSearchPath()
+	var dmls []statementInfo
 
-	// Walk all parse results to extract DML statements
-	for _, parseResult := range parseResults {
-		extractor.currentBaseLine = base.GetLineOffset(parseResult.StartPosition)
-		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
-		if extractor.err != nil {
-			return nil, extractor.err
+	for i, stmt := range stmts {
+		if stmt.Empty() {
+			continue
+		}
+
+		switch n := stmt.AST.(type) {
+		case *ast.VariableSetStmt:
+			if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
+				var newSearchPath []string
+				for _, arg := range n.Args.Items {
+					if ac, ok := arg.(*ast.A_Const); ok {
+						if s, ok := ac.Val.(*ast.String); ok {
+							newSearchPath = append(newSearchPath, s.Str)
+						}
+					}
+				}
+				if len(newSearchPath) > 0 {
+					searchPath = newSearchPath
+				}
+			}
+		case *ast.UpdateStmt:
+			table, err := extractTableReferenceFromRangeVar(n.Relation, metadata, searchPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract table reference from update statement at offset %d", i)
+			}
+			if table == nil {
+				continue
+			}
+			table.StatementType = StatementTypeUpdate
+			nodeLoc := n.Loc
+			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos.Column-- // 0-based column to match existing convention
+			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			dmls = append(dmls, statementInfo{
+				offset:    i,
+				statement: stmt.Text,
+				node:      n,
+				table:     table,
+				startPos:  startPos,
+				endPos:    endPos,
+				fullSQL:   statement,
+			})
+		case *ast.DeleteStmt:
+			table, err := extractTableReferenceFromRangeVar(n.Relation, metadata, searchPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract table reference from delete statement at offset %d", i)
+			}
+			if table == nil {
+				continue
+			}
+			table.StatementType = StatementTypeDelete
+			nodeLoc := n.Loc
+			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos.Column--
+			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			dmls = append(dmls, statementInfo{
+				offset:    i,
+				statement: stmt.Text,
+				node:      n,
+				table:     table,
+				startPos:  startPos,
+				endPos:    endPos,
+				fullSQL:   statement,
+			})
+		default:
 		}
 	}
 
-	return extractor.dmls, nil
+	return dmls, nil
 }
 
-type dmlExtractor struct {
-	*parser.BasePostgreSQLParserListener
-
-	metadata        *model.DatabaseMetadata
-	searchPath      []string
-	dmls            []statementInfo
-	offset          int
-	err             error
-	currentBaseLine int
-}
-
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-
-	switch ctx := ctx.(type) {
-	case *parser.RootContext, *parser.StmtblockContext:
-		return true
-	case *parser.StmtmultiContext, *parser.StmtContext:
-		return isTopLevel(ctx.GetParent())
-	default:
-		return false
-	}
-}
-
-func (e *dmlExtractor) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
-	setRest := ctx.Set_rest()
-	if setRest == nil {
-		return
-	}
-	setRestMore := setRest.Set_rest_more()
-	if setRestMore == nil {
-		return
-	}
-	genericSet := setRestMore.Generic_set()
-	if genericSet == nil {
-		return
-	}
-	varName := genericSet.Var_name()
-	if varName == nil {
-		return
-	}
-	if len(varName.AllColid()) != 1 {
-		return
-	}
-	name := NormalizePostgreSQLColid(varName.Colid(0))
-	if !strings.EqualFold(name, "search_path") {
-		return
-	}
-	var searchPath []string
-	for _, value := range genericSet.Var_list().AllVar_value() {
-		valueText := value.GetText()
-		if strings.HasPrefix(valueText, "\"") && strings.HasSuffix(valueText, "\"") {
-			// Remove the quotes from the schema name.
-			valueText = strings.Trim(valueText, "\"")
-		} else if strings.HasPrefix(valueText, "'") && strings.HasSuffix(valueText, "'") {
-			// Remove the quotes from the schema name.
-			valueText = strings.Trim(valueText, "'")
-		} else {
-			// For non-quoted schema names, we just return the lower string for PostgreSQL.
-			valueText = strings.ToLower(valueText)
-		}
-		searchPath = append(searchPath, strings.TrimSpace(valueText))
-	}
-	e.searchPath = searchPath
-}
-
-func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
-	if isTopLevel(ctx) {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if isTopLevel(ctx.GetParent()) {
-		table, err := e.extractTableReference(ctx.Relation_expr_opt_alias())
-		if err != nil {
-			e.err = errors.Wrapf(err, "failed to extract table reference from update statement at offset %d", e.offset)
-			return
-		}
-		if table == nil {
-			return
-		}
-		table.StatementType = StatementTypeUpdate
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-			baseLine:  e.currentBaseLine,
-		})
-	}
-}
-
-func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if isTopLevel(ctx.GetParent()) {
-		table, err := e.extractTableReference(ctx.Relation_expr_opt_alias())
-		if err != nil {
-			e.err = errors.Wrapf(err, "failed to extract table reference from delete statement at offset %d", e.offset)
-			return
-		}
-		if table == nil {
-			return
-		}
-		table.StatementType = StatementTypeDelete
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-			baseLine:  e.currentBaseLine,
-		})
-	}
-}
-
-func (e *dmlExtractor) extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) (*TableReference, error) {
-	if ctx == nil {
+func extractTableReferenceFromRangeVar(rv *ast.RangeVar, metadata *model.DatabaseMetadata, searchPath []string) (*TableReference, error) {
+	if rv == nil {
 		return nil, nil
 	}
 
 	table := TableReference{}
 
-	relationExpr := ctx.Relation_expr()
-	if relationExpr == nil {
-		return nil, nil
-	}
-
-	list := NormalizePostgreSQLQualifiedName(relationExpr.Qualified_name())
-	switch len(list) {
-	case 3:
-		table.Database = list[0]
-		table.Schema = list[1]
-		table.Table = list[2]
-	case 2:
-		table.Schema = list[0]
-		table.Table = list[1]
-	case 1:
+	switch {
+	case rv.Catalogname != "":
+		table.Database = rv.Catalogname
+		table.Schema = rv.Schemaname
+		table.Table = rv.Relname
+	case rv.Schemaname != "":
+		table.Schema = rv.Schemaname
+		table.Table = rv.Relname
+	default:
 		// TODO: remove it in the future.
 		// Handle the case where the search path is not synchronized with the metadata.
-		if len(e.searchPath) == 0 {
-			e.searchPath = []string{"public"}
+		if len(searchPath) == 0 {
+			searchPath = []string{"public"}
 		}
-		schemaName, _ := e.metadata.SearchObject(e.searchPath, list[0])
+		schemaName, _ := metadata.SearchObject(searchPath, rv.Relname)
 		if schemaName == "" {
-			return nil, errors.Errorf("Table %q not found in metadata with search path %v", list[0], e.searchPath)
+			return nil, errors.Errorf("Table %q not found in metadata with search path %v", rv.Relname, searchPath)
 		}
 		table.Schema = schemaName
-		table.Table = list[0]
-	default:
-		return nil, errors.Errorf("Invalid table name: %v", list)
+		table.Table = rv.Relname
 	}
 
-	if ctx.Colid() != nil {
-		table.Alias = NormalizePostgreSQLColid(ctx.Colid())
+	if rv.Alias != nil && rv.Alias.Aliasname != "" {
+		table.Alias = rv.Alias.Aliasname
 	}
 	return &table, nil
 }
