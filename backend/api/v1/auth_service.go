@@ -400,6 +400,20 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	if tokenSubject != stored.UserEmail {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token does not match refresh token"))
 	}
+
+	// Verify the user is still a member of the workspace.
+	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID:    &workspaceID,
+		Email:          user.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify workspace membership"))
+	}
+	if ws == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q is no longer a member of workspace %q", user.Email, workspaceID))
+	}
+
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
 	if err != nil {
@@ -1030,6 +1044,10 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	// Check MFA requirement for the target workspace.
 	mfaSecondStep := request.GetMfaTempToken() != ""
 	if mfaSecondStep {
+		// Check MFA lockout before verifying.
+		if err := s.checkMFALockout(ctx, user.Email); err != nil {
+			return nil, err
+		}
 		// Verify the MFA temp token and OTP/recovery code.
 		mfaEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
 		if err != nil {
@@ -1091,9 +1109,12 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to consume refresh token"))
 		}
-		sessionExpiresAt := time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
-		if oldStored != nil && !oldStored.ExpiresAt.IsZero() {
-			sessionExpiresAt = oldStored.ExpiresAt
+		if oldStored == nil {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or expired refresh token"))
+		}
+		sessionExpiresAt := oldStored.ExpiresAt
+		if sessionExpiresAt.IsZero() {
+			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
 		}
 
 		origin := req.Header().Get("Origin")
