@@ -57,11 +57,11 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	policyCache, err := lru.New[string, *PolicyMessage](128)
+	policyCache, err := lru.New[string, *PolicyMessage](4096)
 	if err != nil {
 		return nil, err
 	}
-	settingCache, err := lru.New[string, *SettingMessage](64)
+	settingCache, err := lru.New[string, *SettingMessage](1024)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func getInstanceCacheKey(instanceID string) string {
 }
 
 func getSettingCacheKey(workspace string, name storepb.SettingName) string {
-	return fmt.Sprintf("workspaces/%s/settings/%s", workspace, name)
+	return fmt.Sprintf("workspaces/%s/settings/%s", workspace, name.String())
 }
 
 func getGroupCacheKey(workspace, email string) string {
@@ -154,7 +154,7 @@ func getMemberGroupsCacheKey(workspace, userName string) string {
 }
 
 func getPolicyCacheKey(workspace string, resourceType storepb.Policy_Resource, resource string, policyType storepb.Policy_Type) string {
-	return fmt.Sprintf("workspaces/%s/policies/%s/%s/%s", workspace, resourceType, resource, policyType)
+	return fmt.Sprintf("workspaces/%s/policies/%s/%s/%s", workspace, resourceType.String(), resource, policyType.String())
 }
 
 func getDatabaseCacheKey(workspace, instanceID, databaseName string) string {
