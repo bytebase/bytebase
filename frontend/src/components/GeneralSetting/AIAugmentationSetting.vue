@@ -177,6 +177,7 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NCollapseTransition, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
@@ -278,15 +279,12 @@ watchEffect(async () => {
 
 const allowSave = computed((): boolean => {
   const initValue = getInitialState();
-  const enabledUpdated = state.enabled !== initValue.enabled;
-  const openAIKeyUpdated = !!state.apiKey;
-  const openAIEndpointUpdated = state.endpoint !== initValue.endpoint;
-  const openAIModelUpdated = state.model !== initValue.model;
   return (
-    enabledUpdated ||
-    openAIKeyUpdated ||
-    openAIEndpointUpdated ||
-    openAIModelUpdated
+    state.enabled !== initValue.enabled ||
+    state.provider !== initValue.provider ||
+    !!state.apiKey ||
+    state.endpoint !== initValue.endpoint ||
+    state.model !== initValue.model
   );
 });
 
@@ -347,6 +345,14 @@ const toggleAIEnabled = (on: boolean) => {
 };
 
 const updateAISetting = async () => {
+  const initValue = getInitialState();
+  const paths: string[] = [];
+  if (state.enabled !== initValue.enabled) paths.push("value.ai.enabled");
+  if (state.provider !== initValue.provider) paths.push("value.ai.provider");
+  if (state.endpoint !== initValue.endpoint) paths.push("value.ai.endpoint");
+  if (state.model !== initValue.model) paths.push("value.ai.model");
+  if (state.apiKey) paths.push("value.ai.api_key");
+
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
     value: create(SettingSettingValueSchema, {
@@ -362,6 +368,7 @@ const updateAISetting = async () => {
         }),
       },
     }),
+    updateMask: create(FieldMaskSchema, { paths }),
   });
 
   Object.assign(state, getInitialState());
