@@ -114,8 +114,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   );
 
   const enableOnboarding = computed(() => {
-    return activeUserCount.value === 1 && !isSaaSMode.value
-  })
+    return activeUserCount.value === 1 && !isSaaSMode.value;
+  });
 
   const updateUserStat = (count: number) => {
     if (!serverInfo.value) {

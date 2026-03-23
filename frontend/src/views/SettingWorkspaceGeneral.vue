@@ -90,7 +90,7 @@ import { pushNotification, useActuatorV1Store } from "@/store";
 
 const route = useRoute();
 const { t } = useI18n();
-const actuatorStore = useActuatorV1Store()
+const actuatorStore = useActuatorV1Store();
 
 const accountSettingRef = ref<InstanceType<typeof AccountSetting>>();
 const generalSettingRef = ref<InstanceType<typeof GeneralSetting>>();

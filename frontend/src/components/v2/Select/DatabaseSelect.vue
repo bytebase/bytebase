@@ -19,8 +19,7 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store, useActuatorV1Store } from "@/store";
-import { workspaceNamePrefix } from "@/store/modules/v1/common";
+import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
