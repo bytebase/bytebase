@@ -382,22 +382,15 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 5. Extract workspace from the expired access token cookie (per-session, not per-user).
+	// 5. Extract workspace from the expired access token cookie (per-session).
+	// No fallback — each session must carry its own workspace via the access token cookie.
 	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
-	workspaceID := ""
-	if accessTokenStr != "" {
-		wsID, err := auth.ExtractWorkspaceFromToken(accessTokenStr, s.secret)
-		if err == nil && wsID != "" {
-			workspaceID = wsID
-		}
+	if accessTokenStr == "" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token required for refresh"))
 	}
-	if workspaceID == "" {
-		// Fallback if access token cookie is missing or unparseable.
-		var resolveErr error
-		workspaceID, resolveErr = s.resolveWorkspaceForRefresh(ctx, user)
-		if resolveErr != nil {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrap(resolveErr, "failed to resolve workspace"))
-		}
+	workspaceID, err := auth.ExtractWorkspaceFromToken(accessTokenStr, s.secret)
+	if err != nil || workspaceID == "" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("failed to extract workspace from access token"))
 	}
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
@@ -985,31 +978,6 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 	}
 }
 
-// resolveWorkspaceForRefresh returns the workspace for a token refresh.
-// It must return the same workspace as the original login session.
-// If the user is no longer a member of that workspace, the refresh fails.
-func (s *AuthService) resolveWorkspaceForRefresh(ctx context.Context, user *store.UserMessage) (string, error) {
-	workspaceID := user.Profile.GetLastLoginWorkspace()
-	if workspaceID == "" {
-		// Fallback for users who logged in before last_login_workspace was implemented.
-		return s.resolveWorkspaceForLogin(ctx, user)
-	}
-
-	// Verify the user is still a member of the workspace.
-	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-		WorkspaceID:    &workspaceID,
-		Email:          user.Email,
-		IncludeAllUser: !s.profile.SaaS,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to find workspace")
-	}
-	if ws == nil {
-		return "", errors.Errorf("user %q is no longer a member of workspace %q", user.Email, workspaceID)
-	}
-	return workspaceID, nil
-}
-
 // SwitchWorkspace switches the current user's active workspace and issues new tokens.
 func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[v1pb.SwitchWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
@@ -1078,19 +1046,32 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 
-		refreshToken, err := auth.GenerateOpaqueToken()
+		// Consume the old refresh token and preserve its absolute expiry.
+		oldRefreshToken := auth.GetRefreshTokenFromCookie(req.Header())
+		var sessionExpiresAt time.Time
+		if oldRefreshToken != "" {
+			oldStored, err := s.store.GetAndDeleteWebRefreshToken(ctx, auth.HashToken(oldRefreshToken))
+			if err == nil && oldStored != nil {
+				sessionExpiresAt = oldStored.ExpiresAt
+			}
+		}
+		if sessionExpiresAt.IsZero() {
+			// No old refresh token — use default duration (first switch after login without refresh).
+			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
+		}
+
+		newRefreshToken, err := auth.GenerateOpaqueToken()
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
 		}
-		refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 		if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
-			TokenHash: auth.HashToken(refreshToken),
+			TokenHash: auth.HashToken(newRefreshToken),
 			UserEmail: user.Email,
-			ExpiresAt: time.Now().Add(refreshTokenDuration),
+			ExpiresAt: sessionExpiresAt,
 		}); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
 		}
-		refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
+		refreshCookie := auth.GetRefreshTokenCookie(origin, newRefreshToken, time.Until(sessionExpiresAt))
 		resp.Header().Add("Set-Cookie", refreshCookie.String())
 	} else {
 		response.Token = token
