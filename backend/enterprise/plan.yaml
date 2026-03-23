@@ -44,7 +44,7 @@ plans:
       - FEATURE_COMMUNITY_SUPPORT
   - type: TEAM
     maximumInstanceCount: 10
-    maximumSeatCount: 20
+    maximumSeatCount: -1
     features:
       # Database Change Management
       - FEATURE_DATABASE_CHANGE
