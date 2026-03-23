@@ -26,12 +26,9 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 	return &http.Cookie{
 		Name:  AccessTokenCookieName,
 		Value: token,
-		// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
-		// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-		// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
-		// 1. The access token is about to expire in <<refreshThresholdDuration>>
-		// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-		Expires: time.Now().Add(tokenDuration - 1*time.Second),
+		// Cookie outlives the JWT so that Refresh() can extract the workspace from the expired token.
+		// The auth middleware rejects expired JWTs, so an expired JWT in the cookie is harmless.
+		Expires: time.Now().Add(tokenDuration + 30*time.Second),
 		Path:    "/",
 		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 		HttpOnly: true,

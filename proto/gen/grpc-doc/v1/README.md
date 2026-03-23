@@ -3552,6 +3552,9 @@ Response from refreshing the access token.
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The target workspace to switch to. Format: workspaces/{workspace} |
 | web | [bool](#bool) |  | If true, sets tokens as HTTP-only cookies (browser clients). |
+| otp_code | [string](#string) | optional | OTP code for MFA verification. Required if the target workspace enforces MFA. |
+| recovery_code | [string](#string) | optional | Recovery code for MFA verification (alternative to otp_code). |
+| mfa_temp_token | [string](#string) | optional | Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token. |
 
 
 

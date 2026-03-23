@@ -331,6 +331,27 @@ export declare type SwitchWorkspaceRequest = Message<"bytebase.v1.SwitchWorkspac
    * @generated from field: bool web = 2;
    */
   web: boolean;
+
+  /**
+   * OTP code for MFA verification. Required if the target workspace enforces MFA.
+   *
+   * @generated from field: optional string otp_code = 3;
+   */
+  otpCode?: string;
+
+  /**
+   * Recovery code for MFA verification (alternative to otp_code).
+   *
+   * @generated from field: optional string recovery_code = 4;
+   */
+  recoveryCode?: string;
+
+  /**
+   * Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
+   *
+   * @generated from field: optional string mfa_temp_token = 5;
+   */
+  mfaTempToken?: string;
 };
 
 /**

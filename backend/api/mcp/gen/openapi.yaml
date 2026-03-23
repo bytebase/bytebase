@@ -17099,6 +17099,24 @@ components:
           type: boolean
           title: web
           description: If true, sets tokens as HTTP-only cookies (browser clients).
+        otpCode:
+          type:
+            - string
+            - "null"
+          title: otp_code
+          description: OTP code for MFA verification. Required if the target workspace enforces MFA.
+        recoveryCode:
+          type:
+            - string
+            - "null"
+          title: recovery_code
+          description: Recovery code for MFA verification (alternative to otp_code).
+        mfaTempToken:
+          type:
+            - string
+            - "null"
+          title: mfa_temp_token
+          description: Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
       title: SwitchWorkspaceRequest
       additionalProperties: false
     bytebase.v1.SyncDatabaseRequest:

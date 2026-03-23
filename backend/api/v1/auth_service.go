@@ -382,11 +382,11 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 5. Extract workspace from the expired access token cookie (per-session).
-	// No fallback — each session must carry its own workspace via the access token cookie.
+	// 5. Extract workspace from the access token cookie (still present because cookie
+	// outlives the JWT by 30 seconds). This ensures per-session workspace isolation.
 	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
 	if accessTokenStr == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token required for refresh"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token cookie required for refresh"))
 	}
 	workspaceID, err := auth.ExtractWorkspaceFromToken(accessTokenStr, s.secret)
 	if err != nil || workspaceID == "" {
@@ -1011,12 +1011,43 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
 	}
 
-	// Validate the target workspace's sign-in policies (domain restrictions, etc.).
+	// Validate the target workspace's sign-in policies.
 	if user.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user has been deactivated"))
 	}
 	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, user.Email, false); err != nil {
 		return nil, err
+	}
+
+	// Check MFA requirement for the target workspace.
+	mfaSecondStep := request.GetMfaTempToken() != ""
+	if mfaSecondStep {
+		// Verify the MFA temp token and OTP/recovery code.
+		mfaEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid MFA temp token"))
+		}
+		if mfaEmail != user.Email {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("MFA token does not match user"))
+		}
+		if request.OtpCode != nil {
+			if err := challengeMFACode(user, *request.OtpCode); err != nil {
+				return nil, err
+			}
+		} else if request.RecoveryCode != nil {
+			if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("OTP or recovery code required"))
+		}
+	} else {
+		// First step: check if MFA is required for the target workspace.
+		if resp, err := s.checkMFARequired(ctx, user, workspaceID, false); err != nil {
+			return nil, err
+		} else if resp != nil {
+			return resp, nil
+		}
 	}
 
 	// Generate new token with target workspace.

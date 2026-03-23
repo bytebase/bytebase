@@ -663,7 +663,13 @@ type SwitchWorkspaceRequest struct {
 	// Format: workspaces/{workspace}
 	Workspace string `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	// If true, sets tokens as HTTP-only cookies (browser clients).
-	Web           bool `protobuf:"varint,2,opt,name=web,proto3" json:"web,omitempty"`
+	Web bool `protobuf:"varint,2,opt,name=web,proto3" json:"web,omitempty"`
+	// OTP code for MFA verification. Required if the target workspace enforces MFA.
+	OtpCode *string `protobuf:"bytes,3,opt,name=otp_code,json=otpCode,proto3,oneof" json:"otp_code,omitempty"`
+	// Recovery code for MFA verification (alternative to otp_code).
+	RecoveryCode *string `protobuf:"bytes,4,opt,name=recovery_code,json=recoveryCode,proto3,oneof" json:"recovery_code,omitempty"`
+	// Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
+	MfaTempToken  *string `protobuf:"bytes,5,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -712,6 +718,27 @@ func (x *SwitchWorkspaceRequest) GetWeb() bool {
 	return false
 }
 
+func (x *SwitchWorkspaceRequest) GetOtpCode() string {
+	if x != nil && x.OtpCode != nil {
+		return *x.OtpCode
+	}
+	return ""
+}
+
+func (x *SwitchWorkspaceRequest) GetRecoveryCode() string {
+	if x != nil && x.RecoveryCode != nil {
+		return *x.RecoveryCode
+	}
+	return ""
+}
+
+func (x *SwitchWorkspaceRequest) GetMfaTempToken() string {
+	if x != nil && x.MfaTempToken != nil {
+		return *x.MfaTempToken
+	}
+	return ""
+}
+
 var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
@@ -755,10 +782,16 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\"\x10\n" +
 	"\x0eRefreshRequest\"\x11\n" +
-	"\x0fRefreshResponse\"H\n" +
+	"\x0fRefreshResponse\"\xef\x01\n" +
 	"\x16SwitchWorkspaceRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x10\n" +
-	"\x03web\x18\x02 \x01(\bR\x03web2\xa0\x05\n" +
+	"\x03web\x18\x02 \x01(\bR\x03web\x12\x1e\n" +
+	"\botp_code\x18\x03 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12(\n" +
+	"\rrecovery_code\x18\x04 \x01(\tH\x01R\frecoveryCode\x88\x01\x01\x12)\n" +
+	"\x0emfa_temp_token\x18\x05 \x01(\tH\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
+	"\t_otp_codeB\x10\n" +
+	"\x0e_recovery_codeB\x11\n" +
+	"\x0f_mfa_temp_token2\xa0\x05\n" +
 	"\vAuthService\x12a\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\"!\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12`\n" +
 	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x81\x01\n" +
@@ -834,6 +867,7 @@ func file_v1_auth_service_proto_init() {
 		(*IdentityProviderContext_OidcContext)(nil),
 	}
 	file_v1_auth_service_proto_msgTypes[4].OneofWrappers = []any{}
+	file_v1_auth_service_proto_msgTypes[11].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

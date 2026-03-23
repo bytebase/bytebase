@@ -257,6 +257,7 @@ import {
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
+  useActuatorV1Store,
 } from "@/store";
 import {
   AccountType,
@@ -298,6 +299,7 @@ const settingV1Store = useSettingV1Store();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   editing: false,
@@ -398,7 +400,10 @@ const allowEdit = computed(() => {
   if (user.value.state !== State.ACTIVE) {
     return false;
   }
-  return isSelf.value || hasWorkspacePermissionV2("bb.users.update");
+  if (isSelf.value) {
+    return true;
+  }
+  return !actuatorStore.isSaaSMode && hasWorkspacePermissionV2("bb.users.update");
 });
 
 // Only users with bb.users.updateEmail permission can change email.

@@ -10385,6 +10385,27 @@ Format: workspaces/{workspace} </p></td>
                   <td><p>If true, sets tokens as HTTP-only cookies (browser clients). </p></td>
                 </tr>
               
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>OTP code for MFA verification. Required if the target workspace enforces MFA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recovery_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Recovery code for MFA verification (alternative to otp_code). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mfa_temp_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

@@ -185,4 +185,13 @@ message SwitchWorkspaceRequest {
 
   // If true, sets tokens as HTTP-only cookies (browser clients).
   bool web = 2;
+
+  // OTP code for MFA verification. Required if the target workspace enforces MFA.
+  optional string otp_code = 3;
+
+  // Recovery code for MFA verification (alternative to otp_code).
+  optional string recovery_code = 4;
+
+  // Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
+  optional string mfa_temp_token = 5;
 }
