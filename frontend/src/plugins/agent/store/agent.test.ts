@@ -89,6 +89,7 @@ describe("useAgentStore", () => {
             createdTs: 10,
             updatedTs: 20,
             status: "running",
+            runId: "run-1",
           },
         ],
         messagesByThreadId: {
@@ -110,9 +111,31 @@ describe("useAgentStore", () => {
     const thread = store.currentThread;
 
     expect(thread).not.toBeNull();
-    expect(thread?.status).toBe("error");
+    expect(thread?.status).toBe("idle");
     expect(thread?.interrupted).toBe(true);
+    expect(thread?.runId).toBe("run-1");
     expect(store.loading).toBe(false);
+  });
+
+  test("clears interruption markers when a new run starts", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.interruptRun(threadId);
+    store.startRun(
+      threadId,
+      {
+        path: "/projects/demo",
+        title: "Demo",
+      },
+      {
+        runId: "run-2",
+      }
+    );
+
+    expect(store.getThread(threadId)?.status).toBe("running");
+    expect(store.getThread(threadId)?.interrupted).toBe(false);
+    expect(store.getThread(threadId)?.runId).toBe("run-2");
   });
 
   test("persists the selected thread and resets thread messages in place", async () => {

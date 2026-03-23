@@ -2480,6 +2480,8 @@
     "result": "結果:",
     "stop": "停止",
     "interrupted": "中断",
+    "retry-last-turn": "直前のターンを再試行",
+    "interrupted-retry-hint": "再試行すると、現在のページ状態で中断されたターンをやり直します。",
     "new-thread": "新しいスレッド",
     "reset-thread": "スレッドをリセット",
     "thread-select-label": "スレッド",

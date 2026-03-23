@@ -2480,6 +2480,8 @@
     "result": "Kết quả:",
     "stop": "Dừng",
     "interrupted": "Bị gián đoạn",
+    "retry-last-turn": "Thử lại lượt trước",
+    "interrupted-retry-hint": "Thử lại sẽ chạy lại lượt bị gián đoạn với trạng thái trang hiện tại.",
     "new-thread": "Luồng mới",
     "reset-thread": "Đặt lại luồng",
     "thread-select-label": "Luồng",

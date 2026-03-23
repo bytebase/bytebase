@@ -19,7 +19,7 @@ import type {
   ToolExecutor,
 } from "./types";
 
-const MAX_ITERATIONS = 50;
+const MAX_ITERATIONS = 1000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 

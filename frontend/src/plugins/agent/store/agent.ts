@@ -48,6 +48,7 @@ const createThreadRecord = (options: CreateThreadOptions = {}): AgentThread => {
     page: options.page,
     lastError: null,
     interrupted: false,
+    runId: null,
   };
 };
 
@@ -189,6 +190,7 @@ const normalizeThread = (raw: unknown): AgentThread => {
           ? null
           : null,
     interrupted: Boolean(thread.interrupted),
+    runId: typeof thread.runId === "string" ? thread.runId : null,
   };
 };
 
@@ -267,7 +269,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       thread.updatedTs = Math.max(thread.updatedTs, lastMessage.createdTs);
     }
     if (thread.status === "running") {
-      thread.status = "error";
+      thread.status = DEFAULT_THREAD_STATUS;
       thread.interrupted = true;
       thread.lastError = null;
     }
@@ -472,6 +474,28 @@ export const useAgentStore = defineStore("agent", () => {
     return agentMessage;
   };
 
+  const removeMessagesByRunId = (threadId: string, runId?: string | null) => {
+    if (!runId) {
+      return [];
+    }
+    const thread = getThread(threadId);
+    if (!thread) {
+      return [];
+    }
+    const existingMessages = getMessages(threadId);
+    const removedMessages = existingMessages.filter(
+      (message) => message.metadata?.runId === runId
+    );
+    if (removedMessages.length === 0) {
+      return [];
+    }
+    messagesByThreadId.value[threadId] = existingMessages.filter(
+      (message) => message.metadata?.runId !== runId
+    );
+    touchThread(threadId);
+    return removedMessages;
+  };
+
   const appendToolCall = (
     threadId: string,
     messageId: string,
@@ -525,6 +549,7 @@ export const useAgentStore = defineStore("agent", () => {
     thread.status = DEFAULT_THREAD_STATUS;
     thread.lastError = null;
     thread.interrupted = false;
+    thread.runId = null;
     thread.updatedTs = Date.now();
   };
 
@@ -542,25 +567,45 @@ export const useAgentStore = defineStore("agent", () => {
     }
     thread.lastError = null;
     thread.interrupted = false;
+    thread.runId = null;
     if (thread.status === "error") {
       thread.status = DEFAULT_THREAD_STATUS;
     }
     touchThread(thread.id);
   };
 
+  const interruptRun = (threadId: string, page?: AgentThreadSnapshot) => {
+    setThreadStatus(threadId, DEFAULT_THREAD_STATUS, {
+      interrupted: true,
+      page,
+    });
+  };
+
   const cancel = () => {
     abortController.value?.abort();
     abortController.value = null;
     if (runningThreadId.value) {
-      setThreadStatus(runningThreadId.value, DEFAULT_THREAD_STATUS);
+      interruptRun(runningThreadId.value);
     }
   };
 
-  const startRun = (threadId: string, page?: AgentThreadSnapshot) => {
+  const startRun = (
+    threadId: string,
+    page?: AgentThreadSnapshot,
+    options: {
+      replacePage?: boolean;
+      runId?: string;
+    } = {}
+  ) => {
     const thread = getThread(threadId);
+    const nextPage = options.replacePage ? page : (thread?.page ?? page);
     setThreadStatus(threadId, "running", {
-      page: thread?.page ?? page,
+      page: nextPage,
     });
+    const updatedThread = getThread(threadId);
+    if (updatedThread) {
+      updatedThread.runId = options.runId ?? updatedThread.runId ?? null;
+    }
   };
 
   const finishRun = (
@@ -574,6 +619,10 @@ export const useAgentStore = defineStore("agent", () => {
       lastError: options.lastError ?? null,
       interrupted: false,
     });
+    const thread = getThread(threadId);
+    if (thread) {
+      thread.runId = null;
+    }
   };
 
   const saveWindowState = () => {
@@ -707,10 +756,12 @@ export const useAgentStore = defineStore("agent", () => {
     setThreadStatus,
     startRun,
     finishRun,
+    interruptRun,
     awaitUser,
     answerPendingAsk,
     touchThread,
     addMessage,
+    removeMessagesByRunId,
     appendToolCall,
     clearMessages,
     clearConversation,
