@@ -82,24 +82,35 @@ func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret string, 
 	return generateOAuth2Token(userEmail, clientID, workspaceID, OAuth2AccessTokenAudience, expirationTime, []byte(secret))
 }
 
-// ExtractClaimsFromExpiredToken parses a JWT (even if expired) and returns the subject and workspace_id.
+// ExpiredTokenClaims holds the claims extracted from an expired JWT.
+type ExpiredTokenClaims struct {
+	Subject     string
+	WorkspaceID string
+	Audience    []string
+}
+
+// ExtractClaimsFromExpiredToken parses a JWT (even if expired) and returns key claims.
 // Signature is still verified. Used by the Refresh endpoint to bind workspace to the session.
-func ExtractClaimsFromExpiredToken(tokenString, secret string) (subject, workspaceID string, err error) {
+func ExtractClaimsFromExpiredToken(tokenString, secret string) (*ExpiredTokenClaims, error) {
 	claims := &claimsMessage{}
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-	token, parseErr := parser.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+	token, err := parser.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(secret), nil
 	})
-	if parseErr != nil {
-		return "", "", parseErr
+	if err != nil {
+		return nil, err
 	}
 	if !token.Valid {
-		return "", "", jwt.ErrSignatureInvalid
+		return nil, jwt.ErrSignatureInvalid
 	}
-	return claims.Subject, claims.WorkspaceID, nil
+	return &ExpiredTokenClaims{
+		Subject:     claims.Subject,
+		WorkspaceID: claims.WorkspaceID,
+		Audience:    claims.Audience,
+	}, nil
 }
 
 // generateOAuth2Token creates a JWT token with OAuth2-specific claims including client_id.

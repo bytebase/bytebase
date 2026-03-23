@@ -393,13 +393,14 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	if accessTokenStr == "" {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token cookie required for refresh"))
 	}
-	tokenSubject, workspaceID, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
-	if err != nil || workspaceID == "" {
+	tokenClaims, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
+	if err != nil || tokenClaims.WorkspaceID == "" {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("failed to extract workspace from access token"))
 	}
-	if tokenSubject != stored.UserEmail {
+	if tokenClaims.Subject != stored.UserEmail {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token does not match refresh token"))
 	}
+	workspaceID := tokenClaims.WorkspaceID
 
 	// Verify the user is still a member of the workspace.
 	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
@@ -1020,6 +1021,16 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only end users can switch workspaces"))
 	}
 
+	// Reject OAuth2 tokens — they are bound to a specific workspace via the OAuth client
+	// and must not be used to mint plain user tokens for other workspaces.
+	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
+	if accessTokenStr != "" {
+		tokenClaims, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
+		if err == nil && slices.Contains(tokenClaims.Audience, auth.OAuth2AccessTokenAudience) {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.New("OAuth2 tokens cannot be used to switch workspaces"))
+		}
+	}
+
 	// Verify the user is a member of the target workspace.
 	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
 		WorkspaceID:    &workspaceID,
@@ -1111,6 +1122,9 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		}
 		if oldStored == nil {
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or expired refresh token"))
+		}
+		if oldStored.UserEmail != user.Email {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token does not belong to current user"))
 		}
 		sessionExpiresAt := oldStored.ExpiresAt
 		if sessionExpiresAt.IsZero() {
