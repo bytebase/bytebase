@@ -70,9 +70,9 @@ func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDe
 		switch stmt.AST.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			nodeLoc := ast.NodeLoc(stmt.AST)
-			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
 			startPos.Column-- // 0-based to match backup convention
-			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
 			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
 				return stmt.AST, nil
 			}
@@ -249,9 +249,9 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		switch stmt.AST.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			nodeLoc := ast.NodeLoc(stmt.AST)
-			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
 			startPos.Column-- // 0-based
-			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
 			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
 				// Extract statement text without trailing semicolon/whitespace.
 				text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";")

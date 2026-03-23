@@ -49,7 +49,7 @@ func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 		}
 	}
 
-	pos := byteOffsetToRunePosition(statement, parseErr.Position)
+	pos := ByteOffsetToRunePosition(statement, parseErr.Position)
 	return &base.SyntaxError{
 		Position:   pos,
 		Message:    parseErr.Message,

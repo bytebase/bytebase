@@ -87,7 +87,7 @@ func convertOmniError(err error, _ string, stmt base.Statement) error {
 	}
 
 	// Convert byte offset within stmt.Text to line:column.
-	pos := byteOffsetToRunePosition(stmt.Text, parseErr.Position)
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
 
 	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
 	if stmt.Start != nil {

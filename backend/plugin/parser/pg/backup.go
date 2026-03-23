@@ -320,9 +320,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 			}
 			table.StatementType = StatementTypeUpdate
 			nodeLoc := n.Loc
-			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
 			startPos.Column-- // 0-based column to match existing convention
-			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
 			dmls = append(dmls, statementInfo{
 				offset:    i,
 				statement: stmt.Text,
@@ -342,9 +342,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 			}
 			table.StatementType = StatementTypeDelete
 			nodeLoc := n.Loc
-			startPos := byteOffsetToRunePosition(statement, nodeLoc.Start)
+			startPos := ByteOffsetToRunePosition(statement, nodeLoc.Start)
 			startPos.Column--
-			endPos := byteOffsetToRunePosition(statement, nodeLoc.End)
+			endPos := ByteOffsetToRunePosition(statement, nodeLoc.End)
 			dmls = append(dmls, statementInfo{
 				offset:    i,
 				statement: stmt.Text,

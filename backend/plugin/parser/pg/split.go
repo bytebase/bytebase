@@ -23,8 +23,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		result = append(result, base.Statement{
 			Text:  seg.Text,
 			Empty: seg.Empty(),
-			Start: byteOffsetToRunePosition(statement, seg.ByteStart),
-			End:   byteOffsetToRunePosition(statement, seg.ByteEnd),
+			Start: ByteOffsetToRunePosition(statement, seg.ByteStart),
+			End:   ByteOffsetToRunePosition(statement, seg.ByteEnd),
 			Range: &storepb.Range{
 				Start: int32(seg.ByteStart),
 				End:   int32(seg.ByteEnd),
