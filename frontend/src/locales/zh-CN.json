@@ -2971,6 +2971,8 @@
     "result": "结果：",
     "stop": "停止",
     "interrupted": "已中断",
+    "retry-last-turn": "重试上一轮",
+    "interrupted-retry-hint": "重试会基于当前页面状态重新运行已中断的这一轮。",
     "new-thread": "新线程",
     "reset-thread": "重置线程",
     "thread-select-label": "线程",

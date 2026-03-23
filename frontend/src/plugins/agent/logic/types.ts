@@ -49,6 +49,7 @@ export interface AgentThread {
   page?: AgentThreadSnapshot;
   lastError?: string | null;
   interrupted?: boolean;
+  runId?: string | null;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -15,7 +16,9 @@ const agentStore = useAgentStore();
 const input = ref("");
 let currentRunToken = 0;
 
+const currentThread = computed(() => agentStore.currentThread);
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
+const isInterrupted = computed(() => Boolean(currentThread.value?.interrupted));
 const chooseOptions = computed(() =>
   currentPendingAsk.value?.kind === "choose"
     ? (currentPendingAsk.value.options ?? [])
@@ -97,15 +100,7 @@ const handleOutcome = (
       agentStore.awaitUser(threadId, outcome.ask);
       return;
     case "aborted":
-      agentStore.addMessage({
-        threadId,
-        role: "assistant",
-        content: `_${t("agent.interrupted")}_`,
-        metadata: {
-          route: page.path,
-        },
-      });
-      agentStore.finishRun(threadId);
+      agentStore.interruptRun(threadId, page);
       return;
     case "error":
       agentStore.addMessage({
@@ -127,7 +122,8 @@ const handleOutcome = (
 
 async function runThread(
   threadId: string,
-  page: { path: string; title: string }
+  page: { path: string; title: string },
+  runId: string
 ) {
   const controller = new AbortController();
   const runToken = ++currentRunToken;
@@ -158,6 +154,7 @@ async function runThread(
             toolCalls: message.toolCalls,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
@@ -169,6 +166,7 @@ async function runThread(
             content: result,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
@@ -182,6 +180,7 @@ async function runThread(
             content: text,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
@@ -204,6 +203,29 @@ async function runThread(
   }
 }
 
+async function startThreadRun(
+  threadId: string,
+  currentPage: { path: string; title: string },
+  options: {
+    preferCurrentPage?: boolean;
+  } = {}
+) {
+  const threadPage = options.preferCurrentPage
+    ? currentPage
+    : resolveThreadPageSnapshot(threadId, currentPage);
+  const runId = uuidv4();
+
+  if (options.preferCurrentPage) {
+    agentStore.updateThreadPage(threadId, threadPage);
+  }
+
+  agentStore.startRun(threadId, threadPage, {
+    replacePage: options.preferCurrentPage,
+    runId,
+  });
+  await runThread(threadId, threadPage, runId);
+}
+
 async function send() {
   if (agentStore.hasRunningThread) {
     return;
@@ -212,7 +234,6 @@ async function send() {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
 
@@ -249,8 +270,7 @@ async function send() {
     } else {
       return;
     }
-    agentStore.startRun(threadId, threadPage);
-    await runThread(threadId, threadPage);
+    await startThreadRun(threadId, currentPage);
     return;
   }
 
@@ -268,8 +288,28 @@ async function send() {
       route: currentPage.path,
     },
   });
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
+}
+
+async function retryLastTurn() {
+  if (agentStore.hasRunningThread || !currentThread.value?.interrupted) {
+    return;
+  }
+
+  const threadId = currentThread.value.id;
+  const currentPage = getCurrentPageSnapshot();
+  agentStore.removeMessagesByRunId(threadId, currentThread.value.runId);
+  agentStore.clearError(threadId);
+  await startThreadRun(threadId, currentPage, {
+    preferCurrentPage: true,
+  });
+}
+
+function dismissInterrupted() {
+  if (!currentThread.value) {
+    return;
+  }
+  agentStore.clearError(currentThread.value.id);
 }
 
 async function submitConfirmation(confirmed: boolean) {
@@ -285,7 +325,6 @@ async function submitConfirmation(confirmed: boolean) {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
   const answer = confirmed ? confirmLabel.value : cancelLabel.value;
 
   agentStore.clearError(threadId);
@@ -300,8 +339,7 @@ async function submitConfirmation(confirmed: boolean) {
       route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
 }
 
 async function submitChoice(option: AgentAskUserOption) {
@@ -317,7 +355,6 @@ async function submitChoice(option: AgentAskUserOption) {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
   agentStore.answerPendingAsk(
@@ -331,8 +368,7 @@ async function submitChoice(option: AgentAskUserOption) {
       route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
 }
 
 watch(
@@ -371,6 +407,30 @@ watch(
               ? $t("agent.pending-choose-hint")
               : $t("agent.pending-input-hint")
         }}
+      </div>
+    </div>
+
+    <div
+      v-if="isInterrupted"
+      class="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+    >
+      <div class="font-medium">{{ $t("agent.interrupted") }}</div>
+      <div class="mt-1">{{ $t("agent.interrupted-retry-hint") }}</div>
+      <div class="mt-2 flex flex-wrap gap-x-2 gap-y-2">
+        <button
+          class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="retryLastTurn"
+        >
+          {{ $t("agent.retry-last-turn") }}
+        </button>
+        <button
+          class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="dismissInterrupted"
+        >
+          {{ $t("common.dismiss") }}
+        </button>
       </div>
     </div>
 
