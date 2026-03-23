@@ -148,26 +148,59 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 	return create, nil
 }
 
-func (s *Store) FindWorkspaceIDByMemberEmail(ctx context.Context, memberName string, includeAllUser bool) (string, error) {
-	workspaces, err := s.FindWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to find workspaces for user")
-	}
-	if len(workspaces) == 0 {
-		return "", errors.Errorf("%q is not a member of any workspace", memberName)
-	}
-	// Returns the first workspace. The caller (resolveWorkspaceForLogin) may
-	// override this with the user's last login workspace from their profile.
-	return workspaces[0].ResourceID, nil
+// UpdateWorkspaceMessage is the message for updating a workspace.
+type UpdateWorkspaceMessage struct {
+	ResourceID string
+	Title      *string
 }
 
-// FindWorkspacesByMemberEmail finds all workspaces where the given email is a member
-// in the workspace IAM policy bindings. The memberName should be in the format
-// "users/{email}", "serviceAccounts/{email}", etc.
+// UpdateWorkspace updates a workspace.
+func (s *Store) UpdateWorkspace(ctx context.Context, patch *UpdateWorkspaceMessage) error {
+	set := qb.Q()
+	if v := patch.Title; v != nil {
+		set.Comma("name = ?", *v)
+	}
+	q := qb.Q().Space("UPDATE workspace SET ? WHERE resource_id = ? AND deleted = FALSE", set, patch.ResourceID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return errors.Wrapf(err, "failed to update workspace")
+	}
+	return nil
+}
+
+// FindWorkspaceMessage is the message for finding workspaces.
+type FindWorkspaceMessage struct {
+	// WorkspaceID filters by a specific workspace. Nil means no filter.
+	WorkspaceID *string
+	// Email is required. The user email (without "users/" prefix).
+	Email string
+	// IncludeAllUser includes workspaces where "allUsers" is a member.
+	IncludeAllUser bool
+}
+
+// FindWorkspace finds a single workspace matching the filter.
+// Returns (nil, nil) if no workspace matches.
+func (s *Store) FindWorkspace(ctx context.Context, find *FindWorkspaceMessage) (*WorkspaceMessage, error) {
+	workspaces, err := s.ListWorkspacesByEmail(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(workspaces) == 0 {
+		return nil, nil
+	}
+	return workspaces[0], nil
+}
+
+// ListWorkspacesByEmail finds all workspaces where the given email is a member
+// in the workspace IAM policy bindings.
 // Returns workspaces sorted by name.
-func (s *Store) FindWorkspacesByMemberEmail(ctx context.Context, memberName string, includeAllUser bool) ([]*WorkspaceMessage, error) {
+func (s *Store) ListWorkspacesByEmail(ctx context.Context, find *FindWorkspaceMessage) ([]*WorkspaceMessage, error) {
+	memberName := common.FormatUserEmail(find.Email)
 	memberFilter := qb.Q().Space("member = ?", memberName)
-	if includeAllUser {
+	if find.IncludeAllUser {
 		memberFilter.Or("member = ?", common.AllUsers)
 	}
 
@@ -184,8 +217,11 @@ func (s *Store) FindWorkspacesByMemberEmail(ctx context.Context, memberName stri
 			     jsonb_array_elements_text(binding->'members') AS member
 			WHERE ?
 		  )
-		ORDER BY w.name
 	`, memberFilter)
+	if v := find.WorkspaceID; v != nil {
+		q.And("w.resource_id = ?", *v)
+	}
+	q.Space("ORDER BY w.name")
 
 	query, args, err := q.ToSQL()
 	if err != nil {

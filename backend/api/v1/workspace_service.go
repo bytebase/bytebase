@@ -35,6 +35,67 @@ func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *c
 	}
 }
 
+func (s *WorkspaceService) ListWorkspaces(ctx context.Context, _ *connect.Request[v1pb.ListWorkspacesRequest]) (*connect.Response[v1pb.ListWorkspacesResponse], error) {
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	workspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{
+		Email:          user.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspaces"))
+	}
+
+	var result []*v1pb.Workspace
+	for _, ws := range workspaces {
+		result = append(result, &v1pb.Workspace{
+			Name:  common.FormatWorkspace(ws.ResourceID),
+			Title: ws.Name,
+		})
+	}
+	return connect.NewResponse(&v1pb.ListWorkspacesResponse{Workspaces: result}), nil
+}
+
+func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Request[v1pb.UpdateWorkspaceRequest]) (*connect.Response[v1pb.Workspace], error) {
+	ws := req.Msg.Workspace
+	if ws == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace is required"))
+	}
+	if req.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
+	}
+	if len(req.Msg.UpdateMask.GetPaths()) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
+	}
+
+	patch := &store.UpdateWorkspaceMessage{
+		ResourceID: common.GetWorkspaceIDFromContext(ctx),
+	}
+	for _, path := range req.Msg.UpdateMask.GetPaths() {
+		switch path {
+		case "title":
+			if ws.Title == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("title cannot be empty"))
+			}
+			patch.Title = &ws.Title
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported field: %q", path))
+		}
+	}
+
+	if err := s.store.UpdateWorkspace(ctx, patch); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update workspace"))
+	}
+
+	return connect.NewResponse(&v1pb.Workspace{
+		Name:  ws.Name,
+		Title: ws.Title,
+	}), nil
+}
+
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {

@@ -2,8 +2,10 @@
 // @generated from file v1/workspace_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
+import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
+import { file_google_protobuf_field_mask } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
 import { file_v1_iam_policy } from "./iam_policy_pb";
 
@@ -11,7 +13,35 @@ import { file_v1_iam_policy } from "./iam_policy_pb";
  * Describes the file v1/workspace_service.proto.
  */
 export const file_v1_workspace_service = /*@__PURE__*/
-  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEy1wIKEFdvcmtzcGFjZVNlcnZpY2USnAEKDEdldElhbVBvbGljeRIgLmJ5dGViYXNlLnYxLkdldElhbVBvbGljeVJlcXVlc3QaFi5ieXRlYmFzZS52MS5JYW1Qb2xpY3kiUorqMBpiYi53b3Jrc3BhY2VzLmdldElhbVBvbGljeZDqMAGC0+STAioSKC92MS97cmVzb3VyY2U9d29ya3NwYWNlcy8qfTpnZXRJYW1Qb2xpY3kSowEKDFNldElhbVBvbGljeRIgLmJ5dGViYXNlLnYxLlNldElhbVBvbGljeVJlcXVlc3QaFi5ieXRlYmFzZS52MS5JYW1Qb2xpY3kiWYrqMBpiYi53b3Jrc3BhY2VzLnNldElhbVBvbGljeZDqMAGY6jABgtPkkwItOgEqIigvdjEve3Jlc291cmNlPXdvcmtzcGFjZXMvKn06c2V0SWFtUG9saWN5QqsBCg9jb20uYnl0ZWJhc2UudjFCFVdvcmtzcGFjZVNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_v1_annotation, file_v1_iam_policy]);
+  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEiFwoVTGlzdFdvcmtzcGFjZXNSZXF1ZXN0IkQKFkxpc3RXb3Jrc3BhY2VzUmVzcG9uc2USKgoKd29ya3NwYWNlcxgBIAMoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSIoCglXb3Jrc3BhY2USDAoEbmFtZRgBIAEoCRINCgV0aXRsZRgCIAEoCSJ5ChZVcGRhdGVXb3Jrc3BhY2VSZXF1ZXN0Ei4KCXdvcmtzcGFjZRgBIAEoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZUID4EECEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzazLtBAoQV29ya3NwYWNlU2VydmljZRJ1Cg5MaXN0V29ya3NwYWNlcxIiLmJ5dGViYXNlLnYxLkxpc3RXb3Jrc3BhY2VzUmVxdWVzdBojLmJ5dGViYXNlLnYxLkxpc3RXb3Jrc3BhY2VzUmVzcG9uc2UiGpDqMAKC0+STAhASDi92MS93b3Jrc3BhY2VzEpwBCg9VcGRhdGVXb3Jrc3BhY2USIy5ieXRlYmFzZS52MS5VcGRhdGVXb3Jrc3BhY2VSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlIkyK6jAUYmIud29ya3NwYWNlcy51cGRhdGWQ6jABmOowAYLT5JMCJjoBKjIhL3YxL3t3b3Jrc3BhY2UubmFtZT13b3Jrc3BhY2VzLyp9EpwBCgxHZXRJYW1Qb2xpY3kSIC5ieXRlYmFzZS52MS5HZXRJYW1Qb2xpY3lSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuSWFtUG9saWN5IlKK6jAaYmIud29ya3NwYWNlcy5nZXRJYW1Qb2xpY3mQ6jABgtPkkwIqEigvdjEve3Jlc291cmNlPXdvcmtzcGFjZXMvKn06Z2V0SWFtUG9saWN5EqMBCgxTZXRJYW1Qb2xpY3kSIC5ieXRlYmFzZS52MS5TZXRJYW1Qb2xpY3lSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuSWFtUG9saWN5IlmK6jAaYmIud29ya3NwYWNlcy5zZXRJYW1Qb2xpY3mQ6jABmOowAYLT5JMCLToBKiIoL3YxL3tyZXNvdXJjZT13b3Jrc3BhY2VzLyp9OnNldElhbVBvbGljeUKrAQoPY29tLmJ5dGViYXNlLnYxQhVXb3Jrc3BhY2VTZXJ2aWNlUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z", [file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_field_mask, file_v1_annotation, file_v1_iam_policy]);
+
+/**
+ * Describes the message bytebase.v1.ListWorkspacesRequest.
+ * Use `create(ListWorkspacesRequestSchema)` to create a new message.
+ */
+export const ListWorkspacesRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 0);
+
+/**
+ * Describes the message bytebase.v1.ListWorkspacesResponse.
+ * Use `create(ListWorkspacesResponseSchema)` to create a new message.
+ */
+export const ListWorkspacesResponseSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 1);
+
+/**
+ * Describes the message bytebase.v1.Workspace.
+ * Use `create(WorkspaceSchema)` to create a new message.
+ */
+export const WorkspaceSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 2);
+
+/**
+ * Describes the message bytebase.v1.UpdateWorkspaceRequest.
+ * Use `create(UpdateWorkspaceRequestSchema)` to create a new message.
+ */
+export const UpdateWorkspaceRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 3);
 
 /**
  * WorkspaceService manages workspace-level operations and profile.

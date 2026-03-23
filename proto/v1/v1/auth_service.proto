@@ -67,6 +67,16 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
+
+  // Switches the current user's active workspace and issues new tokens.
+  // The user must be a member of the target workspace.
+  rpc SwitchWorkspace(SwitchWorkspaceRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth:switchWorkspace"
+      body: "*"
+    };
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
 }
 
 message LoginRequest {
@@ -167,3 +177,21 @@ message RefreshRequest {}
 
 // Response from refreshing the access token.
 message RefreshResponse {}
+
+message SwitchWorkspaceRequest {
+  // The target workspace to switch to.
+  // Format: workspaces/{workspace}
+  string workspace = 1;
+
+  // If true, sets tokens as HTTP-only cookies (browser clients).
+  bool web = 2;
+
+  // OTP code for MFA verification. Required if the target workspace enforces MFA.
+  optional string otp_code = 3;
+
+  // Recovery code for MFA verification (alternative to otp_code).
+  optional string recovery_code = 4;
+
+  // Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
+  optional string mfa_temp_token = 5;
+}

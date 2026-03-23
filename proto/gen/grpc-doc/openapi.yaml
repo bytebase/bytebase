@@ -256,6 +256,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ExchangeTokenResponse'
+  /v1/auth:switchWorkspace:
+    post:
+      tags:
+        - AuthService
+      summary: SwitchWorkspace
+      description: |-
+        Switches the current user's active workspace and issues new tokens.
+         The user must be a member of the target workspace.
+      operationId: AuthService_SwitchWorkspace
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SwitchWorkspaceRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /v1/cel/batchDeparse:
     post:
       tags:
@@ -15049,6 +15071,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateWorksheetOrganizerResponse'
+  /v1/workspaces:
+    get:
+      tags:
+        - WorkspaceService
+      summary: ListWorkspaces
+      description: Lists all workspaces the current user is a member of.
+      operationId: WorkspaceService_ListWorkspaces
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorkspacesResponse'
+  /v1/workspaces/{workspace}:
+    patch:
+      tags:
+        - WorkspaceService
+      summary: UpdateWorkspace
+      description: Updates a workspace. Currently only title can be updated.
+      operationId: WorkspaceService_UpdateWorkspace
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workspace:
+                  title: workspace
+                  $ref: '#/components/schemas/bytebase.v1.Workspace'
+                updateMask:
+                  title: update_mask
+                  $ref: '#/components/schemas/google.protobuf.FieldMask'
+              title: UpdateWorkspaceRequest
+              required:
+                - workspace
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Workspace'
   /v1/workspaces/{workspace}/actuator/info:
     get:
       tags:
@@ -22796,6 +22870,20 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
+    bytebase.v1.ListWorkspacesRequest:
+      type: object
+      title: ListWorkspacesRequest
+      additionalProperties: false
+    bytebase.v1.ListWorkspacesResponse:
+      type: object
+      properties:
+        workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Workspace'
+          title: workspaces
+      title: ListWorkspacesResponse
+      additionalProperties: false
     bytebase.v1.LoginRequest:
       type: object
       properties:
@@ -26467,6 +26555,39 @@ components:
           readOnly: true
       title: Subscription
       additionalProperties: false
+    bytebase.v1.SwitchWorkspaceRequest:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The target workspace to switch to.
+             Format: workspaces/{workspace}
+        web:
+          type: boolean
+          title: web
+          description: If true, sets tokens as HTTP-only cookies (browser clients).
+        otpCode:
+          type:
+            - string
+            - "null"
+          title: otp_code
+          description: OTP code for MFA verification. Required if the target workspace enforces MFA.
+        recoveryCode:
+          type:
+            - string
+            - "null"
+          title: recovery_code
+          description: Recovery code for MFA verification (alternative to otp_code).
+        mfaTempToken:
+          type:
+            - string
+            - "null"
+          title: mfa_temp_token
+          description: Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
+      title: SwitchWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.SyncDatabaseRequest:
       type: object
       properties:
@@ -28388,6 +28509,19 @@ components:
       required:
         - worksheet
       additionalProperties: false
+    bytebase.v1.UpdateWorkspaceRequest:
+      type: object
+      properties:
+        workspace:
+          title: workspace
+          $ref: '#/components/schemas/bytebase.v1.Workspace'
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateWorkspaceRequest
+      required:
+        - workspace
+      additionalProperties: false
     bytebase.v1.User:
       type: object
       properties:
@@ -28780,6 +28914,18 @@ components:
       title: WorksheetOrganizer
       required:
         - worksheet
+      additionalProperties: false
+    bytebase.v1.Workspace:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+        title:
+          type: string
+          title: title
+      title: Workspace
       additionalProperties: false
     bytebase.v1.WorkspaceApprovalSetting:
       type: object
