@@ -384,13 +384,21 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 
 	// 5. Extract workspace from the access token cookie (still present because cookie
 	// outlives the JWT by 30 seconds). This ensures per-session workspace isolation.
-	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
+	// Also verify the token's subject matches the refresh token's user to prevent
+	// pairing a refresh token with an access token from a different session.
+	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrap(err, "invalid access token header"))
+	}
 	if accessTokenStr == "" {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token cookie required for refresh"))
 	}
-	workspaceID, err := auth.ExtractWorkspaceFromToken(accessTokenStr, s.secret)
+	tokenSubject, workspaceID, err := auth.ExtractClaimsFromExpiredToken(accessTokenStr, s.secret)
 	if err != nil || workspaceID == "" {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("failed to extract workspace from access token"))
+	}
+	if tokenSubject != stored.UserEmail {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("access token does not match refresh token"))
 	}
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
@@ -1073,23 +1081,24 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	resp := connect.NewResponse(response)
 
 	if request.Web {
+		// Require a valid refresh token cookie — prevents non-web clients from
+		// upgrading a short-lived bearer token into a long-lived web session.
+		oldRefreshToken := auth.GetRefreshTokenFromCookie(req.Header())
+		if oldRefreshToken == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("refresh token cookie required for web workspace switch"))
+		}
+		oldStored, err := s.store.GetAndDeleteWebRefreshToken(ctx, auth.HashToken(oldRefreshToken))
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to consume refresh token"))
+		}
+		sessionExpiresAt := time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
+		if oldStored != nil && !oldStored.ExpiresAt.IsZero() {
+			sessionExpiresAt = oldStored.ExpiresAt
+		}
+
 		origin := req.Header().Get("Origin")
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
-
-		// Consume the old refresh token and preserve its absolute expiry.
-		oldRefreshToken := auth.GetRefreshTokenFromCookie(req.Header())
-		var sessionExpiresAt time.Time
-		if oldRefreshToken != "" {
-			oldStored, err := s.store.GetAndDeleteWebRefreshToken(ctx, auth.HashToken(oldRefreshToken))
-			if err == nil && oldStored != nil {
-				sessionExpiresAt = oldStored.ExpiresAt
-			}
-		}
-		if sessionExpiresAt.IsZero() {
-			// No old refresh token — use default duration (first switch after login without refresh).
-			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
-		}
 
 		newRefreshToken, err := auth.GenerateOpaqueToken()
 		if err != nil {
