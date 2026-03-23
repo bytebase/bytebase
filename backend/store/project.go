@@ -129,7 +129,6 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		}
 		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	} else {
-		// TODO(ed): order won't work
 		q.Space("ORDER BY project.resource_id")
 	}
 	if v := find.Limit; v != nil {

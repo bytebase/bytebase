@@ -283,6 +283,7 @@ func (m *Manager) generateInstance(
 	}
 
 	testDatabase, err := m.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    instance.Workspace,
 		InstanceID:   &instance.ResourceID,
 		DatabaseName: &dbName,
 	})

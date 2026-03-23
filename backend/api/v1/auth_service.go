@@ -232,9 +232,8 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		if err := validatePassword(ctx, s.store, workspaceID, request.Password); err != nil {
 			return nil, err
 		}
-	} else if len(request.Password) < 8 {
-		// TODO(ed): optimize this
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should be no less than 8 characters"))
+	} else if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(defaultAccountRestriction.PasswordRestriction)); err != nil {
+		return nil, err
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
@@ -309,10 +308,12 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
 	resp.Header().Add("Set-Cookie", refreshCookie.String())
 
-	// Update last login time.
+	// Update last login time and workspace.
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 		Profile: &storepb.UserProfile{
-			LastLoginTime: timestamppb.Now(),
+			LastLoginTime:      timestamppb.Now(),
+			Source:             user.Profile.GetSource(),
+			LastLoginWorkspace: workspaceID,
 		},
 	}); err != nil {
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
@@ -379,10 +380,10 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 5. Issue new tokens
-	workspaceID, err := s.store.FindWorkspaceIDByMemberEmail(ctx, common.FormatUserEmail(user.Email), !s.profile.SaaS)
+	// 5. Issue new tokens — preserve the workspace from the original login session.
+	workspaceID, err := s.resolveWorkspaceForRefresh(ctx, user)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrap(err, "failed to resolve workspace"))
 	}
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
@@ -919,10 +920,8 @@ func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMe
 
 // resolveWorkspaceForLogin determines the workspace for a login token.
 // For SA/WI: looks up the account record to get workspace.
-// For END_USER: finds workspaces via IAM policy membership.
-//   - If the user belongs to exactly 1 workspace, use it.
-//   - If multiple, use the first one (TODO: workspace picker in SaaS mode).
-//   - If none, return error.
+// For END_USER: prefers the last login workspace (from user profile) if still valid,
+// otherwise falls back to the first workspace from IAM membership.
 func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.UserMessage) (string, error) {
 	// Determine member name format based on user type.
 	var memberName string
@@ -943,8 +942,54 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 		return "", errors.Errorf("unsupported user type %s for login", user.Type)
 	}
 
-	// find workspaces by IAM policy membership.
-	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName, !s.profile.SaaS)
+	includeAllUser := !s.profile.SaaS
+
+	// Prefer the last login workspace if it's still valid.
+	if lastWS := user.Profile.GetLastLoginWorkspace(); lastWS != "" {
+		workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to find workspaces for user")
+		}
+		for _, ws := range workspaces {
+			if ws.ResourceID == lastWS {
+				return lastWS, nil
+			}
+		}
+		// Last login workspace no longer valid (removed from membership or deleted).
+		// Fall through to default selection.
+		if len(workspaces) > 0 {
+			return workspaces[0].ResourceID, nil
+		}
+		return "", errors.Errorf("%q is not a member of any workspace", memberName)
+	}
+
+	// No last login workspace — use the first one.
+	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName, includeAllUser)
+}
+
+// resolveWorkspaceForRefresh returns the workspace for a token refresh.
+// It must return the same workspace as the original login session.
+// If the user is no longer a member of that workspace, the refresh fails.
+func (s *AuthService) resolveWorkspaceForRefresh(ctx context.Context, user *store.UserMessage) (string, error) {
+	workspaceID := user.Profile.GetLastLoginWorkspace()
+	if workspaceID == "" {
+		// Fallback for users who logged in before last_login_workspace was implemented.
+		return s.resolveWorkspaceForLogin(ctx, user)
+	}
+
+	// Verify the user is still a member of the workspace.
+	includeAllUser := !s.profile.SaaS
+	memberName := common.FormatUserEmail(user.Email)
+	workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to find workspaces for user")
+	}
+	for _, ws := range workspaces {
+		if ws.ResourceID == workspaceID {
+			return workspaceID, nil
+		}
+	}
+	return "", errors.Errorf("user %q is no longer a member of workspace %q", user.Email, workspaceID)
 }
 
 // finalizeLogin builds the response, sets cookies if needed, and updates the user profile.
@@ -987,6 +1032,8 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 			Profile: &storepb.UserProfile{
 				LastLoginTime:          timestamppb.Now(),
 				LastChangePasswordTime: user.Profile.GetLastChangePasswordTime(),
+				Source:                 user.Profile.GetSource(),
+				LastLoginWorkspace:     workspaceID,
 			},
 		}); err != nil {
 			slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))

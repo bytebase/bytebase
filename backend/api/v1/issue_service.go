@@ -82,8 +82,9 @@ func (s *IssueService) getIssueFind(
 	offset *int,
 ) (*store.FindIssueMessage, *filterIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
-		Limit:  limit,
-		Offset: offset,
+		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Limit:     limit,
+		Offset:    offset,
 	}
 	if query != "" {
 		issueFind.Query = &query
@@ -495,7 +496,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
 
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: project.ResourceID})
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), UID: &planID, ProjectID: project.ResourceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 		}
@@ -1058,6 +1059,7 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		UID:        &issueUID,
 		ProjectIDs: []string{projectID},
 	})
@@ -1213,6 +1215,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		UID:        &issueUID,
 		ProjectIDs: []string{projectID},
 	})

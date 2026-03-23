@@ -127,9 +127,11 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	if !ok {
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
-	if err := populateRawResources(ctx, in.store, authContext, request, fullMethod); err != nil {
+	resources, err := populateRawResources(ctx, in.store, request, fullMethod)
+	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to populate raw resources %s", err))
 	}
+	authContext.Resources = resources
 
 	if auth.IsAuthenticationSkipped(fullMethod, authContext) {
 		return nil
@@ -142,6 +144,34 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 	if user == nil {
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("unauthenticated for method %q", fullMethod))
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" {
+		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("empty workspace id"))
+	}
+
+	// Workspace isolation: verify all resources belong to the caller's workspace.
+	// Instance and database ownership is already validated in populateRawResources
+	// (via workspace-filtered store lookups). Here we validate workspace and project resources.
+	// Runs after authentication so unauthenticated requests get 401 first,
+	// preventing resource existence probing.
+	for _, resource := range authContext.Resources {
+		switch resource.Type {
+		case common.ResourceTypeWorkspace:
+			if resource.ID != workspaceID {
+				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+			}
+		case common.ResourceTypeProject:
+			project, err := in.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &resource.ID})
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+			}
+			if project == nil || project.Workspace != workspaceID {
+				return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", resource.ID))
+			}
+		default:
+		}
 	}
 
 	ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, authContext)
@@ -224,9 +254,6 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	for _, resource := range authContext.Resources {
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
-			if workspaceID != resource.ID {
-				return false, nil, errors.Errorf("request workspace %v does not match the workspace %v in token", resource.ID, workspaceID)
-			}
 			hasWorkspaceResource = true
 		case common.ResourceTypeProject:
 			projectIDMap[resource.ID] = true
@@ -267,11 +294,23 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
+var instanceRegex = regexp.MustCompile(`^instances/[^/]+`)
 
-func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
+// populateRawResources extracts resources from the request and validates workspace ownership.
+//
+// Resource resolution strategy:
+//   - workspaces/{id}        → ResourceTypeWorkspace (direct match)
+//   - projects/{id}          → ResourceTypeProject (direct match)
+//   - instances/{id}/databases/{name} → looks up database with workspace filter, returns ResourceTypeProject (parent project)
+//   - instances/{id}[/...]   → looks up instance with workspace filter, returns ResourceTypeWorkspace (instance permissions are workspace-scoped)
+//   - default                → ResourceTypeWorkspace from context (fallback for unmatched patterns)
+//
+// All instance/database lookups use the workspace ID from the request context,
+// ensuring the resource belongs to the caller's workspace before any permission check.
+func populateRawResources(ctx context.Context, stores *store.Store, request any, method string) ([]*common.Resource, error) {
 	rawNames, err := getResourceFromRequest(ctx, request, method)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var resources []*common.Resource
@@ -280,7 +319,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 		case strings.HasPrefix(name, "workspaces/"):
 			wsID, err := common.GetWorkspaceID(name)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			resources = append(resources, &common.Resource{
 				Type: common.ResourceTypeWorkspace,
@@ -290,37 +329,66 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 		case strings.HasPrefix(name, "projects/") && name != "projects/-":
 			project := projectRegex.FindString(name)
 			if project == "" {
-				return errors.Errorf("invalid project resource %q", name)
+				return nil, errors.Errorf("invalid project resource %q", name)
 			}
 			projectID, err := common.GetProjectID(project)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			resources = append(resources, &common.Resource{
 				Type: common.ResourceTypeProject,
 				ID:   projectID,
 			})
+		// Database resources: look up the database (with workspace filter) and resolve
+		// to its parent project for project-level permission checks.
 		case strings.HasPrefix(name, "instances/") && strings.Contains(name, "/databases/") && !strings.HasPrefix(name, "instances/-/databases/"):
 			match := databaseRegex.FindString(name)
 			if match != "" {
 				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
 				if err != nil {
-					return errors.Wrapf(err, "failed to parse %q", match)
+					return nil, errors.Wrapf(err, "failed to parse %q", match)
 				}
 				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
 					ShowDeleted:  true,
 				})
 				if err != nil {
-					return errors.Wrapf(err, "failed to get database")
+					return nil, errors.Wrapf(err, "failed to get database")
 				}
 				if database == nil {
-					return errors.Errorf("database %q not found", match)
+					return nil, errors.Errorf("database %q not found", match)
 				}
 				resources = append(resources, &common.Resource{
 					Type: common.ResourceTypeProject,
 					ID:   database.ProjectID,
+				})
+			}
+		// Instance resources (e.g. instances/{id}, instances/{id}/roles/{role}):
+		// validate the instance belongs to the caller's workspace. Returns workspace
+		// resource since instance permissions are workspace-scoped.
+		case strings.HasPrefix(name, "instances/") && !strings.Contains(name, "/databases/"):
+			match := instanceRegex.FindString(name)
+			if match != "" {
+				instanceID, err := common.GetInstanceID(match)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse %q", match)
+				}
+				workspaceID := common.GetWorkspaceIDFromContext(ctx)
+				instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+					Workspace:  workspaceID,
+					ResourceID: &instanceID,
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get instance")
+				}
+				if instance == nil {
+					return nil, errors.Errorf("instance %q not found", match)
+				}
+				resources = append(resources, &common.Resource{
+					Type: common.ResourceTypeWorkspace,
+					ID:   workspaceID,
 				})
 			}
 		default:
@@ -332,8 +400,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 			}
 		}
 	}
-	authContext.Resources = resources
-	return nil
+	return resources, nil
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {

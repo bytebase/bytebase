@@ -21,6 +21,7 @@ CREATE TABLE principal (
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
+    -- golbal unique
     email text NOT NULL,
     password_hash text NOT NULL,
     phone text NOT NULL DEFAULT '',
@@ -54,6 +55,7 @@ CREATE INDEX idx_setting_workspace ON setting(workspace);
 
 -- Role
 CREATE TABLE role (
+    -- golbal unique
     resource_id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     name text NOT NULL,
@@ -95,6 +97,7 @@ CREATE UNIQUE INDEX idx_policy_unique_workspace_resource ON policy(workspace, re
 
 -- idp stores generic identity provider.
 CREATE TABLE idp (
+    -- golbal unique
     resource_id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     name text NOT NULL,
@@ -106,6 +109,7 @@ CREATE TABLE idp (
 );
 
 CREATE TABLE user_group (
+    -- golbal unique
     id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     email text,
@@ -119,6 +123,7 @@ CREATE UNIQUE INDEX idx_user_group_unique_email ON user_group(workspace, email) 
 
 -- review config table.
 CREATE TABLE review_config (
+    -- golbal unique
     id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     enabled boolean NOT NULL DEFAULT TRUE,
@@ -128,6 +133,7 @@ CREATE TABLE review_config (
 );
 
 CREATE TABLE audit_log (
+    -- golbal unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -144,6 +150,7 @@ CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'))
 CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
 
 CREATE TABLE export_archive (
+    -- golbal unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -157,6 +164,7 @@ CREATE TABLE export_archive (
 -----------------------
 
 CREATE TABLE project (
+    -- golbal unique
     resource_id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     deleted boolean NOT NULL DEFAULT FALSE,
@@ -173,6 +181,7 @@ CREATE TABLE service_account (
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
+    -- golbal unique
     email text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     service_key_hash text NOT NULL,
@@ -188,6 +197,7 @@ CREATE TABLE workload_identity (
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     name text NOT NULL,
+    -- golbal unique
     email text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     project text REFERENCES project(resource_id),
@@ -201,6 +211,7 @@ CREATE INDEX idx_workload_identity_workspace ON workload_identity(workspace);
 
 -- Project Hook
 CREATE TABLE project_webhook (
+    -- golbal unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     project text NOT NULL REFERENCES project(resource_id),
     -- Stored as ProjectWebhook (proto/store/store/project_webhook.proto)
@@ -216,6 +227,7 @@ CREATE TABLE sheet_blob (
 
 -- plan table stores the plan for a project
 CREATE TABLE plan (
+    -- unique and auto-increase per project
     id bigint NOT NULL,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
@@ -234,6 +246,7 @@ CREATE INDEX idx_plan_creator ON plan(creator);
 CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
 
 CREATE TABLE plan_check_run (
+    -- unique and auto-increase per project
     id bigint NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -264,6 +277,7 @@ CREATE TABLE plan_webhook_delivery (
 
 -- issue
 CREATE TABLE issue (
+    -- unique and auto-increase per project
     id bigint NOT NULL,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -289,6 +303,7 @@ CREATE INDEX idx_issue_creator ON issue(creator);
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 CREATE TABLE issue_comment (
+    -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -306,6 +321,7 @@ CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resour
 
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
+    -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -338,6 +354,7 @@ CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(pa
 
 CREATE TABLE db_group (
     project text NOT NULL REFERENCES project(resource_id),
+    -- global unique
     resource_id text NOT NULL,
     name text NOT NULL DEFAULT '',
     -- Stored as google.type.Expr (from Google Common Expression Language)
@@ -366,6 +383,7 @@ CREATE INDEX idx_release_project_release_id ON release(project, release_id);
 CREATE INDEX idx_release_category ON release(project, category);
 
 CREATE TABLE access_grant (
+    -- global unique
     id text PRIMARY KEY,
     project text NOT NULL REFERENCES project(resource_id),
     creator text NOT NULL,
@@ -380,6 +398,7 @@ CREATE TABLE access_grant (
 CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
 
 CREATE TABLE query_history (
+    -- global unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     creator text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -400,6 +419,7 @@ CREATE INDEX idx_query_history_creator_created_at_project ON query_history(creat
 -----------------------
 
 CREATE TABLE instance (
+    -- global unique
     resource_id text NOT NULL PRIMARY KEY,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     deleted boolean NOT NULL DEFAULT FALSE,
@@ -440,6 +460,7 @@ CREATE TABLE db_schema (
 );
 
 CREATE TABLE revision (
+    -- global unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     instance text NOT NULL,
     db_name text NOT NULL,
@@ -456,6 +477,7 @@ CREATE UNIQUE INDEX idx_revision_unique_instance_db_name_type_version_deleted_at
 CREATE INDEX idx_revision_instance_db_name_type_version ON revision(instance, db_name, (payload->>'type'), version);
 
 CREATE TABLE sync_history (
+    -- global unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
@@ -469,6 +491,7 @@ CREATE TABLE sync_history (
 CREATE INDEX idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
 
 CREATE TABLE changelog (
+    -- global unique
     resource_id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
     created_at timestamptz NOT NULL DEFAULT now(),
     instance text NOT NULL,
@@ -498,6 +521,7 @@ ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
 -- task table stores the task for a plan
 CREATE TABLE task (
+    -- unique and auto-increase per project
     id bigint NOT NULL,
     project text NOT NULL REFERENCES project(resource_id),
     plan_id bigint NOT NULL,
@@ -515,6 +539,7 @@ CREATE INDEX idx_task_plan_id_environment ON task(project, plan_id, environment)
 
 -- task run table stores the task run
 CREATE TABLE task_run (
+    -- unique and auto-increase per project
     id bigint NOT NULL,
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),

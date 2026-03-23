@@ -250,7 +250,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		Watermark:              v1Setting.Watermark,
 		DirectorySyncToken:     v1Setting.DirectorySyncToken,
 		BrandingLogo:           v1Setting.BrandingLogo,
-		PasswordRestriction:    convertPasswordRestrictionSetting(v1Setting.PasswordRestriction),
+		PasswordRestriction:    convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
 		EnableDebug:            v1Setting.EnableDebug,
 		SqlResultSize:          v1Setting.SqlResultSize,
 		QueryTimeout:           v1Setting.QueryTimeout,
@@ -716,7 +716,7 @@ func convertToAlgorithmRangeMaskSlices(storeSlices []*storepb.Algorithm_RangeMas
 	return v1Slices
 }
 
-func convertPasswordRestrictionSetting(v1Setting *v1pb.WorkspaceProfileSetting_PasswordRestriction) *storepb.WorkspaceProfileSetting_PasswordRestriction {
+func convertToStorePasswordRestriction(v1Setting *v1pb.WorkspaceProfileSetting_PasswordRestriction) *storepb.WorkspaceProfileSetting_PasswordRestriction {
 	if v1Setting == nil {
 		return nil
 	}

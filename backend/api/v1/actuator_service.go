@@ -153,6 +153,14 @@ func (s *ActuatorService) SetupSample(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
+var defaultAccountRestriction = &v1pb.Restriction{
+	DisallowSignup:         false,
+	DisallowPasswordSignin: false,
+	PasswordRestriction: &v1pb.WorkspaceProfileSetting_PasswordRestriction{
+		MinLength: 8,
+	},
+}
+
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
@@ -163,12 +171,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		Docker:              s.profile.IsDocker,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
-		Restriction: &v1pb.Restriction{
-			PasswordRestriction: &v1pb.WorkspaceProfileSetting_PasswordRestriction{
-				MinLength: 8,
-			},
-		},
-		NeedAdminSetup: true,
+		Restriction:         defaultAccountRestriction,
 	}
 
 	if workspaceID != "" {
@@ -195,7 +198,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
-		serverInfo.NeedAdminSetup = activeEndUserCount <= 1
 		serverInfo.ActivatedUserCount = int32(activeEndUserCount)
 
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
@@ -203,7 +205,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 		}
 		serverInfo.Restriction = &v1pb.Restriction{
-			PasswordRestriction:    convertPasswordRestriction(setting.GetPasswordRestriction()),
+			PasswordRestriction:    convertToV1PasswordRestriction(setting.GetPasswordRestriction()),
 			DisallowSignup:         setting.DisallowSignup,
 			DisallowPasswordSignin: setting.DisallowPasswordSignin,
 		}
@@ -304,8 +306,8 @@ func (s *ActuatorService) getUnlicensedFeatures(ctx context.Context, workspaceID
 	return unlicensedFeatures
 }
 
-// convertPasswordRestriction converts store PasswordRestriction to v1 PasswordRestriction.
-func convertPasswordRestriction(pr *storepb.WorkspaceProfileSetting_PasswordRestriction) *v1pb.WorkspaceProfileSetting_PasswordRestriction {
+// convertToV1PasswordRestriction converts store PasswordRestriction to v1 PasswordRestriction.
+func convertToV1PasswordRestriction(pr *storepb.WorkspaceProfileSetting_PasswordRestriction) *v1pb.WorkspaceProfileSetting_PasswordRestriction {
 	if pr == nil {
 		return nil
 	}

@@ -211,13 +211,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   externalUrl: string;
 
   /**
-   * Whether the Bytebase instance requires initial admin setup.
-   *
-   * @generated from field: bool need_admin_setup = 9;
-   */
-  needAdminSetup: boolean;
-
-  /**
    * The last time any API call was made, refreshed on each request.
    *
    * @generated from field: google.protobuf.Timestamp last_active_time = 11;

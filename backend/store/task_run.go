@@ -34,6 +34,9 @@ type TaskRunMessage struct {
 
 // FindTaskRunMessage is the message for finding task runs.
 type FindTaskRunMessage struct {
+	// Workspace filters task runs by the parent project's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace   string
 	UID         *int64
 	UIDs        *[]int64
 	ProjectID   string
@@ -77,6 +80,10 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		LEFT JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
 		WHERE task_run.project = ?
 	`, find.ProjectID)
+
+	if find.Workspace != "" {
+		q.And("task_run.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
 
 	if v := find.UID; v != nil {
 		q.And("task_run.id = ?", *v)
@@ -179,17 +186,12 @@ func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*Ta
 		return nil, err
 	}
 	if len(taskRuns) == 0 {
-		return nil, errors.Errorf("task run not found")
+		return nil, nil
 	}
 	if len(taskRuns) > 1 {
 		return nil, errors.Errorf("expected to get one task run, but got %d", len(taskRuns))
 	}
 	return taskRuns[0], nil
-}
-
-// GetTaskRunByUID gets a task run by uid.
-func (s *Store) GetTaskRunByUID(ctx context.Context, projectID string, uid int64) (*TaskRunMessage, error) {
-	return s.GetTaskRunV1(ctx, &FindTaskRunMessage{ProjectID: projectID, UID: &uid})
 }
 
 // UpdateTaskRunStatus updates task run status.

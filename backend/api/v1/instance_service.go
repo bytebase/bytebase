@@ -454,7 +454,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +464,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
 			}
-			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
+			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
 		}

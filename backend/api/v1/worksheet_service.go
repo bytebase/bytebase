@@ -72,6 +72,7 @@ func (s *WorksheetService) CreateWorksheet(
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Worksheet.Database))
 		}
 		db, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			Workspace:    common.GetWorkspaceIDFromContext(ctx),
 			InstanceID:   &instanceID,
 			DatabaseName: &databaseName,
 		})
@@ -237,6 +238,7 @@ func (s *WorksheetService) UpdateWorksheet(
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Worksheet.Database))
 				}
 				database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+					Workspace:    common.GetWorkspaceIDFromContext(ctx),
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
 				})

@@ -94,6 +94,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Parent))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,
@@ -172,6 +173,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	}
 
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,

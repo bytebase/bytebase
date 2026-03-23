@@ -28,11 +28,15 @@ type FindDBSchemaMessage struct {
 func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*model.DatabaseMetadata, error) {
 	q := qb.Q().Space(`
 		SELECT
-			metadata,
-			raw_dump,
-			config
+			db_schema.metadata,
+			db_schema.raw_dump,
+			db_schema.config
 		FROM db_schema
-		WHERE instance = ? AND db_name = ?`, find.InstanceID, find.DatabaseName)
+		JOIN instance ON instance.resource_id = db_schema.instance
+		WHERE db_schema.instance = ? AND db_schema.db_name = ?`, find.InstanceID, find.DatabaseName)
+	if find.Workspace != "" {
+		q.And("instance.workspace = ?", find.Workspace)
+	}
 
 	query, args, err := q.ToSQL()
 	if err != nil {

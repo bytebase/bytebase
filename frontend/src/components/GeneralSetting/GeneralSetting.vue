@@ -12,7 +12,7 @@
         v-model:mode="state.databaseChangeMode"
       />
 
-      <div v-if="!isSaaSMode">
+      <div>
         <label class="flex items-center gap-x-2">
           <span class="font-medium">{{
             $t("settings.general.workspace.external-url.self")
@@ -24,7 +24,7 @@
             url="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
           />
         </div>
-        <div v-if="externalUrlFromFlag" class="mb-2 text-sm text-accent">
+        <div v-if="externalUrlFromFlag && !isSaaSMode" class="mb-2 text-sm text-accent">
           {{ $t("settings.general.workspace.external-url.managed-by-flag") }}
         </div>
         <PermissionGuardWrapper

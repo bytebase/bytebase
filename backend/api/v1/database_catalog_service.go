@@ -40,6 +40,7 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 		ShowDeleted:  true,
@@ -79,6 +80,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})

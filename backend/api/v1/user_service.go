@@ -271,6 +271,10 @@ func validatePassword(ctx context.Context, store *store.Store, workspace, passwo
 	}
 	passwordRestriction := setting.GetPasswordRestriction()
 
+	return validatePasswordWithRestriction(password, passwordRestriction)
+}
+
+func validatePasswordWithRestriction(password string, passwordRestriction *storepb.WorkspaceProfileSetting_PasswordRestriction) error {
 	if len(password) < int(passwordRestriction.GetMinLength()) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should no less than %v characters", passwordRestriction.GetMinLength()))
 	}

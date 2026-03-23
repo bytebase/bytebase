@@ -122,9 +122,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ExternalUrl != y.ExternalUrl {
 		return false
 	}
-	if x.NeedAdminSetup != y.NeedAdminSetup {
-		return false
-	}
 	if p, q := x.LastActiveTime, y.LastActiveTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}

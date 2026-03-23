@@ -75,17 +75,27 @@
                     {{ $t('common.archive-description', { name: project.title || project.name }) }}
                   </p>
                 </div>
-                <BBButtonConfirm
-                  type="ARCHIVE"
-                  :button-text="$t('common.archive')"
-                  :confirm-title="$t('common.confirm-archive')"
-                  :confirm-description="
-                    $t('project.settings.confirm-archive-project', { name: project.title || project.name })
-                  "
-                  :require-confirm="true"
-                  :disabled="dangerZoneState.isExecuting"
-                  @confirm="handleArchive"
-                />
+                <PermissionGuardWrapper
+                  v-slot="slotProps"
+                  :project="project"
+                  :permissions="[
+                    'bb.projects.delete'
+                  ]"
+                >
+                  <div>
+                    <BBButtonConfirm
+                      type="ARCHIVE"
+                      :button-text="$t('common.archive')"
+                      :confirm-title="$t('common.confirm-archive')"
+                      :confirm-description="
+                        $t('project.settings.confirm-archive-project', { name: project.title || project.name })
+                      "
+                      :require-confirm="true"
+                      :disabled="dangerZoneState.isExecuting || slotProps.disabled"
+                      @confirm="handleArchive"
+                    />
+                  </div>
+                </PermissionGuardWrapper>
               </template>
               <template v-else-if="project.state === State.DELETED">
                 <div class="flex-1">
@@ -96,17 +106,27 @@
                     {{ $t('project.settings.restore.btn-text') }}
                   </p>
                 </div>
-                <BBButtonConfirm
-                  type="RESTORE"
-                  :button-text="$t('common.restore')"
-                  :confirm-title="$t('project.settings.restore.title')"
-                  :confirm-description="
-                    $t('project.settings.restore.title') + ` '${project.title || project.name}'?`
-                  "
-                  :require-confirm="true"
-                  :disabled="dangerZoneState.isExecuting"
-                  @confirm="handleRestore"
-                />
+                <PermissionGuardWrapper
+                  v-slot="slotProps"
+                  :project="project"
+                  :permissions="[
+                    'bb.projects.undelete'
+                  ]"
+                >
+                  <div>
+                    <BBButtonConfirm
+                      type="RESTORE"
+                      :button-text="$t('common.restore')"
+                      :confirm-title="$t('project.settings.restore.title')"
+                      :confirm-description="
+                        $t('project.settings.restore.title') + ` '${project.title || project.name}'?`
+                      "
+                      :require-confirm="true"
+                      :disabled="dangerZoneState.isExecuting || slotProps.disabled"
+                      @confirm="handleRestore"
+                    />
+                  </div>
+                </PermissionGuardWrapper>
               </template>
             </div>
 
@@ -120,17 +140,27 @@
                   {{ $t('common.delete-resource-description', { name: project.title || project.name }) }}
                 </p>
               </div>
-              <BBButtonConfirm
-                type="DELETE"
-                :button-text="$t('common.delete')"
-                :confirm-title="$t('common.confirm-delete')"
-                :confirm-description="
-                  $t('project.settings.confirm-delete-project', { name: project.title || project.name })
-                "
-                :require-confirm="true"
-                :disabled="dangerZoneState.isExecuting"
-                @confirm="handleDelete"
-              />
+              <PermissionGuardWrapper
+                v-slot="slotProps"
+                :project="project"
+                :permissions="[
+                  'bb.projects.delete'
+                ]"
+              >
+                <div>
+                  <BBButtonConfirm
+                    type="DELETE"
+                    :button-text="$t('common.delete')"
+                    :confirm-title="$t('common.confirm-delete')"
+                    :confirm-description="
+                      $t('project.settings.confirm-delete-project', { name: project.title || project.name })
+                    "
+                    :require-confirm="true"
+                    :disabled="dangerZoneState.isExecuting || slotProps.disabled"
+                    @confirm="handleDelete"
+                  />
+                </div>
+              </PermissionGuardWrapper>
             </div>
           </div>
         </div>

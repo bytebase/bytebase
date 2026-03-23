@@ -237,6 +237,7 @@ func newMaskingDataProviderFromDBNames(ctx context.Context, s *store.Store, inst
 	}
 
 	databases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:    &instance.ResourceID,
 		DatabaseNames: dbNames,
 	})

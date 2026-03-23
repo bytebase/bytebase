@@ -228,7 +228,7 @@ func (s *DatabaseGroupService) ListDatabaseGroups(ctx context.Context, req *conn
 
 	var allProjectDatabases []*store.DatabaseMessage
 	if req.Msg.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-		allProjectDatabases, err = s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectResourceID})
+		allProjectDatabases, err = s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &projectResourceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -288,7 +288,7 @@ func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGr
 func convertStoreToV1DatabaseGroupWithView(ctx context.Context, stores *store.Store, databaseGroup *store.DatabaseGroupMessage, projectResourceID string, view v1pb.DatabaseGroupView) (*v1pb.DatabaseGroup, error) {
 	var allProjectDatabases []*store.DatabaseMessage
 	if view == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectResourceID})
+		databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &projectResourceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}

@@ -41,6 +41,9 @@ message UserProfile {
   // The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
   string source = 3;
   reserved 4;
+  // The workspace resource ID the user last logged into.
+  // Used to auto-select workspace on next login instead of requiring a workspace picker.
+  string last_login_workspace = 5;
 }
 
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.

@@ -37,6 +37,9 @@ type AccessGrantMessage struct {
 
 // FindAccessGrantMessage is the message for finding access grants.
 type FindAccessGrantMessage struct {
+	// Workspace filters access grants by the parent project's workspace.
+	// Empty string skips filtering.
+	Workspace string
 	ID        *string
 	ProjectID *string
 	Creator   *string
@@ -116,6 +119,10 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 		FROM access_grant
 		WHERE TRUE
 	`)
+
+	if find.Workspace != "" {
+		q.And("project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)

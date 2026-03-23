@@ -51,6 +51,9 @@ type UpdateDatabaseMessage struct {
 
 // BatchUpdateDatabases is the message for batch updating databases.
 type BatchUpdateDatabases struct {
+	// Workspace scopes the update to databases whose instance belongs to this workspace.
+	// Empty string skips filtering (cross-workspace).
+	Workspace           string
 	ProjectID           *string
 	FindByEnvironmentID *string
 	// Empty string will unset the environment.
@@ -59,6 +62,9 @@ type BatchUpdateDatabases struct {
 
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
+	// Workspace filters databases by the parent instance's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace              string
 	ProjectID              *string
 	EffectiveEnvironmentID *string
 	InstanceID             *string
@@ -75,10 +81,25 @@ type FindDatabaseMessage struct {
 	OrderByKeys []*OrderByKey
 }
 
+// removeDatabaseCache invalidates both workspace-scoped and unscoped cache entries for a database.
+func (s *Store) removeDatabaseCache(ctx context.Context, instanceID, databaseName string) {
+	// Remove unscoped (runner) cache entry.
+	s.databaseCache.Remove(getDatabaseCacheKey("", instanceID, databaseName))
+	// Remove workspace-scoped (API) cache entry.
+	// Query workspace directly from instance table to avoid workspace-filtering issues with GetInstance.
+	var workspace string
+	if err := s.GetDB().QueryRowContext(ctx,
+		"SELECT workspace FROM instance WHERE resource_id = $1", instanceID,
+	).Scan(&workspace); err != nil {
+		return
+	}
+	s.databaseCache.Remove(getDatabaseCacheKey(workspace, instanceID, databaseName))
+}
+
 // GetDatabase gets a database.
 func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok && s.enableCache {
+		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(find.Workspace, *find.InstanceID, *find.DatabaseName)); ok && s.enableCache {
 			return v, nil
 		}
 	}
@@ -95,7 +116,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 	}
 	database := databases[0]
 
-	s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
+	s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
 	return database, nil
 }
 
@@ -115,6 +136,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 	from.Space("LEFT JOIN instance ON db.instance = instance.resource_id")
 
+	if find.Workspace != "" {
+		where.And("instance.workspace = ?", find.Workspace)
+	}
 	if v := find.ProjectID; v != nil {
 		where.And("db.project = ?", *v)
 	}
@@ -227,7 +251,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 
 	for _, database := range databases {
-		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
+		s.databaseCache.Add(getDatabaseCacheKey(find.Workspace, database.InstanceID, database.DatabaseName), database)
 	}
 	return databases, nil
 }
@@ -260,7 +284,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 
 	// Invalidate and update the cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
+	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
@@ -309,7 +333,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	// Invalidate and update the cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
+	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
@@ -365,7 +389,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 
 	// Invalidate and update database cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
+	s.removeDatabaseCache(ctx, patch.InstanceID, patch.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
@@ -406,6 +430,10 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		return errors.Errorf("empty where")
 	}
 
+	if update.Workspace != "" {
+		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
+	}
+
 	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
 
 	query, args, err := q.ToSQL()
@@ -419,7 +447,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 
 	// Invalidate cache for updated databases
 	for _, database := range databases {
-		s.databaseCache.Remove(getDatabaseCacheKey(database.InstanceID, database.DatabaseName))
+		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
 	}
 	return nil
 }

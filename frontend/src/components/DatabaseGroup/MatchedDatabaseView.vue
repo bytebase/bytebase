@@ -37,7 +37,7 @@
                 :link="false"
               />
               <EnvironmentV1Name
-                class="ml-1 text-sm text-gray-400 max-w-[124px]"
+                class="ml-1 text-sm text-gray-400 max-w-31"
                 :environment="getDatabaseEnvironment(database)"
                 :link="false"
               />

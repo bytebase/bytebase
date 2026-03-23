@@ -49,12 +49,10 @@ const (
 )
 
 // NewHandlerWithAuth creates a new Language Server Protocol handler with authentication.
-func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam.Manager, user *store.UserMessage, workspaceID string, tokenExpiry time.Time) jsonrpc2.Handler {
+func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam.Manager, _ *store.UserMessage, _ string, tokenExpiry time.Time) jsonrpc2.Handler {
 	handler := &Handler{
 		store:                s,
 		profile:              profile,
-		user:                 user,
-		workspaceID:          workspaceID,
 		tokenExpiry:          tokenExpiry,
 		iamManager:           iamManager,
 		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
@@ -84,8 +82,6 @@ type Handler struct {
 	store    *store.Store
 
 	// Auth-related fields
-	user        *store.UserMessage
-	workspaceID string
 	tokenExpiry time.Time
 	iamManager  *iam.Manager
 
@@ -168,7 +164,7 @@ func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
 	}
 
 	instance, err := h.store.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  h.workspaceID,
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &instanceID,
 	})
 	if err != nil {
@@ -208,9 +204,12 @@ func (h *Handler) checkTokenExpiry() error {
 }
 
 func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMetadataCommandArguments) error {
-	if h.user == nil {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok || user == nil {
 		return errors.New("user not authenticated")
 	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
 	// If database is specified, check database schema permission
 	if metadata.DatabaseName != "" && metadata.InstanceID != "" {
@@ -221,6 +220,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 
 		database, err := h.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			Workspace:    workspaceID,
 			InstanceID:   &instanceID,
 			DatabaseName: &metadata.DatabaseName,
 		})
@@ -232,7 +232,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 
 		// Check bb.databases.getSchema permission
-		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, h.user, h.workspaceID, database.ProjectID)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.DatabasesGetSchema, user, workspaceID, database.ProjectID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}
@@ -241,7 +241,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		}
 	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
 		// If only instance is specified, check instance get permission
-		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, h.user, h.workspaceID)
+		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, user, workspaceID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}

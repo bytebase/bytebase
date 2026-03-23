@@ -29,6 +29,7 @@
       :title="$t('settings.general.workspace.announcement.self')"
     />
     <PermissionGuardWrapper
+      v-if="!actuatorStore.isSaaSMode"
       v-slot="slotProps"
       :permissions="[
         'bb.settings.setWorkspaceProfile'
@@ -40,6 +41,7 @@
       />
     </PermissionGuardWrapper>
     <PermissionGuardWrapper
+      v-if="!actuatorStore.isSaaSMode"
       v-slot="slotProps"
       :permissions="[
         'bb.settings.setWorkspaceProfile'
@@ -84,10 +86,11 @@ import {
 } from "@/components/GeneralSetting";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import { pushNotification } from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 
 const route = useRoute();
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 
 const accountSettingRef = ref<InstanceType<typeof AccountSetting>>();
 const generalSettingRef = ref<InstanceType<typeof GeneralSetting>>();

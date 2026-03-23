@@ -35,6 +35,9 @@ type PlanMessage struct {
 
 // FindPlanMessage is the message to find a plan.
 type FindPlanMessage struct {
+	// Workspace filters plans by the parent project's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace string
 	UID       *int64
 	ProjectID string
 
@@ -141,6 +144,10 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		LEFT JOIN issue on plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE plan.project = ?
 	`, find.ProjectID)
+
+	if find.Workspace != "" {
+		q.And("plan.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)

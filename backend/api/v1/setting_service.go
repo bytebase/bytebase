@@ -553,6 +553,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for instances", env.Id))
 				}
 				if err := s.store.BatchUpdateDatabases(ctx, nil, &store.BatchUpdateDatabases{
+					Workspace:           common.GetWorkspaceIDFromContext(ctx),
 					EnvironmentID:       &emptyStr,
 					FindByEnvironmentID: &env.Id,
 				}); err != nil {

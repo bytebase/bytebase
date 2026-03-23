@@ -54,6 +54,9 @@ func (x *UserProfile) Equal(y *UserProfile) bool {
 	if x.Source != y.Source {
 		return false
 	}
+	if x.LastLoginWorkspace != y.LastLoginWorkspace {
+		return false
+	}
 	return true
 }
 

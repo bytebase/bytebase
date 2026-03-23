@@ -49,8 +49,11 @@ func (t *TaskMessage) GetDatabaseName() string {
 
 // TaskFind is the API message for finding tasks.
 type TaskFind struct {
-	ID  *int64
-	IDs *[]int64
+	// Workspace filters tasks by the parent project's workspace.
+	// Empty string skips filtering (for cross-workspace queries like runners).
+	Workspace string
+	ID        *int64
+	IDs       *[]int64
 
 	// Related fields
 	ProjectID    string
@@ -281,6 +284,9 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 			LIMIT 1
 		) AS latest_task_run ON TRUE
 		WHERE task.project = ?`, storepb.TaskRun_NOT_STARTED.String(), find.ProjectID)
+	if find.Workspace != "" {
+		q.Space("AND task.project IN (SELECT resource_id FROM project WHERE workspace = ?)", find.Workspace)
+	}
 	if v := find.ID; v != nil {
 		q.Space("AND task.id = ?", *v)
 	}
