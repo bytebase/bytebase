@@ -2,11 +2,11 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
+	omniparser "github.com/bytebase/omni/pg/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -27,8 +27,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	return diagnostics, nil
 }
 
-// parsePostgreSQLStatement parses the given SQL and returns the ParseResult.
-// Use the PostgreSQL parser based on antlr4.
+// parsePostgreSQLStatement parses the given SQL and returns a SyntaxError if any.
 func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
 	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
@@ -36,35 +35,24 @@ func parsePostgreSQLStatement(statement string) *base.SyntaxError {
 		// for the last statement in the script.
 		statement += ";"
 	}
-	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewPostgreSQLParser(stream)
-	startPosition := &storepb.Position{Line: 1}
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
 
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = false
-
-	_ = p.Root()
-
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
+	_, err := ParsePg(statement)
+	if err == nil {
+		return nil
 	}
 
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
+	var parseErr *omniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return &base.SyntaxError{
+			Position: &storepb.Position{Line: 1, Column: 1},
+			Message:  err.Error(),
+		}
 	}
 
-	return nil
+	pos := byteOffsetToRunePosition(statement, parseErr.Position)
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    parseErr.Message,
+		RawMessage: parseErr.Message,
+	}
 }
