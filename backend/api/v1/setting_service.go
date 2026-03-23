@@ -512,13 +512,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
 			}
-			if existedSetting != nil {
-				existedAISetting, err := convertToSettingMessage(existedSetting)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
-				}
-				if aiSetting.ApiKey == "" {
-					aiSetting.ApiKey = existedAISetting.Value.GetAi().GetApiKey()
+			if existedSetting != nil && aiSetting.ApiKey == "" {
+				if existedAI, ok := existedSetting.Value.(*storepb.AISetting); ok {
+					aiSetting.ApiKey = existedAI.ApiKey
 				}
 			}
 			if aiSetting.ApiKey == "" {
