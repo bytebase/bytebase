@@ -252,12 +252,12 @@ import {
   featureToRef,
   hasFeature,
   pushNotification,
+  useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
-  useActuatorV1Store,
 } from "@/store";
 import {
   AccountType,
@@ -403,7 +403,9 @@ const allowEdit = computed(() => {
   if (isSelf.value) {
     return true;
   }
-  return !actuatorStore.isSaaSMode && hasWorkspacePermissionV2("bb.users.update");
+  return (
+    !actuatorStore.isSaaSMode && hasWorkspacePermissionV2("bb.users.update")
+  );
 });
 
 // Only users with bb.users.updateEmail permission can change email.
