@@ -2480,6 +2480,8 @@
     "result": "Resultado:",
     "stop": "Detener",
     "interrupted": "Interrumpido",
+    "retry-last-turn": "Reintentar el último turno",
+    "interrupted-retry-hint": "Reintentar vuelve a ejecutar el turno interrumpido con el estado actual de la página.",
     "new-thread": "Nuevo hilo",
     "reset-thread": "Restablecer hilo",
     "thread-select-label": "Hilo",

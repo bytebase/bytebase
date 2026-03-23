@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -35,85 +31,43 @@ func (*StatementDisallowAddNotNullAdvisor) Check(_ context.Context, checkCtx adv
 	}
 
 	rule := &statementDisallowAddNotNullRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowAddNotNullRule struct {
-	BaseRule
+	OmniBaseRule
 }
 
 func (*statementDisallowAddNotNullRule) Name() string {
 	return "statement_disallow_add_not_null"
 }
 
-func (r *statementDisallowAddNotNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx)
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*statementDisallowAddNotNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleAltertablestmt handles ALTER TABLE ALTER COLUMN SET NOT NULL
-func (r *statementDisallowAddNotNullRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
-	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+func (r *statementDisallowAddNotNullRule) OnStatement(node ast.Node) {
+	alter, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return
 	}
 
-	if !isTopLevel(altertablestmtCtx.GetParent()) {
-		return
-	}
-
-	// Check all alter table commands
-	if altertablestmtCtx.Alter_table_cmds() != nil {
-		allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// Check for ALTER COLUMN ... SET NOT NULL
-			if cmd.ALTER() != nil && cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
-				// Get the column name
-				allColIDs := cmd.AllColid()
-				if len(allColIDs) > 0 {
-					columnName := pgparser.NormalizePostgreSQLColid(allColIDs[0])
-					r.AddAdvice(&storepb.Advice{
-						Status:  r.level,
-						Code:    code.StatementAddNotNull.Int32(),
-						Title:   r.title,
-						Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", columnName),
-						StartPosition: &storepb.Position{
-							Line:   int32(altertablestmtCtx.GetStart().GetLine()),
-							Column: 0,
-						},
-					})
-				}
-			}
+	for _, cmd := range omniAlterTableCmds(alter) {
+		if ast.AlterTableType(cmd.Subtype) != ast.AT_SetNotNull {
+			continue
 		}
+		columnName := cmd.Name
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.Level,
+			Code:    code.StatementAddNotNull.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", columnName),
+			StartPosition: &storepb.Position{
+				Line:   r.ContentStartLine(),
+				Column: 0,
+			},
+		})
 	}
 }

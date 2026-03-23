@@ -3,15 +3,11 @@ package pg
 import (
 	"context"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -34,133 +30,63 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &indexCreateConcurrentlyRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		newlyCreatedTables: make(map[string]bool),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexCreateConcurrentlyRule struct {
-	BaseRule
+	OmniBaseRule
 
 	newlyCreatedTables map[string]bool
 }
 
 func (*indexCreateConcurrentlyRule) Name() string {
-	return "index_create_concurrently"
+	return string(storepb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY)
 }
 
-func (r *indexCreateConcurrentlyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		if c, ok := ctx.(*parser.CreatestmtContext); ok {
-			r.handleCreatestmt(c)
-		}
-	case "Indexstmt":
-		if c, ok := ctx.(*parser.IndexstmtContext); ok {
-			r.handleIndexstmt(c)
-		}
-	case "Dropstmt":
-		if c, ok := ctx.(*parser.DropstmtContext); ok {
-			r.handleDropstmt(c)
-		}
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*indexCreateConcurrentlyRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleCreatestmt collects newly created tables
-func (r *indexCreateConcurrentlyRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Extract table name
-	qualifiedNames := ctx.AllQualified_name()
-	if len(qualifiedNames) > 0 {
-		tableName := extractTableName(qualifiedNames[0])
+func (r *indexCreateConcurrentlyRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		tableName := omniTableName(n.Relation)
 		if tableName != "" {
 			r.newlyCreatedTables[tableName] = true
 		}
-	}
-}
-
-// handleIndexstmt checks CREATE INDEX statements
-func (r *indexCreateConcurrentlyRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if CONCURRENTLY is used (via Opt_concurrently)
-	hasConcurrently := ctx.Opt_concurrently() != nil && ctx.Opt_concurrently().CONCURRENTLY() != nil
-
-	if !hasConcurrently {
-		// Check if the index is being created on a newly created table
-		if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-			tableName := extractTableName(ctx.Relation_expr().Qualified_name())
-			// Skip the check if the table is newly created
+	case *ast.IndexStmt:
+		if !n.Concurrent {
+			tableName := omniTableName(n.Relation)
 			if r.newlyCreatedTables[tableName] {
 				return
 			}
-		}
-
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
-			Code:    code.CreateIndexUnconcurrently.Int32(),
-			Title:   r.title,
-			Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
-				Column: 0,
-			},
-		})
-	}
-}
-
-// handleDropstmt checks DROP INDEX statements
-func (r *indexCreateConcurrentlyRule) handleDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is a DROP INDEX statement
-	if ctx.INDEX() != nil {
-		// Check if CONCURRENTLY is used
-		if ctx.CONCURRENTLY() == nil {
 			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
-				Code:    code.DropIndexUnconcurrently.Int32(),
-				Title:   r.title,
-				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
+				Status:  r.Level,
+				Code:    code.CreateIndexUnconcurrently.Int32(),
+				Title:   r.Title,
+				Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   r.ContentStartLine(),
 					Column: 0,
 				},
 			})
 		}
+	case *ast.DropStmt:
+		if n.RemoveType == int(ast.OBJECT_INDEX) && !n.Concurrent {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    code.DropIndexUnconcurrently.Int32(),
+				Title:   r.Title,
+				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
+				StartPosition: &storepb.Position{
+					Line:   r.ContentStartLine(),
+					Column: 0,
+				},
+			})
+		}
+	default:
 	}
 }

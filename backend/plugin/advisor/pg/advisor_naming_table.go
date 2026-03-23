@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -52,34 +49,19 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &namingTableConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format:    format,
 		maxLength: maxLength,
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingTableConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
 	format    *regexp.Regexp
 	maxLength int
@@ -89,72 +71,41 @@ func (*namingTableConventionRule) Name() string {
 	return string(storepb.SQLReviewRule_NAMING_TABLE)
 }
 
-func (r *namingTableConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Renamestmt":
-		r.handleRenamestmt(ctx.(*parser.RenamestmtContext))
+func (r *namingTableConventionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		if n.Relation != nil {
+			r.checkTableName(n.Relation.Relname)
+		}
+	case *ast.RenameStmt:
+		if n.RenameType == ast.OBJECT_TABLE {
+			r.checkTableName(n.Newname)
+		}
 	default:
 	}
-	return nil
 }
 
-func (*namingTableConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleCreatestmt handles CREATE TABLE
-func (r *namingTableConventionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	allQualifiedNames := ctx.AllQualified_name()
-	if len(allQualifiedNames) > 0 {
-		tableName := extractTableName(allQualifiedNames[0])
-		r.checkTableName(tableName, ctx)
-	}
-}
-
-// handleRenamestmt handles ALTER TABLE RENAME TO
-func (r *namingTableConventionRule) handleRenamestmt(ctx *parser.RenamestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check for ALTER TABLE ... RENAME TO new_name
-	if ctx.TABLE() != nil && ctx.TO() != nil {
-		allNames := ctx.AllName()
-		if len(allNames) > 0 {
-			// The new table name is the last Name() in RENAME TO new_name
-			newTableName := pgparser.NormalizePostgreSQLName(allNames[len(allNames)-1])
-			r.checkTableName(newTableName, ctx)
-		}
-	}
-}
-
-func (r *namingTableConventionRule) checkTableName(tableName string, ctx antlr.ParserRuleContext) {
+func (r *namingTableConventionRule) checkTableName(tableName string) {
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingTableConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingTableConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})

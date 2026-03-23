@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -34,35 +30,18 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &tableDisallowPartitionRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens: antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
+	rule := &tableDisallowPartitionRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type tableDisallowPartitionRule struct {
-	BaseRule
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
 // Name returns the rule name.
@@ -70,69 +49,46 @@ func (*tableDisallowPartitionRule) Name() string {
 	return "table.disallow-partition"
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *tableDisallowPartitionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Partition_cmd":
-		r.handlePartitionCmd(ctx.(*parser.Partition_cmdContext))
+// OnStatement is called for each top-level statement AST node.
+func (r *tableDisallowPartitionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-// OnExit is called when the parser exits a rule context.
-func (*tableDisallowPartitionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *tableDisallowPartitionRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is a partitioned table
-	if ctx.Optpartitionspec() != nil {
+func (r *tableDisallowPartitionRule) handleCreateStmt(n *ast.CreateStmt) {
+	if n.Partspec != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.CreateTablePartition.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", getTextFromTokens(r.tokens, ctx)),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.TrimmedStmtText()),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
 }
 
-func (r *tableDisallowPartitionRule) handlePartitionCmd(ctx *parser.Partition_cmdContext) {
-	if !isTopLevel(ctx.GetParent().GetParent().GetParent()) {
-		// Partition_cmd is nested: Altertablestmt -> Alter_table_cmds -> Alter_table_cmd -> Partition_cmd
-		return
-	}
-
-	// Check for ATTACH PARTITION
-	if ctx.ATTACH() != nil && ctx.PARTITION() != nil {
-		// Navigate up to get the Altertablestmt context for line position
-		parent := ctx.GetParent()
-		for parent != nil {
-			if alterTableCtx, ok := parent.(*parser.AltertablestmtContext); ok {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.level,
-					Code:    code.CreateTablePartition.Int32(),
-					Title:   r.title,
-					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", getTextFromTokens(r.tokens, alterTableCtx)),
-					StartPosition: &storepb.Position{
-						Line:   int32(alterTableCtx.GetStart().GetLine()),
-						Column: 0,
-					},
-				})
-				return
-			}
-			parent = parent.GetParent()
+func (r *tableDisallowPartitionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	for _, cmd := range omniAlterTableCmds(n) {
+		if ast.AlterTableType(cmd.Subtype) == ast.AT_AttachPartition {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    code.CreateTablePartition.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.TrimmedStmtText()),
+				StartPosition: &storepb.Position{
+					Line:   r.ContentStartLine(),
+					Column: 0,
+				},
+			})
+			return
 		}
 	}
 }

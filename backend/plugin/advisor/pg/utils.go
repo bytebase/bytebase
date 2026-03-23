@@ -106,20 +106,7 @@ func extractSchemaName(ctx parser.IQualified_nameContext) string {
 	return parts[0]
 }
 
-// extractIntegerConstant extracts an integer value from an Iconst context.
-// Returns the integer value and an error if parsing fails.
-func extractIntegerConstant(ctx parser.IIconstContext) (int, error) {
-	if ctx == nil {
-		return 0, errors.New("iconst context is nil")
-	}
-	text := ctx.GetText()
-	val, err := strconv.Atoi(text)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to parse integer constant: %s", text)
-	}
-	return val, nil
-}
-
+// nolint:unused
 // extractStringConstant extracts a string value from an Sconst context.
 // Removes surrounding quotes and handles basic escape sequences.
 func extractStringConstant(ctx parser.ISconstContext) string {
@@ -153,4 +140,45 @@ func normalizeSchemaName(schemaName string) string {
 		return "public"
 	}
 	return schemaName
+}
+
+// getAffectedRows extracts the estimated row count from a PostgreSQL EXPLAIN result.
+func getAffectedRows(res []any) (int64, error) {
+	// the res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) != 3 {
+		return 0, errors.Errorf("expected 3 but got %d", len(res))
+	}
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", res[2])
+	}
+	// EXPLAIN output has at least 2 rows
+	if len(rowList) < 2 {
+		return 0, errors.Errorf("not found any data")
+	}
+	// We need row 2
+	rowTwo, ok := rowList[1].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
+	}
+	// PostgreSQL EXPLAIN result has one column
+	if len(rowTwo) != 1 {
+		return 0, errors.Errorf("expected one but got %d", len(rowTwo))
+	}
+	// Get the string value
+	text, ok := rowTwo[0].(string)
+	if !ok {
+		return 0, errors.Errorf("expected string but got %t", rowTwo[0])
+	}
+
+	rowsRegexp := regexp.MustCompile("rows=([0-9]+)")
+	matches := rowsRegexp.FindStringSubmatch(text)
+	if len(matches) != 2 {
+		return 0, errors.Errorf("failed to find rows in %q", text)
+	}
+	value, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		return 0, errors.Errorf("failed to get integer from %q", matches[1])
+	}
+	return value, nil
 }

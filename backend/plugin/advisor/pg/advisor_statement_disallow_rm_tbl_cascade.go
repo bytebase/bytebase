@@ -3,14 +3,11 @@ package pg
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,106 +30,46 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 	}
 
 	rule := &statementDisallowRemoveTblCascadeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowRemoveTblCascadeRule struct {
-	BaseRule
+	OmniBaseRule
 }
 
-// Name returns the rule name.
 func (*statementDisallowRemoveTblCascadeRule) Name() string {
 	return "statement.disallow-remove-table-cascade"
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *statementDisallowRemoveTblCascadeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Dropstmt":
-		r.handleDropstmt(ctx.(*parser.DropstmtContext))
-	case "Truncatestmt":
-		r.handleTruncatestmt(ctx.(*parser.TruncatestmtContext))
+func (r *statementDisallowRemoveTblCascadeRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.DropStmt:
+		if n.RemoveType == int(ast.OBJECT_TABLE) && ast.DropBehavior(n.Behavior) == ast.DROP_CASCADE {
+			r.addCascadeAdvice()
+		}
+	case *ast.TruncateStmt:
+		if n.Behavior == ast.DROP_CASCADE {
+			r.addCascadeAdvice()
+		}
 	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-// OnExit is called when the parser exits a rule context.
-func (*statementDisallowRemoveTblCascadeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementDisallowRemoveTblCascadeRule) handleDropstmt(ctx *parser.DropstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check if this is a DROP TABLE statement
-	if ctx.Object_type_any_name() == nil || ctx.Object_type_any_name().TABLE() == nil {
-		return
-	}
-
-	// Check for CASCADE option
-	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
-			Code:    code.StatementDisallowCascade.Int32(),
-			Title:   r.title,
-			Content: "The use of CASCADE is not permitted when removing a table",
-			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
-				Column: 0,
-			},
-		})
 	}
 }
 
-func (r *statementDisallowRemoveTblCascadeRule) handleTruncatestmt(ctx *parser.TruncatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Check for CASCADE option
-	if r.hasCascadeOption(ctx.Opt_drop_behavior()) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
-			Code:    code.StatementDisallowCascade.Int32(),
-			Title:   r.title,
-			Content: "The use of CASCADE is not permitted when removing a table",
-			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
-				Column: 0,
-			},
-		})
-	}
-}
-
-// hasCascadeOption checks if the drop behavior is CASCADE
-func (*statementDisallowRemoveTblCascadeRule) hasCascadeOption(ctx parser.IOpt_drop_behaviorContext) bool {
-	if ctx == nil {
-		return false
-	}
-	return ctx.CASCADE() != nil
+func (r *statementDisallowRemoveTblCascadeRule) addCascadeAdvice() {
+	r.AddAdvice(&storepb.Advice{
+		Status:  r.Level,
+		Code:    code.StatementDisallowCascade.Int32(),
+		Title:   r.Title,
+		Content: "The use of CASCADE is not permitted when removing a table",
+		StartPosition: &storepb.Position{
+			Line:   r.ContentStartLine(),
+			Column: 0,
+		},
+	})
 }

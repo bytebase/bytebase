@@ -7,15 +7,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -53,34 +49,19 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &namingColumnConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format:    format,
 		maxLength: maxLength,
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingColumnConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
 	format    *regexp.Regexp
 	maxLength int
@@ -90,134 +71,55 @@ func (*namingColumnConventionRule) Name() string {
 	return "naming_column_convention"
 }
 
-func (r *namingColumnConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx)
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx)
-	case "Renamestmt":
-		r.handleRenamestmt(ctx)
+func (r *namingColumnConventionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
+	case *ast.RenameStmt:
+		r.handleRenameStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*namingColumnConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
+func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniTableName(n.Relation)
+	cols, _ := omniTableElements(n)
+	for _, col := range cols {
+		r.checkColumnName(tableName, col.Colname)
+	}
 }
 
-func (r *namingColumnConventionRule) handleCreatestmt(ctx antlr.ParserRuleContext) {
-	createCtx, ok := ctx.(*parser.CreatestmtContext)
-	if !ok {
-		return
-	}
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get table name
-	qualifiedNames := createCtx.AllQualified_name()
-	if len(qualifiedNames) == 0 {
-		return
-	}
-	tableName := extractTableName(qualifiedNames[0])
-
-	// Get OptTableElementList which contains column definitions
-	if createCtx.Opttableelementlist() == nil || createCtx.Opttableelementlist().Tableelementlist() == nil {
-		return
-	}
-
-	// Iterate through all table elements
-	allElements := createCtx.Opttableelementlist().Tableelementlist().AllTableelement()
-	for _, elem := range allElements {
-		// Check if this is a column definition
-		if elem.ColumnDef() != nil {
-			colDef := elem.ColumnDef()
-			if colDef.Colid() != nil {
-				columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-				r.checkColumnName(tableName, columnName, colDef.GetStart().GetLine())
+func (r *namingColumnConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Relation)
+	for _, cmd := range omniAlterTableCmds(n) {
+		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddColumn {
+			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
+				r.checkColumnName(tableName, colDef.Colname)
 			}
 		}
 	}
 }
 
-func (r *namingColumnConventionRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
-	alterCtx, ok := ctx.(*parser.AltertablestmtContext)
-	if !ok {
-		return
-	}
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get table name
-	if alterCtx.Relation_expr() == nil || alterCtx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-	tableName := extractTableName(alterCtx.Relation_expr().Qualified_name())
-
-	// Get ALTER TABLE commands
-	if alterCtx.Alter_table_cmds() == nil {
-		return
-	}
-
-	allCmds := alterCtx.Alter_table_cmds().AllAlter_table_cmd()
-	for _, cmd := range allCmds {
-		// Check for ADD COLUMN
-		if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-			colDef := cmd.ColumnDef()
-			if colDef.Colid() != nil {
-				columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-				r.checkColumnName(tableName, columnName, colDef.GetStart().GetLine())
-			}
-		}
+func (r *namingColumnConventionRule) handleRenameStmt(n *ast.RenameStmt) {
+	if n.RenameType == ast.OBJECT_COLUMN {
+		tableName := omniTableName(n.Relation)
+		r.checkColumnName(tableName, n.Newname)
 	}
 }
 
-func (r *namingColumnConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
-	renameCtx, ok := ctx.(*parser.RenamestmtContext)
-	if !ok {
-		return
-	}
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
+func (r *namingColumnConventionRule) checkColumnName(tableName, columnName string) {
+	line := r.FindLineByName(columnName)
 
-	// Check if this is RENAME COLUMN
-	if renameCtx.Opt_column() == nil || renameCtx.Opt_column().COLUMN() == nil {
-		return
-	}
-
-	// Get table name
-	var tableName string
-	if renameCtx.Relation_expr() != nil && renameCtx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(renameCtx.Relation_expr().Qualified_name())
-	}
-	if tableName == "" {
-		return
-	}
-
-	// Get new column name
-	allNames := renameCtx.AllName()
-	if len(allNames) < 2 {
-		return
-	}
-
-	newColumnName := pg.NormalizePostgreSQLName(allNames[1])
-	r.checkColumnName(tableName, newColumnName, renameCtx.GetStart().GetLine())
-}
-
-func (r *namingColumnConventionRule) checkColumnName(tableName, columnName string, line int) {
 	if !r.format.MatchString(columnName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingColumnConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, columnName, r.format),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   line,
 				Column: 0,
 			},
 		})
@@ -225,12 +127,12 @@ func (r *namingColumnConventionRule) checkColumnName(tableName, columnName strin
 
 	if r.maxLength > 0 && len(columnName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingColumnConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   line,
 				Column: 0,
 			},
 		})

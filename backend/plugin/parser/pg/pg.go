@@ -87,7 +87,7 @@ func convertOmniError(err error, _ string, stmt base.Statement) error {
 	}
 
 	// Convert byte offset within stmt.Text to line:column.
-	pos := byteOffsetToRunePosition(stmt.Text, parseErr.Position)
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
 
 	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
 	if stmt.Start != nil {
@@ -277,27 +277,6 @@ func NormalizePostgreSQLQualifiedName(ctx parser.IQualified_nameContext) []strin
 
 	if ctx.Indirection() != nil {
 		res = append(res, normalizePostgreSQLIndirection(ctx.Indirection())...)
-	}
-	return res
-}
-
-func normalizePostgreSQLSetTarget(ctx parser.ISet_targetContext) []string {
-	if ctx == nil {
-		return []string{}
-	}
-
-	var res []string
-	res = append(res, NormalizePostgreSQLColid(ctx.Colid()))
-	res = append(res, normalizePostgreSQLOptIndirection(ctx.Opt_indirection())...)
-	return res
-}
-
-func normalizePostgreSQLOptIndirection(ctx parser.IOpt_indirectionContext) []string {
-	var res []string
-	for _, child := range ctx.AllIndirection_el() {
-		if part := normalizePostgreSQLIndirectionEl(child); part != "" {
-			res = append(res, part)
-		}
 	}
 	return res
 }

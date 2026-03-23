@@ -3,15 +3,13 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,88 +31,182 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &noSelectAllRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens: antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
+	rule := &noSelectAllRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type noSelectAllRule struct {
-	BaseRule
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
-// Name returns the rule name.
 func (*noSelectAllRule) Name() string {
-	return "statement.no-select-all"
+	return string(storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL)
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *noSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Simple_select_pramary":
-		r.handleSimpleSelectPramary(ctx.(*parser.Simple_select_pramaryContext))
+func (r *noSelectAllRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		r.checkSelectStmt(n, true)
+	case *ast.InsertStmt:
+		if sel, ok := n.SelectStmt.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	case *ast.ViewStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	case *ast.CreateTableAsStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-// OnExit is called when the parser exits a rule context.
-func (*noSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *noSelectAllRule) handleSimpleSelectPramary(ctx *parser.Simple_select_pramaryContext) {
-	// Check if this is a SELECT statement with target list
-	if ctx.SELECT() == nil {
+func (r *noSelectAllRule) checkSelectStmt(sel *ast.SelectStmt, isTopLevel bool) {
+	if sel == nil {
 		return
 	}
 
-	// Check the target list for * (asterisk)
-	if ctx.Opt_target_list() != nil && ctx.Opt_target_list().Target_list() != nil {
-		targetList := ctx.Opt_target_list().Target_list()
-		allTargets := targetList.AllTarget_el()
+	// For set operations (UNION/INTERSECT/EXCEPT), recurse into children.
+	if sel.Op != ast.SETOP_NONE {
+		r.checkSelectStmt(sel.Larg, false)
+		r.checkSelectStmt(sel.Rarg, false)
+		return
+	}
 
-		for _, target := range allTargets {
-			// Check if target is a Target_star (SELECT *)
-			if _, ok := target.(*parser.Target_starContext); ok {
-				stmtText := getTextFromTokens(r.tokens, ctx)
-				if stmtText == "" {
-					stmtText = "<unknown statement>"
+	// Walk subqueries first.
+	r.walkSelectSubqueries(sel)
+
+	// Check target list for SELECT *.
+	if sel.TargetList != nil {
+		for _, item := range sel.TargetList.Items {
+			rt, ok := item.(*ast.ResTarget)
+			if !ok {
+				continue
+			}
+			cr, ok := rt.Val.(*ast.ColumnRef)
+			if !ok {
+				continue
+			}
+			if cr.Fields != nil {
+				for _, field := range cr.Fields.Items {
+					if _, ok := field.(*ast.A_Star); ok {
+						stmtText := r.extractSelectText(sel, isTopLevel)
+						r.AddAdvice(&storepb.Advice{
+							Status:  r.Level,
+							Code:    code.StatementSelectAll.Int32(),
+							Title:   r.Title,
+							Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
+							StartPosition: &storepb.Position{
+								Line:   r.ContentStartLine(),
+								Column: 0,
+							},
+						})
+						return
+					}
 				}
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.level,
-					Code:    code.StatementSelectAll.Int32(),
-					Title:   r.title,
-					Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
-					StartPosition: &storepb.Position{
-						Line:   int32(ctx.GetStart().GetLine()),
-						Column: 0,
-					},
-				})
-				return
 			}
 		}
+	}
+}
+
+// extractSelectText returns the text representation of a SelectStmt.
+func (r *noSelectAllRule) extractSelectText(sel *ast.SelectStmt, isTopLevel bool) string {
+	if isTopLevel {
+		return r.TrimmedStmtText()
+	}
+	// For nested subqueries, extract from StmtText using Loc byte offsets.
+	loc := sel.Loc
+	if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(r.StmtText) {
+		return strings.TrimSpace(r.StmtText[loc.Start:loc.End])
+	}
+	return r.TrimmedStmtText()
+}
+
+func (r *noSelectAllRule) walkSelectSubqueries(sel *ast.SelectStmt) {
+	if sel == nil {
+		return
+	}
+	// Check CTEs (WITH clause).
+	if sel.WithClause != nil && sel.WithClause.Ctes != nil {
+		for _, item := range sel.WithClause.Ctes.Items {
+			if cte, ok := item.(*ast.CommonTableExpr); ok {
+				if sub, ok := cte.Ctequery.(*ast.SelectStmt); ok {
+					r.checkSelectStmt(sub, false)
+				}
+			}
+		}
+	}
+	// Check target list for subqueries (e.g., SELECT (SELECT * FROM t)).
+	r.walkNodeListForSelectAll(sel.TargetList)
+	r.walkNodeListForSelectAll(sel.FromClause)
+	r.walkNodeForSelectAll(sel.WhereClause)
+	r.walkNodeForSelectAll(sel.HavingClause)
+	r.walkNodeListForSelectAll(sel.GroupClause)
+	r.walkNodeListForSelectAll(sel.SortClause)
+	r.walkNodeForSelectAll(sel.LimitCount)
+	r.walkNodeForSelectAll(sel.LimitOffset)
+}
+
+func (r *noSelectAllRule) walkNodeListForSelectAll(list *ast.List) {
+	if list == nil {
+		return
+	}
+	for _, item := range list.Items {
+		r.walkNodeForSelectAll(item)
+	}
+}
+
+func (r *noSelectAllRule) walkNodeForSelectAll(node ast.Node) {
+	if node == nil {
+		return
+	}
+	switch n := node.(type) {
+	case *ast.SubLink:
+		if sub, ok := n.Subselect.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sub, false)
+		}
+	case *ast.RangeSubselect:
+		if sub, ok := n.Subquery.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sub, false)
+		}
+	case *ast.List:
+		r.walkNodeListForSelectAll(n)
+	case *ast.ResTarget:
+		r.walkNodeForSelectAll(n.Val)
+	case *ast.FuncCall:
+		r.walkNodeListForSelectAll(n.Args)
+	case *ast.A_Expr:
+		r.walkNodeForSelectAll(n.Lexpr)
+		r.walkNodeForSelectAll(n.Rexpr)
+	case *ast.BoolExpr:
+		r.walkNodeListForSelectAll(n.Args)
+	case *ast.CoalesceExpr:
+		r.walkNodeListForSelectAll(n.Args)
+	case *ast.CaseExpr:
+		r.walkNodeForSelectAll(n.Arg)
+		r.walkNodeListForSelectAll(n.Args)
+		r.walkNodeForSelectAll(n.Defresult)
+	case *ast.CaseWhen:
+		r.walkNodeForSelectAll(n.Expr)
+		r.walkNodeForSelectAll(n.Result)
+	case *ast.NullTest:
+		r.walkNodeForSelectAll(n.Arg)
+	case *ast.TypeCast:
+		r.walkNodeForSelectAll(n.Arg)
+	case *ast.JoinExpr:
+		r.walkNodeForSelectAll(n.Larg)
+		r.walkNodeForSelectAll(n.Rarg)
+		r.walkNodeForSelectAll(n.Quals)
+	case *ast.SortBy:
+		r.walkNodeForSelectAll(n.Node)
+	default:
 	}
 }

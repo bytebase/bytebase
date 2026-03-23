@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,84 +30,38 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	var adviceList []*storepb.Advice
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &insertMustSpecifyColumnRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			tokens: antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
+	rule := &insertMustSpecifyColumnRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type insertMustSpecifyColumnRule struct {
-	BaseRule
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
 func (*insertMustSpecifyColumnRule) Name() string {
-	return "insert_must_specify_column"
+	return string(storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN)
 }
 
-func (r *insertMustSpecifyColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Insertstmt":
-		r.handleInsertstmt(ctx)
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*insertMustSpecifyColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *insertMustSpecifyColumnRule) handleInsertstmt(ctx antlr.ParserRuleContext) {
-	insertstmtCtx, ok := ctx.(*parser.InsertstmtContext)
+func (r *insertMustSpecifyColumnRule) OnStatement(node ast.Node) {
+	ins, ok := node.(*ast.InsertStmt)
 	if !ok {
 		return
 	}
 
-	if !isTopLevel(insertstmtCtx.GetParent()) {
-		return
-	}
-
-	// Check if column list is specified
-	// In PostgreSQL, INSERT has an optional insert_column_list
-	// If insert_column_list is not specified or empty, we should report it
-	if insertstmtCtx.Insert_rest() == nil {
-		return
-	}
-
-	// Check if there's an insert_column_list
-	// Insert_column_list exists, which means columns are specified
-	hasColumnList := insertstmtCtx.Insert_rest().Insert_column_list() != nil
-
-	if !hasColumnList {
+	if ins.Cols == nil || len(ins.Cols.Items) == 0 {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.InsertNotSpecifyColumn.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", getTextFromTokens(r.tokens, insertstmtCtx)),
+			Title:   r.Title,
+			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", r.TrimmedStmtText()),
 			StartPosition: &storepb.Position{
-				Line:   int32(insertstmtCtx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})

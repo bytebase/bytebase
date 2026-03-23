@@ -17,90 +17,95 @@ const extractPermissionDeniedDetail = (error: unknown) => {
   return undefined;
 };
 
+const handleUnauthenticatedFailure = ({
+  silent,
+  isLoggedIn,
+}: {
+  silent: boolean;
+  isLoggedIn: boolean;
+}) => {
+  const authStore = useAuthStore();
+  authStore.unauthenticatedOccurred = true;
+  if (!silent && isLoggedIn) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("auth.token-expired-title"),
+      description: t("auth.token-expired-description"),
+    });
+  }
+};
+
 export const authInterceptor: Interceptor = (next) => async (req) => {
   try {
-    const resp = await next(req);
-    return resp;
+    return await next(req);
   } catch (error) {
     const authStore = useAuthStore();
     const silent = req.contextValues.get(silentContextKey);
     const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
 
-    if (!silent && error instanceof ConnectError) {
+    if (error instanceof ConnectError) {
       const { code } = error;
       if (ignoredCodes?.includes(code)) {
-        // omit specified errors
-      } else {
-        if (
-          code === Code.Unauthenticated &&
-          req.method.name !== "Login" &&
-          req.method.name !== "Signup"
-        ) {
-          // Don't retry refresh endpoint failures - just propagate error
-          // The caller (refreshTokens catch block) will handle the notification
-          if (req.method.name === "Refresh") {
-            throw error;
-          }
+        throw error;
+      }
 
-          // Try to refresh - catch ONLY refresh failures
-          try {
-            await refreshTokens();
-          } catch {
-            // Refresh itself failed - auth is broken
-            authStore.unauthenticatedOccurred = true;
-            if (authStore.isLoggedIn) {
-              pushNotification({
-                module: "bytebase",
-                style: "WARN",
-                title: t("auth.token-expired-title"),
-                description: t("auth.token-expired-description"),
-              });
-            }
-            throw error;
-          }
+      if (
+        code === Code.Unauthenticated &&
+        req.method.name !== "Login" &&
+        req.method.name !== "Signup"
+      ) {
+        // Don't retry refresh endpoint failures - just propagate error.
+        if (req.method.name === "Refresh") {
+          throw error;
+        }
 
-          // Refresh succeeded - retry the original request
-          try {
-            return await next(req);
-          } catch (retryError) {
-            // Retry failed - check if it's also an auth error
-            if (
-              retryError instanceof ConnectError &&
-              retryError.code === Code.Unauthenticated
-            ) {
-              // New token also invalid (edge case) - auth is broken
-              authStore.unauthenticatedOccurred = true;
-              if (authStore.isLoggedIn) {
-                pushNotification({
-                  module: "bytebase",
-                  style: "WARN",
-                  title: t("auth.token-expired-title"),
-                  description: t("auth.token-expired-description"),
-                });
-              }
-            }
-            // Throw retry error (not original) - let other handlers deal with it
-            throw retryError;
-          }
-        } else if (
-          code === Code.PermissionDenied &&
-          router.currentRoute.value.name !== WORKSPACE_ROUTE_403
-        ) {
-          const errorDetail = extractPermissionDeniedDetail(error);
-          router.push({
-            name: WORKSPACE_ROUTE_403,
-            query: errorDetail
-              ? {
-                  from: router.currentRoute.value.fullPath,
-                  api: errorDetail.method,
-                  permissions: errorDetail.requiredPermissions.join(","),
-                  resources: errorDetail.resources.join(","),
-                }
-              : undefined,
+        try {
+          await refreshTokens();
+        } catch {
+          handleUnauthenticatedFailure({
+            silent,
+            isLoggedIn: authStore.isLoggedIn,
           });
+          throw error;
+        }
+
+        try {
+          return await next(req);
+        } catch (retryError) {
+          if (
+            retryError instanceof ConnectError &&
+            retryError.code === Code.Unauthenticated
+          ) {
+            handleUnauthenticatedFailure({
+              silent,
+              isLoggedIn: authStore.isLoggedIn,
+            });
+          }
+          throw retryError;
         }
       }
+
+      if (
+        !silent &&
+        code === Code.PermissionDenied &&
+        router.currentRoute.value.name !== WORKSPACE_ROUTE_403
+      ) {
+        const errorDetail = extractPermissionDeniedDetail(error);
+        router.push({
+          name: WORKSPACE_ROUTE_403,
+          query: errorDetail
+            ? {
+                from: router.currentRoute.value.fullPath,
+                api: errorDetail.method,
+                permissions: errorDetail.requiredPermissions.join(","),
+                resources: errorDetail.resources.join(","),
+              }
+            : undefined,
+        });
+      }
     }
+
     throw error;
   }
 };
