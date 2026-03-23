@@ -148,15 +148,25 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 	return create, nil
 }
 
-// UpdateWorkspaceName updates the workspace display name.
-func (s *Store) UpdateWorkspaceName(ctx context.Context, resourceID, name string) error {
-	q := qb.Q().Space("UPDATE workspace SET name = ? WHERE resource_id = ? AND deleted = FALSE", name, resourceID)
+// UpdateWorkspaceMessage is the message for updating a workspace.
+type UpdateWorkspaceMessage struct {
+	ResourceID string
+	Title      *string
+}
+
+// UpdateWorkspace updates a workspace.
+func (s *Store) UpdateWorkspace(ctx context.Context, patch *UpdateWorkspaceMessage) error {
+	set := qb.Q()
+	if v := patch.Title; v != nil {
+		set.Comma("name = ?", *v)
+	}
+	q := qb.Q().Space("UPDATE workspace SET ? WHERE resource_id = ? AND deleted = FALSE", set, patch.ResourceID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to update workspace name")
+		return errors.Wrapf(err, "failed to update workspace")
 	}
 	return nil
 }

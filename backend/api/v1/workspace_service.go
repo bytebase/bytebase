@@ -75,18 +75,23 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
 	}
 
+	patch := &store.UpdateWorkspaceMessage{
+		ResourceID: workspaceID,
+	}
 	for _, path := range req.Msg.UpdateMask.GetPaths() {
 		switch path {
 		case "title":
 			if ws.Title == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("title cannot be empty"))
 			}
-			if err := s.store.UpdateWorkspaceName(ctx, workspaceID, ws.Title); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update workspace"))
-			}
+			patch.Title = &ws.Title
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported field: %q", path))
 		}
+	}
+
+	if err := s.store.UpdateWorkspace(ctx, patch); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update workspace"))
 	}
 
 	return connect.NewResponse(&v1pb.Workspace{
