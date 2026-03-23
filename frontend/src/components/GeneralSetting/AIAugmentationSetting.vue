@@ -66,10 +66,11 @@
               >
                 <NSelect
                   style="width: 12rem"
-                  v-model:value="state.provider"
+                  :value="state.provider"
                   :options="providerOptions"
                   :disabled="slotProps.disabled"
                   :consistent-menu-width="true"
+                  @update:value="onProviderChange"
                 />
               </PermissionGuardWrapper>
             </div>
@@ -178,7 +179,7 @@
 import { create } from "@bufbuild/protobuf";
 import { NCollapseTransition, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -330,12 +331,10 @@ const providerDefault = computed(() => {
   }
 });
 
-watch(
-  () => state.provider,
-  () => {
-    Object.assign(state, providerDefault.value);
-  }
-);
+const onProviderChange = (provider: AISetting_Provider) => {
+  state.provider = provider;
+  Object.assign(state, providerDefault.value);
+};
 
 const toggleAIEnabled = (on: boolean) => {
   if (!on) {
