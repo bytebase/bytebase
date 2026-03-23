@@ -257,4 +257,161 @@ describe("runAgentLoop", () => {
     });
     expect(onToolResult).not.toHaveBeenCalled();
   });
+
+  test("records skipped tool results after ask_user and does not execute later tool calls", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        {
+          id: "tool-ask",
+          name: "ask_user",
+          arguments: JSON.stringify({
+            prompt: "Which environment should I use?",
+            kind: "input",
+          }),
+          metadata: "",
+        },
+        {
+          id: "tool-late",
+          name: "search_api",
+          arguments: JSON.stringify({ service: "SQLService" }),
+          metadata: "",
+        },
+      ],
+    } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async (name, _args, toolCallId) => {
+      if (name === "ask_user") {
+        return {
+          kind: "ask_user" as const,
+          ask: {
+            toolCallId,
+            prompt: "Which environment should I use?",
+            kind: "input" as const,
+          },
+        };
+      }
+      return {
+        kind: "tool_result" as const,
+        result: "should not run",
+      };
+    });
+    const onToolResult = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool,
+      { onToolResult }
+    );
+
+    expect(outcome).toEqual({
+      kind: "awaiting_user",
+      ask: {
+        toolCallId: "tool-ask",
+        prompt: "Which environment should I use?",
+        kind: "input",
+      },
+    });
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(executeTool).toHaveBeenCalledWith(
+      "ask_user",
+      {
+        prompt: "Which environment should I use?",
+        kind: "input",
+      },
+      "tool-ask"
+    );
+    expect(onToolResult).toHaveBeenCalledTimes(1);
+    expect(onToolResult).toHaveBeenCalledWith(
+      "tool-late",
+      JSON.stringify({
+        skipped: true,
+        blockedByToolCallId: "tool-ask",
+        blockedByKind: "ask_user",
+        reason: "Skipped because this assistant turn already emitted ask_user",
+      })
+    );
+  });
+
+  test("records skipped tool results after done and does not execute later tool calls", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "",
+      toolCalls: [
+        {
+          id: "tool-done",
+          name: "done",
+          arguments: JSON.stringify({
+            text: "Finished successfully",
+            success: true,
+          }),
+          metadata: "",
+        },
+        {
+          id: "tool-late",
+          name: "navigate",
+          arguments: JSON.stringify({ path: "/projects/demo" }),
+          metadata: "",
+        },
+      ],
+    } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async (name, args) => {
+      if (name === "done") {
+        return {
+          kind: "done" as const,
+          text: String(args.text),
+          success: args.success !== false,
+        };
+      }
+      return {
+        kind: "tool_result" as const,
+        result: "should not run",
+      };
+    });
+    const onToolResult = vi.fn();
+    const onText = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool,
+      { onToolResult, onText }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "Finished successfully",
+      success: true,
+      explicit: true,
+    });
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(executeTool).toHaveBeenCalledWith(
+      "done",
+      {
+        text: "Finished successfully",
+        success: true,
+      },
+      "tool-done"
+    );
+    expect(onToolResult).toHaveBeenNthCalledWith(
+      1,
+      "tool-done",
+      JSON.stringify({
+        text: "Finished successfully",
+        success: true,
+      })
+    );
+    expect(onToolResult).toHaveBeenNthCalledWith(
+      2,
+      "tool-late",
+      JSON.stringify({
+        skipped: true,
+        blockedByToolCallId: "tool-done",
+        blockedByKind: "done",
+        reason: "Skipped because this assistant turn already emitted done",
+      })
+    );
+    expect(onText).toHaveBeenCalledWith("Finished successfully");
+  });
 });

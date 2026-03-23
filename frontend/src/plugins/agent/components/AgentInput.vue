@@ -135,7 +135,11 @@ async function runThread(
 
   const systemPrompt = buildSystemPrompt(page);
   const tools = getToolDefinitions();
-  const executor = createToolExecutor(router);
+  const executor = createToolExecutor(router, {
+    onNavigate: () => {
+      agentStore.updateThreadPage(threadId, getCurrentPageSnapshot());
+    },
+  });
 
   try {
     const outcome = await runAgentLoop(

@@ -365,7 +365,14 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
   ];
 }
 
-export function createToolExecutor(router: Router): ToolExecutor {
+interface CreateToolExecutorOptions {
+  onNavigate?: () => void;
+}
+
+export function createToolExecutor(
+  router: Router,
+  options: CreateToolExecutorOptions = {}
+): ToolExecutor {
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
   const domActionTool = createDomActionTool(router);
@@ -380,10 +387,22 @@ export function createToolExecutor(router: Router): ToolExecutor {
         return toToolResult(await searchApi(args as SearchApiArgs));
       case "call_api":
         return toToolResult(await callApi(args as unknown as CallApiArgs));
-      case "navigate":
-        return toToolResult(
-          await navigateTool(args as { path?: string; list?: boolean })
+      case "navigate": {
+        const result = await navigateTool(
+          args as { path?: string; list?: boolean }
         );
+        try {
+          const payload = JSON.parse(result) as {
+            navigated?: boolean;
+          };
+          if (payload.navigated) {
+            options.onNavigate?.();
+          }
+        } catch {
+          // Ignore malformed tool output and return the raw result.
+        }
+        return toToolResult(result);
+      }
       case "get_page_state":
         return toToolResult(await pageStateTool(args as PageStateArgs));
       case "dom_action":

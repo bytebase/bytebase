@@ -21,6 +21,38 @@ vi.mock("./searchApi", () => ({
 }));
 
 import { createToolExecutor, getToolDefinitions } from ".";
+import { createNavigateTool } from "./navigate";
+
+describe("agent tools navigate", () => {
+  test("calls onNavigate after a successful navigation result", async () => {
+    const navigateTool = vi.fn(async () =>
+      JSON.stringify({
+        navigated: true,
+        currentPath: "/projects/demo",
+      })
+    );
+    vi.mocked(createNavigateTool).mockReturnValue(navigateTool);
+    const onNavigate = vi.fn();
+    const executeTool = createToolExecutor({} as Router, { onNavigate });
+
+    const result = await executeTool(
+      "navigate",
+      {
+        path: "/projects/demo",
+      },
+      "tool-navigate"
+    );
+
+    expect(result).toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        navigated: true,
+        currentPath: "/projects/demo",
+      }),
+    });
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("agent tools ask_user", () => {
   test("exposes choose in the ask_user schema", () => {

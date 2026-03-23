@@ -99,6 +99,18 @@ export interface AgentCallbacks {
   onError?: (error: Error) => void;
 }
 
+function createSkippedToolResult(blockedBy: {
+  toolCallId: string;
+  kind: "ask_user" | "done";
+}): string {
+  return JSON.stringify({
+    skipped: true,
+    blockedByToolCallId: blockedBy.toolCallId,
+    blockedByKind: blockedBy.kind,
+    reason: `Skipped because this assistant turn already emitted ${blockedBy.kind}`,
+  });
+}
+
 export async function runAgentLoop(
   messages: Message[],
   tools: ToolDefinition[],
@@ -145,7 +157,27 @@ export async function runAgentLoop(
         conversation.push(assistantMessage);
         callbacks?.onAssistantMessage?.(assistantMessage);
 
+        let terminalState:
+          | {
+              outcome: AgentLoopOutcome;
+              blockedBy: { toolCallId: string; kind: "ask_user" | "done" };
+            }
+          | undefined;
+
         for (const tc of toolCalls) {
+          if (terminalState) {
+            const skippedResult = createSkippedToolResult(
+              terminalState.blockedBy
+            );
+            callbacks?.onToolResult?.(tc.id, skippedResult);
+            conversation.push({
+              role: "tool",
+              content: skippedResult,
+              toolCallId: tc.id,
+            });
+            continue;
+          }
+
           let executionResult;
           try {
             const args = JSON.parse(tc.arguments) as Record<string, unknown>;
@@ -170,10 +202,17 @@ export async function runAgentLoop(
           }
 
           if (executionResult.kind === "ask_user") {
-            return {
-              kind: "awaiting_user",
-              ask: executionResult.ask,
+            terminalState = {
+              outcome: {
+                kind: "awaiting_user",
+                ask: executionResult.ask,
+              },
+              blockedBy: {
+                toolCallId: tc.id,
+                kind: "ask_user",
+              },
             };
+            continue;
           }
 
           const doneResult = JSON.stringify({
@@ -186,13 +225,25 @@ export async function runAgentLoop(
             content: doneResult,
             toolCallId: tc.id,
           });
-          callbacks?.onText?.(executionResult.text);
-          return {
-            kind: "completed",
-            text: executionResult.text,
-            success: executionResult.success,
-            explicit: true,
+          terminalState = {
+            outcome: {
+              kind: "completed",
+              text: executionResult.text,
+              success: executionResult.success,
+              explicit: true,
+            },
+            blockedBy: {
+              toolCallId: tc.id,
+              kind: "done",
+            },
           };
+        }
+
+        if (terminalState) {
+          if (terminalState.outcome.kind === "completed") {
+            callbacks?.onText?.(terminalState.outcome.text);
+          }
+          return terminalState.outcome;
         }
 
         continue;

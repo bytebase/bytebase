@@ -15,7 +15,9 @@ const {
 } = vi.hoisted(() => ({
   mockRunAgentLoop: vi.fn(),
   mockBuildSystemPrompt: vi.fn(() => "system-prompt"),
-  mockCreateToolExecutor: vi.fn(() => vi.fn()),
+  mockCreateToolExecutor: vi.fn((_router?: unknown, _options?: unknown) =>
+    vi.fn()
+  ),
   mockGetToolDefinitions: vi.fn(() => []),
   mockRoute: { fullPath: "/projects/demo" },
 }));
@@ -210,6 +212,126 @@ describe("AgentInput", () => {
     expect(store.getThread(threadId)?.page).toEqual({
       path: "/projects/original",
       title: "Original Page",
+    });
+  });
+
+  test("refreshes the saved thread page snapshot after navigate before a follow-up turn", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+    let runCount = 0;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+
+    mockCreateToolExecutor.mockImplementation((_router: unknown, _options) => {
+      const options = _options as { onNavigate?: () => void } | undefined;
+      return vi.fn(async (name: string) => {
+        if (name !== "navigate") {
+          throw new Error(`Unexpected tool: ${name}`);
+        }
+        mockRoute.fullPath = "/projects/navigated";
+        document.title = "Navigated Page";
+        options?.onNavigate?.();
+        return {
+          kind: "tool_result",
+          result: JSON.stringify({
+            navigated: true,
+            currentPath: "/projects/navigated",
+          }),
+        };
+      });
+    });
+    mockRunAgentLoop.mockImplementation(
+      async (
+        _messages: unknown,
+        _tools: unknown,
+        executor: (
+          name: string,
+          args: Record<string, unknown>,
+          toolCallId: string
+        ) => Promise<{ kind: string; result?: string }>,
+        callbacks?: {
+          onAssistantMessage?: (message: {
+            content?: string;
+            toolCalls?: unknown[];
+          }) => void;
+          onToolResult?: (toolCallId: string, result: string) => void;
+        }
+      ) => {
+        runCount += 1;
+        if (runCount === 1) {
+          callbacks?.onAssistantMessage?.({
+            content: "",
+            toolCalls: [
+              {
+                id: "tool-nav",
+                name: "navigate",
+                arguments: JSON.stringify({ path: "/projects/navigated" }),
+              },
+            ],
+          });
+          const result = await executor(
+            "navigate",
+            { path: "/projects/navigated" },
+            "tool-nav"
+          );
+          if (result.kind === "tool_result" && result.result) {
+            callbacks?.onToolResult?.("tool-nav", result.result);
+          }
+          return {
+            kind: "awaiting_user",
+            ask: {
+              toolCallId: "tool-ask",
+              prompt: "Continue?",
+              kind: "input",
+            },
+          };
+        }
+        return {
+          kind: "completed",
+          text: "Done",
+          success: true,
+          explicit: true,
+        };
+      }
+    );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("navigate first");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/navigated",
+      title: "Navigated Page",
+    });
+    expect(store.getPendingAsk(threadId)).toEqual({
+      toolCallId: "tool-ask",
+      prompt: "Continue?",
+      kind: "input",
+    });
+
+    mockRoute.fullPath = "/projects/elsewhere";
+    document.title = "Elsewhere Page";
+
+    await wrapper.find("textarea").setValue("continue");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(1, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(2, {
+      path: "/projects/navigated",
+      title: "Navigated Page",
     });
   });
 
