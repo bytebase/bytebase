@@ -35,6 +35,63 @@ func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *c
 	}
 }
 
+func (s *WorkspaceService) ListWorkspaces(ctx context.Context, _ *connect.Request[v1pb.ListWorkspacesRequest]) (*connect.Response[v1pb.ListWorkspacesResponse], error) {
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	workspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{
+		Email:          user.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspaces"))
+	}
+
+	var result []*v1pb.Workspace
+	for _, ws := range workspaces {
+		result = append(result, &v1pb.Workspace{
+			Name:  common.FormatWorkspace(ws.ResourceID),
+			Title: ws.Name,
+		})
+	}
+	return connect.NewResponse(&v1pb.ListWorkspacesResponse{Workspaces: result}), nil
+}
+
+func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Request[v1pb.UpdateWorkspaceRequest]) (*connect.Response[v1pb.Workspace], error) {
+	ws := req.Msg.Workspace
+	if ws == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace is required"))
+	}
+	workspaceID, err := common.GetWorkspaceID(ws.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workspace name"))
+	}
+	if workspaceID != common.GetWorkspaceIDFromContext(ctx) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("can only update your own workspace"))
+	}
+
+	for _, path := range req.Msg.UpdateMask.GetPaths() {
+		switch path {
+		case "title":
+			if ws.Title == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("title cannot be empty"))
+			}
+			if err := s.store.UpdateWorkspaceName(ctx, workspaceID, ws.Title); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update workspace"))
+			}
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported field: %q", path))
+		}
+	}
+
+	return connect.NewResponse(&v1pb.Workspace{
+		Name:  ws.Name,
+		Title: ws.Title,
+	}), nil
+}
+
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {

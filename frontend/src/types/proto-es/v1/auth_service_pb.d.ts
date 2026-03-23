@@ -314,6 +314,32 @@ export declare type RefreshResponse = Message<"bytebase.v1.RefreshResponse"> & {
 export declare const RefreshResponseSchema: GenMessage<RefreshResponse>;
 
 /**
+ * @generated from message bytebase.v1.SwitchWorkspaceRequest
+ */
+export declare type SwitchWorkspaceRequest = Message<"bytebase.v1.SwitchWorkspaceRequest"> & {
+  /**
+   * The target workspace to switch to.
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+
+  /**
+   * If true, sets tokens as HTTP-only cookies (browser clients).
+   *
+   * @generated from field: bool web = 2;
+   */
+  web: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.SwitchWorkspaceRequest.
+ * Use `create(SwitchWorkspaceRequestSchema)` to create a new message.
+ */
+export declare const SwitchWorkspaceRequestSchema: GenMessage<SwitchWorkspaceRequest>;
+
+/**
  * AuthService handles user authentication operations.
  *
  * @generated from service bytebase.v1.AuthService
@@ -376,6 +402,17 @@ export declare const AuthService: GenService<{
     methodKind: "unary";
     input: typeof RefreshRequestSchema;
     output: typeof RefreshResponseSchema;
+  },
+  /**
+   * Switches the current user's active workspace and issues new tokens.
+   * The user must be a member of the target workspace.
+   *
+   * @generated from rpc bytebase.v1.AuthService.SwitchWorkspace
+   */
+  switchWorkspace: {
+    methodKind: "unary";
+    input: typeof SwitchWorkspaceRequestSchema;
+    output: typeof LoginResponseSchema;
   },
 }>;
 

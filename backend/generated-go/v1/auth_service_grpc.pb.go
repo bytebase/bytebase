@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName         = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName        = "/bytebase.v1.AuthService/Logout"
-	AuthService_ExchangeToken_FullMethodName = "/bytebase.v1.AuthService/ExchangeToken"
-	AuthService_Signup_FullMethodName        = "/bytebase.v1.AuthService/Signup"
-	AuthService_Refresh_FullMethodName       = "/bytebase.v1.AuthService/Refresh"
+	AuthService_Login_FullMethodName           = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName          = "/bytebase.v1.AuthService/Logout"
+	AuthService_ExchangeToken_FullMethodName   = "/bytebase.v1.AuthService/ExchangeToken"
+	AuthService_Signup_FullMethodName          = "/bytebase.v1.AuthService/Signup"
+	AuthService_Refresh_FullMethodName         = "/bytebase.v1.AuthService/Refresh"
+	AuthService_SwitchWorkspace_FullMethodName = "/bytebase.v1.AuthService/SwitchWorkspace"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -51,6 +52,9 @@ type AuthServiceClient interface {
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
+	// Switches the current user's active workspace and issues new tokens.
+	// The user must be a member of the target workspace.
+	SwitchWorkspace(ctx context.Context, in *SwitchWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 }
 
 type authServiceClient struct {
@@ -111,6 +115,16 @@ func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opt
 	return out, nil
 }
 
+func (c *authServiceClient) SwitchWorkspace(ctx context.Context, in *SwitchWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_SwitchWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -135,6 +149,9 @@ type AuthServiceServer interface {
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
+	// Switches the current user's active workspace and issues new tokens.
+	// The user must be a member of the target workspace.
+	SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -159,6 +176,9 @@ func (UnimplementedAuthServiceServer) Signup(context.Context, *SignupRequest) (*
 }
 func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
+}
+func (UnimplementedAuthServiceServer) SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SwitchWorkspace not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -271,6 +291,24 @@ func _AuthService_Refresh_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_SwitchWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SwitchWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SwitchWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SwitchWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SwitchWorkspace(ctx, req.(*SwitchWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -297,6 +335,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Refresh",
 			Handler:    _AuthService_Refresh_Handler,
+		},
+		{
+			MethodName: "SwitchWorkspace",
+			Handler:    _AuthService_SwitchWorkspace_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

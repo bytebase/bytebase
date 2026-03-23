@@ -178,3 +178,19 @@ func (x *RefreshResponse) Equal(y *RefreshResponse) bool {
 	}
 	return true
 }
+
+func (x *SwitchWorkspaceRequest) Equal(y *SwitchWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
+	if x.Web != y.Web {
+		return false
+	}
+	return true
+}

@@ -157,6 +157,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.WorksheetsGet,
 			permission.WorksheetsManage,
 			permission.WorkspacesGetIamPolicy,
+			permission.WorkspacesUpdate,
 			permission.WorkspacesSetIamPolicy,
 			permission.ServiceAccountsCreate,
 			permission.ServiceAccountsDelete,

@@ -195,16 +195,18 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	}
 
 	// Step 1: Resolve workspace — check if user belongs to an existing workspace.
-	memberName := common.FormatUserEmail(request.Email)
-	workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, !s.profile.SaaS)
+	existingWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		Email:          request.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspaces"))
 	}
 
 	var workspaceID string
-	isMember := len(workspaces) > 0
+	isMember := existingWS != nil
 	if isMember {
-		workspaceID = workspaces[0].ResourceID
+		workspaceID = existingWS.ResourceID
 	} else if !s.profile.SaaS {
 		// Self-hosted: join the existing workspace (will be added as member in step 3).
 		// No workspace membership found. Check if any workspace exists.
@@ -924,7 +926,6 @@ func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMe
 // otherwise falls back to the first workspace from IAM membership.
 func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.UserMessage) (string, error) {
 	// Determine member name format based on user type.
-	var memberName string
 	switch user.Type {
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		// SA has workspace on its record — look it up directly.
@@ -937,34 +938,39 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 		}
 		return "", errors.Errorf("service account %q not found", user.Email)
 	case storepb.PrincipalType_END_USER:
-		memberName = common.FormatUserEmail(user.Email)
+		includeAllUser := !s.profile.SaaS
+
+		// Prefer the last login workspace if it's still valid.
+		if lastWS := user.Profile.GetLastLoginWorkspace(); lastWS != "" {
+			ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+				WorkspaceID:    &lastWS,
+				Email:          user.Email,
+				IncludeAllUser: includeAllUser,
+			})
+			if err != nil {
+				return "", errors.Wrap(err, "failed to find workspace")
+			}
+			if ws != nil {
+				return ws.ResourceID, nil
+			}
+			// Last login workspace no longer valid — fall through to default.
+		}
+
+		// Use the first workspace the user is a member of.
+		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			Email:          user.Email,
+			IncludeAllUser: includeAllUser,
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "failed to find workspace")
+		}
+		if ws == nil {
+			return "", errors.Errorf("%q is not a member of any workspace", user.Email)
+		}
+		return ws.ResourceID, nil
 	default:
 		return "", errors.Errorf("unsupported user type %s for login", user.Type)
 	}
-
-	includeAllUser := !s.profile.SaaS
-
-	// Prefer the last login workspace if it's still valid.
-	if lastWS := user.Profile.GetLastLoginWorkspace(); lastWS != "" {
-		workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to find workspaces for user")
-		}
-		for _, ws := range workspaces {
-			if ws.ResourceID == lastWS {
-				return lastWS, nil
-			}
-		}
-		// Last login workspace no longer valid (removed from membership or deleted).
-		// Fall through to default selection.
-		if len(workspaces) > 0 {
-			return workspaces[0].ResourceID, nil
-		}
-		return "", errors.Errorf("%q is not a member of any workspace", memberName)
-	}
-
-	// No last login workspace — use the first one.
-	return s.store.FindWorkspaceIDByMemberEmail(ctx, memberName, includeAllUser)
 }
 
 // resolveWorkspaceForRefresh returns the workspace for a token refresh.
@@ -978,18 +984,106 @@ func (s *AuthService) resolveWorkspaceForRefresh(ctx context.Context, user *stor
 	}
 
 	// Verify the user is still a member of the workspace.
-	includeAllUser := !s.profile.SaaS
-	memberName := common.FormatUserEmail(user.Email)
-	workspaces, err := s.store.FindWorkspacesByMemberEmail(ctx, memberName, includeAllUser)
+	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID:    &workspaceID,
+		Email:          user.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
 	if err != nil {
-		return "", errors.Wrap(err, "failed to find workspaces for user")
+		return "", errors.Wrap(err, "failed to find workspace")
 	}
-	for _, ws := range workspaces {
-		if ws.ResourceID == workspaceID {
-			return workspaceID, nil
+	if ws == nil {
+		return "", errors.Errorf("user %q is no longer a member of workspace %q", user.Email, workspaceID)
+	}
+	return workspaceID, nil
+}
+
+// SwitchWorkspace switches the current user's active workspace and issues new tokens.
+func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[v1pb.SwitchWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	request := req.Msg
+	if request.Workspace == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace is required"))
+	}
+
+	workspaceID, err := common.GetWorkspaceID(request.Workspace)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workspace name"))
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+	if user.Type != storepb.PrincipalType_END_USER {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only end users can switch workspaces"))
+	}
+
+	// Verify the user is a member of the target workspace.
+	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID:    &workspaceID,
+		Email:          user.Email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace"))
+	}
+	if ws == nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
+	}
+
+	// Generate new token with target workspace.
+	token, err := s.generateLoginToken(ctx, user, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate token"))
+	}
+
+	// Update last login workspace.
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		Profile: &storepb.UserProfile{
+			LastLoginTime:          user.Profile.GetLastLoginTime(),
+			LastChangePasswordTime: user.Profile.GetLastChangePasswordTime(),
+			Source:                 user.Profile.GetSource(),
+			LastLoginWorkspace:     workspaceID,
+		},
+	}); err != nil {
+		slog.Error("failed to update user profile", log.BBError(err))
+	}
+
+	// Build response.
+	response := &v1pb.LoginResponse{}
+	resp := connect.NewResponse(response)
+
+	if request.Web {
+		origin := req.Header().Get("Origin")
+		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
+		resp.Header().Add("Set-Cookie", cookie.String())
+
+		refreshToken, err := auth.GenerateOpaqueToken()
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
 		}
+		refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
+		if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
+			TokenHash: auth.HashToken(refreshToken),
+			UserEmail: user.Email,
+			ExpiresAt: time.Now().Add(refreshTokenDuration),
+		}); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
+		}
+		refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
+		resp.Header().Add("Set-Cookie", refreshCookie.String())
+	} else {
+		response.Token = token
 	}
-	return "", errors.Errorf("user %q is no longer a member of workspace %q", user.Email, workspaceID)
+
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert user"))
+	}
+	v1User.Workspace = common.FormatWorkspace(workspaceID)
+	response.User = v1User
+
+	return resp, nil
 }
 
 // finalizeLogin builds the response, sets cookies if needed, and updates the user profile.

@@ -33,6 +33,12 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// WorkspaceServiceListWorkspacesProcedure is the fully-qualified name of the WorkspaceService's
+	// ListWorkspaces RPC.
+	WorkspaceServiceListWorkspacesProcedure = "/bytebase.v1.WorkspaceService/ListWorkspaces"
+	// WorkspaceServiceUpdateWorkspaceProcedure is the fully-qualified name of the WorkspaceService's
+	// UpdateWorkspace RPC.
+	WorkspaceServiceUpdateWorkspaceProcedure = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
 	// WorkspaceServiceGetIamPolicyProcedure is the fully-qualified name of the WorkspaceService's
 	// GetIamPolicy RPC.
 	WorkspaceServiceGetIamPolicyProcedure = "/bytebase.v1.WorkspaceService/GetIamPolicy"
@@ -43,6 +49,10 @@ const (
 
 // WorkspaceServiceClient is a client for the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceClient interface {
+	// Lists all workspaces the current user is a member of.
+	ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error)
+	// Updates a workspace. Currently only title can be updated.
+	UpdateWorkspace(context.Context, *connect.Request[v1.UpdateWorkspaceRequest]) (*connect.Response[v1.Workspace], error)
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
@@ -62,6 +72,18 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
 	return &workspaceServiceClient{
+		listWorkspaces: connect.NewClient[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse](
+			httpClient,
+			baseURL+WorkspaceServiceListWorkspacesProcedure,
+			connect.WithSchema(workspaceServiceMethods.ByName("ListWorkspaces")),
+			connect.WithClientOptions(opts...),
+		),
+		updateWorkspace: connect.NewClient[v1.UpdateWorkspaceRequest, v1.Workspace](
+			httpClient,
+			baseURL+WorkspaceServiceUpdateWorkspaceProcedure,
+			connect.WithSchema(workspaceServiceMethods.ByName("UpdateWorkspace")),
+			connect.WithClientOptions(opts...),
+		),
 		getIamPolicy: connect.NewClient[v1.GetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+WorkspaceServiceGetIamPolicyProcedure,
@@ -79,8 +101,20 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // workspaceServiceClient implements WorkspaceServiceClient.
 type workspaceServiceClient struct {
-	getIamPolicy *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	setIamPolicy *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	listWorkspaces  *connect.Client[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse]
+	updateWorkspace *connect.Client[v1.UpdateWorkspaceRequest, v1.Workspace]
+	getIamPolicy    *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
+	setIamPolicy    *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+}
+
+// ListWorkspaces calls bytebase.v1.WorkspaceService.ListWorkspaces.
+func (c *workspaceServiceClient) ListWorkspaces(ctx context.Context, req *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error) {
+	return c.listWorkspaces.CallUnary(ctx, req)
+}
+
+// UpdateWorkspace calls bytebase.v1.WorkspaceService.UpdateWorkspace.
+func (c *workspaceServiceClient) UpdateWorkspace(ctx context.Context, req *connect.Request[v1.UpdateWorkspaceRequest]) (*connect.Response[v1.Workspace], error) {
+	return c.updateWorkspace.CallUnary(ctx, req)
 }
 
 // GetIamPolicy calls bytebase.v1.WorkspaceService.GetIamPolicy.
@@ -95,6 +129,10 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.
 
 // WorkspaceServiceHandler is an implementation of the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceHandler interface {
+	// Lists all workspaces the current user is a member of.
+	ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error)
+	// Updates a workspace. Currently only title can be updated.
+	UpdateWorkspace(context.Context, *connect.Request[v1.UpdateWorkspaceRequest]) (*connect.Response[v1.Workspace], error)
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
@@ -110,6 +148,18 @@ type WorkspaceServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
+	workspaceServiceListWorkspacesHandler := connect.NewUnaryHandler(
+		WorkspaceServiceListWorkspacesProcedure,
+		svc.ListWorkspaces,
+		connect.WithSchema(workspaceServiceMethods.ByName("ListWorkspaces")),
+		connect.WithHandlerOptions(opts...),
+	)
+	workspaceServiceUpdateWorkspaceHandler := connect.NewUnaryHandler(
+		WorkspaceServiceUpdateWorkspaceProcedure,
+		svc.UpdateWorkspace,
+		connect.WithSchema(workspaceServiceMethods.ByName("UpdateWorkspace")),
+		connect.WithHandlerOptions(opts...),
+	)
 	workspaceServiceGetIamPolicyHandler := connect.NewUnaryHandler(
 		WorkspaceServiceGetIamPolicyProcedure,
 		svc.GetIamPolicy,
@@ -124,6 +174,10 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 	)
 	return "/bytebase.v1.WorkspaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case WorkspaceServiceListWorkspacesProcedure:
+			workspaceServiceListWorkspacesHandler.ServeHTTP(w, r)
+		case WorkspaceServiceUpdateWorkspaceProcedure:
+			workspaceServiceUpdateWorkspaceHandler.ServeHTTP(w, r)
 		case WorkspaceServiceGetIamPolicyProcedure:
 			workspaceServiceGetIamPolicyHandler.ServeHTTP(w, r)
 		case WorkspaceServiceSetIamPolicyProcedure:
@@ -136,6 +190,14 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 
 // UnimplementedWorkspaceServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWorkspaceServiceHandler struct{}
+
+func (UnimplementedWorkspaceServiceHandler) ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.ListWorkspaces is not implemented"))
+}
+
+func (UnimplementedWorkspaceServiceHandler) UpdateWorkspace(context.Context, *connect.Request[v1.UpdateWorkspaceRequest]) (*connect.Response[v1.Workspace], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.UpdateWorkspace is not implemented"))
+}
 
 func (UnimplementedWorkspaceServiceHandler) GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.GetIamPolicy is not implemented"))

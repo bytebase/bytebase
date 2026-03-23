@@ -916,6 +916,10 @@
                   <a href="#bytebase.v1.SignupRequest"><span class="badge">M</span>SignupRequest</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.SwitchWorkspaceRequest"><span class="badge">M</span>SwitchWorkspaceRequest</a>
+                </li>
+              
               
               
               
@@ -2884,6 +2888,22 @@
           <li>
             <a href="#v1%2fworkspace_service.proto">v1/workspace_service.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.ListWorkspacesRequest"><span class="badge">M</span>ListWorkspacesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListWorkspacesResponse"><span class="badge">M</span>ListWorkspacesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateWorkspaceRequest"><span class="badge">M</span>UpdateWorkspaceRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Workspace"><span class="badge">M</span>Workspace</a>
+                </li>
               
               
               
@@ -10340,6 +10360,38 @@ Only returned when web=false. For web=true, the token is set as an HTTP-only coo
 
         
       
+        <h3 id="bytebase.v1.SwitchWorkspaceRequest">SwitchWorkspaceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>workspace</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The target workspace to switch to.
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If true, sets tokens as HTTP-only cookies (browser clients). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
 
@@ -10395,6 +10447,14 @@ Returns access tokens so the user is logged in immediately after signup.</p></td
                 <td><a href="#bytebase.v1.RefreshResponse">RefreshResponse</a></td>
                 <td><p>Refreshes the access token using the refresh token cookie.
 Permissions required: None (validates via refresh token cookie)</p></td>
+              </tr>
+            
+              <tr>
+                <td>SwitchWorkspace</td>
+                <td><a href="#bytebase.v1.SwitchWorkspaceRequest">SwitchWorkspaceRequest</a></td>
+                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
+                <td><p>Switches the current user&#39;s active workspace and issues new tokens.
+The user must be a member of the target workspace.</p></td>
               </tr>
             
           </tbody>
@@ -10461,6 +10521,16 @@ Permissions required: None (validates via refresh token cookie)</p></td>
                 <td>Refresh</td>
                 <td>POST</td>
                 <td>/v1/auth/refresh</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SwitchWorkspace</td>
+                <td>POST</td>
+                <td>/v1/auth:switchWorkspace</td>
                 <td>*</td>
               </tr>
               
@@ -32370,6 +32440,99 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
       <p></p>
 
       
+        <h3 id="bytebase.v1.ListWorkspacesRequest">ListWorkspacesRequest</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.ListWorkspacesResponse">ListWorkspacesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>workspaces</td>
+                  <td><a href="#bytebase.v1.Workspace">Workspace</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateWorkspaceRequest">UpdateWorkspaceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>workspace</td>
+                  <td><a href="#bytebase.v1.Workspace">Workspace</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Workspace">Workspace</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
 
@@ -32383,6 +32546,20 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
           </thead>
           <tbody>
+            
+              <tr>
+                <td>ListWorkspaces</td>
+                <td><a href="#bytebase.v1.ListWorkspacesRequest">ListWorkspacesRequest</a></td>
+                <td><a href="#bytebase.v1.ListWorkspacesResponse">ListWorkspacesResponse</a></td>
+                <td><p>Lists all workspaces the current user is a member of.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateWorkspace</td>
+                <td><a href="#bytebase.v1.UpdateWorkspaceRequest">UpdateWorkspaceRequest</a></td>
+                <td><a href="#bytebase.v1.Workspace">Workspace</a></td>
+                <td><p>Updates a workspace. Currently only title can be updated.</p></td>
+              </tr>
             
               <tr>
                 <td>GetIamPolicy</td>
@@ -32417,6 +32594,26 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             </thead>
             <tbody>
+            
+              
+              
+              <tr>
+                <td>ListWorkspaces</td>
+                <td>GET</td>
+                <td>/v1/workspaces</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateWorkspace</td>
+                <td>PATCH</td>
+                <td>/v1/{workspace.name=workspaces/*}</td>
+                <td>*</td>
+              </tr>
+              
             
               
               

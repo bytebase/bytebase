@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WorkspaceService_GetIamPolicy_FullMethodName = "/bytebase.v1.WorkspaceService/GetIamPolicy"
-	WorkspaceService_SetIamPolicy_FullMethodName = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_ListWorkspaces_FullMethodName  = "/bytebase.v1.WorkspaceService/ListWorkspaces"
+	WorkspaceService_UpdateWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
+	WorkspaceService_GetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/GetIamPolicy"
+	WorkspaceService_SetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/SetIamPolicy"
 )
 
 // WorkspaceServiceClient is the client API for WorkspaceService service.
@@ -29,6 +31,10 @@ const (
 //
 // WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceClient interface {
+	// Lists all workspaces the current user is a member of.
+	ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error)
+	// Updates a workspace. Currently only title can be updated.
+	UpdateWorkspace(ctx context.Context, in *UpdateWorkspaceRequest, opts ...grpc.CallOption) (*Workspace, error)
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
@@ -43,6 +49,26 @@ type workspaceServiceClient struct {
 
 func NewWorkspaceServiceClient(cc grpc.ClientConnInterface) WorkspaceServiceClient {
 	return &workspaceServiceClient{cc}
+}
+
+func (c *workspaceServiceClient) ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListWorkspacesResponse)
+	err := c.cc.Invoke(ctx, WorkspaceService_ListWorkspaces_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workspaceServiceClient) UpdateWorkspace(ctx context.Context, in *UpdateWorkspaceRequest, opts ...grpc.CallOption) (*Workspace, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Workspace)
+	err := c.cc.Invoke(ctx, WorkspaceService_UpdateWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *workspaceServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
@@ -71,6 +97,10 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 //
 // WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceServer interface {
+	// Lists all workspaces the current user is a member of.
+	ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error)
+	// Updates a workspace. Currently only title can be updated.
+	UpdateWorkspace(context.Context, *UpdateWorkspaceRequest) (*Workspace, error)
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
@@ -87,6 +117,12 @@ type WorkspaceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkspaceServiceServer struct{}
 
+func (UnimplementedWorkspaceServiceServer) ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListWorkspaces not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) UpdateWorkspace(context.Context, *UpdateWorkspaceRequest) (*Workspace, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateWorkspace not implemented")
+}
 func (UnimplementedWorkspaceServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetIamPolicy not implemented")
 }
@@ -112,6 +148,42 @@ func RegisterWorkspaceServiceServer(s grpc.ServiceRegistrar, srv WorkspaceServic
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&WorkspaceService_ServiceDesc, srv)
+}
+
+func _WorkspaceService_ListWorkspaces_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWorkspacesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).ListWorkspaces(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_ListWorkspaces_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).ListWorkspaces(ctx, req.(*ListWorkspacesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkspaceService_UpdateWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).UpdateWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_UpdateWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).UpdateWorkspace(ctx, req.(*UpdateWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkspaceService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -157,6 +229,14 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.WorkspaceService",
 	HandlerType: (*WorkspaceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListWorkspaces",
+			Handler:    _WorkspaceService_ListWorkspaces_Handler,
+		},
+		{
+			MethodName: "UpdateWorkspace",
+			Handler:    _WorkspaceService_UpdateWorkspace_Handler,
+		},
 		{
 			MethodName: "GetIamPolicy",
 			Handler:    _WorkspaceService_GetIamPolicy_Handler,

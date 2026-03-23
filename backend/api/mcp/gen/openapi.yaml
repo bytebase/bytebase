@@ -712,6 +712,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.LoginResponse'
+  /bytebase.v1.AuthService/SwitchWorkspace:
+    post:
+      tags:
+        - bytebase.v1.AuthService
+      summary: SwitchWorkspace
+      description: |-
+        Switches the current user's active workspace and issues new tokens.
+         The user must be a member of the target workspace.
+      operationId: bytebase.v1.AuthService.SwitchWorkspace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SwitchWorkspaceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /bytebase.v1.CelService/BatchDeparse:
     post:
       tags:
@@ -6941,6 +6979,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.IamPolicy'
+  /bytebase.v1.WorkspaceService/ListWorkspaces:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: ListWorkspaces
+      description: Lists all workspaces the current user is a member of.
+      operationId: bytebase.v1.WorkspaceService.ListWorkspaces
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ListWorkspacesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListWorkspacesResponse'
   /bytebase.v1.WorkspaceService/SetIamPolicy:
     post:
       tags:
@@ -6979,6 +7053,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.IamPolicy'
+  /bytebase.v1.WorkspaceService/UpdateWorkspace:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: UpdateWorkspace
+      description: Updates a workspace. Currently only title can be updated.
+      operationId: bytebase.v1.WorkspaceService.UpdateWorkspace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdateWorkspaceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Workspace'
 components:
   schemas:
     bytebase.v1.AIChatMessage:
@@ -13377,6 +13487,20 @@ components:
       title: ListWorkloadIdentitiesResponse
       additionalProperties: false
       description: Response message for listing workload identities.
+    bytebase.v1.ListWorkspacesRequest:
+      type: object
+      title: ListWorkspacesRequest
+      additionalProperties: false
+    bytebase.v1.ListWorkspacesResponse:
+      type: object
+      properties:
+        workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Workspace'
+          title: workspaces
+      title: ListWorkspacesResponse
+      additionalProperties: false
     bytebase.v1.LoginRequest:
       type: object
       properties:
@@ -16962,6 +17086,21 @@ components:
           description: Whether high availability (multiple replicas) is enabled.
       title: Subscription
       additionalProperties: false
+    bytebase.v1.SwitchWorkspaceRequest:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The target workspace to switch to.
+             Format: workspaces/{workspace}
+        web:
+          type: boolean
+          title: web
+          description: If true, sets tokens as HTTP-only cookies (browser clients).
+      title: SwitchWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.SyncDatabaseRequest:
       type: object
       properties:
@@ -18806,6 +18945,17 @@ components:
           $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: UpdateWorksheetRequest
       additionalProperties: false
+    bytebase.v1.UpdateWorkspaceRequest:
+      type: object
+      properties:
+        workspace:
+          title: workspace
+          $ref: '#/components/schemas/bytebase.v1.Workspace'
+        updateMask:
+          title: update_mask
+          $ref: '#/components/schemas/google.protobuf.FieldMask'
+      title: UpdateWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.User:
       type: object
       properties:
@@ -19171,6 +19321,18 @@ components:
             type: string
           title: folders
       title: WorksheetOrganizer
+      additionalProperties: false
+    bytebase.v1.Workspace:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+        title:
+          type: string
+          title: title
+      title: Workspace
       additionalProperties: false
     bytebase.v1.WorkspaceApprovalSetting:
       type: object
