@@ -5212,6 +5212,7 @@ MFAConfig is the MFA configuration for a user.
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | source | [string](#string) |  | The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| last_login_workspace | [string](#string) |  | The workspace resource ID the user last logged into. Used to auto-select workspace on next login instead of requiring a workspace picker. |
 
 
 

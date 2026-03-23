@@ -215,9 +215,12 @@ type UserProfile struct {
 	LastLoginTime          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
 	LastChangePasswordTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_change_password_time,json=lastChangePasswordTime,proto3" json:"last_change_password_time,omitempty"`
 	// The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-	Source        string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Source string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	// The workspace resource ID the user last logged into.
+	// Used to auto-select workspace on next login instead of requiring a workspace picker.
+	LastLoginWorkspace string `protobuf:"bytes,5,opt,name=last_login_workspace,json=lastLoginWorkspace,proto3" json:"last_login_workspace,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *UserProfile) Reset() {
@@ -267,6 +270,13 @@ func (x *UserProfile) GetLastChangePasswordTime() *timestamppb.Timestamp {
 func (x *UserProfile) GetSource() string {
 	if x != nil {
 		return x.Source
+	}
+	return ""
+}
+
+func (x *UserProfile) GetLastLoginWorkspace() string {
+	if x != nil {
+		return x.LastLoginWorkspace
 	}
 	return ""
 }
@@ -355,11 +365,12 @@ const file_store_user_proto_rawDesc = "" +
 	"\x0ftemp_otp_secret\x18\x02 \x01(\tR\rtempOtpSecret\x12%\n" +
 	"\x0erecovery_codes\x18\x03 \x03(\tR\rrecoveryCodes\x12.\n" +
 	"\x13temp_recovery_codes\x18\x04 \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xc6\x01\n" +
+	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xf8\x01\n" +
 	"\vUserProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06sourceJ\x04\b\x04\x10\x05\"\xae\x02\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x120\n" +
+	"\x14last_login_workspace\x18\x05 \x01(\tR\x12lastLoginWorkspaceJ\x04\b\x04\x10\x05\"\xae\x02\n" +
 	"\x16WorkloadIdentityConfig\x12X\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e23.bytebase.store.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +

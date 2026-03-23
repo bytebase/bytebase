@@ -253,9 +253,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
-	if len(find.ProjectIDs) == 0 {
-		return nil, errors.Errorf("empty project filter")
-	}
 	if len(find.ProjectIDs) == 1 {
 		where.And("issue.project = ?", find.ProjectIDs[0])
 	} else {

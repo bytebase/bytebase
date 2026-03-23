@@ -181,7 +181,6 @@ const changeStepIndex = (nextIndex: number) => {
 };
 
 const onCancel = (to: RouteLocationRaw) => {
-  actuatorV1Store.onboardingState.isOnboarding = false;
   router.push(to);
 };
 
@@ -221,7 +220,7 @@ const tryFinishSetup = async () => {
 };
 
 onMounted(async () => {
-  if (!actuatorV1Store.onboardingState.isOnboarding) {
+  if (!actuatorV1Store.enableOnboarding) {
     const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
     return onCancel(getHomePageByMode(databaseChangeMode.value));
   }

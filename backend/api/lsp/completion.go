@@ -145,7 +145,7 @@ func convertLSPCompletionItemKind(tp parserbase.CandidateType) lsp.CompletionIte
 }
 
 func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-	metadata, err := h.store.GetDBSchemaSnapshot(ctx, h.workspaceID, instanceID, databaseName)
+	metadata, err := h.store.GetDBSchemaSnapshot(ctx, common.GetWorkspaceIDFromContext(ctx), instanceID, databaseName)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "failed to get database schema")
 	}
@@ -161,6 +161,7 @@ func (h *Handler) ListDatabaseNamesFunc(ctx context.Context, instanceID string) 
 	}
 
 	databases, err := h.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		InstanceID: &instanceID,
 	})
 	if err != nil {

@@ -19,7 +19,7 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useActuatorV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -58,6 +58,7 @@ defineEmits<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
+const actuatorStore = useActuatorV1Store();
 
 const getOption = (db: Database) => {
   return {
@@ -89,7 +90,7 @@ const handleSearch = async (params: {
   pageSize: number;
 }) => {
   const { databases, nextPageToken } = await databaseStore.fetchDatabases({
-    parent: props.projectName ?? `${workspaceNamePrefix}-`,
+    parent: props.projectName ?? actuatorStore.workspaceResourceName,
     filter: {
       environment: props.environmentName,
       engines: props.allowedEngineTypeList,

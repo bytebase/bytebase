@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	wsjsonrpc2 "github.com/sourcegraph/jsonrpc2/websocket"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -52,6 +54,8 @@ func (s *Server) Router(c *echo.Context) error {
 
 	handler, closer := newHandler(s.store, s.profile, s.iamManager, user, workspaceID, tokenExpiry)
 	ctx := c.Request().Context()
+	ctx = context.WithValue(ctx, common.UserContextKey, user)
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
 	<-jsonrpc2.NewConn(ctx, wsjsonrpc2.NewObjectStream(connection), handler, nil /* connOpt */).DisconnectNotify()
 	err = closer.Close()
 	if err != nil {

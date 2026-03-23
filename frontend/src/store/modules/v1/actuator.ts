@@ -37,10 +37,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   });
   const appProfile = ref<AppProfile>(defaultAppProfile());
   const onboardingState = useLocalStorage<{
-    isOnboarding: boolean;
     consumed: string[];
   }>(STORAGE_KEY_ONBOARDING, {
-    isOnboarding: false,
     consumed: [],
   });
 
@@ -114,6 +112,10 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const activeUserCount = computed(
     () => serverInfo.value?.activatedUserCount ?? 0
   );
+
+  const enableOnboarding = computed(() => {
+    return activeUserCount.value === 1 && !isSaaSMode.value
+  })
 
   const updateUserStat = (count: number) => {
     if (!serverInfo.value) {
@@ -263,8 +265,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     totalInstanceCount,
     replicaCount,
     quickStartEnabled,
-    // Actions
+    enableOnboarding,
     activeUserCount,
+    // Actions
     updateUserStat,
     setLogo,
     setServerInfo,

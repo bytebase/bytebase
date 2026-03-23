@@ -222,6 +222,7 @@ const {
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
+const actuatorStore = useActuatorV1Store();
 
 const hasGetPolicyPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.get");
@@ -279,7 +280,7 @@ const fetchDatabases = async () => {
   try {
     const resp = await databaseStore.fetchDatabases({
       pageSize: 1,
-      parent: useActuatorV1Store().workspaceResourceName,
+      parent: actuatorStore.workspaceResourceName,
       filter: {
         environment: environment.value.name,
       },

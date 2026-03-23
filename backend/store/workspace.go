@@ -156,8 +156,8 @@ func (s *Store) FindWorkspaceIDByMemberEmail(ctx context.Context, memberName str
 	if len(workspaces) == 0 {
 		return "", errors.Errorf("%q is not a member of any workspace", memberName)
 	}
-	// TODO(ed): In SaaS mode with multiple workspaces, return a workspace picker
-	// instead of auto-selecting the first one. For now, use the first workspace.
+	// Returns the first workspace. The caller (resolveWorkspaceForLogin) may
+	// override this with the user's last login workspace from their profile.
 	return workspaces[0].ResourceID, nil
 }
 
