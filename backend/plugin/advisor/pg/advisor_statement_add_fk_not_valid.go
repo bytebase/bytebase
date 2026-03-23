@@ -3,14 +3,11 @@ package pg
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,111 +30,45 @@ func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &statementAddFKNotValidRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementAddFKNotValidRule struct {
-	BaseRule
+	OmniBaseRule
 }
 
 func (*statementAddFKNotValidRule) Name() string {
 	return "statement_add_fk_not_valid"
 }
 
-func (r *statementAddFKNotValidRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx)
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*statementAddFKNotValidRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementAddFKNotValidRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
-	altertablestmtCtx, ok := ctx.(*parser.AltertablestmtContext)
+func (r *statementAddFKNotValidRule) OnStatement(node ast.Node) {
+	alter, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return
 	}
 
-	if !isTopLevel(altertablestmtCtx.GetParent()) {
-		return
-	}
-
-	if altertablestmtCtx.Alter_table_cmds() == nil {
-		return
-	}
-
-	allCmds := altertablestmtCtx.Alter_table_cmds().AllAlter_table_cmd()
-	for _, cmd := range allCmds {
-		// Check for ADD + something
-		if cmd.ADD_P() == nil {
+	for _, cmd := range omniAlterTableCmds(alter) {
+		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
 			continue
 		}
-
-		// Check for Tableconstraint
-		if cmd.Tableconstraint() == nil {
+		constraint, ok := cmd.Def.(*ast.Constraint)
+		if !ok || constraint.Contype != ast.CONSTR_FOREIGN {
 			continue
 		}
-
-		constraint := cmd.Tableconstraint()
-		if constraint.Constraintelem() == nil {
-			continue
-		}
-
-		elem := constraint.Constraintelem()
-
-		// Check if this is a FOREIGN KEY constraint
-		if elem.FOREIGN() == nil || elem.KEY() == nil {
-			continue
-		}
-
-		// Check if NOT VALID is present
-		hasNotValid := false
-		if elem.Constraintattributespec() != nil {
-			allAttrs := elem.Constraintattributespec().AllConstraintattributeElem()
-			for _, attr := range allAttrs {
-				if attr.NOT() != nil && attr.VALID() != nil {
-					hasNotValid = true
-					break
-				}
-			}
-		}
-
-		// If NOT VALID is not present, this is a problem
-		if !hasNotValid {
+		if !constraint.SkipValidation {
 			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
+				Status:  r.Level,
 				Code:    code.StatementAddFKWithValidation.Int32(),
-				Title:   r.title,
+				Title:   r.Title,
 				Content: "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
 				StartPosition: &storepb.Position{
-					Line:   int32(altertablestmtCtx.GetStart().GetLine()),
+					Line:   r.ContentStartLine(),
 					Column: 0,
 				},
 			})

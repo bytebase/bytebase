@@ -4,16 +4,14 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -37,33 +35,31 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	rule := &columnNoNullRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		originalMetadata: checkCtx.OriginalMetadata,
 		nullableColumns:  make(columnMap),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
+	// Manually iterate statements instead of using RunOmniRules because
+	// generateAdvice must be called AFTER all statements have been processed.
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	// Generate advice after all parse trees have been walked
 	rule.generateAdvice()
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 type columnName struct {
@@ -79,41 +75,53 @@ func (c columnName) normalizeTableName() string {
 	return fmt.Sprintf("%q.%q", c.schema, c.table)
 }
 
-type columnMap map[columnName]int
+type columnMap map[columnName]int32
 
 type columnNoNullRule struct {
-	BaseRule
+	OmniBaseRule
 
 	originalMetadata *model.DatabaseMetadata
 	nullableColumns  columnMap
 }
 
 func (*columnNoNullRule) Name() string {
-	return "CreatestmtAltertablestmt"
+	return string(storepb.SQLReviewRule_COLUMN_NO_NULL)
 }
 
-func (r *columnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		if createStmt, ok := ctx.(*parser.CreatestmtContext); ok {
-			r.handleCreatestmt(createStmt)
-		}
-	case "Altertablestmt":
-		if alterStmt, ok := ctx.(*parser.AltertablestmtContext); ok {
-			r.handleAltertablestmt(alterStmt)
-		}
+func (r *columnNoNullRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*columnNoNullRule) OnExit(antlr.ParserRuleContext, string) error {
-	return nil
+// columnLine finds the 1-based line number of a column name within the current
+// statement text, searching from the given byte offset. Returns the line number
+// and the updated search offset (past the found occurrence).
+// Falls back to ContentStartLine() if not found.
+func (r *columnNoNullRule) columnLine(colName string, searchFrom int) (int32, int) {
+	text := r.StmtText
+	if searchFrom < len(text) {
+		idx := strings.Index(text[searchFrom:], colName)
+		if idx >= 0 {
+			pos := searchFrom + idx
+			line := int32(1)
+			for i := 0; i < pos; i++ {
+				if text[i] == '\n' {
+					line++
+				}
+			}
+			return line, pos + len(colName)
+		}
+	}
+	return r.ContentStartLine(), searchFrom
 }
 
 // generateAdvice generates advice for all nullable columns.
-// This should be called AFTER walking all parse trees to avoid duplicates.
+// This should be called AFTER processing all statements to avoid duplicates.
 func (r *columnNoNullRule) generateAdvice() {
 	var columnList []columnName
 	for column := range r.nullableColumns {
@@ -121,7 +129,6 @@ func (r *columnNoNullRule) generateAdvice() {
 	}
 
 	if len(columnList) > 0 {
-		// Order it cause the random iteration order in Go
 		slices.SortFunc(columnList, func(i, j columnName) int {
 			if i.schema != j.schema {
 				if i.schema < j.schema {
@@ -146,122 +153,130 @@ func (r *columnNoNullRule) generateAdvice() {
 	}
 
 	for _, column := range columnList {
-		// Note: We already added baseLine offset when storing the line number,
-		// but AddAdvice will add it again, so we need to subtract it first
 		lineNumber := r.nullableColumns[column]
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:  r.Level,
 			Code:    code.ColumnCannotNull.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("Column %q in %s cannot have NULL value", column.column, column.normalizeTableName()),
 			StartPosition: &storepb.Position{
-				Line:   int32(lineNumber - r.baseLine),
+				Line:   lineNumber,
 				Column: 0,
 			},
 		})
 	}
 }
 
-func (r *columnNoNullRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	tableName := r.extractTableName(ctx.AllQualified_name())
+func (r *columnNoNullRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
+	schema := omniSchemaName(n.Relation)
 
-	// Track all columns and their line numbers
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			// Column definition
-			if elem.ColumnDef() != nil {
-				colDef := elem.ColumnDef()
-				if colDef.Colid() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					// Add column as nullable by default
-					r.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
+	cols, constraints := omniTableElements(n)
 
-					// Check column constraints for NOT NULL or PRIMARY KEY
-					r.removeColumnByColConstraints("public", tableName, colDef)
-				}
+	searchFrom := 0
+	for _, col := range cols {
+		var line int32
+		line, searchFrom = r.columnLine(col.Colname, searchFrom)
+		r.addColumn(schema, tableName, col.Colname, line)
+
+		// Check column-level constraints for NOT NULL or PRIMARY KEY
+		if col.IsNotNull {
+			r.removeColumn(schema, tableName, col.Colname)
+			continue
+		}
+		for _, c := range omniColumnConstraints(col) {
+			if c.Contype == ast.CONSTR_NOTNULL || c.Contype == ast.CONSTR_PRIMARY {
+				r.removeColumn(schema, tableName, col.Colname)
+				break
 			}
+		}
+	}
 
-			// Table constraint (like PRIMARY KEY (id))
-			if elem.Tableconstraint() != nil {
-				r.removeColumnByTableConstraint("public", tableName, elem.Tableconstraint())
+	// Table-level constraints (e.g., PRIMARY KEY (col1, col2))
+	for _, c := range constraints {
+		if c.Contype == ast.CONSTR_PRIMARY {
+			for _, colName := range omniConstraintColumns(c) {
+				r.removeColumn(schema, tableName, colName)
 			}
 		}
 	}
 }
 
-func (r *columnNoNullRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnNoNullRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Relation)
+	if tableName == "" {
 		return
 	}
+	schema := omniSchemaName(n.Relation)
 
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
+	for _, cmd := range omniAlterTableCmds(n) {
+		switch ast.AlterTableType(cmd.Subtype) {
+		case ast.AT_AddColumn:
+			colDef, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok || colDef == nil {
+				continue
+			}
+			line, _ := r.columnLine(colDef.Colname, 0)
+			r.addColumn(schema, tableName, colDef.Colname, line)
 
-	tableName := ctx.Relation_expr().Qualified_name().GetText()
-
-	// Check ALTER TABLE commands
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				colDef := cmd.ColumnDef()
-				if colDef.Colid() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					r.addColumn("public", tableName, columnName, colDef.GetStart().GetLine())
-					r.removeColumnByColConstraints("public", tableName, colDef)
+			// Check column-level constraints
+			if colDef.IsNotNull {
+				r.removeColumn(schema, tableName, colDef.Colname)
+				continue
+			}
+			for _, c := range omniColumnConstraints(colDef) {
+				if c.Contype == ast.CONSTR_NOTNULL || c.Contype == ast.CONSTR_PRIMARY {
+					r.removeColumn(schema, tableName, colDef.Colname)
+					break
 				}
 			}
 
-			// ALTER COLUMN SET NOT NULL
-			if cmd.ALTER() != nil && cmd.SET() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
-				allColids := cmd.AllColid()
-				if len(allColids) > 0 {
-					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					r.removeColumn("public", tableName, columnName)
+		case ast.AT_SetNotNull:
+			r.removeColumn(schema, tableName, cmd.Name)
+
+		case ast.AT_DropNotNull:
+			r.addColumn(schema, tableName, cmd.Name, r.ContentStartLine())
+
+		case ast.AT_AddConstraint:
+			constraint, ok := cmd.Def.(*ast.Constraint)
+			if !ok || constraint == nil {
+				continue
+			}
+			if constraint.Contype == ast.CONSTR_PRIMARY {
+				for _, colName := range omniConstraintColumns(constraint) {
+					r.removeColumn(schema, tableName, colName)
+				}
+
+				// PRIMARY KEY USING INDEX
+				if constraint.Indexname != "" && r.originalMetadata != nil {
+					schemaMetadata := r.originalMetadata.GetSchemaMetadata(schema)
+					if schemaMetadata != nil {
+						dbTable := schemaMetadata.GetTable(tableName)
+						if dbTable != nil {
+							index := dbTable.GetIndex(constraint.Indexname)
+							if index != nil {
+								for _, expression := range index.GetProto().GetExpressions() {
+									r.removeColumn(schema, tableName, expression)
+								}
+							}
+						}
+					}
 				}
 			}
-
-			// ALTER COLUMN DROP NOT NULL
-			if cmd.ALTER() != nil && cmd.DROP() != nil && cmd.NOT() != nil && cmd.NULL_P() != nil {
-				allColids := cmd.AllColid()
-				if len(allColids) > 0 {
-					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					r.addColumn("public", tableName, columnName, cmd.GetStart().GetLine())
-				}
-			}
-
-			// ADD table constraint
-			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				r.removeColumnByTableConstraint("public", tableName, cmd.Tableconstraint())
-			}
+		default:
 		}
 	}
 }
 
-func (*columnNoNullRule) extractTableName(qualifiedNames []parser.IQualified_nameContext) string {
-	if len(qualifiedNames) == 0 {
-		return ""
-	}
-
-	return extractTableName(qualifiedNames[0])
-}
-
-func (r *columnNoNullRule) addColumn(schema, table, column string, line int) {
+func (r *columnNoNullRule) addColumn(schema, table, column string, line int32) {
 	if schema == "" {
 		schema = "public"
 	}
-	// Store absolute line number (adding baseLine offset now, not later in AddAdvice)
-	r.nullableColumns[columnName{schema: schema, table: table, column: column}] = line + r.baseLine
+	// Store absolute line number (BaseLine + relative line)
+	r.nullableColumns[columnName{schema: schema, table: table, column: column}] = line + int32(r.BaseLine)
 }
 
 func (r *columnNoNullRule) removeColumn(schema, table, column string) {
@@ -269,75 +284,4 @@ func (r *columnNoNullRule) removeColumn(schema, table, column string) {
 		schema = "public"
 	}
 	delete(r.nullableColumns, columnName{schema: schema, table: table, column: column})
-}
-
-func (r *columnNoNullRule) removeColumnByColConstraints(schema, table string, colDef parser.IColumnDefContext) {
-	if colDef.Colquallist() == nil {
-		return
-	}
-
-	columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-	allConstraints := colDef.Colquallist().AllColconstraint()
-	for _, constraint := range allConstraints {
-		if constraint.Colconstraintelem() == nil {
-			continue
-		}
-
-		elem := constraint.Colconstraintelem()
-
-		// NOT NULL constraint
-		if elem.NOT() != nil && elem.NULL_P() != nil {
-			r.removeColumn(schema, table, columnName)
-			return
-		}
-
-		// PRIMARY KEY constraint
-		if elem.PRIMARY() != nil && elem.KEY() != nil {
-			r.removeColumn(schema, table, columnName)
-			return
-		}
-	}
-}
-
-func (r *columnNoNullRule) removeColumnByTableConstraint(schema, table string, constraint parser.ITableconstraintContext) {
-	if constraint.Constraintelem() == nil {
-		return
-	}
-
-	elem := constraint.Constraintelem()
-
-	// PRIMARY KEY (col1, col2, ...)
-	if elem.PRIMARY() != nil && elem.KEY() != nil && elem.Columnlist() != nil {
-		allColumnElems := elem.Columnlist().AllColumnElem()
-		for _, columnElem := range allColumnElems {
-			if columnElem.Colid() != nil {
-				r.removeColumn(schema, table, pg.NormalizePostgreSQLColid(columnElem.Colid()))
-			}
-		}
-		return
-	}
-
-	// PRIMARY KEY USING INDEX
-	if elem.PRIMARY() != nil && elem.KEY() != nil && elem.Existingindex() != nil {
-		existingIndex := elem.Existingindex()
-		if existingIndex.Name() != nil {
-			indexName := pg.NormalizePostgreSQLName(existingIndex.Name())
-			// Try to find index in catalog
-			if r.originalMetadata != nil {
-				schemaMetadata := r.originalMetadata.GetSchemaMetadata(schema)
-				var index *model.IndexMetadata
-				if schemaMetadata != nil {
-					dbTable := schemaMetadata.GetTable(table)
-					if dbTable != nil {
-						index = dbTable.GetIndex(indexName)
-					}
-				}
-				if index != nil {
-					for _, expression := range index.GetProto().GetExpressions() {
-						r.removeColumn(schema, table, expression)
-					}
-				}
-			}
-		}
-	}
 }

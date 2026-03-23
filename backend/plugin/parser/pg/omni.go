@@ -57,9 +57,9 @@ func GetOmniNode(a base.AST) (ast.Node, bool) {
 	return omniAST.Node, true
 }
 
-// byteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column
+// ByteOffsetToRunePosition converts a byte offset in sql to a 1-based line:column
 // where column is measured in Unicode code points (runes), matching storepb.Position semantics.
-func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
+func ByteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	if byteOffset > len(sql) {
 		byteOffset = len(sql)
 	}

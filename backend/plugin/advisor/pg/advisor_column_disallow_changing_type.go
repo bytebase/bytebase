@@ -3,16 +3,13 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -35,83 +32,47 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	rule := &columnDisallowChangingTypeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		rule.tokens = antlrAST.Tokens
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnDisallowChangingTypeRule struct {
-	BaseRule
-
-	tokens *antlr.CommonTokenStream
+	OmniBaseRule
 }
 
 func (*columnDisallowChangingTypeRule) Name() string {
 	return "column-disallow-changing-type"
 }
 
-func (r *columnDisallowChangingTypeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*columnDisallowChangingTypeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *columnDisallowChangingTypeRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func (r *columnDisallowChangingTypeRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.AlterTableStmt)
+	if !ok {
 		return
 	}
 
-	// Check for ALTER COLUMN TYPE statements
-	if ctx.Alter_table_cmds() == nil {
-		return
-	}
-
-	allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-	for _, cmd := range allCmds {
-		// ALTER opt_column? colid opt_set_data? TYPE_P typename ...
-		if cmd.ALTER() != nil && cmd.TYPE_P() != nil {
-			// This is an ALTER COLUMN TYPE statement
-			text := r.tokens.GetTextFromRuleContext(ctx)
+	for _, cmd := range omniAlterTableCmds(n) {
+		if ast.AlterTableType(cmd.Subtype) == ast.AT_AlterColumnType {
+			stmtText := strings.TrimSpace(r.StmtText)
+			// Remove trailing semicolons for cleaner display
+			stmtText = strings.TrimRight(stmtText, ";")
+			stmtText = strings.TrimSpace(stmtText)
 
 			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
+				Status:  r.Level,
 				Code:    code.ChangeColumnType.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf("The statement \"%s\" changes column type", text),
+				Title:   r.Title,
+				Content: fmt.Sprintf("The statement \"%s\" changes column type", stmtText),
 				StartPosition: &storepb.Position{
-					Line:   int32(ctx.GetStart().GetLine()),
+					Line:   r.ContentStartLine(),
 					Column: 0,
 				},
 			})
-			break // Only report once per ALTER TABLE statement
+			return // Only report once per ALTER TABLE statement
 		}
 	}
 }

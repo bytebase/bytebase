@@ -7,15 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -42,30 +39,26 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &indexTotalNumberLimitRule{
-		BaseRule:      BaseRule{level: level, title: checkCtx.Rule.Type.String()},
-		max:           int(numberPayload.Number),
-		finalMetadata: checkCtx.FinalMetadata,
-		tableLine:     make(tableLineMap),
-	}
-
-	checker := NewGenericChecker([]Rule{rule})
+	maxCount := int(numberPayload.Number)
+	finalMetadata := checkCtx.FinalMetadata
+	tableLine := make(tableLineMap)
 
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		baseLine := stmt.BaseLine()
+		stmtText := stmt.Text
+		handleIndexTotalStmt(node, baseLine, stmtText, tableLine)
 	}
 
-	rule.generateAdvice()
-	return checker.GetAdviceList(), nil
+	var adviceList []*storepb.Advice
+	generateIndexTotalAdvice(tableLine, finalMetadata, maxCount, level, checkCtx.Rule.Type.String(), &adviceList)
+	return adviceList, nil
 }
 
 type tableLine struct {
@@ -87,39 +80,91 @@ func (m tableLineMap) set(schema string, table string, line int) {
 	}
 }
 
-type indexTotalNumberLimitRule struct {
-	BaseRule
-
-	max           int
-	finalMetadata *model.DatabaseMetadata
-	tableLine     tableLineMap
-}
-
-func (*indexTotalNumberLimitRule) Name() string {
-	return "index_total_number_limit"
-}
-
-func (r *indexTotalNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
-	case "Indexstmt":
-		r.handleIndexstmt(ctx.(*parser.IndexstmtContext))
-	default:
-		// Do nothing for other node types
+func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl tableLineMap) {
+	// Helper to compute absolute end line (matching ANTLR GetStop().GetLine() behavior).
+	absEndLine := func() int {
+		endLine := int32(1)
+		if stmtText != "" {
+			for i := len(stmtText) - 1; i >= 0; i-- {
+				c := stmtText[i]
+				if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != ';' {
+					pos := pgparser.ByteOffsetToRunePosition(stmtText, i)
+					endLine = pos.Line
+					break
+				}
+			}
+		}
+		return baseLine + int(endLine)
 	}
-	return nil
+
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		tableName := omniTableName(n.Relation)
+		if tableName == "" {
+			return
+		}
+		schemaName := omniSchemaName(n.Relation)
+		cols, constraints := omniTableElements(n)
+		// Check column-level constraints
+		for _, col := range cols {
+			for _, c := range omniColumnConstraints(col) {
+				if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
+					tl.set(schemaName, tableName, absEndLine())
+					return
+				}
+			}
+		}
+		// Check table-level constraints
+		for _, c := range constraints {
+			if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
+				tl.set(schemaName, tableName, absEndLine())
+				return
+			}
+		}
+
+	case *ast.AlterTableStmt:
+		tableName := omniTableName(n.Relation)
+		if tableName == "" {
+			return
+		}
+		schemaName := omniSchemaName(n.Relation)
+		for _, cmd := range omniAlterTableCmds(n) {
+			// ADD COLUMN with PK/UNIQUE constraint
+			if cmd.Subtype == int(ast.AT_AddColumn) {
+				if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
+					for _, c := range omniColumnConstraints(colDef) {
+						if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
+							tl.set(schemaName, tableName, absEndLine())
+							return
+						}
+					}
+				}
+			}
+			// ADD CONSTRAINT (PK or UNIQUE)
+			if cmd.Subtype == int(ast.AT_AddConstraint) {
+				if c, ok := cmd.Def.(*ast.Constraint); ok {
+					if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
+						tl.set(schemaName, tableName, absEndLine())
+						return
+					}
+				}
+			}
+		}
+
+	case *ast.IndexStmt:
+		tableName := omniTableName(n.Relation)
+		if tableName == "" {
+			return
+		}
+		schemaName := omniSchemaName(n.Relation)
+		tl.set(schemaName, tableName, absEndLine())
+	default:
+	}
 }
 
-func (*indexTotalNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *indexTotalNumberLimitRule) generateAdvice() {
+func generateIndexTotalAdvice(tl tableLineMap, finalMetadata *model.DatabaseMetadata, maxCount int, level storepb.Advice_Status, title string, adviceList *[]*storepb.Advice) {
 	var tableList []tableLine
-	for _, table := range r.tableLine {
+	for _, table := range tl {
 		tableList = append(tableList, table)
 	}
 	slices.SortFunc(tableList, func(i, j tableLine) int {
@@ -133,7 +178,7 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 	})
 
 	for _, table := range tableList {
-		schema := r.finalMetadata.GetSchemaMetadata(table.schema)
+		schema := finalMetadata.GetSchemaMetadata(table.schema)
 		if schema == nil {
 			continue
 		}
@@ -141,15 +186,12 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 		if tableInfo == nil {
 			continue
 		}
-		if len(tableInfo.GetProto().Indexes) > r.max {
-			// Directly append to adviceList instead of using AddAdvice because
-			// table.line already stores absolute line numbers (baseLine + line at time of encounter).
-			// Using AddAdvice would incorrectly add the current baseLine again.
-			r.adviceList = append(r.adviceList, &storepb.Advice{
-				Status:  r.level,
+		if len(tableInfo.GetProto().Indexes) > maxCount {
+			*adviceList = append(*adviceList, &storepb.Advice{
+				Status:  level,
 				Code:    code.IndexCountExceedsLimit.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, r.max, len(tableInfo.GetProto().Indexes)),
+				Title:   title,
+				Content: fmt.Sprintf("The count of index in table %q.%q should be no more than %d, but found %d", table.schema, table.table, maxCount, len(tableInfo.GetProto().Indexes)),
 				StartPosition: &storepb.Position{
 					Line:   int32(table.line),
 					Column: 0,
@@ -157,145 +199,4 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 			})
 		}
 	}
-}
-
-func (r *indexTotalNumberLimitRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	qualifiedNames := ctx.AllQualified_name()
-	if len(qualifiedNames) == 0 {
-		return
-	}
-
-	tableName := extractTableName(qualifiedNames[0])
-	if tableName == "" {
-		return
-	}
-
-	schemaName := extractSchemaName(qualifiedNames[0])
-
-	// Check if this CREATE TABLE statement creates any indexes
-	// (PRIMARY KEY or UNIQUE constraints)
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			// Check column-level constraints
-			if elem.ColumnDef() != nil {
-				if hasIndexConstraint(elem.ColumnDef()) {
-					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
-					return
-				}
-			}
-
-			// Check table-level constraints
-			if elem.Tableconstraint() != nil && hasTableIndexConstraint(elem.Tableconstraint()) {
-				r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
-				return
-			}
-		}
-	}
-}
-
-func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
-	if tableName == "" {
-		return
-	}
-
-	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-
-	// Check ALTER TABLE commands that create indexes
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN with PRIMARY KEY or UNIQUE
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				if hasIndexConstraint(cmd.ColumnDef()) {
-					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
-					return
-				}
-			}
-
-			// ADD CONSTRAINT (PRIMARY KEY or UNIQUE)
-			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
-				if hasTableIndexConstraint(cmd.Tableconstraint()) {
-					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
-					return
-				}
-			}
-		}
-	}
-}
-
-func (r *indexTotalNumberLimitRule) handleIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
-	if tableName == "" {
-		return
-	}
-
-	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-	r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
-}
-
-// hasIndexConstraint checks if a column definition has PRIMARY KEY or UNIQUE constraint
-func hasIndexConstraint(colDef parser.IColumnDefContext) bool {
-	if colDef.Colquallist() == nil {
-		return false
-	}
-
-	allConstraints := colDef.Colquallist().AllColconstraint()
-	for _, constraint := range allConstraints {
-		if constraint.Colconstraintelem() != nil {
-			elem := constraint.Colconstraintelem()
-			// PRIMARY KEY creates an index
-			if elem.PRIMARY() != nil && elem.KEY() != nil {
-				return true
-			}
-			// UNIQUE creates an index
-			if elem.UNIQUE() != nil {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// hasTableIndexConstraint checks if a table constraint is PRIMARY KEY or UNIQUE
-func hasTableIndexConstraint(constraint parser.ITableconstraintContext) bool {
-	if constraint == nil || constraint.Constraintelem() == nil {
-		return false
-	}
-
-	elem := constraint.Constraintelem()
-
-	// PRIMARY KEY creates an index
-	if elem.PRIMARY() != nil && elem.KEY() != nil {
-		return true
-	}
-
-	// UNIQUE creates an index
-	if elem.UNIQUE() != nil {
-		return true
-	}
-
-	return false
 }

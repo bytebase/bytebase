@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -56,9 +54,9 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &namingIndexConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format:           format,
 		maxLength:        maxLength,
@@ -66,26 +64,11 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingIndexConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
 	format           string
 	maxLength        int
@@ -98,115 +81,55 @@ func (*namingIndexConventionRule) Name() string {
 	return "naming-index-convention"
 }
 
-// OnEnter handles entering a parse tree node.
-func (r *namingIndexConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Indexstmt":
-		r.handleIndexstmt(ctx)
-	case "Renamestmt":
-		r.handleRenamestmt(ctx)
+func (r *namingIndexConventionRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.IndexStmt:
+		r.handleIndexStmt(n)
+	case *ast.RenameStmt:
+		r.handleRenameStmt(n)
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit handles exiting a parse tree node.
-func (*namingIndexConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleIndexstmt checks CREATE INDEX statements
-func (r *namingIndexConventionRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
-	indexstmtCtx, ok := ctx.(*parser.IndexstmtContext)
-	if !ok {
-		return
-	}
-	if !isTopLevel(indexstmtCtx.GetParent()) {
+func (r *namingIndexConventionRule) handleIndexStmt(n *ast.IndexStmt) {
+	// Skip UNIQUE indexes - they are handled by the UK naming rule
+	if n.Unique {
 		return
 	}
 
-	// Check if this is a UNIQUE index - if so, skip it
-	if indexstmtCtx.Opt_unique() != nil && indexstmtCtx.Opt_unique().UNIQUE() != nil {
-		return
-	}
-
-	// Get index name
-	indexName := ""
-	if indexstmtCtx.Name() != nil {
-		indexName = pgparser.NormalizePostgreSQLName(indexstmtCtx.Name())
-	}
+	indexName := n.Idxname
 	if indexName == "" {
 		return
 	}
 
-	// Get table name
-	tableName := ""
-	if indexstmtCtx.Relation_expr() != nil && indexstmtCtx.Relation_expr().Qualified_name() != nil {
-		tableName = extractTableName(indexstmtCtx.Relation_expr().Qualified_name())
-	}
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	// Get column list
-	var columnList []string
-	if indexstmtCtx.Index_params() != nil {
-		allParams := indexstmtCtx.Index_params().AllIndex_elem()
-		for _, param := range allParams {
-			if param.Colid() != nil {
-				colName := pgparser.NormalizePostgreSQLColid(param.Colid())
-				columnList = append(columnList, colName)
-			}
-		}
-	}
-
-	r.checkIndexName(indexName, tableName, columnList, indexstmtCtx.GetStart().GetLine())
+	columnList := omniIndexColumns(n)
+	r.checkIndexName(indexName, tableName, columnList)
 }
 
-// handleRenamestmt checks ALTER INDEX ... RENAME TO statements
-func (r *namingIndexConventionRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
-	renamestmtCtx, ok := ctx.(*parser.RenamestmtContext)
-	if !ok {
-		return
-	}
-	if !isTopLevel(renamestmtCtx.GetParent()) {
-		return
-	}
-
-	// Check for ALTER INDEX ... RENAME TO
-	if renamestmtCtx.INDEX() != nil && renamestmtCtx.TO() != nil {
-		allNames := renamestmtCtx.AllName()
-		if len(allNames) < 1 {
-			return
+func (r *namingIndexConventionRule) handleRenameStmt(n *ast.RenameStmt) {
+	// ALTER INDEX ... RENAME TO
+	if n.RenameType == ast.OBJECT_INDEX {
+		oldIndexName := ""
+		if n.Relation != nil {
+			oldIndexName = n.Relation.Relname
 		}
+		newIndexName := n.Newname
 
-		// Get old index name from qualified_name
-		var oldIndexName string
-		if renamestmtCtx.Qualified_name() != nil {
-			parts := pgparser.NormalizePostgreSQLQualifiedName(renamestmtCtx.Qualified_name())
-			if len(parts) > 0 {
-				oldIndexName = parts[len(parts)-1]
-			}
-		}
-
-		// Get new index name from the name after TO
-		newIndexName := pgparser.NormalizePostgreSQLName(allNames[0])
-
-		// Look up the index in catalog to determine if it's a regular index (not unique, not PK)
 		if r.originalMetadata != nil && oldIndexName != "" {
 			tableName, index := r.findIndex("", "", oldIndexName)
-			if index != nil {
-				// Only check if it's a regular index (not unique, not primary)
-				if !index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
-					r.checkIndexName(newIndexName, tableName, index.GetProto().GetExpressions(), renamestmtCtx.GetStart().GetLine())
-				}
+			if index != nil && !index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
+				r.checkIndexName(newIndexName, tableName, index.GetProto().GetExpressions())
 			}
 		}
 	}
 }
 
-func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, columnList []string, line int) {
+func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, columnList []string) {
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
@@ -215,12 +138,12 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 	regex, err := getTemplateRegexp(r.format, r.templateList, metaData)
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.Internal.Int32(),
 			Title:   "Internal error for index naming convention rule",
 			Content: fmt.Sprintf("Failed to compile regex: %v", err),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
@@ -229,12 +152,12 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 
 	if !regex.MatchString(indexName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingIndexConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", tableName, regex, indexName),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
@@ -242,12 +165,12 @@ func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, 
 
 	if r.maxLength > 0 && len(indexName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.NamingIndexConventionMismatch.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexName, tableName, r.maxLength),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})

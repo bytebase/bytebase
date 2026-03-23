@@ -4,18 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
-	"strconv"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -45,292 +42,116 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		return nil, nil
 	}
 
-	var adviceList []*storepb.Advice
-	var preExecutions []string
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &insertRowLimitRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			maxRow:        int(numberPayload.Number),
-			driver:        checkCtx.Driver,
-			ctx:           ctx,
-			tokens:        antlrAST.Tokens,
-			preExecutions: preExecutions,
-			TenantMode:    checkCtx.TenantMode,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
-		preExecutions = rule.preExecutions
+	rule := &insertRowLimitRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		maxRow:     int(numberPayload.Number),
+		driver:     checkCtx.Driver,
+		ctx:        ctx,
+		TenantMode: checkCtx.TenantMode,
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type insertRowLimitRule struct {
-	BaseRule
+	OmniBaseRule
 
 	maxRow        int
 	driver        *sql.DB
 	ctx           context.Context
-	tokens        *antlr.CommonTokenStream
 	explainCount  int
 	preExecutions []string
 	TenantMode    bool
 }
 
 func (*insertRowLimitRule) Name() string {
-	return "insert_row_limit"
+	return string(storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT)
 }
 
-func (r *insertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Variablesetstmt":
-		if c, ok := ctx.(*parser.VariablesetstmtContext); ok {
-			r.handleVariablesetstmt(c)
+func (r *insertRowLimitRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.VariableSetStmt:
+		if omniIsRoleOrSearchPathSet(n) {
+			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
 		}
-	case "Insertstmt":
-		if c, ok := ctx.(*parser.InsertstmtContext); ok {
-			r.handleInsertstmt(c)
-		}
+	case *ast.InsertStmt:
+		r.checkInsert(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*insertRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *insertRowLimitRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
-}
-
-func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
+func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
 	code := advisorcode.Ok
 	rows := int64(0)
-	statementText := getTextFromTokens(r.tokens, ctx)
+	statementText := r.TrimmedStmtText()
 
-	// Check if this is INSERT ... VALUES or INSERT ... SELECT
-	if ctx.Insert_rest() != nil && ctx.Insert_rest().Selectstmt() != nil {
-		// Count the number of value lists if this is VALUES
-		rowCount := countValueLists(ctx.Insert_rest().Selectstmt())
-		if rowCount > 0 {
-			// This is INSERT ... VALUES
-			if rowCount > r.maxRow {
-				code = advisorcode.InsertTooManyRows
-				rows = int64(rowCount)
-			}
-		} else if r.driver != nil {
-			// For INSERT ... SELECT, use EXPLAIN
-			if r.explainCount >= common.MaximumLintExplainSize {
-				return
-			}
-			r.explainCount++
+	// Count VALUES rows if this is INSERT ... VALUES.
+	if sel, ok := ins.SelectStmt.(*ast.SelectStmt); ok && sel.ValuesLists != nil {
+		rowCount := len(sel.ValuesLists.Items)
+		if rowCount > r.maxRow {
+			code = advisorcode.InsertTooManyRows
+			rows = int64(rowCount)
+		}
+	} else if ins.SelectStmt != nil && r.driver != nil {
+		// For INSERT ... SELECT, use EXPLAIN.
+		if r.explainCount >= common.MaximumLintExplainSize {
+			return
+		}
+		r.explainCount++
 
-			res, err := advisor.Query(r.ctx, advisor.QueryContext{
-				TenantMode:    r.TenantMode,
-				PreExecutions: r.preExecutions,
-			}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
+		res, err := advisor.Query(r.ctx, advisor.QueryContext{
+			TenantMode:    r.TenantMode,
+			PreExecutions: r.preExecutions,
+		}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
-			if err != nil {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.level,
-					Code:    advisorcode.InsertTooManyRows.Int32(),
-					Title:   r.title,
-					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
-					StartPosition: &storepb.Position{
-						Line:   int32(ctx.GetStart().GetLine()),
-						Column: 0,
-					},
-				})
-				return
-			}
+		if err != nil {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    advisorcode.InsertTooManyRows.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
+				StartPosition: &storepb.Position{
+					Line:   r.ContentStartLine(),
+					Column: 0,
+				},
+			})
+			return
+		}
 
-			rowCount, err := getAffectedRows(res)
-			if err != nil {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.level,
-					Code:    advisorcode.Internal.Int32(),
-					Title:   r.title,
-					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
-					StartPosition: &storepb.Position{
-						Line:   int32(ctx.GetStart().GetLine()),
-						Column: 0,
-					},
-				})
-				return
-			}
+		rowCount, err := getAffectedRows(res)
+		if err != nil {
+			r.AddAdvice(&storepb.Advice{
+				Status:  r.Level,
+				Code:    advisorcode.Internal.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
+				StartPosition: &storepb.Position{
+					Line:   r.ContentStartLine(),
+					Column: 0,
+				},
+			})
+			return
+		}
 
-			if rowCount > int64(r.maxRow) {
-				code = advisorcode.InsertTooManyRows
-				rows = rowCount
-			}
+		if rowCount > int64(r.maxRow) {
+			code = advisorcode.InsertTooManyRows
+			rows = rowCount
 		}
 	}
 
 	if code != advisorcode.Ok {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", statementText, rows, r.maxRow),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
 	}
-}
-
-// countValueLists counts the number of value lists in an INSERT ... VALUES statement
-// Returns 0 if this is not a VALUES statement (e.g., INSERT ... SELECT)
-func countValueLists(selectStmt parser.ISelectstmtContext) int {
-	if selectStmt == nil {
-		return 0
-	}
-
-	// Navigate to the values_clause
-	// SELECT can be select_no_parens or select_with_parens
-	if selectStmt.Select_no_parens() != nil {
-		return countValuesInSelectNoParens(selectStmt.Select_no_parens())
-	}
-
-	if selectStmt.Select_with_parens() != nil {
-		return countValuesInSelectWithParens(selectStmt.Select_with_parens())
-	}
-
-	return 0
-}
-
-// countValuesInSelectNoParens counts VALUES rows in a select_no_parens
-func countValuesInSelectNoParens(selectCtx parser.ISelect_no_parensContext) int {
-	if selectCtx == nil || selectCtx.Select_clause() == nil {
-		return 0
-	}
-
-	// Check if this is a values_clause
-	return countValuesInSelectClause(selectCtx.Select_clause())
-}
-
-// countValuesInSelectWithParens counts VALUES rows in a select_with_parens
-func countValuesInSelectWithParens(selectCtx parser.ISelect_with_parensContext) int {
-	if selectCtx == nil {
-		return 0
-	}
-
-	if selectCtx.Select_no_parens() != nil {
-		return countValuesInSelectNoParens(selectCtx.Select_no_parens())
-	}
-
-	if selectCtx.Select_with_parens() != nil {
-		return countValuesInSelectWithParens(selectCtx.Select_with_parens())
-	}
-
-	return 0
-}
-
-// countValuesInSelectClause counts VALUES rows in a select_clause
-func countValuesInSelectClause(selectClause parser.ISelect_clauseContext) int {
-	if selectClause == nil {
-		return 0
-	}
-
-	// select_clause has AllSimple_select_intersect
-	allIntersect := selectClause.AllSimple_select_intersect()
-	if len(allIntersect) == 0 {
-		return 0
-	}
-
-	// Check the first one for values_clause
-	return countValuesInSimpleSelectIntersect(allIntersect[0])
-}
-
-// countValuesInSimpleSelectIntersect counts VALUES rows in simple_select_intersect
-func countValuesInSimpleSelectIntersect(intersect parser.ISimple_select_intersectContext) int {
-	if intersect == nil {
-		return 0
-	}
-
-	// Get all simple_select_pramary
-	allPrimary := intersect.AllSimple_select_pramary()
-	if len(allPrimary) == 0 {
-		return 0
-	}
-
-	// Check the first one for values_clause
-	return countValuesInPrimary(allPrimary[0])
-}
-
-// countValuesInPrimary counts VALUES rows in simple_select_pramary
-func countValuesInPrimary(primary parser.ISimple_select_pramaryContext) int {
-	if primary == nil || primary.Values_clause() == nil {
-		return 0
-	}
-
-	// values_clause: VALUES (expr_list) (, (expr_list))*
-	// Count the number of COMMA tokens + 1
-	valuesClause := primary.Values_clause()
-	commaCount := len(valuesClause.AllCOMMA())
-	return commaCount + 1
-}
-
-func getAffectedRows(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
-	}
-	// EXPLAIN output has at least 2 rows
-	if len(rowList) < 2 {
-		return 0, errors.Errorf("not found any data")
-	}
-	// We need row 2
-	rowTwo, ok := rowList[1].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
-	}
-	// PostgreSQL EXPLAIN result has one column
-	if len(rowTwo) != 1 {
-		return 0, errors.Errorf("expected one but got %d", len(rowTwo))
-	}
-	// Get the string value
-	text, ok := rowTwo[0].(string)
-	if !ok {
-		return 0, errors.Errorf("expected string but got %t", rowTwo[0])
-	}
-
-	rowsRegexp := regexp.MustCompile("rows=([0-9]+)")
-	matches := rowsRegexp.FindStringSubmatch(text)
-	if len(matches) != 2 {
-		return 0, errors.Errorf("failed to find rows in %q", text)
-	}
-	value, err := strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, errors.Errorf("failed to get integer from %q", matches[1])
-	}
-	return value, nil
 }

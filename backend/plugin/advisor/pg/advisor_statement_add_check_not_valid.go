@@ -3,14 +3,11 @@ package pg
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,157 +30,48 @@ func (*StatementAddCheckNotValidAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	rule := &statementAddCheckNotValidRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementAddCheckNotValidRule struct {
-	BaseRule
+	OmniBaseRule
 }
 
 func (*statementAddCheckNotValidRule) Name() string {
 	return "statement_add_check_not_valid"
 }
 
-func (r *statementAddCheckNotValidRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Colconstraint":
-		r.handleColconstraint(ctx)
-	case "Tableconstraint":
-		r.handleTableconstraint(ctx)
-	default:
-	}
-	return nil
-}
-
-func (*statementAddCheckNotValidRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// handleColconstraint handles column-level constraints in ALTER TABLE ADD CONSTRAINT ... CHECK
-// This handles the case where CHECK constraint is parsed as a column-level constraint
-func (r *statementAddCheckNotValidRule) handleColconstraint(ctx antlr.ParserRuleContext) {
-	colCtx, ok := ctx.(*parser.ColconstraintContext)
+func (r *statementAddCheckNotValidRule) OnStatement(node ast.Node) {
+	alter, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return
 	}
 
-	// Check if this is within an ALTER TABLE statement
-	parent := colCtx.GetParent()
-	var alterTableCtx *parser.AltertablestmtContext
-	for parent != nil {
-		if altCtx, ok := parent.(*parser.AltertablestmtContext); ok {
-			alterTableCtx = altCtx
-			if !isTopLevel(alterTableCtx.GetParent()) {
-				return
-			}
-			break
+	for _, cmd := range omniAlterTableCmds(alter) {
+		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
+			continue
 		}
-		parent = parent.GetParent()
-	}
-
-	// Only process if we're within an ALTER TABLE
-	if alterTableCtx == nil {
-		return
-	}
-
-	// Check if this is a CHECK constraint
-	if colCtx.Colconstraintelem() != nil {
-		constraintElem := colCtx.Colconstraintelem()
-		if constraintElem.CHECK() != nil {
-			// For column-level constraints, NOT VALID would be in Constraintattr
-			// But since this is parsed as a column constraint, it won't have NOT VALID
-			// (when NOT VALID is present, it's parsed as a table constraint)
+		constraint, ok := cmd.Def.(*ast.Constraint)
+		if !ok || constraint.Contype != ast.CONSTR_CHECK {
+			continue
+		}
+		if !constraint.SkipValidation {
 			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
+				Status:  r.Level,
 				Code:    code.StatementAddCheckWithValidation.Int32(),
-				Title:   r.title,
+				Title:   r.Title,
 				Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
 				StartPosition: &storepb.Position{
-					Line:   int32(alterTableCtx.GetStart().GetLine()),
+					Line:   r.ContentStartLine(),
 					Column: 0,
 				},
 			})
-		}
-	}
-}
-
-// handleTableconstraint handles table-level constraints in ALTER TABLE ADD CONSTRAINT ... CHECK
-// This handles the case where CHECK constraint is parsed as a table-level constraint (e.g., with NOT VALID)
-func (r *statementAddCheckNotValidRule) handleTableconstraint(ctx antlr.ParserRuleContext) {
-	tableCtx, ok := ctx.(*parser.TableconstraintContext)
-	if !ok {
-		return
-	}
-
-	// Check if this is within an ALTER TABLE statement
-	parent := tableCtx.GetParent()
-	var alterTableCtx *parser.AltertablestmtContext
-	for parent != nil {
-		if altCtx, ok := parent.(*parser.AltertablestmtContext); ok {
-			alterTableCtx = altCtx
-			if !isTopLevel(alterTableCtx.GetParent()) {
-				return
-			}
-			break
-		}
-		parent = parent.GetParent()
-	}
-
-	// Only process if we're within an ALTER TABLE
-	if alterTableCtx == nil {
-		return
-	}
-
-	// Check if this is a CHECK constraint
-	if tableCtx.Constraintelem() != nil {
-		constraintElem := tableCtx.Constraintelem()
-		if constraintElem.CHECK() != nil {
-			// Check if NOT VALID is specified
-			hasNotValid := false
-			if constraintElem.Constraintattributespec() != nil {
-				allAttrs := constraintElem.Constraintattributespec().AllConstraintattributeElem()
-				for _, attr := range allAttrs {
-					// Check for NOT VALID
-					if attr.NOT() != nil && attr.VALID() != nil {
-						hasNotValid = true
-						break
-					}
-				}
-			}
-
-			if !hasNotValid {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.level,
-					Code:    code.StatementAddCheckWithValidation.Int32(),
-					Title:   r.title,
-					Content: "Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately",
-					StartPosition: &storepb.Position{
-						Line:   int32(alterTableCtx.GetStart().GetLine()),
-						Column: 0,
-					},
-				})
-			}
 		}
 	}
 }

@@ -3,20 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 const (
@@ -54,22 +49,25 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		rule := &ddlRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: title,
-			},
-			tokens: antlrAST.Tokens,
+		baseLine := stmt.BaseLine()
+		if omniIsDDLStatement(node) {
+			stmtText := omniTrimmedStmtText(stmt.Text)
+			startLine := omniContentStartLine(stmt.Text)
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Title:   title,
+				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmtText),
+				Code:    code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: &storepb.Position{
+					Line:   int32(baseLine) + startLine,
+					Column: 0,
+				},
+			})
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
 	// Check if backup schema exists
@@ -116,145 +114,97 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	return adviceList, nil
 }
 
-// isDDLStatement checks if a context is a DDL statement
-func isDDLStatement(ctx antlr.Tree) bool {
-	switch ctx.(type) {
+// omniIsDDLStatement checks if a node is a DDL statement.
+func omniIsDDLStatement(node ast.Node) bool {
+	switch node.(type) {
 	// CREATE statements
-	case *parser.CreatestmtContext,
-		*parser.CreateasstmtContext,
-		*parser.CreateassertionstmtContext,
-		*parser.CreatecaststmtContext,
-		*parser.CreateconversionstmtContext,
-		*parser.CreatedomainstmtContext,
-		*parser.CreateextensionstmtContext,
-		*parser.CreatefdwstmtContext,
-		*parser.CreateforeignserverstmtContext,
-		*parser.CreateforeigntablestmtContext,
-		*parser.CreatefunctionstmtContext,
-		*parser.CreategroupstmtContext,
-		*parser.CreatematviewstmtContext,
-		*parser.CreateopclassstmtContext,
-		*parser.CreateopfamilystmtContext,
-		*parser.CreatepublicationstmtContext,
-		*parser.CreatepolicystmtContext,
-		*parser.CreateplangstmtContext,
-		*parser.CreateschemastmtContext,
-		*parser.CreateseqstmtContext,
-		*parser.CreatesubscriptionstmtContext,
-		*parser.CreatestatsstmtContext,
-		*parser.CreatetablespacestmtContext,
-		*parser.CreatetransformstmtContext,
-		*parser.CreatetrigstmtContext,
-		*parser.CreateeventtrigstmtContext,
-		*parser.CreaterolestmtContext,
-		*parser.CreateuserstmtContext,
-		*parser.CreateusermappingstmtContext,
-		*parser.CreatedbstmtContext,
-		*parser.CreateamstmtContext,
-		*parser.IndexstmtContext, // CREATE INDEX
+	case *ast.CreateStmt,
+		*ast.CreateTableAsStmt,
+		*ast.CreateDomainStmt,
+		*ast.CreateExtensionStmt,
+		*ast.CreateFdwStmt,
+		*ast.CreateForeignServerStmt,
+		*ast.CreateForeignTableStmt,
+		*ast.CreateFunctionStmt,
+		*ast.CreateRoleStmt,
+		*ast.CreatePolicyStmt,
+		*ast.CreatePLangStmt,
+		*ast.CreateSchemaStmt,
+		*ast.CreateSeqStmt,
+		*ast.CreateSubscriptionStmt,
+		*ast.CreateStatsStmt,
+		*ast.CreateTableSpaceStmt,
+		*ast.CreateTransformStmt,
+		*ast.CreateTrigStmt,
+		*ast.CreateEventTrigStmt,
+		*ast.CreateUserMappingStmt,
+		*ast.CreatedbStmt,
+		*ast.CreateAmStmt,
+		*ast.CreatePublicationStmt,
+		*ast.CreateOpClassStmt,
+		*ast.CreateOpFamilyStmt,
+		*ast.CreateCastStmt,
+		*ast.CreateConversionStmt,
+		*ast.CreateRangeStmt,
+		*ast.CompositeTypeStmt,
+		*ast.CreateEnumStmt,
+		*ast.IndexStmt,
+		*ast.ViewStmt,
 		// ALTER statements
-		*parser.AltereventtrigstmtContext,
-		*parser.AltercollationstmtContext,
-		*parser.AlterdatabasestmtContext,
-		*parser.AlterdatabasesetstmtContext,
-		*parser.AlterdefaultprivilegesstmtContext,
-		*parser.AlterdomainstmtContext,
-		*parser.AlterenumstmtContext,
-		*parser.AlterextensionstmtContext,
-		*parser.AlterextensioncontentsstmtContext,
-		*parser.AlterfdwstmtContext,
-		*parser.AlterforeignserverstmtContext,
-		*parser.AlterfunctionstmtContext,
-		*parser.AltergroupstmtContext,
-		*parser.AlterobjectdependsstmtContext,
-		*parser.AlterobjectschemastmtContext,
-		*parser.AlterownerstmtContext,
-		*parser.AlteroperatorstmtContext,
-		*parser.AltertypestmtContext,
-		*parser.AlterpolicystmtContext,
-		*parser.AlterseqstmtContext,
-		*parser.AltersystemstmtContext,
-		*parser.AltertablestmtContext,
-		*parser.AltertblspcstmtContext,
-		*parser.AltercompositetypestmtContext,
-		*parser.AlterpublicationstmtContext,
-		*parser.AlterrolesetstmtContext,
-		*parser.AlterrolestmtContext,
-		*parser.AltersubscriptionstmtContext,
-		*parser.AlterstatsstmtContext,
-		*parser.AltertsconfigurationstmtContext,
-		*parser.AltertsdictionarystmtContext,
-		*parser.AlterusermappingstmtContext,
-		*parser.AlteropfamilystmtContext,
+		*ast.AlterEventTrigStmt,
+		*ast.AlterCollationStmt,
+		*ast.AlterDatabaseStmt,
+		*ast.AlterDatabaseSetStmt,
+		*ast.AlterDefaultPrivilegesStmt,
+		*ast.AlterDomainStmt,
+		*ast.AlterEnumStmt,
+		*ast.AlterExtensionStmt,
+		*ast.AlterExtensionContentsStmt,
+		*ast.AlterFdwStmt,
+		*ast.AlterForeignServerStmt,
+		*ast.AlterFunctionStmt,
+		*ast.AlterObjectDependsStmt,
+		*ast.AlterObjectSchemaStmt,
+		*ast.AlterOwnerStmt,
+		*ast.AlterOperatorStmt,
+		*ast.AlterTypeStmt,
+		*ast.AlterPolicyStmt,
+		*ast.AlterSeqStmt,
+		*ast.AlterSystemStmt,
+		*ast.AlterTableStmt,
+		*ast.AlterTableSpaceOptionsStmt,
+		*ast.AlterPublicationStmt,
+		*ast.AlterRoleSetStmt,
+		*ast.AlterRoleStmt,
+		*ast.AlterSubscriptionStmt,
+		*ast.AlterStatsStmt,
+		*ast.AlterTSConfigurationStmt,
+		*ast.AlterTSDictionaryStmt,
+		*ast.AlterUserMappingStmt,
+		*ast.AlterOpFamilyStmt,
 		// DROP statements
-		*parser.DropstmtContext,
-		*parser.DropcaststmtContext,
-		*parser.DropopclassstmtContext,
-		*parser.DropopfamilystmtContext,
-		*parser.DropownedstmtContext,
-		*parser.DropsubscriptionstmtContext,
-		*parser.DroptablespacestmtContext,
-		*parser.DroptransformstmtContext,
-		*parser.DroprolestmtContext,
-		*parser.DropusermappingstmtContext,
-		*parser.DropdbstmtContext,
+		*ast.DropStmt,
+		*ast.DropOwnedStmt,
+		*ast.DropSubscriptionStmt,
+		*ast.DropTableSpaceStmt,
+		*ast.DropRoleStmt,
+		*ast.DropUserMappingStmt,
+		*ast.DropdbStmt,
 		// Other DDL statements
-		*parser.TruncatestmtContext,
-		*parser.RenamestmtContext,
-		*parser.CommentstmtContext,
-		*parser.DefinestmtContext,
-		*parser.RemoveaggrstmtContext,
-		*parser.RemovefuncstmtContext,
-		*parser.RemoveoperstmtContext,
-		*parser.ReindexstmtContext,
-		*parser.ClusterstmtContext,
-		*parser.RefreshmatviewstmtContext,
-		*parser.RulestmtContext,
-		*parser.SeclabelstmtContext,
-		*parser.ReassignownedstmtContext:
+		*ast.TruncateStmt,
+		*ast.RenameStmt,
+		*ast.CommentStmt,
+		*ast.DefineStmt,
+		*ast.ReindexStmt,
+		*ast.ClusterStmt,
+		*ast.RefreshMatViewStmt,
+		*ast.RuleStmt,
+		*ast.SecLabelStmt,
+		*ast.ReassignOwnedStmt:
 		return true
 	default:
 		return false
 	}
-}
-
-// ddlRule checks for DDL statements in DML context
-type ddlRule struct {
-	BaseRule
-	tokens *antlr.CommonTokenStream
-}
-
-func (*ddlRule) Name() string {
-	return "ddl-in-dml-check"
-}
-
-func (r *ddlRule) OnEnter(ctx antlr.ParserRuleContext, _ string) error {
-	return r.handleEveryRule(ctx)
-}
-
-func (*ddlRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
-	// Check if this is a top-level DDL statement
-	if !isTopLevel(ctx.GetParent()) {
-		return nil
-	}
-
-	if isDDLStatement(ctx) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
-			Title:   r.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", getTextFromTokens(r.tokens, ctx)),
-			Code:    code.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
-				Column: 0,
-			},
-		})
-	}
-	return nil
 }
 
 // StatementType represents the type of DML statement
@@ -278,101 +228,107 @@ type TableReference struct {
 type statementInfo struct {
 	offset    int
 	statement string
-	tree      antlr.ParserRuleContext
 	table     *TableReference
 }
 
 func prepareTransformation(parsedStatements []base.ParsedStatement) []statementInfo {
-	extractor := &dmlExtractor{}
+	var dmls []statementInfo
+	offset := 0
 	for _, stmt := range parsedStatements {
 		if stmt.AST == nil {
+			offset++
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
+			offset++
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, antlrAST.Tree)
-	}
-	return extractor.dmls
-}
 
-type dmlExtractor struct {
-	*parser.BasePostgreSQLParserListener
-
-	dmls   []statementInfo
-	offset int
-}
-
-func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
-	if isTopLevel(ctx) {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if isTopLevel(ctx.GetParent()) {
-		table := extractTableReference(ctx.Relation_expr_opt_alias())
-		if table == nil {
-			return
+		switch n := node.(type) {
+		case *ast.UpdateStmt:
+			table := omniExtractTableReferenceFromRangeVar(n.Relation)
+			if table != nil {
+				table.StatementType = StatementTypeUpdate
+				dmls = append(dmls, statementInfo{
+					offset:    offset,
+					statement: stmt.Text,
+					table:     table,
+				})
+			}
+		case *ast.DeleteStmt:
+			// DeleteStmt uses UsingClause for FROM but Relation for the target table
+			table := omniExtractTableReferenceFromRangeVar(n.Relation)
+			if table != nil {
+				table.StatementType = StatementTypeDelete
+				dmls = append(dmls, statementInfo{
+					offset:    offset,
+					statement: stmt.Text,
+					table:     table,
+				})
+			}
+		default:
 		}
-		table.StatementType = StatementTypeUpdate
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-		})
+
+		offset++
 	}
+	return dmls
 }
 
-func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
-	if isTopLevel(ctx.GetParent()) {
-		table := extractTableReference(ctx.Relation_expr_opt_alias())
-		if table == nil {
-			return
-		}
-		table.StatementType = StatementTypeDelete
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-		})
-	}
-}
-
-func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableReference {
-	if ctx == nil {
+func omniExtractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
+	if rv == nil {
 		return nil
 	}
 
 	table := TableReference{}
-
-	relationExpr := ctx.Relation_expr()
-	if relationExpr == nil {
-		return nil
+	if rv.Catalogname != "" {
+		table.Database = rv.Catalogname
 	}
-
-	list := pg.NormalizePostgreSQLQualifiedName(relationExpr.Qualified_name())
-	switch len(list) {
-	case 3:
-		table.Database = list[0]
-		table.Schema = list[1]
-		table.Table = list[2]
-	case 2:
-		table.Schema = list[0]
-		table.Table = list[1]
-	case 1:
+	if rv.Schemaname != "" {
+		table.Schema = rv.Schemaname
+	} else {
 		table.Schema = defaultSchema
-		table.Table = list[0]
-	default:
-		slog.Debug("Invalid table name", log.BBError(errors.Errorf("Invalid table name: %v", list)))
-		return nil
+	}
+	table.Table = rv.Relname
+	if rv.Alias != nil {
+		table.Alias = rv.Alias.Aliasname
 	}
 
-	if ctx.Colid() != nil {
-		table.Alias = pg.NormalizePostgreSQLColid(ctx.Colid())
+	if table.Table == "" {
+		return nil
 	}
 	return &table
+}
+
+// omniTrimmedStmtText returns the statement text with leading/trailing whitespace
+// and trailing semicolons removed.
+func omniTrimmedStmtText(text string) string {
+	result := text
+	// Trim leading/trailing whitespace
+	for len(result) > 0 && (result[0] == ' ' || result[0] == '\t' || result[0] == '\n' || result[0] == '\r') {
+		result = result[1:]
+	}
+	for len(result) > 0 {
+		last := result[len(result)-1]
+		if last == ' ' || last == '\t' || last == '\n' || last == '\r' || last == ';' {
+			result = result[:len(result)-1]
+		} else {
+			break
+		}
+	}
+	return result
+}
+
+// omniContentStartLine returns the 1-based line number of the first non-whitespace
+// character in the text.
+func omniContentStartLine(text string) int32 {
+	line := int32(1)
+	for _, c := range text {
+		if c == '\n' {
+			line++
+		} else if c != ' ' && c != '\t' && c != '\r' {
+			break
+		}
+	}
+	return line
 }

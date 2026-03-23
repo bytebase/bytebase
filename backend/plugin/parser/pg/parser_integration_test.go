@@ -56,7 +56,7 @@ FRAM t1;`,
 				if parseErr != nil {
 					var pe *omniparser.ParseError
 					require.True(t, errors.As(parseErr, &pe), "expected *ParseError, got %T", parseErr)
-					pos := byteOffsetToRunePosition(stmt.Text, pe.Position)
+					pos := ByteOffsetToRunePosition(stmt.Text, pe.Position)
 					// Adjust line by the statement's base line.
 					if stmt.Start != nil {
 						pos.Line += stmt.Start.Line - 1

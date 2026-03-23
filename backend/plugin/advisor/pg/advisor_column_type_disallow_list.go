@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -38,40 +33,24 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	// Convert disallowed types to lowercase for case-insensitive comparison
 	typeRestriction := make(map[string]bool)
 	for _, tp := range stringArrayPayload.List {
 		typeRestriction[strings.ToLower(tp)] = true
 	}
 
 	rule := &columnTypeDisallowListRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		typeRestriction: typeRestriction,
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnTypeDisallowListRule struct {
-	BaseRule
+	OmniBaseRule
 
 	typeRestriction map[string]bool
 }
@@ -80,104 +59,59 @@ func (*columnTypeDisallowListRule) Name() string {
 	return "column_type_disallow_list"
 }
 
-func (r *columnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		if c, ok := ctx.(*parser.CreatestmtContext); ok {
-			r.handleCreatestmt(c)
-		}
-	case "Altertablestmt":
-		if c, ok := ctx.(*parser.AltertablestmtContext); ok {
-			r.handleAltertablestmt(c)
-		}
+func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		r.handleCreateStmt(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTableStmt(n)
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*columnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *columnTypeDisallowListRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	qualifiedNames := ctx.AllQualified_name()
-	if len(qualifiedNames) == 0 {
-		return
-	}
-
-	tableName := extractTableName(qualifiedNames[0])
+func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	// Check all columns for disallowed types
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-		for _, elem := range allElements {
-			if elem.ColumnDef() != nil {
-				colDef := elem.ColumnDef()
-				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					r.checkType(tableName, columnName, colDef.Typename(), colDef.GetStart().GetLine())
-				}
-			}
+	cols, _ := omniTableElements(n)
+	for _, col := range cols {
+		if col.TypeName != nil {
+			r.checkType(tableName, col.Colname, col.TypeName, col.Colname)
 		}
 	}
 }
 
-func (r *columnTypeDisallowListRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	if ctx.Relation_expr() == nil || ctx.Relation_expr().Qualified_name() == nil {
-		return
-	}
-
-	tableName := extractTableName(ctx.Relation_expr().Qualified_name())
+func (r *columnTypeDisallowListRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	// Check ALTER TABLE ADD COLUMN
-	if ctx.Alter_table_cmds() != nil {
-		allCmds := ctx.Alter_table_cmds().AllAlter_table_cmd()
-		for _, cmd := range allCmds {
-			// ADD COLUMN
-			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
-				colDef := cmd.ColumnDef()
-				if colDef.Colid() != nil && colDef.Typename() != nil {
-					columnName := pg.NormalizePostgreSQLColid(colDef.Colid())
-					r.checkType(tableName, columnName, colDef.Typename(), colDef.GetStart().GetLine())
-				}
+	for _, cmd := range omniAlterTableCmds(n) {
+		switch ast.AlterTableType(cmd.Subtype) {
+		case ast.AT_AddColumn:
+			colDef, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok || colDef == nil || colDef.TypeName == nil {
+				continue
 			}
-
-			// ALTER COLUMN TYPE
-			if cmd.ALTER() != nil && cmd.TYPE_P() != nil && cmd.Typename() != nil {
-				allColids := cmd.AllColid()
-				if len(allColids) > 0 {
-					columnName := pg.NormalizePostgreSQLColid(allColids[0])
-					r.checkType(tableName, columnName, cmd.Typename(), cmd.GetStart().GetLine())
-				}
+			r.checkType(tableName, colDef.Colname, colDef.TypeName, colDef.Colname)
+		case ast.AT_AlterColumnType:
+			typeName, ok := cmd.Def.(*ast.ColumnDef)
+			if !ok || typeName == nil || typeName.TypeName == nil {
+				continue
 			}
+			r.checkType(tableName, cmd.Name, typeName.TypeName, cmd.Name)
+		default:
 		}
 	}
 }
 
-func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, typename parser.ITypenameContext, line int) {
-	if typename == nil {
-		return
-	}
+func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, tn *ast.TypeName, searchName string) {
+	// Build a type text from the TypeName for equivalence checking
+	typeText := omniTypeName(tn)
 
-	// Get the type text
-	typeText := typename.GetText()
-
-	// Check if this type is equivalent to any type in the disallow list
 	var matchedDisallowedType string
 	for disallowedType := range r.typeRestriction {
 		if areTypesEquivalent(typeText, disallowedType) {
@@ -188,12 +122,12 @@ func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, typ
 
 	if matchedDisallowedType != "" {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.DisabledColumnType.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(matchedDisallowedType), tableName, columnName),
 			StartPosition: &storepb.Position{
-				Line:   int32(line),
+				Line:   r.FindLineByName(searchName),
 				Column: 0,
 			},
 		})

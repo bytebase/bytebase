@@ -5,15 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -44,114 +43,55 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	var adviceList []*storepb.Advice
-	var preExecutions []string
-	for _, stmtInfo := range checkCtx.ParsedStatements {
-		if stmtInfo.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
-		if !ok {
-			continue
-		}
-		rule := &statementAffectedRowLimitRule{
-			BaseRule: BaseRule{
-				level: level,
-				title: checkCtx.Rule.Type.String(),
-			},
-			maxRow:        int(numberPayload.Number),
-			ctx:           ctx,
-			driver:        checkCtx.Driver,
-			tenantMode:    checkCtx.TenantMode,
-			preExecutions: preExecutions,
-			tokens:        antlrAST.Tokens,
-		}
-		rule.SetBaseLine(stmtInfo.BaseLine())
-
-		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		adviceList = append(adviceList, checker.GetAdviceList()...)
-		preExecutions = rule.preExecutions
+	rule := &statementAffectedRowLimitRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		maxRow:     int(numberPayload.Number),
+		ctx:        ctx,
+		driver:     checkCtx.Driver,
+		tenantMode: checkCtx.TenantMode,
 	}
 
-	return adviceList, nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementAffectedRowLimitRule struct {
-	BaseRule
+	OmniBaseRule
 	maxRow        int
 	driver        *sql.DB
 	ctx           context.Context
 	explainCount  int
 	preExecutions []string
 	tenantMode    bool
-	tokens        *antlr.CommonTokenStream
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
-	return "statement_affected_row_limit"
+	return string(storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT)
 }
 
-func (r *statementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Variablesetstmt":
-		if c, ok := ctx.(*parser.VariablesetstmtContext); ok {
-			r.handleVariablesetstmt(c)
+func (r *statementAffectedRowLimitRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.VariableSetStmt:
+		if omniIsRoleOrSearchPathSet(n) {
+			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
 		}
-	case "Updatestmt":
-		if c, ok := ctx.(*parser.UpdatestmtContext); ok {
-			r.handleUpdatestmt(c)
-		}
-	case "Deletestmt":
-		if c, ok := ctx.(*parser.DeletestmtContext); ok {
-			r.handleDeletestmt(c)
-		}
+	case *ast.UpdateStmt, *ast.DeleteStmt:
+		r.checkAffectedRows()
 	default:
-		// Do nothing for other node types
 	}
-	return nil
 }
 
-func (*statementAffectedRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementAffectedRowLimitRule) handleVariablesetstmt(ctx *parser.VariablesetstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.preExecutions = appendSessionPreExecutionStatements(r.preExecutions, r.tokens, ctx)
-}
-
-func (r *statementAffectedRowLimitRule) handleUpdatestmt(ctx *parser.UpdatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.checkAffectedRows(ctx)
-}
-
-func (r *statementAffectedRowLimitRule) handleDeletestmt(ctx *parser.DeletestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	r.checkAffectedRows(ctx)
-}
-
-func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleContext) {
-	// Check if we've hit the maximum number of EXPLAIN queries
+func (r *statementAffectedRowLimitRule) checkAffectedRows() {
 	if r.explainCount >= common.MaximumLintExplainSize {
 		return
 	}
 
 	r.explainCount++
 
-	// Get the statement text
-	statementText := getTextFromTokens(r.tokens, ctx)
+	statementText := r.TrimmedStmtText()
 
-	// Run EXPLAIN to get estimated row count
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,
 		PreExecutions: r.preExecutions,
@@ -159,12 +99,12 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.InsertTooManyRows.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
@@ -174,12 +114,12 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 	rowCount, err := getAffectedRows(res)
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.Internal.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})
@@ -188,12 +128,12 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 
 	if rowCount > int64(r.maxRow) {
 		r.AddAdvice(&storepb.Advice{
-			Status:  r.level,
+			Status:  r.Level,
 			Code:    code.StatementAffectedRowExceedsLimit.Int32(),
-			Title:   r.title,
+			Title:   r.Title,
 			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", statementText, rowCount, r.maxRow),
 			StartPosition: &storepb.Position{
-				Line:   int32(ctx.GetStart().GetLine()),
+				Line:   r.ContentStartLine(),
 				Column: 0,
 			},
 		})

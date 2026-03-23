@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -34,33 +32,20 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 	}
 
 	rule := &statementMergeAlterTableRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		tableMap: make(tableMap),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
+	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	return rule.generateAdvice(), nil
 }
 
 type statementMergeAlterTableRule struct {
-	BaseRule
+	OmniBaseRule
 	tableMap tableMap
 }
 
@@ -95,79 +80,30 @@ func (t tableStatement) key() string {
 	return fmt.Sprintf("%s.%s", t.schema, t.name)
 }
 
-// Name returns the rule name.
 func (*statementMergeAlterTableRule) Name() string {
-	return "statement.merge-alter-table"
+	return string(storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE)
 }
 
-// OnEnter is called when the parser enters a rule context.
-func (r *statementMergeAlterTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Createstmt":
-		r.handleCreatestmt(ctx.(*parser.CreatestmtContext))
-	case "Altertablestmt":
-		r.handleAltertablestmt(ctx.(*parser.AltertablestmtContext))
+func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateStmt:
+		if n.Relation != nil {
+			tableName := omniTableName(n.Relation)
+			schema := omniSchemaName(n.Relation)
+			if tableName != "" {
+				r.tableMap.set(schema, tableName, int(r.ContentEndLine()))
+			}
+		}
+	case *ast.AlterTableStmt:
+		if n.Relation != nil {
+			tableName := omniTableName(n.Relation)
+			schema := omniSchemaName(n.Relation)
+			if tableName != "" {
+				r.tableMap.add(schema, tableName, int(r.ContentEndLine()))
+			}
+		}
 	default:
-		// Do nothing for other node types
 	}
-	return nil
-}
-
-// OnExit is called when the parser exits a rule context.
-func (*statementMergeAlterTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *statementMergeAlterTableRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	allQualifiedNames := ctx.AllQualified_name()
-	if len(allQualifiedNames) == 0 {
-		return
-	}
-
-	qualifiedName := allQualifiedNames[0]
-	tableName := extractTableName(qualifiedName)
-	schema := extractSchemaName(qualifiedName)
-	if schema == "" {
-		schema = "public"
-	}
-
-	if tableName == "" {
-		return
-	}
-
-	r.tableMap.set(schema, tableName, ctx.GetStop().GetLine())
-}
-
-func (r *statementMergeAlterTableRule) handleAltertablestmt(ctx *parser.AltertablestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	relationExpr := ctx.Relation_expr()
-	if relationExpr == nil {
-		return
-	}
-
-	qualifiedName := relationExpr.Qualified_name()
-	if qualifiedName == nil {
-		return
-	}
-
-	tableName := extractTableName(qualifiedName)
-	schema := extractSchemaName(qualifiedName)
-	if schema == "" {
-		schema = "public"
-	}
-
-	if tableName == "" {
-		return
-	}
-
-	r.tableMap.add(schema, tableName, ctx.GetStop().GetLine())
 }
 
 func (r *statementMergeAlterTableRule) generateAdvice() []*storepb.Advice {
@@ -188,9 +124,9 @@ func (r *statementMergeAlterTableRule) generateAdvice() []*storepb.Advice {
 	for _, table := range tableList {
 		if table.count > 1 {
 			adviceList = append(adviceList, &storepb.Advice{
-				Status:  r.level,
+				Status:  r.Level,
 				Code:    code.StatementRedundantAlterTable.Int32(),
-				Title:   r.title,
+				Title:   r.Title,
 				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
 				StartPosition: &storepb.Position{
 					Line:   int32(table.line),

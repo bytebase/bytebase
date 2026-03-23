@@ -24,7 +24,7 @@
       title: TABLE_COMMENT
       content: Comment is required for table `d`
       startposition:
-        line: 3
+        line: 2
         column: 0
       endposition: null
 - statement: |-
@@ -38,7 +38,7 @@
       title: TABLE_COMMENT
       content: Comment is required for table `t`
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-
@@ -52,7 +52,7 @@
       title: TABLE_COMMENT
       content: Comment is required for table `t`
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
 - statement: |-

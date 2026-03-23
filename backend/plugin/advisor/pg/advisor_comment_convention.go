@@ -6,14 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -41,33 +38,18 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &commentConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		maxLength: int(numberPayload.Number),
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type commentConventionRule struct {
-	BaseRule
+	OmniBaseRule
 
 	maxLength int
 }
@@ -76,46 +58,22 @@ func (*commentConventionRule) Name() string {
 	return "comment_convention"
 }
 
-func (r *commentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Commentstmt":
-		r.handleCommentstmt(ctx)
-	default:
-		// Do nothing for other node types
-	}
-	return nil
-}
-
-func (*commentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *commentConventionRule) handleCommentstmt(ctx antlr.ParserRuleContext) {
-	commentstmtCtx, ok := ctx.(*parser.CommentstmtContext)
+func (r *commentConventionRule) OnStatement(node ast.Node) {
+	cs, ok := node.(*ast.CommentStmt)
 	if !ok {
 		return
 	}
 
-	if !isTopLevel(commentstmtCtx.GetParent()) {
-		return
-	}
-
-	// Extract comment text
-	if commentstmtCtx.Comment_text() != nil && commentstmtCtx.Comment_text().Sconst() != nil {
-		comment := extractStringConstant(commentstmtCtx.Comment_text().Sconst())
-
-		// Check length
-		if r.maxLength > 0 && len(comment) > r.maxLength {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
-				Code:    code.CommentTooLong.Int32(),
-				Title:   r.title,
-				Content: fmt.Sprintf("The length of comment should be within %d characters", r.maxLength),
-				StartPosition: &storepb.Position{
-					Line:   int32(commentstmtCtx.GetStart().GetLine()),
-					Column: 0,
-				},
-			})
-		}
+	if r.maxLength > 0 && len(cs.Comment) > r.maxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.Level,
+			Code:    code.CommentTooLong.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("The length of comment should be within %d characters", r.maxLength),
+			StartPosition: &storepb.Position{
+				Line:   r.ContentStartLine(),
+				Column: 0,
+			},
+		})
 	}
 }
