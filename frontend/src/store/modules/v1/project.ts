@@ -338,11 +338,9 @@ export const useProjectByName = (name: MaybeRef<string>) => {
     () => unref(name),
     () => {
       ready.value = false;
-      store
-        .getOrFetchProjectByName(unref(name), /* silent */ true)
-        .then(() => {
-          ready.value = true;
-        });
+      store.getOrFetchProjectByName(unref(name), /* silent */ true).then(() => {
+        ready.value = true;
+      });
     },
     { immediate: true }
   );
