@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watchEffect } from "vue";
+import { computed, reactive, ref, unref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { projectServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
@@ -334,12 +334,16 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 export const useProjectByName = (name: MaybeRef<string>) => {
   const store = useProjectV1Store();
   const ready = ref(false);
-  watchEffect(() => {
-    ready.value = false;
-    store.getOrFetchProjectByName(unref(name), /* silent */ true).then(() => {
-      ready.value = true;
-    });
-  });
+  watch(
+    () => unref(name),
+    () => {
+      ready.value = false;
+      store.getOrFetchProjectByName(unref(name), /* silent */ true).then(() => {
+        ready.value = true;
+      });
+    },
+    { immediate: true }
+  );
   const project = computed(() => {
     return store.getProjectByName(unref(name));
   });
