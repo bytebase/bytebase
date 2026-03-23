@@ -1,0 +1,615 @@
+import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { createI18n } from "vue-i18n";
+import type { AgentLoopOutcome } from "../logic/types";
+import { useAgentStore } from "../store/agent";
+import AgentInput from "./AgentInput.vue";
+
+const {
+  mockRunAgentLoop,
+  mockBuildSystemPrompt,
+  mockCreateToolExecutor,
+  mockGetToolDefinitions,
+  mockRoute,
+} = vi.hoisted(() => ({
+  mockRunAgentLoop: vi.fn(),
+  mockBuildSystemPrompt: vi.fn(() => "system-prompt"),
+  mockCreateToolExecutor: vi.fn((_router?: unknown, _options?: unknown) =>
+    vi.fn()
+  ),
+  mockGetToolDefinitions: vi.fn(() => []),
+  mockRoute: { fullPath: "/projects/demo" },
+}));
+
+vi.mock("../logic/agentLoop", () => ({
+  runAgentLoop: mockRunAgentLoop,
+}));
+
+vi.mock("../logic/prompt", () => ({
+  buildSystemPrompt: mockBuildSystemPrompt,
+}));
+
+vi.mock("../logic/tools", () => ({
+  createToolExecutor: mockCreateToolExecutor,
+  getToolDefinitions: mockGetToolDefinitions,
+}));
+
+vi.mock("vue-router", () => ({
+  useRoute: () => mockRoute,
+  useRouter: () => ({}),
+}));
+
+const getTextareaValue = (wrapper: ReturnType<typeof mount>) => {
+  return (wrapper.find("textarea").element as HTMLTextAreaElement).value;
+};
+const flushPromises = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
+const createDeferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+  return { promise, resolve };
+};
+
+const i18n = createI18n({
+  legacy: false,
+  locale: "en-US",
+  messages: {
+    "en-US": {
+      agent: {
+        interrupted: "Interrupted",
+        "input-placeholder": "Ask anything...",
+        send: "Send",
+        reply: "Reply",
+        stop: "Stop",
+        confirm: "Confirm",
+        cancel: "Cancel",
+        "pending-input-hint": "Reply below to continue this thread.",
+        "pending-confirm-hint":
+          "Choose confirm or cancel to continue this thread.",
+        "pending-choose-hint": "Choose an option to continue this thread.",
+      },
+    },
+  },
+});
+
+describe("AgentInput", () => {
+  let pinia: ReturnType<typeof createPinia>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    pinia = createPinia();
+    setActivePinia(pinia);
+    mockRunAgentLoop.mockReset();
+    mockBuildSystemPrompt.mockClear();
+    mockCreateToolExecutor.mockClear();
+    mockGetToolDefinitions.mockClear();
+  });
+
+  beforeEach(() => {
+    mockRoute.fullPath = "/projects/demo";
+    document.title = "Demo Page";
+  });
+
+  test("submits pending input as a tool result and resumes the same thread", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "tool-ask",
+          name: "ask_user",
+          arguments: JSON.stringify({
+            prompt: "Which project should I use?",
+            kind: "input",
+          }),
+        },
+      ],
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+    });
+
+    mockRunAgentLoop.mockImplementation(
+      async (
+        messages: unknown,
+        _tools: unknown,
+        _executor: unknown,
+        callbacks?: { onText?: (text: string) => void }
+      ) => {
+        callbacks?.onText?.("Using project demo.");
+        return {
+          kind: "completed",
+          text: "Using project demo.",
+          success: true,
+          explicit: true,
+        };
+      }
+    );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("demo-project");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    const toolMessages = store
+      .getMessages(threadId)
+      .filter((message) => message.role === "tool");
+    expect(toolMessages).toHaveLength(1);
+    expect(toolMessages[0].toolCallId).toBe("tool-ask");
+    expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
+      kind: "input",
+      answer: "demo-project",
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(store.currentThreadId).toBe(threadId);
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+
+    const [messages] = mockRunAgentLoop.mock.calls[0];
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "system", content: "system-prompt" }),
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-ask",
+        }),
+      ])
+    );
+  });
+
+  test("resumes pending asks with the saved thread page snapshot", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+    });
+
+    mockRoute.fullPath = "/projects/other";
+    document.title = "Other Page";
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Using project demo.",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("demo-project");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/original",
+      title: "Original Page",
+    });
+  });
+
+  test("refreshes the saved thread page snapshot after navigate before a follow-up turn", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+    let runCount = 0;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+
+    mockCreateToolExecutor.mockImplementation((_router: unknown, _options) => {
+      const options = _options as { onNavigate?: () => void } | undefined;
+      return vi.fn(async (name: string) => {
+        if (name !== "navigate") {
+          throw new Error(`Unexpected tool: ${name}`);
+        }
+        mockRoute.fullPath = "/projects/navigated";
+        document.title = "Navigated Page";
+        options?.onNavigate?.();
+        return {
+          kind: "tool_result",
+          result: JSON.stringify({
+            navigated: true,
+            currentPath: "/projects/navigated",
+          }),
+        };
+      });
+    });
+    mockRunAgentLoop.mockImplementation(
+      async (
+        _messages: unknown,
+        _tools: unknown,
+        executor: (
+          name: string,
+          args: Record<string, unknown>,
+          toolCallId: string
+        ) => Promise<{ kind: string; result?: string }>,
+        callbacks?: {
+          onAssistantMessage?: (message: {
+            content?: string;
+            toolCalls?: unknown[];
+          }) => void;
+          onToolResult?: (toolCallId: string, result: string) => void;
+        }
+      ) => {
+        runCount += 1;
+        if (runCount === 1) {
+          callbacks?.onAssistantMessage?.({
+            content: "",
+            toolCalls: [
+              {
+                id: "tool-nav",
+                name: "navigate",
+                arguments: JSON.stringify({ path: "/projects/navigated" }),
+              },
+            ],
+          });
+          const result = await executor(
+            "navigate",
+            { path: "/projects/navigated" },
+            "tool-nav"
+          );
+          if (result.kind === "tool_result" && result.result) {
+            callbacks?.onToolResult?.("tool-nav", result.result);
+          }
+          return {
+            kind: "awaiting_user",
+            ask: {
+              toolCallId: "tool-ask",
+              prompt: "Continue?",
+              kind: "input",
+            },
+          };
+        }
+        return {
+          kind: "completed",
+          text: "Done",
+          success: true,
+          explicit: true,
+        };
+      }
+    );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("navigate first");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/navigated",
+      title: "Navigated Page",
+    });
+    expect(store.getPendingAsk(threadId)).toEqual({
+      toolCallId: "tool-ask",
+      prompt: "Continue?",
+      kind: "input",
+    });
+
+    mockRoute.fullPath = "/projects/elsewhere";
+    document.title = "Elsewhere Page";
+
+    await wrapper.find("textarea").setValue("continue");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(1, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(2, {
+      path: "/projects/navigated",
+      title: "Navigated Page",
+    });
+  });
+
+  test("keeps the latest run cancellable when an earlier aborted run settles late", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+    const firstRun = createDeferred<AgentLoopOutcome>();
+    const secondRun = createDeferred<AgentLoopOutcome>();
+    let firstSignal: AbortSignal | undefined;
+    let secondSignal: AbortSignal | undefined;
+
+    mockRunAgentLoop
+      .mockImplementationOnce(
+        async (
+          _messages: unknown,
+          _tools: unknown,
+          _executor: unknown,
+          _callbacks: unknown,
+          signal?: AbortSignal
+        ) => {
+          firstSignal = signal;
+          return firstRun.promise;
+        }
+      )
+      .mockImplementationOnce(
+        async (
+          _messages: unknown,
+          _tools: unknown,
+          _executor: unknown,
+          _callbacks: unknown,
+          signal?: AbortSignal
+        ) => {
+          secondSignal = signal;
+          return secondRun.promise;
+        }
+      );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("first request");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(firstSignal);
+    expect(store.loading).toBe(true);
+
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(store.abortController).toBeNull();
+    expect(store.loading).toBe(false);
+
+    await wrapper.find("textarea").setValue("second request");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.loading).toBe(true);
+
+    firstRun.resolve({ kind: "aborted" });
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.loading).toBe(true);
+    expect(
+      store
+        .getMessages(threadId)
+        .some((message) => message.content === "_Interrupted_")
+    ).toBe(false);
+
+    secondRun.resolve({
+      kind: "completed",
+      text: "Done",
+      success: true,
+      explicit: true,
+    });
+    await flushPromises();
+
+    expect(store.abortController).toBeNull();
+    expect(store.loading).toBe(false);
+  });
+
+  test("clears stale composer input when pending asks disappear", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.awaitUser(threadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+      defaultValue: "demo-project",
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
+    await wrapper.find("textarea").setValue("stale input");
+
+    store.clearPendingAsk(threadId);
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("");
+  });
+
+  test("clears stale composer input when switching threads", async () => {
+    const store = useAgentStore();
+    const firstThreadId = store.currentThreadId!;
+
+    store.awaitUser(firstThreadId, {
+      toolCallId: "tool-ask",
+      prompt: "Which project should I use?",
+      kind: "input",
+      defaultValue: "demo-project",
+    });
+
+    const secondThread = store.createThread({ title: "Second" });
+    store.setCurrentThread(firstThreadId);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
+    await wrapper.find("textarea").setValue("stale input");
+
+    store.setCurrentThread(secondThread.id);
+    await flushPromises();
+    expect(getTextareaValue(wrapper)).toBe("");
+
+    store.setCurrentThread(firstThreadId);
+    await flushPromises();
+    expect(getTextareaValue(wrapper)).toBe("demo-project");
+  });
+
+  test("uses choose buttons to answer pending choose prompts", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "tool-choose",
+          name: "ask_user",
+          arguments: JSON.stringify({
+            prompt: "Which environment should I use?",
+            kind: "choose",
+            options: [
+              {
+                label: "Production",
+                value: "prod",
+                description: "Use the production environment",
+              },
+              {
+                label: "Staging",
+                value: "staging",
+              },
+            ],
+          }),
+        },
+      ],
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-choose",
+      prompt: "Which environment should I use?",
+      kind: "choose",
+      options: [
+        {
+          label: "Production",
+          value: "prod",
+          description: "Use the production environment",
+        },
+        {
+          label: "Staging",
+          value: "staging",
+        },
+      ],
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Using production.",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const buttons = wrapper.findAll("button");
+    expect(buttons).toHaveLength(2);
+    await buttons[0].trigger("click");
+    await flushPromises();
+
+    const toolMessages = store
+      .getMessages(threadId)
+      .filter((message) => message.role === "tool");
+    expect(toolMessages).toHaveLength(1);
+    expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
+      kind: "choose",
+      answer: "Production",
+      value: "prod",
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+  });
+
+  test("uses confirm buttons to answer pending confirmation prompts", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "tool-confirm",
+          name: "ask_user",
+          arguments: JSON.stringify({
+            prompt: "Delete the database?",
+            kind: "confirm",
+            confirmLabel: "Delete",
+            cancelLabel: "Keep it",
+          }),
+        },
+      ],
+    });
+    store.awaitUser(threadId, {
+      toolCallId: "tool-confirm",
+      prompt: "Delete the database?",
+      kind: "confirm",
+      confirmLabel: "Delete",
+      cancelLabel: "Keep it",
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Canceled.",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const buttons = wrapper.findAll("button");
+    expect(buttons).toHaveLength(2);
+    await buttons[0].trigger("click");
+    await flushPromises();
+
+    const toolMessages = store
+      .getMessages(threadId)
+      .filter((message) => message.role === "tool");
+    expect(toolMessages).toHaveLength(1);
+    expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
+      kind: "confirm",
+      answer: "Delete",
+      confirmed: true,
+    });
+    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+  });
+});
