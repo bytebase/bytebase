@@ -1710,6 +1710,7 @@ from pg_proc p
 where n.nspname not in (%s)
   AND n.nspname NOT LIKE 'pg_temp%%'
   AND n.nspname NOT LIKE 'pg_toast%%'
+  AND p.prokind <> 'a'
   AND pt.typrelid IS NOT NULL
 `, pgparser.SystemSchemaWhereClause)
 
@@ -1752,6 +1753,7 @@ left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
 where n.nspname not in (%s)
   AND n.nspname NOT LIKE 'pg_temp%%'
   AND n.nspname NOT LIKE 'pg_toast%%'
+  AND p.prokind <> 'a'
 order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
