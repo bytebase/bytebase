@@ -64,19 +64,15 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 	if ws == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace is required"))
 	}
-	workspaceID, err := common.GetWorkspaceID(ws.Name)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workspace name"))
-	}
-	if workspaceID != common.GetWorkspaceIDFromContext(ctx) {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("can only update your own workspace"))
+	if req.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 	if len(req.Msg.UpdateMask.GetPaths()) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
 	}
 
 	patch := &store.UpdateWorkspaceMessage{
-		ResourceID: workspaceID,
+		ResourceID: common.GetWorkspaceIDFromContext(ctx),
 	}
 	for _, path := range req.Msg.UpdateMask.GetPaths() {
 		switch path {
