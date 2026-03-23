@@ -6,20 +6,15 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
+	pgparser "github.com/bytebase/omni/pg/parser"
 	pg "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-var (
-	// globalFollowSetsByState is the global follow sets by state.
-	// It is shared by all PostgreSQL completers.
-	// The FollowSetsByState is the thread-safe struct.
-	globalFollowSetsByState = base.NewFollowSetsByState()
 )
 
 func init() {
@@ -43,121 +38,74 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	return trickyCompleter.completion()
 }
 
-func newIgnoredTokens() map[int]bool {
-	return map[int]bool{
-		antlr.TokenEOF:                                                 true,
-		pg.PostgreSQLLexerDollar:                                       true,
-		pg.PostgreSQLLexerOPEN_PAREN:                                   true,
-		pg.PostgreSQLLexerCLOSE_PAREN:                                  true,
-		pg.PostgreSQLLexerOPEN_BRACKET:                                 true,
-		pg.PostgreSQLLexerCLOSE_BRACKET:                                true,
-		pg.PostgreSQLLexerCOMMA:                                        true,
-		pg.PostgreSQLLexerSEMI:                                         true,
-		pg.PostgreSQLLexerCOLON:                                        true,
-		pg.PostgreSQLLexerEQUAL:                                        true,
-		pg.PostgreSQLLexerDOT:                                          true,
-		pg.PostgreSQLLexerPLUS:                                         true,
-		pg.PostgreSQLLexerMINUS:                                        true,
-		pg.PostgreSQLLexerSLASH:                                        true,
-		pg.PostgreSQLLexerCARET:                                        true,
-		pg.PostgreSQLLexerLT:                                           true,
-		pg.PostgreSQLLexerGT:                                           true,
-		pg.PostgreSQLLexerLESS_LESS:                                    true,
-		pg.PostgreSQLLexerGREATER_GREATER:                              true,
-		pg.PostgreSQLLexerCOLON_EQUALS:                                 true,
-		pg.PostgreSQLLexerLESS_EQUALS:                                  true,
-		pg.PostgreSQLLexerEQUALS_GREATER:                               true,
-		pg.PostgreSQLLexerGREATER_EQUALS:                               true,
-		pg.PostgreSQLLexerDOT_DOT:                                      true,
-		pg.PostgreSQLLexerNOT_EQUALS:                                   true,
-		pg.PostgreSQLLexerTYPECAST:                                     true,
-		pg.PostgreSQLLexerPERCENT:                                      true,
-		pg.PostgreSQLLexerPARAM:                                        true,
-		pg.PostgreSQLLexerOperator:                                     true,
-		pg.PostgreSQLLexerIdentifier:                                   true,
-		pg.PostgreSQLLexerQuotedIdentifier:                             true,
-		pg.PostgreSQLLexerUnterminatedQuotedIdentifier:                 true,
-		pg.PostgreSQLLexerInvalidQuotedIdentifier:                      true,
-		pg.PostgreSQLLexerInvalidUnterminatedQuotedIdentifier:          true,
-		pg.PostgreSQLLexerUnicodeQuotedIdentifier:                      true,
-		pg.PostgreSQLLexerUnterminatedUnicodeQuotedIdentifier:          true,
-		pg.PostgreSQLLexerInvalidUnicodeQuotedIdentifier:               true,
-		pg.PostgreSQLLexerInvalidUnterminatedUnicodeQuotedIdentifier:   true,
-		pg.PostgreSQLLexerStringConstant:                               true,
-		pg.PostgreSQLLexerUnterminatedStringConstant:                   true,
-		pg.PostgreSQLLexerUnicodeEscapeStringConstant:                  true,
-		pg.PostgreSQLLexerUnterminatedUnicodeEscapeStringConstant:      true,
-		pg.PostgreSQLLexerBeginDollarStringConstant:                    true,
-		pg.PostgreSQLLexerBinaryStringConstant:                         true,
-		pg.PostgreSQLLexerUnterminatedBinaryStringConstant:             true,
-		pg.PostgreSQLLexerInvalidBinaryStringConstant:                  true,
-		pg.PostgreSQLLexerInvalidUnterminatedBinaryStringConstant:      true,
-		pg.PostgreSQLLexerHexadecimalStringConstant:                    true,
-		pg.PostgreSQLLexerUnterminatedHexadecimalStringConstant:        true,
-		pg.PostgreSQLLexerInvalidHexadecimalStringConstant:             true,
-		pg.PostgreSQLLexerInvalidUnterminatedHexadecimalStringConstant: true,
-		pg.PostgreSQLLexerIntegral:                                     true,
-		pg.PostgreSQLLexerNumericFail:                                  true,
-		pg.PostgreSQLLexerNumeric:                                      true,
+// computeSQLAndByteOffset converts (statement, caretLine, caretOffset) to
+// (trimmedSQL, byteOffset) for omni's parser.Collect API.
+func computeSQLAndByteOffset(statement string, caretLine int, caretOffset int, tricky bool) (string, int) {
+	var sql string
+	var newLine, newOffset int
+	if tricky {
+		sql, newLine, newOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+		sql, newLine, newOffset = skipHeadingSQLWithoutSemicolon(sql, newLine, newOffset)
+	} else {
+		sql, newLine, newOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	}
+	return sql, lineColumnToByteOffset(sql, newLine, newOffset)
 }
 
-func newPreferredRules() map[int]bool {
-	return map[int]bool{
-		pg.PostgreSQLParserRULE_relation_expr:  true,
-		pg.PostgreSQLParserRULE_qualified_name: true,
-		pg.PostgreSQLParserRULE_columnref:      true,
-		pg.PostgreSQLParserRULE_func_name:      true,
+// lineColumnToByteOffset converts 1-based line and 0-based column (character count)
+// to a byte offset. Column is measured in runes (characters), not bytes, so that
+// multi-byte UTF-8 characters are handled correctly.
+func lineColumnToByteOffset(sql string, line, column int) int {
+	currentLine := 1
+	for i := 0; i < len(sql); i++ {
+		if currentLine == line {
+			// Count 'column' runes from position i to get the byte offset.
+			pos := i
+			for c := 0; c < column && pos < len(sql); c++ {
+				_, size := utf8.DecodeRuneInString(sql[pos:])
+				pos += size
+			}
+			if pos > len(sql) {
+				return len(sql)
+			}
+			return pos
+		}
+		if sql[i] == '\n' {
+			currentLine++
+		}
 	}
+	return len(sql)
 }
 
-func newNoSeparatorRequired() map[int]bool {
-	return map[int]bool{
-		pg.PostgreSQLLexerDollar:          true,
-		pg.PostgreSQLLexerOPEN_PAREN:      true,
-		pg.PostgreSQLLexerCLOSE_PAREN:     true,
-		pg.PostgreSQLLexerOPEN_BRACKET:    true,
-		pg.PostgreSQLLexerCLOSE_BRACKET:   true,
-		pg.PostgreSQLLexerCOMMA:           true,
-		pg.PostgreSQLLexerSEMI:            true,
-		pg.PostgreSQLLexerCOLON:           true,
-		pg.PostgreSQLLexerEQUAL:           true,
-		pg.PostgreSQLLexerDOT:             true,
-		pg.PostgreSQLLexerPLUS:            true,
-		pg.PostgreSQLLexerMINUS:           true,
-		pg.PostgreSQLLexerSLASH:           true,
-		pg.PostgreSQLLexerCARET:           true,
-		pg.PostgreSQLLexerLT:              true,
-		pg.PostgreSQLLexerGT:              true,
-		pg.PostgreSQLLexerLESS_LESS:       true,
-		pg.PostgreSQLLexerGREATER_GREATER: true,
-		pg.PostgreSQLLexerCOLON_EQUALS:    true,
-		pg.PostgreSQLLexerLESS_EQUALS:     true,
-		pg.PostgreSQLLexerEQUALS_GREATER:  true,
-		pg.PostgreSQLLexerGREATER_EQUALS:  true,
-		pg.PostgreSQLLexerDOT_DOT:         true,
-		pg.PostgreSQLLexerNOT_EQUALS:      true,
-		pg.PostgreSQLLexerTYPECAST:        true,
-		pg.PostgreSQLLexerPERCENT:         true,
-		pg.PostgreSQLLexerPARAM:           true,
+// isNoSeparatorRequired returns true if tokenType is a punctuation/operator token
+// that does not require whitespace separation from the next token.
+func isNoSeparatorRequired(tokenType int) bool {
+	switch tokenType {
+	case '$', '(', ')', '[', ']', ',', ';', ':', '=', '.',
+		'+', '-', '/', '^', '<', '>', '%', '*',
+		pgparser.TYPECAST, pgparser.DOT_DOT, pgparser.COLON_EQUALS,
+		pgparser.EQUALS_GREATER, pgparser.LESS_EQUALS,
+		pgparser.GREATER_EQUALS, pgparser.NOT_EQUALS, pgparser.PARAM,
+		pgparser.Op:
+		return true
 	}
+	return false
 }
 
 type Completer struct {
-	ctx                 context.Context
-	core                *base.CodeCompletionCore
-	scene               base.SceneType
-	parser              *pg.PostgreSQLParser
-	lexer               *pg.PostgreSQLLexer
-	scanner             *base.Scanner
-	instanceID          string
-	defaultDatabase     string
-	defaultSchema       string
-	schemaNotSelected   bool // true if user didn't explicitly select a schema
-	getMetadata         base.GetDatabaseMetadataFunc
-	listDatabaseNames   base.ListDatabaseNamesFunc
-	metadataCache       map[string]*model.DatabaseMetadata
-	noSeparatorRequired map[int]bool
+	ctx               context.Context
+	scene             base.SceneType
+	sql               string           // the SQL statement (after skipHeadingSQLs)
+	cursorByteOffset  int              // byte offset in sql for omni Collect
+	tokens            []pgparser.Token // omni tokens for the SQL
+	caretTokenIndex   int              // index in tokens at/near the caret
+	instanceID        string
+	defaultDatabase   string
+	defaultSchema     string
+	schemaNotSelected bool
+	getMetadata       base.GetDatabaseMetadataFunc
+	listDatabaseNames base.ListDatabaseNamesFunc
+	metadataCache     map[string]*model.DatabaseMetadata
 	// referencesStack is a hierarchical stack of table references.
 	// We'll update the stack when we encounter a new FROM clauses.
 	referencesStack [][]base.TableReference
@@ -170,115 +118,148 @@ type Completer struct {
 }
 
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	// For all PostgreSQL completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		pg.PostgreSQLParserRULE_simple_select_pramary,
-		pg.PostgreSQLParserRULE_select_no_parens,
-		pg.PostgreSQLParserRULE_target_alias,
-		pg.PostgreSQLParserRULE_with_clause,
-	)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, true /* tricky */)
+	tokens := pgparser.Tokenize(sql)
+	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	defaultSchema := cCtx.DefaultSchema
 	schemaNotSelected := defaultSchema == ""
 	if defaultSchema == "" {
 		defaultSchema = "public"
 	}
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       defaultSchema,
-		schemaNotSelected:   schemaNotSelected,
-		getMetadata:         cCtx.Metadata,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
+		ctx:               ctx,
+		scene:             cCtx.Scene,
+		sql:               sql,
+		cursorByteOffset:  byteOffset,
+		tokens:            tokens,
+		caretTokenIndex:   caretTokenIndex,
+		instanceID:        cCtx.InstanceID,
+		defaultDatabase:   cCtx.DefaultDatabase,
+		defaultSchema:     defaultSchema,
+		schemaNotSelected: schemaNotSelected,
+		getMetadata:       cCtx.Metadata,
+		listDatabaseNames: cCtx.ListDatabaseNames,
+		metadataCache:     make(map[string]*model.DatabaseMetadata),
+		cteCache:          make(map[int][]*base.VirtualTableReference),
 	}
 }
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	// For all PostgreSQL completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		pg.PostgreSQLParserRULE_simple_select_pramary,
-		pg.PostgreSQLParserRULE_select_no_parens,
-		pg.PostgreSQLParserRULE_target_alias,
-		pg.PostgreSQLParserRULE_with_clause,
-	)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
+	tokens := pgparser.Tokenize(sql)
+	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	defaultSchema := cCtx.DefaultSchema
 	schemaNotSelected := defaultSchema == ""
 	if defaultSchema == "" {
 		defaultSchema = "public"
 	}
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       defaultSchema,
-		schemaNotSelected:   schemaNotSelected,
-		getMetadata:         cCtx.Metadata,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
+		ctx:               ctx,
+		scene:             cCtx.Scene,
+		sql:               sql,
+		cursorByteOffset:  byteOffset,
+		tokens:            tokens,
+		caretTokenIndex:   caretTokenIndex,
+		instanceID:        cCtx.InstanceID,
+		defaultDatabase:   cCtx.DefaultDatabase,
+		defaultSchema:     defaultSchema,
+		schemaNotSelected: schemaNotSelected,
+		getMetadata:       cCtx.Metadata,
+		listDatabaseNames: cCtx.ListDatabaseNames,
+		metadataCache:     make(map[string]*model.DatabaseMetadata),
+		cteCache:          make(map[int][]*base.VirtualTableReference),
 	}
 }
 
+// findCaretTokenIndex returns the index of the first token whose start (Loc)
+// is at or past byteOffset. This matches ANTLR Scanner.SeekPosition semantics:
+// the caret token is the one that starts at or after the cursor position.
+// Uses >= so that when the cursor is exactly at a token boundary, we pick
+// that token (not the one before it).
+// Returns len(tokens) if all tokens are before byteOffset.
+func findCaretTokenIndex(tokens []pgparser.Token, byteOffset int) int {
+	for i, tok := range tokens {
+		if tok.Loc >= byteOffset {
+			return i
+		}
+	}
+	return len(tokens)
+}
+
 func (c *Completer) completion() ([]base.Candidate, error) {
-	// Check the caret token is quoted or not.
-	// This check should be done before checking the caret token is a separator or not.
-	if c.scanner.IsTokenType(pg.PostgreSQLLexerQuotedIdentifier) ||
-		c.scanner.IsTokenType(pg.PostgreSQLLexerInvalidQuotedIdentifier) ||
-		c.scanner.IsTokenType(pg.PostgreSQLLexerUnicodeQuotedIdentifier) {
-		c.caretTokenIsQuoted = true
+	// Check if the caret token is quoted.
+	if c.caretTokenIndex < len(c.tokens) {
+		tok := c.tokens[c.caretTokenIndex]
+		if tok.Type == pgparser.IDENT && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '"' {
+			c.caretTokenIsQuoted = true
+		}
 	}
 
-	caretIndex := c.scanner.GetIndex()
-	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
+	caretIndex := c.caretTokenIndex
+	if caretIndex > 0 && !isNoSeparatorRequired(c.tokens[caretIndex-1].Type) {
 		caretIndex--
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-	c.parser.Reset()
-	var context antlr.ParserRuleContext
-	if c.scene == base.SceneTypeQuery {
-		context = c.parser.Selectstmt()
-	} else {
-		context = c.parser.Root()
+
+	// Use omni parser to collect grammar candidates instead of C3.
+	candidates := pgparser.Collect(c.sql, c.cursorByteOffset)
+
+	// If Collect returned no rule candidates and the cursor is at the end of a
+	// partial identifier token (prefix), retry Collect at the start of that
+	// token.  This enables completion for "SELECT * FROM t|" style inputs
+	// where the parser sees a complete token and doesn't know what grammar
+	// rule to suggest.
+	if len(candidates.Rules) == 0 {
+		if prefixTok, ok := c.prefixToken(); ok {
+			candidates = pgparser.Collect(c.sql, prefixTok.Loc)
+		}
 	}
 
-	candidates := c.core.CollectCandidates(caretIndex, context)
-
-	for ruleName := range candidates.Rules {
-		if ruleName == pg.PostgreSQLParserRULE_columnref {
+	for _, rc := range candidates.Rules {
+		if rc.Rule == "columnref" {
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
+			break
 		}
 	}
 
 	return c.convertCandidates(candidates)
+}
+
+// prefixToken returns the token immediately before (or containing) the cursor
+// position when that token is an identifier-like token that the user is still
+// typing.  Returns false if no such token exists.
+func (c *Completer) prefixToken() (pgparser.Token, bool) {
+	// caretTokenIndex points to the first token at or past cursorByteOffset.
+	// The partial-prefix token is the one just before it (when the cursor is
+	// right after it) or the token itself (when the cursor is inside it).
+	idx := c.caretTokenIndex
+
+	// Check if the cursor is inside the token at caretTokenIndex.
+	if idx < len(c.tokens) {
+		tok := c.tokens[idx]
+		if tok.Loc < c.cursorByteOffset && c.cursorByteOffset <= tok.End && isIdentLikeToken(tok.Type) {
+			return tok, true
+		}
+	}
+
+	// Check the token before caretTokenIndex (cursor is right after it).
+	if idx > 0 {
+		tok := c.tokens[idx-1]
+		if tok.End == c.cursorByteOffset && isIdentLikeToken(tok.Type) {
+			return tok, true
+		}
+	}
+
+	return pgparser.Token{}, false
+}
+
+// isIdentLikeToken returns true for token types that represent identifiers or
+// unreserved keywords that a user might be partially typing.
+func isIdentLikeToken(tokenType int) bool {
+	return pgparser.IsIdentifierTokenType(tokenType)
 }
 
 type CompletionMap map[string]base.Candidate
@@ -424,20 +405,44 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 		}
 		for table := range tables {
 			tableMeta := schemaMeta.GetTable(table)
-			if tableMeta == nil {
+			if tableMeta != nil {
+				for _, column := range tableMeta.GetProto().GetColumns() {
+					definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					m.Insert(base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    column.Comment,
+					})
+				}
 				continue
 			}
-			for _, column := range tableMeta.GetProto().GetColumns() {
-				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
-				if !column.Nullable {
-					definition += ", NOT NULL"
+			// Check foreign tables.
+			if extMeta := schemaMeta.GetExternalTable(table); extMeta != nil {
+				for _, column := range extMeta.GetProto().GetColumns() {
+					definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					m.Insert(base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    column.Comment,
+					})
 				}
-				m.Insert(base.Candidate{
-					Type:       base.CandidateTypeColumn,
-					Text:       c.quotedIdentifierIfNeeded(column.Name),
-					Definition: definition,
-					Comment:    column.Comment,
-				})
+				continue
+			}
+			// Check materialized views by resolving their definitions.
+			if mvMeta := schemaMeta.GetMaterializedView(table); mvMeta != nil {
+				if columns, err := c.resolveMaterializedViewColumns(mvMeta.GetDefinition(), schema, table); err == nil {
+					for _, col := range columns {
+						m.Insert(col)
+					}
+				}
 			}
 		}
 	}
@@ -476,6 +481,35 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 				})
 			}
 		}
+		for _, ft := range schemaMeta.ListForeignTableNames() {
+			extMeta := schemaMeta.GetExternalTable(ft)
+			if extMeta == nil {
+				continue
+			}
+			for _, column := range extMeta.GetProto().GetColumns() {
+				definition := fmt.Sprintf("%s.%s | %s", schema, ft, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    column.Comment,
+				})
+			}
+		}
+		for _, mv := range schemaMeta.ListMaterializedViewNames() {
+			mvMeta := schemaMeta.GetMaterializedView(mv)
+			if mvMeta == nil {
+				continue
+			}
+			if columns, err := c.resolveMaterializedViewColumns(mvMeta.GetDefinition(), schema, mv); err == nil {
+				for _, col := range columns {
+					m.Insert(col)
+				}
+			}
+		}
 	}
 }
 
@@ -502,7 +536,7 @@ func (m CompletionMap) toSlice() []base.Candidate {
 	return result
 }
 
-func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+func (c *Completer) convertCandidates(candidates *pgparser.CandidateSet) ([]base.Candidate, error) {
 	keywordEntries := make(CompletionMap)
 	runtimeFunctionEntries := make(CompletionMap)
 	schemaEntries := make(CompletionMap)
@@ -511,59 +545,30 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	viewEntries := make(CompletionMap)
 	sequenceEntries := make(CompletionMap)
 
-	for token, value := range candidates.Tokens {
-		if token < 0 {
+	// Token candidates → keywords.
+	// Skip single-char punctuation/operator tokens (they are not useful keyword completions).
+	for _, tok := range candidates.Tokens {
+		if tok > 0 && tok < 256 {
 			continue
 		}
-		entry := c.parser.SymbolicNames[token]
-		if strings.HasSuffix(entry, "_P") {
-			entry = entry[:len(entry)-2]
-		} else {
-			entry = unquote(entry)
+		name := pgparser.TokenName(tok)
+		if name == "" {
+			continue
 		}
-
-		list := 0
-		if len(value) > 0 {
-			// For function call:
-			if value[0] == pg.PostgreSQLLexerOPEN_PAREN {
-				list = 1
-			} else {
-				for _, item := range value {
-					subEntry := c.parser.SymbolicNames[item]
-					if strings.HasSuffix(subEntry, "_P") {
-						subEntry = subEntry[:len(subEntry)-2]
-					} else {
-						subEntry = unquote(subEntry)
-					}
-					entry += " " + subEntry
-				}
-			}
-		}
-
-		switch list {
-		case 1:
-			runtimeFunctionEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeFunction,
-				Text: strings.ToLower(entry) + "()",
-			})
-		default:
-			keywordEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeKeyword,
-				Text: entry,
-			})
-		}
+		keywordEntries.Insert(base.Candidate{
+			Type: base.CandidateTypeKeyword,
+			Text: name,
+		})
 	}
 
-	for candidate := range candidates.Rules {
-		c.scanner.PopAndRestore()
-		c.scanner.Push()
+	// Rule candidates → semantic objects
+	for _, rc := range candidates.Rules {
+		c.fetchCommonTableExpression(candidates.CTEPositions)
 
-		c.fetchCommonTableExpression(candidates.Rules[candidate])
-
-		switch candidate {
-		case pg.PostgreSQLParserRULE_func_name:
+		switch rc.Rule {
+		case "func_name":
 			runtimeFunctionEntries.insertFunctions()
-		case pg.PostgreSQLParserRULE_relation_expr, pg.PostgreSQLParserRULE_qualified_name:
+		case "relation_expr", "qualified_name", "any_name":
 			qualifier, flags := c.determineQualifiedName()
 
 			if flags&ObjectFlagsShowFirst != 0 {
@@ -594,7 +599,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				viewEntries.insertViewsWithPrefix(c, schemas, includeSchemaPrefix)
 				sequenceEntries.insertSequencesWithPrefix(c, schemas, includeSchemaPrefix)
 			}
-		case pg.PostgreSQLParserRULE_columnref:
+		case "columnref":
 			schema, table, flags := c.determineColumnRef()
 			if flags&ObjectFlagsShowSchemas != 0 {
 				schemaEntries.insertSchemas(c)
@@ -693,12 +698,15 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						}
 					}
 				} else if len(c.references) > 0 {
-					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
-					for _, alias := range list {
-						columnEntries.Insert(base.Candidate{
-							Type: base.CandidateTypeColumn,
-							Text: c.quotedIdentifierIfNeeded(alias),
-						})
+					// Only suggest SELECT item aliases in ORDER BY / GROUP BY / HAVING.
+					if c.isInAliasAllowedContext() {
+						list := c.fetchSelectItemAliases(candidates.SelectAliasPositions)
+						for _, alias := range list {
+							columnEntries.Insert(base.Candidate{
+								Type: base.CandidateTypeColumn,
+								Text: c.quotedIdentifierIfNeeded(alias),
+							})
+						}
 					}
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
@@ -729,7 +737,6 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		}
 	}
 
-	c.scanner.PopAndRestore()
 	var result []base.Candidate
 	result = append(result, keywordEntries.toSlice()...)
 	result = append(result, runtimeFunctionEntries.toSlice()...)
@@ -742,14 +749,10 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	return result, nil
 }
 
-func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
+func (c *Completer) fetchCommonTableExpression(ctePositions []int) {
 	c.cteTables = nil
-	for _, rule := range ruleStack {
-		if rule.ID == pg.PostgreSQLParserRULE_select_no_parens {
-			for _, pos := range rule.CTEList {
-				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
-			}
-		}
+	for _, pos := range ctePositions {
+		c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
 	}
 }
 
@@ -757,7 +760,10 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 	if metadata, exists := c.cteCache[pos]; exists {
 		return metadata
 	}
-	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if pos >= len(c.sql) {
+		return nil
+	}
+	followingText := c.sql[pos:]
 	if len(followingText) == 0 {
 		return nil
 	}
@@ -817,39 +823,57 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 	l.tables = append(l.tables, table)
 }
 
-func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
-	canUseAliases := false
-	for i := len(ruleStack) - 1; i >= 0; i-- {
-		switch ruleStack[i].ID {
-		case pg.PostgreSQLParserRULE_simple_select_pramary, pg.PostgreSQLParserRULE_select_no_parens:
-			if !canUseAliases {
-				return nil
+// isInAliasAllowedContext checks if the caret is in a context where SELECT item
+// aliases are valid completions: ORDER BY, GROUP BY, or HAVING clauses.
+// Aliases are NOT allowed in WHERE, JOIN ON, FROM, or SELECT contexts.
+func (c *Completer) isInAliasAllowedContext() bool {
+	level := 0
+	for i := c.caretTokenIndex - 1; i >= 0; i-- {
+		switch c.tokens[i].Type {
+		case ')':
+			level++
+		case '(':
+			if level > 0 {
+				level--
+			} else {
+				return false // inside a subquery — don't look further
 			}
-			aliasMap := make(map[string]bool)
-			for pos := range ruleStack[i].SelectItemAliases {
-				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
-					aliasMap[aliasText] = true
-				}
-			}
-
-			var result []string
-			for alias := range aliasMap {
-				result = append(result, alias)
-			}
-			slices.Sort(result)
-			return result
-		case pg.PostgreSQLParserRULE_opt_sort_clause, pg.PostgreSQLParserRULE_group_clause, pg.PostgreSQLParserRULE_having_clause:
-			canUseAliases = true
 		default:
-			// Other cases
+		}
+		if level > 0 {
+			continue // skip tokens inside nested parens
+		}
+		switch c.tokens[i].Type {
+		case pgparser.ORDER, pgparser.GROUP_P, pgparser.HAVING:
+			return true
+		case pgparser.WHERE, pgparser.ON, pgparser.FROM, pgparser.SELECT,
+			pgparser.LIMIT, pgparser.OFFSET, pgparser.WINDOW, pgparser.FOR:
+			return false
 		}
 	}
+	return false
+}
 
-	return nil
+func (c *Completer) fetchSelectItemAliases(aliasPositions []int) []string {
+	aliasMap := make(map[string]bool)
+	for _, pos := range aliasPositions {
+		if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+			aliasMap[aliasText] = true
+		}
+	}
+	var result []string
+	for alias := range aliasMap {
+		result = append(result, alias)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *Completer) extractAliasText(pos int) string {
-	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if pos >= len(c.sql) {
+		return ""
+	}
+	followingText := c.sql[pos:]
 	if len(followingText) == 0 {
 		return ""
 	}
@@ -894,100 +918,121 @@ const (
 )
 
 func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */)
-	}
+	// Walk backward from the caret token to find qualifier.identifier pattern.
+	// We look for: [identifier] [.] [identifier_at_caret]
+	idx := c.caretTokenIndex
 
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerONLY) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec.
-		// Jump back.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	// Go left until we hit a non-identifier token.
-	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
-			c.scanner.Backward(true /* skipHidden */)
+	// If the caret token is an identifier or ONLY keyword, we're on the trailing identifier.
+	// Otherwise we might be right after the trailing identifier (e.g. after a dot).
+	if idx < len(c.tokens) {
+		tt := c.tokens[idx].Type
+		if tt != pgparser.ONLY && !pgparser.IsIdentifierTokenType(tt) {
+			idx--
 		}
-		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
-		}
+	} else {
+		idx = len(c.tokens) - 1
 	}
 
-	// The current token is on the leading identifier.
-	qualifier := ""
-	temp := ""
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = normalizeIdentifier(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
+	if idx < 0 {
+		return "", ObjectFlagsShowFirst | ObjectFlagsShowSecond
 	}
 
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
-		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond
+	// Check if there's a dot before the current identifier, indicating a qualifier.
+	if idx >= 2 && pgparser.IsIdentifierTokenType(c.tokens[idx].Type) &&
+		c.tokens[idx-1].Type == '.' &&
+		pgparser.IsIdentifierTokenType(c.tokens[idx-2].Type) {
+		qualifier := normalizeIdentifier(c.tokens[idx-2].Str)
+		return qualifier, ObjectFlagsShowSecond
 	}
 
-	qualifier = temp
-	return qualifier, ObjectFlagsShowSecond
+	// If caret is right after a dot (e.g. "schema.|"), the dot is at idx
+	if idx >= 1 && c.tokens[idx].Type == '.' &&
+		pgparser.IsIdentifierTokenType(c.tokens[idx-1].Type) {
+		qualifier := normalizeIdentifier(c.tokens[idx-1].Str)
+		return qualifier, ObjectFlagsShowSecond
+	}
+
+	return "", ObjectFlagsShowFirst | ObjectFlagsShowSecond
 }
 
 func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlags) {
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */)
-	}
+	// Walk backward from the caret token to find schema.table.column pattern.
+	idx := c.caretTokenIndex
 
-	tokenType := c.scanner.GetTokenType()
-	if tokenType != pg.PostgreSQLLexerDOT && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec.
-		// Jump back.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
-			c.scanner.Backward(true /* skipHidden */)
+	// If the caret token is not a dot and not an identifier, step back.
+	if idx < len(c.tokens) {
+		tt := c.tokens[idx].Type
+		if tt != '.' && !pgparser.IsIdentifierTokenType(tt) {
+			idx--
 		}
-		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
+	} else {
+		idx = len(c.tokens) - 1
+	}
 
-			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
-				c.scanner.Backward(true /* skipHidden */)
-				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-					c.scanner.Backward(true /* skipHidden */)
-				}
-			}
+	if idx < 0 {
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	}
+
+	// Walk backward to find the leftmost identifier in a dotted chain.
+	// Possible patterns:
+	//   column                    → show schemas, tables, columns
+	//   table.column              → show tables, columns
+	//   table.                    → show tables, columns
+	//   schema.table.column       → show columns
+	//   schema.table.             → show columns
+
+	// Collect identifiers and dots backward.
+	parts := []string{} // identifiers found, from right to left
+	pos := idx
+
+	// If current position is an identifier, collect it and move left.
+	if pos >= 0 && pgparser.IsIdentifierTokenType(c.tokens[pos].Type) {
+		parts = append(parts, normalizeIdentifier(c.tokens[pos].Str))
+		pos--
+	}
+
+	// Check for dot + identifier patterns going left.
+	for pos >= 1 && c.tokens[pos].Type == '.' && pgparser.IsIdentifierTokenType(c.tokens[pos-1].Type) {
+		parts = append(parts, normalizeIdentifier(c.tokens[pos-1].Str))
+		pos -= 2
+	}
+
+	// Handle trailing dot case: if current token is a dot, the parts collected
+	// so far are qualifiers. E.g. "table." means table is a qualifier.
+	if idx >= 0 && c.tokens[idx].Type == '.' {
+		// The dot is the last token. Parts are everything before the dot.
+		// e.g., for "schema.table." parts = ["table", "schema"]
+		// We treat this as schema=schema, table=table, show columns.
+		switch len(parts) {
+		case 0:
+			// Just a lone dot — shouldn't happen, but treat as no qualifier.
+			return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+		case 1:
+			// "table." → table=parts[0], show tables + columns
+			return parts[0], parts[0], ObjectFlagsShowTables | ObjectFlagsShowColumns
+		default:
+			// "schema.table." → schema=parts[1], table=parts[0], show columns
+			return parts[1], parts[0], ObjectFlagsShowColumns
 		}
 	}
 
-	schema = ""
-	table = ""
-	temp := ""
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = normalizeIdentifier(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
+	// Not a trailing dot case. Parts are from the identifier chain (right-to-left).
+	// parts[0] = rightmost (column), parts[1] = next left (table or schema), etc.
+	switch len(parts) {
+	case 0:
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	case 1:
+		// Single identifier, e.g. "col" → show schemas, tables, columns
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	case 2:
+		// "table.column" → We don't know yet if parts[1] is a schema or table.
+		// Return schema=table=parts[1] so the downstream code can check aliases
+		// and resolve against both schema and table metadata.
+		return parts[1], parts[1], ObjectFlagsShowTables | ObjectFlagsShowColumns
+	default:
+		// "schema.table.column" → schema=leftmost, table=second from left
+		return parts[len(parts)-1], parts[len(parts)-2], ObjectFlagsShowColumns
 	}
-
-	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
-		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
-	}
-
-	c.scanner.Forward(true /* skipHidden */) // skip dot
-	table = temp
-	schema = temp
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = normalizeIdentifier(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-
-		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
-			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-		}
-
-		table = temp
-		return schema, table, ObjectFlagsShowColumns
-	}
-
-	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
 }
 
 func normalizeIdentifier(tokenText string) string {
@@ -1015,85 +1060,40 @@ func (c *Completer) takeReferencesSnapshot() {
 }
 
 func (c *Completer) collectRemainingTableReferences() {
-	c.scanner.Push()
-
 	level := 0
-	for {
-		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) {
-				break
+	for i := c.caretTokenIndex; i < len(c.tokens); i++ {
+		switch c.tokens[i].Type {
+		case '(':
+			level++
+		case ')':
+			if level > 0 {
+				level--
 			}
-
-			switch c.scanner.GetTokenType() {
-			case pg.PostgreSQLLexerOPEN_PAREN:
-				level++
-			case pg.PostgreSQLLexerCLOSE_PAREN:
-				if level > 0 {
-					level--
-				}
-			case pg.PostgreSQLLexerFROM:
-				// Open and close parenthesis don't need to match, if we come from within a subquery.
-				if level == 0 {
-					found = true
-				}
-			default:
-				// Other tokens, continue scanning
+		case pgparser.FROM:
+			if level == 0 {
+				c.parseTableReferences(c.sql[c.tokens[i].Loc:])
 			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clauses found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
+		default:
 		}
 	}
 }
 
 func (c *Completer) collectLeadingTableReferences(caretIndex int) {
-	c.scanner.Push()
-
-	c.scanner.SeekIndex(0)
-
 	level := 0
-	for {
-		found := c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
-				break
+	for i := 0; i < len(c.tokens) && i < caretIndex; i++ {
+		switch c.tokens[i].Type {
+		case '(':
+			level++
+			c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+		case ')':
+			if level == 0 {
+				return // We cannot go above the initial nesting level.
 			}
-
-			switch c.scanner.GetTokenType() {
-			case pg.PostgreSQLLexerOPEN_PAREN:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case pg.PostgreSQLLexerCLOSE_PAREN:
-				if level == 0 {
-					c.scanner.PopAndRestore()
-					return // We cannot go above the initial nesting level.
-				}
-
-				level--
-				c.referencesStack = c.referencesStack[1:]
-			case pg.PostgreSQLLexerFROM:
-				found = true
-			default:
-				// Other tokens, continue scanning
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clauses found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == pg.PostgreSQLLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
+			level--
+			c.referencesStack = c.referencesStack[1:]
+		case pgparser.FROM:
+			c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+		default:
 		}
 	}
 }
@@ -1242,34 +1242,6 @@ func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
 
 	return tableAlias, columnAliases
 }
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*pg.PostgreSQLParser, *pg.PostgreSQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
 
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
@@ -1318,34 +1290,43 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	input := antlr.NewInputStream(statement)
-	lexer := pg.NewPostgreSQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
+	tokens := pgparser.Tokenize(statement)
+	caretByteOff := lineColumnToByteOffset(statement, caretLine, caretOffset)
 
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-	latestSelect := 0
+	latestSelectOffset := -1
+	latestSelectLine := 0
 	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
-		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+
+	for _, tok := range tokens {
+		if tok.Loc >= caretByteOff {
 			break
 		}
-		if token.GetTokenType() == pg.PostgreSQLLexerSELECT && token.GetColumn() == 0 {
-			latestSelect = token.GetTokenIndex()
-			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
-			newCaretOffset = caretOffset
+		if tok.Type == pgparser.SELECT {
+			// Check that this SELECT starts at column 0 of its line.
+			// Either it's the first byte of the string, or the byte immediately
+			// before it is a newline.
+			atColumn0 := tok.Loc == 0 || statement[tok.Loc-1] == '\n'
+			if atColumn0 {
+				latestSelectOffset = tok.Loc
+				// Compute the line number of this token.
+				line := 1
+				for j := 0; j < tok.Loc; j++ {
+					if statement[j] == '\n' {
+						line++
+					}
+				}
+				latestSelectLine = line
+				newCaretLine = caretLine - latestSelectLine + 1
+				newCaretOffset = caretOffset
+			}
 		}
 	}
 
-	if latestSelect == 0 {
+	if latestSelectOffset < 0 {
 		return statement, caretLine, caretOffset
 	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
+
+	return statement[latestSelectOffset:], newCaretLine, newCaretOffset
 }
 
 func (c *Completer) listAllSchemas() []string {
@@ -1408,6 +1389,36 @@ func (c *Completer) listMaterializedViews(schema string) []string {
 	return schemaMeta.ListMaterializedViewNames()
 }
 
+func (c *Completer) resolveMaterializedViewColumns(definition, schema, table string) ([]base.Candidate, error) {
+	if len(definition) == 0 {
+		return nil, nil
+	}
+	span, err := GetQuerySpan(
+		c.ctx,
+		base.GetQuerySpanContext{
+			InstanceID:              c.instanceID,
+			GetDatabaseMetadataFunc: c.getMetadata,
+			ListDatabaseNamesFunc:   c.listDatabaseNames,
+		},
+		base.Statement{Text: definition + ";"},
+		c.defaultDatabase,
+		"",
+		false,
+	)
+	if err != nil || span.NotFoundError != nil {
+		return nil, err
+	}
+	var candidates []base.Candidate
+	for _, col := range span.Results {
+		candidates = append(candidates, base.Candidate{
+			Type:       base.CandidateTypeColumn,
+			Text:       c.quotedIdentifierIfNeeded(col.Name),
+			Definition: fmt.Sprintf("%s.%s", schema, table),
+		})
+	}
+	return candidates, nil
+}
+
 func (c *Completer) listViews(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
 		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
@@ -1447,7 +1458,7 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if strings.ToLower(s) != s {
 		return fmt.Sprintf(`"%s"`, s)
 	}
-	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
+	if pgparser.IsReservedKeyword(strings.ToUpper(s)) {
 		return fmt.Sprintf(`"%s"`, s)
 	}
 	// PostgreSQL requires double quotes for identifiers with special characters or start with digits
