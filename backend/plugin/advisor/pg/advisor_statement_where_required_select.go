@@ -50,11 +50,23 @@ func (*statementWhereRequiredSelectRule) Name() string {
 }
 
 func (r *statementWhereRequiredSelectRule) OnStatement(node ast.Node) {
-	sel, ok := node.(*ast.SelectStmt)
-	if !ok {
-		return
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		r.checkSelectStmt(n, true)
+	case *ast.InsertStmt:
+		if sel, ok := n.SelectStmt.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	case *ast.ViewStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	case *ast.CreateTableAsStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	default:
 	}
-	r.checkSelectStmt(sel, true)
 }
 
 // checkSelectStmt recursively checks a SelectStmt for WHERE clause requirement.
@@ -120,6 +132,10 @@ func (r *statementWhereRequiredSelectRule) extractSelectText(sel *ast.SelectStmt
 
 // walkSubqueries walks the AST nodes within a SelectStmt to find nested subqueries.
 func (r *statementWhereRequiredSelectRule) walkSubqueries(sel *ast.SelectStmt) {
+	// Check CTEs (WITH clause).
+	if sel.WithClause != nil {
+		r.walkCTEs(sel.WithClause)
+	}
 	// Check target list expressions for subqueries.
 	r.walkNodeList(sel.TargetList)
 	// Check FROM clause for subqueries (e.g., subqueries in FROM).
@@ -135,6 +151,22 @@ func (r *statementWhereRequiredSelectRule) walkSubqueries(sel *ast.SelectStmt) {
 	// Check limit/offset.
 	r.walkNode(sel.LimitCount)
 	r.walkNode(sel.LimitOffset)
+}
+
+// walkCTEs checks each CTE query for SELECT without WHERE.
+func (r *statementWhereRequiredSelectRule) walkCTEs(with *ast.WithClause) {
+	if with.Ctes == nil {
+		return
+	}
+	for _, item := range with.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if sel, ok := cte.Ctequery.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	}
 }
 
 func (r *statementWhereRequiredSelectRule) walkNodeList(list *ast.List) {

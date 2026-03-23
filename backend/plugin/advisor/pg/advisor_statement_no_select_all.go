@@ -57,6 +57,14 @@ func (r *noSelectAllRule) OnStatement(node ast.Node) {
 		if sel, ok := n.SelectStmt.(*ast.SelectStmt); ok {
 			r.checkSelectStmt(sel, false)
 		}
+	case *ast.ViewStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
+	case *ast.CreateTableAsStmt:
+		if sel, ok := n.Query.(*ast.SelectStmt); ok {
+			r.checkSelectStmt(sel, false)
+		}
 	default:
 	}
 }
@@ -126,6 +134,18 @@ func (r *noSelectAllRule) walkSelectSubqueries(sel *ast.SelectStmt) {
 	if sel == nil {
 		return
 	}
+	// Check CTEs (WITH clause).
+	if sel.WithClause != nil && sel.WithClause.Ctes != nil {
+		for _, item := range sel.WithClause.Ctes.Items {
+			if cte, ok := item.(*ast.CommonTableExpr); ok {
+				if sub, ok := cte.Ctequery.(*ast.SelectStmt); ok {
+					r.checkSelectStmt(sub, false)
+				}
+			}
+		}
+	}
+	// Check target list for subqueries (e.g., SELECT (SELECT * FROM t)).
+	r.walkNodeListForSelectAll(sel.TargetList)
 	r.walkNodeListForSelectAll(sel.FromClause)
 	r.walkNodeForSelectAll(sel.WhereClause)
 	r.walkNodeForSelectAll(sel.HavingClause)
