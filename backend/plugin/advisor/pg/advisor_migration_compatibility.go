@@ -119,9 +119,9 @@ func (r *compatibilityRule) handleRenameStmt(n *ast.RenameStmt) {
 				code = advisorcode.CompatibilityRenameColumn
 			}
 		}
-	case ast.OBJECT_TABLE:
-		code = advisorcode.CompatibilityRenameTable
 	default:
+		// All non-column renames (TABLE, INDEX, CONSTRAINT, etc.) are potentially incompatible.
+		code = advisorcode.CompatibilityRenameTable
 	}
 
 	if code != advisorcode.Ok {
