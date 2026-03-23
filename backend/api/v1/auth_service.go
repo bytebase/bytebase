@@ -382,10 +382,22 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 5. Issue new tokens — preserve the workspace from the original login session.
-	workspaceID, err := s.resolveWorkspaceForRefresh(ctx, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrap(err, "failed to resolve workspace"))
+	// 5. Extract workspace from the expired access token cookie (per-session, not per-user).
+	accessTokenStr, _ := auth.GetTokenFromHeaders(req.Header())
+	workspaceID := ""
+	if accessTokenStr != "" {
+		wsID, err := auth.ExtractWorkspaceFromToken(accessTokenStr, s.secret)
+		if err == nil && wsID != "" {
+			workspaceID = wsID
+		}
+	}
+	if workspaceID == "" {
+		// Fallback if access token cookie is missing or unparseable.
+		var resolveErr error
+		workspaceID, resolveErr = s.resolveWorkspaceForRefresh(ctx, user)
+		if resolveErr != nil {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrap(resolveErr, "failed to resolve workspace"))
+		}
 	}
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	accessToken, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, accessTokenDuration)
@@ -1029,6 +1041,14 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	}
 	if ws == nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
+	}
+
+	// Validate the target workspace's sign-in policies (domain restrictions, etc.).
+	if user.MemberDeleted {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user has been deactivated"))
+	}
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, user.Email, false); err != nil {
+		return nil, err
 	}
 
 	// Generate new token with target workspace.

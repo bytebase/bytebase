@@ -82,6 +82,26 @@ func GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret string, 
 	return generateOAuth2Token(userEmail, clientID, workspaceID, OAuth2AccessTokenAudience, expirationTime, []byte(secret))
 }
 
+// ExtractWorkspaceFromToken parses a JWT (even if expired) and returns the workspace_id claim.
+// Used by the Refresh endpoint to preserve the session's workspace without storing it separately.
+func ExtractWorkspaceFromToken(tokenString, secret string) (string, error) {
+	claims := &claimsMessage{}
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	token, err := parser.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if !token.Valid {
+		return "", jwt.ErrSignatureInvalid
+	}
+	return claims.WorkspaceID, nil
+}
+
 // generateOAuth2Token creates a JWT token with OAuth2-specific claims including client_id.
 func generateOAuth2Token(userEmail, clientID, workspaceID, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	claims := &oauth2ClaimsMessage{

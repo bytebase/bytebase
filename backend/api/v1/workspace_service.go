@@ -71,6 +71,9 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 	if workspaceID != common.GetWorkspaceIDFromContext(ctx) {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("can only update your own workspace"))
 	}
+	if len(req.Msg.UpdateMask.GetPaths()) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
+	}
 
 	for _, path := range req.Msg.UpdateMask.GetPaths() {
 		switch path {
