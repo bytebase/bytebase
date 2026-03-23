@@ -445,6 +445,93 @@ describe("AgentInput", () => {
     });
   });
 
+  test("preserves the latest page snapshot when an interrupted run ends on a new page", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+
+    mockRunAgentLoop.mockImplementation(async () => {
+      mockRoute.fullPath = "/projects/navigated";
+      document.title = "Navigated Page";
+      return { kind: "aborted" };
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("inspect this page");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.interrupted).toBe(true);
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/navigated",
+      title: "Navigated Page",
+    });
+  });
+
+  test("dismissing interrupted state removes partial run output", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "user",
+      content: "inspect this page",
+    });
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      content: "Partial answer",
+      metadata: {
+        runId: "run-1",
+      },
+    });
+    store.addMessage({
+      threadId,
+      role: "tool",
+      toolCallId: "tool-1",
+      content: JSON.stringify({ partial: true }),
+      metadata: {
+        runId: "run-1",
+      },
+    });
+    store.interruptRun(threadId);
+    store.getThread(threadId)!.runId = "run-1";
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await findButtonByText(wrapper, "Dismiss")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.interrupted).toBe(false);
+    expect(store.getThread(threadId)?.runId).toBeNull();
+    expect(
+      store.getMessages(threadId).map((message) => ({
+        role: message.role,
+        content: message.content,
+        toolCallId: message.toolCallId,
+      }))
+    ).toEqual([
+      {
+        role: "user",
+        content: "inspect this page",
+        toolCallId: undefined,
+      },
+    ]);
+  });
+
   test("keeps the latest run cancellable when an earlier aborted run settles late", async () => {
     const store = useAgentStore();
     const threadId = store.currentThreadId!;

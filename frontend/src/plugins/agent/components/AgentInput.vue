@@ -100,7 +100,7 @@ const handleOutcome = (
       agentStore.awaitUser(threadId, outcome.ask);
       return;
     case "aborted":
-      agentStore.interruptRun(threadId, page);
+      agentStore.interruptRun(threadId, getCurrentPageSnapshot());
       return;
     case "error":
       agentStore.addMessage({
@@ -309,6 +309,10 @@ function dismissInterrupted() {
   if (!currentThread.value) {
     return;
   }
+  agentStore.removeMessagesByRunId(
+    currentThread.value.id,
+    currentThread.value.runId
+  );
   agentStore.clearError(currentThread.value.id);
 }
 
