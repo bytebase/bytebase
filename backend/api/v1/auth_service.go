@@ -308,10 +308,12 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
 	resp.Header().Add("Set-Cookie", refreshCookie.String())
 
-	// Update last login time.
+	// Update last login time and workspace.
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 		Profile: &storepb.UserProfile{
-			LastLoginTime: timestamppb.Now(),
+			LastLoginTime:      timestamppb.Now(),
+			Source:             user.Profile.GetSource(),
+			LastLoginWorkspace: workspaceID,
 		},
 	}); err != nil {
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
