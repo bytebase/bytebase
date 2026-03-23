@@ -124,7 +124,13 @@ describe("useAgentStore", () => {
       role: "user",
       content: "Initial prompt",
     });
-    const secondThread = store.createThread({ title: "Second" });
+    const secondThread = store.createThread({
+      title: "Second",
+      page: {
+        path: "/projects/original",
+        title: "Original Page",
+      },
+    });
     store.setCurrentThread(secondThread.id);
 
     await nextTick();
@@ -137,6 +143,17 @@ describe("useAgentStore", () => {
 
     expect(rehydratedStore.getMessages(secondThread.id)).toEqual([]);
     expect(rehydratedStore.getThread(secondThread.id)?.status).toBe("idle");
+    expect(rehydratedStore.getThread(secondThread.id)?.page).toBeUndefined();
+
+    rehydratedStore.ensureCurrentThread({
+      path: "/projects/current",
+      title: "Current Page",
+    });
+
+    expect(rehydratedStore.getThread(secondThread.id)?.page).toEqual({
+      path: "/projects/current",
+      title: "Current Page",
+    });
   });
 
   test("preserves an existing thread page when resuming a run", () => {

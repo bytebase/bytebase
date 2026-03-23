@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
+import type { AgentLoopOutcome } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentInput from "./AgentInput.vue";
 
@@ -43,6 +44,14 @@ const getTextareaValue = (wrapper: ReturnType<typeof mount>) => {
 const flushPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
+};
+
+const createDeferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+  return { promise, resolve };
 };
 
 const i18n = createI18n({
@@ -202,6 +211,90 @@ describe("AgentInput", () => {
       path: "/projects/original",
       title: "Original Page",
     });
+  });
+
+  test("keeps the latest run cancellable when an earlier aborted run settles late", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+    const firstRun = createDeferred<AgentLoopOutcome>();
+    const secondRun = createDeferred<AgentLoopOutcome>();
+    let firstSignal: AbortSignal | undefined;
+    let secondSignal: AbortSignal | undefined;
+
+    mockRunAgentLoop
+      .mockImplementationOnce(
+        async (
+          _messages: unknown,
+          _tools: unknown,
+          _executor: unknown,
+          _callbacks: unknown,
+          signal?: AbortSignal
+        ) => {
+          firstSignal = signal;
+          return firstRun.promise;
+        }
+      )
+      .mockImplementationOnce(
+        async (
+          _messages: unknown,
+          _tools: unknown,
+          _executor: unknown,
+          _callbacks: unknown,
+          signal?: AbortSignal
+        ) => {
+          secondSignal = signal;
+          return secondRun.promise;
+        }
+      );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("first request");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(firstSignal);
+    expect(store.loading).toBe(true);
+
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(store.abortController).toBeNull();
+    expect(store.loading).toBe(false);
+
+    await wrapper.find("textarea").setValue("second request");
+    await wrapper.find("button").trigger("click");
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.loading).toBe(true);
+
+    firstRun.resolve({ kind: "aborted" });
+    await flushPromises();
+
+    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.loading).toBe(true);
+    expect(
+      store
+        .getMessages(threadId)
+        .some((message) => message.content === "_Interrupted_")
+    ).toBe(false);
+
+    secondRun.resolve({
+      kind: "completed",
+      text: "Done",
+      success: true,
+      explicit: true,
+    });
+    await flushPromises();
+
+    expect(store.abortController).toBeNull();
+    expect(store.loading).toBe(false);
   });
 
   test("clears stale composer input when pending asks disappear", async () => {

@@ -521,6 +521,7 @@ export const useAgentStore = defineStore("agent", () => {
     messagesByThreadId.value[thread.id] = [];
     delete pendingAskByThreadId.value[thread.id];
     thread.title = "";
+    thread.page = undefined;
     thread.status = DEFAULT_THREAD_STATUS;
     thread.lastError = null;
     thread.interrupted = false;

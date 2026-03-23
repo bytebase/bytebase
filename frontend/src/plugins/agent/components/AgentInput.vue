@@ -13,6 +13,7 @@ const router = useRouter();
 const route = useRoute();
 const agentStore = useAgentStore();
 const input = ref("");
+let currentRunToken = 0;
 
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
 const chooseOptions = computed(() =>
@@ -129,6 +130,7 @@ async function runThread(
   page: { path: string; title: string }
 ) {
   const controller = new AbortController();
+  const runToken = ++currentRunToken;
   agentStore.abortController = controller;
 
   const systemPrompt = buildSystemPrompt(page);
@@ -183,9 +185,18 @@ async function runThread(
       controller.signal
     );
 
+    if (runToken !== currentRunToken) {
+      return;
+    }
+
     handleOutcome(threadId, page, "Error: ", outcome);
   } finally {
-    agentStore.abortController = null;
+    if (
+      runToken === currentRunToken &&
+      agentStore.abortController === controller
+    ) {
+      agentStore.abortController = null;
+    }
   }
 }
 
