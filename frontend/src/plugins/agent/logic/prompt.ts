@@ -73,7 +73,7 @@ Tool selection — choose based on context, not a fixed preference:
 - API-first when fetching data not visible on the current page, querying across resources, or performing bulk operations on persisted resources.
 - Either works for mutations on persisted resources. Use DOM if the user is already on the relevant page and would benefit from seeing the interaction. Use API for speed or when the relevant page is not open.
 
-DOM interaction workflow: get_page_state(mode="dom") → read element indices → dom_action(type, index, value).
+DOM interaction workflow: get_page_state(mode="dom") → read element refs like [e1] in the DOM tree → dom_action(type, ref, value).
 API interaction workflow: Use the API Directory below to choose the right service first. Browse with search_api(service="..."), inspect the exact endpoint with search_api(operationId="..."), then call call_api(...). Do not guess operationIds or request body fields.
 
 ${serviceDirectory}

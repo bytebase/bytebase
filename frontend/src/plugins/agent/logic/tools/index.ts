@@ -214,9 +214,9 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
 | Mode | Result |
 |------|--------|
 | semantic (default) | Route path, params, title + context from Pinia stores (project, database, issue, user info when available) |
-| dom | Above + indexed DOM tree of interactive elements |
+| dom | Above + ref-labeled DOM tree of interactive elements |
 
-Use mode="dom" before dom_action to get element indices. Use semantic mode (default) to understand the current page context.`,
+Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mode (default) to understand the current page context.`,
       parametersSchema: {
         type: "object",
         properties: {
@@ -224,7 +224,7 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
             type: "string",
             enum: ["semantic", "dom"],
             description:
-              'Default "semantic" returns route info + store context. "dom" adds an indexed tree of interactive elements for use with dom_action.',
+              'Default "semantic" returns route info + store context. "dom" adds a ref-labeled tree of interactive elements for use with dom_action.',
           },
         },
       },
@@ -232,7 +232,7 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
     {
       name: "dom_action",
       description: `Last-resort DOM interaction — use only when no API endpoint covers the action.
-**Always call get_page_state(mode="dom") first** to get the element ref.
+**Always call get_page_state(mode="dom") first** to get the element ref, such as [e1].
 
 | Action | When to use | value param |
 |--------|-------------|-------------|
