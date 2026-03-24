@@ -2491,6 +2491,7 @@
     "thread-status-awaiting-user": "入力待ち",
     "thread-status-error": "エラー",
     "thread-status-interrupted": "中断",
+    "thread-total-tokens": "使用済みトークン: {count}",
     "reply": "返信",
     "confirm": "確認",
     "cancel": "キャンセル",

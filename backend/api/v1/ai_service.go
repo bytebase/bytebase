@@ -91,6 +91,10 @@ type chatOpenAIFunctionCallRef struct {
 	Arguments string `json:"arguments"`
 }
 
+type chatOpenAIUsage struct {
+	TotalTokens int32 `json:"total_tokens"`
+}
+
 type chatOpenAIResponse struct {
 	Choices []struct {
 		Message struct {
@@ -99,6 +103,7 @@ type chatOpenAIResponse struct {
 			ToolCalls []json.RawMessage `json:"tool_calls"`
 		} `json:"message"`
 	} `json:"choices"`
+	Usage *chatOpenAIUsage `json:"usage,omitempty"`
 }
 
 // chatOpenAIToolCallParsed extracts the fields we need from a raw tool call JSON.
@@ -276,6 +281,9 @@ func (*AIService) chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, 
 	}
 
 	result := &v1pb.AIChatResponse{}
+	if resp.Usage != nil {
+		result.Usage = newAIChatUsage(resp.Usage.TotalTokens)
+	}
 	if len(resp.Choices) > 0 {
 		msg := resp.Choices[0].Message
 		result.Content = msg.Content
@@ -333,8 +341,14 @@ type chatClaudeContentBlock struct {
 	Content   string `json:"content,omitempty"`
 }
 
+type chatClaudeUsage struct {
+	InputTokens  int32 `json:"input_tokens"`
+	OutputTokens int32 `json:"output_tokens"`
+}
+
 type chatClaudeResponse struct {
 	Content []chatClaudeContentBlock `json:"content"`
+	Usage   *chatClaudeUsage         `json:"usage,omitempty"`
 }
 
 func (*AIService) chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
@@ -434,6 +448,9 @@ func (*AIService) chatClaude(ctx context.Context, aiSetting *storepb.AISetting, 
 	}
 
 	result := &v1pb.AIChatResponse{}
+	if resp.Usage != nil {
+		result.Usage = newAIChatUsage(resp.Usage.InputTokens + resp.Usage.OutputTokens)
+	}
 	var textContent string
 	for _, block := range resp.Content {
 		switch block.Type {
@@ -497,12 +514,17 @@ type chatGeminiFunctionDecl struct {
 	Parameters  any    `json:"parameters"`
 }
 
+type chatGeminiUsage struct {
+	TotalTokenCount int32 `json:"totalTokenCount"`
+}
+
 type chatGeminiResponse struct {
 	Candidates []struct {
 		Content struct {
 			Parts []chatGeminiResponsePart `json:"parts"`
 		} `json:"content"`
 	} `json:"candidates"`
+	UsageMetadata *chatGeminiUsage `json:"usageMetadata,omitempty"`
 }
 
 type chatGeminiResponsePart struct {
@@ -618,6 +640,9 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 	}
 
 	result := &v1pb.AIChatResponse{}
+	if resp.UsageMetadata != nil {
+		result.Usage = newAIChatUsage(resp.UsageMetadata.TotalTokenCount)
+	}
 	if len(resp.Candidates) > 0 {
 		var textContent string
 		for _, part := range resp.Candidates[0].Content.Parts {
@@ -649,6 +674,15 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 		}
 	}
 	return connect.NewResponse(result), nil
+}
+
+func newAIChatUsage(totalTokens int32) *v1pb.AIChatUsage {
+	if totalTokens <= 0 {
+		return nil
+	}
+	return &v1pb.AIChatUsage{
+		TotalTokens: totalTokens,
+	}
 }
 
 // doHTTPRequest executes an HTTP request and returns the response body.

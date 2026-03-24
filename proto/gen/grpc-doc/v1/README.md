@@ -140,6 +140,7 @@
     - [AIChatResponse](#bytebase-v1-AIChatResponse)
     - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
     - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
+    - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
   
@@ -2733,6 +2734,7 @@ Response message for AIService.Chat.
 | ----- | ---- | ----- | ----------- |
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
+| usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
 
 
 
@@ -2768,6 +2770,21 @@ A tool definition that the AI can invoke.
 | name | [string](#string) |  | The name of the tool. |
 | description | [string](#string) |  | A description of what the tool does. |
 | parameters_schema | [string](#string) |  | The JSON Schema describing the tool&#39;s parameters. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatUsage"></a>
+
+### AIChatUsage
+Token usage for a single AI provider call.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_tokens | [int32](#int32) |  | Total tokens used by the provider call. |
 
 
 

@@ -192,6 +192,10 @@ async function runThread(
       return;
     }
 
+    agentStore.incrementThreadTotalTokens(
+      threadId,
+      outcome.totalTokensUsed ?? 0
+    );
     handleOutcome(threadId, page, "Error: ", outcome);
   } finally {
     if (
