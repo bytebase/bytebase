@@ -188,14 +188,15 @@ async function runThread(
       controller.signal
     );
 
-    if (runToken !== currentRunToken) {
-      return;
-    }
-
     agentStore.incrementThreadTotalTokens(
       threadId,
       outcome.totalTokensUsed ?? 0
     );
+
+    if (runToken !== currentRunToken) {
+      return;
+    }
+
     handleOutcome(threadId, page, "Error: ", outcome);
   } finally {
     if (
