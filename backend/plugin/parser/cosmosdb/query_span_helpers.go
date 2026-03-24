@@ -11,11 +11,14 @@ import (
 
 // extractFromNames returns the container name and from-clause alias.
 func extractFromNames(fromClause parser.IFrom_clauseContext) (containerName, fromAlias string) {
-	containerExpr := fromClause.From_specification().From_source().Container_expression()
-	if i := containerExpr.Container_name().Identifier(); i != nil {
-		containerName = i.GetText()
+	fromSource := fromClause.From_specification().From_source()
+	containerExpr := fromSource.Container_expression()
+	if containerExpr != nil && containerExpr.Container_name() != nil {
+		if i := containerExpr.Container_name().Identifier(); i != nil {
+			containerName = i.GetText()
+		}
 	}
-	if i := containerExpr.Identifier(); i != nil {
+	if i := fromSource.Identifier(); i != nil {
 		fromAlias = i.GetText()
 	}
 	return containerName, fromAlias
