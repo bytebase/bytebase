@@ -1,10 +1,10 @@
-export { extractDomTree, getElementByIndex } from "./domTree";
+export { extractDomTree, getElementByRef } from "./domTree";
 
 export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
 
 export interface DomActionParams {
   type: DomActionType;
-  index: number;
+  index: string | number;
   value?: string;
 }
 

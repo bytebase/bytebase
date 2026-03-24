@@ -1,5 +1,5 @@
 export interface IndexedElement {
-  index: number;
+  ref: string;
   tag: string;
   role?: string;
   label: string;
@@ -62,10 +62,21 @@ function isLandmark(el: Element): boolean {
   return false;
 }
 
-let elementRegistry: IndexedElement[] = [];
+const elementRegistry = new Map<string, IndexedElement>();
+let nextElementRef = 1;
 
-export function getElementByIndex(index: number): IndexedElement | undefined {
-  return elementRegistry[index];
+function createElementRef(): string {
+  return `e${nextElementRef++}`;
+}
+
+function registerElement(entry: Omit<IndexedElement, "ref">): IndexedElement {
+  const registered = { ref: createElementRef(), ...entry };
+  elementRegistry.set(registered.ref, registered);
+  return registered;
+}
+
+export function getElementByRef(ref: string): IndexedElement | undefined {
+  return elementRegistry.get(ref);
 }
 
 function isVisible(el: Element): boolean {
@@ -185,14 +196,11 @@ function walkDom(node: Element, depth: number, lines: string[]): void {
 
   // Monaco editor — register as a single interactive element
   if (isMonacoEditor(node)) {
-    const index = elementRegistry.length;
     const content = getMonacoContent(node) ?? "";
     const preview =
       content.length > 200 ? content.slice(0, 200) + "..." : content;
     const label = content ? `SQL: ${preview}` : "empty editor";
-
-    elementRegistry.push({
-      index,
+    const entry = registerElement({
       tag: "editor",
       label,
       value: content,
@@ -200,22 +208,20 @@ function walkDom(node: Element, depth: number, lines: string[]): void {
     });
 
     const indent = "  ".repeat(depth);
-    lines.push(`${indent}[${index}]<editor>${label}</editor>`);
+    lines.push(`${indent}[${entry.ref}]<editor>${label}</editor>`);
     return;
   }
 
   if (isInteractive(node)) {
-    const index = elementRegistry.length;
     const tag = node.tagName.toLowerCase();
     const label = extractLabel(node);
     const value = extractValue(node);
     const role = node.getAttribute("role") ?? undefined;
-
-    elementRegistry.push({ index, tag, role, label, value, element: node });
+    const entry = registerElement({ tag, role, label, value, element: node });
 
     const indent = "  ".repeat(depth);
     const valueAttr = value ? ` value="${value}"` : "";
-    lines.push(`${indent}[${index}]<${tag}${valueAttr}>${label}</${tag}>`);
+    lines.push(`${indent}[${entry.ref}]<${tag}${valueAttr}>${label}</${tag}>`);
 
     // Don't recurse into interactive elements
     return;
@@ -232,7 +238,8 @@ export function extractDomTree(root?: Element): {
   tree: string;
   count: number;
 } {
-  elementRegistry = [];
+  elementRegistry.clear();
+  nextElementRef = 1;
   const lines: string[] = [];
   const rootEl = root ?? document.body;
 
@@ -242,6 +249,6 @@ export function extractDomTree(root?: Element): {
 
   return {
     tree: lines.join("\n"),
-    count: elementRegistry.length,
+    count: elementRegistry.size,
   };
 }
