@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import type { DomRefSuggestion } from "../dom";
+import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -59,6 +61,179 @@ const isSendDisabled = computed(() => {
   }
   return !input.value.trim();
 });
+
+const inputRef = ref<HTMLTextAreaElement>();
+const domRefSuggestions = ref<DomRefSuggestion[]>([]);
+const isDomRefMenuOpen = ref(false);
+const activeDomRefIndex = ref(0);
+const selectionStart = ref(0);
+const selectionEnd = ref(0);
+let domRefRequestToken = 0;
+
+const DOM_REF_SUGGESTION_LIMIT = 8;
+
+const normalizeSearchText = (value?: string) =>
+  value?.toLowerCase().trim() ?? "";
+
+const matchDomRefSuggestion = (suggestion: DomRefSuggestion, query: string) => {
+  if (!query) {
+    return true;
+  }
+  const normalizedQuery = normalizeSearchText(query);
+  return [
+    suggestion.ref,
+    suggestion.tag,
+    suggestion.role,
+    suggestion.label,
+    suggestion.value,
+  ].some((value) => normalizeSearchText(value).includes(normalizedQuery));
+};
+
+const getDomRefQuery = (
+  text: string,
+  start: number,
+  end: number
+): { query: string; start: number; end: number } | null => {
+  if (start !== end) {
+    return null;
+  }
+  const prefix = text.slice(0, start);
+  const matches = prefix.match(/(^|\s)@([^\s@]*)$/);
+  if (!matches) {
+    return null;
+  }
+  return {
+    query: matches[2] ?? "",
+    start: start - matches[2].length - 1,
+    end,
+  };
+};
+
+const activeDomRefQuery = computed(() =>
+  getDomRefQuery(input.value, selectionStart.value, selectionEnd.value)
+);
+
+const filteredDomRefSuggestions = computed(() => {
+  const query = activeDomRefQuery.value?.query ?? "";
+  return domRefSuggestions.value
+    .filter((suggestion: DomRefSuggestion) =>
+      matchDomRefSuggestion(suggestion, query)
+    )
+    .slice(0, DOM_REF_SUGGESTION_LIMIT);
+});
+
+const updateSelection = () => {
+  const textarea = inputRef.value;
+  if (!textarea) {
+    return;
+  }
+  selectionStart.value = textarea.selectionStart ?? 0;
+  selectionEnd.value = textarea.selectionEnd ?? selectionStart.value;
+};
+
+const closeDomRefMenu = () => {
+  isDomRefMenuOpen.value = false;
+  activeDomRefIndex.value = 0;
+};
+
+const openDomRefMenu = () => {
+  isDomRefMenuOpen.value = true;
+  activeDomRefIndex.value = 0;
+};
+
+const loadDomRefSuggestions = async () => {
+  const query = activeDomRefQuery.value;
+  if (!query) {
+    closeDomRefMenu();
+    domRefSuggestions.value = [];
+    return;
+  }
+
+  const requestToken = ++domRefRequestToken;
+  const suggestions = await lazyExtractDomRefSuggestions();
+  if (requestToken !== domRefRequestToken || !activeDomRefQuery.value) {
+    return;
+  }
+
+  domRefSuggestions.value = suggestions;
+  if (filteredDomRefSuggestions.value.length > 0) {
+    openDomRefMenu();
+    return;
+  }
+  closeDomRefMenu();
+};
+
+const selectDomRefSuggestion = async (suggestion: DomRefSuggestion) => {
+  const query = activeDomRefQuery.value;
+  const textarea = inputRef.value;
+  if (!query || !textarea) {
+    return;
+  }
+
+  const before = input.value.slice(0, query.start);
+  const after = input.value.slice(query.end);
+  const token = `[${suggestion.ref}]`;
+  const suffix = after.startsWith(" ") ? "" : " ";
+  const nextValue = `${before}${token}${suffix}${after}`;
+  const caret = before.length + token.length + suffix.length;
+
+  input.value = nextValue;
+  closeDomRefMenu();
+  await nextTick();
+  textarea.focus();
+  textarea.setSelectionRange(caret, caret);
+  updateSelection();
+};
+
+const moveDomRefSelection = (offset: number) => {
+  const total = filteredDomRefSuggestions.value.length;
+  if (total === 0) {
+    return;
+  }
+  activeDomRefIndex.value = (activeDomRefIndex.value + offset + total) % total;
+};
+
+const handleTextareaKeydown = async (event: KeyboardEvent) => {
+  if (isDomRefMenuOpen.value) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveDomRefSelection(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveDomRefSelection(-1);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDomRefMenu();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const suggestion =
+        filteredDomRefSuggestions.value[activeDomRefIndex.value];
+      if (suggestion) {
+        await selectDomRefSuggestion(suggestion);
+      } else {
+        closeDomRefMenu();
+      }
+      return;
+    }
+  }
+
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    await send();
+  }
+};
+
+const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) => {
+  return [suggestion.tag.toLowerCase(), suggestion.role]
+    .filter((value): value is string => Boolean(value))
+    .join(" · ");
+};
 
 const getThreadPageSnapshot = (threadId: string) => {
   return agentStore.getThread(threadId)?.page;
@@ -399,6 +574,21 @@ watch(
   },
   { immediate: true }
 );
+watch(
+  () => [input.value, selectionStart.value, selectionEnd.value],
+  () => {
+    void loadDomRefSuggestions();
+  }
+);
+
+watch(
+  () => agentStore.hasRunningThread,
+  (running) => {
+    if (running) {
+      closeDomRefMenu();
+    }
+  }
+);
 </script>
 
 <template>
@@ -476,14 +666,48 @@ watch(
     </div>
 
     <div v-else class="flex items-end gap-x-2">
-      <textarea
-        v-model="input"
-        rows="1"
-        :placeholder="inputPlaceholder"
-        class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-        :disabled="agentStore.hasRunningThread"
-        @keydown.enter.exact.prevent="send"
-      />
+      <div class="relative min-w-0 flex-1">
+        <textarea
+          ref="inputRef"
+          v-model="input"
+          rows="1"
+          :placeholder="inputPlaceholder"
+          class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="updateSelection"
+          @blur="closeDomRefMenu"
+          @input="updateSelection"
+          @keyup="updateSelection"
+          @select="updateSelection"
+          @keydown.exact="handleTextareaKeydown"
+        />
+        <div
+          v-if="isDomRefMenuOpen"
+          data-testid="dom-ref-autocomplete"
+          class="absolute bottom-full left-0 z-10 mb-2 w-full overflow-hidden rounded-md border bg-white shadow-lg"
+        >
+          <button
+            v-for="(suggestion, index) in filteredDomRefSuggestions"
+            :key="suggestion.ref"
+            type="button"
+            data-testid="dom-ref-autocomplete-item"
+            class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-gray-50"
+            :class="index === activeDomRefIndex ? 'bg-blue-50' : 'bg-white'"
+            @mousedown.prevent="selectDomRefSuggestion(suggestion)"
+          >
+            <div class="flex items-center gap-x-2 text-gray-800">
+              <span class="font-medium">[{{ suggestion.ref }}]</span>
+              <span class="truncate">{{ suggestion.label }}</span>
+            </div>
+            <div
+              v-if="formatDomRefSuggestionMeta(suggestion)"
+              class="mt-1 text-xs text-gray-500"
+            >
+              {{ formatDomRefSuggestionMeta(suggestion) }}
+            </div>
+          </button>
+        </div>
+      </div>
       <button
         v-if="agentStore.loading"
         class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"

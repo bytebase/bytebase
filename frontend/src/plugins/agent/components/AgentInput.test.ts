@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
+import type { DomRefSuggestion } from "../dom";
 import type { AgentLoopOutcome } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentInput from "./AgentInput.vue";
@@ -11,6 +12,7 @@ const {
   mockBuildSystemPrompt,
   mockCreateToolExecutor,
   mockGetToolDefinitions,
+  mockLazyExtractDomRefSuggestions,
   mockRoute,
 } = vi.hoisted(() => ({
   mockRunAgentLoop: vi.fn(),
@@ -19,7 +21,14 @@ const {
     vi.fn()
   ),
   mockGetToolDefinitions: vi.fn(() => []),
+  mockLazyExtractDomRefSuggestions: vi.fn<() => Promise<DomRefSuggestion[]>>(
+    async () => []
+  ),
   mockRoute: { fullPath: "/projects/demo" },
+}));
+
+vi.mock("../dom", () => ({
+  lazyExtractDomRefSuggestions: mockLazyExtractDomRefSuggestions,
 }));
 
 vi.mock("../logic/agentLoop", () => ({
@@ -87,6 +96,15 @@ const i18n = createI18n({
   },
 });
 
+const createDomRefSuggestion = (
+  overrides: Partial<DomRefSuggestion> = {}
+): DomRefSuggestion => ({
+  ref: "e1",
+  tag: "BUTTON",
+  label: "Suggestion",
+  ...overrides,
+});
+
 describe("AgentInput", () => {
   let pinia: ReturnType<typeof createPinia>;
 
@@ -98,6 +116,11 @@ describe("AgentInput", () => {
     mockBuildSystemPrompt.mockClear();
     mockCreateToolExecutor.mockClear();
     mockGetToolDefinitions.mockClear();
+  });
+
+  beforeEach(() => {
+    mockLazyExtractDomRefSuggestions.mockReset();
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([]);
   });
 
   beforeEach(() => {
@@ -141,7 +164,6 @@ describe("AgentInput", () => {
           kind: "completed",
           text: "Using project demo.",
           success: true,
-          explicit: true,
         };
       }
     );
@@ -201,7 +223,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Using project demo.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {
@@ -232,7 +253,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Done",
       success: true,
-      explicit: true,
       totalTokensUsed: 123,
     });
 
@@ -327,7 +347,6 @@ describe("AgentInput", () => {
           kind: "completed",
           text: "Done",
           success: true,
-          explicit: true,
         };
       }
     );
@@ -413,7 +432,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Done",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {
@@ -633,7 +651,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Done",
       success: true,
-      explicit: true,
     });
     await flushPromises();
 
@@ -699,6 +716,123 @@ describe("AgentInput", () => {
     expect(getTextareaValue(wrapper)).toBe("demo-project");
   });
 
+  test("shows filtered DOM ref suggestions and inserts the selected ref", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+      createDomRefSuggestion({
+        ref: "e2",
+        tag: "A",
+        role: "link",
+        label: "Cancel",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Click @sav");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(10, 10);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    expect(mockLazyExtractDomRefSuggestions).toHaveBeenCalled();
+    const items = wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]');
+    expect(items).toHaveLength(1);
+    expect(items[0].text()).toContain("[e1]");
+    expect(items[0].text()).toContain("Save changes");
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("Click [e1] ");
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
+  });
+
+  test("uses arrow keys to change the active DOM ref suggestion before selecting", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+      createDomRefSuggestion({
+        ref: "e2",
+        tag: "BUTTON",
+        role: "button",
+        label: "Delete changes",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Use @");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    await textarea.trigger("keydown", { key: "ArrowDown" });
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("Use [e2] ");
+  });
+
+  test("does not send while the DOM ref menu is open and escape closes it", async () => {
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Inspect @save");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(13, 13);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    await textarea.trigger("keydown", { key: "Escape" });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+  });
+
   test("uses choose buttons to answer pending choose prompts", async () => {
     const store = useAgentStore();
     const threadId = store.currentThreadId!;
@@ -749,7 +883,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Using production.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {
@@ -808,7 +941,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Canceled.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {

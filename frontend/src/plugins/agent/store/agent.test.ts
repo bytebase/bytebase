@@ -1,11 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
-import {
-  AGENT_STATE_KEY,
-  LEGACY_AGENT_MESSAGES_KEY,
-  useAgentStore,
-} from "./agent";
+import { AGENT_STATE_KEY, AGENT_WINDOW_KEY, useAgentStore } from "./agent";
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -57,25 +53,22 @@ describe("useAgentStore", () => {
     expect(store.threads[0].totalTokensUsed).toBe(0);
   });
 
-  test("migrates legacy flat messages into a thread-aware state", () => {
+  test("loads persisted window state", () => {
     localStorage.setItem(
-      LEGACY_AGENT_MESSAGES_KEY,
-      JSON.stringify([
-        { role: "user", content: "Help me inspect this page" },
-        { role: "assistant", content: "Sure" },
-      ])
+      AGENT_WINDOW_KEY,
+      JSON.stringify({
+        position: { x: 120, y: 240 },
+        size: { width: 480, height: 640 },
+      })
     );
 
     const store = createStore();
+    store.loadWindowState();
 
-    expect(store.threads).toHaveLength(1);
-    expect(store.currentThreadId).toBe(store.threads[0].id);
-    expect(store.messages).toHaveLength(2);
-    expect(store.messages[0].id).toBeTruthy();
-    expect(store.messages[0].threadId).toBe(store.currentThreadId);
-    expect(store.messages[0].createdTs).toBeTypeOf("number");
-    expect(store.threads[0].title).toContain("Help me inspect this page");
-    expect(localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY)).toBeNull();
+    expect(store.position).toEqual({ x: 120, y: 240 });
+    expect(store.size).toEqual({ width: 480, height: 640 });
+    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain('"width":480');
+    expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
   });
 
   test("normalizes stale running threads on load", () => {
