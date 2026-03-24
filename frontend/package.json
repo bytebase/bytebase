@@ -116,7 +116,7 @@
     "@vue/compiler-sfc": "3.5.29",
     "@vue/eslint-config-typescript": "^14.5.0",
     "@vue/test-utils": "2.4.6",
-    "@vue/tsconfig": "0.9.0",
+    "@vue/tsconfig": "0.9.1",
     "autoprefixer": "10.4.27",
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.0.0",
@@ -131,7 +131,8 @@
     "rollup": "4.59.0",
     "tailwindcss": "4.2.1",
     "ts-node": "^10.9.2",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.57.2",
     "unified": "^11.0.5",
     "unplugin-icons": "23.0.1",
     "unplugin-vue-components": "31.0.0",
@@ -155,6 +156,11 @@
   "pnpm": {
     "patchedDependencies": {
       "naive-ui@2.44.1": "patches/naive-ui@2.44.1.patch"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "typescript": "6"
+      }
     }
   }
 }
