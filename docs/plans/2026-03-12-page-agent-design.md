@@ -111,7 +111,7 @@ The prompt instructs the model to list routes first when unsure instead of guess
 Current modes:
 
 - default `semantic` mode returns route information plus structured context when available,
-- `mode: "dom"` returns the same base page state plus indexed DOM information.
+- `mode: "dom"` returns the same base page state plus DOM snapshot information, including snapshot-local element refs such as `e1` and `e2`.
 
 There is no standalone `get_dom_tree` tool. DOM inspection is part of `get_page_state(mode="dom")`.
 
@@ -126,13 +126,15 @@ Those values are populated from route-aware store lookups in `frontend/src/plugi
 
 ### `dom_action`
 
-`dom_action` is the browser-side UI interaction tool. It supports the implemented action types used by the agent runtime, including reading indexed DOM elements and performing interactions such as click, input, select, and scroll.
+`dom_action` is the browser-side UI interaction tool. It supports the implemented action types used by the agent runtime, including reading DOM elements from the current snapshot and performing interactions such as click, input, select, and scroll.
 
 The intended workflow is:
 
 1. call `get_page_state(mode="dom")`,
-2. inspect element indices,
-3. call `dom_action(...)`.
+2. inspect snapshot-local element refs such as `[e1]`,
+3. call `dom_action(ref="e1", action="click")` or another action using that ref.
+
+These refs are derived from the current DOM snapshot. They are not durable IDs and should be treated as valid only for the snapshot that returned them.
 
 ### `get_skill`
 
