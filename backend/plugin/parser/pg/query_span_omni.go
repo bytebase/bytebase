@@ -161,7 +161,9 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
 	}
 
-	// Step 2: Extract access tables.
+	// Step 2: Extract access tables (non-fatal on error — some statement
+	// types like SET don't have table references).
+	accessesMap := make(base.SourceColumnSet)
 	accessTables, err := ExtractAccessTables(stmt, ExtractAccessTablesOption{
 		DefaultDatabase:        e.defaultDatabase,
 		DefaultSchema:          e.searchPath[0],
@@ -170,14 +172,10 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		InstanceID:             e.gCtx.InstanceID,
 		SkipMetadataValidation: false,
 	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract access tables")
-	}
-
-	// Build access map.
-	accessesMap := make(base.SourceColumnSet)
-	for _, resource := range accessTables {
-		accessesMap[resource] = true
+	if err == nil {
+		for _, resource := range accessTables {
+			accessesMap[resource] = true
+		}
 	}
 
 	// Step 3: Check for mixed system/user tables.
@@ -210,7 +208,12 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// Step 6: Cast to SelectStmt, init catalog, analyze.
 	selStmt, ok := omniStmts[0].AST.(*ast.SelectStmt)
 	if !ok {
-		return nil, errors.Errorf("expected SelectStmt for SELECT query, got %T", omniStmts[0].AST)
+		// Not a SelectStmt (e.g., SET, SHOW classified as Select type).
+		return &base.QuerySpan{
+			Type:          base.Select,
+			SourceColumns: accessesMap,
+			Results:       []base.QuerySpanResult{},
+		}, nil
 	}
 
 	// Pre-analysis check: if the parse tree contains constructs that omni
@@ -270,6 +273,11 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 		sourceColSet := make(base.SourceColumnSet)
 		e.walkExpr(q, te.Expr, sourceColSet)
 		isPlain := idx < len(plainMask) && plainMask[idx]
+		// Even if the parse tree says this came from *, the underlying
+		// expression through CTEs/subqueries may not be a simple column ref.
+		if isPlain {
+			isPlain = isUltimatelyPlainColumn(q, te.Expr)
+		}
 		results = append(results, base.QuerySpanResult{
 			Name:          te.ResName,
 			SourceColumns: sourceColSet,
@@ -278,6 +286,41 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 		idx++
 	}
 	return results
+}
+
+// isUltimatelyPlainColumn checks whether an expression, after resolving through
+// CTEs and subqueries, is a simple column reference (VarExpr pointing to a
+// physical table). Aggregates, functions, and other expressions return false.
+func isUltimatelyPlainColumn(q *catalog.Query, expr catalog.AnalyzedExpr) bool {
+	if expr == nil {
+		return false
+	}
+	v, ok := expr.(*catalog.VarExpr)
+	if !ok {
+		return false
+	}
+	if v.RangeIdx < 0 || v.RangeIdx >= len(q.RangeTable) {
+		return false
+	}
+	rte := q.RangeTable[v.RangeIdx]
+	colIdx := int(v.AttNum - 1)
+
+	switch rte.Kind {
+	case catalog.RTERelation:
+		return true
+	case catalog.RTESubquery:
+		if rte.Subquery != nil && colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
+			return isUltimatelyPlainColumn(rte.Subquery, rte.Subquery.TargetList[colIdx].Expr)
+		}
+	case catalog.RTECTE:
+		if rte.CTEIndex >= 0 && rte.CTEIndex < len(q.CTEList) {
+			cte := q.CTEList[rte.CTEIndex]
+			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
+				return isUltimatelyPlainColumn(cte.Query, cte.Query.TargetList[colIdx].Expr)
+			}
+		}
+	}
+	return false
 }
 
 // buildPlainFieldMask returns a boolean slice aligned with the analyzed
@@ -632,6 +675,9 @@ func astNodeNeedsFallback(n ast.Node) bool {
 		return true
 	case *ast.FuncCall:
 		// Function calls may be UDFs needing body analysis.
+		return true
+	case *ast.A_Indirection:
+		// Array subscripts and field selections — omni may reduce to ConstExpr.
 		return true
 	case *ast.SubLink:
 		if sel, ok := v.Subselect.(*ast.SelectStmt); ok {
