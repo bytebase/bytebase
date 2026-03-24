@@ -4,7 +4,7 @@ export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
 
 export interface DomActionParams {
   type: DomActionType;
-  index: string | number;
+  ref: string;
   value?: string;
 }
 

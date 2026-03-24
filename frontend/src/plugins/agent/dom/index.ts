@@ -45,7 +45,7 @@ function formatRefreshError(message: string): DomActionResult {
 }
 
 function getElementRef(params: DomActionParams): string | undefined {
-  return typeof params.index === "string" ? params.index.trim() : undefined;
+  return typeof params.ref === "string" ? params.ref.trim() : undefined;
 }
 
 export async function lazyExecuteDomAction(
@@ -55,7 +55,7 @@ export async function lazyExecuteDomAction(
   const elementRef = getElementRef(params);
   if (!elementRef) {
     return formatRefreshError(
-      `Invalid element ref: ${JSON.stringify(params.index)}. Use refs like [e1] from the DOM tree.`
+      `Invalid element ref: ${JSON.stringify(params.ref)}. Use refs like [e1] from the DOM tree.`
     );
   }
   if (!/^e\d+$/.test(elementRef)) {

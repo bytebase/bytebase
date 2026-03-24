@@ -54,6 +54,36 @@ describe("agent tools navigate", () => {
   });
 });
 
+describe("agent tools dom_action", () => {
+  test("exposes ref-based dom_action schema", () => {
+    const domAction = getToolDefinitions().find(
+      (tool) => tool.name === "dom_action"
+    );
+
+    expect(domAction).toBeDefined();
+    expect(domAction?.parametersSchema).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          type: expect.objectContaining({
+            enum: ["click", "input", "select", "read", "scroll"],
+          }),
+          ref: expect.objectContaining({
+            type: "string",
+          }),
+        }),
+        required: ["type", "ref"],
+      })
+    );
+    expect(domAction?.parametersSchema).not.toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          index: expect.anything(),
+        }),
+      })
+    );
+  });
+});
+
 describe("agent tools ask_user", () => {
   test("exposes choose in the ask_user schema", () => {
     const askUser = getToolDefinitions().find(

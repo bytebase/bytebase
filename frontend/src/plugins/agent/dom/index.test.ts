@@ -12,7 +12,7 @@ describe("lazyExecuteDomAction", () => {
     document.body.innerHTML = `<input value="hello" />`;
     await lazyExtractDomTree();
 
-    const result = await lazyExecuteDomAction({ type: "read", index: "e1" });
+    const result = await lazyExecuteDomAction({ type: "read", ref: "e1" });
 
     expect(result).toEqual({ success: true, message: "hello" });
   });
@@ -22,7 +22,7 @@ describe("lazyExecuteDomAction", () => {
     await lazyExtractDomTree();
 
     await expect(
-      lazyExecuteDomAction({ type: "click", index: 1 })
+      lazyExecuteDomAction({ type: "click", ref: 1 } as never)
     ).resolves.toEqual({
       success: false,
       message:
@@ -30,7 +30,7 @@ describe("lazyExecuteDomAction", () => {
     });
 
     await expect(
-      lazyExecuteDomAction({ type: "click", index: "1" })
+      lazyExecuteDomAction({ type: "click", ref: "1" })
     ).resolves.toEqual({
       success: false,
       message:
@@ -38,7 +38,7 @@ describe("lazyExecuteDomAction", () => {
     });
 
     await expect(
-      lazyExecuteDomAction({ type: "click", index: "e9" })
+      lazyExecuteDomAction({ type: "click", ref: "e9" })
     ).resolves.toEqual({
       success: false,
       message:
@@ -47,7 +47,7 @@ describe("lazyExecuteDomAction", () => {
 
     document.querySelector("button")?.remove();
     await expect(
-      lazyExecuteDomAction({ type: "click", index: "e1" })
+      lazyExecuteDomAction({ type: "click", ref: "e1" })
     ).resolves.toEqual({
       success: false,
       message:
@@ -66,7 +66,7 @@ describe("lazyExecuteDomAction", () => {
     } as unknown as Router;
 
     const result = await lazyExecuteDomAction(
-      { type: "click", index: "e1" },
+      { type: "click", ref: "e1" },
       router
     );
 

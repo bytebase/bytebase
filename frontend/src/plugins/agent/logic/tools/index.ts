@@ -232,7 +232,7 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
     {
       name: "dom_action",
       description: `Last-resort DOM interaction — use only when no API endpoint covers the action.
-**Always call get_page_state(mode="dom") first** to get the element index.
+**Always call get_page_state(mode="dom") first** to get the element ref.
 
 | Action | When to use | value param |
 |--------|-------------|-------------|
@@ -249,17 +249,17 @@ Use mode="dom" before dom_action to get element indices. Use semantic mode (defa
             enum: ["click", "input", "select", "read", "scroll"],
             description: "The action to perform",
           },
-          index: {
-            type: "number",
+          ref: {
+            type: "string",
             description:
-              "Element index from DOM tree (from get_page_state with mode='dom')",
+              "Element ref from DOM tree (from get_page_state with mode='dom'), such as 'e1'",
           },
           value: {
             type: "string",
             description: "Value for input/select actions",
           },
         },
-        required: ["type", "index"],
+        required: ["type", "ref"],
       },
     },
     {
