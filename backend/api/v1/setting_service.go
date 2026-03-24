@@ -515,6 +515,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
 		}
+		// Clone to avoid mutating the cached store object if validation fails later.
+		oldAISetting = proto.CloneOf(oldAISetting)
 
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {

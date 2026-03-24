@@ -351,7 +351,10 @@ const updateAISetting = async () => {
   if (state.provider !== initValue.provider) paths.push("value.ai.provider");
   if (state.endpoint !== initValue.endpoint) paths.push("value.ai.endpoint");
   if (state.model !== initValue.model) paths.push("value.ai.model");
-  if (state.apiKey) paths.push("value.ai.api_key");
+  // Include api_key when user entered a new key, or when provider changed
+  // (switching providers invalidates the old key, forcing user to provide a new one).
+  if (state.apiKey || state.provider !== initValue.provider)
+    paths.push("value.ai.api_key");
 
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
