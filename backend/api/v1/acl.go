@@ -292,6 +292,7 @@ func doIAMPermissionCheck(ctx context.Context, iamManager *iam.Manager, fullMeth
 	return true, nil, nil
 }
 
+var workspaceRegex = regexp.MustCompile(`^workspaces/[^/]+`)
 var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 var instanceRegex = regexp.MustCompile(`^instances/[^/]+`)
@@ -317,7 +318,11 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 	for _, name := range rawNames {
 		switch {
 		case strings.HasPrefix(name, "workspaces/"):
-			wsID, err := common.GetWorkspaceID(name)
+			match := workspaceRegex.FindString(name)
+			if match == "" {
+				return nil, errors.Errorf("invalid workspace resource %q", name)
+			}
+			wsID, err := common.GetWorkspaceID(match)
 			if err != nil {
 				return nil, err
 			}

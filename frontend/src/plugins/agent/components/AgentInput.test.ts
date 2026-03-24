@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
+import type { DomRefSuggestion } from "../dom";
 import type { AgentLoopOutcome } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentInput from "./AgentInput.vue";
@@ -11,6 +12,7 @@ const {
   mockBuildSystemPrompt,
   mockCreateToolExecutor,
   mockGetToolDefinitions,
+  mockLazyExtractDomRefSuggestions,
   mockRoute,
 } = vi.hoisted(() => ({
   mockRunAgentLoop: vi.fn(),
@@ -19,7 +21,14 @@ const {
     vi.fn()
   ),
   mockGetToolDefinitions: vi.fn(() => []),
+  mockLazyExtractDomRefSuggestions: vi.fn<() => Promise<DomRefSuggestion[]>>(
+    async () => []
+  ),
   mockRoute: { fullPath: "/projects/demo" },
+}));
+
+vi.mock("../dom", () => ({
+  lazyExtractDomRefSuggestions: mockLazyExtractDomRefSuggestions,
 }));
 
 vi.mock("../logic/agentLoop", () => ({
@@ -43,6 +52,9 @@ vi.mock("vue-router", () => ({
 const getTextareaValue = (wrapper: ReturnType<typeof mount>) => {
   return (wrapper.find("textarea").element as HTMLTextAreaElement).value;
 };
+const findButtonByText = (wrapper: ReturnType<typeof mount>, text: string) => {
+  return wrapper.findAll("button").find((button) => button.text() === text);
+};
 const flushPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
@@ -61,8 +73,14 @@ const i18n = createI18n({
   locale: "en-US",
   messages: {
     "en-US": {
+      common: {
+        dismiss: "Dismiss",
+      },
       agent: {
         interrupted: "Interrupted",
+        "retry-last-turn": "Retry last turn",
+        "interrupted-retry-hint":
+          "Retry reruns the interrupted turn with the current page state.",
         "input-placeholder": "Ask anything...",
         send: "Send",
         reply: "Reply",
@@ -78,6 +96,15 @@ const i18n = createI18n({
   },
 });
 
+const createDomRefSuggestion = (
+  overrides: Partial<DomRefSuggestion> = {}
+): DomRefSuggestion => ({
+  ref: "e1",
+  tag: "BUTTON",
+  label: "Suggestion",
+  ...overrides,
+});
+
 describe("AgentInput", () => {
   let pinia: ReturnType<typeof createPinia>;
 
@@ -89,6 +116,11 @@ describe("AgentInput", () => {
     mockBuildSystemPrompt.mockClear();
     mockCreateToolExecutor.mockClear();
     mockGetToolDefinitions.mockClear();
+  });
+
+  beforeEach(() => {
+    mockLazyExtractDomRefSuggestions.mockReset();
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([]);
   });
 
   beforeEach(() => {
@@ -132,7 +164,6 @@ describe("AgentInput", () => {
           kind: "completed",
           text: "Using project demo.",
           success: true,
-          explicit: true,
         };
       }
     );
@@ -192,7 +223,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Using project demo.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {
@@ -213,6 +243,30 @@ describe("AgentInput", () => {
       path: "/projects/original",
       title: "Original Page",
     });
+  });
+
+  test("increments the current thread token total from loop usage", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+      totalTokensUsed: 123,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("inspect this page");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.totalTokensUsed).toBe(123);
   });
 
   test("refreshes the saved thread page snapshot after navigate before a follow-up turn", async () => {
@@ -293,7 +347,6 @@ describe("AgentInput", () => {
           kind: "completed",
           text: "Done",
           success: true,
-          explicit: true,
         };
       }
     );
@@ -333,6 +386,193 @@ describe("AgentInput", () => {
       path: "/projects/navigated",
       title: "Navigated Page",
     });
+  });
+
+  test("shows retry CTA and reruns interrupted turns from the last stable input", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+    store.addMessage({
+      threadId,
+      role: "user",
+      content: "inspect this page",
+      metadata: {
+        route: "/projects/original",
+      },
+    });
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      content: "Partial answer",
+      metadata: {
+        route: "/projects/original",
+        runId: "run-1",
+      },
+    });
+    store.addMessage({
+      threadId,
+      role: "tool",
+      toolCallId: "tool-1",
+      content: JSON.stringify({ partial: true }),
+      metadata: {
+        route: "/projects/original",
+        runId: "run-1",
+      },
+    });
+    store.interruptRun(threadId);
+    store.getThread(threadId)!.runId = "run-1";
+
+    mockRoute.fullPath = "/projects/current";
+    document.title = "Current Page";
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    expect(wrapper.text()).toContain("Retry reruns the interrupted turn");
+    await findButtonByText(wrapper, "Retry last turn")!.trigger("click");
+    await flushPromises();
+
+    expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
+      path: "/projects/current",
+      title: "Current Page",
+    });
+
+    const [messages] = mockRunAgentLoop.mock.calls[0];
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "system", content: "system-prompt" }),
+        expect.objectContaining({
+          role: "user",
+          content: "inspect this page",
+        }),
+      ])
+    );
+    expect(messages).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "assistant",
+          content: "Partial answer",
+        }),
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-1",
+        }),
+      ])
+    );
+    expect(
+      store
+        .getMessages(threadId)
+        .some((message) => message.content === "Partial answer")
+    ).toBe(false);
+    expect(
+      store
+        .getMessages(threadId)
+        .some((message) => message.toolCallId === "tool-1")
+    ).toBe(false);
+    expect(store.getThread(threadId)?.interrupted).toBe(false);
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/current",
+      title: "Current Page",
+    });
+  });
+
+  test("preserves the latest page snapshot when an interrupted run ends on a new page", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.updateThreadPage(threadId, {
+      path: "/projects/original",
+      title: "Original Page",
+    });
+
+    mockRunAgentLoop.mockImplementation(async () => {
+      mockRoute.fullPath = "/projects/navigated";
+      document.title = "Navigated Page";
+      return { kind: "aborted" };
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("inspect this page");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.interrupted).toBe(true);
+    expect(store.getThread(threadId)?.page).toEqual({
+      path: "/projects/navigated",
+      title: "Navigated Page",
+    });
+  });
+
+  test("dismissing interrupted state removes partial run output", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "user",
+      content: "inspect this page",
+    });
+    store.addMessage({
+      threadId,
+      role: "assistant",
+      content: "Partial answer",
+      metadata: {
+        runId: "run-1",
+      },
+    });
+    store.addMessage({
+      threadId,
+      role: "tool",
+      toolCallId: "tool-1",
+      content: JSON.stringify({ partial: true }),
+      metadata: {
+        runId: "run-1",
+      },
+    });
+    store.interruptRun(threadId);
+    store.getThread(threadId)!.runId = "run-1";
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await findButtonByText(wrapper, "Dismiss")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.interrupted).toBe(false);
+    expect(store.getThread(threadId)?.runId).toBeNull();
+    expect(
+      store.getMessages(threadId).map((message) => ({
+        role: message.role,
+        content: message.content,
+        toolCallId: message.toolCallId,
+      }))
+    ).toEqual([
+      {
+        role: "user",
+        content: "inspect this page",
+        toolCallId: undefined,
+      },
+    ]);
   });
 
   test("keeps the latest run cancellable when an earlier aborted run settles late", async () => {
@@ -376,13 +616,13 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("first request");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
     expect(store.abortController?.signal).toBe(firstSignal);
     expect(store.loading).toBe(true);
 
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Stop")!.trigger("click");
     await flushPromises();
 
     expect(firstSignal?.aborted).toBe(true);
@@ -390,7 +630,7 @@ describe("AgentInput", () => {
     expect(store.loading).toBe(false);
 
     await wrapper.find("textarea").setValue("second request");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
     expect(store.abortController?.signal).toBe(secondSignal);
@@ -411,7 +651,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Done",
       success: true,
-      explicit: true,
     });
     await flushPromises();
 
@@ -477,6 +716,123 @@ describe("AgentInput", () => {
     expect(getTextareaValue(wrapper)).toBe("demo-project");
   });
 
+  test("shows filtered DOM ref suggestions and inserts the selected ref", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+      createDomRefSuggestion({
+        ref: "e2",
+        tag: "A",
+        role: "link",
+        label: "Cancel",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Click @sav");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(10, 10);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    expect(mockLazyExtractDomRefSuggestions).toHaveBeenCalled();
+    const items = wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]');
+    expect(items).toHaveLength(1);
+    expect(items[0].text()).toContain("[e1]");
+    expect(items[0].text()).toContain("Save changes");
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("Click [e1] ");
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
+  });
+
+  test("uses arrow keys to change the active DOM ref suggestion before selecting", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+      createDomRefSuggestion({
+        ref: "e2",
+        tag: "BUTTON",
+        role: "button",
+        label: "Delete changes",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Use @");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    await textarea.trigger("keydown", { key: "ArrowDown" });
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("Use [e2] ");
+  });
+
+  test("does not send while the DOM ref menu is open and escape closes it", async () => {
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+    mockLazyExtractDomRefSuggestions.mockResolvedValue([
+      createDomRefSuggestion({
+        ref: "e1",
+        tag: "BUTTON",
+        role: "button",
+        label: "Save changes",
+      }),
+    ]);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Inspect @save");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(13, 13);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    await textarea.trigger("keydown", { key: "Escape" });
+    await flushPromises();
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+  });
+
   test("uses choose buttons to answer pending choose prompts", async () => {
     const store = useAgentStore();
     const threadId = store.currentThreadId!;
@@ -527,7 +883,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Using production.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {
@@ -586,7 +941,6 @@ describe("AgentInput", () => {
       kind: "completed",
       text: "Canceled.",
       success: true,
-      explicit: true,
     });
 
     const wrapper = mount(AgentInput, {

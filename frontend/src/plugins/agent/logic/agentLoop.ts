@@ -19,7 +19,7 @@ import type {
   ToolExecutor,
 } from "./types";
 
-const MAX_ITERATIONS = 50;
+const MAX_ITERATIONS = 1000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 
@@ -120,11 +120,12 @@ export async function runAgentLoop(
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
+  let totalTokensUsed = 0;
 
   try {
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       if (signal?.aborted) {
-        return { kind: "aborted" };
+        return { kind: "aborted", totalTokensUsed };
       }
 
       const protoMessages = conversation.map(messageToProto);
@@ -140,6 +141,8 @@ export async function runAgentLoop(
           ),
         signal
       );
+
+      totalTokensUsed += response.usage?.totalTokens ?? 0;
 
       if (response.toolCalls.length > 0) {
         const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
@@ -206,6 +209,7 @@ export async function runAgentLoop(
               outcome: {
                 kind: "awaiting_user",
                 ask: executionResult.ask,
+                totalTokensUsed,
               },
               blockedBy: {
                 toolCallId: tc.id,
@@ -230,7 +234,7 @@ export async function runAgentLoop(
               kind: "completed",
               text: executionResult.text,
               success: executionResult.success,
-              explicit: true,
+              totalTokensUsed,
             },
             blockedBy: {
               toolCallId: tc.id,
@@ -249,28 +253,31 @@ export async function runAgentLoop(
         continue;
       }
 
-      const text = response.content ?? "";
-      callbacks?.onText?.(text);
+      const error = new Error(
+        "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+      );
+      callbacks?.onError?.(error);
       return {
-        kind: "completed",
-        text,
-        success: true,
-        explicit: false,
+        kind: "error",
+        error,
+        totalTokensUsed,
       };
     }
 
     return {
       kind: "error",
       error: new Error("Agent loop exceeded maximum iterations"),
+      totalTokensUsed,
     };
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     if (error.name === "AbortError") {
-      return { kind: "aborted" };
+      return { kind: "aborted", totalTokensUsed };
     }
     return {
       kind: "error",
       error,
+      totalTokensUsed,
     };
   }
 }

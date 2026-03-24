@@ -9,7 +9,7 @@ frontend/src/plugins/agent/
 ├── components/          # Vue UI (AgentWindow, message rendering)
 ├── dom/                 # DOM interaction layer
 │   ├── actions.ts       # Execute DOM actions (click, input, select, scroll)
-│   └── domTree.ts       # Extract and index interactive DOM elements
+│   └── domTree.ts       # Extract interactive DOM elements and snapshot-local eN refs
 ├── logic/
 │   ├── agentLoop.ts     # Main agent loop: tool calls, retries, message history
 │   ├── context.ts       # Extract page context from Pinia stores
@@ -49,6 +49,15 @@ The agent chooses between DOM and API based on page context:
 - **DOM-first** on form/preview/editor/creation pages — these have unsaved state that only exists in the UI
 - **API-first** for data queries, bulk operations, or when the relevant page is not open
 - **Either** for mutations on persisted resources — DOM if the user benefits from seeing it, API for speed
+
+## Maintaining DOM Snapshot Refs
+
+When updating prompt text, examples, or maintenance docs for the page agent DOM tools:
+
+- Describe DOM elements with snapshot-local refs such as `[e1]`, not numeric indices.
+- Use `dom_action(ref="e1", ...)` in examples.
+- State clearly that refs come from the current `get_page_state(mode="dom")` snapshot and must be refreshed after the DOM changes or the page is re-read.
+- Do not describe refs as durable IDs across snapshots, rerenders, or navigation.
 
 ## Maintaining the Service Directory
 

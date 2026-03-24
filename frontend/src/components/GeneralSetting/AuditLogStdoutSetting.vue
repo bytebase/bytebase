@@ -5,7 +5,6 @@
         <h1 class="text-2xl font-bold">
           {{ $t("settings.general.workspace.log") }}
         </h1>
-        <FeatureBadge :feature="PlanFeature.FEATURE_AUDIT_LOG" />
       </div>
     </div>
 
@@ -17,9 +16,10 @@
             :text="true"
             :disabled="!allowEdit || !hasAuditLogFeature"
           />
-          <span class="text-sm">
+          <div class="flex items-center gap-x-2 text-sm">
             {{ $t("settings.general.workspace.audit-log-stdout.enable") }}
-          </span>
+            <FeatureBadge :feature="PlanFeature.FEATURE_AUDIT_LOG" />
+          </div>
         </div>
         <div class="mt-1 text-sm text-gray-400">
           {{ $t("settings.general.workspace.audit-log-stdout.description") }}

@@ -3,6 +3,8 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/iam_policy.proto";
 
@@ -10,6 +12,23 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // WorkspaceService manages workspace-level operations and profile.
 service WorkspaceService {
+  // Lists all workspaces the current user is a member of.
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {
+    option (google.api.http) = {get: "/v1/workspaces"};
+    option (bytebase.v1.auth_method) = CUSTOM;
+  }
+
+  // Updates a workspace. Currently only title can be updated.
+  rpc UpdateWorkspace(UpdateWorkspaceRequest) returns (Workspace) {
+    option (google.api.http) = {
+      patch: "/v1/{workspace.name=workspaces/*}"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.workspaces.update";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
   // Retrieves IAM policy for the workspace.
   // Permissions required: bb.workspaces.getIamPolicy
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
@@ -29,4 +48,23 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
+}
+
+message ListWorkspacesRequest {}
+
+message ListWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+}
+
+message Workspace {
+  // Format: workspaces/{workspace}
+  string name = 1;
+
+  string title = 2;
+}
+
+message UpdateWorkspaceRequest {
+  Workspace workspace = 1 [(google.api.field_behavior) = REQUIRED];
+
+  google.protobuf.FieldMask update_mask = 2;
 }

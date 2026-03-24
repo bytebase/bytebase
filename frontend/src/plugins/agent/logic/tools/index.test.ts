@@ -54,6 +54,61 @@ describe("agent tools navigate", () => {
   });
 });
 
+describe("agent tools get_page_state", () => {
+  test("describes a ref-labeled DOM tree", () => {
+    const pageState = getToolDefinitions().find(
+      (tool) => tool.name === "get_page_state"
+    );
+
+    expect(pageState).toBeDefined();
+    expect(pageState?.description).toContain("ref-labeled DOM tree");
+    expect(pageState?.description).toContain("element refs like [e1]");
+    expect(pageState?.description).not.toContain("element indices");
+    expect(pageState?.parametersSchema).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          mode: expect.objectContaining({
+            description: expect.stringContaining("ref-labeled tree"),
+          }),
+        }),
+      })
+    );
+  });
+});
+
+describe("agent tools dom_action", () => {
+  test("exposes ref-based dom_action schema", () => {
+    const domAction = getToolDefinitions().find(
+      (tool) => tool.name === "dom_action"
+    );
+
+    expect(domAction).toBeDefined();
+    expect(domAction?.description).toContain(
+      '**Always call get_page_state(mode="dom") first** to get the element ref, such as [e1].'
+    );
+    expect(domAction?.parametersSchema).toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          type: expect.objectContaining({
+            enum: ["click", "input", "select", "read", "scroll"],
+          }),
+          ref: expect.objectContaining({
+            type: "string",
+          }),
+        }),
+        required: ["type", "ref"],
+      })
+    );
+    expect(domAction?.parametersSchema).not.toEqual(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          index: expect.anything(),
+        }),
+      })
+    );
+  });
+});
+
 describe("agent tools ask_user", () => {
   test("exposes choose in the ask_user schema", () => {
     const askUser = getToolDefinitions().find(

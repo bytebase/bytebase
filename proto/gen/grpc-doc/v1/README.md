@@ -140,6 +140,7 @@
     - [AIChatResponse](#bytebase-v1-AIChatResponse)
     - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
     - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
+    - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
   
@@ -196,6 +197,7 @@
     - [RefreshRequest](#bytebase-v1-RefreshRequest)
     - [RefreshResponse](#bytebase-v1-RefreshResponse)
     - [SignupRequest](#bytebase-v1-SignupRequest)
+    - [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest)
   
     - [AuthService](#bytebase-v1-AuthService)
   
@@ -712,6 +714,11 @@
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
+    - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
+    - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
+    - [Workspace](#bytebase-v1-Workspace)
+  
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
 - [Scalar Value Types](#scalar-value-types)
@@ -2733,6 +2740,7 @@ Response message for AIService.Chat.
 | ----- | ---- | ----- | ----------- |
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
+| usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
 
 
 
@@ -2768,6 +2776,21 @@ A tool definition that the AI can invoke.
 | name | [string](#string) |  | The name of the tool. |
 | description | [string](#string) |  | A description of what the tool does. |
 | parameters_schema | [string](#string) |  | The JSON Schema describing the tool&#39;s parameters. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatUsage"></a>
+
+### AIChatUsage
+Token usage for a single AI provider call.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_tokens | [int32](#int32) |  | Total tokens used by the provider call. |
 
 
 
@@ -3535,6 +3558,25 @@ Response from refreshing the access token.
 
 
 
+
+<a name="bytebase-v1-SwitchWorkspaceRequest"></a>
+
+### SwitchWorkspaceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| workspace | [string](#string) |  | The target workspace to switch to. Format: workspaces/{workspace} |
+| web | [bool](#bool) |  | If true, sets tokens as HTTP-only cookies (browser clients). |
+| otp_code | [string](#string) | optional | OTP code for MFA verification. Required if the target workspace enforces MFA. |
+| recovery_code | [string](#string) | optional | Recovery code for MFA verification (alternative to otp_code). |
+| mfa_temp_token | [string](#string) | optional | Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token. |
+
+
+
+
+
  
 
  
@@ -3554,6 +3596,7 @@ AuthService handles user authentication operations.
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
 | Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
+| SwitchWorkspace | [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Switches the current user&#39;s active workspace and issues new tokens. The user must be a member of the target workspace. |
 
  
 
@@ -11441,6 +11484,63 @@ WorksheetService manages SQL worksheets for query development.
 ## v1/workspace_service.proto
 
 
+
+<a name="bytebase-v1-ListWorkspacesRequest"></a>
+
+### ListWorkspacesRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-ListWorkspacesResponse"></a>
+
+### ListWorkspacesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| workspaces | [Workspace](#bytebase-v1-Workspace) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateWorkspaceRequest"></a>
+
+### UpdateWorkspaceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| workspace | [Workspace](#bytebase-v1-Workspace) |  |  |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Workspace"></a>
+
+### Workspace
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: workspaces/{workspace} |
+| title | [string](#string) |  |  |
+
+
+
+
+
  
 
  
@@ -11455,6 +11555,8 @@ WorkspaceService manages workspace-level operations and profile.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
+| ListWorkspaces | [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest) | [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse) | Lists all workspaces the current user is a member of. |
+| UpdateWorkspace | [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest) | [Workspace](#bytebase-v1-Workspace) | Updates a workspace. Currently only title can be updated. |
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves IAM policy for the workspace. Permissions required: bb.workspaces.getIamPolicy |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
 

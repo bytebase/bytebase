@@ -2,3 +2,72 @@
 // source: v1/workspace_service.proto
 
 package v1
+
+import (
+	proto "google.golang.org/protobuf/proto"
+	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
+)
+
+func (x *ListWorkspacesRequest) Equal(y *ListWorkspacesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *ListWorkspacesResponse) Equal(y *ListWorkspacesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Workspaces) != len(y.Workspaces) {
+		return false
+	}
+	for i := 0; i < len(x.Workspaces); i++ {
+		if !x.Workspaces[i].Equal(y.Workspaces[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *Workspace) Equal(y *Workspace) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	return true
+}
+
+func (x *UpdateWorkspaceRequest) Equal(y *UpdateWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.Workspace.Equal(y.Workspace) {
+		return false
+	}
+	if equal, ok := interface{}(x.UpdateMask).(interface {
+		Equal(*fieldmaskpb.FieldMask) bool
+	}); !ok || !equal.Equal(y.UpdateMask) {
+		return false
+	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
+		return false
+	}
+	return true
+}

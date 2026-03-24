@@ -2,7 +2,9 @@
 // @generated from file v1/workspace_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { Message } from "@bufbuild/protobuf";
+import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 
 /**
@@ -11,11 +13,103 @@ import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSch
 export declare const file_v1_workspace_service: GenFile;
 
 /**
+ * @generated from message bytebase.v1.ListWorkspacesRequest
+ */
+export declare type ListWorkspacesRequest = Message<"bytebase.v1.ListWorkspacesRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorkspacesRequest.
+ * Use `create(ListWorkspacesRequestSchema)` to create a new message.
+ */
+export declare const ListWorkspacesRequestSchema: GenMessage<ListWorkspacesRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListWorkspacesResponse
+ */
+export declare type ListWorkspacesResponse = Message<"bytebase.v1.ListWorkspacesResponse"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.Workspace workspaces = 1;
+   */
+  workspaces: Workspace[];
+};
+
+/**
+ * Describes the message bytebase.v1.ListWorkspacesResponse.
+ * Use `create(ListWorkspacesResponseSchema)` to create a new message.
+ */
+export declare const ListWorkspacesResponseSchema: GenMessage<ListWorkspacesResponse>;
+
+/**
+ * @generated from message bytebase.v1.Workspace
+ */
+export declare type Workspace = Message<"bytebase.v1.Workspace"> & {
+  /**
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title: string;
+};
+
+/**
+ * Describes the message bytebase.v1.Workspace.
+ * Use `create(WorkspaceSchema)` to create a new message.
+ */
+export declare const WorkspaceSchema: GenMessage<Workspace>;
+
+/**
+ * @generated from message bytebase.v1.UpdateWorkspaceRequest
+ */
+export declare type UpdateWorkspaceRequest = Message<"bytebase.v1.UpdateWorkspaceRequest"> & {
+  /**
+   * @generated from field: bytebase.v1.Workspace workspace = 1;
+   */
+  workspace?: Workspace;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask update_mask = 2;
+   */
+  updateMask?: FieldMask;
+};
+
+/**
+ * Describes the message bytebase.v1.UpdateWorkspaceRequest.
+ * Use `create(UpdateWorkspaceRequestSchema)` to create a new message.
+ */
+export declare const UpdateWorkspaceRequestSchema: GenMessage<UpdateWorkspaceRequest>;
+
+/**
  * WorkspaceService manages workspace-level operations and profile.
  *
  * @generated from service bytebase.v1.WorkspaceService
  */
 export declare const WorkspaceService: GenService<{
+  /**
+   * Lists all workspaces the current user is a member of.
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.ListWorkspaces
+   */
+  listWorkspaces: {
+    methodKind: "unary";
+    input: typeof ListWorkspacesRequestSchema;
+    output: typeof ListWorkspacesResponseSchema;
+  },
+  /**
+   * Updates a workspace. Currently only title can be updated.
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.UpdateWorkspace
+   */
+  updateWorkspace: {
+    methodKind: "unary";
+    input: typeof UpdateWorkspaceRequestSchema;
+    output: typeof WorkspaceSchema;
+  },
   /**
    * Retrieves IAM policy for the workspace.
    * Permissions required: bb.workspaces.getIamPolicy

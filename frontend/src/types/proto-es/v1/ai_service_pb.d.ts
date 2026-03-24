@@ -155,6 +155,26 @@ export declare type AIChatRequest = Message<"bytebase.v1.AIChatRequest"> & {
 export declare const AIChatRequestSchema: GenMessage<AIChatRequest>;
 
 /**
+ * Token usage for a single AI provider call.
+ *
+ * @generated from message bytebase.v1.AIChatUsage
+ */
+export declare type AIChatUsage = Message<"bytebase.v1.AIChatUsage"> & {
+  /**
+   * Total tokens used by the provider call.
+   *
+   * @generated from field: int32 total_tokens = 1;
+   */
+  totalTokens: number;
+};
+
+/**
+ * Describes the message bytebase.v1.AIChatUsage.
+ * Use `create(AIChatUsageSchema)` to create a new message.
+ */
+export declare const AIChatUsageSchema: GenMessage<AIChatUsage>;
+
+/**
  * Response message for AIService.Chat.
  *
  * @generated from message bytebase.v1.AIChatResponse
@@ -173,6 +193,13 @@ export declare type AIChatResponse = Message<"bytebase.v1.AIChatResponse"> & {
    * @generated from field: repeated bytebase.v1.AIChatToolCall tool_calls = 2;
    */
   toolCalls: AIChatToolCall[];
+
+  /**
+   * Token usage for this provider call, when available.
+   *
+   * @generated from field: optional bytebase.v1.AIChatUsage usage = 3;
+   */
+  usage?: AIChatUsage;
 };
 
 /**

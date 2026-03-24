@@ -47,10 +47,13 @@ migrateStorageKeys();
 
   const currentUser = await useAuthStore().fetchCurrentUser();
   // Initialize stores.
-  await Promise.all([
+  const initPromises: Promise<unknown>[] = [
     useActuatorV1Store().fetchServerInfo(currentUser?.workspace),
-    useSubscriptionV1Store().fetchSubscription(),
-  ]);
+  ];
+  if (currentUser) {
+    initPromises.push(useSubscriptionV1Store().fetchSubscription());
+  }
+  await Promise.all(initPromises);
 
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
 

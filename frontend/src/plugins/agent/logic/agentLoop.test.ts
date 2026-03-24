@@ -53,7 +53,7 @@ describe("runAgentLoop", () => {
       kind: "completed",
       text: "Finished successfully",
       success: true,
-      explicit: true,
+      totalTokensUsed: 0,
     });
     expect(onToolResult).toHaveBeenCalledWith(
       "tool-1",
@@ -77,6 +77,68 @@ describe("runAgentLoop", () => {
           metadata: "",
         },
       ],
+    });
+  });
+
+  test("accumulates token usage across repeated provider calls", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-1",
+            name: "search_api",
+            arguments: JSON.stringify({ service: "SQLService" }),
+            metadata: "",
+          },
+        ],
+        usage: {
+          totalTokens: 11,
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-2",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "Final answer",
+              success: true,
+            }),
+            metadata: "",
+          },
+        ],
+        usage: {
+          totalTokens: 7,
+        },
+      } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async (name, args) => {
+      if (name === "done") {
+        return {
+          kind: "done" as const,
+          text: String(args.text),
+          success: args.success !== false,
+        };
+      }
+      return {
+        kind: "tool_result" as const,
+        result: JSON.stringify({ ok: true }),
+      };
+    });
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "Final answer",
+      success: true,
+      totalTokensUsed: 18,
     });
   });
 
@@ -174,7 +236,7 @@ describe("runAgentLoop", () => {
       ])
     );
   });
-  test("keeps plain assistant text as a compatibility fallback", async () => {
+  test("returns an error when the assistant replies with plain text instead of done", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "Here is the answer",
       toolCalls: [],
@@ -182,21 +244,25 @@ describe("runAgentLoop", () => {
 
     const executeTool: ToolExecutor = vi.fn();
     const onText = vi.fn();
+    const onError = vi.fn();
 
     const outcome = await runAgentLoop(
       [{ role: "system", content: "system" }],
       [],
       executeTool,
-      { onText }
+      { onText, onError }
     );
 
-    expect(outcome).toEqual({
-      kind: "completed",
-      text: "Here is the answer",
-      success: true,
-      explicit: false,
-    });
-    expect(onText).toHaveBeenCalledWith("Here is the answer");
+    expect(outcome.kind).toBe("error");
+    if (outcome.kind !== "error") {
+      throw new Error(`Expected error outcome, got ${outcome.kind}`);
+    }
+    expect(outcome.error.message).toBe(
+      "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+    );
+    expect(outcome.totalTokensUsed).toBe(0);
+    expect(onError).toHaveBeenCalledWith(outcome.error);
+    expect(onText).not.toHaveBeenCalled();
     expect(executeTool).not.toHaveBeenCalled();
   });
 
@@ -254,6 +320,7 @@ describe("runAgentLoop", () => {
           { label: "Staging", value: "staging" },
         ],
       },
+      totalTokensUsed: 0,
     });
     expect(onToolResult).not.toHaveBeenCalled();
   });
@@ -312,6 +379,7 @@ describe("runAgentLoop", () => {
         prompt: "Which environment should I use?",
         kind: "input",
       },
+      totalTokensUsed: 0,
     });
     expect(executeTool).toHaveBeenCalledTimes(1);
     expect(executeTool).toHaveBeenCalledWith(
@@ -383,7 +451,7 @@ describe("runAgentLoop", () => {
       kind: "completed",
       text: "Finished successfully",
       success: true,
-      explicit: true,
+      totalTokensUsed: 0,
     });
     expect(executeTool).toHaveBeenCalledTimes(1);
     expect(executeTool).toHaveBeenCalledWith(

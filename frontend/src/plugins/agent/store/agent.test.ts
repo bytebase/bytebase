@@ -1,11 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
-import {
-  AGENT_STATE_KEY,
-  LEGACY_AGENT_MESSAGES_KEY,
-  useAgentStore,
-} from "./agent";
+import { AGENT_STATE_KEY, AGENT_WINDOW_KEY, useAgentStore } from "./agent";
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -54,27 +50,25 @@ describe("useAgentStore", () => {
     expect(store.threads).toHaveLength(1);
     expect(store.currentThreadId).toBe(store.threads[0].id);
     expect(store.messages).toEqual([]);
+    expect(store.threads[0].totalTokensUsed).toBe(0);
   });
 
-  test("migrates legacy flat messages into a thread-aware state", () => {
+  test("loads persisted window state", () => {
     localStorage.setItem(
-      LEGACY_AGENT_MESSAGES_KEY,
-      JSON.stringify([
-        { role: "user", content: "Help me inspect this page" },
-        { role: "assistant", content: "Sure" },
-      ])
+      AGENT_WINDOW_KEY,
+      JSON.stringify({
+        position: { x: 120, y: 240 },
+        size: { width: 480, height: 640 },
+      })
     );
 
     const store = createStore();
+    store.loadWindowState();
 
-    expect(store.threads).toHaveLength(1);
-    expect(store.currentThreadId).toBe(store.threads[0].id);
-    expect(store.messages).toHaveLength(2);
-    expect(store.messages[0].id).toBeTruthy();
-    expect(store.messages[0].threadId).toBe(store.currentThreadId);
-    expect(store.messages[0].createdTs).toBeTypeOf("number");
-    expect(store.threads[0].title).toContain("Help me inspect this page");
-    expect(localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY)).toBeNull();
+    expect(store.position).toEqual({ x: 120, y: 240 });
+    expect(store.size).toEqual({ width: 480, height: 640 });
+    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain('"width":480');
+    expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
   });
 
   test("normalizes stale running threads on load", () => {
@@ -89,6 +83,7 @@ describe("useAgentStore", () => {
             createdTs: 10,
             updatedTs: 20,
             status: "running",
+            runId: "run-1",
           },
         ],
         messagesByThreadId: {
@@ -110,9 +105,31 @@ describe("useAgentStore", () => {
     const thread = store.currentThread;
 
     expect(thread).not.toBeNull();
-    expect(thread?.status).toBe("error");
+    expect(thread?.status).toBe("idle");
     expect(thread?.interrupted).toBe(true);
+    expect(thread?.runId).toBe("run-1");
     expect(store.loading).toBe(false);
+  });
+
+  test("clears interruption markers when a new run starts", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.interruptRun(threadId);
+    store.startRun(
+      threadId,
+      {
+        path: "/projects/demo",
+        title: "Demo",
+      },
+      {
+        runId: "run-2",
+      }
+    );
+
+    expect(store.getThread(threadId)?.status).toBe("running");
+    expect(store.getThread(threadId)?.interrupted).toBe(false);
+    expect(store.getThread(threadId)?.runId).toBe("run-2");
   });
 
   test("persists the selected thread and resets thread messages in place", async () => {
@@ -154,6 +171,24 @@ describe("useAgentStore", () => {
       path: "/projects/current",
       title: "Current Page",
     });
+  });
+
+  test("increments and resets thread token totals", async () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.incrementThreadTotalTokens(threadId, 120);
+    store.incrementThreadTotalTokens(threadId, 30);
+
+    expect(store.getThread(threadId)?.totalTokensUsed).toBe(150);
+
+    await nextTick();
+
+    const rehydratedStore = createStore();
+    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(150);
+
+    rehydratedStore.clearConversation(threadId);
+    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(0);
   });
 
   test("preserves an existing thread page when resuming a run", () => {

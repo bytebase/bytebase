@@ -34,7 +34,14 @@ func FormatGroupName(group *store.GroupMessage) string {
 
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
 // The role can be either with or without the "roles/" prefix.
-func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, workspace string, role string, policies ...*storepb.IamPolicy) []*store.UserMessage {
+func GetUsersByRoleInIAMPolicy(
+	ctx context.Context,
+	stores *store.Store,
+	workspace string,
+	role string,
+	allowAllUsers bool,
+	policies ...*storepb.IamPolicy,
+) []*store.UserMessage {
 	roleFullName := role
 	if !strings.HasPrefix(role, common.RolePrefix) {
 		roleFullName = common.FormatRole(role)
@@ -53,7 +60,7 @@ func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, workspa
 			}
 
 			for _, member := range binding.Members {
-				if member == common.AllUsers {
+				if member == common.AllUsers && allowAllUsers {
 					// TODO(d): make it more efficient.
 					allUsers, err := stores.ListUsers(ctx, &store.FindUserMessage{
 						ShowDeleted: false,

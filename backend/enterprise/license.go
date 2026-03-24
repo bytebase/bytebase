@@ -163,7 +163,7 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store, saas bool) (
 		store:  store,
 		config: config,
 		saas:   saas,
-		cache:  expirable.NewLRU[string, *v1pb.Subscription](1, nil, 1*time.Minute),
+		cache:  expirable.NewLRU[string, *v1pb.Subscription](128, nil, 1*time.Minute),
 	}
 	service.replicaCache.Store(&replicaCacheState{
 		replicaCount: 1,
@@ -181,6 +181,9 @@ func licenseCacheKey(workspaceID string) string {
 // If there is no license, we will return a free plan subscription without expiration time.
 // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 func (s *LicenseService) LoadSubscription(ctx context.Context, workspaceID string) *v1pb.Subscription {
+	if workspaceID == "" {
+		return defaultFreeSubscription
+	}
 	key := licenseCacheKey(workspaceID)
 
 	// Fast path: cache hit (TTL handled automatically by expirable.LRU)
@@ -196,7 +199,13 @@ func (s *LicenseService) LoadSubscription(ctx context.Context, workspaceID strin
 		}
 
 		subscription := s.loadSubscriptionFromDB(ctx, workspaceID)
-		s.cache.Add(key, subscription)
+
+		// Only cache non-free subscriptions. Free plan may be a transient failure
+		// (e.g. DB not ready during startup), and caching it would mask the real
+		// license for the TTL duration.
+		if subscription.Plan != v1pb.PlanType_FREE {
+			s.cache.Add(key, subscription)
+		}
 		return subscription, nil
 	})
 
