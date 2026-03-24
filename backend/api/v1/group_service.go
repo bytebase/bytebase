@@ -283,23 +283,8 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
 	payload := &storepb.GroupPayload{}
 	for _, member := range group.Members {
-		email, err := common.GetUserEmail(member.Member)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member email"))
-		}
-		user, err := s.store.GetUserByEmail(ctx, email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get member %s", member.Member))
-		}
-		if user == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot found member %s", member.Member))
-		}
-		if user.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only allow add end users to the group"))
-		}
-
 		m := &storepb.GroupMember{
-			Member: common.FormatUserEmail(user.Email),
+			Member: member.Member,
 		}
 		switch member.Role {
 		case v1pb.GroupMember_MEMBER:

@@ -238,6 +238,7 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 
 	case storepb.PrincipalType_END_USER:
 		// END_USER membership is verified via workspace IAM policy.
+		// Check direct membership, group membership, and allUsers.
 		iamPolicy, err := in.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {
 			return errs.Wrap(err, "failed to get workspace IAM policy")
@@ -250,6 +251,13 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 				}
 				if member == common.AllUsers && !in.profile.SaaS {
 					return nil
+				}
+				// Check group membership.
+				if strings.HasPrefix(member, common.GroupPrefix) {
+					groupMembers, _ := in.store.GetGroupMembersSnapshot(ctx, workspaceID, member)
+					if groupMembers != nil && groupMembers[userMember] {
+						return nil
+					}
 				}
 			}
 		}

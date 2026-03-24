@@ -195,11 +195,25 @@ func (s *Store) FindWorkspace(ctx context.Context, find *FindWorkspaceMessage) (
 }
 
 // ListWorkspacesByEmail finds all workspaces where the given email is a member
-// in the workspace IAM policy bindings.
+// in the workspace IAM policy bindings, either directly or via a group.
 // Returns workspaces sorted by name.
 func (s *Store) ListWorkspacesByEmail(ctx context.Context, find *FindWorkspaceMessage) ([]*WorkspaceMessage, error) {
 	memberName := common.FormatUserEmail(find.Email)
+
+	// Check direct membership OR group membership:
+	// 1. Direct: member = 'users/{email}'
+	// 2. Group: member = 'groups/{groupEmail}' and user_group with that email
+	//    contains 'users/{email}' in its payload.members[].member
+	// 3. AllUsers: member = 'allUsers' (self-hosted only)
 	memberFilter := qb.Q().Space("member = ?", memberName)
+	memberFilter.Or(`member LIKE 'groups/%' AND EXISTS (
+		SELECT 1
+		FROM user_group ug,
+		     jsonb_array_elements(ug.payload->'members') AS gm
+		WHERE ug.workspace = w.resource_id
+		  AND 'groups/' || ug.email = member
+		  AND gm->>'member' = ?
+	)`, memberName)
 	if find.IncludeAllUser {
 		memberFilter.Or("member = ?", common.AllUsers)
 	}
@@ -208,8 +222,8 @@ func (s *Store) ListWorkspacesByEmail(ctx context.Context, find *FindWorkspaceMe
 		SELECT DISTINCT w.resource_id, w.name
 		FROM workspace w
 		JOIN policy p ON p.workspace = w.resource_id
-		WHERE p.resource_type = 'WORKSPACE'
-		  AND p.type = 'IAM'
+		WHERE p.resource_type = ?
+		  AND p.type = ?
 		  AND w.deleted = FALSE
 		  AND EXISTS (
 			SELECT 1
@@ -217,7 +231,7 @@ func (s *Store) ListWorkspacesByEmail(ctx context.Context, find *FindWorkspaceMe
 			     jsonb_array_elements_text(binding->'members') AS member
 			WHERE ?
 		  )
-	`, memberFilter)
+	`, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), memberFilter)
 	if v := find.WorkspaceID; v != nil {
 		q.And("w.resource_id = ?", *v)
 	}
