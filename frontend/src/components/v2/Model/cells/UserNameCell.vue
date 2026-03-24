@@ -2,10 +2,10 @@
   <div class="flex flex-row items-center" :class="gapClass">
     <UserAvatar :user="user" :size="avatarSize" />
 
-    <div class="flex flex-row items-center">
-      <div class="flex flex-col">
-        <div class="flex flex-row items-center gap-x-1">
-          <div :class="isDeleted ? 'line-through' : ''">
+    <div class="flex flex-row items-center min-w-0">
+      <div class="flex flex-col min-w-0">
+        <div class="flex flex-row items-center gap-x-1 min-w-0">
+          <div class="truncate" :class="isDeleted ? 'line-through' : ''">
             <HighlightLabelText
               v-if="onClickUser"
               class="truncate max-w-40 cursor-pointer"
