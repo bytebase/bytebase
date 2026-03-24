@@ -116,7 +116,9 @@ const activeDomRefQuery = computed(() =>
 const filteredDomRefSuggestions = computed(() => {
   const query = activeDomRefQuery.value?.query ?? "";
   return domRefSuggestions.value
-    .filter((suggestion) => matchDomRefSuggestion(suggestion, query))
+    .filter((suggestion: DomRefSuggestion) =>
+      matchDomRefSuggestion(suggestion, query)
+    )
     .slice(0, DOM_REF_SUGGESTION_LIMIT);
 });
 

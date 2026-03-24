@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
+import type { DomRefSuggestion } from "../dom";
 import type { AgentLoopOutcome } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentInput from "./AgentInput.vue";
@@ -20,7 +21,9 @@ const {
     vi.fn()
   ),
   mockGetToolDefinitions: vi.fn(() => []),
-  mockLazyExtractDomRefSuggestions: vi.fn(async () => []),
+  mockLazyExtractDomRefSuggestions: vi.fn<
+    () => Promise<DomRefSuggestion[]>
+  >(async () => []),
   mockRoute: { fullPath: "/projects/demo" },
 }));
 
@@ -91,6 +94,15 @@ const i18n = createI18n({
       },
     },
   },
+});
+
+const createDomRefSuggestion = (
+  overrides: Partial<DomRefSuggestion> = {}
+): DomRefSuggestion => ({
+  ref: "e1",
+  tag: "BUTTON",
+  label: "Suggestion",
+  ...overrides,
 });
 
 describe("AgentInput", () => {
@@ -706,18 +718,18 @@ describe("AgentInput", () => {
 
   test("shows filtered DOM ref suggestions and inserts the selected ref", async () => {
     mockLazyExtractDomRefSuggestions.mockResolvedValue([
-      {
+      createDomRefSuggestion({
         ref: "e1",
         tag: "BUTTON",
         role: "button",
         label: "Save changes",
-      },
-      {
+      }),
+      createDomRefSuggestion({
         ref: "e2",
         tag: "A",
         role: "link",
         label: "Cancel",
-      },
+      }),
     ]);
 
     const wrapper = mount(AgentInput, {
@@ -749,18 +761,18 @@ describe("AgentInput", () => {
 
   test("uses arrow keys to change the active DOM ref suggestion before selecting", async () => {
     mockLazyExtractDomRefSuggestions.mockResolvedValue([
-      {
+      createDomRefSuggestion({
         ref: "e1",
         tag: "BUTTON",
         role: "button",
         label: "Save changes",
-      },
-      {
+      }),
+      createDomRefSuggestion({
         ref: "e2",
         tag: "BUTTON",
         role: "button",
         label: "Delete changes",
-      },
+      }),
     ]);
 
     const wrapper = mount(AgentInput, {
@@ -789,12 +801,12 @@ describe("AgentInput", () => {
       success: true,
     });
     mockLazyExtractDomRefSuggestions.mockResolvedValue([
-      {
+      createDomRefSuggestion({
         ref: "e1",
         tag: "BUTTON",
         role: "button",
         label: "Save changes",
-      },
+      }),
     ]);
 
     const wrapper = mount(AgentInput, {

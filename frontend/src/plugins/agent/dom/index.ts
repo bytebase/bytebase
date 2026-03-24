@@ -1,5 +1,9 @@
 import type { Router } from "vue-router";
-import type { DomActionParams, DomActionResult } from "./actions";
+import type {
+  DomActionParams,
+  DomActionResult,
+  DomRefSuggestion,
+} from "./actions";
 
 // Single dynamic import path. actions.ts re-exports extractDomTree and
 // getElementByRef from domTree.ts, ensuring one module instance so the
