@@ -34,7 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260211083148-d2ea344b4b65
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260320111558-ef957ff3b59c
+	github.com/bytebase/omni v0.0.0-20260324084257-a8ae1438840a
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -378,8 +378,6 @@ replace (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
 
 	github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
-
-	github.com/bytebase/omni => ../omni
 
 	// copied from pingcap/tidb
 	// fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
