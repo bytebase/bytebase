@@ -21,9 +21,9 @@ const {
     vi.fn()
   ),
   mockGetToolDefinitions: vi.fn(() => []),
-  mockLazyExtractDomRefSuggestions: vi.fn<
-    () => Promise<DomRefSuggestion[]>
-  >(async () => []),
+  mockLazyExtractDomRefSuggestions: vi.fn<() => Promise<DomRefSuggestion[]>>(
+    async () => []
+  ),
   mockRoute: { fullPath: "/projects/demo" },
 }));
 
