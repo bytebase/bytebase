@@ -126,7 +126,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	groupMessage, err := s.convertToGroupMessage(ctx, req.Msg)
+	groupMessage, err := convertToGroupMessage(req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -299,7 +299,7 @@ func convertToGroupPayload(group *v1pb.Group) (*storepb.GroupPayload, error) {
 	return payload, nil
 }
 
-func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
+func convertToGroupMessage(request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
 	if request.GroupEmail == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing group_email in the request"))
 	}
