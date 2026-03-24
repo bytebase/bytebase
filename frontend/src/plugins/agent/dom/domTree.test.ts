@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test } from "vitest";
-import { extractDomTree, getElementByRef } from "./domTree";
+import {
+  extractDomRefSuggestions,
+  extractDomTree,
+  getElementByRef,
+} from "./domTree";
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -33,6 +37,57 @@ describe("extractDomTree", () => {
     expect(getElementByRef("e1")?.tag).toBe("button");
     expect(getElementByRef("e3")?.tag).toBe("editor");
     expect(getElementByRef("e9")).toBeUndefined();
+  });
+
+  test("returns structured DOM ref suggestions for visible interactive elements", () => {
+    document.body.innerHTML = `
+      <main>
+        <button aria-label="Run query">Run</button>
+        <div role="button" aria-labelledby="publish-label">Publish now</div>
+        <span id="publish-label">Publish</span>
+        <input placeholder="Project name" value="Test Project" />
+        <div class="monaco-editor">
+          <div class="view-lines">
+            <div class="view-line">SELECT *</div>
+            <div class="view-line">FROM projects;</div>
+          </div>
+        </div>
+        <button style="display: none">Hidden</button>
+      </main>
+    `;
+
+    expect(extractDomRefSuggestions()).toEqual([
+      {
+        ref: "e1",
+        tag: "button",
+        role: undefined,
+        label: "Run query",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "div",
+        role: "button",
+        label: "Publish",
+        value: undefined,
+      },
+      {
+        ref: "e3",
+        tag: "input",
+        role: undefined,
+        label: "Project name",
+        value: "Test Project",
+      },
+      {
+        ref: "e4",
+        tag: "editor",
+        role: undefined,
+        label: "SQL: SELECT *\nFROM projects;",
+        value: "SELECT *\nFROM projects;",
+      },
+    ]);
+
+    expect(getElementByRef("e2")?.label).toBe("Publish");
   });
 
   test("resets refs on each extraction", () => {

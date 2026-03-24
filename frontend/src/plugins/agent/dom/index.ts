@@ -20,6 +20,13 @@ export async function lazyExtractDomTree(): Promise<{
   return m.extractDomTree();
 }
 
+export async function lazyExtractDomRefSuggestions(): Promise<
+  import("./actions").DomRefSuggestion[]
+> {
+  const m = await ensureLoaded();
+  return m.extractDomRefSuggestions();
+}
+
 function isSameOriginLink(el: Element): string | undefined {
   if (!(el instanceof HTMLAnchorElement)) return undefined;
   const href = el.getAttribute("href");
@@ -88,4 +95,4 @@ export async function lazyExecuteDomAction(
   return m.executeDomAction(params, entry.element);
 }
 
-export type { DomActionParams, DomActionResult };
+export type { DomActionParams, DomActionResult, DomRefSuggestion };

@@ -1,4 +1,9 @@
-export { extractDomTree, getElementByRef } from "./domTree";
+export type { DomRefSuggestion } from "./domTree";
+export {
+  extractDomRefSuggestions,
+  extractDomTree,
+  getElementByRef,
+} from "./domTree";
 
 export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
 

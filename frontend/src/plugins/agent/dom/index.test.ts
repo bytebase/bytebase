@@ -1,10 +1,34 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Router } from "vue-router";
-import { lazyExecuteDomAction, lazyExtractDomTree } from "./index";
+import {
+  lazyExecuteDomAction,
+  lazyExtractDomRefSuggestions,
+  lazyExtractDomTree,
+} from "./index";
 
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+});
+
+describe("lazyExtractDomRefSuggestions", () => {
+  test("returns structured suggestions from the shared DOM registry", async () => {
+    document.body.innerHTML = `<button aria-label="Run query">Run</button>`;
+
+    await expect(lazyExtractDomRefSuggestions()).resolves.toEqual([
+      {
+        ref: "e1",
+        tag: "button",
+        role: undefined,
+        label: "Run query",
+        value: undefined,
+      },
+    ]);
+
+    await expect(
+      lazyExecuteDomAction({ type: "read", ref: "e1" })
+    ).resolves.toEqual({ success: true, message: "Run" });
+  });
 });
 
 describe("lazyExecuteDomAction", () => {

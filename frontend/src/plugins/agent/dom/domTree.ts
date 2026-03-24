@@ -1,9 +1,12 @@
-export interface IndexedElement {
+export interface DomRefSuggestion {
   ref: string;
   tag: string;
   role?: string;
   label: string;
   value?: string;
+}
+
+export interface IndexedElement extends DomRefSuggestion {
   element: Element;
 }
 
@@ -189,6 +192,22 @@ function extractValue(el: Element): string | undefined {
   return undefined;
 }
 
+function toDomRefSuggestion({
+  ref,
+  tag,
+  role,
+  label,
+  value,
+}: IndexedElement): DomRefSuggestion {
+  return {
+    ref,
+    tag,
+    role,
+    label,
+    value,
+  };
+}
+
 function walkDom(node: Element, depth: number, lines: string[]): void {
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
@@ -234,9 +253,10 @@ function walkDom(node: Element, depth: number, lines: string[]): void {
   }
 }
 
-export function extractDomTree(root?: Element): {
+function extractDomState(root?: Element): {
   tree: string;
   count: number;
+  refs: DomRefSuggestion[];
 } {
   elementRegistry.clear();
   nextElementRef = 1;
@@ -250,5 +270,18 @@ export function extractDomTree(root?: Element): {
   return {
     tree: lines.join("\n"),
     count: elementRegistry.size,
+    refs: Array.from(elementRegistry.values(), toDomRefSuggestion),
   };
+}
+
+export function extractDomTree(root?: Element): {
+  tree: string;
+  count: number;
+} {
+  const { tree, count } = extractDomState(root);
+  return { tree, count };
+}
+
+export function extractDomRefSuggestions(root?: Element): DomRefSuggestion[] {
+  return extractDomState(root).refs;
 }
