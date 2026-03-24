@@ -66,10 +66,11 @@
               >
                 <NSelect
                   style="width: 12rem"
-                  v-model:value="state.provider"
+                  :value="state.provider"
                   :options="providerOptions"
                   :disabled="slotProps.disabled"
                   :consistent-menu-width="true"
+                  @update:value="onProviderChange"
                 />
               </PermissionGuardWrapper>
             </div>
@@ -176,9 +177,10 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NCollapseTransition, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
-import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -277,15 +279,12 @@ watchEffect(async () => {
 
 const allowSave = computed((): boolean => {
   const initValue = getInitialState();
-  const enabledUpdated = state.enabled !== initValue.enabled;
-  const openAIKeyUpdated = !!state.apiKey;
-  const openAIEndpointUpdated = state.endpoint !== initValue.endpoint;
-  const openAIModelUpdated = state.model !== initValue.model;
   return (
-    enabledUpdated ||
-    openAIKeyUpdated ||
-    openAIEndpointUpdated ||
-    openAIModelUpdated
+    state.enabled !== initValue.enabled ||
+    state.provider !== initValue.provider ||
+    !!state.apiKey ||
+    state.endpoint !== initValue.endpoint ||
+    state.model !== initValue.model
   );
 });
 
@@ -330,12 +329,10 @@ const providerDefault = computed(() => {
   }
 });
 
-watch(
-  () => state.provider,
-  () => {
-    Object.assign(state, providerDefault.value);
-  }
-);
+const onProviderChange = (provider: AISetting_Provider) => {
+  state.provider = provider;
+  Object.assign(state, providerDefault.value);
+};
 
 const toggleAIEnabled = (on: boolean) => {
   if (!on) {
@@ -348,6 +345,17 @@ const toggleAIEnabled = (on: boolean) => {
 };
 
 const updateAISetting = async () => {
+  const initValue = getInitialState();
+  const paths: string[] = [];
+  if (state.enabled !== initValue.enabled) paths.push("value.ai.enabled");
+  if (state.provider !== initValue.provider) paths.push("value.ai.provider");
+  if (state.endpoint !== initValue.endpoint) paths.push("value.ai.endpoint");
+  if (state.model !== initValue.model) paths.push("value.ai.model");
+  // Include api_key when user entered a new key, or when provider changed
+  // (switching providers invalidates the old key, forcing user to provide a new one).
+  if (state.apiKey || state.provider !== initValue.provider)
+    paths.push("value.ai.api_key");
+
   await settingV1Store.upsertSetting({
     name: Setting_SettingName.AI,
     value: create(SettingSettingValueSchema, {
@@ -363,6 +371,7 @@ const updateAISetting = async () => {
         }),
       },
     }),
+    updateMask: create(FieldMaskSchema, { paths }),
   });
 
   Object.assign(state, getInitialState());

@@ -46,6 +46,7 @@ export interface AgentThread {
   createdTs: number;
   updatedTs: number;
   status: AgentThreadStatus;
+  totalTokensUsed: number;
   page?: AgentThreadSnapshot;
   lastError?: string | null;
   interrupted?: boolean;
@@ -101,24 +102,28 @@ export type ToolExecutionResult =
       ask: AgentPendingAsk;
     };
 
+interface AgentLoopUsage {
+  totalTokensUsed?: number;
+}
+
 export type AgentLoopOutcome =
-  | {
+  | ({
       kind: "completed";
       text: string;
       success: boolean;
       explicit: boolean;
-    }
-  | {
+    } & AgentLoopUsage)
+  | ({
       kind: "awaiting_user";
       ask: AgentPendingAsk;
-    }
-  | {
+    } & AgentLoopUsage)
+  | ({
       kind: "aborted";
-    }
-  | {
+    } & AgentLoopUsage)
+  | ({
       kind: "error";
       error: Error;
-    };
+    } & AgentLoopUsage);
 
 export type ToolExecutor = (
   name: string,

@@ -3,8 +3,7 @@
   <BannerDemo v-if="shouldShowDemoBanner" />
   <BannerSubscription v-if="shouldShowSubscriptionBanner" />
   <BannerExternalUrl v-if="shouldShowExternalUrlBanner" />
-  <!-- TODO(ed): remove the isDev when HA is ready -->
-  <BannerHA v-if="isDev() && shouldShowHABanner" />
+  <BannerHA v-if="shouldShowHABanner" />
   <BannerAnnouncement />
 </template>
 

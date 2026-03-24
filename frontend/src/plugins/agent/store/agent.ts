@@ -45,6 +45,7 @@ const createThreadRecord = (options: CreateThreadOptions = {}): AgentThread => {
     createdTs: now,
     updatedTs: now,
     status: DEFAULT_THREAD_STATUS,
+    totalTokensUsed: 0,
     page: options.page,
     lastError: null,
     interrupted: false,
@@ -174,6 +175,12 @@ const normalizeThread = (raw: unknown): AgentThread => {
     createdTs: typeof thread.createdTs === "number" ? thread.createdTs : now,
     updatedTs: typeof thread.updatedTs === "number" ? thread.updatedTs : now,
     status,
+    totalTokensUsed:
+      typeof thread.totalTokensUsed === "number" &&
+      Number.isFinite(thread.totalTokensUsed) &&
+      thread.totalTokensUsed >= 0
+        ? thread.totalTokensUsed
+        : 0,
     page:
       isRecord(thread.page) &&
       typeof thread.page.path === "string" &&
@@ -512,6 +519,19 @@ export const useAgentStore = defineStore("agent", () => {
     return message;
   };
 
+  const incrementThreadTotalTokens = (
+    threadId: string,
+    totalTokensUsed: number
+  ) => {
+    const thread = getThread(threadId);
+    if (!thread || totalTokensUsed <= 0) {
+      return null;
+    }
+    thread.totalTokensUsed += totalTokensUsed;
+    touchThread(threadId);
+    return thread;
+  };
+
   const awaitUser = (threadId: string, pendingAsk: AgentPendingAsk) => {
     setThreadStatus(threadId, "awaiting_user");
     return setPendingAsk(threadId, pendingAsk);
@@ -547,6 +567,7 @@ export const useAgentStore = defineStore("agent", () => {
     thread.title = "";
     thread.page = undefined;
     thread.status = DEFAULT_THREAD_STATUS;
+    thread.totalTokensUsed = 0;
     thread.lastError = null;
     thread.interrupted = false;
     thread.runId = null;
@@ -760,6 +781,7 @@ export const useAgentStore = defineStore("agent", () => {
     awaitUser,
     answerPendingAsk,
     touchThread,
+    incrementThreadTotalTokens,
     addMessage,
     removeMessagesByRunId,
     appendToolCall,

@@ -86,6 +86,12 @@ message AIChatRequest {
   repeated AIChatToolDefinition tool_definitions = 2;
 }
 
+// Token usage for a single AI provider call.
+message AIChatUsage {
+  // Total tokens used by the provider call.
+  int32 total_tokens = 1;
+}
+
 // Response message for AIService.Chat.
 message AIChatResponse {
   // The text content of the AI response. Optional when the response only contains tool calls.
@@ -93,4 +99,7 @@ message AIChatResponse {
 
   // Tool calls the AI wants to make.
   repeated AIChatToolCall tool_calls = 2;
+
+  // Token usage for this provider call, when available.
+  optional AIChatUsage usage = 3;
 }

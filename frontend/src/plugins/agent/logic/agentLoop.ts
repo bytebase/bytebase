@@ -120,11 +120,12 @@ export async function runAgentLoop(
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
+  let totalTokensUsed = 0;
 
   try {
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       if (signal?.aborted) {
-        return { kind: "aborted" };
+        return { kind: "aborted", totalTokensUsed };
       }
 
       const protoMessages = conversation.map(messageToProto);
@@ -140,6 +141,8 @@ export async function runAgentLoop(
           ),
         signal
       );
+
+      totalTokensUsed += response.usage?.totalTokens ?? 0;
 
       if (response.toolCalls.length > 0) {
         const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
@@ -206,6 +209,7 @@ export async function runAgentLoop(
               outcome: {
                 kind: "awaiting_user",
                 ask: executionResult.ask,
+                totalTokensUsed,
               },
               blockedBy: {
                 toolCallId: tc.id,
@@ -231,6 +235,7 @@ export async function runAgentLoop(
               text: executionResult.text,
               success: executionResult.success,
               explicit: true,
+              totalTokensUsed,
             },
             blockedBy: {
               toolCallId: tc.id,
@@ -256,21 +261,24 @@ export async function runAgentLoop(
         text,
         success: true,
         explicit: false,
+        totalTokensUsed,
       };
     }
 
     return {
       kind: "error",
       error: new Error("Agent loop exceeded maximum iterations"),
+      totalTokensUsed,
     };
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     if (error.name === "AbortError") {
-      return { kind: "aborted" };
+      return { kind: "aborted", totalTokensUsed };
     }
     return {
       kind: "error",
       error,
+      totalTokensUsed,
     };
   }
 }

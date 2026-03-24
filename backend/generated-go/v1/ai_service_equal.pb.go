@@ -97,6 +97,19 @@ func (x *AIChatRequest) Equal(y *AIChatRequest) bool {
 	return true
 }
 
+func (x *AIChatUsage) Equal(y *AIChatUsage) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TotalTokens != y.TotalTokens {
+		return false
+	}
+	return true
+}
+
 func (x *AIChatResponse) Equal(y *AIChatResponse) bool {
 	if x == y {
 		return true
@@ -114,6 +127,9 @@ func (x *AIChatResponse) Equal(y *AIChatResponse) bool {
 		if !x.ToolCalls[i].Equal(y.ToolCalls[i]) {
 			return false
 		}
+	}
+	if !x.Usage.Equal(y.Usage) {
+		return false
 	}
 	return true
 }

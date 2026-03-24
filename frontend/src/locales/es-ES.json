@@ -2491,6 +2491,7 @@
     "thread-status-awaiting-user": "Esperando entrada",
     "thread-status-error": "Error",
     "thread-status-interrupted": "Interrumpido",
+    "thread-total-tokens": "Tokens usados: {count}",
     "reply": "Responder",
     "confirm": "Confirmar",
     "cancel": "Cancelar",
