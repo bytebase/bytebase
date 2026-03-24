@@ -319,6 +319,8 @@ func isUltimatelyPlainColumn(q *catalog.Query, expr catalog.AnalyzedExpr) bool {
 				return isUltimatelyPlainColumn(cte.Query, cte.Query.TargetList[colIdx].Expr)
 			}
 		}
+	default:
+		return false
 	}
 	return false
 }
@@ -455,8 +457,7 @@ func countStarColumnsFromRTE(q *catalog.Query, targets []*catalog.TargetEntry, s
 		// Check if this column's AttNum is sequential within its RTE.
 		// Star expansion produces columns in order: attnum 1, 2, 3, ...
 		if count > 0 {
-			prev, _ := targets[i-1].Expr.(*catalog.VarExpr)
-			if prev != nil && v.RangeIdx == prev.RangeIdx && v.AttNum != prev.AttNum+1 {
+			if prev, ok := targets[i-1].Expr.(*catalog.VarExpr); ok && v.RangeIdx == prev.RangeIdx && v.AttNum != prev.AttNum+1 {
 				break
 			}
 		}
@@ -498,45 +499,6 @@ func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query, selStmt *
 		})
 	}
 	return results
-}
-
-// extractAllSourceColumns extracts all source columns referenced by the query
-// (SELECT + WHERE + JOIN ON + HAVING).
-func (e *omniQuerySpanExtractor) extractAllSourceColumns(q *catalog.Query) base.SourceColumnSet {
-	result := make(base.SourceColumnSet)
-
-	// Handle set operations.
-	if q.SetOp != catalog.SetOpNone {
-		if q.LArg != nil {
-			for col := range e.extractAllSourceColumns(q.LArg) {
-				result[col] = true
-			}
-		}
-		if q.RArg != nil {
-			for col := range e.extractAllSourceColumns(q.RArg) {
-				result[col] = true
-			}
-		}
-		return result
-	}
-
-	// Collect from all target entries.
-	for _, te := range q.TargetList {
-		e.walkExpr(q, te.Expr, result)
-	}
-
-	// Collect from WHERE clause and JOIN conditions.
-	if q.JoinTree != nil {
-		e.walkExpr(q, q.JoinTree.Quals, result)
-		for _, fn := range q.JoinTree.FromList {
-			e.walkJoinNodeExprs(q, fn, result)
-		}
-	}
-
-	// Collect from HAVING clause.
-	e.walkExpr(q, q.HavingQual, result)
-
-	return result
 }
 
 // walkExpr recursively walks an analyzed expression tree and collects all
@@ -675,22 +637,9 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 
 	case catalog.RTEFunction:
 		// Function results have no further lineage to track.
-	}
-}
 
-// walkJoinNodeExprs walks the JoinNode tree to collect column references
-// from JOIN ON clauses.
-func (e *omniQuerySpanExtractor) walkJoinNodeExprs(q *catalog.Query, node catalog.JoinNode, result base.SourceColumnSet) {
-	if node == nil {
-		return
-	}
-	switch n := node.(type) {
-	case *catalog.JoinExprNode:
-		e.walkExpr(q, n.Quals, result)
-		e.walkJoinNodeExprs(q, n.Left, result)
-		e.walkJoinNodeExprs(q, n.Right, result)
-	case *catalog.RangeTableRef:
-		// No expressions to walk.
+	default:
+		// Unknown RTE kind — skip.
 	}
 }
 
@@ -748,6 +697,8 @@ func astNodeNeedsFallback(n ast.Node) bool {
 		if sel, ok := v.Subselect.(*ast.SelectStmt); ok {
 			return selectNeedsFallback(sel)
 		}
+	default:
+		// Other node types don't need fallback.
 	}
 	return false
 }
@@ -812,6 +763,8 @@ func exprNeedsFallback(expr catalog.AnalyzedExpr) bool {
 		return exprNeedsFallback(v.Arg)
 	case *catalog.CoerceViaIOExpr:
 		return exprNeedsFallback(v.Arg)
+	default:
+		// Other expression types don't need fallback.
 	}
 	return false
 }
