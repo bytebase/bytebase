@@ -54,6 +54,7 @@ describe("useAgentStore", () => {
     expect(store.threads).toHaveLength(1);
     expect(store.currentThreadId).toBe(store.threads[0].id);
     expect(store.messages).toEqual([]);
+    expect(store.threads[0].totalTokensUsed).toBe(0);
   });
 
   test("migrates legacy flat messages into a thread-aware state", () => {
@@ -177,6 +178,24 @@ describe("useAgentStore", () => {
       path: "/projects/current",
       title: "Current Page",
     });
+  });
+
+  test("increments and resets thread token totals", async () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.incrementThreadTotalTokens(threadId, 120);
+    store.incrementThreadTotalTokens(threadId, 30);
+
+    expect(store.getThread(threadId)?.totalTokensUsed).toBe(150);
+
+    await nextTick();
+
+    const rehydratedStore = createStore();
+    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(150);
+
+    rehydratedStore.clearConversation(threadId);
+    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(0);
   });
 
   test("preserves an existing thread page when resuming a run", () => {

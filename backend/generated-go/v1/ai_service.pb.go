@@ -349,20 +349,68 @@ func (x *AIChatRequest) GetToolDefinitions() []*AIChatToolDefinition {
 	return nil
 }
 
+// Token usage for a single AI provider call.
+type AIChatUsage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Total tokens used by the provider call.
+	TotalTokens   int32 `protobuf:"varint,1,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AIChatUsage) Reset() {
+	*x = AIChatUsage{}
+	mi := &file_v1_ai_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AIChatUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIChatUsage) ProtoMessage() {}
+
+func (x *AIChatUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_ai_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIChatUsage.ProtoReflect.Descriptor instead.
+func (*AIChatUsage) Descriptor() ([]byte, []int) {
+	return file_v1_ai_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *AIChatUsage) GetTotalTokens() int32 {
+	if x != nil {
+		return x.TotalTokens
+	}
+	return 0
+}
+
 // Response message for AIService.Chat.
 type AIChatResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The text content of the AI response. Optional when the response only contains tool calls.
 	Content *string `protobuf:"bytes,1,opt,name=content,proto3,oneof" json:"content,omitempty"`
 	// Tool calls the AI wants to make.
-	ToolCalls     []*AIChatToolCall `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
+	ToolCalls []*AIChatToolCall `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
+	// Token usage for this provider call, when available.
+	Usage         *AIChatUsage `protobuf:"bytes,3,opt,name=usage,proto3,oneof" json:"usage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AIChatResponse) Reset() {
 	*x = AIChatResponse{}
-	mi := &file_v1_ai_service_proto_msgTypes[4]
+	mi := &file_v1_ai_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -374,7 +422,7 @@ func (x *AIChatResponse) String() string {
 func (*AIChatResponse) ProtoMessage() {}
 
 func (x *AIChatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_ai_service_proto_msgTypes[4]
+	mi := &file_v1_ai_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -387,7 +435,7 @@ func (x *AIChatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AIChatResponse.ProtoReflect.Descriptor instead.
 func (*AIChatResponse) Descriptor() ([]byte, []int) {
-	return file_v1_ai_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_ai_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AIChatResponse) GetContent() string {
@@ -400,6 +448,13 @@ func (x *AIChatResponse) GetContent() string {
 func (x *AIChatResponse) GetToolCalls() []*AIChatToolCall {
 	if x != nil {
 		return x.ToolCalls
+	}
+	return nil
+}
+
+func (x *AIChatResponse) GetUsage() *AIChatUsage {
+	if x != nil {
+		return x.Usage
 	}
 	return nil
 }
@@ -431,13 +486,17 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\t_metadata\"\x95\x01\n" +
 	"\rAIChatRequest\x126\n" +
 	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageR\bmessages\x12L\n" +
-	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionR\x0ftoolDefinitions\"w\n" +
+	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionR\x0ftoolDefinitions\"0\n" +
+	"\vAIChatUsage\x12!\n" +
+	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\"\xb6\x01\n" +
 	"\x0eAIChatResponse\x12\x1d\n" +
 	"\acontent\x18\x01 \x01(\tH\x00R\acontent\x88\x01\x01\x12:\n" +
 	"\n" +
-	"tool_calls\x18\x02 \x03(\v2\x1b.bytebase.v1.AIChatToolCallR\ttoolCallsB\n" +
+	"tool_calls\x18\x02 \x03(\v2\x1b.bytebase.v1.AIChatToolCallR\ttoolCalls\x123\n" +
+	"\x05usage\x18\x03 \x01(\v2\x18.bytebase.v1.AIChatUsageH\x01R\x05usage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_content*\xbc\x01\n" +
+	"\b_contentB\b\n" +
+	"\x06_usage*\xbc\x01\n" +
 	"\x11AIChatMessageRole\x12$\n" +
 	" AI_CHAT_MESSAGE_ROLE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bAI_CHAT_MESSAGE_ROLE_SYSTEM\x10\x01\x12\x1d\n" +
@@ -461,14 +520,15 @@ func file_v1_ai_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_ai_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_ai_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_v1_ai_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_ai_service_proto_goTypes = []any{
 	(AIChatMessageRole)(0),       // 0: bytebase.v1.AIChatMessageRole
 	(*AIChatMessage)(nil),        // 1: bytebase.v1.AIChatMessage
 	(*AIChatToolDefinition)(nil), // 2: bytebase.v1.AIChatToolDefinition
 	(*AIChatToolCall)(nil),       // 3: bytebase.v1.AIChatToolCall
 	(*AIChatRequest)(nil),        // 4: bytebase.v1.AIChatRequest
-	(*AIChatResponse)(nil),       // 5: bytebase.v1.AIChatResponse
+	(*AIChatUsage)(nil),          // 5: bytebase.v1.AIChatUsage
+	(*AIChatResponse)(nil),       // 6: bytebase.v1.AIChatResponse
 }
 var file_v1_ai_service_proto_depIdxs = []int32{
 	0, // 0: bytebase.v1.AIChatMessage.role:type_name -> bytebase.v1.AIChatMessageRole
@@ -476,13 +536,14 @@ var file_v1_ai_service_proto_depIdxs = []int32{
 	1, // 2: bytebase.v1.AIChatRequest.messages:type_name -> bytebase.v1.AIChatMessage
 	2, // 3: bytebase.v1.AIChatRequest.tool_definitions:type_name -> bytebase.v1.AIChatToolDefinition
 	3, // 4: bytebase.v1.AIChatResponse.tool_calls:type_name -> bytebase.v1.AIChatToolCall
-	4, // 5: bytebase.v1.AIService.Chat:input_type -> bytebase.v1.AIChatRequest
-	5, // 6: bytebase.v1.AIService.Chat:output_type -> bytebase.v1.AIChatResponse
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	5, // 5: bytebase.v1.AIChatResponse.usage:type_name -> bytebase.v1.AIChatUsage
+	4, // 6: bytebase.v1.AIService.Chat:input_type -> bytebase.v1.AIChatRequest
+	6, // 7: bytebase.v1.AIService.Chat:output_type -> bytebase.v1.AIChatResponse
+	7, // [7:8] is the sub-list for method output_type
+	6, // [6:7] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_v1_ai_service_proto_init() }
@@ -493,14 +554,14 @@ func file_v1_ai_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_ai_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_v1_ai_service_proto_msgTypes[2].OneofWrappers = []any{}
-	file_v1_ai_service_proto_msgTypes[4].OneofWrappers = []any{}
+	file_v1_ai_service_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_ai_service_proto_rawDesc), len(file_v1_ai_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

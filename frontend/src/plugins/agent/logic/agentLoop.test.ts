@@ -54,6 +54,7 @@ describe("runAgentLoop", () => {
       text: "Finished successfully",
       success: true,
       explicit: true,
+      totalTokensUsed: 0,
     });
     expect(onToolResult).toHaveBeenCalledWith(
       "tool-1",
@@ -77,6 +78,50 @@ describe("runAgentLoop", () => {
           metadata: "",
         },
       ],
+    });
+  });
+
+  test("accumulates token usage across repeated provider calls", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-1",
+            name: "search_api",
+            arguments: JSON.stringify({ service: "SQLService" }),
+            metadata: "",
+          },
+        ],
+        usage: {
+          totalTokens: 11,
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        content: "Final answer",
+        toolCalls: [],
+        usage: {
+          totalTokens: 7,
+        },
+      } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async () => ({
+      kind: "tool_result" as const,
+      result: JSON.stringify({ ok: true }),
+    }));
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "Final answer",
+      success: true,
+      explicit: false,
+      totalTokensUsed: 18,
     });
   });
 
@@ -195,6 +240,7 @@ describe("runAgentLoop", () => {
       text: "Here is the answer",
       success: true,
       explicit: false,
+      totalTokensUsed: 0,
     });
     expect(onText).toHaveBeenCalledWith("Here is the answer");
     expect(executeTool).not.toHaveBeenCalled();
@@ -254,6 +300,7 @@ describe("runAgentLoop", () => {
           { label: "Staging", value: "staging" },
         ],
       },
+      totalTokensUsed: 0,
     });
     expect(onToolResult).not.toHaveBeenCalled();
   });
@@ -312,6 +359,7 @@ describe("runAgentLoop", () => {
         prompt: "Which environment should I use?",
         kind: "input",
       },
+      totalTokensUsed: 0,
     });
     expect(executeTool).toHaveBeenCalledTimes(1);
     expect(executeTool).toHaveBeenCalledWith(
@@ -384,6 +432,7 @@ describe("runAgentLoop", () => {
       text: "Finished successfully",
       success: true,
       explicit: true,
+      totalTokensUsed: 0,
     });
     expect(executeTool).toHaveBeenCalledTimes(1);
     expect(executeTool).toHaveBeenCalledWith(

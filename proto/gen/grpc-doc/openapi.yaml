@@ -16211,6 +16211,12 @@ components:
             $ref: '#/components/schemas/bytebase.v1.AIChatToolCall'
           title: tool_calls
           description: Tool calls the AI wants to make.
+        usage:
+          oneOf:
+            - $ref: '#/components/schemas/bytebase.v1.AIChatUsage'
+            - type: "null"
+          title: usage
+          description: Token usage for this provider call, when available.
       title: AIChatResponse
       additionalProperties: false
       description: Response message for AIService.Chat.
@@ -16258,6 +16264,17 @@ components:
       title: AIChatToolDefinition
       additionalProperties: false
       description: A tool definition that the AI can invoke.
+    bytebase.v1.AIChatUsage:
+      type: object
+      properties:
+        totalTokens:
+          type: integer
+          title: total_tokens
+          format: int32
+          description: Total tokens used by the provider call.
+      title: AIChatUsage
+      additionalProperties: false
+      description: Token usage for a single AI provider call.
     bytebase.v1.AICompletionRequest:
       type: object
       properties:

@@ -224,6 +224,31 @@ describe("AgentInput", () => {
     });
   });
 
+  test("increments the current thread token total from loop usage", async () => {
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+      explicit: true,
+      totalTokensUsed: 123,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("inspect this page");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(store.getThread(threadId)?.totalTokensUsed).toBe(123);
+  });
+
   test("refreshes the saved thread page snapshot after navigate before a follow-up turn", async () => {
     const store = useAgentStore();
     const threadId = store.currentThreadId!;
