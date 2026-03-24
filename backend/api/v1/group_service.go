@@ -206,7 +206,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 			if group.Payload.Source != "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot change members for external group"))
 			}
-			payload, err := s.convertToGroupPayload(ctx, req.Msg.Group)
+			payload, err := convertToGroupPayload(req.Msg.Group)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
@@ -280,7 +280,7 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 	return nil
 }
 
-func (*GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
+func convertToGroupPayload(group *v1pb.Group) (*storepb.GroupPayload, error) {
 	payload := &storepb.GroupPayload{}
 	for _, member := range group.Members {
 		m := &storepb.GroupMember{
@@ -311,7 +311,7 @@ func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.
 		Payload:     &storepb.GroupPayload{},
 	}
 
-	payload, err := s.convertToGroupPayload(ctx, request.Group)
+	payload, err := convertToGroupPayload(request.Group)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
