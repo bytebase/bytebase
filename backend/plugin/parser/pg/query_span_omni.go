@@ -153,12 +153,17 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	e.ctx = ctx
 
 	// Step 1: Parse with omni.
-	omniStmts, err := ParsePg(stmt)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse statement")
-	}
+	// On parse failure (e.g. syntax error), return a permissive QuerySpan so
+	// the query can still be sent to the database, which will produce the
+	// proper error with position info. The old ANTLR parser was lenient
+	// and would produce a partial tree; omni is strict.
+	omniStmts, _ := ParsePg(stmt)
 	if len(omniStmts) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
+		return &base.QuerySpan{
+			Type:          base.Select,
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
 	}
 
 	// Step 2: Extract access tables (non-fatal on error — some statement
