@@ -280,7 +280,7 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 	return nil
 }
 
-func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
+func (*GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
 	payload := &storepb.GroupPayload{}
 	for _, member := range group.Members {
 		m := &storepb.GroupMember{
