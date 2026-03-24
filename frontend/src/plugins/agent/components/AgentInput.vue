@@ -3,8 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { lazyExtractDomRefSuggestions } from "../dom";
 import type { DomRefSuggestion } from "../dom";
+import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -72,7 +72,8 @@ let domRefRequestToken = 0;
 
 const DOM_REF_SUGGESTION_LIMIT = 8;
 
-const normalizeSearchText = (value?: string) => value?.toLowerCase().trim() ?? "";
+const normalizeSearchText = (value?: string) =>
+  value?.toLowerCase().trim() ?? "";
 
 const matchDomRefSuggestion = (suggestion: DomRefSuggestion, query: string) => {
   if (!query) {
@@ -209,7 +210,8 @@ const handleTextareaKeydown = async (event: KeyboardEvent) => {
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      const suggestion = filteredDomRefSuggestions.value[activeDomRefIndex.value];
+      const suggestion =
+        filteredDomRefSuggestions.value[activeDomRefIndex.value];
       if (suggestion) {
         await selectDomRefSuggestion(suggestion);
       } else {

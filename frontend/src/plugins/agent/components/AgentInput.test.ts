@@ -742,7 +742,9 @@ describe("AgentInput", () => {
     await flushPromises();
 
     expect(getTextareaValue(wrapper)).toBe("Click [e1] ");
-    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
   });
 
   test("uses arrow keys to change the active DOM ref suggestion before selecting", async () => {
@@ -809,7 +811,9 @@ describe("AgentInput", () => {
 
     await textarea.trigger("keydown", { key: "Escape" });
     await flushPromises();
-    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
+      false
+    );
 
     await textarea.trigger("keydown", { key: "Enter" });
     await flushPromises();
