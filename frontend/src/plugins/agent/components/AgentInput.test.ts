@@ -3,7 +3,11 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
 import type { AgentLoopOutcome } from "../logic/types";
-import { useAgentStore } from "../store/agent";
+import {
+  LEGACY_AGENT_MESSAGES_KEY,
+  LEGACY_AGENT_STATE_KEY,
+  useAgentStore,
+} from "../store/agent";
 import AgentInput from "./AgentInput.vue";
 
 const {
@@ -103,6 +107,85 @@ describe("AgentInput", () => {
   beforeEach(() => {
     mockRoute.fullPath = "/projects/demo";
     document.title = "Demo Page";
+  });
+
+  test("ignores legacy persisted conversations when starting a new run", async () => {
+    localStorage.setItem(
+      LEGACY_AGENT_STATE_KEY,
+      JSON.stringify({
+        currentThreadId: "thread-1",
+        threads: [
+          {
+            id: "thread-1",
+            title: "Legacy thread",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+        ],
+        messagesByThreadId: {
+          "thread-1": [
+            {
+              id: "msg-1",
+              threadId: "thread-1",
+              createdTs: 30,
+              role: "assistant",
+              content: "legacy assistant output",
+            },
+            {
+              id: "msg-2",
+              threadId: "thread-1",
+              createdTs: 31,
+              role: "tool",
+              toolCallId: "tool-1",
+              content: JSON.stringify({ legacy: true }),
+            },
+          ],
+        },
+        pendingAskByThreadId: {},
+      })
+    );
+    localStorage.setItem(
+      LEGACY_AGENT_MESSAGES_KEY,
+      JSON.stringify([{ role: "assistant", content: "legacy flat history" }])
+    );
+
+    const store = useAgentStore();
+    const threadId = store.currentThreadId!;
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Fresh reply",
+      success: true,
+      explicit: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("fresh prompt");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    const [messages] = mockRunAgentLoop.mock.calls[0];
+    expect(threadId).toBe(store.currentThreadId);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "system", content: "system-prompt" }),
+        expect.objectContaining({ role: "user", content: "fresh prompt" }),
+      ])
+    );
+    expect(messages).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ content: "legacy assistant output" }),
+        expect.objectContaining({ content: "legacy flat history" }),
+        expect.objectContaining({ toolCallId: "tool-1" }),
+      ])
+    );
+    expect(localStorage.getItem(LEGACY_AGENT_STATE_KEY)).toBeNull();
+    expect(localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY)).toBeNull();
   });
 
   test("submits pending input as a tool result and resumes the same thread", async () => {
