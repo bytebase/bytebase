@@ -24,8 +24,8 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 	isHTTPS := strings.HasPrefix(origin, "https")
 	tokenDuration := GetAccessTokenDuration(ctx, stores, licenseService, workspaceID)
 	return &http.Cookie{
-		Name:    AccessTokenCookieName,
-		Value:   token,
+		Name:  AccessTokenCookieName,
+		Value: token,
 		// Cookie outlives the JWT by 30 seconds so that Refresh() can extract the
 		// workspace from the expired token. The frontend calls Refresh immediately
 		// on 401, well within this window.
