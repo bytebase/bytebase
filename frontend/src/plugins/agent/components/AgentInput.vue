@@ -666,13 +666,13 @@ watch(
     </div>
 
     <div v-else class="flex items-end gap-x-2">
-      <div class="relative flex-1">
+      <div class="relative min-w-0 flex-1">
         <textarea
           ref="inputRef"
           v-model="input"
           rows="1"
           :placeholder="inputPlaceholder"
-          class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+          class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
           :disabled="agentStore.hasRunningThread"
           @click="updateSelection"
           @blur="closeDomRefMenu"
