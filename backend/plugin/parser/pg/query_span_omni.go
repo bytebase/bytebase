@@ -239,7 +239,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// Step 7: Extract lineage from analyzed query.
 	// SourceColumns (table-level access) is already captured in accessesMap
 	// from ExtractAccessTables above — no need to re-extract from the query.
-	results := e.extractLineage(query)
+	results := e.extractLineage(query, selStmt)
 
 	return &base.QuerySpan{
 		Type:          base.Select,
@@ -249,36 +249,128 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 }
 
 // extractLineage extracts the result column lineage from an analyzed query.
-func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query) []base.QuerySpanResult {
+// selStmt is the original parse tree, used to determine IsPlainField
+// (which is true only for columns that came from * expansion).
+func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
 	// Handle set operations (UNION/INTERSECT/EXCEPT).
 	if q.SetOp != catalog.SetOpNone {
-		return e.extractSetOpLineage(q)
+		return e.extractSetOpLineage(q, selStmt)
 	}
 
+	// Build a plain-field mask from the parse tree's target list.
+	// IsPlainField = true only for columns expanded from SELECT * or SELECT t.*.
+	plainMask := buildPlainFieldMask(selStmt, q)
+
 	var results []base.QuerySpanResult
+	idx := 0
 	for _, te := range q.TargetList {
 		if te.ResJunk {
 			continue
 		}
-		_, isVar := te.Expr.(*catalog.VarExpr)
 		sourceColSet := make(base.SourceColumnSet)
 		e.walkExpr(q, te.Expr, sourceColSet)
+		isPlain := idx < len(plainMask) && plainMask[idx]
 		results = append(results, base.QuerySpanResult{
 			Name:          te.ResName,
 			SourceColumns: sourceColSet,
-			IsPlainField:  isVar,
+			IsPlainField:  isPlain,
 		})
+		idx++
 	}
 	return results
 }
 
+// buildPlainFieldMask returns a boolean slice aligned with the analyzed
+// query's non-junk TargetList. An entry is true if the column was produced
+// by * expansion (SELECT * or SELECT t.*), false for explicit column refs.
+func buildPlainFieldMask(selStmt *ast.SelectStmt, q *catalog.Query) []bool {
+	// Count non-junk target entries.
+	nResults := 0
+	for _, te := range q.TargetList {
+		if !te.ResJunk {
+			nResults++
+		}
+	}
+
+	if selStmt == nil || selStmt.TargetList == nil {
+		// No parse tree info — default to false (non-plain).
+		return make([]bool, nResults)
+	}
+
+	mask := make([]bool, nResults)
+	pos := 0 // position in the analyzed (non-junk) target list
+
+	for parseIdx, item := range selStmt.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok || pos >= nResults {
+			continue
+		}
+		if isStarTarget(rt) {
+			starCount := countStarExpansion(selStmt, parseIdx, pos, nResults)
+			for i := 0; i < starCount && pos < nResults; i++ {
+				mask[pos] = true
+				pos++
+			}
+		} else {
+			// Explicit column reference or expression — not plain.
+			mask[pos] = false
+			pos++
+		}
+	}
+
+	return mask
+}
+
+// isStarTarget checks if a ResTarget in the parse tree is a star expression
+// (SELECT * or SELECT t.*).
+func isStarTarget(rt *ast.ResTarget) bool {
+	if rt == nil || rt.Val == nil {
+		return false
+	}
+	cr, ok := rt.Val.(*ast.ColumnRef)
+	if !ok || cr.Fields == nil || len(cr.Fields.Items) == 0 {
+		return false
+	}
+	last := cr.Fields.Items[len(cr.Fields.Items)-1]
+	_, isStar := last.(*ast.A_Star)
+	return isStar
+}
+
+// countStarExpansion determines how many analyzed columns a single * in the
+// parse tree expanded to. parseIdx is the 0-based index of the current star
+// target in the parse tree's target list.
+func countStarExpansion(selStmt *ast.SelectStmt, parseIdx, currentPos, totalResults int) int {
+	// Count remaining non-star parse-tree targets after the current one.
+	remainingNonStar := 0
+	for i := parseIdx + 1; i < len(selStmt.TargetList.Items); i++ {
+		rt, ok := selStmt.TargetList.Items[i].(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		if !isStarTarget(rt) {
+			remainingNonStar++
+		}
+		// For remaining stars, we'd need recursive handling.
+		// For simplicity, treat them as consuming 0 here;
+		// they'll be computed when we reach them.
+	}
+
+	// This star expands to: totalResults - currentPos - remaining non-star targets
+	// (minus any columns from subsequent stars, which we handle when we reach them).
+	count := totalResults - currentPos - remainingNonStar
+	if count < 1 {
+		return 1
+	}
+	return count
+}
+
 // extractSetOpLineage handles UNION/INTERSECT/EXCEPT by merging lineage from both branches.
-func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query) []base.QuerySpanResult {
+func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
 	if q.LArg == nil || q.RArg == nil {
 		return nil
 	}
-	lResults := e.extractLineage(q.LArg)
-	rResults := e.extractLineage(q.RArg)
+	lResults := e.extractLineage(q.LArg, selStmt.Larg)
+	rResults := e.extractLineage(q.RArg, selStmt.Rarg)
 
 	var results []base.QuerySpanResult
 	for i, lr := range lResults {
