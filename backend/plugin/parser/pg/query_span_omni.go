@@ -213,25 +213,33 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		return nil, errors.Errorf("expected SelectStmt for SELECT query, got %T", omniStmts[0].AST)
 	}
 
+	// Pre-analysis check: if the parse tree contains constructs that omni
+	// doesn't fully handle (JSON constructors, function calls that may be UDFs),
+	// fall back to ANTLR immediately.
+	if selectNeedsFallback(selStmt) {
+		return e.fallbackToANTLR(ctx, stmt)
+	}
+
 	if err := e.initCatalog(); err != nil {
 		return nil, errors.Wrapf(err, "failed to initialize catalog")
 	}
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		// Fallback: use legacy ANTLR-based extractor when omni analysis fails
-		// (e.g., unsupported function signatures, complex syntax not yet handled).
+		// Fallback: use legacy ANTLR-based extractor when omni analysis fails.
 		return e.fallbackToANTLR(ctx, stmt)
 	}
 
-	// Step 7: Extract lineage and source columns (stubs for now).
-	results := e.extractLineage(query)
-	sourceColumns := e.extractAllSourceColumns(query)
-
-	// Merge extracted source columns with access tables.
-	for col := range sourceColumns {
-		accessesMap[col] = true
+	// Post-analysis check: if the analyzed query has patterns that need
+	// special handling not yet in omni (function RTEs, UDFs).
+	if queryNeedsFallback(query) {
+		return e.fallbackToANTLR(ctx, stmt)
 	}
+
+	// Step 7: Extract lineage from analyzed query.
+	// SourceColumns (table-level access) is already captured in accessesMap
+	// from ExtractAccessTables above — no need to re-extract from the query.
+	results := e.extractLineage(query)
 
 	return &base.QuerySpan{
 		Type:          base.Select,
@@ -484,6 +492,125 @@ func (e *omniQuerySpanExtractor) walkJoinNodeExprs(q *catalog.Query, node catalo
 	case *catalog.RangeTableRef:
 		// No expressions to walk.
 	}
+}
+
+// selectNeedsFallback checks the raw parse tree (before analysis) for constructs
+// that omni doesn't handle well, such as JSON constructors and function calls.
+func selectNeedsFallback(sel *ast.SelectStmt) bool {
+	if sel == nil {
+		return false
+	}
+	// Check set operations recursively.
+	if sel.Larg != nil && selectNeedsFallback(sel.Larg) {
+		return true
+	}
+	if sel.Rarg != nil && selectNeedsFallback(sel.Rarg) {
+		return true
+	}
+	// Check target list for unsupported expressions.
+	if sel.TargetList != nil {
+		for _, item := range sel.TargetList.Items {
+			if rt, ok := item.(*ast.ResTarget); ok && rt.Val != nil {
+				if astNodeNeedsFallback(rt.Val) {
+					return true
+				}
+			}
+		}
+	}
+	// Check FROM clause for function tables.
+	if sel.FromClause != nil {
+		for _, item := range sel.FromClause.Items {
+			if _, ok := item.(*ast.RangeFunction); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// astNodeNeedsFallback checks if an AST node contains constructs that require
+// fallback to ANTLR (e.g., JSON constructors, function calls that may be UDFs).
+func astNodeNeedsFallback(n ast.Node) bool {
+	if n == nil {
+		return false
+	}
+	switch v := n.(type) {
+	case *ast.JsonObjectConstructor, *ast.JsonArrayConstructor, *ast.JsonArrayQueryConstructor,
+		*ast.JsonFuncExpr:
+		return true
+	case *ast.FuncCall:
+		// Function calls may be UDFs needing body analysis.
+		return true
+	case *ast.SubLink:
+		if sel, ok := v.Subselect.(*ast.SelectStmt); ok {
+			return selectNeedsFallback(sel)
+		}
+	}
+	return false
+}
+
+// queryNeedsFallback checks if the analyzed query contains patterns that
+// omni may not handle correctly and should fall back to ANTLR.
+// This includes: function table sources, function calls in expressions
+// (which may be UDFs needing body analysis), and nil expressions
+// (indicating omni didn't fully resolve something).
+func queryNeedsFallback(q *catalog.Query) bool {
+	for _, rte := range q.RangeTable {
+		if rte.Kind == catalog.RTEFunction {
+			return true
+		}
+	}
+	for _, te := range q.TargetList {
+		if te.ResJunk {
+			continue
+		}
+		if exprNeedsFallback(te.Expr) {
+			return true
+		}
+	}
+	return false
+}
+
+func exprNeedsFallback(expr catalog.AnalyzedExpr) bool {
+	if expr == nil {
+		// nil expression means omni didn't resolve it.
+		return true
+	}
+	switch v := expr.(type) {
+	case *catalog.FuncCallExpr:
+		// Any function call may be a UDF needing body analysis.
+		return true
+	case *catalog.AggExpr:
+		// Aggregate calls are handled by omni, but some JSON/custom aggregates
+		// may produce incorrect results — skip for now, will revisit.
+		return false
+	case *catalog.OpExpr:
+		return exprNeedsFallback(v.Left) || exprNeedsFallback(v.Right)
+	case *catalog.CaseExprQ:
+		if exprNeedsFallback(v.Arg) || exprNeedsFallback(v.Default) {
+			return true
+		}
+		for _, w := range v.When {
+			if exprNeedsFallback(w.Result) {
+				return true
+			}
+		}
+	case *catalog.CoalesceExprQ:
+		for _, arg := range v.Args {
+			if exprNeedsFallback(arg) {
+				return true
+			}
+		}
+	case *catalog.SubLinkExpr:
+		if v.SubQuery != nil {
+			return queryNeedsFallback(v.SubQuery)
+		}
+	case *catalog.RelabelExpr:
+		return exprNeedsFallback(v.Arg)
+	case *catalog.CoerceViaIOExpr:
+		return exprNeedsFallback(v.Arg)
+	}
+	return false
 }
 
 // fallbackToANTLR uses the legacy ANTLR-based extractor when omni analysis fails.
