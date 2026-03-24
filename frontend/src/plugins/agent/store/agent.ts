@@ -14,9 +14,7 @@ import type {
 } from "../logic/types";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
-export const LEGACY_AGENT_STATE_KEY = "bb-agent-state";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
-export const LEGACY_AGENT_MESSAGES_KEY = "bb-agent-messages";
 
 interface PersistedAgentState {
   currentThreadId: string | null;
@@ -640,14 +638,7 @@ export const useAgentStore = defineStore("agent", () => {
     localStorage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
   };
 
-  const clearLegacyConversationState = () => {
-    localStorage.removeItem(LEGACY_AGENT_STATE_KEY);
-    localStorage.removeItem(LEGACY_AGENT_MESSAGES_KEY);
-  };
-
   const loadState = () => {
-    clearLegacyConversationState();
-
     const saved = localStorage.getItem(AGENT_STATE_KEY);
     if (saved) {
       try {

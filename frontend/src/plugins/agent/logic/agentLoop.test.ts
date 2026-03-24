@@ -53,7 +53,6 @@ describe("runAgentLoop", () => {
       kind: "completed",
       text: "Finished successfully",
       success: true,
-      explicit: true,
       totalTokensUsed: 0,
     });
     expect(onToolResult).toHaveBeenCalledWith(
@@ -98,17 +97,36 @@ describe("runAgentLoop", () => {
         },
       } as never)
       .mockResolvedValueOnce({
-        content: "Final answer",
-        toolCalls: [],
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-2",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "Final answer",
+              success: true,
+            }),
+            metadata: "",
+          },
+        ],
         usage: {
           totalTokens: 7,
         },
       } as never);
 
-    const executeTool: ToolExecutor = vi.fn(async () => ({
-      kind: "tool_result" as const,
-      result: JSON.stringify({ ok: true }),
-    }));
+    const executeTool: ToolExecutor = vi.fn(async (name, args) => {
+      if (name === "done") {
+        return {
+          kind: "done" as const,
+          text: String(args.text),
+          success: args.success !== false,
+        };
+      }
+      return {
+        kind: "tool_result" as const,
+        result: JSON.stringify({ ok: true }),
+      };
+    });
 
     const outcome = await runAgentLoop(
       [{ role: "system", content: "system" }],
@@ -120,7 +138,6 @@ describe("runAgentLoop", () => {
       kind: "completed",
       text: "Final answer",
       success: true,
-      explicit: false,
       totalTokensUsed: 18,
     });
   });
@@ -219,7 +236,7 @@ describe("runAgentLoop", () => {
       ])
     );
   });
-  test("keeps plain assistant text as a compatibility fallback", async () => {
+  test("returns an error when the assistant replies with plain text instead of done", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "Here is the answer",
       toolCalls: [],
@@ -227,22 +244,25 @@ describe("runAgentLoop", () => {
 
     const executeTool: ToolExecutor = vi.fn();
     const onText = vi.fn();
+    const onError = vi.fn();
 
     const outcome = await runAgentLoop(
       [{ role: "system", content: "system" }],
       [],
       executeTool,
-      { onText }
+      { onText, onError }
     );
 
-    expect(outcome).toEqual({
-      kind: "completed",
-      text: "Here is the answer",
-      success: true,
-      explicit: false,
-      totalTokensUsed: 0,
-    });
-    expect(onText).toHaveBeenCalledWith("Here is the answer");
+    expect(outcome.kind).toBe("error");
+    if (outcome.kind !== "error") {
+      throw new Error(`Expected error outcome, got ${outcome.kind}`);
+    }
+    expect(outcome.error.message).toBe(
+      "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+    );
+    expect(outcome.totalTokensUsed).toBe(0);
+    expect(onError).toHaveBeenCalledWith(outcome.error);
+    expect(onText).not.toHaveBeenCalled();
     expect(executeTool).not.toHaveBeenCalled();
   });
 
@@ -431,7 +451,6 @@ describe("runAgentLoop", () => {
       kind: "completed",
       text: "Finished successfully",
       success: true,
-      explicit: true,
       totalTokensUsed: 0,
     });
     expect(executeTool).toHaveBeenCalledTimes(1);

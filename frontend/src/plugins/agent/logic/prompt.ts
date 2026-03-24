@@ -65,7 +65,7 @@ Rules:
 - Use get_skill to load step-by-step workflow guides before multi-step tasks (SQL queries, schema changes, permission grants).
 - Always confirm destructive actions before executing them. When you need confirmation or missing input from the user, call ask_user instead of guessing.
 - Use ask_user(kind="input") for free-form answers, ask_user(kind="confirm") for confirm/cancel decisions, and ask_user(kind="choose") when the user must pick from explicit options.
-- Call done({ text, success }) when you are ready to finish. Plain assistant text without done is allowed only as a fallback.
+- Call done({ text, success }) when you are ready to finish. Do not reply with plain assistant text.
 - Do not call ask_user and done in the same response.
 
 Tool selection — choose based on context, not a fixed preference:

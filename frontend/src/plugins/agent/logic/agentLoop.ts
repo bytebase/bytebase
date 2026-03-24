@@ -234,7 +234,6 @@ export async function runAgentLoop(
               kind: "completed",
               text: executionResult.text,
               success: executionResult.success,
-              explicit: true,
               totalTokensUsed,
             },
             blockedBy: {
@@ -254,13 +253,13 @@ export async function runAgentLoop(
         continue;
       }
 
-      const text = response.content ?? "";
-      callbacks?.onText?.(text);
+      const error = new Error(
+        "Agent must finish with done({ text, success }) or ask_user(...), not plain assistant text."
+      );
+      callbacks?.onError?.(error);
       return {
-        kind: "completed",
-        text,
-        success: true,
-        explicit: false,
+        kind: "error",
+        error,
         totalTokensUsed,
       };
     }

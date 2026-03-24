@@ -111,7 +111,6 @@ export type AgentLoopOutcome =
       kind: "completed";
       text: string;
       success: boolean;
-      explicit: boolean;
     } & AgentLoopUsage)
   | ({
       kind: "awaiting_user";

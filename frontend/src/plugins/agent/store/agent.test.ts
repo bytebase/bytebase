@@ -1,13 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
-import {
-  AGENT_STATE_KEY,
-  AGENT_WINDOW_KEY,
-  LEGACY_AGENT_MESSAGES_KEY,
-  LEGACY_AGENT_STATE_KEY,
-  useAgentStore,
-} from "./agent";
+import { AGENT_STATE_KEY, AGENT_WINDOW_KEY, useAgentStore } from "./agent";
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -59,41 +53,7 @@ describe("useAgentStore", () => {
     expect(store.threads[0].totalTokensUsed).toBe(0);
   });
 
-  test("drops legacy persisted conversation state while preserving window state", () => {
-    localStorage.setItem(
-      LEGACY_AGENT_STATE_KEY,
-      JSON.stringify({
-        currentThreadId: "thread-1",
-        threads: [
-          {
-            id: "thread-1",
-            title: "Legacy thread",
-            createdTs: 10,
-            updatedTs: 20,
-            status: "idle",
-          },
-        ],
-        messagesByThreadId: {
-          "thread-1": [
-            {
-              id: "msg-1",
-              threadId: "thread-1",
-              createdTs: 30,
-              role: "assistant",
-              content: "legacy assistant output",
-            },
-          ],
-        },
-        pendingAskByThreadId: {},
-      })
-    );
-    localStorage.setItem(
-      LEGACY_AGENT_MESSAGES_KEY,
-      JSON.stringify([
-        { role: "user", content: "Help me inspect this page" },
-        { role: "assistant", content: "Sure" },
-      ])
-    );
+  test("loads persisted window state", () => {
     localStorage.setItem(
       AGENT_WINDOW_KEY,
       JSON.stringify({
@@ -105,14 +65,8 @@ describe("useAgentStore", () => {
     const store = createStore();
     store.loadWindowState();
 
-    expect(store.threads).toHaveLength(1);
-    expect(store.currentThreadId).toBe(store.threads[0].id);
-    expect(store.threads[0].title).toBe("");
-    expect(store.messages).toEqual([]);
     expect(store.position).toEqual({ x: 120, y: 240 });
     expect(store.size).toEqual({ width: 480, height: 640 });
-    expect(localStorage.getItem(LEGACY_AGENT_STATE_KEY)).toBeNull();
-    expect(localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY)).toBeNull();
     expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain('"width":480');
     expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
   });
