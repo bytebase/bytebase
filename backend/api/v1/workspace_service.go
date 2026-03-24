@@ -122,28 +122,22 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
-	if err := validateIAMPolicy(ctx, s.store, request, policyMessage); err != nil {
+	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, request, policyMessage); err != nil {
 		return nil, err
-	}
-
-	// In SaaS mode, allUsers is not allowed in workspace IAM policies.
-	// Members must be explicitly added.
-	if s.profile.SaaS {
-		for _, binding := range request.Policy.Bindings {
-			for _, member := range binding.Members {
-				if member == common.AllUsers {
-					return nil, connect.NewError(connect.CodeInvalidArgument,
-						errors.New("allUsers is not allowed in workspace IAM policy in SaaS mode, add members explicitly"))
-				}
-			}
-		}
 	}
 
 	iamPolicy, err := convertToStoreIamPolicy(request.Policy)
 	if err != nil {
 		return nil, err
 	}
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), store.WorkspaceAdminRole, iamPolicy)
+	users := utils.GetUsersByRoleInIAMPolicy(
+		ctx,
+		s.store,
+		common.GetWorkspaceIDFromContext(ctx),
+		store.WorkspaceAdminRole,
+		!s.profile.SaaS,
+		iamPolicy,
+	)
 	if !containsActiveEndUser(users) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
 	}

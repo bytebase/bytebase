@@ -126,7 +126,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 	if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_USER_GROUPS); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	groupMessage, err := s.convertToGroupMessage(ctx, req.Msg)
+	groupMessage, err := convertToGroupMessage(req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -206,7 +206,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 			if group.Payload.Source != "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot change members for external group"))
 			}
-			payload, err := s.convertToGroupPayload(ctx, req.Msg.Group)
+			payload, err := convertToGroupPayload(req.Msg.Group)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
@@ -280,26 +280,11 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 	return nil
 }
 
-func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
+func convertToGroupPayload(group *v1pb.Group) (*storepb.GroupPayload, error) {
 	payload := &storepb.GroupPayload{}
 	for _, member := range group.Members {
-		email, err := common.GetUserEmail(member.Member)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member email"))
-		}
-		user, err := s.store.GetUserByEmail(ctx, email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get member %s", member.Member))
-		}
-		if user == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot found member %s", member.Member))
-		}
-		if user.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only allow add end users to the group"))
-		}
-
 		m := &storepb.GroupMember{
-			Member: common.FormatUserEmail(user.Email),
+			Member: member.Member,
 		}
 		switch member.Role {
 		case v1pb.GroupMember_MEMBER:
@@ -314,7 +299,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 	return payload, nil
 }
 
-func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
+func convertToGroupMessage(request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
 	if request.GroupEmail == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing group_email in the request"))
 	}
@@ -326,7 +311,7 @@ func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.
 		Payload:     &storepb.GroupPayload{},
 	}
 
-	payload, err := s.convertToGroupPayload(ctx, request.Group)
+	payload, err := convertToGroupPayload(request.Group)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
