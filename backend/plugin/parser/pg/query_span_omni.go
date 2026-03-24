@@ -327,35 +327,44 @@ func isUltimatelyPlainColumn(q *catalog.Query, expr catalog.AnalyzedExpr) bool {
 // query's non-junk TargetList. An entry is true if the column was produced
 // by * expansion (SELECT * or SELECT t.*), false for explicit column refs.
 func buildPlainFieldMask(selStmt *ast.SelectStmt, q *catalog.Query) []bool {
-	// Count non-junk target entries.
-	nResults := 0
+	// Collect non-junk target entries.
+	var targets []*catalog.TargetEntry
 	for _, te := range q.TargetList {
 		if !te.ResJunk {
-			nResults++
+			targets = append(targets, te)
 		}
 	}
+	nResults := len(targets)
 
 	if selStmt == nil || selStmt.TargetList == nil {
-		// No parse tree info — default to false (non-plain).
 		return make([]bool, nResults)
 	}
 
-	mask := make([]bool, nResults)
-	pos := 0 // position in the analyzed (non-junk) target list
+	// Count parse-tree items (stars and non-stars).
+	var parseTargets []*ast.ResTarget
+	for _, item := range selStmt.TargetList.Items {
+		if rt, ok := item.(*ast.ResTarget); ok {
+			parseTargets = append(parseTargets, rt)
+		}
+	}
 
-	for parseIdx, item := range selStmt.TargetList.Items {
-		rt, ok := item.(*ast.ResTarget)
-		if !ok || pos >= nResults {
-			continue
+	// For each star, determine how many columns it expands to by
+	// looking at the table it references and counting columns in that RTE.
+	mask := make([]bool, nResults)
+	pos := 0
+
+	for _, rt := range parseTargets {
+		if pos >= nResults {
+			break
 		}
 		if isStarTarget(rt) {
-			starCount := countStarExpansion(selStmt, parseIdx, pos, nResults)
+			tableName := starTableName(rt)
+			starCount := countStarColumnsFromRTE(q, targets, pos, tableName)
 			for i := 0; i < starCount && pos < nResults; i++ {
 				mask[pos] = true
 				pos++
 			}
 		} else {
-			// Explicit column reference or expression — not plain.
 			mask[pos] = false
 			pos++
 		}
@@ -379,29 +388,81 @@ func isStarTarget(rt *ast.ResTarget) bool {
 	return isStar
 }
 
-// countStarExpansion determines how many analyzed columns a single * in the
-// parse tree expanded to. parseIdx is the 0-based index of the current star
-// target in the parse tree's target list.
-func countStarExpansion(selStmt *ast.SelectStmt, parseIdx, currentPos, totalResults int) int {
-	// Count remaining non-star parse-tree targets after the current one.
-	remainingNonStar := 0
-	for i := parseIdx + 1; i < len(selStmt.TargetList.Items); i++ {
-		rt, ok := selStmt.TargetList.Items[i].(*ast.ResTarget)
-		if !ok {
-			continue
+// starTableName extracts the table qualifier from a star target.
+// For "SELECT *" returns "", for "SELECT t.*" returns "t".
+func starTableName(rt *ast.ResTarget) string {
+	cr, ok := rt.Val.(*ast.ColumnRef)
+	if !ok || cr.Fields == nil {
+		return ""
+	}
+	// For t.*, Fields = [String("t"), A_Star{}]
+	if len(cr.Fields.Items) >= 2 {
+		if s, ok := cr.Fields.Items[0].(*ast.String); ok {
+			return s.Str
 		}
-		if !isStarTarget(rt) {
-			remainingNonStar++
-		}
-		// For remaining stars, we'd need recursive handling.
-		// For simplicity, treat them as consuming 0 here;
-		// they'll be computed when we reach them.
+	}
+	return ""
+}
+
+// countStarColumnsFromRTE counts how many analyzed target entries starting
+// at pos belong to a star expansion. For unqualified * (tableName=""), it
+// counts entries that share the same contiguous RangeIdx sequence covering
+// all non-join RTEs. For qualified t.* (tableName="t"), it counts entries
+// whose RTE ERef matches the table name.
+func countStarColumnsFromRTE(q *catalog.Query, targets []*catalog.TargetEntry, startPos int, tableName string) int {
+	if startPos >= len(targets) {
+		return 0
 	}
 
-	// This star expands to: totalResults - currentPos - remaining non-star targets
-	// (minus any columns from subsequent stars, which we handle when we reach them).
-	count := totalResults - currentPos - remainingNonStar
-	if count < 1 {
+	if tableName != "" {
+		// Qualified star: count consecutive entries from the named RTE.
+		count := 0
+		for i := startPos; i < len(targets); i++ {
+			v, ok := targets[i].Expr.(*catalog.VarExpr)
+			if !ok {
+				break
+			}
+			if v.RangeIdx < 0 || v.RangeIdx >= len(q.RangeTable) {
+				break
+			}
+			rte := q.RangeTable[v.RangeIdx]
+			if rte.ERef != tableName && rte.Alias != tableName {
+				break
+			}
+			count++
+		}
+		if count == 0 {
+			return 1
+		}
+		return count
+	}
+
+	// Unqualified star: expands all non-join RTEs in FROM order.
+	// Count how many consecutive VarExprs follow the expected star expansion pattern.
+	count := 0
+	for i := startPos; i < len(targets); i++ {
+		v, ok := targets[i].Expr.(*catalog.VarExpr)
+		if !ok {
+			break
+		}
+		if v.RangeIdx < 0 || v.RangeIdx >= len(q.RangeTable) {
+			break
+		}
+		rte := q.RangeTable[v.RangeIdx]
+		if rte.Kind == catalog.RTEJoin {
+			break
+		}
+		// Check if this column's AttNum is sequential within its RTE.
+		// Star expansion produces columns in order: attnum 1, 2, 3, ...
+		if count > 0 {
+			prev, _ := targets[i-1].Expr.(*catalog.VarExpr)
+			if prev != nil && v.RangeIdx == prev.RangeIdx && v.AttNum != prev.AttNum+1 {
+				break
+			}
+		}
+		count++
+	}
+	if count == 0 {
 		return 1
 	}
 	return count
@@ -415,13 +476,17 @@ func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query, selStmt *
 	lResults := e.extractLineage(q.LArg, selStmt.Larg)
 	rResults := e.extractLineage(q.RArg, selStmt.Rarg)
 
+	// For EXCEPT, output rows come only from the left branch — do not
+	// merge right-side lineage into the result columns.
+	includeRight := q.SetOp != catalog.SetOpExcept && q.SetOp != catalog.SetOpExceptAll
+
 	var results []base.QuerySpanResult
 	for i, lr := range lResults {
 		merged := make(base.SourceColumnSet)
 		for col := range lr.SourceColumns {
 			merged[col] = true
 		}
-		if i < len(rResults) {
+		if includeRight && i < len(rResults) {
 			for col := range rResults[i].SourceColumns {
 				merged[col] = true
 			}
@@ -729,7 +794,7 @@ func exprNeedsFallback(expr catalog.AnalyzedExpr) bool {
 			return true
 		}
 		for _, w := range v.When {
-			if exprNeedsFallback(w.Result) {
+			if exprNeedsFallback(w.Condition) || exprNeedsFallback(w.Result) {
 				return true
 			}
 		}
