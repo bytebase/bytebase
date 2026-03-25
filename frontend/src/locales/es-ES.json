@@ -2483,7 +2483,6 @@
     "retry-last-turn": "Reintentar el último turno",
     "interrupted-retry-hint": "Reintentar vuelve a ejecutar el turno interrumpido con el estado actual de la página.",
     "new-thread": "Nuevo hilo",
-    "reset-thread": "Restablecer hilo",
     "rename-thread": "Renombrar",
     "rename-thread-placeholder": "Introduce un nombre para el hilo",
     "archive-thread": "Archivar",

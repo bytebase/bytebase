@@ -617,23 +617,6 @@ export const useAgentStore = defineStore("agent", () => {
     return toolMessage;
   };
 
-  const clearMessages = (threadId = currentThreadId.value) => {
-    const thread = getThread(threadId);
-    if (!thread) {
-      return;
-    }
-    messagesByThreadId.value[thread.id] = [];
-    delete pendingAskByThreadId.value[thread.id];
-    thread.title = "";
-    thread.page = undefined;
-    thread.status = DEFAULT_THREAD_STATUS;
-    thread.totalTokensUsed = 0;
-    thread.lastError = null;
-    thread.interrupted = false;
-    thread.runId = null;
-    thread.updatedTs = Date.now();
-  };
-
   const cancel = (threadId = currentThreadId.value) => {
     if (!threadId) {
       return;
@@ -643,13 +626,6 @@ export const useAgentStore = defineStore("agent", () => {
     if (isThreadRunning(threadId)) {
       interruptRun(threadId);
     }
-  };
-
-  const clearConversation = (threadId = currentThreadId.value) => {
-    if (threadId && isThreadRunning(threadId)) {
-      cancel(threadId);
-    }
-    clearMessages(threadId);
   };
 
   const clearError = (threadId = currentThreadId.value) => {
@@ -857,8 +833,6 @@ export const useAgentStore = defineStore("agent", () => {
     addMessage,
     removeMessagesByRunId,
     appendToolCall,
-    clearMessages,
-    clearConversation,
     clearError,
     cancel,
     saveWindowState,

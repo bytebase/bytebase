@@ -379,10 +379,6 @@ function createThread() {
   agentStore.createThread({ page: getCurrentPageSnapshot() });
 }
 
-function resetCurrentThread() {
-  agentStore.clearConversation();
-}
-
 function selectThread(threadId: string) {
   if (isRenamingCurrentThread.value) {
     cancelRenameCurrentThread();
@@ -545,12 +541,6 @@ onBeforeUnmount(() => {
                 @keydown="onRenameCurrentThreadKeydown"
               />
               <div class="flex flex-wrap gap-x-2 gap-y-2">
-                <button
-                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="resetCurrentThread"
-                >
-                  {{ $t("agent.reset-thread") }}
-                </button>
                 <button
                   class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
                   @click="beginRenameCurrentThread"

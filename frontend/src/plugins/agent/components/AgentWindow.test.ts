@@ -48,7 +48,6 @@ const i18n = createI18n({
         "thread-switch-locked":
           "Finish the running thread before switching to another one.",
         "new-thread": "New thread",
-        "reset-thread": "Reset thread",
         "rename-thread": "Rename",
         "rename-thread-placeholder": "Enter a thread name",
         "archive-thread": "Archive",

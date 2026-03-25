@@ -2974,7 +2974,6 @@
     "retry-last-turn": "重试上一轮",
     "interrupted-retry-hint": "重试会基于当前页面状态重新运行已中断的这一轮。",
     "new-thread": "新线程",
-    "reset-thread": "重置线程",
     "rename-thread": "重命名",
     "rename-thread-placeholder": "输入线程名称",
     "archive-thread": "归档",

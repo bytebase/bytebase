@@ -132,7 +132,7 @@ describe("useAgentStore", () => {
     expect(store.getThread(threadId)?.runId).toBe("run-2");
   });
 
-  test("persists the selected thread and resets thread messages in place", async () => {
+  test("persists the selected thread across store reloads", async () => {
     const store = createStore();
     const firstThreadId = store.currentThreadId!;
 
@@ -155,25 +155,13 @@ describe("useAgentStore", () => {
     const rehydratedStore = createStore();
     expect(rehydratedStore.currentThreadId).toBe(secondThread.id);
     expect(rehydratedStore.getMessages(firstThreadId)).toHaveLength(1);
-
-    rehydratedStore.clearConversation(secondThread.id);
-
-    expect(rehydratedStore.getMessages(secondThread.id)).toEqual([]);
-    expect(rehydratedStore.getThread(secondThread.id)?.status).toBe("idle");
-    expect(rehydratedStore.getThread(secondThread.id)?.page).toBeUndefined();
-
-    rehydratedStore.ensureCurrentThread({
-      path: "/projects/current",
-      title: "Current Page",
-    });
-
     expect(rehydratedStore.getThread(secondThread.id)?.page).toEqual({
-      path: "/projects/current",
-      title: "Current Page",
+      path: "/projects/original",
+      title: "Original Page",
     });
   });
 
-  test("increments and resets thread token totals", async () => {
+  test("increments and persists thread token totals", async () => {
     const store = createStore();
     const threadId = store.currentThreadId!;
 
@@ -186,9 +174,6 @@ describe("useAgentStore", () => {
 
     const rehydratedStore = createStore();
     expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(150);
-
-    rehydratedStore.clearConversation(threadId);
-    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(0);
   });
 
   test("updates the thread page to the latest current page when starting a run", () => {
