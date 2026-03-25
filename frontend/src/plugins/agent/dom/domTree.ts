@@ -46,6 +46,37 @@ const TERMINAL_INTERACTIVE_TAGS = new Set([
   "SUMMARY",
 ]);
 
+const STRUCTURAL_WRAPPER_TAGS = new Set(["DIV", "SPAN", "TD", "TH"]);
+const STATEFUL_INTERACTIVE_ROLES = new Set([
+  "checkbox",
+  "radio",
+  "switch",
+  "textbox",
+  "combobox",
+  "listbox",
+  "option",
+  "slider",
+]);
+const TEXTBOX_INPUT_TYPES = new Set([
+  "",
+  "email",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "text",
+  "url",
+]);
+const CHECKABLE_INPUT_TYPES = new Set(["checkbox", "radio"]);
+const BUTTON_LIKE_INPUT_TYPES = new Set(["button", "image", "reset", "submit"]);
+const INTERACTIVE_STATE_ATTRIBUTES = [
+  "aria-checked",
+  "aria-expanded",
+  "aria-pressed",
+  "aria-selected",
+  "aria-current",
+];
+
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "PATH"]);
 const MAX_TEXT_NODE_LENGTH = 160;
 const MAX_LABEL_LENGTH = 120;
@@ -89,18 +120,23 @@ interface DomLine {
   dedupeKey?: string;
 }
 
+type InteractiveReason = "native" | "role" | "class" | "editable" | "pointer";
+
 interface WalkContext {
   lines: DomLine[];
   textSeenByParent: Map<string, Set<string>>;
   parentPath: string;
   interactiveLabels: string[];
+  hasInteractiveAncestor: boolean;
 }
 
 function createElementRef(): string {
   return `e${nextElementRef++}`;
 }
 
-function createIndexedElement(entry: Omit<IndexedElement, "ref">): IndexedElement {
+function createIndexedElement(
+  entry: Omit<IndexedElement, "ref">
+): IndexedElement {
   return { ref: createElementRef(), ...entry };
 }
 
@@ -141,6 +177,10 @@ function isContentEditableElement(el: Element): boolean {
   );
 }
 
+function isHiddenInput(el: Element): boolean {
+  return el instanceof HTMLInputElement && el.type === "hidden";
+}
+
 function hasPointerCursor(el: Element): boolean {
   return window.getComputedStyle(el).cursor === "pointer";
 }
@@ -161,21 +201,26 @@ function getMonacoContent(el: Element): string | undefined {
   return content || undefined;
 }
 
-function isInteractive(el: Element): boolean {
-  if (!isPerceivable(el) || hasDisabledState(el)) return false;
-  if (INTERACTIVE_TAGS.has(el.tagName)) return true;
+function getInteractiveReason(el: Element): InteractiveReason | undefined {
+  if (!isPerceivable(el) || hasDisabledState(el) || isHiddenInput(el))
+    return undefined;
+  if (INTERACTIVE_TAGS.has(el.tagName)) return "native";
 
   const role = el.getAttribute("role");
-  if (role && INTERACTIVE_ROLES.has(role)) return true;
+  if (role && INTERACTIVE_ROLES.has(role)) return "role";
 
   for (const cls of NAIVE_INTERACTIVE_CLASSES) {
-    if (el.classList.contains(cls)) return true;
+    if (el.classList.contains(cls)) return "class";
   }
 
-  if (isContentEditableElement(el)) return true;
-  if (hasPointerCursor(el)) return true;
+  if (isContentEditableElement(el)) return "editable";
+  if (hasPointerCursor(el)) return "pointer";
 
-  return false;
+  return undefined;
+}
+
+function isInteractive(el: Element): boolean {
+  return Boolean(getInteractiveReason(el));
 }
 
 function shouldRecurseIntoInteractive(el: Element): boolean {
@@ -229,6 +274,11 @@ function extractLabel(el: Element): string {
     if (label) return truncateText(label, MAX_LABEL_LENGTH);
   }
 
+  if (el instanceof HTMLInputElement && BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+    const buttonValue = normalizeTextContent(el.value);
+    if (buttonValue) return truncateText(buttonValue, MAX_LABEL_LENGTH);
+  }
+
   // title
   const title = normalizeTextContent(el.getAttribute("title") ?? "");
   if (title) return truncateText(title, MAX_LABEL_LENGTH);
@@ -278,6 +328,90 @@ function extractValue(el: Element): string | undefined {
 
   return undefined;
 }
+function hasInteractiveState(el: Element): boolean {
+  return INTERACTIVE_STATE_ATTRIBUTES.some((name) => {
+    const value = el.getAttribute(name);
+    return value !== null && value !== "false";
+  });
+}
+
+function getFallbackLabel(el: Element, reason: InteractiveReason): string {
+  if (el instanceof HTMLInputElement) {
+    if (CHECKABLE_INPUT_TYPES.has(el.type)) return el.type;
+    if (TEXTBOX_INPUT_TYPES.has(el.type)) return "textbox";
+    if (BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+      return normalizeTextContent(el.value) ?? "";
+    }
+  }
+
+  if (el instanceof HTMLTextAreaElement) return "textbox";
+  if (el instanceof HTMLSelectElement) return "select";
+
+  const role = el.getAttribute("role") ?? "";
+  if (STATEFUL_INTERACTIVE_ROLES.has(role)) return role;
+  if (
+    reason === "class" &&
+    (el.classList.contains("n-checkbox") || el.classList.contains("n-switch"))
+  ) {
+    return el.classList.contains("n-switch") ? "switch" : "checkbox";
+  }
+
+  return "";
+}
+
+function shouldIndexInteractiveNode(
+  el: Element,
+  reason: InteractiveReason,
+  label: string,
+  value: string | undefined,
+  context: WalkContext
+): boolean {
+  if (reason === "pointer" && context.hasInteractiveAncestor) return false;
+
+  const hasDescriptor = Boolean(label || value || hasInteractiveState(el));
+
+  if (reason === "pointer") {
+    if (!hasDescriptor) return false;
+    if (STRUCTURAL_WRAPPER_TAGS.has(el.tagName)) {
+      const childCount = el.children.length;
+      const meaningfulDescendantCount = Array.from(el.children).filter(
+        (child) =>
+          !STRUCTURAL_WRAPPER_TAGS.has(child.tagName) || isInteractive(child)
+      ).length;
+      return (
+        childCount === 0 ||
+        meaningfulDescendantCount > 0 ||
+        el.tagName === "DIV"
+      );
+    }
+    return true;
+  }
+
+  if (el instanceof HTMLButtonElement || el instanceof HTMLAnchorElement) {
+    return hasDescriptor;
+  }
+
+  if (el instanceof HTMLInputElement) {
+    if (
+      CHECKABLE_INPUT_TYPES.has(el.type) ||
+      TEXTBOX_INPUT_TYPES.has(el.type)
+    ) {
+      return true;
+    }
+    if (BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+      return hasDescriptor;
+    }
+    return hasDescriptor;
+  }
+
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+    return true;
+  }
+
+  if (reason === "editable") return true;
+
+  return hasDescriptor;
+}
 
 function toDomRefSuggestion({
   ref,
@@ -295,7 +429,11 @@ function toDomRefSuggestion({
   };
 }
 
-function classifyTextLine(parent: Element, depth: number, text: string): DomLine["kind"] {
+function classifyTextLine(
+  parent: Element,
+  depth: number,
+  text: string
+): DomLine["kind"] {
   if (depth <= 1 || isLandmark(parent) || text.length <= 40) {
     return "context";
   }
@@ -337,7 +475,12 @@ function pushInteractiveLine(
   });
 }
 
-function walkDomNode(node: Node, depth: number, context: WalkContext, path: string): void {
+function walkDomNode(
+  node: Node,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
   if (node instanceof Text) {
     pushTextLine(node, depth, context);
     return;
@@ -364,19 +507,34 @@ function walkDomNode(node: Node, depth: number, context: WalkContext, path: stri
     return;
   }
 
-  const isInteractiveNode = isInteractive(node);
+  const interactiveReason = getInteractiveReason(node);
+  const isInteractiveNode = Boolean(interactiveReason);
   let nextInteractiveLabels = context.interactiveLabels;
-  if (isInteractiveNode) {
+  let hasInteractiveAncestor = context.hasInteractiveAncestor;
+  if (interactiveReason) {
     const tag = node.tagName.toLowerCase();
-    const label = extractLabel(node);
     const value = extractValue(node);
-    const role = node.getAttribute("role") ?? undefined;
-    const entry = createIndexedElement({ tag, role, label, value, element: node });
+    const rawLabel = extractLabel(node);
+    const label = rawLabel || getFallbackLabel(node, interactiveReason);
 
-    pushInteractiveLine(depth, entry, value, context);
-    nextInteractiveLabels = label
-      ? [...context.interactiveLabels, label]
-      : context.interactiveLabels;
+    if (
+      shouldIndexInteractiveNode(node, interactiveReason, label, value, context)
+    ) {
+      const role = node.getAttribute("role") ?? undefined;
+      const entry = createIndexedElement({
+        tag,
+        role,
+        label,
+        value,
+        element: node,
+      });
+
+      pushInteractiveLine(depth, entry, value, context);
+      nextInteractiveLabels = label
+        ? [...context.interactiveLabels, label]
+        : context.interactiveLabels;
+      hasInteractiveAncestor = true;
+    }
 
     if (!shouldRecurseIntoInteractive(node)) {
       return;
@@ -392,6 +550,7 @@ function walkDomNode(node: Node, depth: number, context: WalkContext, path: stri
     ...context,
     parentPath: path,
     interactiveLabels: nextInteractiveLabels,
+    hasInteractiveAncestor,
   };
   const childNodes = Array.from(node.childNodes);
   childNodes.forEach((child, index) => {
@@ -430,7 +589,10 @@ function selectBudgetedLines(lines: DomLine[]): DomLine[] {
     if (selected.has(index)) return;
     const line = lines[index];
     const cost = line.text.length + (usedLines > 0 ? 1 : 0);
-    if (usedLines >= MAX_DOM_TREE_LINES || usedChars + cost > MAX_DOM_TREE_CHARS) {
+    if (
+      usedLines >= MAX_DOM_TREE_LINES ||
+      usedChars + cost > MAX_DOM_TREE_CHARS
+    ) {
       return;
     }
     selected.add(index);
@@ -463,6 +625,7 @@ function extractDomState(root?: Element): {
     textSeenByParent: new Map(),
     parentPath: "root",
     interactiveLabels: [],
+    hasInteractiveAncestor: false,
   };
 
   Array.from(rootEl.childNodes).forEach((child, index) => {

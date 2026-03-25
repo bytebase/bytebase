@@ -81,12 +81,39 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain(
-      "[e1]<div>Prod Primary us-east-1</div>"
-    );
+    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
     expect(tree).toContain("  Prod Primary");
     expect(tree).toContain("  us-east-1");
     expect(getElementByRef("e1")?.tag).toBe("div");
+  });
+
+  test("does not promote inherited pointer-cursor wrappers beneath clickable containers", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary</span>
+          <div>
+            <span>Healthy</span>
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Prod Primary Healthy</div>");
+    expect(tree).not.toContain("[e2]");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Prod Primary Healthy",
+        value: undefined,
+      },
+    ]);
   });
 
   test("skips disabled and hidden pointer-cursor containers", () => {
@@ -146,10 +173,62 @@ describe("extractDomTree", () => {
     const { tree, count } = extractDomTree();
 
     expect(count).toBe(1);
-    expect(tree).toContain(
-      "[e1]<div>Prod Primary us-east-1</div>"
-    );
+    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
     expect(tree.match(/Prod Primary us-east-1/g)).toHaveLength(1);
+  });
+
+  test("suppresses blank button refs while keeping meaningful native controls", () => {
+    document.body.innerHTML = `
+      <main>
+        <button><span aria-hidden="true"></span></button>
+        <button title="Refresh"></button>
+        <input type="checkbox" />
+        <input type="text" />
+        <select>
+          <option selected>Prod</option>
+        </select>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(4);
+    expect(tree).toContain("[e1]<button>Refresh</button>");
+    expect(tree).toContain('[e2]<input value="unchecked">checkbox</input>');
+    expect(tree).toContain("[e3]<input>textbox</input>");
+    expect(tree).toContain('[e4]<select value="Prod">Prod</select>');
+    expect(tree).not.toContain("<button></button>");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "button",
+        role: undefined,
+        label: "Refresh",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "input",
+        role: undefined,
+        label: "checkbox",
+        value: "unchecked",
+      },
+      {
+        ref: "e3",
+        tag: "input",
+        role: undefined,
+        label: "textbox",
+        value: undefined,
+      },
+      {
+        ref: "e4",
+        tag: "select",
+        role: undefined,
+        label: "Prod",
+        value: "Prod",
+      },
+    ]);
   });
 
   test("truncates long labels and values deterministically", () => {
@@ -168,7 +247,9 @@ describe("extractDomTree", () => {
   });
 
   test("drops plain text before interactive refs when the tree budget is hit", () => {
-    const textBlocks = Array.from({ length: 140 }, (_, index) => `
+    const textBlocks = Array.from(
+      { length: 140 },
+      (_, index) => `
       <section>
         <p>Context line ${index}</p>
         <div>
@@ -176,7 +257,8 @@ describe("extractDomTree", () => {
           <span>${"detail".repeat(12)} duplicate ${index}</span>
         </div>
       </section>
-    `).join("");
+    `
+    ).join("");
     document.body.innerHTML = `
       <main>
         ${textBlocks}
