@@ -200,6 +200,45 @@ describe("AgentWindow", () => {
     expect(wrapper.find("input").exists()).toBe(false);
   });
 
+  test("resizes and persists the sidebar width", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    store.size.width = 760;
+    store.sidebarWidth = 240;
+
+    await nextTick();
+
+    const sidebar = wrapper.find("aside");
+    expect(sidebar.attributes("style")).toContain("width: 240px");
+
+    await wrapper
+      .find("[data-agent-sidebar-resize]")
+      .trigger("mousedown", { clientX: 240 });
+    document.dispatchEvent(new MouseEvent("mousemove", { clientX: 320 }));
+    document.dispatchEvent(new MouseEvent("mouseup", { clientX: 320 }));
+    await nextTick();
+
+    expect(store.sidebarWidth).toBe(320);
+    expect(wrapper.find("aside").attributes("style")).toContain("width: 320px");
+    expect(localStorage.getItem("bb-agent-window")).toContain(
+      '"sidebarWidth":320'
+    );
+  });
+
+  test("clamps the sidebar width when the window narrows", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    store.size.width = 760;
+    store.sidebarWidth = 420;
+
+    await nextTick();
+    expect(wrapper.find("aside").attributes("style")).toContain("width: 420px");
+
+    store.size.width = 360;
+    await nextTick();
+
+    expect(store.sidebarWidth).toBe(180);
+    expect(wrapper.find("aside").attributes("style")).toContain("width: 180px");
+  });
+
   test("archives and deletes chats through popconfirm", async () => {
     const { store, wrapper } = mountAgentWindow();
     const originalChatId = store.currentChatId!;

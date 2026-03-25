@@ -22,6 +22,8 @@ const agentStore = useAgentStore();
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 400;
 const WINDOW_MARGIN = 16;
+const MIN_SIDEBAR_WIDTH = 180;
+const MIN_MAIN_PANEL_WIDTH = 240;
 
 const windowRef = ref<HTMLElement | null>(null);
 const viewportSize = ref({
@@ -76,6 +78,31 @@ const displayWindowState = computed(() => {
   );
   return { position, size };
 });
+
+const getSidebarWidthBounds = (
+  windowWidth = displayWindowState.value.size.width
+) => {
+  const maxSidebarWidth = Math.max(
+    MIN_SIDEBAR_WIDTH,
+    windowWidth - MIN_MAIN_PANEL_WIDTH
+  );
+  return {
+    min: Math.min(MIN_SIDEBAR_WIDTH, maxSidebarWidth),
+    max: maxSidebarWidth,
+  };
+};
+
+const clampSidebarWidth = (
+  width: number,
+  windowWidth = displayWindowState.value.size.width
+) => {
+  const bounds = getSidebarWidthBounds(windowWidth);
+  return Math.min(bounds.max, Math.max(bounds.min, Math.round(width)));
+};
+
+const sidebarStyle = computed(() => ({
+  width: `${clampSidebarWidth(agentStore.sidebarWidth)}px`,
+}));
 
 const windowStyle = computed(() => ({
   left: `${displayWindowState.value.position.x}px`,
@@ -150,6 +177,13 @@ function syncPosition() {
   );
   agentStore.position.x = position.x;
   agentStore.position.y = position.y;
+}
+
+function syncSidebarWidth(
+  width = agentStore.sidebarWidth,
+  windowWidth = displayWindowState.value.size.width
+) {
+  agentStore.sidebarWidth = clampSidebarWidth(width, windowWidth);
 }
 
 function syncStoreToDisplayState() {
@@ -296,6 +330,37 @@ const isResizing = ref(false);
 const resizeStart = ref({ x: 0, y: 0, w: 0, h: 0 });
 let resizeObserver: ResizeObserver | null = null;
 
+const isSidebarResizing = ref(false);
+const sidebarResizeStart = ref({ x: 0, width: 0 });
+
+function startSidebarResize(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+  syncStoreToDisplayState();
+  isSidebarResizing.value = true;
+  sidebarResizeStart.value = {
+    x: event.clientX,
+    width: clampSidebarWidth(agentStore.sidebarWidth),
+  };
+  document.addEventListener("mousemove", onSidebarResize);
+  document.addEventListener("mouseup", stopSidebarResize);
+}
+
+function onSidebarResize(event: MouseEvent) {
+  if (!isSidebarResizing.value) {
+    return;
+  }
+  const dx = event.clientX - sidebarResizeStart.value.x;
+  syncSidebarWidth(sidebarResizeStart.value.width + dx);
+}
+
+function stopSidebarResize() {
+  isSidebarResizing.value = false;
+  document.removeEventListener("mousemove", onSidebarResize);
+  document.removeEventListener("mouseup", stopSidebarResize);
+  agentStore.saveWindowState();
+}
+
 function startResize(event: MouseEvent) {
   event.preventDefault();
   event.stopPropagation();
@@ -366,6 +431,21 @@ function handleViewportResize() {
   });
 }
 
+watch(
+  () => displayWindowState.value.size.width,
+  (windowWidth) => {
+    const sidebarWidth = clampSidebarWidth(
+      agentStore.sidebarWidth,
+      windowWidth
+    );
+    if (sidebarWidth === agentStore.sidebarWidth) {
+      return;
+    }
+    agentStore.sidebarWidth = sidebarWidth;
+    agentStore.saveWindowState();
+  }
+);
+
 watch(windowRef, () => {
   observeWindowSize();
 });
@@ -396,6 +476,7 @@ watch(
 onMounted(() => {
   agentStore.loadWindowState();
   handleViewportResize();
+  syncSidebarWidth();
   observeWindowSize();
   window.addEventListener("resize", handleViewportResize);
 });
@@ -403,6 +484,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopDrag();
   stopResize();
+  stopSidebarResize();
   resizeObserver?.disconnect();
   cancelAnimationFrame(viewportResizeFrame);
   window.removeEventListener("resize", handleViewportResize);
@@ -477,7 +559,10 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex min-h-0 flex-1 overflow-hidden bg-white">
-        <aside class="flex w-64 shrink-0 flex-col border-r border-gray-200 bg-gray-50">
+        <aside
+          class="flex shrink-0 flex-col border-r border-gray-200 bg-gray-50"
+          :style="sidebarStyle"
+        >
           <div class="border-b border-gray-200 px-3 py-3">
             <div class="flex items-center justify-between gap-x-2">
               <div>
@@ -591,6 +676,18 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </aside>
+
+        <button
+          type="button"
+          data-agent-window-action
+          data-agent-sidebar-resize
+          class="group relative w-1 shrink-0 cursor-col-resize bg-gray-100 transition-colors hover:bg-blue-100"
+          @mousedown="startSidebarResize"
+        >
+          <span
+            class="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-blue-400"
+          />
+        </button>
 
         <div class="flex min-w-0 flex-1 flex-col">
           <AgentChat class="min-h-0 flex-1" />

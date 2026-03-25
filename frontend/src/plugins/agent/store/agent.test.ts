@@ -59,15 +59,20 @@ describe("useAgentStore", () => {
       JSON.stringify({
         position: { x: 120, y: 240 },
         size: { width: 480, height: 640 },
+        sidebarWidth: 280,
       })
     );
 
     const store = createStore();
     store.loadWindowState();
 
+    expect(store.sidebarWidth).toBe(280);
     expect(store.position).toEqual({ x: 120, y: 240 });
     expect(store.size).toEqual({ width: 480, height: 640 });
     expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain('"width":480');
+    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain(
+      '"sidebarWidth":280'
+    );
     expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
   });
 

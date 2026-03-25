@@ -309,6 +309,7 @@ export const useAgentStore = defineStore("agent", () => {
     y: window.innerHeight - 520,
   });
   const size = ref({ width: 400, height: 500 });
+  const sidebarWidth = ref(256);
   const minimized = ref(false);
 
   const chats = ref<AgentChat[]>([]);
@@ -713,7 +714,11 @@ export const useAgentStore = defineStore("agent", () => {
   const saveWindowState = () => {
     localStorage.setItem(
       AGENT_WINDOW_KEY,
-      JSON.stringify({ position: position.value, size: size.value })
+      JSON.stringify({
+        position: position.value,
+        size: size.value,
+        sidebarWidth: sidebarWidth.value,
+      })
     );
   };
 
@@ -756,6 +761,7 @@ export const useAgentStore = defineStore("agent", () => {
       const state = JSON.parse(saved) as {
         position?: { x?: number; y?: number };
         size?: { width?: number; height?: number };
+        sidebarWidth?: number;
       };
       if (
         typeof state.position?.x === "number" &&
@@ -774,6 +780,9 @@ export const useAgentStore = defineStore("agent", () => {
           width: state.size.width,
           height: state.size.height,
         };
+      }
+      if (typeof state.sidebarWidth === "number") {
+        sidebarWidth.value = state.sidebarWidth;
       }
     } catch {
       localStorage.removeItem(AGENT_WINDOW_KEY);
@@ -794,6 +803,7 @@ export const useAgentStore = defineStore("agent", () => {
     visible,
     position,
     size,
+    sidebarWidth,
     minimized,
     chats,
     orderedChats,
