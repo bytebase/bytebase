@@ -134,6 +134,64 @@ describe("extractDomTree", () => {
     expect(tree.match(/Editable SQL/g)).toHaveLength(1);
   });
 
+  test("dedupes descendant text when it matches an interactive label", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary us-east-1</span>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain(
+      "[e1]<div>Prod Primary us-east-1</div>"
+    );
+    expect(tree.match(/Prod Primary us-east-1/g)).toHaveLength(1);
+  });
+
+  test("truncates long labels and values deterministically", () => {
+    const longText = "x".repeat(180);
+    document.body.innerHTML = `
+      <main>
+        <button>${longText}</button>
+        <input value="${longText}" />
+      </main>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toContain(`${"x".repeat(120)}...`);
+    expect(tree).not.toContain("x".repeat(150));
+  });
+
+  test("drops plain text before interactive refs when the tree budget is hit", () => {
+    const textBlocks = Array.from({ length: 140 }, (_, index) => `
+      <section>
+        <p>Context line ${index}</p>
+        <div>
+          <span>${"detail".repeat(12)} ${index}</span>
+          <span>${"detail".repeat(12)} duplicate ${index}</span>
+        </div>
+      </section>
+    `).join("");
+    document.body.innerHTML = `
+      <main>
+        ${textBlocks}
+        <button aria-label="Launch workflow">Launch</button>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<button>Launch workflow</button>");
+    expect(tree).not.toContain("Context line 139");
+    expect(tree.split("\n").length).toBeLessThanOrEqual(120);
+  });
+
   test("returns structured DOM ref suggestions for visible interactive elements", () => {
     document.body.innerHTML = `
       <main>
