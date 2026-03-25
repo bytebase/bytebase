@@ -10,7 +10,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import type { AgentThread } from "../logic/types";
+import type { AgentChat as AgentChatRecord } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentChat from "./AgentChat.vue";
 import AgentInput from "./AgentInput.vue";
@@ -84,59 +84,57 @@ const windowStyle = computed(() => ({
   height: `${displayWindowState.value.size.height}px`,
 }));
 
-const showArchivedThreads = ref(false);
-const displayedThreads = computed(() =>
-  agentStore.orderedThreads.filter((thread) => {
+const showArchivedChats = ref(false);
+const displayedChats = computed(() =>
+  agentStore.orderedChats.filter((chat) => {
     return (
-      showArchivedThreads.value ||
-      !thread.archived ||
-      thread.id === agentStore.currentThreadId
+      showArchivedChats.value ||
+      !chat.archived ||
+      chat.id === agentStore.currentChatId
     );
   })
 );
-const currentThreadStatusLabel = computed(() => {
-  const thread = agentStore.currentThread;
-  if (!thread) {
-    return t("agent.thread-status-idle");
+const currentChatStatusLabel = computed(() => {
+  const chat = agentStore.currentChat;
+  if (!chat) {
+    return t("agent.chat-status-idle");
   }
-  if (thread.interrupted) {
-    return t("agent.thread-status-interrupted");
+  if (chat.interrupted) {
+    return t("agent.chat-status-interrupted");
   }
-  switch (thread.status) {
+  switch (chat.status) {
     case "running":
-      return t("agent.thread-status-running");
+      return t("agent.chat-status-running");
     case "awaiting_user":
-      return t("agent.thread-status-awaiting-user");
+      return t("agent.chat-status-awaiting-user");
     case "error":
-      return t("agent.thread-status-error");
+      return t("agent.chat-status-error");
     default:
-      return t("agent.thread-status-idle");
+      return t("agent.chat-status-idle");
   }
 });
-const currentThreadStatusClass = computed(() => {
-  const thread = agentStore.currentThread;
-  if (!thread || thread.status === "idle") {
+const currentChatStatusClass = computed(() => {
+  const chat = agentStore.currentChat;
+  if (!chat || chat.status === "idle") {
     return "bg-gray-100 text-gray-600";
   }
-  if (thread.status === "running") {
+  if (chat.status === "running") {
     return "bg-blue-50 text-blue-600";
   }
-  if (thread.interrupted || thread.status === "error") {
+  if (chat.interrupted || chat.status === "error") {
     return "bg-red-50 text-red-600";
   }
   return "bg-amber-50 text-amber-600";
 });
 
 const tokenFormatter = new Intl.NumberFormat();
-const currentThreadTokenUsageLabel = computed(() =>
-  t("agent.thread-total-tokens", {
-    count: tokenFormatter.format(
-      agentStore.currentThread?.totalTokensUsed ?? 0
-    ),
+const currentChatTokenUsageLabel = computed(() =>
+  t("agent.chat-total-tokens", {
+    count: tokenFormatter.format(agentStore.currentChat?.totalTokensUsed ?? 0),
   })
 );
-const isThreadSwitchLocked = computed(() => agentStore.hasRunningThread);
-const isThreadCreationDisabled = computed(() => agentStore.hasRunningThread);
+const isChatSwitchLocked = computed(() => agentStore.hasRunningChat);
+const isChatCreationDisabled = computed(() => agentStore.hasRunningChat);
 
 function syncSize(width: number, height: number) {
   const size = getDisplaySize(width, height);
@@ -166,93 +164,93 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
-const getEditableThreadTitle = (thread: AgentThread) =>
-  thread.title
-    ? thread.title
-    : `${t("agent.thread-default-title")} · ${new Date(
-        thread.createdTs
+const getEditableChatTitle = (chat: AgentChatRecord) =>
+  chat.title
+    ? chat.title
+    : `${t("agent.chat-default-title")} · ${new Date(
+        chat.createdTs
       ).toLocaleString()}`;
 
-const getThreadLabel = (thread: AgentThread) => {
-  const baseLabel = getEditableThreadTitle(thread);
-  return thread.archived
-    ? `${baseLabel} (${t("agent.thread-archived-label")})`
+const getChatLabel = (chat: AgentChatRecord) => {
+  const baseLabel = getEditableChatTitle(chat);
+  return chat.archived
+    ? `${baseLabel} (${t("agent.chat-archived-label")})`
     : baseLabel;
 };
 
-function toggleArchivedThreads() {
-  showArchivedThreads.value = !showArchivedThreads.value;
+function toggleArchivedChats() {
+  showArchivedChats.value = !showArchivedChats.value;
 }
 
-const isRenamingCurrentThread = ref(false);
+const isRenamingCurrentChat = ref(false);
 const renamingTitle = ref("");
 const renameInputRef = ref<InstanceType<typeof NInput> | null>(null);
 
-function beginRenameCurrentThread() {
-  const thread = agentStore.currentThread;
-  if (!thread) {
+function beginRenameCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
     return;
   }
-  renamingTitle.value = getEditableThreadTitle(thread);
-  isRenamingCurrentThread.value = true;
+  renamingTitle.value = getEditableChatTitle(chat);
+  isRenamingCurrentChat.value = true;
   nextTick(() => {
     renameInputRef.value?.focus();
     renameInputRef.value?.select();
   });
 }
 
-function cancelRenameCurrentThread() {
-  isRenamingCurrentThread.value = false;
+function cancelRenameCurrentChat() {
+  isRenamingCurrentChat.value = false;
   renamingTitle.value = "";
 }
 
-function commitRenameCurrentThread() {
-  const thread = agentStore.currentThread;
+function commitRenameCurrentChat() {
+  const chat = agentStore.currentChat;
   const title = renamingTitle.value.trim();
-  if (!thread || !isRenamingCurrentThread.value) {
+  if (!chat || !isRenamingCurrentChat.value) {
     return;
   }
   if (!title) {
-    cancelRenameCurrentThread();
+    cancelRenameCurrentChat();
     return;
   }
-  agentStore.renameThread(thread.id, title);
-  cancelRenameCurrentThread();
+  agentStore.renameChat(chat.id, title);
+  cancelRenameCurrentChat();
 }
 
-function onRenameCurrentThreadKeydown(event: KeyboardEvent) {
+function onRenameCurrentChatKeydown(event: KeyboardEvent) {
   if (event.isComposing) {
     return;
   }
   if (event.key === "Escape") {
     event.preventDefault();
-    cancelRenameCurrentThread();
+    cancelRenameCurrentChat();
     return;
   }
   if (event.key === "Enter") {
     event.preventDefault();
-    commitRenameCurrentThread();
+    commitRenameCurrentChat();
   }
 }
 
-function toggleArchiveCurrentThread() {
-  const thread = agentStore.currentThread;
-  if (!thread) {
+function toggleArchiveCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
     return;
   }
-  if (thread.archived) {
-    agentStore.unarchiveThread(thread.id);
+  if (chat.archived) {
+    agentStore.unarchiveChat(chat.id);
     return;
   }
-  agentStore.archiveThread(thread.id);
+  agentStore.archiveChat(chat.id);
 }
 
-function deleteCurrentThread() {
-  const thread = agentStore.currentThread;
-  if (!thread) {
+function deleteCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
     return;
   }
-  agentStore.deleteThread(thread.id);
+  agentStore.deleteChat(chat.id);
 }
 
 const isDragging = ref(false);
@@ -372,25 +370,25 @@ watch(windowRef, () => {
   observeWindowSize();
 });
 
-function createThread() {
-  if (isThreadCreationDisabled.value) {
+function createChat() {
+  if (isChatCreationDisabled.value) {
     return;
   }
-  agentStore.createThread({ page: getCurrentPageSnapshot() });
+  agentStore.createChat({ page: getCurrentPageSnapshot() });
 }
 
-function selectThread(threadId: string) {
-  if (isRenamingCurrentThread.value) {
-    cancelRenameCurrentThread();
+function selectChat(chatId: string) {
+  if (isRenamingCurrentChat.value) {
+    cancelRenameCurrentChat();
   }
-  agentStore.setCurrentThread(threadId);
+  agentStore.setCurrentChat(chatId);
 }
 
 watch(
-  () => agentStore.currentThreadId,
+  () => agentStore.currentChatId,
   () => {
-    if (isRenamingCurrentThread.value) {
-      cancelRenameCurrentThread();
+    if (isRenamingCurrentChat.value) {
+      cancelRenameCurrentChat();
     }
   }
 );
@@ -450,12 +448,12 @@ onBeforeUnmount(() => {
           </span>
           <span
             class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="currentThreadStatusClass"
+            :class="currentChatStatusClass"
           >
-            {{ currentThreadStatusLabel }}
+            {{ currentChatStatusLabel }}
           </span>
           <span class="truncate text-xs text-gray-500">
-            {{ currentThreadTokenUsageLabel }}
+            {{ currentChatTokenUsageLabel }}
           </span>
         </div>
         <div class="flex items-center gap-x-1">
@@ -484,46 +482,46 @@ onBeforeUnmount(() => {
             <div class="flex items-center justify-between gap-x-2">
               <div>
                 <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  {{ $t("agent.thread-list-label") }}
+                  {{ $t("agent.chat-list-label") }}
                 </h2>
                 <p
-                  v-if="isThreadSwitchLocked"
+                  v-if="isChatSwitchLocked"
                   class="mt-1 text-xs text-amber-600"
-                  data-agent-thread-lock-message
+                  data-agent-chat-lock-message
                 >
-                  {{ $t("agent.thread-switch-locked") }}
+                  {{ $t("agent.chat-switch-locked") }}
                 </p>
               </div>
               <button
                 class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                :disabled="isThreadCreationDisabled"
-                @click="createThread"
+                :disabled="isChatCreationDisabled"
+                @click="createChat"
               >
-                {{ $t("agent.new-thread") }}
+                {{ $t("agent.new-chat") }}
               </button>
             </div>
           </div>
 
           <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-            <div class="flex flex-col gap-y-1" data-agent-thread-list>
+            <div class="flex flex-col gap-y-1" data-agent-chat-list>
               <button
-                v-for="thread in displayedThreads"
-                :key="thread.id"
+                v-for="chat in displayedChats"
+                :key="chat.id"
                 type="button"
                 class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 :class="
-                  thread.id === agentStore.currentThreadId
+                  chat.id === agentStore.currentChatId
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-700 hover:bg-white'
                 "
-                :disabled="!agentStore.canSelectThread(thread.id)"
+                :disabled="!agentStore.canSelectChat(chat.id)"
                 :aria-current="
-                  thread.id === agentStore.currentThreadId ? 'true' : undefined
+                  chat.id === agentStore.currentChatId ? 'true' : undefined
                 "
-                @click="selectThread(thread.id)"
+                @click="selectChat(chat.id)"
               >
                 <div class="truncate font-medium">
-                  {{ getThreadLabel(thread) }}
+                  {{ getChatLabel(chat) }}
                 </div>
               </button>
             </div>
@@ -532,61 +530,61 @@ onBeforeUnmount(() => {
           <div class="border-t border-gray-200 px-3 py-3">
             <div class="flex flex-col gap-y-2">
               <NInput
-                v-if="isRenamingCurrentThread"
+                v-if="isRenamingCurrentChat"
                 ref="renameInputRef"
                 v-model:value="renamingTitle"
                 size="small"
-                :placeholder="$t('agent.rename-thread-placeholder')"
-                @blur="commitRenameCurrentThread"
-                @keydown="onRenameCurrentThreadKeydown"
+                :placeholder="$t('agent.rename-chat-placeholder')"
+                @blur="commitRenameCurrentChat"
+                @keydown="onRenameCurrentChatKeydown"
               />
               <div class="flex flex-wrap gap-x-2 gap-y-2">
                 <button
                   class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="beginRenameCurrentThread"
+                  @click="beginRenameCurrentChat"
                 >
-                  {{ $t("agent.rename-thread") }}
+                  {{ $t("agent.rename-chat") }}
                 </button>
                 <button
-                  v-if="agentStore.currentThread?.archived"
+                  v-if="agentStore.currentChat?.archived"
                   class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="toggleArchiveCurrentThread"
+                  @click="toggleArchiveCurrentChat"
                 >
-                  {{ $t("agent.unarchive-thread") }}
+                  {{ $t("agent.unarchive-chat") }}
                 </button>
                 <NPopconfirm
                   v-else
-                  @positive-click="toggleArchiveCurrentThread"
+                  @positive-click="toggleArchiveCurrentChat"
                 >
                   <template #trigger>
                     <button
                       class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
                     >
-                      {{ $t("agent.archive-thread") }}
+                      {{ $t("agent.archive-chat") }}
                     </button>
                   </template>
-                  {{ $t("agent.archive-thread-confirmation") }}
+                  {{ $t("agent.archive-chat-confirmation") }}
                 </NPopconfirm>
                 <NPopconfirm
-                  @positive-click="deleteCurrentThread"
+                  @positive-click="deleteCurrentChat"
                 >
                   <template #trigger>
                     <button
                       class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                     >
-                      {{ $t("agent.delete-thread") }}
+                      {{ $t("agent.delete-chat") }}
                     </button>
                   </template>
-                  {{ $t("agent.delete-thread-confirmation") }}
+                  {{ $t("agent.delete-chat-confirmation") }}
                 </NPopconfirm>
                 <button
                   class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="toggleArchivedThreads"
+                  @click="toggleArchivedChats"
                 >
                   {{
-                    showArchivedThreads
-                      ? $t("agent.hide-archived-threads")
-                      : $t("agent.show-archived-threads")
+                    showArchivedChats
+                      ? $t("agent.hide-archived-chats")
+                      : $t("agent.show-archived-chats")
                   }}
                 </button>
               </div>

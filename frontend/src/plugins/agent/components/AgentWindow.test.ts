@@ -44,27 +44,27 @@ const i18n = createI18n({
         minimize: "Minimize",
         close: "Close",
         resize: "Resize",
-        "thread-list-label": "Chats",
-        "thread-switch-locked":
+        "chat-list-label": "Chats",
+        "chat-switch-locked":
           "Finish the running chat before switching to another one.",
-        "new-thread": "New chat",
-        "rename-thread": "Rename",
-        "rename-thread-placeholder": "Enter a chat name",
-        "archive-thread": "Archive",
-        "unarchive-thread": "Unarchive",
-        "delete-thread": "Delete",
-        "show-archived-threads": "Show archived chats",
-        "hide-archived-threads": "Hide archived chats",
-        "archive-thread-confirmation": "Archive this chat?",
-        "delete-thread-confirmation": "Delete this chat?",
-        "thread-default-title": "New chat",
-        "thread-archived-label": "Archived",
-        "thread-status-idle": "Idle",
-        "thread-status-running": "Running",
-        "thread-status-awaiting-user": "Awaiting input",
-        "thread-status-error": "Error",
-        "thread-status-interrupted": "Interrupted",
-        "thread-total-tokens": "Tokens used: {count}",
+        "new-chat": "New chat",
+        "rename-chat": "Rename",
+        "rename-chat-placeholder": "Enter a chat name",
+        "archive-chat": "Archive",
+        "unarchive-chat": "Unarchive",
+        "delete-chat": "Delete",
+        "show-archived-chats": "Show archived chats",
+        "hide-archived-chats": "Hide archived chats",
+        "archive-chat-confirmation": "Archive this chat?",
+        "delete-chat-confirmation": "Delete this chat?",
+        "chat-default-title": "New chat",
+        "chat-archived-label": "Archived",
+        "chat-status-idle": "Idle",
+        "chat-status-running": "Running",
+        "chat-status-awaiting-user": "Awaiting input",
+        "chat-status-error": "Error",
+        "chat-status-interrupted": "Interrupted",
+        "chat-total-tokens": "Tokens used: {count}",
       },
     },
   },
@@ -99,15 +99,15 @@ describe("AgentWindow", () => {
     document.title = "Demo Page";
   });
 
-  test("renders threads in a left sidebar instead of a select picker", async () => {
+  test("renders chats in a left sidebar instead of a select picker", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const firstThreadId = store.currentThreadId!;
+    const firstChatId = store.currentChatId!;
     store.addMessage({
-      threadId: firstThreadId,
+      chatId: firstChatId,
       role: "user",
       content: "Summarize the production incident timeline",
     });
-    const secondThread = store.createThread({
+    const secondChat = store.createChat({
       title: "Renamed thread",
       select: false,
     });
@@ -115,54 +115,54 @@ describe("AgentWindow", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find("select").exists()).toBe(false);
-    const threadRows = wrapper.findAll("[data-agent-thread-list] button");
-    expect(threadRows).toHaveLength(2);
-    expect(threadRows[0].text()).toContain("Renamed thread");
-    expect(threadRows[1].text()).toContain(
+    const chatRows = wrapper.findAll("[data-agent-chat-list] button");
+    expect(chatRows).toHaveLength(2);
+    expect(chatRows[0].text()).toContain("Renamed thread");
+    expect(chatRows[1].text()).toContain(
       "Summarize the production incident timeline"
     );
-    await threadRows[0].trigger("click");
-    expect(store.currentThreadId).toBe(secondThread.id);
+    await chatRows[0].trigger("click");
+    expect(store.currentChatId).toBe(secondChat.id);
   });
 
-  test("disables switching threads while a thread is running", async () => {
+  test("disables switching chats while a chat is running", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({
+    const firstChatId = store.currentChatId!;
+    const secondChat = store.createChat({
       title: "Second thread",
       select: false,
     });
 
-    store.startRun(firstThreadId, {
+    store.startChatRun(firstChatId, {
       path: "/projects/demo",
       title: "Demo Page",
     });
     await wrapper.vm.$nextTick();
 
-    const threadRows = wrapper.findAll("[data-agent-thread-list] button");
-    const currentRow = threadRows.find(
+    const chatRows = wrapper.findAll("[data-agent-chat-list] button");
+    const currentRow = chatRows.find(
       (row) => row.attributes("aria-current") === "true"
     );
-    const otherRow = threadRows.find((row) =>
+    const otherRow = chatRows.find((row) =>
       row.text().includes("Second thread")
     );
-    const newThreadButton = wrapper
+    const newChatButton = wrapper
       .findAll("button")
       .find((button) => button.text() === "New chat");
 
-    expect(wrapper.find("[data-agent-thread-lock-message]").text()).toContain(
+    expect(wrapper.find("[data-agent-chat-lock-message]").text()).toContain(
       "Finish the running chat before switching to another one."
     );
     expect(currentRow?.attributes("disabled")).toBeUndefined();
     expect(otherRow?.attributes("disabled")).toBe("");
-    expect(newThreadButton?.attributes("disabled")).toBe("");
+    expect(newChatButton?.attributes("disabled")).toBe("");
 
     await otherRow?.trigger("click");
-    expect(store.currentThreadId).toBe(firstThreadId);
-    expect(store.canSelectThread(secondThread.id)).toBe(false);
+    expect(store.currentChatId).toBe(firstChatId);
+    expect(store.canSelectChat(secondChat.id)).toBe(false);
   });
 
-  test("renames the current thread with inline editing", async () => {
+  test("renames the current chat with inline editing", async () => {
     const { store, wrapper } = mountAgentWindow();
     const renameButton = wrapper
       .findAll("button")
@@ -177,13 +177,13 @@ describe("AgentWindow", () => {
     await input.trigger("keydown", { key: "Enter" });
     await nextTick();
 
-    expect(store.currentThread?.title).toBe("Renamed thread in app");
+    expect(store.currentChat?.title).toBe("Renamed thread in app");
     expect(wrapper.find("input").exists()).toBe(false);
   });
 
   test("cancels inline rename on escape", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const originalTitle = store.currentThread?.title;
+    const originalTitle = store.currentChat?.title;
     const renameButton = wrapper
       .findAll("button")
       .find((button) => button.text() === "Rename");
@@ -196,15 +196,15 @@ describe("AgentWindow", () => {
     await input.trigger("keydown", { key: "Escape" });
     await nextTick();
 
-    expect(store.currentThread?.title).toBe(originalTitle);
+    expect(store.currentChat?.title).toBe(originalTitle);
     expect(wrapper.find("input").exists()).toBe(false);
   });
 
-  test("archives and deletes threads through popconfirm", async () => {
+  test("archives and deletes chats through popconfirm", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const originalThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({ title: "Disposable thread" });
-    store.setCurrentThread(secondThread.id);
+    const originalChatId = store.currentChatId!;
+    const secondChat = store.createChat({ title: "Disposable thread" });
+    store.setCurrentChat(secondChat.id);
     await nextTick();
 
     const popconfirms = wrapper.findAllComponents(NPopconfirm);
@@ -212,15 +212,15 @@ describe("AgentWindow", () => {
 
     await popconfirms[0].vm.$emit("positive-click");
     await nextTick();
-    expect(store.getThread(secondThread.id)?.archived).toBe(true);
+    expect(store.getChat(secondChat.id)?.archived).toBe(true);
 
-    store.setCurrentThread(originalThreadId);
+    store.setCurrentChat(originalChatId);
     await nextTick();
     const deletePopconfirm = wrapper.findAllComponents(NPopconfirm)[1];
     await deletePopconfirm.vm.$emit("positive-click");
     await nextTick();
 
-    expect(store.getThread(originalThreadId)).toBeNull();
-    expect(store.currentThreadId).toBe(secondThread.id);
+    expect(store.getChat(originalChatId)).toBeNull();
+    expect(store.currentChatId).toBe(secondChat.id);
   });
 });

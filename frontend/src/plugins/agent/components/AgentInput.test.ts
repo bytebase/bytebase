@@ -78,7 +78,7 @@ const i18n = createI18n({
       },
       agent: {
         interrupted: "Interrupted",
-        "retry-last-turn": "Retry last turn",
+        "retry-last-chat-turn": "Retry last turn",
         "interrupted-retry-hint":
           "Retry reruns the interrupted turn with the current page state.",
         "input-placeholder": "Ask anything...",
@@ -128,12 +128,12 @@ describe("AgentInput", () => {
     document.title = "Demo Page";
   });
 
-  test("submits pending input as a tool result and resumes the same thread", async () => {
+  test("submits pending input as a tool result and resumes the same chat", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     store.addMessage({
-      threadId,
+      chatId,
       role: "assistant",
       toolCalls: [
         {
@@ -146,7 +146,7 @@ describe("AgentInput", () => {
         },
       ],
     });
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-ask",
       prompt: "Which project should I use?",
       kind: "input",
@@ -179,7 +179,7 @@ describe("AgentInput", () => {
     await flushPromises();
 
     const toolMessages = store
-      .getMessages(threadId)
+      .getMessages(chatId)
       .filter((message) => message.role === "tool");
     expect(toolMessages).toHaveLength(1);
     expect(toolMessages[0].toolCallId).toBe("tool-ask");
@@ -187,8 +187,8 @@ describe("AgentInput", () => {
       kind: "input",
       answer: "demo-project",
     });
-    expect(store.getPendingAsk(threadId)).toBeNull();
-    expect(store.currentThreadId).toBe(threadId);
+    expect(store.getPendingAsk(chatId)).toBeNull();
+    expect(store.currentChatId).toBe(chatId);
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
 
     const [messages] = mockRunAgentLoop.mock.calls[0];
@@ -205,13 +205,13 @@ describe("AgentInput", () => {
 
   test("resumes pending asks with the current page snapshot", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.updateThreadPage(threadId, {
+    store.updateChatPage(chatId, {
       path: "/projects/original",
       title: "Original Page",
     });
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-ask",
       prompt: "Which project should I use?",
       kind: "input",
@@ -239,15 +239,15 @@ describe("AgentInput", () => {
       path: "/projects/other",
       title: "Other Page",
     });
-    expect(store.getThread(threadId)?.page).toEqual({
+    expect(store.getChat(chatId)?.page).toEqual({
       path: "/projects/other",
       title: "Other Page",
     });
   });
 
-  test("increments the current thread token total from loop usage", async () => {
+  test("increments the current chat token total from loop usage", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     mockRunAgentLoop.mockResolvedValue({
       kind: "completed",
@@ -266,15 +266,15 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.getThread(threadId)?.totalTokensUsed).toBe(123);
+    expect(store.getChat(chatId)?.totalTokensUsed).toBe(123);
   });
 
-  test("refreshes the saved thread page snapshot after navigate before a follow-up turn", async () => {
+  test("refreshes the saved chat page snapshot after navigate before a follow-up turn", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
     let runCount = 0;
 
-    store.updateThreadPage(threadId, {
+    store.updateChatPage(chatId, {
       path: "/projects/original",
       title: "Original Page",
     });
@@ -361,11 +361,11 @@ describe("AgentInput", () => {
     await wrapper.find("button").trigger("click");
     await flushPromises();
 
-    expect(store.getThread(threadId)?.page).toEqual({
+    expect(store.getChat(chatId)?.page).toEqual({
       path: "/projects/navigated",
       title: "Navigated Page",
     });
-    expect(store.getPendingAsk(threadId)).toEqual({
+    expect(store.getPendingAsk(chatId)).toEqual({
       toolCallId: "tool-ask",
       prompt: "Continue?",
       kind: "input",
@@ -390,14 +390,14 @@ describe("AgentInput", () => {
 
   test("shows retry CTA and reruns interrupted turns from the last stable input", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.updateThreadPage(threadId, {
+    store.updateChatPage(chatId, {
       path: "/projects/original",
       title: "Original Page",
     });
     store.addMessage({
-      threadId,
+      chatId,
       role: "user",
       content: "inspect this page",
       metadata: {
@@ -405,7 +405,7 @@ describe("AgentInput", () => {
       },
     });
     store.addMessage({
-      threadId,
+      chatId,
       role: "assistant",
       content: "Partial answer",
       metadata: {
@@ -414,7 +414,7 @@ describe("AgentInput", () => {
       },
     });
     store.addMessage({
-      threadId,
+      chatId,
       role: "tool",
       toolCallId: "tool-1",
       content: JSON.stringify({ partial: true }),
@@ -423,8 +423,8 @@ describe("AgentInput", () => {
         runId: "run-1",
       },
     });
-    store.interruptRun(threadId);
-    store.getThread(threadId)!.runId = "run-1";
+    store.interruptChatRun(chatId);
+    store.getChat(chatId)!.runId = "run-1";
 
     mockRoute.fullPath = "/projects/current";
     document.title = "Current Page";
@@ -473,16 +473,16 @@ describe("AgentInput", () => {
     );
     expect(
       store
-        .getMessages(threadId)
+        .getMessages(chatId)
         .some((message) => message.content === "Partial answer")
     ).toBe(false);
     expect(
       store
-        .getMessages(threadId)
+        .getMessages(chatId)
         .some((message) => message.toolCallId === "tool-1")
     ).toBe(false);
-    expect(store.getThread(threadId)?.interrupted).toBe(false);
-    expect(store.getThread(threadId)?.page).toEqual({
+    expect(store.getChat(chatId)?.interrupted).toBe(false);
+    expect(store.getChat(chatId)?.page).toEqual({
       path: "/projects/current",
       title: "Current Page",
     });
@@ -490,9 +490,9 @@ describe("AgentInput", () => {
 
   test("preserves the latest page snapshot when an interrupted run ends on a new page", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.updateThreadPage(threadId, {
+    store.updateChatPage(chatId, {
       path: "/projects/original",
       title: "Original Page",
     });
@@ -513,8 +513,8 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.getThread(threadId)?.interrupted).toBe(true);
-    expect(store.getThread(threadId)?.page).toEqual({
+    expect(store.getChat(chatId)?.interrupted).toBe(true);
+    expect(store.getChat(chatId)?.page).toEqual({
       path: "/projects/navigated",
       title: "Navigated Page",
     });
@@ -522,15 +522,15 @@ describe("AgentInput", () => {
 
   test("dismissing interrupted state removes partial run output", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     store.addMessage({
-      threadId,
+      chatId,
       role: "user",
       content: "inspect this page",
     });
     store.addMessage({
-      threadId,
+      chatId,
       role: "assistant",
       content: "Partial answer",
       metadata: {
@@ -538,7 +538,7 @@ describe("AgentInput", () => {
       },
     });
     store.addMessage({
-      threadId,
+      chatId,
       role: "tool",
       toolCallId: "tool-1",
       content: JSON.stringify({ partial: true }),
@@ -546,8 +546,8 @@ describe("AgentInput", () => {
         runId: "run-1",
       },
     });
-    store.interruptRun(threadId);
-    store.getThread(threadId)!.runId = "run-1";
+    store.interruptChatRun(chatId);
+    store.getChat(chatId)!.runId = "run-1";
 
     const wrapper = mount(AgentInput, {
       global: {
@@ -558,10 +558,10 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Dismiss")!.trigger("click");
     await flushPromises();
 
-    expect(store.getThread(threadId)?.interrupted).toBe(false);
-    expect(store.getThread(threadId)?.runId).toBeNull();
+    expect(store.getChat(chatId)?.interrupted).toBe(false);
+    expect(store.getChat(chatId)?.runId).toBeNull();
     expect(
-      store.getMessages(threadId).map((message) => ({
+      store.getMessages(chatId).map((message) => ({
         role: message.role,
         content: message.content,
         toolCallId: message.toolCallId,
@@ -577,7 +577,7 @@ describe("AgentInput", () => {
 
   test("keeps the latest run cancellable when an earlier aborted run settles late", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
     const firstRun = createDeferred<AgentLoopOutcome>();
     const secondRun = createDeferred<AgentLoopOutcome>();
     let firstSignal: AbortSignal | undefined;
@@ -619,31 +619,31 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.getAbortController(threadId)?.signal).toBe(firstSignal);
+    expect(store.getAbortController(chatId)?.signal).toBe(firstSignal);
     expect(store.loading).toBe(true);
 
     await findButtonByText(wrapper, "Stop")!.trigger("click");
     await flushPromises();
 
     expect(firstSignal?.aborted).toBe(true);
-    expect(store.getAbortController(threadId)).toBeNull();
+    expect(store.getAbortController(chatId)).toBeNull();
     expect(store.loading).toBe(false);
 
     await wrapper.find("textarea").setValue("second request");
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.getAbortController(threadId)?.signal).toBe(secondSignal);
+    expect(store.getAbortController(chatId)?.signal).toBe(secondSignal);
     expect(store.loading).toBe(true);
 
     firstRun.resolve({ kind: "aborted" });
     await flushPromises();
 
-    expect(store.getAbortController(threadId)?.signal).toBe(secondSignal);
+    expect(store.getAbortController(chatId)?.signal).toBe(secondSignal);
     expect(store.loading).toBe(true);
     expect(
       store
-        .getMessages(threadId)
+        .getMessages(chatId)
         .some((message) => message.content === "_Interrupted_")
     ).toBe(false);
 
@@ -654,15 +654,15 @@ describe("AgentInput", () => {
     });
     await flushPromises();
 
-    expect(store.getAbortController(threadId)).toBeNull();
+    expect(store.getAbortController(chatId)).toBeNull();
     expect(store.loading).toBe(false);
   });
 
   test("clears stale composer input when pending asks disappear", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-ask",
       prompt: "Which project should I use?",
       kind: "input",
@@ -678,25 +678,25 @@ describe("AgentInput", () => {
     expect(getTextareaValue(wrapper)).toBe("demo-project");
     await wrapper.find("textarea").setValue("stale input");
 
-    store.clearPendingAsk(threadId);
+    store.clearPendingAsk(chatId);
     await flushPromises();
 
     expect(getTextareaValue(wrapper)).toBe("");
   });
 
-  test("clears stale composer input when switching threads", async () => {
+  test("clears stale composer input when switching chats", async () => {
     const store = useAgentStore();
-    const firstThreadId = store.currentThreadId!;
+    const firstChatId = store.currentChatId!;
 
-    store.awaitUser(firstThreadId, {
+    store.awaitUser(firstChatId, {
       toolCallId: "tool-ask",
       prompt: "Which project should I use?",
       kind: "input",
       defaultValue: "demo-project",
     });
 
-    const secondThread = store.createThread({ title: "Second" });
-    store.setCurrentThread(firstThreadId);
+    const secondChat = store.createChat({ title: "Second" });
+    store.setCurrentChat(firstChatId);
 
     const wrapper = mount(AgentInput, {
       global: {
@@ -707,11 +707,11 @@ describe("AgentInput", () => {
     expect(getTextareaValue(wrapper)).toBe("demo-project");
     await wrapper.find("textarea").setValue("stale input");
 
-    store.setCurrentThread(secondThread.id);
+    store.setCurrentChat(secondChat.id);
     await flushPromises();
     expect(getTextareaValue(wrapper)).toBe("");
 
-    store.setCurrentThread(firstThreadId);
+    store.setCurrentChat(firstChatId);
     await flushPromises();
     expect(getTextareaValue(wrapper)).toBe("demo-project");
   });
@@ -835,10 +835,10 @@ describe("AgentInput", () => {
 
   test("uses choose buttons to answer pending choose prompts", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     store.addMessage({
-      threadId,
+      chatId,
       role: "assistant",
       toolCalls: [
         {
@@ -862,7 +862,7 @@ describe("AgentInput", () => {
         },
       ],
     });
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-choose",
       prompt: "Which environment should I use?",
       kind: "choose",
@@ -897,7 +897,7 @@ describe("AgentInput", () => {
     await flushPromises();
 
     const toolMessages = store
-      .getMessages(threadId)
+      .getMessages(chatId)
       .filter((message) => message.role === "tool");
     expect(toolMessages).toHaveLength(1);
     expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
@@ -905,16 +905,16 @@ describe("AgentInput", () => {
       answer: "Production",
       value: "prod",
     });
-    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(store.getPendingAsk(chatId)).toBeNull();
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
   });
 
   test("uses confirm buttons to answer pending confirmation prompts", async () => {
     const store = useAgentStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     store.addMessage({
-      threadId,
+      chatId,
       role: "assistant",
       toolCalls: [
         {
@@ -929,7 +929,7 @@ describe("AgentInput", () => {
         },
       ],
     });
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-confirm",
       prompt: "Delete the database?",
       kind: "confirm",
@@ -955,7 +955,7 @@ describe("AgentInput", () => {
     await flushPromises();
 
     const toolMessages = store
-      .getMessages(threadId)
+      .getMessages(chatId)
       .filter((message) => message.role === "tool");
     expect(toolMessages).toHaveLength(1);
     expect(JSON.parse(toolMessages[0].content ?? "{}")).toEqual({
@@ -963,14 +963,14 @@ describe("AgentInput", () => {
       answer: "Delete",
       confirmed: true,
     });
-    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(store.getPendingAsk(chatId)).toBeNull();
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
   });
 
-  test("keeps the running thread selected while another thread is running", async () => {
+  test("keeps the running chat selected while another chat is running", async () => {
     const store = useAgentStore();
-    const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({
+    const firstChatId = store.currentChatId!;
+    const secondChat = store.createChat({
       title: "Second thread",
       select: false,
     });
@@ -988,16 +988,16 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.isThreadRunning(firstThreadId)).toBe(true);
+    expect(store.isChatRunning(firstChatId)).toBe(true);
 
-    store.setCurrentThread(secondThread.id);
+    store.setCurrentChat(secondChat.id);
     await flushPromises();
 
     const textarea = wrapper.find("textarea");
-    expect(store.currentThreadId).toBe(firstThreadId);
+    expect(store.currentChatId).toBe(firstChatId);
     expect((textarea.element as HTMLTextAreaElement).disabled).toBe(true);
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
-    expect(store.getMessages(secondThread.id)).toEqual([]);
+    expect(store.getMessages(secondChat.id)).toEqual([]);
 
     firstRun.resolve({ kind: "completed", text: "First done", success: true });
     await flushPromises();

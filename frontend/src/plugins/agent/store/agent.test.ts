@@ -44,13 +44,13 @@ afterEach(() => {
 });
 
 describe("useAgentStore", () => {
-  test("creates a default thread when no persisted state exists", () => {
+  test("creates a default chat when no persisted state exists", () => {
     const store = createStore();
 
-    expect(store.threads).toHaveLength(1);
-    expect(store.currentThreadId).toBe(store.threads[0].id);
+    expect(store.chats).toHaveLength(1);
+    expect(store.currentChatId).toBe(store.chats[0].id);
     expect(store.messages).toEqual([]);
-    expect(store.threads[0].totalTokensUsed).toBe(0);
+    expect(store.chats[0].totalTokensUsed).toBe(0);
   });
 
   test("loads persisted window state", () => {
@@ -71,12 +71,12 @@ describe("useAgentStore", () => {
     expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
   });
 
-  test("normalizes stale running threads on load", () => {
+  test("normalizes stale running chats on load", () => {
     localStorage.setItem(
       AGENT_STATE_KEY,
       JSON.stringify({
-        currentThreadId: "thread-1",
-        threads: [
+        currentChatId: "thread-1",
+        chats: [
           {
             id: "thread-1",
             title: "Existing thread",
@@ -86,38 +86,38 @@ describe("useAgentStore", () => {
             runId: "run-1",
           },
         ],
-        messagesByThreadId: {
+        messagesByChatId: {
           "thread-1": [
             {
               id: "msg-1",
-              threadId: "thread-1",
+              chatId: "thread-1",
               createdTs: 30,
               role: "user",
               content: "hello",
             },
           ],
         },
-        pendingAskByThreadId: {},
+        pendingAskByChatId: {},
       })
     );
 
     const store = createStore();
-    const thread = store.currentThread;
+    const chat = store.currentChat;
 
-    expect(thread).not.toBeNull();
-    expect(thread?.status).toBe("idle");
-    expect(thread?.interrupted).toBe(true);
-    expect(thread?.runId).toBe("run-1");
+    expect(chat).not.toBeNull();
+    expect(chat?.status).toBe("idle");
+    expect(chat?.interrupted).toBe(true);
+    expect(chat?.runId).toBe("run-1");
     expect(store.loading).toBe(false);
   });
 
   test("clears interruption markers when a new run starts", () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.interruptRun(threadId);
-    store.startRun(
-      threadId,
+    store.interruptChatRun(chatId);
+    store.startChatRun(
+      chatId,
       {
         path: "/projects/demo",
         title: "Demo",
@@ -127,162 +127,162 @@ describe("useAgentStore", () => {
       }
     );
 
-    expect(store.getThread(threadId)?.status).toBe("running");
-    expect(store.getThread(threadId)?.interrupted).toBe(false);
-    expect(store.getThread(threadId)?.runId).toBe("run-2");
+    expect(store.getChat(chatId)?.status).toBe("running");
+    expect(store.getChat(chatId)?.interrupted).toBe(false);
+    expect(store.getChat(chatId)?.runId).toBe("run-2");
   });
 
-  test("persists the selected thread across store reloads", async () => {
+  test("persists the selected chat across store reloads", async () => {
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
+    const firstChatId = store.currentChatId!;
 
     store.addMessage({
-      threadId: firstThreadId,
+      chatId: firstChatId,
       role: "user",
       content: "Initial prompt",
     });
-    const secondThread = store.createThread({
+    const secondChat = store.createChat({
       title: "Second",
       page: {
         path: "/projects/original",
         title: "Original Page",
       },
     });
-    store.setCurrentThread(secondThread.id);
+    store.setCurrentChat(secondChat.id);
 
     await nextTick();
 
     const rehydratedStore = createStore();
-    expect(rehydratedStore.currentThreadId).toBe(secondThread.id);
-    expect(rehydratedStore.getMessages(firstThreadId)).toHaveLength(1);
-    expect(rehydratedStore.getThread(secondThread.id)?.page).toEqual({
+    expect(rehydratedStore.currentChatId).toBe(secondChat.id);
+    expect(rehydratedStore.getMessages(firstChatId)).toHaveLength(1);
+    expect(rehydratedStore.getChat(secondChat.id)?.page).toEqual({
       path: "/projects/original",
       title: "Original Page",
     });
   });
 
-  test("increments and persists thread token totals", async () => {
+  test("increments and persists chat token totals", async () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.incrementThreadTotalTokens(threadId, 120);
-    store.incrementThreadTotalTokens(threadId, 30);
+    store.incrementChatTotalTokens(chatId, 120);
+    store.incrementChatTotalTokens(chatId, 30);
 
-    expect(store.getThread(threadId)?.totalTokensUsed).toBe(150);
+    expect(store.getChat(chatId)?.totalTokensUsed).toBe(150);
 
     await nextTick();
 
     const rehydratedStore = createStore();
-    expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(150);
+    expect(rehydratedStore.getChat(chatId)?.totalTokensUsed).toBe(150);
   });
 
-  test("updates the thread page to the latest current page when starting a run", () => {
+  test("updates the chat page to the latest current page when starting a run", () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.updateThreadPage(threadId, {
+    store.updateChatPage(chatId, {
       path: "/projects/original",
       title: "Original Page",
     });
 
-    store.ensureCurrentThread({
+    store.ensureCurrentChat({
       path: "/projects/other",
       title: "Other Page",
     });
-    store.startRun(threadId, {
+    store.startChatRun(chatId, {
       path: "/projects/other",
       title: "Other Page",
     });
 
-    expect(store.getThread(threadId)?.page).toEqual({
+    expect(store.getChat(chatId)?.page).toEqual({
       path: "/projects/other",
       title: "Other Page",
     });
   });
 
-  test("uses the first user message as the default thread title", () => {
+  test("uses the first user message as the default chat title", () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
     store.addMessage({
-      threadId,
+      chatId,
       role: "user",
       content: "Investigate unexpected production migration failures now",
     });
 
-    expect(store.getThread(threadId)?.title).toBe(
+    expect(store.getChat(chatId)?.title).toBe(
       "Investigate unexpected production migration f..."
     );
   });
 
-  test("orders equally updated threads by recency of creation", () => {
+  test("orders equally updated chats by recency of creation", () => {
     const dateNow = vi.spyOn(Date, "now");
     dateNow.mockReturnValue(1000);
 
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
+    const firstChatId = store.currentChatId!;
 
     dateNow.mockReturnValue(2000);
     store.addMessage({
-      threadId: firstThreadId,
+      chatId: firstChatId,
       role: "user",
       content: "Summarize the production incident timeline",
     });
 
     dateNow.mockReturnValue(2000);
-    const secondThread = store.createThread({
+    const secondChat = store.createChat({
       title: "Renamed thread",
       select: false,
     });
 
-    expect(store.orderedThreads.map((thread) => thread.id)).toEqual([
-      secondThread.id,
-      firstThreadId,
+    expect(store.orderedChats.map((chat) => chat.id)).toEqual([
+      secondChat.id,
+      firstChatId,
     ]);
 
     dateNow.mockRestore();
   });
 
-  test("does not switch threads while another thread is running", () => {
+  test("does not switch chats while another chat is running", () => {
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({
+    const firstChatId = store.currentChatId!;
+    const secondChat = store.createChat({
       title: "Second",
       select: false,
     });
 
-    store.startRun(firstThreadId, {
+    store.startChatRun(firstChatId, {
       path: "/projects/demo",
       title: "Demo",
     });
-    store.setCurrentThread(secondThread.id);
+    store.setCurrentChat(secondChat.id);
 
-    expect(store.currentThreadId).toBe(firstThreadId);
-    expect(store.canSelectThread(secondThread.id)).toBe(false);
-    expect(store.canSelectThread(firstThreadId)).toBe(true);
+    expect(store.currentChatId).toBe(firstChatId);
+    expect(store.canSelectChat(secondChat.id)).toBe(false);
+    expect(store.canSelectChat(firstChatId)).toBe(true);
   });
 
-  test("creates a new thread without switching while a thread is running", () => {
+  test("creates a new chat without switching while a chat is running", () => {
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
+    const firstChatId = store.currentChatId!;
 
-    store.startRun(firstThreadId, {
+    store.startChatRun(firstChatId, {
       path: "/projects/demo",
       title: "Demo",
     });
-    const secondThread = store.createThread({
+    const secondChat = store.createChat({
       title: "Second",
     });
 
-    expect(store.currentThreadId).toBe(firstThreadId);
-    expect(store.getThread(secondThread.id)?.title).toBe("Second");
+    expect(store.currentChatId).toBe(firstChatId);
+    expect(store.getChat(secondChat.id)?.title).toBe("Second");
   });
 
-  test("persists pending choose asks for awaiting-user threads", async () => {
+  test("persists pending choose asks for awaiting-user chats", async () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-1",
       prompt: "Which database should I use?",
       kind: "choose",
@@ -303,8 +303,8 @@ describe("useAgentStore", () => {
     await nextTick();
 
     const rehydratedStore = createStore();
-    expect(rehydratedStore.getThread(threadId)?.status).toBe("awaiting_user");
-    expect(rehydratedStore.getPendingAsk(threadId)).toEqual({
+    expect(rehydratedStore.getChat(chatId)?.status).toBe("awaiting_user");
+    expect(rehydratedStore.getPendingAsk(chatId)).toEqual({
       toolCallId: "tool-1",
       prompt: "Which database should I use?",
       kind: "choose",
@@ -329,8 +329,8 @@ describe("useAgentStore", () => {
     localStorage.setItem(
       AGENT_STATE_KEY,
       JSON.stringify({
-        currentThreadId: "thread-1",
-        threads: [
+        currentChatId: "thread-1",
+        chats: [
           {
             id: "thread-1",
             title: "Existing thread",
@@ -339,10 +339,10 @@ describe("useAgentStore", () => {
             status: "awaiting_user",
           },
         ],
-        messagesByThreadId: {
+        messagesByChatId: {
           "thread-1": [],
         },
-        pendingAskByThreadId: {
+        pendingAskByChatId: {
           "thread-1": {
             toolCallId: "tool-1",
             prompt: "Choose a database",
@@ -368,9 +368,9 @@ describe("useAgentStore", () => {
 
   test("answerPendingAsk appends a synthetic tool result and clears pending state", () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-1",
       prompt: "Proceed?",
       kind: "confirm",
@@ -378,13 +378,13 @@ describe("useAgentStore", () => {
       cancelLabel: "Cancel",
     });
 
-    store.answerPendingAsk(threadId, {
+    store.answerPendingAsk(chatId, {
       kind: "confirm",
       answer: "Proceed",
       confirmed: true,
     });
 
-    const messages = store.getMessages(threadId);
+    const messages = store.getMessages(chatId);
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe("tool");
     expect(messages[0].toolCallId).toBe("tool-1");
@@ -393,14 +393,14 @@ describe("useAgentStore", () => {
       answer: "Proceed",
       confirmed: true,
     });
-    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(store.getPendingAsk(chatId)).toBeNull();
   });
 
   test("answerPendingAsk stores choose labels and values", () => {
     const store = createStore();
-    const threadId = store.currentThreadId!;
+    const chatId = store.currentChatId!;
 
-    store.awaitUser(threadId, {
+    store.awaitUser(chatId, {
       toolCallId: "tool-choose",
       prompt: "Choose an environment",
       kind: "choose",
@@ -410,13 +410,13 @@ describe("useAgentStore", () => {
       ],
     });
 
-    store.answerPendingAsk(threadId, {
+    store.answerPendingAsk(chatId, {
       kind: "choose",
       answer: "Production",
       value: "prod",
     });
 
-    const messages = store.getMessages(threadId);
+    const messages = store.getMessages(chatId);
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe("tool");
     expect(messages[0].toolCallId).toBe("tool-choose");
@@ -425,15 +425,15 @@ describe("useAgentStore", () => {
       answer: "Production",
       value: "prod",
     });
-    expect(store.getPendingAsk(threadId)).toBeNull();
+    expect(store.getPendingAsk(chatId)).toBeNull();
   });
 
-  test("migrates persisted threads without archived state", () => {
+  test("migrates persisted chats without archived state", () => {
     localStorage.setItem(
       AGENT_STATE_KEY,
       JSON.stringify({
-        currentThreadId: "thread-1",
-        threads: [
+        currentChatId: "thread-1",
+        chats: [
           {
             id: "thread-1",
             title: "Existing thread",
@@ -442,54 +442,54 @@ describe("useAgentStore", () => {
             status: "idle",
           },
         ],
-        messagesByThreadId: {
+        messagesByChatId: {
           "thread-1": [],
         },
-        pendingAskByThreadId: {},
+        pendingAskByChatId: {},
       })
     );
 
     const store = createStore();
 
-    expect(store.getThread("thread-1")?.archived).toBe(false);
+    expect(store.getChat("thread-1")?.archived).toBe(false);
   });
 
-  test("supports renaming, archiving, unarchiving, and deleting threads", () => {
+  test("supports renaming, archiving, unarchiving, and deleting chats", () => {
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({ title: "Second thread" });
+    const firstChatId = store.currentChatId!;
+    const secondChat = store.createChat({ title: "Second thread" });
 
-    store.renameThread(firstThreadId, "  Renamed thread  ");
-    store.archiveThread(firstThreadId);
+    store.renameChat(firstChatId, "  Renamed thread  ");
+    store.archiveChat(firstChatId);
 
-    expect(store.getThread(firstThreadId)?.title).toBe("Renamed thread");
-    expect(store.getThread(firstThreadId)?.archived).toBe(true);
+    expect(store.getChat(firstChatId)?.title).toBe("Renamed thread");
+    expect(store.getChat(firstChatId)?.archived).toBe(true);
 
-    store.unarchiveThread(firstThreadId);
-    expect(store.getThread(firstThreadId)?.archived).toBe(false);
+    store.unarchiveChat(firstChatId);
+    expect(store.getChat(firstChatId)?.archived).toBe(false);
 
-    store.deleteThread(secondThread.id);
-    expect(store.getThread(secondThread.id)).toBeNull();
-    expect(store.currentThreadId).toBe(firstThreadId);
+    store.deleteChat(secondChat.id);
+    expect(store.getChat(secondChat.id)).toBeNull();
+    expect(store.currentChatId).toBe(firstChatId);
   });
 
-  test("tracks abort controllers per thread and cancels only the requested thread", () => {
+  test("tracks abort controllers per chat and cancels only the requested chat", () => {
     const store = createStore();
-    const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({ title: "Second thread" });
+    const firstChatId = store.currentChatId!;
+    const secondChat = store.createChat({ title: "Second thread" });
     const firstController = new AbortController();
     const secondController = new AbortController();
 
-    store.startRun(firstThreadId, { path: "/projects/one", title: "One" });
-    store.startRun(secondThread.id, { path: "/projects/two", title: "Two" });
-    store.setAbortController(firstThreadId, firstController);
-    store.setAbortController(secondThread.id, secondController);
+    store.startChatRun(firstChatId, { path: "/projects/one", title: "One" });
+    store.startChatRun(secondChat.id, { path: "/projects/two", title: "Two" });
+    store.setAbortController(firstChatId, firstController);
+    store.setAbortController(secondChat.id, secondController);
 
-    store.cancel(firstThreadId);
+    store.cancel(firstChatId);
 
     expect(firstController.signal.aborted).toBe(true);
     expect(secondController.signal.aborted).toBe(false);
-    expect(store.isThreadRunning(firstThreadId)).toBe(false);
-    expect(store.isThreadRunning(secondThread.id)).toBe(true);
+    expect(store.isChatRunning(firstChatId)).toBe(false);
+    expect(store.isChatRunning(secondChat.id)).toBe(true);
   });
 });

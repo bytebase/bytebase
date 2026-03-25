@@ -18,9 +18,9 @@ const agentStore = useAgentStore();
 const input = ref("");
 const runTokens = new Map<string, number>();
 
-const currentThread = computed(() => agentStore.currentThread);
+const currentChat = computed(() => agentStore.currentChat);
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
-const isInterrupted = computed(() => Boolean(currentThread.value?.interrupted));
+const isInterrupted = computed(() => Boolean(currentChat.value?.interrupted));
 const chooseOptions = computed(() =>
   currentPendingAsk.value?.kind === "choose"
     ? (currentPendingAsk.value.options ?? [])
@@ -51,12 +51,12 @@ const confirmLabel = computed(
 const cancelLabel = computed(
   () => currentPendingAsk.value?.cancelLabel ?? t("agent.cancel")
 );
-const isCurrentThreadRunning = computed(() =>
-  agentStore.isThreadRunning(currentThread.value?.id)
+const isCurrentChatRunning = computed(() =>
+  agentStore.isChatRunning(currentChat.value?.id)
 );
 const isSendDisabled = computed(() => {
   if (
-    isCurrentThreadRunning.value ||
+    isCurrentChatRunning.value ||
     isAwaitingConfirm.value ||
     isAwaitingChoose.value
   ) {
@@ -243,35 +243,32 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
-const buildConversation = (
-  threadId: string,
-  systemPrompt: string
-): Message[] => {
+const buildChatHistory = (chatId: string, systemPrompt: string): Message[] => {
   return [
     { role: "system", content: systemPrompt },
-    ...agentStore.getMessages(threadId),
+    ...agentStore.getMessages(chatId),
   ];
 };
 
 const handleOutcome = (
-  threadId: string,
+  chatId: string,
   page: { path: string; title: string },
   errorPrefix: string,
   outcome: Awaited<ReturnType<typeof runAgentLoop>>
 ) => {
   switch (outcome.kind) {
     case "completed":
-      agentStore.finishRun(threadId);
+      agentStore.finishChatRun(chatId);
       return;
     case "awaiting_user":
-      agentStore.awaitUser(threadId, outcome.ask);
+      agentStore.awaitUser(chatId, outcome.ask);
       return;
     case "aborted":
-      agentStore.interruptRun(threadId, getCurrentPageSnapshot());
+      agentStore.interruptChatRun(chatId, getCurrentPageSnapshot());
       return;
     case "error":
       agentStore.addMessage({
-        threadId,
+        chatId,
         role: "assistant",
         content: `${errorPrefix}${outcome.error.message}`,
         metadata: {
@@ -279,7 +276,7 @@ const handleOutcome = (
           error: outcome.error.message,
         },
       });
-      agentStore.finishRun(threadId, {
+      agentStore.finishChatRun(chatId, {
         status: "error",
         lastError: outcome.error.message,
       });
@@ -287,28 +284,28 @@ const handleOutcome = (
   }
 };
 
-async function runThread(
-  threadId: string,
+async function runChat(
+  chatId: string,
   page: { path: string; title: string },
   runId: string
 ) {
   const controller = new AbortController();
-  const runToken = (runTokens.get(threadId) ?? 0) + 1;
-  runTokens.set(threadId, runToken);
-  agentStore.setAbortController(threadId, controller);
+  const runToken = (runTokens.get(chatId) ?? 0) + 1;
+  runTokens.set(chatId, runToken);
+  agentStore.setAbortController(chatId, controller);
 
   const systemPrompt = buildSystemPrompt(page);
   const tools = getToolDefinitions();
   const executor = createToolExecutor(router, {
-    threadId,
+    chatId,
     onNavigate: () => {
-      agentStore.updateThreadPage(threadId, getCurrentPageSnapshot());
+      agentStore.updateChatPage(chatId, getCurrentPageSnapshot());
     },
   });
 
   try {
     const outcome = await runAgentLoop(
-      buildConversation(threadId, systemPrompt),
+      buildChatHistory(chatId, systemPrompt),
       tools,
       executor,
       {
@@ -317,7 +314,7 @@ async function runThread(
             return;
           }
           agentStore.addMessage({
-            threadId,
+            chatId,
             role: "assistant",
             content: message.content,
             toolCalls: message.toolCalls,
@@ -329,7 +326,7 @@ async function runThread(
         },
         onToolResult: (toolCallId, result) => {
           agentStore.addMessage({
-            threadId,
+            chatId,
             role: "tool",
             toolCallId,
             content: result,
@@ -344,7 +341,7 @@ async function runThread(
             return;
           }
           agentStore.addMessage({
-            threadId,
+            chatId,
             role: "assistant",
             content: text,
             metadata: {
@@ -357,46 +354,43 @@ async function runThread(
       controller.signal
     );
 
-    agentStore.incrementThreadTotalTokens(
-      threadId,
-      outcome.totalTokensUsed ?? 0
-    );
+    agentStore.incrementChatTotalTokens(chatId, outcome.totalTokensUsed ?? 0);
 
-    if (runToken !== runTokens.get(threadId)) {
+    if (runToken !== runTokens.get(chatId)) {
       return;
     }
 
-    handleOutcome(threadId, page, "Error: ", outcome);
+    handleOutcome(chatId, page, "Error: ", outcome);
   } finally {
-    if (agentStore.getAbortController(threadId) === controller) {
-      agentStore.setAbortController(threadId, null);
+    if (agentStore.getAbortController(chatId) === controller) {
+      agentStore.setAbortController(chatId, null);
     }
   }
 }
 
-async function startThreadRun(
-  threadId: string,
+async function startChatRun(
+  chatId: string,
   currentPage: { path: string; title: string }
 ) {
   const runId = uuidv4();
 
-  agentStore.updateThreadPage(threadId, currentPage);
-  agentStore.startRun(threadId, currentPage, {
+  agentStore.updateChatPage(chatId, currentPage);
+  agentStore.startChatRun(chatId, currentPage, {
     runId,
   });
-  await runThread(threadId, currentPage, runId);
+  await runChat(chatId, currentPage, runId);
 }
 
 async function send() {
-  if (agentStore.isThreadRunning(currentThread.value?.id)) {
+  if (agentStore.isChatRunning(currentChat.value?.id)) {
     return;
   }
 
   const currentPage = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(currentPage);
-  const threadId = thread.id;
+  const thread = agentStore.ensureCurrentChat(currentPage);
+  const chatId = thread.id;
 
-  agentStore.clearError(threadId);
+  agentStore.clearError(chatId);
 
   if (currentPendingAsk.value) {
     const answer = input.value.trim();
@@ -407,7 +401,7 @@ async function send() {
 
     if (currentPendingAsk.value.kind === "choose") {
       agentStore.answerPendingAsk(
-        threadId,
+        chatId,
         {
           kind: "choose",
           answer,
@@ -419,7 +413,7 @@ async function send() {
       );
     } else if (currentPendingAsk.value.kind === "input") {
       agentStore.answerPendingAsk(
-        threadId,
+        chatId,
         {
           kind: "input",
           answer,
@@ -431,7 +425,7 @@ async function send() {
     } else {
       return;
     }
-    await startThreadRun(threadId, currentPage);
+    await startChatRun(chatId, currentPage);
     return;
   }
 
@@ -442,40 +436,40 @@ async function send() {
 
   input.value = "";
   agentStore.addMessage({
-    threadId,
+    chatId,
     role: "user",
     content: text,
     metadata: {
       route: currentPage.path,
     },
   });
-  await startThreadRun(threadId, currentPage);
+  await startChatRun(chatId, currentPage);
 }
 
 async function retryLastTurn() {
   if (
-    agentStore.isThreadRunning(currentThread.value?.id) ||
-    !currentThread.value?.interrupted
+    agentStore.isChatRunning(currentChat.value?.id) ||
+    !currentChat.value?.interrupted
   ) {
     return;
   }
 
-  const threadId = currentThread.value.id;
+  const chatId = currentChat.value.id;
   const currentPage = getCurrentPageSnapshot();
-  agentStore.removeMessagesByRunId(threadId, currentThread.value.runId);
-  agentStore.clearError(threadId);
-  await startThreadRun(threadId, currentPage);
+  agentStore.removeMessagesByRunId(chatId, currentChat.value.runId);
+  agentStore.clearError(chatId);
+  await startChatRun(chatId, currentPage);
 }
 
 function dismissInterrupted() {
-  if (!currentThread.value) {
+  if (!currentChat.value) {
     return;
   }
   agentStore.removeMessagesByRunId(
-    currentThread.value.id,
-    currentThread.value.runId
+    currentChat.value.id,
+    currentChat.value.runId
   );
-  agentStore.clearError(currentThread.value.id);
+  agentStore.clearError(currentChat.value.id);
 }
 
 async function submitConfirmation(confirmed: boolean) {
@@ -483,19 +477,19 @@ async function submitConfirmation(confirmed: boolean) {
   if (
     !pendingAsk ||
     pendingAsk.kind !== "confirm" ||
-    agentStore.isThreadRunning(currentThread.value?.id)
+    agentStore.isChatRunning(currentChat.value?.id)
   ) {
     return;
   }
 
   const currentPage = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(currentPage);
-  const threadId = thread.id;
+  const thread = agentStore.ensureCurrentChat(currentPage);
+  const chatId = thread.id;
   const answer = confirmed ? confirmLabel.value : cancelLabel.value;
 
-  agentStore.clearError(threadId);
+  agentStore.clearError(chatId);
   agentStore.answerPendingAsk(
-    threadId,
+    chatId,
     {
       kind: "confirm",
       answer,
@@ -505,7 +499,7 @@ async function submitConfirmation(confirmed: boolean) {
       route: currentPage.path,
     }
   );
-  await startThreadRun(threadId, currentPage);
+  await startChatRun(chatId, currentPage);
 }
 
 async function submitChoice(option: AgentAskUserOption) {
@@ -513,18 +507,18 @@ async function submitChoice(option: AgentAskUserOption) {
   if (
     !pendingAsk ||
     pendingAsk.kind !== "choose" ||
-    agentStore.isThreadRunning(currentThread.value?.id)
+    agentStore.isChatRunning(currentChat.value?.id)
   ) {
     return;
   }
 
   const currentPage = getCurrentPageSnapshot();
-  const thread = agentStore.ensureCurrentThread(currentPage);
-  const threadId = thread.id;
+  const thread = agentStore.ensureCurrentChat(currentPage);
+  const chatId = thread.id;
 
-  agentStore.clearError(threadId);
+  agentStore.clearError(chatId);
   agentStore.answerPendingAsk(
-    threadId,
+    chatId,
     {
       kind: "choose",
       answer: option.label,
@@ -534,12 +528,12 @@ async function submitChoice(option: AgentAskUserOption) {
       route: currentPage.path,
     }
   );
-  await startThreadRun(threadId, currentPage);
+  await startChatRun(chatId, currentPage);
 }
 
 watch(
   () => [
-    agentStore.currentThreadId,
+    agentStore.currentChatId,
     currentPendingAsk.value?.toolCallId,
     currentPendingAsk.value?.kind,
     currentPendingAsk.value?.defaultValue,
@@ -564,7 +558,7 @@ watch(
 );
 
 watch(
-  () => isCurrentThreadRunning.value,
+  () => isCurrentChatRunning.value,
   (running) => {
     if (running) {
       closeDomRefMenu();
@@ -600,14 +594,14 @@ watch(
       <div class="mt-2 flex flex-wrap gap-x-2 gap-y-2">
         <button
           class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
-          :disabled="isCurrentThreadRunning"
+          :disabled="isCurrentChatRunning"
           @click="retryLastTurn"
         >
-          {{ $t("agent.retry-last-turn") }}
+          {{ $t("agent.retry-last-chat-turn") }}
         </button>
         <button
           class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          :disabled="isCurrentThreadRunning"
+          :disabled="isCurrentChatRunning"
           @click="dismissInterrupted"
         >
           {{ $t("common.dismiss") }}
@@ -618,14 +612,14 @@ watch(
     <div v-if="isAwaitingConfirm" class="flex flex-wrap gap-x-2 gap-y-2">
       <button
         class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        :disabled="isCurrentThreadRunning"
+        :disabled="isCurrentChatRunning"
         @click="submitConfirmation(true)"
       >
         {{ confirmLabel }}
       </button>
       <button
         class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        :disabled="isCurrentThreadRunning"
+        :disabled="isCurrentChatRunning"
         @click="submitConfirmation(false)"
       >
         {{ cancelLabel }}
@@ -637,7 +631,7 @@ watch(
         v-for="option in chooseOptions"
         :key="option.value"
         class="rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
-        :disabled="isCurrentThreadRunning"
+        :disabled="isCurrentChatRunning"
         @click="submitChoice(option)"
       >
         <div class="font-medium text-gray-800">{{ option.label }}</div>
@@ -655,7 +649,7 @@ watch(
           rows="1"
           :placeholder="inputPlaceholder"
           class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-          :disabled="isCurrentThreadRunning"
+          :disabled="isCurrentChatRunning"
           @click="updateSelection"
           @blur="closeDomRefMenu"
           @input="updateSelection"
@@ -693,7 +687,7 @@ watch(
       <button
         v-if="agentStore.loading"
         class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
-        @click="agentStore.cancel(currentThread?.id)"
+        @click="agentStore.cancel(currentChat?.id)"
       >
         {{ $t("agent.stop") }}
       </button>

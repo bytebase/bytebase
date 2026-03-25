@@ -216,10 +216,10 @@ describe("agent tools concurrency guard", () => {
     });
 
     const firstExecutor = createToolExecutor({} as Router, {
-      threadId: "thread-1",
+      chatId: "thread-1",
     });
     const secondExecutor = createToolExecutor({} as Router, {
-      threadId: "thread-2",
+      chatId: "thread-2",
     });
 
     const firstRun = firstExecutor(
@@ -230,7 +230,7 @@ describe("agent tools concurrency guard", () => {
 
     await expect(
       secondExecutor("navigate", { path: "/projects/other" }, "tool-navigate-2")
-    ).rejects.toThrow("Another thread is already using a page-changing tool");
+    ).rejects.toThrow("Another chat is already using a page-changing tool");
 
     releaseNavigation?.();
     await expect(firstRun).resolves.toEqual({

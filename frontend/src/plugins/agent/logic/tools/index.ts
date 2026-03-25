@@ -366,33 +366,33 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
-  threadId?: string;
+  chatId?: string;
   onNavigate?: () => void;
 }
 
 const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
-let pageMutationThreadId: string | null = null;
+let pageMutationChatId: string | null = null;
 
 const withPageMutationLock = async <T>(
-  threadId: string | undefined,
+  chatId: string | undefined,
   toolName: string,
   run: () => Promise<T>
 ): Promise<T> => {
-  if (!PAGE_MUTATION_TOOL_NAMES.has(toolName) || !threadId) {
+  if (!PAGE_MUTATION_TOOL_NAMES.has(toolName) || !chatId) {
     return run();
   }
-  if (pageMutationThreadId && pageMutationThreadId !== threadId) {
+  if (pageMutationChatId && pageMutationChatId !== chatId) {
     throw new Error(
-      "Another thread is already using a page-changing tool. Wait for it to finish, then retry this thread."
+      "Another chat is already using a page-changing tool. Wait for it to finish, then retry this chat."
     );
   }
 
-  pageMutationThreadId = threadId;
+  pageMutationChatId = chatId;
   try {
     return await run();
   } finally {
-    if (pageMutationThreadId === threadId) {
-      pageMutationThreadId = null;
+    if (pageMutationChatId === chatId) {
+      pageMutationChatId = null;
     }
   }
 };
@@ -417,7 +417,7 @@ export function createToolExecutor(
         return toToolResult(await callApi(args as unknown as CallApiArgs));
       case "navigate": {
         const result = await withPageMutationLock(
-          options.threadId,
+          options.chatId,
           name,
           async () =>
             await navigateTool(args as { path?: string; list?: boolean })
@@ -438,7 +438,7 @@ export function createToolExecutor(
         return toToolResult(await pageStateTool(args as PageStateArgs));
       case "dom_action":
         return toToolResult(
-          await withPageMutationLock(options.threadId, name, async () => {
+          await withPageMutationLock(options.chatId, name, async () => {
             return await domActionTool(args as unknown as DomActionArgs);
           })
         );
