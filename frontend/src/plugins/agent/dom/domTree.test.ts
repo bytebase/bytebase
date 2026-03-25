@@ -446,6 +446,108 @@ describe("extractDomTree", () => {
     expect(tree.split("\n").length).toBeLessThanOrEqual(120);
   });
 
+  test("prioritizes main content over shell regions when the budget is hit", () => {
+    const headerButtons = Array.from(
+      { length: 60 },
+      (_, index) => `<button>Header action ${index}</button>`
+    ).join("");
+    const sidebarLinks = Array.from(
+      { length: 60 },
+      (_, index) => `<a href="/sidebar/${index}">Sidebar item ${index}</a>`
+    ).join("");
+    const tableRows = Array.from(
+      { length: 25 },
+      (_, index) => `
+        <tr>
+          <td>Instance ${index}</td>
+          <td>Prod</td>
+          <td>Healthy</td>
+        </tr>
+      `
+    ).join("");
+
+    document.body.innerHTML = `
+      <div data-label="bb-main-body-wrapper">
+        <nav data-label="bb-dashboard-header">${headerButtons}</nav>
+        <div>
+          <aside data-label="bb-dashboard-static-sidebar">${sidebarLinks}</aside>
+          <main id="bb-layout-main">
+            <button>Create instance</button>
+            <table>
+              <thead>
+                <tr>
+                  <th>Instance</th>
+                  <th>Environment</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </main>
+        </div>
+      </div>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toMatch(/\[e\d+\]<button>Create instance<\/button>/);
+    expect(tree).toContain("<thead>Instance | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Instance 24 | Prod | Healthy</tr>");
+    expect(tree).toContain("Sidebar item 0");
+    expect(tree).not.toContain("Header action 59");
+    expect(tree).not.toContain("Sidebar item 59");
+  });
+
+  test("demotes overlay drawers behind main content when the budget is hit", () => {
+    const drawerButtons = Array.from(
+      { length: 80 },
+      (_, index) => `<button>Drawer action ${index}</button>`
+    ).join("");
+    const rows = Array.from(
+      { length: 20 },
+      (_, index) => `
+        <tr>
+          <td>Database ${index}</td>
+          <td>Production</td>
+          <td>Ready</td>
+        </tr>
+      `
+    ).join("");
+
+    document.body.innerHTML = `
+      <div data-label="bb-main-body-wrapper">
+        <main id="bb-layout-main">
+          <button aria-label="Create database">Create</button>
+          <table>
+            <thead>
+              <tr>
+                <th>Database</th>
+                <th>Environment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </main>
+        <div class="n-drawer" role="dialog" aria-modal="true">
+          ${drawerButtons}
+        </div>
+      </div>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toMatch(/\[e\d+\]<button>Create database<\/button>/);
+    expect(tree).toContain("<thead>Database | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Database 19 | Production | Ready</tr>");
+    expect(tree).toContain("Drawer action 0");
+    expect(tree).not.toContain("Drawer action 79");
+  });
+
   test("returns structured DOM ref suggestions for visible interactive elements", () => {
     document.body.innerHTML = `
       <main>

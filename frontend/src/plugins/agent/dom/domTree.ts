@@ -86,6 +86,53 @@ const MAX_EDITOR_PREVIEW_LENGTH = 160;
 const MAX_DOM_TREE_LINES = 120;
 const MAX_DOM_TREE_CHARS = 6000;
 
+const MAIN_CONTENT_SELECTOR = [
+  "main",
+  '[role="main"]',
+  "#bb-layout-main",
+  '[data-label="bb-main-body-wrapper"]',
+].join(",");
+const SHELL_REGION_SELECTOR = [
+  "aside",
+  "nav",
+  "header",
+  "footer",
+  '[role="navigation"]',
+  '[role="banner"]',
+  '[role="contentinfo"]',
+  '[role="complementary"]',
+  '[data-label="bb-dashboard-static-sidebar"]',
+  '[data-label="bb-dashboard-header"]',
+].join(",");
+const OVERLAY_REGION_SELECTOR = [
+  '[role="dialog"]',
+  '[aria-modal="true"]',
+  ".n-drawer",
+  ".n-modal",
+  ".n-popover",
+  ".n-dropdown-menu",
+  ".n-base-select-menu",
+  ".n-dialog",
+].join(",");
+const SECONDARY_REGION_CAPS: Partial<
+  Record<LineRegion, { lines: number; chars: number }>
+> = {
+  overlay: { lines: 24, chars: 1600 },
+  shell: { lines: 18, chars: 1200 },
+};
+const LINE_KIND_PRIORITY: Record<DomLine["kind"], number> = {
+  interactive: 0,
+  context: 1,
+  text: 2,
+};
+const LINE_REGION_PRIORITY: Record<LineRegion, number> = {
+  main: 0,
+  default: 1,
+  overlay: 2,
+  shell: 3,
+};
+const elementRegionCache = new WeakMap<Element, LineRegion>();
+
 const LANDMARK_TAGS = new Set([
   "NAV",
   "MAIN",
@@ -112,8 +159,33 @@ function isLandmark(el: Element): boolean {
   return false;
 }
 
+function getElementRegion(el?: Element): LineRegion {
+  if (!el) return "default";
+
+  const cachedRegion = elementRegionCache.get(el);
+  if (cachedRegion) return cachedRegion;
+
+  let region: LineRegion = "default";
+  if (el.closest(OVERLAY_REGION_SELECTOR)) {
+    region = "overlay";
+  } else if (el.closest(SHELL_REGION_SELECTOR)) {
+    region = "shell";
+  } else if (el.closest(MAIN_CONTENT_SELECTOR)) {
+    region = "main";
+  }
+
+  elementRegionCache.set(el, region);
+  return region;
+}
+
+function getLineRegion(line: DomLine): LineRegion {
+  return getElementRegion(line.sourceElement);
+}
+
 const elementRegistry = new Map<string, IndexedElement>();
 let nextElementRef = 1;
+
+type LineRegion = "main" | "default" | "overlay" | "shell";
 
 interface DomLine {
   text: string;
@@ -981,12 +1053,45 @@ function dedupeEquivalentAncestorLines(lines: DomLine[]): DomLine[] {
   });
 }
 
+function getBudgetSelectionOrder(lines: DomLine[]): number[] {
+  return lines
+    .map((_, index) => index)
+    .sort((leftIndex, rightIndex) => {
+      const left = lines[leftIndex];
+      const right = lines[rightIndex];
+
+      const kindPriorityDiff =
+        LINE_KIND_PRIORITY[left.kind] - LINE_KIND_PRIORITY[right.kind];
+      if (kindPriorityDiff !== 0) return kindPriorityDiff;
+
+      const regionPriorityDiff =
+        LINE_REGION_PRIORITY[getLineRegion(left)] -
+        LINE_REGION_PRIORITY[getLineRegion(right)];
+      if (regionPriorityDiff !== 0) return regionPriorityDiff;
+
+      const valueScoreDiff = getLineValueScore(right) - getLineValueScore(left);
+      if (valueScoreDiff !== 0) return valueScoreDiff;
+
+      const lengthDiff = left.text.length - right.text.length;
+      if (lengthDiff !== 0) return lengthDiff;
+
+      return leftIndex - rightIndex;
+    });
+}
+
 function selectBudgetedLines(lines: DomLine[]): DomLine[] {
   const selected = new Set<number>();
+  const selectionOrder = getBudgetSelectionOrder(lines);
   let usedLines = 0;
   let usedChars = 0;
+  const regionUsage: Record<LineRegion, { lines: number; chars: number }> = {
+    main: { lines: 0, chars: 0 },
+    default: { lines: 0, chars: 0 },
+    overlay: { lines: 0, chars: 0 },
+    shell: { lines: 0, chars: 0 },
+  };
 
-  const trySelect = (index: number): void => {
+  const trySelect = (index: number, enforceRegionCaps: boolean): void => {
     if (selected.has(index)) return;
     const line = lines[index];
     const cost = line.text.length + (usedLines > 0 ? 1 : 0);
@@ -996,16 +1101,39 @@ function selectBudgetedLines(lines: DomLine[]): DomLine[] {
     ) {
       return;
     }
+
+    const region = getLineRegion(line);
+    const regionCap = enforceRegionCaps
+      ? SECONDARY_REGION_CAPS[region]
+      : undefined;
+    if (regionCap) {
+      const usage = regionUsage[region];
+      if (
+        usage.lines >= regionCap.lines ||
+        usage.chars + cost > regionCap.chars
+      ) {
+        return;
+      }
+    }
+
     selected.add(index);
     usedLines += 1;
     usedChars += cost;
+    regionUsage[region].lines += 1;
+    regionUsage[region].chars += cost;
   };
 
-  for (const kind of ["interactive", "context", "text"] as const) {
-    lines.forEach((line, index) => {
-      if (line.kind === kind) {
-        trySelect(index);
-      }
+  selectionOrder.forEach((index) => {
+    trySelect(index, true);
+  });
+
+  const hasPrimaryRegionSelection = Array.from(selected).some((index) => {
+    const region = getLineRegion(lines[index]);
+    return region === "main" || region === "default";
+  });
+  if (!hasPrimaryRegionSelection) {
+    selectionOrder.forEach((index) => {
+      trySelect(index, false);
     });
   }
 
