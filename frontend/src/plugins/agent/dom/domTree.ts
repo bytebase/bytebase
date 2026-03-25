@@ -78,6 +78,8 @@ const INTERACTIVE_STATE_ATTRIBUTES = [
 ];
 
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "PATH"]);
+const TABLE_SECTION_TAGS = new Set(["THEAD", "TBODY", "TFOOT"]);
+const TABLE_CELL_TAGS = new Set(["TH", "TD"]);
 const MAX_TEXT_NODE_LENGTH = 160;
 const MAX_LABEL_LENGTH = 120;
 const MAX_EDITOR_PREVIEW_LENGTH = 160;
@@ -475,6 +477,262 @@ function pushInteractiveLine(
   });
 }
 
+function pushContextLine(
+  depth: number,
+  text: string,
+  context: WalkContext,
+  dedupeKey?: string
+): void {
+  const indent = "  ".repeat(depth);
+  context.lines.push({
+    text: `${indent}${text}`,
+    kind: "context",
+    dedupeKey,
+  });
+}
+
+function collectSemanticTextSegments(node: Node, segments: string[]): void {
+  if (node instanceof Text) {
+    const text = normalizeTextContent(node.textContent ?? "");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+
+  if (node instanceof HTMLInputElement) {
+    const text =
+      extractLabel(node) ||
+      extractValue(node) ||
+      getFallbackLabel(node, "native");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (
+    node instanceof HTMLTextAreaElement ||
+    node instanceof HTMLSelectElement
+  ) {
+    const text =
+      extractLabel(node) ||
+      extractValue(node) ||
+      getFallbackLabel(node, "native");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (isMonacoEditor(node)) {
+    const content = getMonacoContent(node);
+    if (content)
+      segments.push(truncateText(content, MAX_EDITOR_PREVIEW_LENGTH));
+    return;
+  }
+
+  const beforeChildSegments = segments.length;
+  Array.from(node.childNodes).forEach((child) => {
+    collectSemanticTextSegments(child, segments);
+  });
+
+  if (segments.length > beforeChildSegments) return;
+
+  const interactiveReason = getInteractiveReason(node);
+  if (!interactiveReason) return;
+
+  const text =
+    extractLabel(node) ||
+    getFallbackLabel(node, interactiveReason) ||
+    extractValue(node);
+  if (text) segments.push(text);
+}
+
+function extractSemanticText(node: Node): string | undefined {
+  const segments: string[] = [];
+  collectSemanticTextSegments(node, segments);
+  const uniqueSegments: string[] = [];
+  const seen = new Set<string>();
+  for (const segment of segments) {
+    if (seen.has(segment)) continue;
+    seen.add(segment);
+    uniqueSegments.push(segment);
+  }
+
+  if (node instanceof Element && uniqueSegments.length === 0) {
+    const interactiveReason = getInteractiveReason(node);
+    if (interactiveReason) {
+      const label =
+        extractLabel(node) || getFallbackLabel(node, interactiveReason);
+      const value = extractValue(node);
+      const semanticText = normalizeTextContent(label || value || "");
+      if (semanticText) return semanticText;
+    }
+  }
+
+  return normalizeTextContent(uniqueSegments.join(" "));
+}
+
+function walkTableActionableDescendants(
+  node: Node,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+  if (
+    TABLE_SECTION_TAGS.has(node.tagName) ||
+    node.tagName === "TR" ||
+    TABLE_CELL_TAGS.has(node.tagName)
+  ) {
+    Array.from(node.childNodes).forEach((child, index) => {
+      walkTableActionableDescendants(
+        child,
+        depth,
+        context,
+        `${path}/${node.tagName.toLowerCase()}[${index}]`
+      );
+    });
+    return;
+  }
+
+  if (isMonacoEditor(node)) {
+    walkDomNode(node, depth, context, path);
+    return;
+  }
+
+  const interactiveReason = getInteractiveReason(node);
+  if (interactiveReason) {
+    const value = extractValue(node);
+    const label =
+      extractLabel(node) || getFallbackLabel(node, interactiveReason);
+    if (
+      shouldIndexInteractiveNode(node, interactiveReason, label, value, context)
+    ) {
+      walkDomNode(node, depth, context, path);
+      return;
+    }
+  }
+
+  Array.from(node.childNodes).forEach((child, index) => {
+    walkTableActionableDescendants(
+      child,
+      depth,
+      context,
+      `${path}/${node.tagName.toLowerCase()}[${index}]`
+    );
+  });
+}
+
+function walkTableNode(
+  table: Element,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
+  pushContextLine(depth, "<table>", context, `${path}:table`);
+
+  const sectionChildren = Array.from(table.children).filter(
+    (child): child is Element =>
+      child instanceof Element && isPerceivable(child)
+  );
+
+  const rows = sectionChildren.flatMap((child) => {
+    if (TABLE_SECTION_TAGS.has(child.tagName)) {
+      return Array.from(child.children).filter(
+        (row): row is Element =>
+          row instanceof Element && row.tagName === "TR" && isPerceivable(row)
+      );
+    }
+    return child.tagName === "TR" ? [child] : [];
+  });
+
+  rows.forEach((row, rowIndex) => {
+    const cells = Array.from(row.children).filter(
+      (cell): cell is Element =>
+        TABLE_CELL_TAGS.has(cell.tagName) && isPerceivable(cell)
+    );
+    if (cells.length === 0) return;
+
+    const cellTexts = cells.map((cell) => extractSemanticText(cell) ?? "");
+    const rowLabel =
+      normalizeTextContent(cellTexts.join(" | ")) ?? extractLabel(row);
+    const isHeaderRow =
+      row.parentElement?.tagName === "THEAD" ||
+      cells.every((cell) => cell.tagName === "TH");
+
+    if (isHeaderRow) {
+      if (rowLabel) {
+        pushContextLine(
+          depth + 1,
+          `<thead>${rowLabel}</thead>`,
+          context,
+          `${path}:thead:${rowLabel}`
+        );
+      }
+      return;
+    }
+
+    const interactiveReason = getInteractiveReason(row);
+    let childContext = context;
+    if (interactiveReason) {
+      const value = extractValue(row);
+      const label =
+        rowLabel ||
+        extractLabel(row) ||
+        getFallbackLabel(row, interactiveReason);
+      if (
+        shouldIndexInteractiveNode(
+          row,
+          interactiveReason,
+          label,
+          value,
+          context
+        )
+      ) {
+        const entry = createIndexedElement({
+          tag: row.tagName.toLowerCase(),
+          role: row.getAttribute("role") ?? undefined,
+          label,
+          value,
+          element: row,
+        });
+        pushInteractiveLine(depth + 1, entry, value, context);
+        childContext = {
+          ...context,
+          interactiveLabels: label
+            ? [...context.interactiveLabels, label]
+            : context.interactiveLabels,
+          hasInteractiveAncestor: true,
+        };
+      }
+    }
+
+    if (childContext === context && rowLabel) {
+      pushContextLine(
+        depth + 1,
+        `<tr>${rowLabel}</tr>`,
+        context,
+        `${path}:tr:${rowIndex}:${rowLabel}`
+      );
+    }
+
+    cells.forEach((cell, cellIndex) => {
+      Array.from(cell.childNodes).forEach((child, childIndex) => {
+        walkTableActionableDescendants(
+          child,
+          depth + 2,
+          childContext,
+          `${path}/tr[${rowIndex}]/${cell.tagName.toLowerCase()}[${cellIndex}]/child[${childIndex}]`
+        );
+      });
+    });
+  });
+}
+
 function walkDomNode(
   node: Node,
   depth: number,
@@ -490,6 +748,11 @@ function walkDomNode(
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
   if (!isPerceivable(node)) return;
+
+  if (node.tagName === "TABLE") {
+    walkTableNode(node, depth, context, path);
+    return;
+  }
 
   // Monaco editor — register as a single interactive element
   if (isMonacoEditor(node)) {

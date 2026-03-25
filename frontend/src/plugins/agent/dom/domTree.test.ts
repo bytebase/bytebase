@@ -231,6 +231,111 @@ describe("extractDomTree", () => {
     ]);
   });
 
+  test("serializes tables with semantic header and row separators", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th>Instance</th>
+              <th>Environment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div><span>Prod Primary</span></div></td>
+              <td><span>us-east-1</span></td>
+              <td><span>Healthy</span></td>
+            </tr>
+            <tr>
+              <td><a href="/instances/staging">Staging</a></td>
+              <td>us-west-2</td>
+              <td><button aria-label="Open action menu">Actions</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(2);
+    expect(tree).toContain("<table>");
+    expect(tree).toContain("<thead>Instance | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Prod Primary | us-east-1 | Healthy</tr>");
+    expect(tree).toContain("<tr>Staging | us-west-2 | Actions</tr>");
+    expect(tree).toContain("[e1]<a>Staging</a>");
+    expect(tree).toContain("[e2]<button>Open action menu</button>");
+    expect(tree).not.toContain("<div>Prod Primary");
+    expect(tree).not.toContain("<span>Healthy");
+  });
+
+  test("keeps clickable table rows while suppressing wrapper descendants", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Enabled</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td><div><span>Prod Primary</span></div></td>
+              <td>
+                <div class="n-switch n-switch--active">
+                  <div class="n-switch__rail"></div>
+                </div>
+              </td>
+              <td>
+                <div>
+                  <button aria-label="More actions"></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(3);
+    expect(tree).toContain("<thead>Name | Enabled | Action</thead>");
+    expect(tree).toContain("[e1]<tr>Prod Primary | switch | More actions</tr>");
+    expect(tree).toContain('[e2]<div value="checked">switch</div>');
+    expect(tree).toContain("[e3]<button>More actions</button>");
+    expect(tree).not.toContain("n-switch__rail");
+    expect(tree).not.toContain("Prod PrimaryProd Primary");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | switch | More actions",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "div",
+        role: undefined,
+        label: "switch",
+        value: "checked",
+      },
+      {
+        ref: "e3",
+        tag: "button",
+        role: undefined,
+        label: "More actions",
+        value: undefined,
+      },
+    ]);
+  });
+
   test("truncates long labels and values deterministically", () => {
     const longText = "x".repeat(180);
     document.body.innerHTML = `
