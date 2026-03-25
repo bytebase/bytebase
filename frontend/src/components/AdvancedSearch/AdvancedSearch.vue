@@ -189,6 +189,17 @@ const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
 const menuIndex = ref(0);
 const focusedTagIndex = ref<number>();
+let incompleteValueVersion = 0;
+
+const invalidatePendingIncompleteValue = () => {
+  incompleteValueVersion += 1;
+};
+
+const isEditingScopedValue = () => {
+  return (
+    !!state.currentScope && inputText.value.startsWith(`${state.currentScope}:`)
+  );
+};
 
 const editableScopes = computed(() => {
   return props.params.scopes.filter((s) => !s.readonly);
@@ -376,6 +387,7 @@ const selectScope = (
   id: SearchScopeId | undefined,
   value: string | undefined = undefined
 ) => {
+  invalidatePendingIncompleteValue();
   state.currentScope = id;
   if (id) {
     state.menuView = "value";
@@ -407,6 +419,7 @@ const selectValue = (value: string) => {
     state.menuView = undefined;
     return;
   }
+  invalidatePendingIncompleteValue();
   const { allowMultiple } = currentScopeOption.value;
   const updated = upsertScope({
     params: props.params,
@@ -469,19 +482,27 @@ const maybeDeselectMismatchedScope = () => {
   return false;
 };
 
-const maybeEmitIncompleteValue = () => {
-  if (
-    !inputText.value.startsWith(`${state.currentScope}:`) &&
-    props.params.query !== inputText.value
-  ) {
-    const updated = cloneDeep(props.params);
-    updated.query = inputText.value;
-    updateParams(updated);
+const emitIncompleteValueIfStillValid = (version: number) => {
+  if (version !== incompleteValueVersion) {
+    return;
   }
+  if (isEditingScopedValue() || props.params.query === inputText.value) {
+    return;
+  }
+  const updated = cloneDeep(props.params);
+  updated.query = inputText.value;
+  emit("update:params", updated);
 };
 
-const updateParams = useDebounceFn((params: SearchParams) => {
-  emit("update:params", params);
+const maybeEmitIncompleteValue = () => {
+  if (isEditingScopedValue() || props.params.query === inputText.value) {
+    return;
+  }
+  updateParams(incompleteValueVersion);
+};
+
+const updateParams = useDebounceFn((version: number) => {
+  emitIncompleteValueIfStillValid(version);
 }, DEBOUNCE_SEARCH_DELAY);
 
 const handleInputClick = () => {
@@ -576,6 +597,7 @@ const handleKeyUp = (e: KeyboardEvent) => {
 };
 
 const handleClear = () => {
+  invalidatePendingIncompleteValue();
   const params = defaultSearchParams();
   emit("update:params", params);
   hideMenu();
