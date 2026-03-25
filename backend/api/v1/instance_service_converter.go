@@ -436,17 +436,16 @@ func convertV1RedisType(redisType v1pb.DataSource_RedisType) storepb.DataSource_
 }
 
 func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_RedisType {
-	authenticationType := v1pb.DataSource_STANDALONE
 	switch redisType {
 	case storepb.DataSource_STANDALONE:
-		authenticationType = v1pb.DataSource_STANDALONE
+		return v1pb.DataSource_STANDALONE
 	case storepb.DataSource_SENTINEL:
-		authenticationType = v1pb.DataSource_SENTINEL
+		return v1pb.DataSource_SENTINEL
 	case storepb.DataSource_CLUSTER:
-		authenticationType = v1pb.DataSource_CLUSTER
+		return v1pb.DataSource_CLUSTER
 	default:
+		return v1pb.DataSource_REDIS_TYPE_UNSPECIFIED
 	}
-	return authenticationType
 }
 
 func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
