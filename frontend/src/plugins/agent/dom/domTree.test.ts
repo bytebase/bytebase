@@ -39,6 +39,623 @@ describe("extractDomTree", () => {
     expect(getElementByRef("e9")).toBeUndefined();
   });
 
+  test("preserves visible non-interactive text nodes with normalized whitespace", () => {
+    document.body.innerHTML = `
+      <main>
+        <section>
+          <h1>   Instances   </h1>
+          <div>
+            <span>Primary</span>
+            <span>US East</span>
+          </div>
+          <button aria-label="Create instance">Create</button>
+          <p style="display: none">Hidden text</p>
+          <div aria-hidden="true" style="display: none">
+            <span>Also hidden</span>
+          </div>
+        </section>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("Instances");
+    expect(tree).toContain("Primary");
+    expect(tree).toContain("US East");
+    expect(tree).toContain("[e1]<button>Create instance</button>");
+    expect(tree).not.toContain("Hidden text");
+    expect(tree).not.toContain("Also hidden");
+  });
+
+  test("treats clickable containers with pointer cursor as interactive and preserves descendant text", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary</span>
+          <span>us-east-1</span>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
+    expect(tree).toContain("  Prod Primary");
+    expect(tree).toContain("  us-east-1");
+    expect(getElementByRef("e1")?.tag).toBe("div");
+  });
+
+  test("does not promote inherited pointer-cursor wrappers beneath clickable containers", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary</span>
+          <div>
+            <span>Healthy</span>
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Prod Primary Healthy</div>");
+    expect(tree).not.toContain("[e2]");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Prod Primary Healthy",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("skips disabled and hidden pointer-cursor containers", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer" disabled>Disabled row</div>
+        <div style="cursor: pointer" aria-disabled="true">Aria disabled row</div>
+        <div style="cursor: pointer" inert>Inert row</div>
+        <div style="cursor: pointer" aria-hidden="true">Aria hidden row</div>
+        <div style="cursor: pointer">Active row</div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Active row</div>");
+    expect(tree).toContain("Disabled row");
+    expect(tree).toContain("Aria disabled row");
+    expect(tree).not.toContain("Inert row");
+    expect(tree).not.toContain("Aria hidden row");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Active row",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("treats contenteditable regions as interactive without duplicating descendants", () => {
+    document.body.innerHTML = `
+      <main>
+        <div contenteditable="true">Editable SQL</div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Editable SQL</div>");
+    expect(tree.match(/Editable SQL/g)).toHaveLength(1);
+  });
+
+  test("dedupes descendant text when it matches an interactive label", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary us-east-1</span>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Prod Primary us-east-1</div>");
+    expect(tree.match(/Prod Primary us-east-1/g)).toHaveLength(1);
+  });
+
+  test("suppresses blank button refs while keeping meaningful native controls", () => {
+    document.body.innerHTML = `
+      <main>
+        <button><span aria-hidden="true"></span></button>
+        <button title="Refresh"></button>
+        <input type="checkbox" />
+        <input type="text" />
+        <select>
+          <option selected>Prod</option>
+        </select>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(4);
+    expect(tree).toContain("[e1]<button>Refresh</button>");
+    expect(tree).toContain('[e2]<input value="unchecked">checkbox</input>');
+    expect(tree).toContain("[e3]<input>textbox</input>");
+    expect(tree).toContain('[e4]<select value="Prod">Prod</select>');
+    expect(tree).not.toContain("<button></button>");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "button",
+        role: undefined,
+        label: "Refresh",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "input",
+        role: undefined,
+        label: "checkbox",
+        value: "unchecked",
+      },
+      {
+        ref: "e3",
+        tag: "input",
+        role: undefined,
+        label: "textbox",
+        value: undefined,
+      },
+      {
+        ref: "e4",
+        tag: "select",
+        role: undefined,
+        label: "Prod",
+        value: "Prod",
+      },
+    ]);
+  });
+
+  test("serializes tables with semantic header and row separators", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th>Instance</th>
+              <th>Environment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div><span>Prod Primary</span></div></td>
+              <td><span>us-east-1</span></td>
+              <td><span>Healthy</span></td>
+            </tr>
+            <tr>
+              <td><a href="/instances/staging">Staging</a></td>
+              <td>us-west-2</td>
+              <td><button aria-label="Open action menu">Actions</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(2);
+    expect(tree).toContain("<table>");
+    expect(tree).toContain("<thead>Instance | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Prod Primary | us-east-1 | Healthy</tr>");
+    expect(tree).toContain("<tr>Staging | us-west-2 | Actions</tr>");
+    expect(tree).toContain("[e1]<a>Staging</a>");
+    expect(tree).toContain("[e2]<button>Open action menu</button>");
+    expect(tree).not.toContain("<div>Prod Primary");
+    expect(tree).not.toContain("<span>Healthy");
+  });
+
+  test("drops utility action cells from clickable row summaries while keeping controls actionable", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Enabled</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td><div><span>Prod Primary</span></div></td>
+              <td>
+                <div class="n-switch n-switch--active">
+                  <div class="n-switch__rail"></div>
+                </div>
+              </td>
+              <td>
+                <div>
+                  <button></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(3);
+    expect(tree).toContain("<thead>Name | Enabled | Actions</thead>");
+    expect(tree).toContain("[e1]<tr>Prod Primary | switch</tr>");
+    expect(tree).toContain('[e2]<div value="checked">switch</div>');
+    expect(tree).toContain("[e3]<button>Actions</button>");
+    expect(tree).not.toContain("More actions");
+    expect(tree).not.toContain("n-switch__rail");
+    expect(tree).not.toContain("Prod PrimaryProd Primary");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | switch",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "div",
+        role: undefined,
+        label: "switch",
+        value: "checked",
+      },
+      {
+        ref: "e3",
+        tag: "button",
+        role: undefined,
+        label: "Actions",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("drops utility selection cells from table row summaries while keeping checkboxes actionable", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Name</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td><input type="checkbox" checked /></td>
+              <td>Prod Primary</td>
+              <td>Healthy</td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(2);
+    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
+    expect(tree).toContain('[e2]<input value="checked">checkbox</input>');
+    expect(tree).not.toContain("checkbox | Prod Primary");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | Healthy",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "input",
+        role: undefined,
+        label: "checkbox",
+        value: "checked",
+      },
+    ]);
+  });
+
+  test("suppresses Naive input prefix text while preserving the textbox ref", () => {
+    document.body.innerHTML = `
+      <main>
+        <div class="n-input">
+          <div class="n-input-prefix">
+            <span>Filter</span>
+          </div>
+          <div class="n-input-wrapper">
+            <input placeholder="Search instances" />
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<input>Search instances</input>");
+    expect(tree).not.toContain("Filter");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "input",
+        role: undefined,
+        label: "Search instances",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("serializes Naive select controls with sibling labels and selected values", () => {
+    document.body.innerHTML = `
+      <main>
+        <div class="flex items-center gap-x-2">
+          <div class="textinfolabel">Rows per page</div>
+          <div class="n-base-selection" role="combobox">
+            <div class="n-base-selection-label">50</div>
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain('[e1]<select value="50">Rows per page</select>');
+    expect(tree).not.toContain("<div>50</div>");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "select",
+        role: "combobox",
+        label: "Rows per page",
+        value: "50",
+      },
+    ]);
+  });
+
+  test("prefers clickable list items over nested wrapper clones with the same label", () => {
+    document.body.innerHTML = `
+      <main>
+        <ul>
+          <li style="cursor: pointer">
+            <div role="button">
+              <span>Prod Primary</span>
+            </div>
+          </li>
+        </ul>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<li>Prod Primary</li>");
+    expect(tree).not.toContain("[e2]");
+    expect(tree.match(/Prod Primary/g)).toHaveLength(1);
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "li",
+        role: undefined,
+        label: "Prod Primary",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("drops nested wrapper refs when a clickable row already captures the same content", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td>
+                <div role="button">
+                  <span>Prod Primary</span>
+                </div>
+              </td>
+              <td><span>Healthy</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
+    expect(tree).not.toContain("[e2]<div>Prod Primary</div>");
+    expect(tree.match(/Prod Primary/g)).toHaveLength(1);
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | Healthy",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("truncates long labels and values deterministically", () => {
+    const longText = "x".repeat(180);
+    document.body.innerHTML = `
+      <main>
+        <button>${longText}</button>
+        <input value="${longText}" />
+      </main>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toContain(`${"x".repeat(120)}...`);
+    expect(tree).not.toContain("x".repeat(150));
+  });
+
+  test("drops plain text before interactive refs when the tree budget is hit", () => {
+    const textBlocks = Array.from(
+      { length: 140 },
+      (_, index) => `
+      <section>
+        <p>Context line ${index}</p>
+        <div>
+          <span>${"detail".repeat(12)} ${index}</span>
+          <span>${"detail".repeat(12)} duplicate ${index}</span>
+        </div>
+      </section>
+    `
+    ).join("");
+    document.body.innerHTML = `
+      <main>
+        ${textBlocks}
+        <button aria-label="Launch workflow">Launch</button>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<button>Launch workflow</button>");
+    expect(tree).not.toContain("Context line 139");
+    expect(tree.split("\n").length).toBeLessThanOrEqual(120);
+  });
+
+  test("prioritizes main content over shell regions when the budget is hit", () => {
+    const headerButtons = Array.from(
+      { length: 60 },
+      (_, index) => `<button>Header action ${index}</button>`
+    ).join("");
+    const sidebarLinks = Array.from(
+      { length: 60 },
+      (_, index) => `<a href="/sidebar/${index}">Sidebar item ${index}</a>`
+    ).join("");
+    const tableRows = Array.from(
+      { length: 25 },
+      (_, index) => `
+        <tr>
+          <td>Instance ${index}</td>
+          <td>Prod</td>
+          <td>Healthy</td>
+        </tr>
+      `
+    ).join("");
+
+    document.body.innerHTML = `
+      <div data-label="bb-main-body-wrapper">
+        <nav data-label="bb-dashboard-header">${headerButtons}</nav>
+        <div>
+          <aside data-label="bb-dashboard-static-sidebar">${sidebarLinks}</aside>
+          <main id="bb-layout-main">
+            <button>Create instance</button>
+            <table>
+              <thead>
+                <tr>
+                  <th>Instance</th>
+                  <th>Environment</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </main>
+        </div>
+      </div>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toMatch(/\[e\d+\]<button>Create instance<\/button>/);
+    expect(tree).toContain("<thead>Instance | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Instance 24 | Prod | Healthy</tr>");
+    expect(tree).toContain("Sidebar item 0");
+    expect(tree).not.toContain("Header action 59");
+    expect(tree).not.toContain("Sidebar item 59");
+  });
+
+  test("demotes overlay drawers behind main content when the budget is hit", () => {
+    const drawerButtons = Array.from(
+      { length: 80 },
+      (_, index) => `<button>Drawer action ${index}</button>`
+    ).join("");
+    const rows = Array.from(
+      { length: 20 },
+      (_, index) => `
+        <tr>
+          <td>Database ${index}</td>
+          <td>Production</td>
+          <td>Ready</td>
+        </tr>
+      `
+    ).join("");
+
+    document.body.innerHTML = `
+      <div data-label="bb-main-body-wrapper">
+        <main id="bb-layout-main">
+          <button aria-label="Create database">Create</button>
+          <table>
+            <thead>
+              <tr>
+                <th>Database</th>
+                <th>Environment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </main>
+        <div class="n-drawer" role="dialog" aria-modal="true">
+          ${drawerButtons}
+        </div>
+      </div>
+    `;
+
+    const { tree } = extractDomTree();
+
+    expect(tree).toMatch(/\[e\d+\]<button>Create database<\/button>/);
+    expect(tree).toContain("<thead>Database | Environment | Status</thead>");
+    expect(tree).toContain("<tr>Database 19 | Production | Ready</tr>");
+    expect(tree).toContain("Drawer action 0");
+    expect(tree).not.toContain("Drawer action 79");
+  });
+
   test("returns structured DOM ref suggestions for visible interactive elements", () => {
     document.body.innerHTML = `
       <main>
