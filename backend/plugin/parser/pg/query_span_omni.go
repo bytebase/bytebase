@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
+	omniparser "github.com/bytebase/omni/pg/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -155,12 +156,17 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// Step 1: Parse with omni.
 	omniStmts, err := ParsePg(stmt)
 	if err != nil {
-		// Return a SyntaxError so the SQL service can populate
-		// DetailedError.SyntaxError in the query result. This matches the
-		// old ANTLR behavior where ParsePostgreSQL returned *base.SyntaxError.
-		return nil, &base.SyntaxError{
-			Message: err.Error(),
+		// Convert omni parse error to *base.SyntaxError with position info
+		// so the SQL service can populate DetailedError.SyntaxError.
+		syntaxErr := &base.SyntaxError{
+			Message:  err.Error(),
+			Position: &storepb.Position{Line: 1, Column: 1},
 		}
+		var parseErr *omniparser.ParseError
+		if errors.As(err, &parseErr) && parseErr.Position > 0 {
+			syntaxErr.Position = ByteOffsetToRunePosition(stmt, parseErr.Position-1)
+		}
+		return nil, syntaxErr
 	}
 	if len(omniStmts) != 1 {
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
