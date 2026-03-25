@@ -29,6 +29,10 @@ type omniQuerySpanExtractor struct {
 	metaCache     map[string]*model.DatabaseMetadata
 	cat           *catalog.Catalog
 	funcBodyCache map[uint32][]base.SourceColumnSet
+	// funcOrigDefs stores the original (non-stubbed) function definitions keyed
+	// by lowercase function name. Used by analyzeFunctionBody to get the real
+	// body when it was stubbed during catalog loading.
+	funcOrigDefs map[string]string
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -42,6 +46,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		gCtx:            gCtx,
 		metaCache:       make(map[string]*model.DatabaseMetadata),
 		funcBodyCache:   make(map[uint32][]base.SourceColumnSet),
+		funcOrigDefs:    make(map[string]string),
 	}
 }
 
@@ -82,6 +87,18 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		}
 	}
 
+	// Store original (non-stubbed) function definitions for body analysis.
+	for _, s := range meta.GetProto().GetSchemas() {
+		for _, f := range s.GetFunctions() {
+			if f.Definition != "" {
+				origBody := extractFuncBodyFromDef(f.Definition)
+				if origBody != "" {
+					e.funcOrigDefs[strings.ToLower(f.Name)] = origBody
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -108,7 +125,14 @@ func buildMinimalDDL(meta *storepb.DatabaseSchemaMetadata) string {
 		}
 		for _, f := range s.Functions {
 			if f.Definition != "" {
-				fmt.Fprintf(&b, "%s;\n", strings.TrimSuffix(strings.TrimSpace(f.Definition), ";"))
+				// Load the function with a stubbed body to avoid type validation
+				// failures. The catalog needs the function signature (name, params,
+				// return type) to resolve SELECT * FROM func(), but the actual body
+				// is analyzed separately via analyzeFunctionBody. Stubbing the body
+				// avoids errors when table column types default to text but the
+				// function declares int parameters.
+				stubbed := stubFunctionBody(f.Definition)
+				fmt.Fprintf(&b, "%s;\n", strings.TrimSuffix(strings.TrimSpace(stubbed), ";"))
 			}
 		}
 	}
@@ -149,6 +173,77 @@ func buildCreateMaterializedView(b *strings.Builder, schema string, v *storepb.M
 
 func quoteIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+// extractFuncBodyFromDef extracts the dollar-quoted function body from a
+// CREATE FUNCTION definition string.
+func extractFuncBodyFromDef(definition string) string {
+	// Find dollar-quoted body.
+	tag, bodyStart, bodyEnd := findDollarQuotedBody(definition)
+	if tag == "" {
+		return ""
+	}
+	return definition[bodyStart : bodyEnd-len(tag)]
+}
+
+// findDollarQuotedBody locates the dollar-quoted body in a function definition.
+// Returns the tag, the start of body content (after opening tag), and the end
+// position (after closing tag).
+func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd int) {
+	for i := 0; i < len(definition); i++ {
+		if definition[i] != '$' {
+			continue
+		}
+		// Find end of tag.
+		tagEnd := i + 1
+		for tagEnd < len(definition) && definition[tagEnd] != '$' {
+			tagEnd++
+		}
+		if tagEnd >= len(definition) {
+			continue
+		}
+		tag := definition[i : tagEnd+1]
+		contentStart := tagEnd + 1
+		// Find closing tag.
+		closeIdx := strings.Index(definition[contentStart:], tag)
+		if closeIdx >= 0 {
+			return tag, contentStart, contentStart + closeIdx + len(tag)
+		}
+	}
+	return "", 0, 0
+}
+
+// stubFunctionBody replaces the body of a CREATE FUNCTION statement with a
+// minimal stub. This avoids catalog type validation failures when table column
+// types are unknown (defaulting to text) while the function declares specific
+// return types. The function signature is preserved so the catalog can resolve
+// function calls.
+func stubFunctionBody(definition string) string {
+	tag, bodyStart, bodyEnd := findDollarQuotedBody(definition)
+	if tag == "" {
+		return definition
+	}
+
+	// Determine language for appropriate stub body.
+	upper := strings.ToUpper(definition)
+	lang := ""
+	if langIdx := strings.Index(upper, "LANGUAGE"); langIdx >= 0 {
+		rest := strings.TrimSpace(definition[langIdx+8:])
+		parts := strings.Fields(rest)
+		if len(parts) > 0 {
+			lang = strings.ToLower(strings.TrimRight(parts[0], ";"))
+		}
+	}
+
+	var stubBody string
+	switch lang {
+	case "plpgsql":
+		stubBody = " BEGIN RETURN; END; "
+	default:
+		stubBody = " SELECT NULL "
+	}
+
+	return definition[:bodyStart] + stubBody + definition[bodyEnd-len(tag):]
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.
@@ -235,7 +330,23 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to analyze SELECT statement")
+		// Before falling back, try to handle user-defined table-returning functions
+		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
+		// used as table sources: SELECT * FROM func()).
+		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
+			return &base.QuerySpan{
+				Type:          base.Select,
+				SourceColumns: accessesMap,
+				Results:       results,
+			}, nil
+		}
+		// Fail-open: return access tables with best-effort column names when analysis fails
+		// (e.g., unsupported built-in functions like unnest with certain signatures).
+		return &base.QuerySpan{
+			Type:          base.Select,
+			SourceColumns: accessesMap,
+			Results:       extractFallbackColumns(selStmt),
+		}, nil
 	}
 
 	// Step 7: Extract lineage from analyzed query.
@@ -662,4 +773,437 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 	default:
 		// Unknown RTE kind — skip.
 	}
+}
+
+// extractFallbackColumns attempts to extract column names from the parse tree
+// when AnalyzeSelectStmt fails. For SELECT * FROM func() AS t(a, b), it extracts
+// the alias column names. For explicit target lists, it extracts column names/aliases.
+func extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
+	if selStmt == nil {
+		return nil
+	}
+
+	// Check if SELECT has explicit target list (not *).
+	if selStmt.TargetList != nil {
+		var results []base.QuerySpanResult
+		allStar := true
+		for _, item := range selStmt.TargetList.Items {
+			rt, ok := item.(*ast.ResTarget)
+			if !ok {
+				continue
+			}
+			if !isStarTarget(rt) {
+				allStar = false
+				name := rt.Name
+				if name == "" {
+					name = figureResTargetName(rt)
+				}
+				results = append(results, base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: base.SourceColumnSet{},
+				})
+			}
+		}
+		if !allStar && len(results) > 0 {
+			return results
+		}
+	}
+
+	// For SELECT *, try to extract column names from FROM clause aliases.
+	if selStmt.FromClause != nil {
+		for _, item := range selStmt.FromClause.Items {
+			if cols := extractColumnsFromFromItem(item); len(cols) > 0 {
+				return cols
+			}
+		}
+	}
+
+	return nil
+}
+
+// figureResTargetName extracts a column name from a ResTarget's expression.
+func figureResTargetName(rt *ast.ResTarget) string {
+	if rt == nil || rt.Val == nil {
+		return ""
+	}
+	if cr, ok := rt.Val.(*ast.ColumnRef); ok && cr.Fields != nil {
+		for _, f := range cr.Fields.Items {
+			if s, ok := f.(*ast.String); ok {
+				return s.Str
+			}
+		}
+	}
+	if fc, ok := rt.Val.(*ast.FuncCall); ok && fc.Funcname != nil {
+		for _, f := range fc.Funcname.Items {
+			if s, ok := f.(*ast.String); ok {
+				return s.Str
+			}
+		}
+	}
+	return ""
+}
+
+// extractColumnsFromFromItem extracts column names from a FROM clause item's alias.
+func extractColumnsFromFromItem(item ast.Node) []base.QuerySpanResult {
+	if item == nil {
+		return nil
+	}
+
+	var alias *ast.Alias
+	switch v := item.(type) {
+	case *ast.RangeFunction:
+		alias = v.Alias
+	case *ast.RangeVar:
+		alias = v.Alias
+	case *ast.RangeSubselect:
+		alias = v.Alias
+	default:
+		return nil
+	}
+
+	if alias == nil {
+		return nil
+	}
+
+	// If alias has column names, use those.
+	if alias.Colnames != nil && len(alias.Colnames.Items) > 0 {
+		var results []base.QuerySpanResult
+		for _, item := range alias.Colnames.Items {
+			if s, ok := item.(*ast.String); ok {
+				results = append(results, base.QuerySpanResult{
+					Name:          s.Str,
+					SourceColumns: base.SourceColumnSet{},
+				})
+			}
+		}
+		return results
+	}
+
+	// If it's a RangeFunction without explicit column names, use function name(s).
+	if rf, ok := item.(*ast.RangeFunction); ok {
+		return extractFuncColumnNames(rf, alias)
+	}
+
+	return nil
+}
+
+// extractFuncColumnNames extracts column names from a RangeFunction.
+// For functions like unnest(ARRAY, ARRAY), each argument produces a column
+// named after the function.
+func extractFuncColumnNames(rf *ast.RangeFunction, _ *ast.Alias) []base.QuerySpanResult {
+	if rf.Functions == nil {
+		return nil
+	}
+
+	var results []base.QuerySpanResult
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Funcname == nil {
+			continue
+		}
+		// Get function name.
+		funcName := ""
+		for _, nameItem := range fc.Funcname.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				funcName = s.Str
+			}
+		}
+		if funcName == "" {
+			continue
+		}
+		// Determine number of columns: for set-returning functions like unnest,
+		// each argument produces a column.
+		nCols := 1
+		if fc.Args != nil && len(fc.Args.Items) > 1 {
+			nCols = len(fc.Args.Items)
+		}
+		for range nCols {
+			results = append(results, base.QuerySpanResult{
+				Name:          funcName,
+				SourceColumns: base.SourceColumnSet{},
+			})
+		}
+	}
+	return results
+}
+
+// tryUserFuncTableSource handles the case where AnalyzeSelectStmt fails because
+// the FROM clause contains a user-defined RETURNS TABLE function. The omni catalog
+// cannot resolve these as table sources, so we look up the function manually,
+// analyze its body for lineage, and construct the result.
+// Returns nil if this case doesn't apply.
+func (e *omniQuerySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	if selStmt == nil || selStmt.FromClause == nil {
+		return nil
+	}
+
+	// Look for a single RangeFunction in the FROM clause.
+	for _, item := range selStmt.FromClause.Items {
+		rf, ok := item.(*ast.RangeFunction)
+		if !ok || rf.Functions == nil {
+			continue
+		}
+
+		// Extract function name from the RangeFunction.
+		funcName := extractFuncNameFromRange(rf)
+		if funcName == "" {
+			continue
+		}
+
+		// Look up the function in the catalog.
+		proc := e.lookupUserProcByName(funcName)
+		if proc != nil {
+			// Found in catalog — use it for lineage analysis.
+			outNames := getOutputParamNames(proc)
+			if len(outNames) == 0 {
+				continue
+			}
+			bodySets := e.analyzeFunctionBody(proc)
+			return e.buildFuncResults(outNames, bodySets, accessesMap)
+		}
+
+		// Catalog lookup failed — try metadata. This handles cases where
+		// the metadata function name differs from the name in the DDL definition.
+		if results := e.tryMetadataFuncLookup(funcName, accessesMap); results != nil {
+			return results
+		}
+	}
+
+	return nil
+}
+
+// extractFuncNameFromRange extracts the function name from a RangeFunction node.
+func extractFuncNameFromRange(rf *ast.RangeFunction) string {
+	if rf.Functions == nil {
+		return ""
+	}
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Funcname == nil {
+			continue
+		}
+		for _, nameItem := range fc.Funcname.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				return s.Str
+			}
+		}
+	}
+	return ""
+}
+
+// lookupUserProcByName finds a user-defined function by name in the catalog,
+// searching through schemas in the search path.
+func (e *omniQuerySpanExtractor) lookupUserProcByName(name string) *catalog.UserProc {
+	lowerName := strings.ToLower(name)
+	for _, schemaName := range e.searchPath {
+		for _, row := range e.cat.QueryPgProc(schemaName) {
+			if strings.ToLower(row.ProName) == lowerName {
+				return e.cat.GetUserProcByOID(row.OID)
+			}
+		}
+	}
+	return nil
+}
+
+// getOutputParamNames returns the names of output parameters (TABLE or OUT mode)
+// for a user-defined function. Returns nil if the function has no output params.
+func getOutputParamNames(proc *catalog.UserProc) []string {
+	var names []string
+	for i, mode := range proc.ArgModes {
+		if mode == 't' || mode == 'o' {
+			if i < len(proc.ArgNames) {
+				names = append(names, proc.ArgNames[i])
+			}
+		}
+	}
+	return names
+}
+
+// buildFuncResults constructs QuerySpanResults from output parameter names and
+// function body lineage analysis, and populates table-level access in accessesMap.
+func (*omniQuerySpanExtractor) buildFuncResults(outNames []string, bodySets []base.SourceColumnSet, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	for _, colSet := range bodySets {
+		for k, v := range colSet {
+			accessesMap[base.ColumnResource{
+				Database: k.Database,
+				Schema:   k.Schema,
+				Table:    k.Table,
+			}] = v
+		}
+	}
+
+	var results []base.QuerySpanResult
+	for i, name := range outNames {
+		sourceColumns := make(base.SourceColumnSet)
+		if i < len(bodySets) {
+			for k, v := range bodySets[i] {
+				sourceColumns[k] = v
+			}
+		}
+		results = append(results, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: sourceColumns,
+		})
+	}
+	return results
+}
+
+// tryMetadataFuncLookup searches for a function by name in the database metadata
+// (not the catalog). This handles cases where the catalog can't resolve the
+// function — either because the metadata function name differs from the DDL name,
+// or because RETURNS TABLE functions can't be loaded into the catalog.
+func (e *omniQuerySpanExtractor) tryMetadataFuncLookup(funcName string, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
+	if err != nil || meta == nil {
+		return nil
+	}
+
+	_, funcs := meta.SearchFunctions(e.searchPath, funcName)
+	if len(funcs) == 0 {
+		return nil
+	}
+
+	// Use the first matching function's definition.
+	funcDef := funcs[0].Definition
+	if funcDef == "" {
+		return nil
+	}
+
+	// Parse the function definition to extract output param names and body.
+	// We can't rely on the catalog for RETURNS TABLE functions because the
+	// catalog may reject them due to type validation.
+	outNames, body, lang := parseFuncDefForLineage(funcDef)
+	if len(outNames) == 0 || body == "" {
+		return nil
+	}
+
+	// Construct a synthetic UserProc for body analysis.
+	syntheticProc := &catalog.UserProc{
+		Name:     funcName,
+		Language: lang,
+		Body:     body,
+	}
+	// Set ArgModes and ArgNames for output params.
+	for _, name := range outNames {
+		syntheticProc.ArgModes = append(syntheticProc.ArgModes, 't')
+		syntheticProc.ArgNames = append(syntheticProc.ArgNames, name)
+	}
+	// Also extract input params for variable substitution.
+	inputNames := parseInputParamNames(funcDef)
+	for _, name := range inputNames {
+		syntheticProc.ArgModes = append([]byte{'i'}, syntheticProc.ArgModes...)
+		syntheticProc.ArgNames = append([]string{name}, syntheticProc.ArgNames...)
+	}
+
+	// Use a temporary OID for caching.
+	syntheticProc.OID = uint32(0xFFFF0000 + len(e.funcBodyCache))
+
+	bodySets := e.analyzeFunctionBody(syntheticProc)
+	return e.buildFuncResults(outNames, bodySets, accessesMap)
+}
+
+// parseFuncDefForLineage extracts output parameter names, function body, and
+// language from a CREATE FUNCTION definition string.
+func parseFuncDefForLineage(definition string) (outNames []string, body string, lang string) {
+	upper := strings.ToUpper(definition)
+
+	// Extract language.
+	if langIdx := strings.Index(upper, "LANGUAGE"); langIdx >= 0 {
+		rest := strings.TrimSpace(definition[langIdx+8:])
+		parts := strings.Fields(rest)
+		if len(parts) > 0 {
+			lang = strings.ToLower(strings.TrimRight(parts[0], ";"))
+		}
+	}
+
+	// Extract body.
+	body = extractFuncBodyFromDef(definition)
+
+	// Extract output param names from RETURNS TABLE(name type, ...).
+	tableIdx := strings.Index(upper, "RETURNS TABLE")
+	if tableIdx < 0 {
+		tableIdx = strings.Index(upper, "RETURNS\n    TABLE")
+	}
+	if tableIdx >= 0 {
+		rest := definition[tableIdx:]
+		parenStart := strings.Index(rest, "(")
+		if parenStart >= 0 {
+			depth := 0
+			parenEnd := -1
+			for i := parenStart; i < len(rest); i++ {
+				switch rest[i] {
+				case '(':
+					depth++
+				case ')':
+					depth--
+					if depth == 0 {
+						parenEnd = i
+					}
+				default:
+				}
+				if parenEnd >= 0 {
+					break
+				}
+			}
+			if parenEnd > parenStart {
+				paramList := rest[parenStart+1 : parenEnd]
+				for _, param := range strings.Split(paramList, ",") {
+					parts := strings.Fields(strings.TrimSpace(param))
+					if len(parts) >= 2 {
+						outNames = append(outNames, parts[0])
+					}
+				}
+			}
+		}
+	}
+
+	return outNames, body, lang
+}
+
+// parseInputParamNames extracts input parameter names from a CREATE FUNCTION
+// definition. It parses the parameter list before RETURNS.
+func parseInputParamNames(definition string) []string {
+	upper := strings.ToUpper(definition)
+
+	// Find the parameter list: between FUNCTION name( and ) RETURNS.
+	funcIdx := strings.Index(upper, "FUNCTION")
+	if funcIdx < 0 {
+		return nil
+	}
+
+	rest := definition[funcIdx:]
+	parenStart := strings.Index(rest, "(")
+	if parenStart < 0 {
+		return nil
+	}
+
+	// Find the closing paren that ends the input params.
+	returnsIdx := strings.Index(upper[funcIdx+parenStart:], "RETURNS")
+	if returnsIdx < 0 {
+		return nil
+	}
+
+	paramSection := rest[parenStart+1 : parenStart+returnsIdx]
+	// Find the last ) before RETURNS.
+	lastParen := strings.LastIndex(paramSection, ")")
+	if lastParen >= 0 {
+		paramSection = paramSection[:lastParen]
+	}
+
+	var names []string
+	for _, param := range strings.Split(paramSection, ",") {
+		parts := strings.Fields(strings.TrimSpace(param))
+		if len(parts) >= 2 {
+			names = append(names, parts[0])
+		}
+	}
+	return names
 }

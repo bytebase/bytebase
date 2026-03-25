@@ -355,6 +355,7 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		Results:          []YamlQuerySpanResult{},
 		SourceColumns:    []ColumnResource{},
 		PredicateColumns: []ColumnResource{},
+		PredicatePaths:   []string{},
 	}
 	for _, result := range s.Results {
 		yamlResult := &YamlQuerySpanResult{

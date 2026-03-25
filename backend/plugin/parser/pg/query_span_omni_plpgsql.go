@@ -30,14 +30,21 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []b
 	// Store nil sentinel to detect recursion.
 	e.funcBodyCache[proc.OID] = nil
 
+	// If the function body was stubbed during catalog loading (to avoid type
+	// validation errors), use the original body from metadata instead.
+	body := proc.Body
+	if origBody, ok := e.funcOrigDefs[strings.ToLower(proc.Name)]; ok && origBody != "" {
+		body = origBody
+	}
+
 	var result []base.SourceColumnSet
 	var err error
 
 	switch strings.ToLower(proc.Language) {
 	case "plpgsql":
-		result, err = e.analyzePLpgSQLBody(proc)
+		result, err = e.analyzePLpgSQLBody(proc, body)
 	case "sql":
-		result, err = e.analyzeSQLBody(proc)
+		result, err = e.analyzeSQLBody(body)
 	default:
 		// Unsupported language (C, internal, etc.) — unknown lineage.
 		result = makeEmptySets(proc)
@@ -75,12 +82,12 @@ func countOutputParams(proc *catalog.UserProc) int {
 	return count
 }
 
-func (e *omniQuerySpanExtractor) analyzeSQLBody(proc *catalog.UserProc) ([]base.SourceColumnSet, error) {
-	if proc.Body == "" {
-		return makeEmptySets(proc), nil
+func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColumnSet, error) {
+	if body == "" {
+		return nil, nil
 	}
 
-	stmts, err := ParsePg(proc.Body)
+	stmts, err := ParsePg(body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse SQL function body")
 	}
@@ -98,7 +105,7 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(proc *catalog.UserProc) ([]base.
 		return e.extractFuncLineage(query), nil
 	}
 
-	return makeEmptySets(proc), nil
+	return nil, nil
 }
 
 func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
@@ -165,12 +172,12 @@ type plpgsqlAnalyzer struct {
 	returnResults [][]base.SourceColumnSet
 }
 
-func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc) ([]base.SourceColumnSet, error) {
-	if proc.Body == "" {
+func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc, body string) ([]base.SourceColumnSet, error) {
+	if body == "" {
 		return makeEmptySets(proc), nil
 	}
 
-	block, err := plpgsqlparser.Parse(proc.Body)
+	block, err := plpgsqlparser.Parse(body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse PL/pgSQL function body")
 	}
@@ -178,6 +185,23 @@ func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc) ([]b
 	analyzer := &plpgsqlAnalyzer{
 		extractor: e,
 		scope:     newVariableScope(nil),
+	}
+
+	// Add function input parameters to scope so they can be substituted in
+	// embedded SQL. Output/table params ('o', 't') are NOT added because their
+	// names often collide with column names in the function body's queries
+	// (e.g., RETURNS TABLE(a int, b int) where a, b are also column names).
+	for i, name := range proc.ArgNames {
+		if name == "" {
+			continue
+		}
+		if i < len(proc.ArgModes) {
+			mode := proc.ArgModes[i]
+			if mode == 'o' || mode == 't' {
+				continue
+			}
+		}
+		analyzer.scope.set(name, make(base.SourceColumnSet))
 	}
 
 	analyzer.walkBlock(block)
@@ -384,7 +408,10 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 
 	query, err := a.extractor.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		return nil
+		// When full analysis fails (e.g., type mismatches with aggregate functions),
+		// fall back to extracting column references from the parse tree and resolving
+		// them against known tables in the catalog.
+		return a.fallbackExtractLineage(sql, selStmt)
 	}
 
 	results := a.extractor.extractFuncLineage(query)
@@ -556,4 +583,213 @@ func (a *plpgsqlAnalyzer) mergeReturnResults(nCols int) []base.SourceColumnSet {
 	}
 
 	return result
+}
+
+// fallbackExtractLineage is called when AnalyzeSelectStmt fails for embedded SQL
+// (e.g., due to type mismatches with aggregate functions). It uses the parse tree
+// to extract column references and resolves them against known tables and variables.
+func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.SelectStmt) []base.SourceColumnSet {
+	if selStmt == nil || selStmt.TargetList == nil {
+		return nil
+	}
+
+	// Collect table references from the FROM clause.
+	fromTables := a.collectFromTables(selStmt)
+
+	var results []base.SourceColumnSet
+	origItems := extractSelectItemNames(origSQL)
+
+	for i, item := range selStmt.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			results = append(results, make(base.SourceColumnSet))
+			continue
+		}
+
+		colSet := make(base.SourceColumnSet)
+
+		// Try to extract column references from the expression.
+		a.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
+
+		// If still empty, try the original item name as a variable reference.
+		if len(colSet) == 0 && i < len(origItems) {
+			varName := strings.TrimSpace(origItems[i])
+			// Strip wrapping parentheses for subquery expressions.
+			varName = strings.TrimPrefix(strings.TrimSuffix(varName, ")"), "(")
+			varName = strings.TrimSpace(varName)
+			if sources, ok := a.scope.get(varName); ok {
+				for k, v := range sources {
+					colSet[k] = v
+				}
+			}
+		}
+
+		results = append(results, colSet)
+	}
+
+	return results
+}
+
+// collectFromTables collects table references from the FROM clause and maps
+// table names/aliases to their schema-qualified names.
+func (a *plpgsqlAnalyzer) collectFromTables(selStmt *ast.SelectStmt) map[string]base.ColumnResource {
+	tables := make(map[string]base.ColumnResource)
+	if selStmt.FromClause == nil {
+		return tables
+	}
+
+	for _, item := range selStmt.FromClause.Items {
+		a.collectTablesFromNode(item, tables)
+	}
+	return tables
+}
+
+func (a *plpgsqlAnalyzer) collectTablesFromNode(node ast.Node, tables map[string]base.ColumnResource) {
+	switch v := node.(type) {
+	case *ast.RangeVar:
+		schema := "public"
+		if v.Schemaname != "" {
+			schema = v.Schemaname
+		}
+		resource := base.ColumnResource{
+			Database: a.extractor.defaultDatabase,
+			Schema:   schema,
+			Table:    v.Relname,
+		}
+		tables[strings.ToLower(v.Relname)] = resource
+		if v.Alias != nil && v.Alias.Aliasname != "" {
+			tables[strings.ToLower(v.Alias.Aliasname)] = resource
+		}
+	case *ast.JoinExpr:
+		if v.Larg != nil {
+			a.collectTablesFromNode(v.Larg, tables)
+		}
+		if v.Rarg != nil {
+			a.collectTablesFromNode(v.Rarg, tables)
+		}
+	default:
+	}
+}
+
+// extractColumnRefsFromExpr recursively walks an AST expression and resolves
+// column references against known tables.
+func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables map[string]base.ColumnResource, result base.SourceColumnSet) {
+	if node == nil {
+		return
+	}
+
+	switch v := node.(type) {
+	case *ast.ColumnRef:
+		a.resolveColumnRef(v, fromTables, result)
+	case *ast.FuncCall:
+		if v.Args != nil {
+			for _, arg := range v.Args.Items {
+				a.extractColumnRefsFromExpr(arg, fromTables, result)
+			}
+		}
+	case *ast.A_Expr:
+		a.extractColumnRefsFromExpr(v.Lexpr, fromTables, result)
+		a.extractColumnRefsFromExpr(v.Rexpr, fromTables, result)
+	case *ast.SubLink:
+		if v.Subselect != nil {
+			if subSel, ok := v.Subselect.(*ast.SelectStmt); ok {
+				subTables := a.collectFromTables(subSel)
+				for k, val := range fromTables {
+					if _, exists := subTables[k]; !exists {
+						subTables[k] = val
+					}
+				}
+				if subSel.TargetList != nil {
+					for _, item := range subSel.TargetList.Items {
+						if rt, ok := item.(*ast.ResTarget); ok {
+							a.extractColumnRefsFromExpr(rt.Val, subTables, result)
+						}
+					}
+				}
+			}
+		}
+	case *ast.TypeCast:
+		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+	case *ast.BoolExpr:
+		if v.Args != nil {
+			for _, arg := range v.Args.Items {
+				a.extractColumnRefsFromExpr(arg, fromTables, result)
+			}
+		}
+	case *ast.CaseExpr:
+		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+		if v.Args != nil {
+			for _, w := range v.Args.Items {
+				a.extractColumnRefsFromExpr(w, fromTables, result)
+			}
+		}
+		a.extractColumnRefsFromExpr(v.Defresult, fromTables, result)
+	case *ast.CaseWhen:
+		a.extractColumnRefsFromExpr(v.Expr, fromTables, result)
+		a.extractColumnRefsFromExpr(v.Result, fromTables, result)
+	case *ast.CoalesceExpr:
+		if v.Args != nil {
+			for _, arg := range v.Args.Items {
+				a.extractColumnRefsFromExpr(arg, fromTables, result)
+			}
+		}
+	default:
+	}
+}
+
+// resolveColumnRef resolves a ColumnRef to a source column using known tables.
+func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[string]base.ColumnResource, result base.SourceColumnSet) {
+	if cr == nil || cr.Fields == nil || len(cr.Fields.Items) == 0 {
+		return
+	}
+
+	var parts []string
+	for _, f := range cr.Fields.Items {
+		if s, ok := f.(*ast.String); ok {
+			parts = append(parts, s.Str)
+		}
+	}
+
+	switch len(parts) {
+	case 1:
+		colName := parts[0]
+		if _, ok := a.scope.get(colName); ok {
+			return
+		}
+		for _, resource := range fromTables {
+			rel := a.extractor.cat.GetRelation(resource.Schema, resource.Table)
+			if rel != nil && relationHasColumn(rel, colName) {
+				result[base.ColumnResource{
+					Database: resource.Database,
+					Schema:   resource.Schema,
+					Table:    resource.Table,
+					Column:   colName,
+				}] = true
+				return
+			}
+		}
+	case 2:
+		tableName := strings.ToLower(parts[0])
+		colName := parts[1]
+		if resource, ok := fromTables[tableName]; ok {
+			result[base.ColumnResource{
+				Database: resource.Database,
+				Schema:   resource.Schema,
+				Table:    resource.Table,
+				Column:   colName,
+			}] = true
+		}
+	default:
+	}
+}
+
+// relationHasColumn checks if a catalog relation has a column with the given name.
+func relationHasColumn(rel *catalog.Relation, colName string) bool {
+	lowerName := strings.ToLower(colName)
+	for _, col := range rel.Columns {
+		if strings.ToLower(col.Name) == lowerName {
+			return true
+		}
+	}
+	return false
 }

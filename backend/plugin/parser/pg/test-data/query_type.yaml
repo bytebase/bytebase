@@ -10,6 +10,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: DML
   statement: INSERT INTO t (a, b, c, d) VALUES (1, 2, 3, 4);
   defaultDatabase: db
@@ -63,6 +64,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: DDL
   statement: create table t (a int, b int, c int, d int);
   defaultDatabase: db
@@ -116,6 +118,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: Explain
   statement: EXPLAIN SELECT * FROM t;
   defaultDatabase: db
@@ -169,6 +172,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: Explain Analyze
   statement: EXPLAIN ANALYZE SELECT * FROM t1;
   defaultDatabase: db
@@ -227,6 +231,7 @@
           table: t1
           column: ""
     predicatecolumns: []
+    predicatepaths: []
 - description: UPDATE statement
   statement: UPDATE t SET a = 1 WHERE b = 2;
   defaultDatabase: db
@@ -253,6 +258,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: DELETE statement
   statement: DELETE FROM t WHERE id > 100;
   defaultDatabase: db
@@ -278,6 +284,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: MERGE statement
   statement: MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.value = source.value;
   defaultDatabase: db
@@ -290,6 +297,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: COPY statement
   statement: COPY t FROM '/tmp/data.csv' CSV;
   defaultDatabase: db
@@ -302,6 +310,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: ALTER TABLE statement
   statement: ALTER TABLE t ADD COLUMN new_col VARCHAR(255);
   defaultDatabase: db
@@ -314,6 +323,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: DROP TABLE statement
   statement: DROP TABLE IF EXISTS t CASCADE;
   defaultDatabase: db
@@ -326,6 +336,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE INDEX statement
   statement: CREATE INDEX idx_name ON t (col1, col2);
   defaultDatabase: db
@@ -338,6 +349,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE VIEW statement
   statement: CREATE VIEW v AS SELECT * FROM t WHERE status = 'active';
   defaultDatabase: db
@@ -350,6 +362,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE FUNCTION statement
   statement: CREATE FUNCTION add_numbers(a int, b int) RETURNS int AS $$ BEGIN RETURN a + b; END; $$ LANGUAGE plpgsql;
   defaultDatabase: db
@@ -362,6 +375,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE TRIGGER statement
   statement: CREATE TRIGGER audit_trigger AFTER INSERT ON t FOR EACH ROW EXECUTE FUNCTION audit_function();
   defaultDatabase: db
@@ -374,6 +388,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE SEQUENCE statement
   statement: CREATE SEQUENCE seq_id START 1 INCREMENT 1;
   defaultDatabase: db
@@ -386,6 +401,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE SCHEMA statement
   statement: CREATE SCHEMA myschema;
   defaultDatabase: db
@@ -398,6 +414,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE DATABASE statement
   statement: CREATE DATABASE mydb;
   defaultDatabase: db
@@ -410,6 +427,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: TRUNCATE statement
   statement: TRUNCATE TABLE t RESTART IDENTITY CASCADE;
   defaultDatabase: db
@@ -422,6 +440,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: SELECT INTO - should be DDL not SELECT
   statement: SELECT * INTO new_table FROM old_table WHERE id > 100;
   defaultDatabase: db
@@ -434,6 +453,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE TABLE AS statement
   statement: CREATE TABLE new_table AS SELECT * FROM old_table;
   defaultDatabase: db
@@ -446,6 +466,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: REFRESH MATERIALIZED VIEW statement
   statement: REFRESH MATERIALIZED VIEW CONCURRENTLY mv_sales;
   defaultDatabase: db
@@ -458,6 +479,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: Simple SELECT
   statement: SELECT * FROM t;
   defaultDatabase: db
@@ -468,13 +490,9 @@
   querySpan:
     type: 1
     results: []
-    sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: ""
-          column: ""
+    sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: SHOW statement
   statement: SHOW ALL;
   defaultDatabase: db
@@ -487,6 +505,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: ALTER SEQUENCE
   statement: ALTER SEQUENCE seq_id RESTART WITH 100;
   defaultDatabase: db
@@ -499,6 +518,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CREATE ROLE
   statement: CREATE ROLE admin WITH LOGIN PASSWORD 'secret';
   defaultDatabase: db
@@ -511,6 +531,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: GRANT statement - should be DDL
   statement: GRANT SELECT ON TABLE t TO user1;
   defaultDatabase: db
@@ -523,6 +544,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: VACUUM statement
   statement: VACUUM ANALYZE t;
   defaultDatabase: db
@@ -535,6 +557,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CLUSTER statement
   statement: CLUSTER t USING idx_name;
   defaultDatabase: db
@@ -547,6 +570,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: COMMENT statement
   statement: COMMENT ON TABLE t IS 'This is a test table';
   defaultDatabase: db
@@ -559,6 +583,7 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
 - description: CALL stored procedure
   statement: CALL my_procedure(1, 'test');
   defaultDatabase: db
@@ -571,3 +596,4 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+    predicatepaths: []
