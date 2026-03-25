@@ -9,6 +9,7 @@ import {
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("lazyExtractDomRefSuggestions", () => {
@@ -39,6 +40,60 @@ describe("lazyExecuteDomAction", () => {
     const result = await lazyExecuteDomAction({ type: "read", ref: "e1" });
 
     expect(result).toEqual({ success: true, message: "hello" });
+  });
+
+  test("clicks pointer-cursor containers via refs without changing ref lookup semantics", async () => {
+    vi.stubGlobal(
+      "MouseEvent",
+      class extends Event {
+        constructor(type: string, init?: EventInit) {
+          super(type, init);
+        }
+      }
+    );
+
+    const onClick = vi.fn();
+    const row = document.createElement("div");
+    row.style.cursor = "pointer";
+    row.textContent = "Prod Primary";
+    row.addEventListener("click", onClick);
+    document.body.append(row);
+
+    await expect(lazyExtractDomRefSuggestions()).resolves.toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Prod Primary",
+        value: undefined,
+      },
+    ]);
+
+    await expect(
+      lazyExecuteDomAction({ type: "click", ref: "e1" })
+    ).resolves.toEqual({ success: true, message: "Clicked div" });
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns only the top-level ref for inherited pointer-cursor wrappers", async () => {
+    document.body.innerHTML = `
+      <div style="cursor: pointer">
+        <span>Prod Primary</span>
+        <div>
+          <span>Healthy</span>
+        </div>
+      </div>
+    `;
+
+    await expect(lazyExtractDomRefSuggestions()).resolves.toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Prod Primary Healthy",
+        value: undefined,
+      },
+    ]);
   });
 
   test("returns refresh guidance for malformed, missing, and stale refs", async () => {

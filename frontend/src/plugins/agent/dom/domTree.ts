@@ -35,9 +35,126 @@ const INTERACTIVE_ROLES = new Set([
   "slider",
 ]);
 
-const NAIVE_INTERACTIVE_CLASSES = ["n-button", "n-switch", "n-checkbox"];
+const NAIVE_INTERACTIVE_CLASSES = [
+  "n-button",
+  "n-switch",
+  "n-checkbox",
+  "n-base-selection",
+];
+
+const TERMINAL_INTERACTIVE_TAGS = new Set([
+  "A",
+  "BUTTON",
+  "INPUT",
+  "SELECT",
+  "TEXTAREA",
+  "SUMMARY",
+]);
+
+const STRUCTURAL_WRAPPER_TAGS = new Set(["DIV", "SPAN", "TD", "TH"]);
+const STATEFUL_INTERACTIVE_ROLES = new Set([
+  "checkbox",
+  "radio",
+  "switch",
+  "textbox",
+  "combobox",
+  "listbox",
+  "option",
+  "slider",
+]);
+const TEXTBOX_INPUT_TYPES = new Set([
+  "",
+  "email",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "text",
+  "url",
+]);
+const CHECKABLE_INPUT_TYPES = new Set(["checkbox", "radio"]);
+const BUTTON_LIKE_INPUT_TYPES = new Set(["button", "image", "reset", "submit"]);
+const INTERACTIVE_STATE_ATTRIBUTES = [
+  "aria-checked",
+  "aria-expanded",
+  "aria-pressed",
+  "aria-selected",
+  "aria-current",
+];
 
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "PATH"]);
+const TABLE_SECTION_TAGS = new Set(["THEAD", "TBODY", "TFOOT"]);
+const TABLE_CELL_TAGS = new Set(["TH", "TD"]);
+const MAX_TEXT_NODE_LENGTH = 160;
+const MAX_LABEL_LENGTH = 120;
+const MAX_EDITOR_PREVIEW_LENGTH = 160;
+const MAX_DOM_TREE_LINES = 120;
+const MAX_DOM_TREE_CHARS = 6000;
+const ACTION_LIKE_HEADERS = new Set([
+  "action",
+  "actions",
+  "operation",
+  "operations",
+  "menu",
+]);
+const NAIVE_CONTROL_TEXT_SELECTORS = [
+  ".n-input-prefix",
+  ".n-input-suffix",
+  ".n-input__placeholder",
+  ".n-base-selection-label",
+  ".n-base-selection-placeholder",
+  ".n-base-selection-tags",
+  ".n-base-selection-input",
+  ".n-base-suffix",
+  ".n-base-loading",
+].join(",");
+
+const MAIN_CONTENT_SELECTOR = [
+  "main",
+  '[role="main"]',
+  "#bb-layout-main",
+  '[data-label="bb-main-body-wrapper"]',
+].join(",");
+const SHELL_REGION_SELECTOR = [
+  "aside",
+  "nav",
+  "header",
+  "footer",
+  '[role="navigation"]',
+  '[role="banner"]',
+  '[role="contentinfo"]',
+  '[role="complementary"]',
+  '[data-label="bb-dashboard-static-sidebar"]',
+  '[data-label="bb-dashboard-header"]',
+].join(",");
+const OVERLAY_REGION_SELECTOR = [
+  '[role="dialog"]',
+  '[aria-modal="true"]',
+  ".n-drawer",
+  ".n-modal",
+  ".n-popover",
+  ".n-dropdown-menu",
+  ".n-base-select-menu",
+  ".n-dialog",
+].join(",");
+const SECONDARY_REGION_CAPS: Partial<
+  Record<LineRegion, { lines: number; chars: number }>
+> = {
+  overlay: { lines: 24, chars: 1600 },
+  shell: { lines: 18, chars: 1200 },
+};
+const LINE_KIND_PRIORITY: Record<DomLine["kind"], number> = {
+  interactive: 0,
+  context: 1,
+  text: 2,
+};
+const LINE_REGION_PRIORITY: Record<LineRegion, number> = {
+  main: 0,
+  default: 1,
+  overlay: 2,
+  shell: 3,
+};
+const elementRegionCache = new WeakMap<Element, LineRegion>();
 
 const LANDMARK_TAGS = new Set([
   "NAV",
@@ -65,17 +182,62 @@ function isLandmark(el: Element): boolean {
   return false;
 }
 
+function getElementRegion(el?: Element): LineRegion {
+  if (!el) return "default";
+
+  const cachedRegion = elementRegionCache.get(el);
+  if (cachedRegion) return cachedRegion;
+
+  let region: LineRegion = "default";
+  if (el.closest(OVERLAY_REGION_SELECTOR)) {
+    region = "overlay";
+  } else if (el.closest(SHELL_REGION_SELECTOR)) {
+    region = "shell";
+  } else if (el.closest(MAIN_CONTENT_SELECTOR)) {
+    region = "main";
+  }
+
+  elementRegionCache.set(el, region);
+  return region;
+}
+
+function getLineRegion(line: DomLine): LineRegion {
+  return getElementRegion(line.sourceElement);
+}
+
 const elementRegistry = new Map<string, IndexedElement>();
 let nextElementRef = 1;
+
+type LineRegion = "main" | "default" | "overlay" | "shell";
+
+interface DomLine {
+  text: string;
+  kind: "interactive" | "context" | "text";
+  entry?: IndexedElement;
+  dedupeKey?: string;
+  sourceElement?: Element;
+  signature?: string;
+  semanticTag?: string;
+}
+
+type InteractiveReason = "native" | "role" | "class" | "editable" | "pointer";
+
+interface WalkContext {
+  lines: DomLine[];
+  textSeenByParent: Map<string, Set<string>>;
+  parentPath: string;
+  interactiveLabels: string[];
+  hasInteractiveAncestor: boolean;
+}
 
 function createElementRef(): string {
   return `e${nextElementRef++}`;
 }
 
-function registerElement(entry: Omit<IndexedElement, "ref">): IndexedElement {
-  const registered = { ref: createElementRef(), ...entry };
-  elementRegistry.set(registered.ref, registered);
-  return registered;
+function createIndexedElement(
+  entry: Omit<IndexedElement, "ref">
+): IndexedElement {
+  return { ref: createElementRef(), ...entry };
 }
 
 export function getElementByRef(ref: string): IndexedElement | undefined {
@@ -89,6 +251,46 @@ function isVisible(el: Element): boolean {
     style.visibility !== "hidden" &&
     style.opacity !== "0"
   );
+}
+
+function hasHiddenAncestor(el: Element): boolean {
+  return el.closest('[hidden], [aria-hidden="true"], [inert]') !== null;
+}
+
+function isPerceivable(el: Element): boolean {
+  return isVisible(el) && !hasHiddenAncestor(el);
+}
+
+function hasDisabledState(el: Element): boolean {
+  if (el.matches(":disabled") || el.hasAttribute("disabled")) return true;
+  return el.closest('[aria-disabled="true"], [disabled]') !== null;
+}
+
+function isContentEditableElement(el: Element): boolean {
+  const contentEditable = el.getAttribute("contenteditable");
+  return (
+    el instanceof HTMLElement &&
+    (el.isContentEditable ||
+      contentEditable === "" ||
+      contentEditable === "true" ||
+      contentEditable === "plaintext-only")
+  );
+}
+
+function isHiddenInput(el: Element): boolean {
+  return el instanceof HTMLInputElement && el.type === "hidden";
+}
+
+function hasPointerCursor(el: Element): boolean {
+  return window.getComputedStyle(el).cursor === "pointer";
+}
+
+function isNaiveSelectElement(el: Element): boolean {
+  return el.classList.contains("n-base-selection");
+}
+
+function isNaiveControlTextElement(el: Element): boolean {
+  return Boolean(el.closest(NAIVE_CONTROL_TEXT_SELECTORS));
 }
 
 function isMonacoEditor(el: Element): boolean {
@@ -107,54 +309,165 @@ function getMonacoContent(el: Element): string | undefined {
   return content || undefined;
 }
 
-function isInteractive(el: Element): boolean {
-  if (INTERACTIVE_TAGS.has(el.tagName)) return true;
+function getInteractiveReason(el: Element): InteractiveReason | undefined {
+  if (!isPerceivable(el) || hasDisabledState(el) || isHiddenInput(el))
+    return undefined;
+  if (INTERACTIVE_TAGS.has(el.tagName)) return "native";
 
   const role = el.getAttribute("role");
-  if (role && INTERACTIVE_ROLES.has(role)) return true;
+  if (role && INTERACTIVE_ROLES.has(role)) return "role";
 
   for (const cls of NAIVE_INTERACTIVE_CLASSES) {
-    if (el.classList.contains(cls)) return true;
+    if (el.classList.contains(cls)) return "class";
   }
 
-  return false;
+  if (isContentEditableElement(el)) return "editable";
+  if (hasPointerCursor(el)) return "pointer";
+
+  return undefined;
+}
+
+function isInteractive(el: Element): boolean {
+  return Boolean(getInteractiveReason(el));
+}
+
+function shouldRecurseIntoInteractive(el: Element): boolean {
+  if (TERMINAL_INTERACTIVE_TAGS.has(el.tagName)) return false;
+  if (isContentEditableElement(el)) return false;
+  return Array.from(el.children).length > 0;
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
+}
+
+function normalizeTextContent(text: string): string | undefined {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (!normalized) return undefined;
+  return truncateText(normalized, MAX_TEXT_NODE_LENGTH);
+}
+
+function getSiblingControlLabel(el: Element): string | undefined {
+  const parent = el.parentElement;
+  if (!parent) return undefined;
+
+  for (
+    let sibling = el.previousElementSibling;
+    sibling;
+    sibling = sibling.previousElementSibling
+  ) {
+    if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
+    const text = normalizeTextContent(sibling.textContent ?? "");
+    if (text) return truncateText(text, MAX_LABEL_LENGTH);
+  }
+
+  if (parent.children.length <= 3) {
+    for (
+      let sibling = parent.previousElementSibling;
+      sibling;
+      sibling = sibling.previousElementSibling
+    ) {
+      if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
+      const text = normalizeTextContent(sibling.textContent ?? "");
+      if (text) return truncateText(text, MAX_LABEL_LENGTH);
+    }
+  }
+
+  return undefined;
+}
+
+function getTableColumnHeaderLabel(el: Element): string | undefined {
+  const cell = el.closest("td, th");
+  if (!cell || !cell.parentElement) return undefined;
+
+  const cells = Array.from(cell.parentElement.children).filter(
+    (child): child is Element =>
+      child instanceof Element && TABLE_CELL_TAGS.has(child.tagName)
+  );
+  const columnIndex = cells.indexOf(cell);
+  if (columnIndex < 0) return undefined;
+
+  const table = cell.closest("table");
+  if (!table) return undefined;
+
+  const headerRow = table.querySelector("thead tr");
+  if (!headerRow) return undefined;
+
+  const headerCells = Array.from(headerRow.children).filter(
+    (child): child is Element =>
+      child instanceof Element && TABLE_CELL_TAGS.has(child.tagName)
+  );
+  const headerText = normalizeTextContent(
+    headerCells[columnIndex]?.textContent ?? ""
+  );
+  return headerText ? truncateText(headerText, MAX_LABEL_LENGTH) : undefined;
 }
 
 function extractLabel(el: Element): string {
   // aria-label
-  const ariaLabel = el.getAttribute("aria-label");
-  if (ariaLabel) return ariaLabel.trim();
+  const ariaLabel = normalizeTextContent(el.getAttribute("aria-label") ?? "");
+  if (ariaLabel) return truncateText(ariaLabel, MAX_LABEL_LENGTH);
 
   // aria-labelledby
   const labelledBy = el.getAttribute("aria-labelledby");
   if (labelledBy) {
     const parts = labelledBy
       .split(/\s+/)
-      .map((id) => document.getElementById(id)?.textContent?.trim())
-      .filter(Boolean);
-    if (parts.length > 0) return parts.join(" ");
+      .map((id) =>
+        normalizeTextContent(document.getElementById(id)?.textContent ?? "")
+      )
+      .filter((part): part is string => Boolean(part));
+    if (parts.length > 0) {
+      return truncateText(parts.join(" "), MAX_LABEL_LENGTH);
+    }
   }
 
   // placeholder
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    if (el.placeholder) return el.placeholder.trim();
+    const placeholder = normalizeTextContent(el.placeholder);
+    if (placeholder) return truncateText(placeholder, MAX_LABEL_LENGTH);
   }
 
   // Naive UI form-item label
   const formItem = el.closest(".n-form-item");
   if (formItem) {
-    const labelEl = formItem.querySelector(".n-form-item-label__text");
-    if (labelEl?.textContent) return labelEl.textContent.trim();
+    const label = normalizeTextContent(
+      formItem.querySelector(".n-form-item-label__text")?.textContent ?? ""
+    );
+    if (label) return truncateText(label, MAX_LABEL_LENGTH);
+  }
+
+  if (el instanceof HTMLInputElement && BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+    const buttonValue = normalizeTextContent(el.value);
+    if (buttonValue) return truncateText(buttonValue, MAX_LABEL_LENGTH);
   }
 
   // title
-  const title = el.getAttribute("title");
-  if (title) return title.trim();
+  const title = normalizeTextContent(el.getAttribute("title") ?? "");
+  if (title) return truncateText(title, MAX_LABEL_LENGTH);
+
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement ||
+    isNaiveSelectElement(el)
+  ) {
+    const siblingLabel = getSiblingControlLabel(el);
+    if (siblingLabel) return siblingLabel;
+  }
+
+  const columnHeaderLabel = getTableColumnHeaderLabel(el);
+  if (columnHeaderLabel) {
+    const normalizedHeader = normalizeLineSignature(columnHeaderLabel);
+    if (normalizedHeader && ACTION_LIKE_HEADERS.has(normalizedHeader)) {
+      return truncateText(columnHeaderLabel, MAX_LABEL_LENGTH);
+    }
+  }
 
   // text content (truncated)
-  const text = (el.textContent ?? "").trim().replace(/\s+/g, " ");
-  if (text.length > 80) return text.slice(0, 80) + "...";
-  return text;
+  const text = normalizeTextContent(el.textContent ?? "");
+  return text ? truncateText(text, MAX_LABEL_LENGTH) : "";
 }
 
 function extractValue(el: Element): string | undefined {
@@ -162,20 +475,26 @@ function extractValue(el: Element): string | undefined {
     if (el.type === "checkbox" || el.type === "radio") {
       return el.checked ? "checked" : "unchecked";
     }
-    return el.value || undefined;
+    const value = normalizeTextContent(el.value);
+    return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
   if (el instanceof HTMLTextAreaElement) {
-    return el.value || undefined;
+    const value = normalizeTextContent(el.value);
+    return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
   if (el instanceof HTMLSelectElement) {
-    return el.options[el.selectedIndex]?.text || el.value || undefined;
+    const value = normalizeTextContent(
+      el.options[el.selectedIndex]?.text || el.value || ""
+    );
+    return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
 
   // Naive UI select
   if (el.classList.contains("n-base-selection")) {
-    const label = el.querySelector(".n-base-selection-label");
-    const text = label?.textContent?.trim();
-    if (text) return text;
+    const value = normalizeTextContent(
+      el.querySelector(".n-base-selection-label")?.textContent ?? ""
+    );
+    return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
 
   // Naive UI checkbox/switch
@@ -190,6 +509,92 @@ function extractValue(el: Element): string | undefined {
   }
 
   return undefined;
+}
+function hasInteractiveState(el: Element): boolean {
+  return INTERACTIVE_STATE_ATTRIBUTES.some((name) => {
+    const value = el.getAttribute(name);
+    return value !== null && value !== "false";
+  });
+}
+
+function getFallbackLabel(el: Element, reason: InteractiveReason): string {
+  if (el instanceof HTMLInputElement) {
+    if (CHECKABLE_INPUT_TYPES.has(el.type)) return el.type;
+    if (TEXTBOX_INPUT_TYPES.has(el.type)) return "textbox";
+    if (BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+      return normalizeTextContent(el.value) ?? "";
+    }
+  }
+
+  if (el instanceof HTMLTextAreaElement) return "textbox";
+  if (el instanceof HTMLSelectElement || isNaiveSelectElement(el)) {
+    return "select";
+  }
+
+  const role = el.getAttribute("role") ?? "";
+  if (STATEFUL_INTERACTIVE_ROLES.has(role)) return role;
+  if (
+    reason === "class" &&
+    (el.classList.contains("n-checkbox") || el.classList.contains("n-switch"))
+  ) {
+    return el.classList.contains("n-switch") ? "switch" : "checkbox";
+  }
+
+  return "";
+}
+
+function shouldIndexInteractiveNode(
+  el: Element,
+  reason: InteractiveReason,
+  label: string,
+  value: string | undefined,
+  context: WalkContext
+): boolean {
+  if (reason === "pointer" && context.hasInteractiveAncestor) return false;
+
+  const hasDescriptor = Boolean(label || value || hasInteractiveState(el));
+
+  if (reason === "pointer") {
+    if (!hasDescriptor) return false;
+    if (STRUCTURAL_WRAPPER_TAGS.has(el.tagName)) {
+      const childCount = el.children.length;
+      const meaningfulDescendantCount = Array.from(el.children).filter(
+        (child) =>
+          !STRUCTURAL_WRAPPER_TAGS.has(child.tagName) || isInteractive(child)
+      ).length;
+      return (
+        childCount === 0 ||
+        meaningfulDescendantCount > 0 ||
+        el.tagName === "DIV"
+      );
+    }
+    return true;
+  }
+
+  if (el instanceof HTMLButtonElement || el instanceof HTMLAnchorElement) {
+    return hasDescriptor;
+  }
+
+  if (el instanceof HTMLInputElement) {
+    if (
+      CHECKABLE_INPUT_TYPES.has(el.type) ||
+      TEXTBOX_INPUT_TYPES.has(el.type)
+    ) {
+      return true;
+    }
+    if (BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
+      return hasDescriptor;
+    }
+    return hasDescriptor;
+  }
+
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+    return true;
+  }
+
+  if (reason === "editable") return true;
+
+  return hasDescriptor;
 }
 
 function toDomRefSuggestion({
@@ -208,49 +613,714 @@ function toDomRefSuggestion({
   };
 }
 
-function walkDom(node: Element, depth: number, lines: string[]): void {
+function normalizeLineSignature(text: string): string | undefined {
+  return normalizeTextContent(text)?.toLowerCase();
+}
+
+function splitStructuredSignature(signature: string): string[] {
+  return signature
+    .split("|")
+    .map((segment) => normalizeLineSignature(segment) ?? "")
+    .filter(Boolean);
+}
+
+function classifyTextLine(
+  parent: Element,
+  depth: number,
+  text: string
+): DomLine["kind"] {
+  if (depth <= 1 || isLandmark(parent) || text.length <= 40) {
+    return "context";
+  }
+  return "text";
+}
+
+function pushTextLine(node: Text, depth: number, context: WalkContext): void {
+  if (!node.parentElement || !isPerceivable(node.parentElement)) return;
+  if (isNaiveControlTextElement(node.parentElement)) return;
+  const text = normalizeTextContent(node.textContent ?? "");
+  if (!text) return;
+  if (context.interactiveLabels.includes(text)) return;
+
+  const seenForParent =
+    context.textSeenByParent.get(context.parentPath) ?? new Set<string>();
+  if (seenForParent.has(text)) return;
+  seenForParent.add(text);
+  context.textSeenByParent.set(context.parentPath, seenForParent);
+
+  const indent = "  ".repeat(depth);
+  context.lines.push({
+    text: `${indent}${text}`,
+    kind: classifyTextLine(node.parentElement, depth, text),
+    dedupeKey: `${depth}:${text}`,
+    sourceElement: node.parentElement,
+    signature: normalizeLineSignature(text),
+    semanticTag: node.parentElement.tagName.toLowerCase(),
+  });
+}
+
+function pushInteractiveLine(
+  depth: number,
+  entry: IndexedElement,
+  value: string | undefined,
+  context: WalkContext
+): void {
+  const indent = "  ".repeat(depth);
+  const valueAttr = value ? ` value="${value}"` : "";
+  context.lines.push({
+    text: `${indent}[${entry.ref}]<${entry.tag}${valueAttr}>${entry.label}</${entry.tag}>`,
+    kind: "interactive",
+    entry,
+    sourceElement: entry.element,
+    signature: normalizeLineSignature(entry.label),
+    semanticTag: entry.tag,
+  });
+}
+
+function pushContextLine(
+  depth: number,
+  text: string,
+  context: WalkContext,
+  dedupeKey?: string,
+  sourceElement?: Element,
+  signature?: string,
+  semanticTag?: string
+): void {
+  const indent = "  ".repeat(depth);
+  context.lines.push({
+    text: `${indent}${text}`,
+    kind: "context",
+    dedupeKey,
+    sourceElement,
+    signature,
+    semanticTag,
+  });
+}
+
+function collectSemanticTextSegments(node: Node, segments: string[]): void {
+  if (node instanceof Text) {
+    const text = normalizeTextContent(node.textContent ?? "");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
-  if (!isVisible(node)) return;
+  if (!isPerceivable(node)) return;
+
+  if (node instanceof HTMLInputElement) {
+    const text =
+      extractLabel(node) ||
+      extractValue(node) ||
+      getFallbackLabel(node, "native");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (
+    node instanceof HTMLTextAreaElement ||
+    node instanceof HTMLSelectElement
+  ) {
+    const text =
+      extractLabel(node) ||
+      extractValue(node) ||
+      getFallbackLabel(node, "native");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (isMonacoEditor(node)) {
+    const content = getMonacoContent(node);
+    if (content)
+      segments.push(truncateText(content, MAX_EDITOR_PREVIEW_LENGTH));
+    return;
+  }
+
+  const beforeChildSegments = segments.length;
+  Array.from(node.childNodes).forEach((child) => {
+    collectSemanticTextSegments(child, segments);
+  });
+
+  if (segments.length > beforeChildSegments) return;
+
+  const interactiveReason = getInteractiveReason(node);
+  if (!interactiveReason) return;
+
+  const text =
+    extractLabel(node) ||
+    getFallbackLabel(node, interactiveReason) ||
+    extractValue(node);
+  if (text) segments.push(text);
+}
+
+function collectNonInteractiveTextSegments(
+  node: Node,
+  segments: string[],
+  isRoot = false
+): void {
+  if (node instanceof Text) {
+    const text = normalizeTextContent(node.textContent ?? "");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+  if (!isRoot && getInteractiveReason(node)) return;
+  if (isNaiveControlTextElement(node)) return;
+
+  Array.from(node.childNodes).forEach((child) => {
+    collectNonInteractiveTextSegments(child, segments);
+  });
+}
+
+function extractNonInteractiveText(node: Node): string | undefined {
+  const segments: string[] = [];
+  collectNonInteractiveTextSegments(node, segments, true);
+  const uniqueSegments = [...new Set(segments)];
+  return normalizeTextContent(uniqueSegments.join(" "));
+}
+
+function extractSemanticText(node: Node): string | undefined {
+  const segments: string[] = [];
+  collectSemanticTextSegments(node, segments);
+  const uniqueSegments: string[] = [];
+  const seen = new Set<string>();
+  for (const segment of segments) {
+    if (seen.has(segment)) continue;
+    seen.add(segment);
+    uniqueSegments.push(segment);
+  }
+
+  if (node instanceof Element && uniqueSegments.length === 0) {
+    const interactiveReason = getInteractiveReason(node);
+    if (interactiveReason) {
+      const label =
+        extractLabel(node) || getFallbackLabel(node, interactiveReason);
+      const value = extractValue(node);
+      const semanticText = normalizeTextContent(label || value || "");
+      if (semanticText) return semanticText;
+    }
+  }
+
+  return normalizeTextContent(uniqueSegments.join(" "));
+}
+
+function walkTableActionableDescendants(
+  node: Node,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+  if (
+    TABLE_SECTION_TAGS.has(node.tagName) ||
+    node.tagName === "TR" ||
+    TABLE_CELL_TAGS.has(node.tagName)
+  ) {
+    Array.from(node.childNodes).forEach((child, index) => {
+      walkTableActionableDescendants(
+        child,
+        depth,
+        context,
+        `${path}/${node.tagName.toLowerCase()}[${index}]`
+      );
+    });
+    return;
+  }
+
+  if (isMonacoEditor(node)) {
+    walkDomNode(node, depth, context, path);
+    return;
+  }
+
+  const interactiveReason = getInteractiveReason(node);
+  if (interactiveReason) {
+    const value = extractValue(node);
+    const label =
+      extractLabel(node) || getFallbackLabel(node, interactiveReason);
+    if (
+      shouldIndexInteractiveNode(node, interactiveReason, label, value, context)
+    ) {
+      walkDomNode(node, depth, context, path);
+      return;
+    }
+  }
+
+  Array.from(node.childNodes).forEach((child, index) => {
+    walkTableActionableDescendants(
+      child,
+      depth,
+      context,
+      `${path}/${node.tagName.toLowerCase()}[${index}]`
+    );
+  });
+}
+
+function isUtilityTableCell(
+  cell: Element,
+  columnHeader: string | undefined,
+  cellText: string
+): boolean {
+  if (!cellText) return false;
+
+  const normalizedHeader = normalizeLineSignature(columnHeader ?? "") ?? "";
+  if (normalizedHeader && !ACTION_LIKE_HEADERS.has(normalizedHeader)) {
+    return false;
+  }
+
+  if (
+    !cell.querySelector(
+      "a, button, input, select, textarea, .n-button, .n-switch, .n-checkbox, .n-base-selection"
+    )
+  ) {
+    return false;
+  }
+
+  return !extractNonInteractiveText(cell);
+}
+
+function walkTableNode(
+  table: Element,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
+  pushContextLine(
+    depth,
+    "<table>",
+    context,
+    `${path}:table`,
+    table,
+    undefined,
+    "table"
+  );
+
+  const sectionChildren = Array.from(table.children).filter(
+    (child): child is Element =>
+      child instanceof Element && isPerceivable(child)
+  );
+
+  const rows = sectionChildren.flatMap((child) => {
+    if (TABLE_SECTION_TAGS.has(child.tagName)) {
+      return Array.from(child.children).filter(
+        (row): row is Element =>
+          row instanceof Element && row.tagName === "TR" && isPerceivable(row)
+      );
+    }
+    return child.tagName === "TR" ? [child] : [];
+  });
+
+  const headerLabels = rows.reduce<string[] | undefined>((labels, row) => {
+    if (labels) return labels;
+    const cells = Array.from(row.children).filter(
+      (cell): cell is Element =>
+        TABLE_CELL_TAGS.has(cell.tagName) && isPerceivable(cell)
+    );
+    const isHeaderRow =
+      row.parentElement?.tagName === "THEAD" ||
+      cells.every((cell) => cell.tagName === "TH");
+    if (!isHeaderRow) return labels;
+    return cells.map((cell) => extractSemanticText(cell) ?? "");
+  }, undefined);
+
+  rows.forEach((row, rowIndex) => {
+    const cells = Array.from(row.children).filter(
+      (cell): cell is Element =>
+        TABLE_CELL_TAGS.has(cell.tagName) && isPerceivable(cell)
+    );
+    if (cells.length === 0) return;
+
+    const cellTexts = cells.map((cell, cellIndex) => {
+      const cellText = extractSemanticText(cell) ?? "";
+      if (isUtilityTableCell(cell, headerLabels?.[cellIndex], cellText)) {
+        return "";
+      }
+      return cellText;
+    });
+    const rowLabel =
+      normalizeTextContent(cellTexts.filter(Boolean).join(" | ")) ??
+      extractLabel(row);
+    const isHeaderRow =
+      row.parentElement?.tagName === "THEAD" ||
+      cells.every((cell) => cell.tagName === "TH");
+
+    if (isHeaderRow) {
+      if (rowLabel) {
+        pushContextLine(
+          depth + 1,
+          `<thead>${rowLabel}</thead>`,
+          context,
+          `${path}:thead:${rowLabel}`,
+          row,
+          normalizeLineSignature(rowLabel),
+          "thead"
+        );
+      }
+      return;
+    }
+
+    const interactiveReason = getInteractiveReason(row);
+    let childContext = context;
+    if (interactiveReason) {
+      const value = extractValue(row);
+      const label =
+        rowLabel ||
+        extractLabel(row) ||
+        getFallbackLabel(row, interactiveReason);
+      if (
+        shouldIndexInteractiveNode(
+          row,
+          interactiveReason,
+          label,
+          value,
+          context
+        )
+      ) {
+        const entry = createIndexedElement({
+          tag: row.tagName.toLowerCase(),
+          role: row.getAttribute("role") ?? undefined,
+          label,
+          value,
+          element: row,
+        });
+        pushInteractiveLine(depth + 1, entry, value, context);
+        childContext = {
+          ...context,
+          interactiveLabels: label
+            ? [...context.interactiveLabels, label]
+            : context.interactiveLabels,
+          hasInteractiveAncestor: true,
+        };
+      }
+    }
+
+    if (childContext === context && rowLabel) {
+      pushContextLine(
+        depth + 1,
+        `<tr>${rowLabel}</tr>`,
+        context,
+        `${path}:tr:${rowIndex}:${rowLabel}`,
+        row,
+        normalizeLineSignature(rowLabel),
+        "tr"
+      );
+    }
+
+    cells.forEach((cell, cellIndex) => {
+      Array.from(cell.childNodes).forEach((child, childIndex) => {
+        walkTableActionableDescendants(
+          child,
+          depth + 2,
+          childContext,
+          `${path}/tr[${rowIndex}]/${cell.tagName.toLowerCase()}[${cellIndex}]/child[${childIndex}]`
+        );
+      });
+    });
+  });
+}
+
+function walkDomNode(
+  node: Node,
+  depth: number,
+  context: WalkContext,
+  path: string
+): void {
+  if (node instanceof Text) {
+    pushTextLine(node, depth, context);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+
+  if (node.tagName === "TABLE") {
+    walkTableNode(node, depth, context, path);
+    return;
+  }
 
   // Monaco editor — register as a single interactive element
   if (isMonacoEditor(node)) {
     const content = getMonacoContent(node) ?? "";
-    const preview =
-      content.length > 200 ? content.slice(0, 200) + "..." : content;
+    const preview = truncateText(content, MAX_EDITOR_PREVIEW_LENGTH);
     const label = content ? `SQL: ${preview}` : "empty editor";
-    const entry = registerElement({
+    const entry = createIndexedElement({
       tag: "editor",
       label,
       value: content,
       element: node,
     });
 
-    const indent = "  ".repeat(depth);
-    lines.push(`${indent}[${entry.ref}]<editor>${label}</editor>`);
+    pushInteractiveLine(depth, entry, undefined, context);
     return;
   }
 
-  if (isInteractive(node)) {
-    const tag = node.tagName.toLowerCase();
-    const label = extractLabel(node);
+  const interactiveReason = getInteractiveReason(node);
+  const isInteractiveNode = Boolean(interactiveReason);
+  let nextInteractiveLabels = context.interactiveLabels;
+  let hasInteractiveAncestor = context.hasInteractiveAncestor;
+  if (interactiveReason) {
+    const tag = isNaiveSelectElement(node)
+      ? "select"
+      : node.tagName.toLowerCase();
     const value = extractValue(node);
-    const role = node.getAttribute("role") ?? undefined;
-    const entry = registerElement({ tag, role, label, value, element: node });
+    const rawLabel = extractLabel(node);
+    const label = rawLabel || getFallbackLabel(node, interactiveReason);
 
-    const indent = "  ".repeat(depth);
-    const valueAttr = value ? ` value="${value}"` : "";
-    lines.push(`${indent}[${entry.ref}]<${tag}${valueAttr}>${label}</${tag}>`);
+    if (
+      shouldIndexInteractiveNode(node, interactiveReason, label, value, context)
+    ) {
+      const role = node.getAttribute("role") ?? undefined;
+      const entry = createIndexedElement({
+        tag,
+        role,
+        label,
+        value,
+        element: node,
+      });
 
-    // Don't recurse into interactive elements
-    return;
+      pushInteractiveLine(depth, entry, value, context);
+      nextInteractiveLabels = label
+        ? [...context.interactiveLabels, label]
+        : context.interactiveLabels;
+      hasInteractiveAncestor = true;
+    }
+
+    if (!shouldRecurseIntoInteractive(node)) {
+      return;
+    }
   }
 
-  // Only increment depth at landmark/semantic containers
-  const childDepth = isLandmark(node) ? depth + 1 : depth;
-  for (const child of Array.from(node.children)) {
-    walkDom(child, childDepth, lines);
+  const childDepth = isInteractiveNode
+    ? depth + 1
+    : isLandmark(node)
+      ? depth + 1
+      : depth;
+  const childContext: WalkContext = {
+    ...context,
+    parentPath: path,
+    interactiveLabels: nextInteractiveLabels,
+    hasInteractiveAncestor,
+  };
+  const childNodes = Array.from(node.childNodes);
+  childNodes.forEach((child, index) => {
+    walkDomNode(
+      child,
+      childDepth,
+      childContext,
+      `${path}/${node.tagName.toLowerCase()}[${index}]`
+    );
+  });
+}
+
+function dedupeAdjacentLines(lines: DomLine[]): DomLine[] {
+  const deduped: DomLine[] = [];
+  for (const line of lines) {
+    const previous = deduped[deduped.length - 1];
+    if (
+      previous &&
+      !line.entry &&
+      !previous.entry &&
+      previous.dedupeKey === line.dedupeKey
+    ) {
+      continue;
+    }
+    deduped.push(line);
   }
+  return deduped;
+}
+
+const WRAPPER_TAGS = new Set(["div", "span"]);
+const SEMANTIC_LINE_TAG_SCORES = new Map([
+  ["table", 50],
+  ["thead", 80],
+  ["tbody", 60],
+  ["tfoot", 60],
+  ["tr", 90],
+  ["th", 85],
+  ["td", 80],
+  ["ul", 55],
+  ["ol", 55],
+  ["li", 88],
+  ["button", 85],
+  ["a", 85],
+  ["input", 85],
+  ["select", 85],
+  ["textarea", 85],
+  ["editor", 85],
+  ["summary", 82],
+]);
+
+function getLineValueScore(line: DomLine): number {
+  const kindScore =
+    line.kind === "interactive" ? 200 : line.kind === "context" ? 120 : 40;
+  const tagScore = line.semanticTag
+    ? (SEMANTIC_LINE_TAG_SCORES.get(line.semanticTag) ??
+      (WRAPPER_TAGS.has(line.semanticTag) ? 0 : 20))
+    : 0;
+  return kindScore + tagScore;
+}
+
+function canDropEquivalentLine(line: DomLine): boolean {
+  if (line.kind !== "interactive") return true;
+  return WRAPPER_TAGS.has(line.semanticTag ?? "") && !line.entry?.value;
+}
+
+function isAncestralDuplicate(keeper: DomLine, candidate: DomLine): boolean {
+  if (!keeper.signature || !candidate.signature) return false;
+  if (!keeper.sourceElement || !candidate.sourceElement) return false;
+  if (
+    keeper.sourceElement !== candidate.sourceElement &&
+    !keeper.sourceElement.contains(candidate.sourceElement) &&
+    !candidate.sourceElement.contains(keeper.sourceElement)
+  ) {
+    return false;
+  }
+
+  if (keeper.signature === candidate.signature) {
+    return true;
+  }
+
+  if (
+    candidate.kind === "interactive" &&
+    !WRAPPER_TAGS.has(candidate.semanticTag ?? "")
+  ) {
+    return false;
+  }
+
+  const keeperSegments = splitStructuredSignature(keeper.signature);
+  if (keeperSegments.length <= 1) return false;
+
+  const candidateSegments = splitStructuredSignature(candidate.signature);
+  return (
+    candidateSegments.length === 1 &&
+    keeperSegments.includes(candidateSegments[0])
+  );
+}
+
+function dedupeEquivalentAncestorLines(lines: DomLine[]): DomLine[] {
+  return lines.filter((line, index) => {
+    if (!canDropEquivalentLine(line)) return true;
+
+    return !lines.some((other, otherIndex) => {
+      if (index === otherIndex) return false;
+      if (!isAncestralDuplicate(other, line)) return false;
+
+      const otherScore = getLineValueScore(other);
+      const lineScore = getLineValueScore(line);
+      if (otherScore !== lineScore) {
+        return otherScore > lineScore;
+      }
+
+      const otherIsCloserSemanticAncestor = Boolean(
+        other.sourceElement &&
+          line.sourceElement &&
+          other.sourceElement.contains(line.sourceElement) &&
+          other.semanticTag &&
+          !WRAPPER_TAGS.has(other.semanticTag)
+      );
+      if (otherIsCloserSemanticAncestor) {
+        return true;
+      }
+
+      return otherIndex < index;
+    });
+  });
+}
+
+function getBudgetSelectionOrder(lines: DomLine[]): number[] {
+  return lines
+    .map((_, index) => index)
+    .sort((leftIndex, rightIndex) => {
+      const left = lines[leftIndex];
+      const right = lines[rightIndex];
+
+      const kindPriorityDiff =
+        LINE_KIND_PRIORITY[left.kind] - LINE_KIND_PRIORITY[right.kind];
+      if (kindPriorityDiff !== 0) return kindPriorityDiff;
+
+      const regionPriorityDiff =
+        LINE_REGION_PRIORITY[getLineRegion(left)] -
+        LINE_REGION_PRIORITY[getLineRegion(right)];
+      if (regionPriorityDiff !== 0) return regionPriorityDiff;
+
+      const valueScoreDiff = getLineValueScore(right) - getLineValueScore(left);
+      if (valueScoreDiff !== 0) return valueScoreDiff;
+
+      const lengthDiff = left.text.length - right.text.length;
+      if (lengthDiff !== 0) return lengthDiff;
+
+      return leftIndex - rightIndex;
+    });
+}
+
+function selectBudgetedLines(lines: DomLine[]): DomLine[] {
+  const selected = new Set<number>();
+  const selectionOrder = getBudgetSelectionOrder(lines);
+  let usedLines = 0;
+  let usedChars = 0;
+  const regionUsage: Record<LineRegion, { lines: number; chars: number }> = {
+    main: { lines: 0, chars: 0 },
+    default: { lines: 0, chars: 0 },
+    overlay: { lines: 0, chars: 0 },
+    shell: { lines: 0, chars: 0 },
+  };
+
+  const trySelect = (index: number, enforceRegionCaps: boolean): void => {
+    if (selected.has(index)) return;
+    const line = lines[index];
+    const cost = line.text.length + (usedLines > 0 ? 1 : 0);
+    if (
+      usedLines >= MAX_DOM_TREE_LINES ||
+      usedChars + cost > MAX_DOM_TREE_CHARS
+    ) {
+      return;
+    }
+
+    const region = getLineRegion(line);
+    const regionCap = enforceRegionCaps
+      ? SECONDARY_REGION_CAPS[region]
+      : undefined;
+    if (regionCap) {
+      const usage = regionUsage[region];
+      if (
+        usage.lines >= regionCap.lines ||
+        usage.chars + cost > regionCap.chars
+      ) {
+        return;
+      }
+    }
+
+    selected.add(index);
+    usedLines += 1;
+    usedChars += cost;
+    regionUsage[region].lines += 1;
+    regionUsage[region].chars += cost;
+  };
+
+  selectionOrder.forEach((index) => {
+    trySelect(index, true);
+  });
+
+  const hasPrimaryRegionSelection = Array.from(selected).some((index) => {
+    const region = getLineRegion(lines[index]);
+    return region === "main" || region === "default";
+  });
+  if (!hasPrimaryRegionSelection) {
+    selectionOrder.forEach((index) => {
+      trySelect(index, false);
+    });
+  }
+
+  return lines.filter((_, index) => selected.has(index));
 }
 
 function extractDomState(root?: Element): {
@@ -260,15 +1330,33 @@ function extractDomState(root?: Element): {
 } {
   elementRegistry.clear();
   nextElementRef = 1;
-  const lines: string[] = [];
   const rootEl = root ?? document.body;
+  const lines: DomLine[] = [];
+  const context: WalkContext = {
+    lines,
+    textSeenByParent: new Map(),
+    parentPath: "root",
+    interactiveLabels: [],
+    hasInteractiveAncestor: false,
+  };
 
-  for (const child of Array.from(rootEl.children)) {
-    walkDom(child, 0, lines);
-  }
+  Array.from(rootEl.childNodes).forEach((child, index) => {
+    walkDomNode(child, 0, context, `root[${index}]`);
+  });
+
+  const keptLines = selectBudgetedLines(
+    dedupeEquivalentAncestorLines(dedupeAdjacentLines(lines))
+  );
+  const keptEntries = keptLines
+    .flatMap((line) => (line.entry ? [line.entry] : []))
+    .map((entry) => [entry.ref, entry] as const);
+  elementRegistry.clear();
+  keptEntries.forEach(([ref, entry]) => {
+    elementRegistry.set(ref, entry);
+  });
 
   return {
-    tree: lines.join("\n"),
+    tree: keptLines.map((line) => line.text).join("\n"),
     count: elementRegistry.size,
     refs: Array.from(elementRegistry.values(), toDomRefSuggestion),
   };
