@@ -366,8 +366,36 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
+  threadId?: string;
   onNavigate?: () => void;
 }
+
+const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
+let pageMutationThreadId: string | null = null;
+
+const withPageMutationLock = async <T>(
+  threadId: string | undefined,
+  toolName: string,
+  run: () => Promise<T>
+): Promise<T> => {
+  if (!PAGE_MUTATION_TOOL_NAMES.has(toolName) || !threadId) {
+    return run();
+  }
+  if (pageMutationThreadId && pageMutationThreadId !== threadId) {
+    throw new Error(
+      "Another thread is already using a page-changing tool. Wait for it to finish, then retry this thread."
+    );
+  }
+
+  pageMutationThreadId = threadId;
+  try {
+    return await run();
+  } finally {
+    if (pageMutationThreadId === threadId) {
+      pageMutationThreadId = null;
+    }
+  }
+};
 
 export function createToolExecutor(
   router: Router,
@@ -388,8 +416,11 @@ export function createToolExecutor(
       case "call_api":
         return toToolResult(await callApi(args as unknown as CallApiArgs));
       case "navigate": {
-        const result = await navigateTool(
-          args as { path?: string; list?: boolean }
+        const result = await withPageMutationLock(
+          options.threadId,
+          name,
+          async () =>
+            await navigateTool(args as { path?: string; list?: boolean })
         );
         try {
           const payload = JSON.parse(result) as {
@@ -407,7 +438,9 @@ export function createToolExecutor(
         return toToolResult(await pageStateTool(args as PageStateArgs));
       case "dom_action":
         return toToolResult(
-          await domActionTool(args as unknown as DomActionArgs)
+          await withPageMutationLock(options.threadId, name, async () => {
+            return await domActionTool(args as unknown as DomActionArgs);
+          })
         );
       case "get_skill":
         return toToolResult(await getSkill(args as GetSkillArgs));

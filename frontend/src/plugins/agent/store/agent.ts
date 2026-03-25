@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import type {
-  AgentAskUserOption,
   AgentAskUserResponse,
   AgentMessage,
   AgentPendingAsk,
@@ -27,6 +26,7 @@ interface CreateThreadOptions {
   page?: AgentThreadSnapshot;
   select?: boolean;
   title?: string;
+  archived?: boolean;
 }
 
 interface AddMessageOptions extends Message {
@@ -46,6 +46,7 @@ const createThreadRecord = (options: CreateThreadOptions = {}): AgentThread => {
     status: DEFAULT_THREAD_STATUS,
     totalTokensUsed: 0,
     page: options.page,
+    archived: options.archived ?? false,
     lastError: null,
     interrupted: false,
     runId: null,
@@ -94,30 +95,6 @@ const normalizeMessage = (
   };
 };
 
-const normalizeAskUserOption = (raw: unknown): AgentAskUserOption | null => {
-  const option = isRecord(raw) ? raw : {};
-  const label =
-    typeof option.label === "string"
-      ? option.label.trim()
-      : typeof option.value === "string"
-        ? option.value.trim()
-        : "";
-  const value = typeof option.value === "string" ? option.value.trim() : "";
-
-  if (!label || !value) {
-    return null;
-  }
-
-  return {
-    label,
-    value,
-    description:
-      typeof option.description === "string" && option.description.trim()
-        ? option.description.trim()
-        : undefined,
-  };
-};
-
 const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
   const pendingAsk = isRecord(raw) ? raw : {};
   if (
@@ -129,9 +106,34 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
 
   const options = Array.isArray(pendingAsk.options)
     ? pendingAsk.options
-        .map((option) => normalizeAskUserOption(option))
-        .filter((option): option is AgentAskUserOption => !!option)
+        .map((option) => {
+          const candidate = isRecord(option) ? option : {};
+          const label =
+            typeof candidate.label === "string"
+              ? candidate.label.trim()
+              : typeof candidate.value === "string"
+                ? candidate.value.trim()
+                : "";
+          const value =
+            typeof candidate.value === "string" ? candidate.value.trim() : "";
+          if (!label || !value) {
+            return null;
+          }
+          return {
+            label,
+            value,
+            description:
+              typeof candidate.description === "string" &&
+              candidate.description.trim()
+                ? candidate.description.trim()
+                : undefined,
+          };
+        })
+        .filter(
+          (option): option is NonNullable<typeof option> => option !== null
+        )
     : [];
+
   const kind =
     pendingAsk.kind === "confirm"
       ? "confirm"
@@ -189,6 +191,7 @@ const normalizeThread = (raw: unknown): AgentThread => {
             title: thread.page.title,
           }
         : undefined,
+    archived: Boolean(thread.archived),
     lastError:
       typeof thread.lastError === "string"
         ? thread.lastError
@@ -205,14 +208,16 @@ const sortMessages = (messages: AgentMessage[]) => {
   return messages;
 };
 
+const createEmptyPersistedState = (): PersistedAgentState => ({
+  currentThreadId: null,
+  threads: [],
+  messagesByThreadId: {},
+  pendingAskByThreadId: {},
+});
+
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
   if (!isRecord(raw)) {
-    return {
-      currentThreadId: null,
-      threads: [],
-      messagesByThreadId: {},
-      pendingAskByThreadId: {},
-    };
+    return createEmptyPersistedState();
   }
 
   const rawThreads = Array.isArray(raw.threads) ? raw.threads : [];
@@ -295,7 +300,7 @@ export const useAgentStore = defineStore("agent", () => {
   const messagesByThreadId = ref<Record<string, AgentMessage[]>>({});
   const pendingAskByThreadId = ref<Record<string, AgentPendingAsk>>({});
   const currentThreadId = ref<string | null>(null);
-  const abortController = ref<AbortController | null>(null);
+  const abortControllersByThreadId = ref<Record<string, AbortController>>({});
 
   const orderedThreads = computed(() =>
     [...threads.value].sort((a, b) => b.updatedTs - a.updatedTs)
@@ -317,13 +322,14 @@ export const useAgentStore = defineStore("agent", () => {
         ? pendingAskByThreadId.value[currentThreadId.value]
         : undefined) ?? null
   );
-  const runningThread = computed(
-    () => threads.value.find((thread) => thread.status === "running") ?? null
-  );
   const loading = computed(() => currentThread.value?.status === "running");
   const error = computed(() => currentThread.value?.lastError ?? null);
-  const hasRunningThread = computed(() => !!runningThread.value);
-  const runningThreadId = computed(() => runningThread.value?.id ?? null);
+  const runningThreadIds = computed(() =>
+    threads.value
+      .filter((thread) => thread.status === "running")
+      .map((thread) => thread.id)
+  );
+  const hasRunningThread = computed(() => runningThreadIds.value.length > 0);
 
   const getThread = (threadId?: string | null) => {
     if (!threadId) {
@@ -346,6 +352,17 @@ export const useAgentStore = defineStore("agent", () => {
     return pendingAskByThreadId.value[threadId] ?? null;
   };
 
+  const getAbortController = (threadId?: string | null) => {
+    if (!threadId) {
+      return null;
+    }
+    return abortControllersByThreadId.value[threadId] ?? null;
+  };
+
+  const isThreadRunning = (threadId?: string | null) => {
+    return getThread(threadId)?.status === "running";
+  };
+
   const touchThread = (threadId: string) => {
     const thread = getThread(threadId);
     if (!thread) {
@@ -353,6 +370,18 @@ export const useAgentStore = defineStore("agent", () => {
     }
     thread.updatedTs = Date.now();
     return thread;
+  };
+
+  const setAbortController = (
+    threadId: string,
+    controller: AbortController | null
+  ) => {
+    if (controller) {
+      abortControllersByThreadId.value[threadId] = controller;
+      return controller;
+    }
+    delete abortControllersByThreadId.value[threadId];
+    return null;
   };
 
   const clearPendingAsk = (threadId = currentThreadId.value) => {
@@ -395,16 +424,6 @@ export const useAgentStore = defineStore("agent", () => {
     return thread;
   };
 
-  const createThread = (options: CreateThreadOptions = {}) => {
-    const thread = createThreadRecord(options);
-    threads.value.push(thread);
-    messagesByThreadId.value[thread.id] = [];
-    if (options.select ?? true) {
-      currentThreadId.value = thread.id;
-    }
-    return thread;
-  };
-
   const ensureCurrentThread = (page?: AgentThreadSnapshot) => {
     const existing = getThread(currentThreadId.value);
     if (existing) {
@@ -415,6 +434,27 @@ export const useAgentStore = defineStore("agent", () => {
       return existing;
     }
     return createThread({ page });
+  };
+
+  const createThread = (options: CreateThreadOptions = {}) => {
+    const thread = createThreadRecord(options);
+    threads.value.push(thread);
+    messagesByThreadId.value[thread.id] = [];
+    if (options.select ?? true) {
+      currentThreadId.value = thread.id;
+    }
+    return thread;
+  };
+
+  const selectNextAvailableThread = (preferredThreadId?: string | null) => {
+    const preferredThread = getThread(preferredThreadId);
+    if (preferredThread) {
+      currentThreadId.value = preferredThread.id;
+      return preferredThread;
+    }
+    const fallbackThread = orderedThreads.value[0] ?? createThread();
+    currentThreadId.value = fallbackThread.id;
+    return fallbackThread;
   };
 
   const setCurrentThread = (threadId: string) => {
@@ -429,6 +469,36 @@ export const useAgentStore = defineStore("agent", () => {
       return null;
     }
     thread.page = page;
+    touchThread(threadId);
+    return thread;
+  };
+
+  const renameThread = (threadId: string, title: string) => {
+    const thread = getThread(threadId);
+    if (!thread) {
+      return null;
+    }
+    thread.title = title.trim();
+    touchThread(threadId);
+    return thread;
+  };
+
+  const archiveThread = (threadId: string) => {
+    const thread = getThread(threadId);
+    if (!thread) {
+      return null;
+    }
+    thread.archived = true;
+    touchThread(threadId);
+    return thread;
+  };
+
+  const unarchiveThread = (threadId: string) => {
+    const thread = getThread(threadId);
+    if (!thread) {
+      return null;
+    }
+    thread.archived = false;
     touchThread(threadId);
     return thread;
   };
@@ -484,7 +554,7 @@ export const useAgentStore = defineStore("agent", () => {
     toolCall: ToolCall
   ) => {
     const message = getMessages(threadId).find(
-      (message) => message.id === messageId
+      (candidate) => candidate.id === messageId
     );
     if (!message) {
       return null;
@@ -549,9 +619,20 @@ export const useAgentStore = defineStore("agent", () => {
     thread.updatedTs = Date.now();
   };
 
+  const cancel = (threadId = currentThreadId.value) => {
+    if (!threadId) {
+      return;
+    }
+    getAbortController(threadId)?.abort();
+    setAbortController(threadId, null);
+    if (isThreadRunning(threadId)) {
+      interruptRun(threadId);
+    }
+  };
+
   const clearConversation = (threadId = currentThreadId.value) => {
-    if (threadId && runningThreadId.value === threadId) {
-      cancel();
+    if (threadId && isThreadRunning(threadId)) {
+      cancel(threadId);
     }
     clearMessages(threadId);
   };
@@ -577,30 +658,19 @@ export const useAgentStore = defineStore("agent", () => {
     });
   };
 
-  const cancel = () => {
-    abortController.value?.abort();
-    abortController.value = null;
-    if (runningThreadId.value) {
-      interruptRun(runningThreadId.value);
-    }
-  };
-
   const startRun = (
     threadId: string,
     page?: AgentThreadSnapshot,
     options: {
-      replacePage?: boolean;
       runId?: string;
     } = {}
   ) => {
-    const thread = getThread(threadId);
-    const nextPage = options.replacePage ? page : (thread?.page ?? page);
     setThreadStatus(threadId, "running", {
-      page: nextPage,
+      page,
     });
-    const updatedThread = getThread(threadId);
-    if (updatedThread) {
-      updatedThread.runId = options.runId ?? updatedThread.runId ?? null;
+    const thread = getThread(threadId);
+    if (thread) {
+      thread.runId = options.runId ?? thread.runId ?? null;
     }
   };
 
@@ -619,6 +689,21 @@ export const useAgentStore = defineStore("agent", () => {
     if (thread) {
       thread.runId = null;
     }
+  };
+
+  const deleteThread = (threadId: string) => {
+    if (!getThread(threadId)) {
+      return false;
+    }
+    cancel(threadId);
+    threads.value = threads.value.filter((thread) => thread.id !== threadId);
+    delete messagesByThreadId.value[threadId];
+    delete pendingAskByThreadId.value[threadId];
+    delete abortControllersByThreadId.value[threadId];
+    if (currentThreadId.value === threadId) {
+      selectNextAvailableThread();
+    }
+    return true;
   };
 
   const saveWindowState = () => {
@@ -668,13 +753,19 @@ export const useAgentStore = defineStore("agent", () => {
         position?: { x?: number; y?: number };
         size?: { width?: number; height?: number };
       };
-      if (state.position?.x && state.position?.y) {
+      if (
+        typeof state.position?.x === "number" &&
+        typeof state.position?.y === "number"
+      ) {
         position.value = {
           x: state.position.x,
           y: state.position.y,
         };
       }
-      if (state.size?.width && state.size?.height) {
+      if (
+        typeof state.size?.width === "number" &&
+        typeof state.size?.height === "number"
+      ) {
         size.value = {
           width: state.size.width,
           height: state.size.height,
@@ -708,9 +799,9 @@ export const useAgentStore = defineStore("agent", () => {
     currentPendingAsk,
     loading,
     error,
+    runningThreadIds,
     hasRunningThread,
-    runningThreadId,
-    abortController,
+    abortControllersByThreadId,
     toggle() {
       visible.value = !visible.value;
       if (visible.value) {
@@ -726,10 +817,17 @@ export const useAgentStore = defineStore("agent", () => {
     getThread,
     getMessages,
     getPendingAsk,
+    getAbortController,
+    isThreadRunning,
+    setAbortController,
     createThread,
     ensureCurrentThread,
     setCurrentThread,
     updateThreadPage,
+    renameThread,
+    archiveThread,
+    unarchiveThread,
+    deleteThread,
     setPendingAsk,
     clearPendingAsk,
     setThreadStatus,

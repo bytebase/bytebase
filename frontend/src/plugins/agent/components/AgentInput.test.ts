@@ -203,7 +203,7 @@ describe("AgentInput", () => {
     );
   });
 
-  test("resumes pending asks with the saved thread page snapshot", async () => {
+  test("resumes pending asks with the current page snapshot", async () => {
     const store = useAgentStore();
     const threadId = store.currentThreadId!;
 
@@ -236,12 +236,12 @@ describe("AgentInput", () => {
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
-      path: "/projects/original",
-      title: "Original Page",
+      path: "/projects/other",
+      title: "Other Page",
     });
     expect(store.getThread(threadId)?.page).toEqual({
-      path: "/projects/original",
-      title: "Original Page",
+      path: "/projects/other",
+      title: "Other Page",
     });
   });
 
@@ -379,12 +379,12 @@ describe("AgentInput", () => {
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(1, {
-      path: "/projects/original",
-      title: "Original Page",
+      path: "/projects/demo",
+      title: "Demo Page",
     });
     expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(2, {
-      path: "/projects/navigated",
-      title: "Navigated Page",
+      path: "/projects/elsewhere",
+      title: "Elsewhere Page",
     });
   });
 
@@ -619,27 +619,27 @@ describe("AgentInput", () => {
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.abortController?.signal).toBe(firstSignal);
+    expect(store.getAbortController(threadId)?.signal).toBe(firstSignal);
     expect(store.loading).toBe(true);
 
     await findButtonByText(wrapper, "Stop")!.trigger("click");
     await flushPromises();
 
     expect(firstSignal?.aborted).toBe(true);
-    expect(store.abortController).toBeNull();
+    expect(store.getAbortController(threadId)).toBeNull();
     expect(store.loading).toBe(false);
 
     await wrapper.find("textarea").setValue("second request");
     await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
-    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.getAbortController(threadId)?.signal).toBe(secondSignal);
     expect(store.loading).toBe(true);
 
     firstRun.resolve({ kind: "aborted" });
     await flushPromises();
 
-    expect(store.abortController?.signal).toBe(secondSignal);
+    expect(store.getAbortController(threadId)?.signal).toBe(secondSignal);
     expect(store.loading).toBe(true);
     expect(
       store
@@ -654,7 +654,7 @@ describe("AgentInput", () => {
     });
     await flushPromises();
 
-    expect(store.abortController).toBeNull();
+    expect(store.getAbortController(threadId)).toBeNull();
     expect(store.loading).toBe(false);
   });
 
@@ -965,5 +965,57 @@ describe("AgentInput", () => {
     });
     expect(store.getPendingAsk(threadId)).toBeNull();
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+  });
+
+  test("allows sending on the selected thread while another thread is running", async () => {
+    const store = useAgentStore();
+    const firstThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({ title: "Second thread" });
+    store.setCurrentThread(firstThreadId);
+    const firstRun = createDeferred<AgentLoopOutcome>();
+
+    mockRunAgentLoop
+      .mockImplementationOnce(async () => firstRun.promise)
+      .mockResolvedValueOnce({
+        kind: "completed",
+        text: "Second done",
+        success: true,
+      });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("first request");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(store.isThreadRunning(firstThreadId)).toBe(true);
+
+    store.setCurrentThread(secondThread.id);
+    await flushPromises();
+
+    const textarea = wrapper.find("textarea");
+    expect((textarea.element as HTMLTextAreaElement).disabled).toBe(false);
+
+    await textarea.setValue("second request");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(2);
+    expect(store.isThreadRunning(secondThread.id)).toBe(false);
+    expect(store.getMessages(secondThread.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "user",
+          content: "second request",
+        }),
+      ])
+    );
+
+    firstRun.resolve({ kind: "completed", text: "First done", success: true });
+    await flushPromises();
   });
 });

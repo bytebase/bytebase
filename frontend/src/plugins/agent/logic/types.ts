@@ -48,6 +48,7 @@ export interface AgentThread {
   status: AgentThreadStatus;
   totalTokensUsed: number;
   page?: AgentThreadSnapshot;
+  archived: boolean;
   lastError?: string | null;
   interrupted?: boolean;
   runId?: string | null;

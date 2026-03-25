@@ -191,7 +191,7 @@ describe("useAgentStore", () => {
     expect(rehydratedStore.getThread(threadId)?.totalTokensUsed).toBe(0);
   });
 
-  test("preserves an existing thread page when resuming a run", () => {
+  test("updates the thread page to the latest current page when starting a run", () => {
     const store = createStore();
     const threadId = store.currentThreadId!;
 
@@ -210,8 +210,8 @@ describe("useAgentStore", () => {
     });
 
     expect(store.getThread(threadId)?.page).toEqual({
-      path: "/projects/original",
-      title: "Original Page",
+      path: "/projects/other",
+      title: "Other Page",
     });
   });
 
@@ -363,5 +363,70 @@ describe("useAgentStore", () => {
       value: "prod",
     });
     expect(store.getPendingAsk(threadId)).toBeNull();
+  });
+
+  test("migrates persisted threads without archived state", () => {
+    localStorage.setItem(
+      AGENT_STATE_KEY,
+      JSON.stringify({
+        currentThreadId: "thread-1",
+        threads: [
+          {
+            id: "thread-1",
+            title: "Existing thread",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+        ],
+        messagesByThreadId: {
+          "thread-1": [],
+        },
+        pendingAskByThreadId: {},
+      })
+    );
+
+    const store = createStore();
+
+    expect(store.getThread("thread-1")?.archived).toBe(false);
+  });
+
+  test("supports renaming, archiving, unarchiving, and deleting threads", () => {
+    const store = createStore();
+    const firstThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({ title: "Second thread" });
+
+    store.renameThread(firstThreadId, "  Renamed thread  ");
+    store.archiveThread(firstThreadId);
+
+    expect(store.getThread(firstThreadId)?.title).toBe("Renamed thread");
+    expect(store.getThread(firstThreadId)?.archived).toBe(true);
+
+    store.unarchiveThread(firstThreadId);
+    expect(store.getThread(firstThreadId)?.archived).toBe(false);
+
+    store.deleteThread(secondThread.id);
+    expect(store.getThread(secondThread.id)).toBeNull();
+    expect(store.currentThreadId).toBe(firstThreadId);
+  });
+
+  test("tracks abort controllers per thread and cancels only the requested thread", () => {
+    const store = createStore();
+    const firstThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({ title: "Second thread" });
+    const firstController = new AbortController();
+    const secondController = new AbortController();
+
+    store.startRun(firstThreadId, { path: "/projects/one", title: "One" });
+    store.startRun(secondThread.id, { path: "/projects/two", title: "Two" });
+    store.setAbortController(firstThreadId, firstController);
+    store.setAbortController(secondThread.id, secondController);
+
+    store.cancel(firstThreadId);
+
+    expect(firstController.signal.aborted).toBe(true);
+    expect(secondController.signal.aborted).toBe(false);
+    expect(store.isThreadRunning(firstThreadId)).toBe(false);
+    expect(store.isThreadRunning(secondThread.id)).toBe(true);
   });
 });

@@ -76,7 +76,16 @@ const windowStyle = computed(() => ({
   height: `${displayWindowState.value.size.height}px`,
 }));
 
-const threadControlsDisabled = computed(() => agentStore.hasRunningThread);
+const showArchivedThreads = ref(false);
+const displayedThreads = computed(() =>
+  agentStore.orderedThreads.filter((thread) => {
+    return (
+      showArchivedThreads.value ||
+      !thread.archived ||
+      thread.id === agentStore.currentThreadId
+    );
+  })
+);
 const currentThreadStatusLabel = computed(() => {
   const thread = agentStore.currentThread;
   if (!thread) {
@@ -148,13 +157,57 @@ const getCurrentPageSnapshot = () => ({
 });
 
 const getThreadLabel = (thread: AgentThread) => {
-  if (thread.title) {
-    return thread.title;
-  }
-  return `${t("agent.thread-default-title")} · ${new Date(
-    thread.createdTs
-  ).toLocaleString()}`;
+  const baseLabel = thread.title
+    ? thread.title
+    : `${t("agent.thread-default-title")} · ${new Date(
+        thread.createdTs
+      ).toLocaleString()}`;
+  return thread.archived
+    ? `${baseLabel} (${t("agent.thread-archived-label")})`
+    : baseLabel;
 };
+
+function toggleArchivedThreads() {
+  showArchivedThreads.value = !showArchivedThreads.value;
+}
+
+function renameCurrentThread() {
+  const thread = agentStore.currentThread;
+  if (!thread) {
+    return;
+  }
+  const nextTitle = window.prompt(
+    t("agent.rename-thread-prompt"),
+    thread.title || getThreadLabel(thread)
+  );
+  if (nextTitle === null) {
+    return;
+  }
+  agentStore.renameThread(thread.id, nextTitle);
+}
+
+function toggleArchiveCurrentThread() {
+  const thread = agentStore.currentThread;
+  if (!thread) {
+    return;
+  }
+  if (thread.archived) {
+    agentStore.unarchiveThread(thread.id);
+    return;
+  }
+  if (!window.confirm(t("agent.archive-thread-confirmation"))) {
+    return;
+  }
+  agentStore.archiveThread(thread.id);
+}
+
+function deleteCurrentThread() {
+  const thread = agentStore.currentThread;
+  if (!thread || !window.confirm(t("agent.delete-thread-confirmation"))) {
+    return;
+  }
+  agentStore.deleteThread(thread.id);
+}
 
 const isDragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
@@ -377,11 +430,10 @@ onBeforeUnmount(() => {
           <select
             class="min-w-0 flex-1 rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
             :value="agentStore.currentThreadId ?? ''"
-            :disabled="threadControlsDisabled"
             @change="selectThread"
           >
             <option
-              v-for="thread in agentStore.orderedThreads"
+              v-for="thread in displayedThreads"
               :key="thread.id"
               :value="thread.id"
             >
@@ -389,18 +441,50 @@ onBeforeUnmount(() => {
             </option>
           </select>
           <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-            :disabled="threadControlsDisabled"
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
             @click="createThread"
           >
             {{ $t("agent.new-thread") }}
           </button>
           <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-            :disabled="threadControlsDisabled"
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
             @click="resetCurrentThread"
           >
             {{ $t("agent.reset-thread") }}
+          </button>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2">
+          <button
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            @click="renameCurrentThread"
+          >
+            {{ $t("agent.rename-thread") }}
+          </button>
+          <button
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            @click="toggleArchiveCurrentThread"
+          >
+            {{
+              agentStore.currentThread?.archived
+                ? $t("agent.unarchive-thread")
+                : $t("agent.archive-thread")
+            }}
+          </button>
+          <button
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+            @click="deleteCurrentThread"
+          >
+            {{ $t("agent.delete-thread") }}
+          </button>
+          <button
+            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            @click="toggleArchivedThreads"
+          >
+            {{
+              showArchivedThreads
+                ? $t("agent.hide-archived-threads")
+                : $t("agent.show-archived-threads")
+            }}
           </button>
         </div>
       </div>

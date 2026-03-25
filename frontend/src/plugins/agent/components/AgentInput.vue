@@ -16,7 +16,7 @@ const router = useRouter();
 const route = useRoute();
 const agentStore = useAgentStore();
 const input = ref("");
-let currentRunToken = 0;
+const runTokens = new Map<string, number>();
 
 const currentThread = computed(() => agentStore.currentThread);
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
@@ -51,9 +51,12 @@ const confirmLabel = computed(
 const cancelLabel = computed(
   () => currentPendingAsk.value?.cancelLabel ?? t("agent.cancel")
 );
+const isCurrentThreadRunning = computed(() =>
+  agentStore.isThreadRunning(currentThread.value?.id)
+);
 const isSendDisabled = computed(() => {
   if (
-    agentStore.hasRunningThread ||
+    isCurrentThreadRunning.value ||
     isAwaitingConfirm.value ||
     isAwaitingChoose.value
   ) {
@@ -235,17 +238,6 @@ const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) => {
     .join(" · ");
 };
 
-const getThreadPageSnapshot = (threadId: string) => {
-  return agentStore.getThread(threadId)?.page;
-};
-
-const resolveThreadPageSnapshot = (
-  threadId: string,
-  fallbackPage: { path: string; title: string }
-) => {
-  return getThreadPageSnapshot(threadId) ?? fallbackPage;
-};
-
 const getCurrentPageSnapshot = () => ({
   path: route.fullPath,
   title: document.title,
@@ -301,12 +293,14 @@ async function runThread(
   runId: string
 ) {
   const controller = new AbortController();
-  const runToken = ++currentRunToken;
-  agentStore.abortController = controller;
+  const runToken = (runTokens.get(threadId) ?? 0) + 1;
+  runTokens.set(threadId, runToken);
+  agentStore.setAbortController(threadId, controller);
 
   const systemPrompt = buildSystemPrompt(page);
   const tools = getToolDefinitions();
   const executor = createToolExecutor(router, {
+    threadId,
     onNavigate: () => {
       agentStore.updateThreadPage(threadId, getCurrentPageSnapshot());
     },
@@ -368,46 +362,33 @@ async function runThread(
       outcome.totalTokensUsed ?? 0
     );
 
-    if (runToken !== currentRunToken) {
+    if (runToken !== runTokens.get(threadId)) {
       return;
     }
 
     handleOutcome(threadId, page, "Error: ", outcome);
   } finally {
-    if (
-      runToken === currentRunToken &&
-      agentStore.abortController === controller
-    ) {
-      agentStore.abortController = null;
+    if (agentStore.getAbortController(threadId) === controller) {
+      agentStore.setAbortController(threadId, null);
     }
   }
 }
 
 async function startThreadRun(
   threadId: string,
-  currentPage: { path: string; title: string },
-  options: {
-    preferCurrentPage?: boolean;
-  } = {}
+  currentPage: { path: string; title: string }
 ) {
-  const threadPage = options.preferCurrentPage
-    ? currentPage
-    : resolveThreadPageSnapshot(threadId, currentPage);
   const runId = uuidv4();
 
-  if (options.preferCurrentPage) {
-    agentStore.updateThreadPage(threadId, threadPage);
-  }
-
-  agentStore.startRun(threadId, threadPage, {
-    replacePage: options.preferCurrentPage,
+  agentStore.updateThreadPage(threadId, currentPage);
+  agentStore.startRun(threadId, currentPage, {
     runId,
   });
-  await runThread(threadId, threadPage, runId);
+  await runThread(threadId, currentPage, runId);
 }
 
 async function send() {
-  if (agentStore.hasRunningThread) {
+  if (agentStore.isThreadRunning(currentThread.value?.id)) {
     return;
   }
 
@@ -472,7 +453,10 @@ async function send() {
 }
 
 async function retryLastTurn() {
-  if (agentStore.hasRunningThread || !currentThread.value?.interrupted) {
+  if (
+    agentStore.isThreadRunning(currentThread.value?.id) ||
+    !currentThread.value?.interrupted
+  ) {
     return;
   }
 
@@ -480,9 +464,7 @@ async function retryLastTurn() {
   const currentPage = getCurrentPageSnapshot();
   agentStore.removeMessagesByRunId(threadId, currentThread.value.runId);
   agentStore.clearError(threadId);
-  await startThreadRun(threadId, currentPage, {
-    preferCurrentPage: true,
-  });
+  await startThreadRun(threadId, currentPage);
 }
 
 function dismissInterrupted() {
@@ -501,7 +483,7 @@ async function submitConfirmation(confirmed: boolean) {
   if (
     !pendingAsk ||
     pendingAsk.kind !== "confirm" ||
-    agentStore.hasRunningThread
+    agentStore.isThreadRunning(currentThread.value?.id)
   ) {
     return;
   }
@@ -531,7 +513,7 @@ async function submitChoice(option: AgentAskUserOption) {
   if (
     !pendingAsk ||
     pendingAsk.kind !== "choose" ||
-    agentStore.hasRunningThread
+    agentStore.isThreadRunning(currentThread.value?.id)
   ) {
     return;
   }
@@ -582,7 +564,7 @@ watch(
 );
 
 watch(
-  () => agentStore.hasRunningThread,
+  () => isCurrentThreadRunning.value,
   (running) => {
     if (running) {
       closeDomRefMenu();
@@ -618,14 +600,14 @@ watch(
       <div class="mt-2 flex flex-wrap gap-x-2 gap-y-2">
         <button
           class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
-          :disabled="agentStore.hasRunningThread"
+          :disabled="isCurrentThreadRunning"
           @click="retryLastTurn"
         >
           {{ $t("agent.retry-last-turn") }}
         </button>
         <button
           class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          :disabled="agentStore.hasRunningThread"
+          :disabled="isCurrentThreadRunning"
           @click="dismissInterrupted"
         >
           {{ $t("common.dismiss") }}
@@ -636,14 +618,14 @@ watch(
     <div v-if="isAwaitingConfirm" class="flex flex-wrap gap-x-2 gap-y-2">
       <button
         class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        :disabled="agentStore.hasRunningThread"
+        :disabled="isCurrentThreadRunning"
         @click="submitConfirmation(true)"
       >
         {{ confirmLabel }}
       </button>
       <button
         class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        :disabled="agentStore.hasRunningThread"
+        :disabled="isCurrentThreadRunning"
         @click="submitConfirmation(false)"
       >
         {{ cancelLabel }}
@@ -655,7 +637,7 @@ watch(
         v-for="option in chooseOptions"
         :key="option.value"
         class="rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
-        :disabled="agentStore.hasRunningThread"
+        :disabled="isCurrentThreadRunning"
         @click="submitChoice(option)"
       >
         <div class="font-medium text-gray-800">{{ option.label }}</div>
@@ -673,7 +655,7 @@ watch(
           rows="1"
           :placeholder="inputPlaceholder"
           class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-          :disabled="agentStore.hasRunningThread"
+          :disabled="isCurrentThreadRunning"
           @click="updateSelection"
           @blur="closeDomRefMenu"
           @input="updateSelection"
@@ -711,7 +693,7 @@ watch(
       <button
         v-if="agentStore.loading"
         class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
-        @click="agentStore.cancel()"
+        @click="agentStore.cancel(currentThread?.id)"
       >
         {{ $t("agent.stop") }}
       </button>
