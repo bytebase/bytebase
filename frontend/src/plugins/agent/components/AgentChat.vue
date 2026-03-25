@@ -52,7 +52,7 @@ function getToolResult(
 }
 
 watch(
-  [() => agentStore.currentThreadId, () => agentStore.messages.length],
+  [() => agentStore.currentChatId, () => agentStore.messages.length],
   async () => {
     await nextTick();
     if (chatContainer.value) {

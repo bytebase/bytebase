@@ -196,3 +196,49 @@ describe("agent tools ask_user", () => {
     });
   });
 });
+
+describe("agent tools concurrency guard", () => {
+  test("blocks concurrent page-changing tools across threads", async () => {
+    let releaseNavigation: (() => void) | undefined;
+    vi.mocked(createNavigateTool).mockImplementation(() => {
+      return vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            releaseNavigation = () =>
+              resolve(
+                JSON.stringify({
+                  navigated: true,
+                  currentPath: "/projects/demo",
+                })
+              );
+          })
+      );
+    });
+
+    const firstExecutor = createToolExecutor({} as Router, {
+      chatId: "thread-1",
+    });
+    const secondExecutor = createToolExecutor({} as Router, {
+      chatId: "thread-2",
+    });
+
+    const firstRun = firstExecutor(
+      "navigate",
+      { path: "/projects/demo" },
+      "tool-navigate-1"
+    );
+
+    await expect(
+      secondExecutor("navigate", { path: "/projects/other" }, "tool-navigate-2")
+    ).rejects.toThrow("Another chat is already using a page-changing tool");
+
+    releaseNavigation?.();
+    await expect(firstRun).resolves.toEqual({
+      kind: "tool_result",
+      result: JSON.stringify({
+        navigated: true,
+        currentPath: "/projects/demo",
+      }),
+    });
+  });
+});

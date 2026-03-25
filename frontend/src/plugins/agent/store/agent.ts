@@ -2,13 +2,12 @@ import { defineStore } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, ref, watch } from "vue";
 import type {
-  AgentAskUserOption,
   AgentAskUserResponse,
+  AgentChat,
+  AgentChatSnapshot,
+  AgentChatStatus,
   AgentMessage,
   AgentPendingAsk,
-  AgentThread,
-  AgentThreadSnapshot,
-  AgentThreadStatus,
   Message,
   ToolCall,
 } from "../logic/types";
@@ -17,43 +16,49 @@ export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
 
 interface PersistedAgentState {
-  currentThreadId: string | null;
-  threads: AgentThread[];
-  messagesByThreadId: Record<string, AgentMessage[]>;
-  pendingAskByThreadId: Record<string, AgentPendingAsk>;
+  currentChatId: string | null;
+  chats: AgentChat[];
+  messagesByChatId: Record<string, AgentMessage[]>;
+  pendingAskByChatId: Record<string, AgentPendingAsk>;
 }
 
-interface CreateThreadOptions {
-  page?: AgentThreadSnapshot;
+interface CreateChatOptions {
+  page?: AgentChatSnapshot;
   select?: boolean;
   title?: string;
+  archived?: boolean;
 }
 
 interface AddMessageOptions extends Message {
-  threadId?: string;
+  chatId?: string;
   metadata?: AgentMessage["metadata"];
 }
 
-const DEFAULT_THREAD_STATUS: AgentThreadStatus = "idle";
+const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 
-const createThreadRecord = (options: CreateThreadOptions = {}): AgentThread => {
+const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   const now = Date.now();
   return {
     id: uuidv4(),
     title: options.title ?? "",
     createdTs: now,
     updatedTs: now,
-    status: DEFAULT_THREAD_STATUS,
+    status: DEFAULT_CHAT_STATUS,
     totalTokensUsed: 0,
     page: options.page,
+    archived: options.archived ?? false,
     lastError: null,
     interrupted: false,
     runId: null,
   };
 };
 
-const getThreadTitleFromMessage = (content?: string) => {
-  const title = (content ?? "").trim().replace(/\s+/g, " ");
+const normalizeChatTitle = (title?: string) => {
+  return (title ?? "").trim();
+};
+
+const getChatTitleFromMessage = (content?: string) => {
+  const title = normalizeChatTitle(content).replace(/\s+/g, " ");
   if (!title) {
     return "";
   }
@@ -66,14 +71,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const normalizeMessage = (
   raw: unknown,
-  threadId: string,
+  chatId: string,
   fallbackTs: number
 ): AgentMessage => {
   const message = isRecord(raw) ? raw : {};
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
-    threadId:
-      typeof message.threadId === "string" ? message.threadId : threadId,
+    chatId:
+      typeof message.chatId === "string"
+        ? message.chatId
+        : typeof message.threadId === "string"
+          ? message.threadId
+          : chatId,
     createdTs:
       typeof message.createdTs === "number" ? message.createdTs : fallbackTs,
     role:
@@ -94,30 +103,6 @@ const normalizeMessage = (
   };
 };
 
-const normalizeAskUserOption = (raw: unknown): AgentAskUserOption | null => {
-  const option = isRecord(raw) ? raw : {};
-  const label =
-    typeof option.label === "string"
-      ? option.label.trim()
-      : typeof option.value === "string"
-        ? option.value.trim()
-        : "";
-  const value = typeof option.value === "string" ? option.value.trim() : "";
-
-  if (!label || !value) {
-    return null;
-  }
-
-  return {
-    label,
-    value,
-    description:
-      typeof option.description === "string" && option.description.trim()
-        ? option.description.trim()
-        : undefined,
-  };
-};
-
 const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
   const pendingAsk = isRecord(raw) ? raw : {};
   if (
@@ -129,9 +114,34 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
 
   const options = Array.isArray(pendingAsk.options)
     ? pendingAsk.options
-        .map((option) => normalizeAskUserOption(option))
-        .filter((option): option is AgentAskUserOption => !!option)
+        .map((option) => {
+          const candidate = isRecord(option) ? option : {};
+          const label =
+            typeof candidate.label === "string"
+              ? candidate.label.trim()
+              : typeof candidate.value === "string"
+                ? candidate.value.trim()
+                : "";
+          const value =
+            typeof candidate.value === "string" ? candidate.value.trim() : "";
+          if (!label || !value) {
+            return null;
+          }
+          return {
+            label,
+            value,
+            description:
+              typeof candidate.description === "string" &&
+              candidate.description.trim()
+                ? candidate.description.trim()
+                : undefined,
+          };
+        })
+        .filter(
+          (option): option is NonNullable<typeof option> => option !== null
+        )
     : [];
+
   const kind =
     pendingAsk.kind === "confirm"
       ? "confirm"
@@ -159,44 +169,45 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
   };
 };
 
-const normalizeThread = (raw: unknown): AgentThread => {
-  const thread = isRecord(raw) ? raw : {};
+const normalizeChat = (raw: unknown): AgentChat => {
+  const chat = isRecord(raw) ? raw : {};
   const now = Date.now();
   const status =
-    thread.status === "running" ||
-    thread.status === "awaiting_user" ||
-    thread.status === "error"
-      ? thread.status
-      : DEFAULT_THREAD_STATUS;
+    chat.status === "running" ||
+    chat.status === "awaiting_user" ||
+    chat.status === "error"
+      ? chat.status
+      : DEFAULT_CHAT_STATUS;
   return {
-    id: typeof thread.id === "string" ? thread.id : uuidv4(),
-    title: typeof thread.title === "string" ? thread.title : "",
-    createdTs: typeof thread.createdTs === "number" ? thread.createdTs : now,
-    updatedTs: typeof thread.updatedTs === "number" ? thread.updatedTs : now,
+    id: typeof chat.id === "string" ? chat.id : uuidv4(),
+    title: typeof chat.title === "string" ? chat.title : "",
+    createdTs: typeof chat.createdTs === "number" ? chat.createdTs : now,
+    updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
     status,
     totalTokensUsed:
-      typeof thread.totalTokensUsed === "number" &&
-      Number.isFinite(thread.totalTokensUsed) &&
-      thread.totalTokensUsed >= 0
-        ? thread.totalTokensUsed
+      typeof chat.totalTokensUsed === "number" &&
+      Number.isFinite(chat.totalTokensUsed) &&
+      chat.totalTokensUsed >= 0
+        ? chat.totalTokensUsed
         : 0,
     page:
-      isRecord(thread.page) &&
-      typeof thread.page.path === "string" &&
-      typeof thread.page.title === "string"
+      isRecord(chat.page) &&
+      typeof chat.page.path === "string" &&
+      typeof chat.page.title === "string"
         ? {
-            path: thread.page.path,
-            title: thread.page.title,
+            path: chat.page.path,
+            title: chat.page.title,
           }
         : undefined,
+    archived: Boolean(chat.archived),
     lastError:
-      typeof thread.lastError === "string"
-        ? thread.lastError
-        : thread.lastError === null
+      typeof chat.lastError === "string"
+        ? chat.lastError
+        : chat.lastError === null
           ? null
           : null,
-    interrupted: Boolean(thread.interrupted),
-    runId: typeof thread.runId === "string" ? thread.runId : null,
+    interrupted: Boolean(chat.interrupted),
+    runId: typeof chat.runId === "string" ? chat.runId : null,
   };
 };
 
@@ -205,37 +216,45 @@ const sortMessages = (messages: AgentMessage[]) => {
   return messages;
 };
 
+const createEmptyPersistedState = (): PersistedAgentState => ({
+  currentChatId: null,
+  chats: [],
+  messagesByChatId: {},
+  pendingAskByChatId: {},
+});
+
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
   if (!isRecord(raw)) {
-    return {
-      currentThreadId: null,
-      threads: [],
-      messagesByThreadId: {},
-      pendingAskByThreadId: {},
-    };
+    return createEmptyPersistedState();
   }
 
-  const rawThreads = Array.isArray(raw.threads) ? raw.threads : [];
-  const rawMessagesByThreadId = isRecord(raw.messagesByThreadId)
-    ? raw.messagesByThreadId
-    : {};
-  const rawPendingAskByThreadId = isRecord(raw.pendingAskByThreadId)
-    ? raw.pendingAskByThreadId
-    : {};
+  const rawChats = Array.isArray(raw.chats)
+    ? raw.chats
+    : Array.isArray(raw.threads)
+      ? raw.threads
+      : [];
+  const rawMessagesByChatId = isRecord(raw.messagesByChatId)
+    ? raw.messagesByChatId
+    : isRecord(raw.messagesByThreadId)
+      ? raw.messagesByThreadId
+      : {};
+  const rawPendingAskByChatId = isRecord(raw.pendingAskByChatId)
+    ? raw.pendingAskByChatId
+    : isRecord(raw.pendingAskByThreadId)
+      ? raw.pendingAskByThreadId
+      : {};
 
-  const threads = rawThreads.map((thread) => normalizeThread(thread));
-  const messagesByThreadId: Record<string, AgentMessage[]> = {};
-  const pendingAskByThreadId: Record<string, AgentPendingAsk> = {};
+  const chats = rawChats.map((chat) => normalizeChat(chat));
+  const messagesByChatId: Record<string, AgentMessage[]> = {};
+  const pendingAskByChatId: Record<string, AgentPendingAsk> = {};
 
-  for (const thread of threads) {
-    const rawMessages: unknown[] = Array.isArray(
-      rawMessagesByThreadId[thread.id]
-    )
-      ? (rawMessagesByThreadId[thread.id] as unknown[])
+  for (const chat of chats) {
+    const rawMessages: unknown[] = Array.isArray(rawMessagesByChatId[chat.id])
+      ? (rawMessagesByChatId[chat.id] as unknown[])
       : [];
     const messages = sortMessages(
       rawMessages.map((message, index) =>
-        normalizeMessage(message, thread.id, thread.createdTs + index)
+        normalizeMessage(message, chat.id, chat.createdTs + index)
       )
     );
 
@@ -244,41 +263,46 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     );
     const lastMessage = messages.at(-1);
 
-    if (!thread.title) {
-      thread.title = getThreadTitleFromMessage(firstUserMessage?.content);
+    if (!chat.title) {
+      chat.title = getChatTitleFromMessage(firstUserMessage?.content);
     }
     if (lastMessage) {
-      thread.updatedTs = Math.max(thread.updatedTs, lastMessage.createdTs);
+      chat.updatedTs = Math.max(chat.updatedTs, lastMessage.createdTs);
     }
-    if (thread.status === "running") {
-      thread.status = DEFAULT_THREAD_STATUS;
-      thread.interrupted = true;
-      thread.lastError = null;
+    if (chat.status === "running") {
+      chat.status = DEFAULT_CHAT_STATUS;
+      chat.interrupted = true;
+      chat.lastError = null;
     }
 
-    const pendingAsk = normalizePendingAsk(rawPendingAskByThreadId[thread.id]);
-    if (thread.status === "awaiting_user") {
+    const pendingAsk = normalizePendingAsk(rawPendingAskByChatId[chat.id]);
+    if (chat.status === "awaiting_user") {
       if (pendingAsk) {
-        pendingAskByThreadId[thread.id] = pendingAsk;
+        pendingAskByChatId[chat.id] = pendingAsk;
       } else {
-        thread.status = DEFAULT_THREAD_STATUS;
+        chat.status = DEFAULT_CHAT_STATUS;
       }
     }
 
-    messagesByThreadId[thread.id] = messages;
+    messagesByChatId[chat.id] = messages;
   }
 
-  const currentThreadId =
-    typeof raw.currentThreadId === "string" &&
-    threads.some((thread) => thread.id === raw.currentThreadId)
-      ? raw.currentThreadId
-      : (threads[0]?.id ?? null);
+  const savedCurrentChatId =
+    typeof raw.currentChatId === "string"
+      ? raw.currentChatId
+      : typeof raw.currentThreadId === "string"
+        ? raw.currentThreadId
+        : null;
+  const currentChatId =
+    savedCurrentChatId && chats.some((chat) => chat.id === savedCurrentChatId)
+      ? savedCurrentChatId
+      : (chats[0]?.id ?? null);
 
   return {
-    currentThreadId,
-    threads,
-    messagesByThreadId,
-    pendingAskByThreadId,
+    currentChatId,
+    chats,
+    messagesByChatId,
+    pendingAskByChatId,
   };
 };
 
@@ -289,351 +313,429 @@ export const useAgentStore = defineStore("agent", () => {
     y: window.innerHeight - 520,
   });
   const size = ref({ width: 400, height: 500 });
+  const sidebarWidth = ref(256);
   const minimized = ref(false);
 
-  const threads = ref<AgentThread[]>([]);
-  const messagesByThreadId = ref<Record<string, AgentMessage[]>>({});
-  const pendingAskByThreadId = ref<Record<string, AgentPendingAsk>>({});
-  const currentThreadId = ref<string | null>(null);
-  const abortController = ref<AbortController | null>(null);
+  const chats = ref<AgentChat[]>([]);
+  const messagesByChatId = ref<Record<string, AgentMessage[]>>({});
+  const pendingAskByChatId = ref<Record<string, AgentPendingAsk>>({});
+  const currentChatId = ref<string | null>(null);
+  const abortControllersByChatId = ref<Record<string, AbortController>>({});
 
-  const orderedThreads = computed(() =>
-    [...threads.value].sort((a, b) => b.updatedTs - a.updatedTs)
+  const orderedChats = computed(() =>
+    [...chats.value].sort((a, b) => {
+      if (b.updatedTs !== a.updatedTs) {
+        return b.updatedTs - a.updatedTs;
+      }
+      return b.createdTs - a.createdTs;
+    })
   );
-  const currentThread = computed(
-    () =>
-      threads.value.find((thread) => thread.id === currentThreadId.value) ??
-      null
+  const currentChat = computed(
+    () => chats.value.find((chat) => chat.id === currentChatId.value) ?? null
   );
   const messages = computed(
     () =>
-      (currentThreadId.value
-        ? messagesByThreadId.value[currentThreadId.value]
+      (currentChatId.value
+        ? messagesByChatId.value[currentChatId.value]
         : undefined) ?? []
   );
   const currentPendingAsk = computed(
     () =>
-      (currentThreadId.value
-        ? pendingAskByThreadId.value[currentThreadId.value]
+      (currentChatId.value
+        ? pendingAskByChatId.value[currentChatId.value]
         : undefined) ?? null
   );
-  const runningThread = computed(
-    () => threads.value.find((thread) => thread.status === "running") ?? null
+  const loading = computed(() => currentChat.value?.status === "running");
+  const error = computed(() => currentChat.value?.lastError ?? null);
+  const runningChatIds = computed(() =>
+    chats.value
+      .filter((chat) => chat.status === "running")
+      .map((chat) => chat.id)
   );
-  const loading = computed(() => currentThread.value?.status === "running");
-  const error = computed(() => currentThread.value?.lastError ?? null);
-  const hasRunningThread = computed(() => !!runningThread.value);
-  const runningThreadId = computed(() => runningThread.value?.id ?? null);
+  const hasRunningChat = computed(() => runningChatIds.value.length > 0);
 
-  const getThread = (threadId?: string | null) => {
-    if (!threadId) {
+  const getChat = (chatId?: string | null) => {
+    if (!chatId) {
       return null;
     }
-    return threads.value.find((thread) => thread.id === threadId) ?? null;
+    return chats.value.find((chat) => chat.id === chatId) ?? null;
   };
 
-  const getMessages = (threadId?: string | null) => {
-    if (!threadId) {
+  const getMessages = (chatId?: string | null) => {
+    if (!chatId) {
       return [];
     }
-    return messagesByThreadId.value[threadId] ?? [];
+    return messagesByChatId.value[chatId] ?? [];
   };
 
-  const getPendingAsk = (threadId = currentThreadId.value) => {
-    if (!threadId) {
+  const getPendingAsk = (chatId = currentChatId.value) => {
+    if (!chatId) {
       return null;
     }
-    return pendingAskByThreadId.value[threadId] ?? null;
+    return pendingAskByChatId.value[chatId] ?? null;
   };
 
-  const touchThread = (threadId: string) => {
-    const thread = getThread(threadId);
-    if (!thread) {
+  const getAbortController = (chatId?: string | null) => {
+    if (!chatId) {
       return null;
     }
-    thread.updatedTs = Date.now();
-    return thread;
+    return abortControllersByChatId.value[chatId] ?? null;
   };
 
-  const clearPendingAsk = (threadId = currentThreadId.value) => {
-    if (!threadId || !pendingAskByThreadId.value[threadId]) {
+  const isChatRunning = (chatId?: string | null) => {
+    return getChat(chatId)?.status === "running";
+  };
+
+  const touchChat = (chatId: string) => {
+    const chat = getChat(chatId);
+    if (!chat) {
+      return null;
+    }
+    chat.updatedTs = Date.now();
+    return chat;
+  };
+
+  const setAbortController = (
+    chatId: string,
+    controller: AbortController | null
+  ) => {
+    if (controller) {
+      abortControllersByChatId.value[chatId] = controller;
+      return controller;
+    }
+    delete abortControllersByChatId.value[chatId];
+    return null;
+  };
+
+  const clearPendingAsk = (chatId = currentChatId.value) => {
+    if (!chatId || !pendingAskByChatId.value[chatId]) {
       return;
     }
-    delete pendingAskByThreadId.value[threadId];
-    touchThread(threadId);
+    delete pendingAskByChatId.value[chatId];
+    touchChat(chatId);
   };
 
-  const setPendingAsk = (threadId: string, pendingAsk: AgentPendingAsk) => {
-    pendingAskByThreadId.value[threadId] = pendingAsk;
-    touchThread(threadId);
+  const setPendingAsk = (chatId: string, pendingAsk: AgentPendingAsk) => {
+    pendingAskByChatId.value[chatId] = pendingAsk;
+    touchChat(chatId);
     return pendingAsk;
   };
 
-  const setThreadStatus = (
-    threadId: string,
-    status: AgentThreadStatus,
+  const setChatStatus = (
+    chatId: string,
+    status: AgentChatStatus,
     options: {
       interrupted?: boolean;
       lastError?: string | null;
-      page?: AgentThreadSnapshot;
+      page?: AgentChatSnapshot;
     } = {}
   ) => {
-    const thread = getThread(threadId);
-    if (!thread) {
+    const chat = getChat(chatId);
+    if (!chat) {
       return null;
     }
-    thread.status = status;
-    thread.interrupted = options.interrupted ?? false;
-    thread.lastError = options.lastError ?? null;
+    chat.status = status;
+    chat.interrupted = options.interrupted ?? false;
+    chat.lastError = options.lastError ?? null;
     if (options.page) {
-      thread.page = options.page;
+      chat.page = options.page;
     }
     if (status !== "awaiting_user") {
-      delete pendingAskByThreadId.value[threadId];
+      delete pendingAskByChatId.value[chatId];
     }
-    touchThread(threadId);
-    return thread;
+    touchChat(chatId);
+    return chat;
   };
 
-  const createThread = (options: CreateThreadOptions = {}) => {
-    const thread = createThreadRecord(options);
-    threads.value.push(thread);
-    messagesByThreadId.value[thread.id] = [];
-    if (options.select ?? true) {
-      currentThreadId.value = thread.id;
-    }
-    return thread;
-  };
-
-  const ensureCurrentThread = (page?: AgentThreadSnapshot) => {
-    const existing = getThread(currentThreadId.value);
+  const ensureCurrentChat = (page?: AgentChatSnapshot) => {
+    const existing = getChat(currentChatId.value);
     if (existing) {
       if (page && !existing.page) {
         existing.page = page;
-        touchThread(existing.id);
+        touchChat(existing.id);
       }
       return existing;
     }
-    return createThread({ page });
+    return createChat({ page });
   };
 
-  const setCurrentThread = (threadId: string) => {
-    if (getThread(threadId)) {
-      currentThreadId.value = threadId;
+  const createChat = (options: CreateChatOptions = {}) => {
+    const chat = createChatRecord(options);
+    chats.value.push(chat);
+    messagesByChatId.value[chat.id] = [];
+    const shouldSelect =
+      (options.select ?? true) &&
+      (!hasRunningChat.value || currentChatId.value === null);
+    if (shouldSelect) {
+      currentChatId.value = chat.id;
+    }
+    return chat;
+  };
+
+  const selectNextAvailableChat = (preferredChatId?: string | null) => {
+    const preferredChat = getChat(preferredChatId);
+    if (preferredChat) {
+      currentChatId.value = preferredChat.id;
+      return preferredChat;
+    }
+    const fallbackChat = orderedChats.value[0] ?? createChat();
+    currentChatId.value = fallbackChat.id;
+    return fallbackChat;
+  };
+
+  const canSelectChat = (chatId?: string | null) => {
+    if (!chatId || !getChat(chatId)) {
+      return false;
+    }
+    return !hasRunningChat.value || currentChatId.value === chatId;
+  };
+
+  const setCurrentChat = (chatId: string) => {
+    if (canSelectChat(chatId)) {
+      currentChatId.value = chatId;
     }
   };
 
-  const updateThreadPage = (threadId: string, page: AgentThreadSnapshot) => {
-    const thread = getThread(threadId);
-    if (!thread) {
+  const updateChatPage = (chatId: string, page: AgentChatSnapshot) => {
+    const chat = getChat(chatId);
+    if (!chat) {
       return null;
     }
-    thread.page = page;
-    touchThread(threadId);
-    return thread;
+    chat.page = page;
+    touchChat(chatId);
+    return chat;
+  };
+
+  const renameChat = (chatId: string, title: string) => {
+    const chat = getChat(chatId);
+    if (!chat) {
+      return null;
+    }
+    const normalizedTitle = normalizeChatTitle(title);
+    if (chat.title === normalizedTitle) {
+      return chat;
+    }
+    chat.title = normalizedTitle;
+    touchChat(chatId);
+    return chat;
+  };
+
+  const archiveChat = (chatId: string) => {
+    const chat = getChat(chatId);
+    if (!chat) {
+      return null;
+    }
+    chat.archived = true;
+    touchChat(chatId);
+    return chat;
+  };
+
+  const unarchiveChat = (chatId: string) => {
+    const chat = getChat(chatId);
+    if (!chat) {
+      return null;
+    }
+    chat.archived = false;
+    touchChat(chatId);
+    return chat;
   };
 
   const addMessage = (message: AddMessageOptions) => {
-    const thread = getThread(message.threadId) ?? ensureCurrentThread();
+    const chat = getChat(message.chatId) ?? ensureCurrentChat();
     const createdTs = Date.now();
     const agentMessage: AgentMessage = {
       ...message,
       id: uuidv4(),
-      threadId: thread.id,
+      chatId: chat.id,
       createdTs,
     };
-    const threadMessages = getMessages(thread.id);
-    if (threadMessages.length === 0) {
-      messagesByThreadId.value[thread.id] = threadMessages;
+    const chatMessages = getMessages(chat.id);
+    if (chatMessages.length === 0) {
+      messagesByChatId.value[chat.id] = chatMessages;
     }
-    threadMessages.push(agentMessage);
-    if (message.role === "user" && !thread.title) {
-      thread.title = getThreadTitleFromMessage(message.content);
+    chatMessages.push(agentMessage);
+    if (message.role === "user" && !chat.title) {
+      chat.title = getChatTitleFromMessage(message.content);
     }
-    thread.lastError = null;
-    thread.interrupted = false;
-    thread.updatedTs = createdTs;
+    chat.lastError = null;
+    chat.interrupted = false;
+    chat.updatedTs = createdTs;
     return agentMessage;
   };
 
-  const removeMessagesByRunId = (threadId: string, runId?: string | null) => {
+  const removeMessagesByRunId = (chatId: string, runId?: string | null) => {
     if (!runId) {
       return [];
     }
-    const thread = getThread(threadId);
-    if (!thread) {
+    const chat = getChat(chatId);
+    if (!chat) {
       return [];
     }
-    const existingMessages = getMessages(threadId);
+    const existingMessages = getMessages(chatId);
     const removedMessages = existingMessages.filter(
       (message) => message.metadata?.runId === runId
     );
     if (removedMessages.length === 0) {
       return [];
     }
-    messagesByThreadId.value[threadId] = existingMessages.filter(
+    messagesByChatId.value[chatId] = existingMessages.filter(
       (message) => message.metadata?.runId !== runId
     );
-    touchThread(threadId);
+    touchChat(chatId);
     return removedMessages;
   };
 
   const appendToolCall = (
-    threadId: string,
+    chatId: string,
     messageId: string,
     toolCall: ToolCall
   ) => {
-    const message = getMessages(threadId).find(
-      (message) => message.id === messageId
+    const message = getMessages(chatId).find(
+      (candidate) => candidate.id === messageId
     );
     if (!message) {
       return null;
     }
     message.toolCalls = [...(message.toolCalls ?? []), toolCall];
-    touchThread(threadId);
+    touchChat(chatId);
     return message;
   };
 
-  const incrementThreadTotalTokens = (
-    threadId: string,
+  const incrementChatTotalTokens = (
+    chatId: string,
     totalTokensUsed: number
   ) => {
-    const thread = getThread(threadId);
-    if (!thread || totalTokensUsed <= 0) {
+    const chat = getChat(chatId);
+    if (!chat || totalTokensUsed <= 0) {
       return null;
     }
-    thread.totalTokensUsed += totalTokensUsed;
-    touchThread(threadId);
-    return thread;
+    chat.totalTokensUsed += totalTokensUsed;
+    touchChat(chatId);
+    return chat;
   };
 
-  const awaitUser = (threadId: string, pendingAsk: AgentPendingAsk) => {
-    setThreadStatus(threadId, "awaiting_user");
-    return setPendingAsk(threadId, pendingAsk);
+  const awaitUser = (chatId: string, pendingAsk: AgentPendingAsk) => {
+    setChatStatus(chatId, "awaiting_user");
+    return setPendingAsk(chatId, pendingAsk);
   };
 
   const answerPendingAsk = (
-    threadId: string,
+    chatId: string,
     response: AgentAskUserResponse,
     metadata?: AgentMessage["metadata"]
   ) => {
-    const pendingAsk = getPendingAsk(threadId);
+    const pendingAsk = getPendingAsk(chatId);
     if (!pendingAsk) {
       return null;
     }
     const toolMessage = addMessage({
-      threadId,
+      chatId,
       role: "tool",
       toolCallId: pendingAsk.toolCallId,
       content: JSON.stringify(response),
       metadata,
     });
-    clearPendingAsk(threadId);
+    clearPendingAsk(chatId);
     return toolMessage;
   };
 
-  const clearMessages = (threadId = currentThreadId.value) => {
-    const thread = getThread(threadId);
-    if (!thread) {
+  const cancel = (chatId = currentChatId.value) => {
+    if (!chatId) {
       return;
     }
-    messagesByThreadId.value[thread.id] = [];
-    delete pendingAskByThreadId.value[thread.id];
-    thread.title = "";
-    thread.page = undefined;
-    thread.status = DEFAULT_THREAD_STATUS;
-    thread.totalTokensUsed = 0;
-    thread.lastError = null;
-    thread.interrupted = false;
-    thread.runId = null;
-    thread.updatedTs = Date.now();
-  };
-
-  const clearConversation = (threadId = currentThreadId.value) => {
-    if (threadId && runningThreadId.value === threadId) {
-      cancel();
+    getAbortController(chatId)?.abort();
+    setAbortController(chatId, null);
+    if (isChatRunning(chatId)) {
+      interruptChatRun(chatId);
     }
-    clearMessages(threadId);
   };
 
-  const clearError = (threadId = currentThreadId.value) => {
-    const thread = getThread(threadId);
-    if (!thread) {
+  const clearError = (chatId = currentChatId.value) => {
+    const chat = getChat(chatId);
+    if (!chat) {
       return;
     }
-    thread.lastError = null;
-    thread.interrupted = false;
-    thread.runId = null;
-    if (thread.status === "error") {
-      thread.status = DEFAULT_THREAD_STATUS;
+    chat.lastError = null;
+    chat.interrupted = false;
+    chat.runId = null;
+    if (chat.status === "error") {
+      chat.status = DEFAULT_CHAT_STATUS;
     }
-    touchThread(thread.id);
+    touchChat(chat.id);
   };
 
-  const interruptRun = (threadId: string, page?: AgentThreadSnapshot) => {
-    setThreadStatus(threadId, DEFAULT_THREAD_STATUS, {
+  const interruptChatRun = (chatId: string, page?: AgentChatSnapshot) => {
+    setChatStatus(chatId, DEFAULT_CHAT_STATUS, {
       interrupted: true,
       page,
     });
   };
 
-  const cancel = () => {
-    abortController.value?.abort();
-    abortController.value = null;
-    if (runningThreadId.value) {
-      interruptRun(runningThreadId.value);
-    }
-  };
-
-  const startRun = (
-    threadId: string,
-    page?: AgentThreadSnapshot,
+  const startChatRun = (
+    chatId: string,
+    page?: AgentChatSnapshot,
     options: {
-      replacePage?: boolean;
       runId?: string;
     } = {}
   ) => {
-    const thread = getThread(threadId);
-    const nextPage = options.replacePage ? page : (thread?.page ?? page);
-    setThreadStatus(threadId, "running", {
-      page: nextPage,
+    setChatStatus(chatId, "running", {
+      page,
     });
-    const updatedThread = getThread(threadId);
-    if (updatedThread) {
-      updatedThread.runId = options.runId ?? updatedThread.runId ?? null;
+    const chat = getChat(chatId);
+    if (chat) {
+      chat.runId = options.runId ?? chat.runId ?? null;
     }
   };
 
-  const finishRun = (
-    threadId: string,
+  const finishChatRun = (
+    chatId: string,
     options: {
-      status?: Extract<AgentThreadStatus, "idle" | "error">;
+      status?: Extract<AgentChatStatus, "idle" | "error">;
       lastError?: string | null;
     } = {}
   ) => {
-    setThreadStatus(threadId, options.status ?? DEFAULT_THREAD_STATUS, {
+    setChatStatus(chatId, options.status ?? DEFAULT_CHAT_STATUS, {
       lastError: options.lastError ?? null,
       interrupted: false,
     });
-    const thread = getThread(threadId);
-    if (thread) {
-      thread.runId = null;
+    const chat = getChat(chatId);
+    if (chat) {
+      chat.runId = null;
     }
+  };
+
+  const deleteChat = (chatId: string) => {
+    if (!getChat(chatId)) {
+      return false;
+    }
+    cancel(chatId);
+    chats.value = chats.value.filter((chat) => chat.id !== chatId);
+    delete messagesByChatId.value[chatId];
+    delete pendingAskByChatId.value[chatId];
+    delete abortControllersByChatId.value[chatId];
+    if (currentChatId.value === chatId) {
+      selectNextAvailableChat();
+    }
+    return true;
   };
 
   const saveWindowState = () => {
     localStorage.setItem(
       AGENT_WINDOW_KEY,
-      JSON.stringify({ position: position.value, size: size.value })
+      JSON.stringify({
+        position: position.value,
+        size: size.value,
+        sidebarWidth: sidebarWidth.value,
+      })
     );
   };
 
   const saveState = () => {
     const persistedState: PersistedAgentState = {
-      currentThreadId: currentThreadId.value,
-      threads: threads.value,
-      messagesByThreadId: messagesByThreadId.value,
-      pendingAskByThreadId: pendingAskByThreadId.value,
+      currentChatId: currentChatId.value,
+      chats: chats.value,
+      messagesByChatId: messagesByChatId.value,
+      pendingAskByChatId: pendingAskByChatId.value,
     };
     localStorage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
   };
@@ -643,18 +745,18 @@ export const useAgentStore = defineStore("agent", () => {
     if (saved) {
       try {
         const state = normalizePersistedState(JSON.parse(saved));
-        threads.value = state.threads;
-        messagesByThreadId.value = state.messagesByThreadId;
-        pendingAskByThreadId.value = state.pendingAskByThreadId;
-        currentThreadId.value = state.currentThreadId;
+        chats.value = state.chats;
+        messagesByChatId.value = state.messagesByChatId;
+        pendingAskByChatId.value = state.pendingAskByChatId;
+        currentChatId.value = state.currentChatId;
       } catch {
         localStorage.removeItem(AGENT_STATE_KEY);
       }
     }
 
-    if (!currentThreadId.value || !getThread(currentThreadId.value)) {
-      const thread = createThread();
-      currentThreadId.value = thread.id;
+    if (!currentChatId.value || !getChat(currentChatId.value)) {
+      const chat = createChat();
+      currentChatId.value = chat.id;
     }
   };
 
@@ -667,18 +769,28 @@ export const useAgentStore = defineStore("agent", () => {
       const state = JSON.parse(saved) as {
         position?: { x?: number; y?: number };
         size?: { width?: number; height?: number };
+        sidebarWidth?: number;
       };
-      if (state.position?.x && state.position?.y) {
+      if (
+        typeof state.position?.x === "number" &&
+        typeof state.position?.y === "number"
+      ) {
         position.value = {
           x: state.position.x,
           y: state.position.y,
         };
       }
-      if (state.size?.width && state.size?.height) {
+      if (
+        typeof state.size?.width === "number" &&
+        typeof state.size?.height === "number"
+      ) {
         size.value = {
           width: state.size.width,
           height: state.size.height,
         };
+      }
+      if (typeof state.sidebarWidth === "number") {
+        sidebarWidth.value = state.sidebarWidth;
       }
     } catch {
       localStorage.removeItem(AGENT_WINDOW_KEY);
@@ -686,7 +798,7 @@ export const useAgentStore = defineStore("agent", () => {
   };
 
   watch(
-    [threads, messagesByThreadId, pendingAskByThreadId, currentThreadId],
+    [chats, messagesByChatId, pendingAskByChatId, currentChatId],
     saveState,
     {
       deep: true,
@@ -699,18 +811,19 @@ export const useAgentStore = defineStore("agent", () => {
     visible,
     position,
     size,
+    sidebarWidth,
     minimized,
-    threads,
-    orderedThreads,
-    currentThreadId,
-    currentThread,
+    chats,
+    orderedChats,
+    currentChatId,
+    currentChat,
     messages,
     currentPendingAsk,
     loading,
     error,
-    hasRunningThread,
-    runningThreadId,
-    abortController,
+    runningChatIds,
+    hasRunningChat,
+    abortControllersByChatId,
     toggle() {
       visible.value = !visible.value;
       if (visible.value) {
@@ -723,28 +836,34 @@ export const useAgentStore = defineStore("agent", () => {
     restore() {
       minimized.value = false;
     },
-    getThread,
+    getChat,
     getMessages,
     getPendingAsk,
-    createThread,
-    ensureCurrentThread,
-    setCurrentThread,
-    updateThreadPage,
+    getAbortController,
+    isChatRunning,
+    canSelectChat,
+    setAbortController,
+    createChat,
+    ensureCurrentChat,
+    setCurrentChat,
+    updateChatPage,
+    renameChat,
+    archiveChat,
+    unarchiveChat,
+    deleteChat,
     setPendingAsk,
     clearPendingAsk,
-    setThreadStatus,
-    startRun,
-    finishRun,
-    interruptRun,
+    setChatStatus,
+    startChatRun,
+    finishChatRun,
+    interruptChatRun,
     awaitUser,
     answerPendingAsk,
-    touchThread,
-    incrementThreadTotalTokens,
+    touchChat,
+    incrementChatTotalTokens,
     addMessage,
     removeMessagesByRunId,
     appendToolCall,
-    clearMessages,
-    clearConversation,
     clearError,
     cancel,
     saveWindowState,

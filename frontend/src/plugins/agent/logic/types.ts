@@ -18,9 +18,9 @@ export interface Message {
   toolCallId?: string;
 }
 
-export type AgentThreadStatus = "idle" | "running" | "awaiting_user" | "error";
+export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
 
-export interface AgentThreadSnapshot {
+export interface AgentChatSnapshot {
   path: string;
   title: string;
 }
@@ -35,19 +35,20 @@ export interface AgentMessageMetadata {
 
 export interface AgentMessage extends Message {
   id: string;
-  threadId: string;
+  chatId: string;
   createdTs: number;
   metadata?: AgentMessageMetadata;
 }
 
-export interface AgentThread {
+export interface AgentChat {
   id: string;
   title: string;
   createdTs: number;
   updatedTs: number;
-  status: AgentThreadStatus;
+  status: AgentChatStatus;
   totalTokensUsed: number;
-  page?: AgentThreadSnapshot;
+  page?: AgentChatSnapshot;
+  archived: boolean;
   lastError?: string | null;
   interrupted?: boolean;
   runId?: string | null;

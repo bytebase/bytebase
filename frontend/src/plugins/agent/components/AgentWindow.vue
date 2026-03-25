@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { NInput, NPopconfirm } from "naive-ui";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import type { AgentThread } from "../logic/types";
+import type { AgentChat as AgentChatRecord } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentChat from "./AgentChat.vue";
 import AgentInput from "./AgentInput.vue";
@@ -14,6 +22,8 @@ const agentStore = useAgentStore();
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 400;
 const WINDOW_MARGIN = 16;
+const MIN_SIDEBAR_WIDTH = 180;
+const MIN_MAIN_PANEL_WIDTH = 240;
 
 const windowRef = ref<HTMLElement | null>(null);
 const viewportSize = ref({
@@ -69,6 +79,31 @@ const displayWindowState = computed(() => {
   return { position, size };
 });
 
+const getSidebarWidthBounds = (
+  windowWidth = displayWindowState.value.size.width
+) => {
+  const maxSidebarWidth = Math.max(
+    MIN_SIDEBAR_WIDTH,
+    windowWidth - MIN_MAIN_PANEL_WIDTH
+  );
+  return {
+    min: Math.min(MIN_SIDEBAR_WIDTH, maxSidebarWidth),
+    max: maxSidebarWidth,
+  };
+};
+
+const clampSidebarWidth = (
+  width: number,
+  windowWidth = displayWindowState.value.size.width
+) => {
+  const bounds = getSidebarWidthBounds(windowWidth);
+  return Math.min(bounds.max, Math.max(bounds.min, Math.round(width)));
+};
+
+const sidebarStyle = computed(() => ({
+  width: `${clampSidebarWidth(agentStore.sidebarWidth)}px`,
+}));
+
 const windowStyle = computed(() => ({
   left: `${displayWindowState.value.position.x}px`,
   top: `${displayWindowState.value.position.y}px`,
@@ -76,48 +111,57 @@ const windowStyle = computed(() => ({
   height: `${displayWindowState.value.size.height}px`,
 }));
 
-const threadControlsDisabled = computed(() => agentStore.hasRunningThread);
-const currentThreadStatusLabel = computed(() => {
-  const thread = agentStore.currentThread;
-  if (!thread) {
-    return t("agent.thread-status-idle");
+const showArchivedChats = ref(false);
+const displayedChats = computed(() =>
+  agentStore.orderedChats.filter((chat) => {
+    return (
+      showArchivedChats.value ||
+      !chat.archived ||
+      chat.id === agentStore.currentChatId
+    );
+  })
+);
+const currentChatStatusLabel = computed(() => {
+  const chat = agentStore.currentChat;
+  if (!chat) {
+    return t("agent.chat-status-idle");
   }
-  if (thread.interrupted) {
-    return t("agent.thread-status-interrupted");
+  if (chat.interrupted) {
+    return t("agent.chat-status-interrupted");
   }
-  switch (thread.status) {
+  switch (chat.status) {
     case "running":
-      return t("agent.thread-status-running");
+      return t("agent.chat-status-running");
     case "awaiting_user":
-      return t("agent.thread-status-awaiting-user");
+      return t("agent.chat-status-awaiting-user");
     case "error":
-      return t("agent.thread-status-error");
+      return t("agent.chat-status-error");
     default:
-      return t("agent.thread-status-idle");
+      return t("agent.chat-status-idle");
   }
 });
-const currentThreadStatusClass = computed(() => {
-  const thread = agentStore.currentThread;
-  if (!thread || thread.status === "idle") {
+const currentChatStatusClass = computed(() => {
+  const chat = agentStore.currentChat;
+  if (!chat || chat.status === "idle") {
     return "bg-gray-100 text-gray-600";
   }
-  if (thread.status === "running") {
+  if (chat.status === "running") {
     return "bg-blue-50 text-blue-600";
   }
-  if (thread.interrupted || thread.status === "error") {
+  if (chat.interrupted || chat.status === "error") {
     return "bg-red-50 text-red-600";
   }
   return "bg-amber-50 text-amber-600";
 });
 
 const tokenFormatter = new Intl.NumberFormat();
-const currentThreadTokenUsageLabel = computed(() =>
-  t("agent.thread-total-tokens", {
-    count: tokenFormatter.format(
-      agentStore.currentThread?.totalTokensUsed ?? 0
-    ),
+const currentChatTokenUsageLabel = computed(() =>
+  t("agent.chat-total-tokens", {
+    count: tokenFormatter.format(agentStore.currentChat?.totalTokensUsed ?? 0),
   })
 );
+const isChatSwitchLocked = computed(() => agentStore.hasRunningChat);
+const isChatCreationDisabled = computed(() => agentStore.hasRunningChat);
 
 function syncSize(width: number, height: number) {
   const size = getDisplaySize(width, height);
@@ -135,6 +179,13 @@ function syncPosition() {
   agentStore.position.y = position.y;
 }
 
+function syncSidebarWidth(
+  width = agentStore.sidebarWidth,
+  windowWidth = displayWindowState.value.size.width
+) {
+  agentStore.sidebarWidth = clampSidebarWidth(width, windowWidth);
+}
+
 function syncStoreToDisplayState() {
   agentStore.size.width = displayWindowState.value.size.width;
   agentStore.size.height = displayWindowState.value.size.height;
@@ -147,14 +198,103 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
-const getThreadLabel = (thread: AgentThread) => {
-  if (thread.title) {
-    return thread.title;
-  }
-  return `${t("agent.thread-default-title")} · ${new Date(
-    thread.createdTs
-  ).toLocaleString()}`;
+const getEditableChatTitle = (chat: AgentChatRecord) =>
+  chat.title
+    ? chat.title
+    : `${t("agent.chat-default-title")} · ${new Date(
+        chat.createdTs
+      ).toLocaleString()}`;
+
+const getChatLabel = (chat: AgentChatRecord) => {
+  const baseLabel = getEditableChatTitle(chat);
+  return chat.archived
+    ? `${baseLabel} (${t("agent.chat-archived-label")})`
+    : baseLabel;
 };
+
+function toggleArchivedChats() {
+  showArchivedChats.value = !showArchivedChats.value;
+}
+
+const isRenamingCurrentChat = ref(false);
+const renamingTitle = ref("");
+const renameInputRef = ref<
+  InstanceType<typeof NInput> | InstanceType<typeof NInput>[] | null
+>(null);
+
+function focusRenameInput() {
+  const input = Array.isArray(renameInputRef.value)
+    ? renameInputRef.value[0]
+    : renameInputRef.value;
+  input?.focus?.();
+  input?.select?.();
+}
+
+function beginRenameCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
+    return;
+  }
+  renamingTitle.value = getEditableChatTitle(chat);
+  isRenamingCurrentChat.value = true;
+  nextTick(() => {
+    focusRenameInput();
+  });
+}
+
+function cancelRenameCurrentChat() {
+  isRenamingCurrentChat.value = false;
+  renamingTitle.value = "";
+}
+
+function commitRenameCurrentChat() {
+  const chat = agentStore.currentChat;
+  const title = renamingTitle.value.trim();
+  if (!chat || !isRenamingCurrentChat.value) {
+    return;
+  }
+  if (!title) {
+    cancelRenameCurrentChat();
+    return;
+  }
+  agentStore.renameChat(chat.id, title);
+  cancelRenameCurrentChat();
+}
+
+function onRenameCurrentChatKeydown(event: KeyboardEvent) {
+  if (event.isComposing) {
+    return;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelRenameCurrentChat();
+    return;
+  }
+  if (event.key === "Enter") {
+    event.preventDefault();
+    commitRenameCurrentChat();
+  }
+}
+
+function toggleArchiveCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
+    return;
+  }
+  if (chat.archived) {
+    agentStore.unarchiveChat(chat.id);
+    return;
+  }
+  agentStore.archiveChat(chat.id);
+}
+
+function deleteCurrentChat() {
+  const chat = agentStore.currentChat;
+  if (!chat) {
+    return;
+  }
+  agentStore.deleteChat(chat.id);
+}
 
 const isDragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
@@ -198,6 +338,37 @@ function stopDrag() {
 const isResizing = ref(false);
 const resizeStart = ref({ x: 0, y: 0, w: 0, h: 0 });
 let resizeObserver: ResizeObserver | null = null;
+
+const isSidebarResizing = ref(false);
+const sidebarResizeStart = ref({ x: 0, width: 0 });
+
+function startSidebarResize(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+  syncStoreToDisplayState();
+  isSidebarResizing.value = true;
+  sidebarResizeStart.value = {
+    x: event.clientX,
+    width: clampSidebarWidth(agentStore.sidebarWidth),
+  };
+  document.addEventListener("mousemove", onSidebarResize);
+  document.addEventListener("mouseup", stopSidebarResize);
+}
+
+function onSidebarResize(event: MouseEvent) {
+  if (!isSidebarResizing.value) {
+    return;
+  }
+  const dx = event.clientX - sidebarResizeStart.value.x;
+  syncSidebarWidth(sidebarResizeStart.value.width + dx);
+}
+
+function stopSidebarResize() {
+  isSidebarResizing.value = false;
+  document.removeEventListener("mousemove", onSidebarResize);
+  document.removeEventListener("mouseup", stopSidebarResize);
+  agentStore.saveWindowState();
+}
 
 function startResize(event: MouseEvent) {
   event.preventDefault();
@@ -269,26 +440,58 @@ function handleViewportResize() {
   });
 }
 
+watch(
+  () => displayWindowState.value.size.width,
+  (windowWidth) => {
+    const sidebarWidth = clampSidebarWidth(
+      agentStore.sidebarWidth,
+      windowWidth
+    );
+    if (sidebarWidth === agentStore.sidebarWidth) {
+      return;
+    }
+    agentStore.sidebarWidth = sidebarWidth;
+    agentStore.saveWindowState();
+  }
+);
+
 watch(windowRef, () => {
   observeWindowSize();
 });
 
-function createThread() {
-  agentStore.createThread({ page: getCurrentPageSnapshot() });
+function createChat() {
+  if (isChatCreationDisabled.value) {
+    return;
+  }
+  agentStore.createChat({ page: getCurrentPageSnapshot() });
 }
 
-function resetCurrentThread() {
-  agentStore.clearConversation();
+function handleChatRowClick(chatId: string) {
+  if (chatId === agentStore.currentChatId) {
+    if (!isRenamingCurrentChat.value) {
+      beginRenameCurrentChat();
+    }
+    return;
+  }
+  if (isRenamingCurrentChat.value) {
+    cancelRenameCurrentChat();
+  }
+  agentStore.setCurrentChat(chatId);
 }
 
-function selectThread(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  agentStore.setCurrentThread(target.value);
-}
+watch(
+  () => agentStore.currentChatId,
+  () => {
+    if (isRenamingCurrentChat.value) {
+      cancelRenameCurrentChat();
+    }
+  }
+);
 
 onMounted(() => {
   agentStore.loadWindowState();
   handleViewportResize();
+  syncSidebarWidth();
   observeWindowSize();
   window.addEventListener("resize", handleViewportResize);
 });
@@ -296,6 +499,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopDrag();
   stopResize();
+  stopSidebarResize();
   resizeObserver?.disconnect();
   cancelAnimationFrame(viewportResizeFrame);
   window.removeEventListener("resize", handleViewportResize);
@@ -341,12 +545,12 @@ onBeforeUnmount(() => {
           </span>
           <span
             class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="currentThreadStatusClass"
+            :class="currentChatStatusClass"
           >
-            {{ currentThreadStatusLabel }}
+            {{ currentChatStatusLabel }}
           </span>
           <span class="truncate text-xs text-gray-500">
-            {{ currentThreadTokenUsageLabel }}
+            {{ currentChatTokenUsageLabel }}
           </span>
         </div>
         <div class="flex items-center gap-x-1">
@@ -369,44 +573,145 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="border-b bg-white px-3 py-2">
-        <label class="mb-1 block text-xs font-medium text-gray-500">
-          {{ $t("agent.thread-select-label") }}
-        </label>
-        <div class="flex items-center gap-x-2">
-          <select
-            class="min-w-0 flex-1 rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-            :value="agentStore.currentThreadId ?? ''"
-            :disabled="threadControlsDisabled"
-            @change="selectThread"
-          >
-            <option
-              v-for="thread in agentStore.orderedThreads"
-              :key="thread.id"
-              :value="thread.id"
-            >
-              {{ getThreadLabel(thread) }}
-            </option>
-          </select>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-            :disabled="threadControlsDisabled"
-            @click="createThread"
-          >
-            {{ $t("agent.new-thread") }}
-          </button>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-            :disabled="threadControlsDisabled"
-            @click="resetCurrentThread"
-          >
-            {{ $t("agent.reset-thread") }}
-          </button>
+      <div class="flex min-h-0 flex-1 overflow-hidden bg-white">
+        <aside
+          class="flex shrink-0 flex-col border-r border-gray-200 bg-gray-50"
+          :style="sidebarStyle"
+        >
+          <div class="border-b border-gray-200 px-3 py-3">
+            <div class="flex items-center justify-between gap-x-2">
+              <div>
+                <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {{ $t("agent.chat-list-label") }}
+                </h2>
+                <p
+                  v-if="isChatSwitchLocked"
+                  class="mt-1 text-xs text-amber-600"
+                  data-agent-chat-lock-message
+                >
+                  {{ $t("agent.chat-switch-locked") }}
+                </p>
+              </div>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                :disabled="isChatCreationDisabled"
+                @click="createChat"
+              >
+                {{ $t("agent.new-chat") }}
+              </button>
+            </div>
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            <div class="flex flex-col gap-y-1" data-agent-chat-list>
+              <div
+                v-for="chat in displayedChats"
+                :key="chat.id"
+                class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                :class="
+                  chat.id === agentStore.currentChatId
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:bg-white'
+                "
+                :data-agent-chat-row="chat.id"
+              >
+                <NInput
+                  v-if="
+                    chat.id === agentStore.currentChatId && isRenamingCurrentChat
+                  "
+                  ref="renameInputRef"
+                  v-model:value="renamingTitle"
+                  size="small"
+                  :placeholder="$t('agent.rename-chat-placeholder')"
+                  data-agent-inline-rename-input
+                  @blur="commitRenameCurrentChat"
+                  @keydown="onRenameCurrentChatKeydown"
+                />
+                <button
+                  v-else
+                  type="button"
+                  class="w-full text-left font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="!agentStore.canSelectChat(chat.id)"
+                  :aria-current="
+                    chat.id === agentStore.currentChatId ? 'true' : undefined
+                  "
+                  @click="handleChatRowClick(chat.id)"
+                >
+                  <div class="truncate">
+                    {{ getChatLabel(chat) }}
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 px-3 py-3">
+            <div class="flex flex-col gap-y-2">
+              <div class="flex flex-wrap gap-x-2 gap-y-2">
+                <button
+                  v-if="agentStore.currentChat?.archived"
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="toggleArchiveCurrentChat"
+                >
+                  {{ $t("agent.unarchive-chat") }}
+                </button>
+                <NPopconfirm
+                  v-else
+                  @positive-click="toggleArchiveCurrentChat"
+                >
+                  <template #trigger>
+                    <button
+                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                    >
+                      {{ $t("agent.archive-chat") }}
+                    </button>
+                  </template>
+                  {{ $t("agent.archive-chat-confirmation") }}
+                </NPopconfirm>
+                <NPopconfirm
+                  @positive-click="deleteCurrentChat"
+                >
+                  <template #trigger>
+                    <button
+                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      {{ $t("agent.delete-chat") }}
+                    </button>
+                  </template>
+                  {{ $t("agent.delete-chat-confirmation") }}
+                </NPopconfirm>
+                <button
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="toggleArchivedChats"
+                >
+                  {{
+                    showArchivedChats
+                      ? $t("agent.hide-archived-chats")
+                      : $t("agent.show-archived-chats")
+                  }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <button
+          type="button"
+          data-agent-window-action
+          data-agent-sidebar-resize
+          class="group relative w-1 shrink-0 cursor-col-resize bg-gray-100 transition-colors hover:bg-blue-100"
+          @mousedown="startSidebarResize"
+        >
+          <span
+            class="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-blue-400"
+          />
+        </button>
+
+        <div class="flex min-w-0 flex-1 flex-col">
+          <AgentChat class="min-h-0 flex-1" />
+          <AgentInput />
         </div>
       </div>
-
-      <AgentChat class="min-h-0 flex-1" />
-      <AgentInput />
 
       <button
         type="button"
