@@ -16,6 +16,7 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useSubscriptionV1Store,
+  useWorkspaceV1Store,
 } from "./store";
 import {
   humanizeDate,
@@ -52,6 +53,7 @@ migrateStorageKeys();
   ];
   if (currentUser) {
     initPromises.push(useSubscriptionV1Store().fetchSubscription());
+    initPromises.push(useWorkspaceV1Store().fetchWorkspaceList());
   }
   await Promise.all(initPromises);
 

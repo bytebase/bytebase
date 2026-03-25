@@ -14,6 +14,7 @@
             :include-all-users="!isSaaSMode"
             :include-service-account="true"
             :include-workload-identity="true"
+            :allow-arbitrary-email="isSaaSMode"
           />
           <div v-else class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1">

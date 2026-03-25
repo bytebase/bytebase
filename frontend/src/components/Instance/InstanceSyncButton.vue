@@ -1,5 +1,6 @@
 <template>
-  <NDropdown
+  <div>
+    <NDropdown
     :trigger="'click'"
     :options="syncInstnceOptions"
     :render-label="renderDropdownLabel"
@@ -29,7 +30,8 @@
         </template>
       </NButton>
     </PermissionGuardWrapper>
-  </NDropdown>
+    </NDropdown>
+  </div>
 </template>
 
 <script lang="tsx" setup>

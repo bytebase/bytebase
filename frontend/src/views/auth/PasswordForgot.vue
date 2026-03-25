@@ -9,20 +9,20 @@
 
     <div class="mt-8">
       <div class="mt-6">
+        <!-- TODO(ed): support self-service reset password -->
         <BBAttention type="warning" :title="hint">
           <template v-if="actuatorStore.isSaaSMode && !hint">
             <i18n-t
               tag="h3"
               class="text-sm font-medium text-yellow-800"
-              keypath="auth.password-forget.cloud"
+              keypath="auth.password-forget.contact-us"
             >
-              <template #link>
+              <template #email>
                 <a
-                  href="https://hub.bytebase.com/workspace"
-                  target="_blank"
+                  href="mailto:help@bytebase.com"
                   class="normal-link"
                 >
-                  Bytebase Hub
+                  help@bytebase.com
                 </a>
               </template>
             </i18n-t>

@@ -2,6 +2,14 @@ import { NCheckbox, NTag } from "naive-ui";
 import { type VNodeChild } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { HighlightLabelText } from "@/components/v2";
+import { useUserStore } from "@/store";
+import { unknownUser } from "@/types";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ensureUserFullName,
+  hasWorkspacePermissionV2,
+  isValidEmail,
+} from "@/utils";
 import type { ResourceSelectOption, SelectSize } from "./types";
 
 export const getRenderLabelFunc =
@@ -70,3 +78,65 @@ export const getRenderTagFunc =
     }
     return node;
   };
+
+export interface UserResource extends User {
+  // True for emails not yet registered as Bytebase users.
+  isExternal?: boolean;
+}
+
+export const searchUsersWithFallback = async (params: {
+  search: string;
+  project?: string;
+  pageToken: string;
+  pageSize: number;
+  allowArbitraryEmail?: boolean;
+}): Promise<{
+  users: UserResource[];
+  nextPageToken: string;
+}> => {
+  const hasListUserPermission = hasWorkspacePermissionV2("bb.users.list");
+
+  if (!hasListUserPermission) {
+    return {
+      users: [unknownUser(ensureUserFullName(params.search))],
+      nextPageToken: "",
+    };
+  }
+
+  const { nextPageToken, users } = await useUserStore().fetchUserList({
+    filter: {
+      query: params.search,
+      project: params.project,
+    },
+    pageToken: params.pageToken,
+    pageSize: params.pageSize,
+  });
+
+  // In SaaS mode (allowArbitraryEmail), if no existing user matches and the
+  // search looks like an email, offer it as a selectable option so admins
+  // can add emails for users who haven't signed up yet.
+  if (
+    params.allowArbitraryEmail &&
+    users.length === 0 &&
+    !params.pageToken &&
+    isValidEmail(params.search)
+  ) {
+    const fullname = ensureUserFullName(params.search);
+    const user: UserResource = {
+      ...unknownUser(fullname),
+      email: params.search,
+      title: params.search,
+      isExternal: true,
+    };
+
+    return {
+      users: [user],
+      nextPageToken: "",
+    };
+  }
+
+  return {
+    nextPageToken,
+    users,
+  };
+};

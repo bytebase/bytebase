@@ -26,6 +26,7 @@ import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
+import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
@@ -50,13 +51,11 @@ import {
   getAccountTypeByEmail,
   getAccountTypeByFullname,
   unknownGroup,
-  unknownUser,
 } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { ensureUserFullName, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
@@ -66,12 +65,14 @@ import type {
 import {
   getRenderLabelFunc,
   getRenderTagFunc,
+  searchUsersWithFallback,
+  type UserResource,
 } from "./RemoteResourceSelector/utils";
 
 interface AccountResource {
   type: "user" | "group";
   name: string;
-  resource: Group | User;
+  resource: Group | UserResource;
 }
 
 const props = defineProps<{
@@ -84,6 +85,9 @@ const props = defineProps<{
   includeAllUsers: boolean;
   includeServiceAccount: boolean;
   includeWorkloadIdentity: boolean;
+  // When true, allow typing arbitrary emails that don't match existing users.
+  // Used in SaaS mode to invite users who haven't signed up yet.
+  allowArbitraryEmail?: boolean;
 }>();
 
 defineEmits<{
@@ -92,6 +96,7 @@ defineEmits<{
   (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
+const { t } = useI18n();
 const combinedPageToken = ref<{
   user: string;
   group: string;
@@ -108,9 +113,6 @@ const groupStore = useGroupStore();
 const serviceAccountStore = useServiceAccountStore();
 const workloadIdentityStore = useWorkloadIdentityStore();
 
-const hasListUserPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.users.list")
-);
 const hasListGroupPermission = computed(() =>
   hasWorkspacePermissionV2("bb.groups.list")
 );
@@ -121,7 +123,9 @@ const hasGetServiceAccountPermission = computed(() =>
   hasWorkspacePermissionV2("bb.serviceAccounts.get")
 );
 
-const getUserOption = (user: User): ResourceSelectOption<AccountResource> => ({
+const getUserOption = (
+  user: UserResource
+): ResourceSelectOption<AccountResource> => ({
   resource: {
     type: "user",
     name: getUserFullNameByType(user),
@@ -376,20 +380,49 @@ const handleSearchUser = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  if (!hasListUserPermission.value) {
-    return [getUserOption(unknownUser(ensureUserFullName(params.search)))];
-  }
-
-  const { nextPageToken, users } = await userStore.fetchUserList({
-    filter: {
-      query: params.search,
-      project: props.projectName,
-    },
-    pageToken: params.pageToken,
-    pageSize: params.pageSize,
+  const { users, nextPageToken } = await searchUsersWithFallback({
+    ...params,
+    project: props.projectName,
+    allowArbitraryEmail: props.allowArbitraryEmail,
   });
+
   combinedPageToken.value.user = nextPageToken;
-  return users.map(getUserOption);
+  return users.map((user) => getUserOption(user));
+  // if (!hasListUserPermission.value) {
+  //   return [getUserOption(unknownUser(ensureUserFullName(params.search)))];
+  // }
+
+  // const { nextPageToken, users } = await userStore.fetchUserList({
+  //   filter: {
+  //     query: params.search,
+  //     project: props.projectName,
+  //   },
+  //   pageToken: params.pageToken,
+  //   pageSize: params.pageSize,
+  // });
+  // combinedPageToken.value.user = nextPageToken;
+  // const options = users.map((user) => getUserOption(user));
+
+  // // In SaaS mode (allowArbitraryEmail), if no existing user matches and the
+  // // search looks like an email, offer it as a selectable option so admins
+  // // can add emails for users who haven't signed up yet.
+  // if (
+  //   props.allowArbitraryEmail &&
+  //   options.length === 0 &&
+  //   !params.pageToken &&
+  //   isValidEmail(params.search)
+  // ) {
+  //   const fullname = ensureUserFullName(params.search);
+  //   const user = {
+  //     ...unknownUser(fullname),
+  //     email: params.search,
+  //     title: params.search,
+  //   };
+  //   const option = getUserOption(user, true /* isExternal */);
+  //   options.push(option);
+  // }
+
+  // return options;
 };
 
 const handleSearchGroup = async (params: {
@@ -433,7 +466,18 @@ const customLabel = (
     );
   }
 
-  const user = resource.resource as User;
+  const user = resource.resource as UserResource;
+  if (user.isExternal) {
+    return (
+      <div class="flex items-center gap-x-2 w-full py-0.5">
+        <HighlightLabelText keyword={keyword} text={user.email} />
+        <span class="ml-auto text-xs text-gray-400 whitespace-nowrap">
+          {t("settings.members.not-a-member")}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <UserNameCell
       user={user}

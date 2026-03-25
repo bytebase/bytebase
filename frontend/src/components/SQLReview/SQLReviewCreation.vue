@@ -42,6 +42,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code, ConnectError } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -239,14 +240,22 @@ const tryFinishSetup = async () => {
         : t("sql-review.policy-created"),
     });
     onCancel(policy);
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: isUpdate.value
-        ? t("sql-review.policy-update-failed")
-        : t("sql-review.policy-create-failed"),
-    });
+  } catch (error) {
+    if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: error.message,
+      });
+    } else {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: isUpdate.value
+          ? t("sql-review.policy-update-failed")
+          : t("sql-review.policy-create-failed"),
+      });
+    }
   }
 };
 

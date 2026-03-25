@@ -62,7 +62,7 @@
                   :multiple="false"
                   :size="'medium'"
                   :disabled="!allowEdit"
-                  :filter="(user) => userFilter(user, member.member)"
+                  :allow-arbitrary-email="actuatorStore.isSaaSMode"
                   @update:value="($event) => updateMemberEmail(i, $event as (string | undefined))"
                 />
                 <GroupMemberRoleSelect
@@ -150,7 +150,12 @@ import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
-import { pushNotification, useCurrentUserV1, useGroupStore } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useCurrentUserV1,
+  useGroupStore,
+} from "@/store";
 import { extractUserEmail, groupNamePrefix } from "@/store/modules/v1/common";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
@@ -158,7 +163,6 @@ import {
   GroupMemberSchema,
   GroupSchema,
 } from "@/types/proto-es/v1/group_service_pb";
-import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
@@ -186,6 +190,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
+const actuatorStore = useActuatorV1Store();
 
 const state = reactive<LocalState>({
   isRequesting: false,
@@ -203,13 +208,6 @@ const state = reactive<LocalState>({
     ),
   },
 });
-
-const userFilter = (user: User, member: string) => {
-  if (extractUserEmail(member) === user.email) {
-    return true;
-  }
-  return !state.group.members.find((member) => member.member === user.name);
-};
 
 const isCreating = computed(() => !props.group);
 

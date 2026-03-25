@@ -434,6 +434,7 @@
       "general": "General",
       "members": "Members",
       "users-and-groups": "Users & Groups",
+      "members-and-groups": "Members & Groups",
       "iam-and-admin": "IAM & Admin",
       "im-integration": "IM",
       "mcp": "MCP",
@@ -531,6 +532,7 @@
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
+      "not-a-member": "Not a member yet",
       "update-user": "Update User",
       "entra-sync": {
         "self": "Sync from SCIM",
@@ -670,6 +672,7 @@
     "general": {
       "workspace": {
         "id": "Workspace ID",
+        "title": "Workspace title",
         "id-description": "The unique, read-only workspace id.",
         "branding": "Branding",
         "logo": "Logo",
@@ -718,7 +721,6 @@
         "external-url": {
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
-          "managed-by-flag": "This setting is managed via the --external-url command-line flag",
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
         },
         "access-token-duration": {
@@ -790,7 +792,6 @@
         "failed-to-update-setting": "Failed to update setting \"{title}\"",
         "ai-assistant": {
           "self": "AI Assistant",
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode",
           "enable-ai-assistant": "Enable AI Assistant",
           "description": "Use AI to assist the database development tasks.",
           "provider": {
@@ -1612,7 +1613,7 @@
     "password-forget": {
       "title": "Forgot your password?",
       "selfhost": "Please contact your Bytebase Admin to reset your password.",
-      "cloud": "Please go to the {link} and reset your password.",
+      "contact-us": "Please contact us at {email} for help.",
       "return-to-sign-in": "Return to Sign in"
     },
     "password-forgot": "Forgot Password",

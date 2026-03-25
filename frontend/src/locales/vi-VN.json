@@ -434,6 +434,7 @@
       "general": "Chung",
       "members": "Thành viên",
       "users-and-groups": "Người dùng & Nhóm",
+      "members-and-groups": "Thành viên & Nhóm",
       "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
       "mcp": "MCP",
@@ -531,6 +532,7 @@
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
+      "not-a-member": "Chưa là thành viên",
       "update-user": "Cập nhật người dùng",
       "entra-sync": {
         "self": "Đồng bộ từ SCIM",
@@ -670,6 +672,7 @@
     "general": {
       "workspace": {
         "id": "ID không gian làm việc",
+        "title": "Tên không gian làm việc",
         "id-description": "ID không gian làm việc duy nhất, chỉ đọc.",
         "branding": "Thương hiệu",
         "logo": "Logo",
@@ -718,7 +721,6 @@
         "external-url": {
           "self": "URL bên ngoài",
           "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://.",
-          "managed-by-flag": "Cài đặt này được quản lý thông qua tham số dòng lệnh --external-url",
           "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url"
         },
         "access-token-duration": {
@@ -790,7 +792,6 @@
         "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
         "ai-assistant": {
           "self": "Trợ lý AI",
-          "enabled-in-saas": "Gemini AI được kích hoạt tự động ở chế độ SaaS",
           "enable-ai-assistant": "Bật Trợ lý AI",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "provider": {
@@ -1612,7 +1613,7 @@
     "password-forget": {
       "title": "Quên mật khẩu?",
       "selfhost": "Vui lòng liên hệ với Quản trị viên Bytebase của bạn để đặt lại mật khẩu của bạn.",
-      "cloud": "Vui lòng truy cập {link} và đặt lại mật khẩu của bạn.",
+      "contact-us": "Vui lòng liên hệ {email} để được hỗ trợ.",
       "return-to-sign-in": "Quay lại Đăng nhập"
     },
     "password-forgot": "Quên mật khẩu",

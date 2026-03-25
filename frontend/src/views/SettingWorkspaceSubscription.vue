@@ -100,10 +100,10 @@
         />
       </div>
     </div>
+    <!-- TODO(ed): disable upload license when we support the purchase in the SaaS -->
     <div
       v-if="
-        subscriptionStore.isSelfHostLicense &&
-        !actuatorStore.isSaaSMode
+        subscriptionStore.isSelfHostLicense
       "
       class="w-full mt-4 flex flex-col"
     >

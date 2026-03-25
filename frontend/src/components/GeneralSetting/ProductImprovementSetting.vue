@@ -12,7 +12,7 @@
           :text="true"
           :disabled="!allowEdit"
         />
-        <span class="text-sm">
+        <span class="font-medium">
           {{ $t("settings.general.workspace.product-improvement.participate") }}
         </span>
       </div>

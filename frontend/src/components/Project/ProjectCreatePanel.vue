@@ -64,6 +64,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code, ConnectError } from "@connectrpc/connect";
 import { isEmpty } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -151,6 +152,12 @@ const create = async () => {
         name: createdProject.title,
       }),
     });
+  } catch (error) {
+    if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+      resourceIdField.value?.addValidationError(error.message);
+    } else {
+      throw error;
+    }
   } finally {
     state.isCreating = false;
   }

@@ -34,6 +34,7 @@
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
         :include-workload-identity="includeWorkloadIdentity"
+        :allow-arbitrary-email="allowArbitraryEmail"
         @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
@@ -64,25 +65,21 @@ import {
 } from "@/types";
 import { convertMemberToFullname } from "@/utils";
 
-const props = withDefaults(
-  defineProps<{
-    // member binding list, could be
-    // - user:{email}
-    // - group:{email}
-    // - serviceAccount:{email}
-    // - workloadIdentity:{email}
-    value: string[];
-    required: boolean;
-    projectName?: string;
-    disabled?: boolean;
-    includeAllUsers: boolean;
-    includeServiceAccount: boolean;
-    includeWorkloadIdentity: boolean;
-  }>(),
-  {
-    projectName: undefined,
-  }
-);
+const props = defineProps<{
+  // member binding list, could be
+  // - user:{email}
+  // - group:{email}
+  // - serviceAccount:{email}
+  // - workloadIdentity:{email}
+  value: string[];
+  required: boolean;
+  projectName?: string;
+  disabled?: boolean;
+  includeAllUsers: boolean;
+  includeServiceAccount: boolean;
+  includeWorkloadIdentity: boolean;
+  allowArbitraryEmail?: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;

@@ -25,6 +25,7 @@ import {
   useCurrentUserV1,
   useGroupStore,
   useRoleStore,
+  useSubscriptionV1Store,
   useWorkspaceV1Store,
 } from "./store";
 import { isDev } from "./utils";
@@ -39,6 +40,8 @@ const currentUser = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
 const roleStore = useRoleStore();
 const groupStore = useGroupStore();
+const subscriptionStore = useSubscriptionV1Store();
+
 const ready = ref(false);
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
@@ -109,7 +112,9 @@ watch(
     ready.value = false;
     try {
       await Promise.all([
+        subscriptionStore.fetchSubscription(),
         workspaceStore.fetchIamPolicy(),
+        workspaceStore.fetchWorkspaceList(),
         roleStore.fetchRoleList(),
         // we only care about the groups for the current user.
         groupStore.batchGetOrFetchGroups(currentUser.value.groups),
