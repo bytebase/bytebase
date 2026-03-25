@@ -2974,7 +2974,6 @@
     "retry-last-chat-turn": "Retry last turn",
     "interrupted-retry-hint": "Retry reruns the interrupted turn with the current page state.",
     "new-chat": "New chat",
-    "rename-chat": "Rename",
     "rename-chat-placeholder": "Enter a chat name",
     "archive-chat": "Archive",
     "unarchive-chat": "Unarchive",

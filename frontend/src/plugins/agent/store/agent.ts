@@ -53,8 +53,12 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   };
 };
 
+const normalizeChatTitle = (title?: string) => {
+  return (title ?? "").trim();
+};
+
 const getChatTitleFromMessage = (content?: string) => {
-  const title = (content ?? "").trim().replace(/\s+/g, " ");
+  const title = normalizeChatTitle(content).replace(/\s+/g, " ");
   if (!title) {
     return "";
   }
@@ -507,7 +511,11 @@ export const useAgentStore = defineStore("agent", () => {
     if (!chat) {
       return null;
     }
-    chat.title = title.trim();
+    const normalizedTitle = normalizeChatTitle(title);
+    if (chat.title === normalizedTitle) {
+      return chat;
+    }
+    chat.title = normalizedTitle;
     touchChat(chatId);
     return chat;
   };

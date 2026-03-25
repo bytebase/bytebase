@@ -164,17 +164,20 @@ describe("AgentWindow", () => {
     expect(store.canSelectChat(secondChat.id)).toBe(false);
   });
 
-  test("renames the current chat with inline editing", async () => {
+  test("renames the current chat with inline editing on the selected row", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const currentRow = wrapper.find(
+    const currentRowButton = wrapper.find(
       "[data-agent-chat-list] button[aria-current='true']"
     );
+    const currentChatId = store.currentChatId!;
 
-    await currentRow.trigger("click");
+    await currentRowButton.trigger("click");
     await nextTick();
 
-    const input = wrapper.find("input");
+    const currentRow = wrapper.find(`[data-agent-chat-row='${currentChatId}']`);
+    const input = currentRow.find("input");
     expect(input.exists()).toBe(true);
+    expect(currentRow.findComponent(NInput).exists()).toBe(true);
     await input.setValue("  Renamed thread in app  ");
     await input.trigger("keydown", { key: "Enter" });
     await nextTick();

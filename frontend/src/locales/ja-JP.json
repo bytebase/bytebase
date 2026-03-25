@@ -2483,7 +2483,6 @@
     "retry-last-chat-turn": "直前のターンを再試行",
     "interrupted-retry-hint": "再試行すると、現在のページ状態で中断されたターンをやり直します。",
     "new-chat": "新しいチャット",
-    "rename-chat": "名前を変更",
     "rename-chat-placeholder": "チャット名を入力してください",
     "archive-chat": "アーカイブ",
     "unarchive-chat": "アーカイブ解除",

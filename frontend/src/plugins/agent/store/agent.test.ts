@@ -459,6 +459,25 @@ describe("useAgentStore", () => {
     expect(store.getChat("thread-1")?.archived).toBe(false);
   });
 
+  test("does not update updatedTs when rename normalization keeps the same title", () => {
+    const dateNow = vi.spyOn(Date, "now");
+    dateNow.mockReturnValue(1000);
+
+    const store = createStore();
+    const chatId = store.currentChatId!;
+
+    store.renameChat(chatId, "Renamed thread");
+    const updatedTs = store.getChat(chatId)?.updatedTs;
+
+    dateNow.mockReturnValue(2000);
+    store.renameChat(chatId, "  Renamed thread  ");
+
+    expect(store.getChat(chatId)?.title).toBe("Renamed thread");
+    expect(store.getChat(chatId)?.updatedTs).toBe(updatedTs);
+
+    dateNow.mockRestore();
+  });
+
   test("supports renaming, archiving, unarchiving, and deleting chats", () => {
     const store = createStore();
     const firstChatId = store.currentChatId!;

@@ -2974,7 +2974,6 @@
     "retry-last-chat-turn": "重试上一轮",
     "interrupted-retry-hint": "重试会基于当前页面状态重新运行已中断的这一轮。",
     "new-chat": "新聊天",
-    "rename-chat": "重命名",
     "rename-chat-placeholder": "输入聊天名称",
     "archive-chat": "归档",
     "unarchive-chat": "取消归档",

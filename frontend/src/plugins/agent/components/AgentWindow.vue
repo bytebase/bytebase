@@ -218,7 +218,17 @@ function toggleArchivedChats() {
 
 const isRenamingCurrentChat = ref(false);
 const renamingTitle = ref("");
-const renameInputRef = ref<InstanceType<typeof NInput> | null>(null);
+const renameInputRef = ref<
+  InstanceType<typeof NInput> | InstanceType<typeof NInput>[] | null
+>(null);
+
+function focusRenameInput() {
+  const input = Array.isArray(renameInputRef.value)
+    ? renameInputRef.value[0]
+    : renameInputRef.value;
+  input?.focus?.();
+  input?.select?.();
+}
 
 function beginRenameCurrentChat() {
   const chat = agentStore.currentChat;
@@ -228,8 +238,7 @@ function beginRenameCurrentChat() {
   renamingTitle.value = getEditableChatTitle(chat);
   isRenamingCurrentChat.value = true;
   nextTick(() => {
-    renameInputRef.value?.focus();
-    renameInputRef.value?.select();
+    focusRenameInput();
   });
 }
 
@@ -595,40 +604,49 @@ onBeforeUnmount(() => {
 
           <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
             <div class="flex flex-col gap-y-1" data-agent-chat-list>
-              <button
+              <div
                 v-for="chat in displayedChats"
                 :key="chat.id"
-                type="button"
-                class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
                 :class="
                   chat.id === agentStore.currentChatId
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-700 hover:bg-white'
                 "
-                :disabled="!agentStore.canSelectChat(chat.id)"
-                :aria-current="
-                  chat.id === agentStore.currentChatId ? 'true' : undefined
-                "
-                @click="handleChatRowClick(chat.id)"
+                :data-agent-chat-row="chat.id"
               >
-                <div class="truncate font-medium">
-                  {{ getChatLabel(chat) }}
-                </div>
-              </button>
+                <NInput
+                  v-if="
+                    chat.id === agentStore.currentChatId && isRenamingCurrentChat
+                  "
+                  ref="renameInputRef"
+                  v-model:value="renamingTitle"
+                  size="small"
+                  :placeholder="$t('agent.rename-chat-placeholder')"
+                  data-agent-inline-rename-input
+                  @blur="commitRenameCurrentChat"
+                  @keydown="onRenameCurrentChatKeydown"
+                />
+                <button
+                  v-else
+                  type="button"
+                  class="w-full text-left font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="!agentStore.canSelectChat(chat.id)"
+                  :aria-current="
+                    chat.id === agentStore.currentChatId ? 'true' : undefined
+                  "
+                  @click="handleChatRowClick(chat.id)"
+                >
+                  <div class="truncate">
+                    {{ getChatLabel(chat) }}
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
           <div class="border-t border-gray-200 px-3 py-3">
             <div class="flex flex-col gap-y-2">
-              <NInput
-                v-if="isRenamingCurrentChat"
-                ref="renameInputRef"
-                v-model:value="renamingTitle"
-                size="small"
-                :placeholder="$t('agent.rename-chat-placeholder')"
-                @blur="commitRenameCurrentChat"
-                @keydown="onRenameCurrentChatKeydown"
-              />
               <div class="flex flex-wrap gap-x-2 gap-y-2">
                 <button
                   v-if="agentStore.currentChat?.archived"

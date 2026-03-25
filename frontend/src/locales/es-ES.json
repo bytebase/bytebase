@@ -2483,7 +2483,6 @@
     "retry-last-chat-turn": "Reintentar el último turno",
     "interrupted-retry-hint": "Reintentar vuelve a ejecutar el turno interrumpido con el estado actual de la página.",
     "new-chat": "Nuevo chat",
-    "rename-chat": "Renombrar",
     "rename-chat-placeholder": "Introduce un nombre para el chat",
     "archive-chat": "Archivar",
     "unarchive-chat": "Desarchivar",
