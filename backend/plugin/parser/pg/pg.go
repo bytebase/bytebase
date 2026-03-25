@@ -170,47 +170,6 @@ func parseSinglePostgreSQL(sql string, baseLine int) (*base.ANTLRAST, error) {
 	return result, nil
 }
 
-// ParsePostgreSQLPLBlock parses the given PL/pgSQL block (BEGIN...END) and returns the ANTLRAST.
-// Use the PostgreSQL parser based on antlr4, starting from pl_block rule.
-func ParsePostgreSQLPLBlock(plBlock string) (*base.ANTLRAST, error) {
-	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(plBlock))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewPostgreSQLParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     plBlock,
-		StartPosition: &storepb.Position{Line: 1},
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     plBlock,
-		StartPosition: &storepb.Position{Line: 1},
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = true
-
-	// Parse starting from pl_block rule instead of root
-	tree := p.Pl_block()
-	if lexerErrorListener.Err != nil {
-		return nil, lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return nil, parserErrorListener.Err
-	}
-
-	result := &base.ANTLRAST{
-		StartPosition: &storepb.Position{Line: 1},
-		Tree:          tree,
-		Tokens:        stream,
-	}
-
-	return result, nil
-}
-
 func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
 	if ctx == nil {
 		return ""
