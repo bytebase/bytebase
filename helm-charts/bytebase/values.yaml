@@ -20,6 +20,8 @@ bytebase:
     port: 8080
     data: "/var/opt/bytebase"
     external-url: "https://docs.bytebase.com/get-started/self-host/external-url"
+    # Enable JSON formatted logging output for integration with log aggregators (Splunk, ELK, Datadog, Loki).
+    enable-json-logging: false
     externalPg:
       url: ""
       # If users need to read the pgURL from a secret, they can specify the secret name and key here.

@@ -13,9 +13,8 @@ import type {
   ToolCall,
 } from "../logic/types";
 
-export const AGENT_STATE_KEY = "bb-agent-state";
+export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
-export const LEGACY_AGENT_MESSAGES_KEY = "bb-agent-messages";
 
 interface PersistedAgentState {
   currentThreadId: string | null;
@@ -204,30 +203,6 @@ const normalizeThread = (raw: unknown): AgentThread => {
 const sortMessages = (messages: AgentMessage[]) => {
   messages.sort((a, b) => a.createdTs - b.createdTs);
   return messages;
-};
-
-const migrateLegacyState = (legacyMessages: unknown[]): PersistedAgentState => {
-  const thread = createThreadRecord();
-  const startTs = Date.now();
-  const messages = sortMessages(
-    legacyMessages.map((message, index) =>
-      normalizeMessage(message, thread.id, startTs + index)
-    )
-  );
-  const firstUserMessage = messages.find((message) => message.role === "user");
-  const lastMessage = messages.at(-1);
-  thread.title = getThreadTitleFromMessage(firstUserMessage?.content);
-  if (lastMessage) {
-    thread.updatedTs = lastMessage.createdTs;
-  }
-  return {
-    currentThreadId: thread.id,
-    threads: [thread],
-    messagesByThreadId: {
-      [thread.id]: messages,
-    },
-    pendingAskByThreadId: {},
-  };
 };
 
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
@@ -674,23 +649,6 @@ export const useAgentStore = defineStore("agent", () => {
         currentThreadId.value = state.currentThreadId;
       } catch {
         localStorage.removeItem(AGENT_STATE_KEY);
-      }
-    } else {
-      const legacySaved = localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY);
-      if (legacySaved) {
-        try {
-          const parsed = JSON.parse(legacySaved);
-          if (Array.isArray(parsed)) {
-            const state = migrateLegacyState(parsed);
-            threads.value = state.threads;
-            messagesByThreadId.value = state.messagesByThreadId;
-            pendingAskByThreadId.value = state.pendingAskByThreadId;
-            currentThreadId.value = state.currentThreadId;
-          }
-        } catch {
-          localStorage.removeItem(LEGACY_AGENT_MESSAGES_KEY);
-        }
-        localStorage.removeItem(LEGACY_AGENT_MESSAGES_KEY);
       }
     }
 

@@ -1,10 +1,15 @@
-export { extractDomTree, getElementByIndex } from "./domTree";
+export type { DomRefSuggestion } from "./domTree";
+export {
+  extractDomRefSuggestions,
+  extractDomTree,
+  getElementByRef,
+} from "./domTree";
 
 export type DomActionType = "click" | "input" | "select" | "scroll" | "read";
 
 export interface DomActionParams {
   type: DomActionType;
-  index: number;
+  ref: string;
   value?: string;
 }
 
@@ -73,9 +78,20 @@ function findInnerInput(
   );
 }
 
+function isMonacoCandidate(el: Element): boolean {
+  return (
+    el.classList.contains("monaco-editor") ||
+    el.closest(".monaco-editor") !== null
+  );
+}
+
 async function findMonacoEditor(
   el: Element
 ): Promise<{ getValue(): string; setValue(v: string): void } | null> {
+  if (!isMonacoCandidate(el)) {
+    return null;
+  }
+
   try {
     const { isMonacoLoaded, getMonacoEditor } = await import(
       "@/components/MonacoEditor/lazy-editor"

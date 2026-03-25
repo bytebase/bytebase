@@ -32,9 +32,9 @@ require (
 	github.com/beltran/gohive/v2 v2.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
-	github.com/bytebase/gomongo v0.0.0-20260211083148-d2ea344b4b65
+	github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260323084215-7bbe88e0d0ed
+	github.com/bytebase/omni v0.0.0-20260324084257-a8ae1438840a
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -298,7 +298,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.8
 	github.com/aws/smithy-go v1.24.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bytebase/parser v0.0.0-20260318084752-6c474df57697
+	github.com/bytebase/parser v0.0.0-20260324035613-3b4d6e704551
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
