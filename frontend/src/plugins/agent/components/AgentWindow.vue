@@ -457,7 +457,13 @@ function createChat() {
   agentStore.createChat({ page: getCurrentPageSnapshot() });
 }
 
-function selectChat(chatId: string) {
+function handleChatRowClick(chatId: string) {
+  if (chatId === agentStore.currentChatId) {
+    if (!isRenamingCurrentChat.value) {
+      beginRenameCurrentChat();
+    }
+    return;
+  }
   if (isRenamingCurrentChat.value) {
     cancelRenameCurrentChat();
   }
@@ -603,7 +609,7 @@ onBeforeUnmount(() => {
                 :aria-current="
                   chat.id === agentStore.currentChatId ? 'true' : undefined
                 "
-                @click="selectChat(chat.id)"
+                @click="handleChatRowClick(chat.id)"
               >
                 <div class="truncate font-medium">
                   {{ getChatLabel(chat) }}
@@ -624,12 +630,6 @@ onBeforeUnmount(() => {
                 @keydown="onRenameCurrentChatKeydown"
               />
               <div class="flex flex-wrap gap-x-2 gap-y-2">
-                <button
-                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="beginRenameCurrentChat"
-                >
-                  {{ $t("agent.rename-chat") }}
-                </button>
                 <button
                   v-if="agentStore.currentChat?.archived"
                   class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"

@@ -48,7 +48,6 @@ const i18n = createI18n({
         "chat-switch-locked":
           "Finish the running chat before switching to another one.",
         "new-chat": "New chat",
-        "rename-chat": "Rename",
         "rename-chat-placeholder": "Enter a chat name",
         "archive-chat": "Archive",
         "unarchive-chat": "Unarchive",
@@ -123,6 +122,9 @@ describe("AgentWindow", () => {
     );
     await chatRows[0].trigger("click");
     expect(store.currentChatId).toBe(secondChat.id);
+    expect(
+      wrapper.findAll("button").some((button) => button.text() === "Rename")
+    ).toBe(false);
   });
 
   test("disables switching chats while a chat is running", async () => {
@@ -164,11 +166,11 @@ describe("AgentWindow", () => {
 
   test("renames the current chat with inline editing", async () => {
     const { store, wrapper } = mountAgentWindow();
-    const renameButton = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Rename");
+    const currentRow = wrapper.find(
+      "[data-agent-chat-list] button[aria-current='true']"
+    );
 
-    await renameButton?.trigger("click");
+    await currentRow.trigger("click");
     await nextTick();
 
     const input = wrapper.find("input");
@@ -184,11 +186,11 @@ describe("AgentWindow", () => {
   test("cancels inline rename on escape", async () => {
     const { store, wrapper } = mountAgentWindow();
     const originalTitle = store.currentChat?.title;
-    const renameButton = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Rename");
+    const currentRow = wrapper.find(
+      "[data-agent-chat-list] button[aria-current='true']"
+    );
 
-    await renameButton?.trigger("click");
+    await currentRow.trigger("click");
     await nextTick();
 
     const input = wrapper.find("input");
