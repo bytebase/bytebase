@@ -25,11 +25,10 @@ const (
 
 // Reporter sends telemetry events to hub.bytebase.com with deduplication.
 type Reporter struct {
-	mu          sync.RWMutex
-	workspaceID string
-	version     string
-	gitCommit   string
-	enabled     bool
+	mu        sync.RWMutex
+	version   string
+	gitCommit string
+	enabled   bool
 
 	// LRU cache for deduplication: tracks reported statement hashes
 	cache *lru.Cache[string, struct{}]
@@ -43,16 +42,16 @@ var (
 )
 
 // InitGlobalReporter initializes the global telemetry reporter.
-// Must be called once at server startup.
-func InitGlobalReporter(workspaceID, version, gitCommit string, enabled bool) {
+// The workspace ID is not needed at init time — it's resolved from request context
+// when events are reported, so this works in both single-workspace and SaaS modes.
+func InitGlobalReporter(version, gitCommit string, enabled bool) {
 	globalReporterOnce.Do(func() {
 		cache, _ := lru.New[string, struct{}](cacheCapacity)
 		globalReporter = &Reporter{
-			workspaceID: workspaceID,
-			version:     version,
-			gitCommit:   gitCommit,
-			enabled:     enabled,
-			cache:       cache,
+			version:   version,
+			gitCommit: gitCommit,
+			enabled:   enabled,
+			cache:     cache,
 			httpClient: &http.Client{
 				Timeout: 10 * time.Second,
 			},
@@ -75,23 +74,32 @@ type gomongoFallbackPayload struct {
 // ReportGomongoFallback reports a gomongo fallback event.
 // It deduplicates based on statement hash using an LRU cache.
 // Only reports in release versions (non-development builds).
-func ReportGomongoFallback(ctx context.Context, statement string, errorMessage string) {
+// The workspace ID is resolved from the request context if available,
+// otherwise from the explicit workspaceID parameter (for runner contexts).
+func ReportGomongoFallback(ctx context.Context, workspaceID, statement, errorMessage string) {
 	if globalReporter == nil {
 		return
 	}
 
 	globalReporter.mu.RLock()
-	if !globalReporter.enabled || globalReporter.workspaceID == "" {
+	if !globalReporter.enabled {
 		globalReporter.mu.RUnlock()
 		return
 	}
-	workspaceID := globalReporter.workspaceID
 	version := globalReporter.version
 	gitCommit := globalReporter.gitCommit
 	globalReporter.mu.RUnlock()
 
 	// Skip telemetry in development builds
 	if version == "development" {
+		return
+	}
+
+	// Prefer workspace from context (API requests), fall back to parameter (runners).
+	if wsFromCtx := common.GetWorkspaceIDFromContext(ctx); wsFromCtx != "" {
+		workspaceID = wsFromCtx
+	}
+	if workspaceID == "" {
 		return
 	}
 

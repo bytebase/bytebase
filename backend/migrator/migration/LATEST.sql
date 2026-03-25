@@ -44,13 +44,13 @@ CREATE TABLE setting (
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
     -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
-    name text NOT NULL PRIMARY KEY,
+    name text NOT NULL,
     workspace text NOT NULL REFERENCES workspace(resource_id),
     -- Stored as JSON marshalled by protojson.Marshal (camelCase keys)
-    value jsonb NOT NULL
+    value jsonb NOT NULL,
+    PRIMARY KEY (workspace, name)
 );
 
-CREATE UNIQUE INDEX idx_setting_unique_workspace_name ON setting(workspace, name);
 CREATE INDEX idx_setting_workspace ON setting(workspace);
 
 -- Role
@@ -354,7 +354,7 @@ CREATE INDEX idx_worksheet_organizer_payload ON worksheet_organizer USING GIN(pa
 
 CREATE TABLE db_group (
     project text NOT NULL REFERENCES project(resource_id),
-    -- global unique
+    -- project-level unique
     resource_id text NOT NULL,
     name text NOT NULL DEFAULT '',
     -- Stored as google.type.Expr (from Google Common Expression Language)

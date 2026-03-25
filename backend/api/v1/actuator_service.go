@@ -106,7 +106,7 @@ func (s *ActuatorService) GetResourcePackage(
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		workspaceID = ws
-	} else if req.Msg.Name == "" {
+	} else if req.Msg.Name != "" {
 		reqWorkspaceID, err := common.GetWorkspaceID(req.Msg.Name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)

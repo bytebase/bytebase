@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -21,13 +22,15 @@ import (
 type ServiceAccountService struct {
 	v1connect.UnimplementedServiceAccountServiceHandler
 	store      *store.Store
+	profile    *config.Profile
 	iamManager *iam.Manager
 }
 
 // NewServiceAccountService creates a new ServiceAccountService.
-func NewServiceAccountService(store *store.Store, iamManager *iam.Manager) *ServiceAccountService {
+func NewServiceAccountService(store *store.Store, profile *config.Profile, iamManager *iam.Manager) *ServiceAccountService {
 	return &ServiceAccountService{
 		store:      store,
+		profile:    profile,
 		iamManager: iamManager,
 	}
 }
@@ -50,6 +53,10 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		// projectID remains nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
+	}
+
+	if projectID == nil && s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("donot support create workload identity in workspace"))
 	}
 
 	serviceAccountID := request.Msg.ServiceAccountId

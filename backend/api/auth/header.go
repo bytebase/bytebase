@@ -22,14 +22,15 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 		}
 	}
 	isHTTPS := strings.HasPrefix(origin, "https")
-	tokenDuration := GetAccessTokenDuration(ctx, stores, licenseService, workspaceID)
+	// Cookie expiry matches the refresh token duration so that Refresh() can always
+	// extract the workspace from the expired JWT, even after long idle periods.
+	// The auth middleware rejects expired JWTs for API calls, so a stale cookie is harmless.
+	// The cookie is only read by Refresh() which verifies the signature but skips expiry.
+	cookieDuration := GetRefreshTokenDuration(ctx, stores, licenseService, workspaceID)
 	return &http.Cookie{
-		Name:  AccessTokenCookieName,
-		Value: token,
-		// Cookie outlives the JWT by 30 seconds so that Refresh() can extract the
-		// workspace from the expired token. The frontend calls Refresh immediately
-		// on 401, well within this window.
-		Expires: time.Now().Add(tokenDuration + 30*time.Second),
+		Name:    AccessTokenCookieName,
+		Value:   token,
+		Expires: time.Now().Add(cookieDuration),
 		Path:    "/",
 		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
 		HttpOnly: true,

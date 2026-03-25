@@ -242,6 +242,9 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 		user,
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("project ID %q already exists", req.Msg.ProjectId))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil

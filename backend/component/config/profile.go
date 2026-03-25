@@ -21,14 +21,14 @@ type Profile struct {
 	Port int
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
-	// When enabled output logs in json format
-	EnableJSONLogging bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// Demo mode.
 	Demo bool
 	// HA replica mode.
 	HA bool
+	// Enable debug level. Only works when SaaS is true.
+	Debug bool
 
 	// Version is the bytebase's server version
 	Version string

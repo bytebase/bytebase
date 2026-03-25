@@ -213,6 +213,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	instanceMessage.Workspace = workspaceID
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("instance ID %q already exists", req.Msg.InstanceId))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
