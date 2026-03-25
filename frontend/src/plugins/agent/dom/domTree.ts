@@ -38,6 +38,7 @@ const INTERACTIVE_ROLES = new Set([
 const NAIVE_INTERACTIVE_CLASSES = ["n-button", "n-switch", "n-checkbox"];
 
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "PATH"]);
+const MAX_TEXT_NODE_LENGTH = 200;
 
 const LANDMARK_TAGS = new Set([
   "NAV",
@@ -192,6 +193,13 @@ function extractValue(el: Element): string | undefined {
   return undefined;
 }
 
+function normalizeTextContent(text: string): string | undefined {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (!normalized) return undefined;
+  if (normalized.length <= MAX_TEXT_NODE_LENGTH) return normalized;
+  return `${normalized.slice(0, MAX_TEXT_NODE_LENGTH)}...`;
+}
+
 function toDomRefSuggestion({
   ref,
   tag,
@@ -208,7 +216,17 @@ function toDomRefSuggestion({
   };
 }
 
-function walkDom(node: Element, depth: number, lines: string[]): void {
+function walkDomNode(node: Node, depth: number, lines: string[]): void {
+  if (node instanceof Text) {
+    if (!node.parentElement || !isVisible(node.parentElement)) return;
+    const text = normalizeTextContent(node.textContent ?? "");
+    if (!text) return;
+    const indent = "  ".repeat(depth);
+    lines.push(`${indent}${text}`);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
   if (!isVisible(node)) return;
@@ -248,8 +266,8 @@ function walkDom(node: Element, depth: number, lines: string[]): void {
 
   // Only increment depth at landmark/semantic containers
   const childDepth = isLandmark(node) ? depth + 1 : depth;
-  for (const child of Array.from(node.children)) {
-    walkDom(child, childDepth, lines);
+  for (const child of Array.from(node.childNodes)) {
+    walkDomNode(child, childDepth, lines);
   }
 }
 
@@ -263,8 +281,8 @@ function extractDomState(root?: Element): {
   const lines: string[] = [];
   const rootEl = root ?? document.body;
 
-  for (const child of Array.from(rootEl.children)) {
-    walkDom(child, 0, lines);
+  for (const child of Array.from(rootEl.childNodes)) {
+    walkDomNode(child, 0, lines);
   }
 
   return {

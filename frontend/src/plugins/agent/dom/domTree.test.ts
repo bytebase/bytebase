@@ -39,6 +39,35 @@ describe("extractDomTree", () => {
     expect(getElementByRef("e9")).toBeUndefined();
   });
 
+  test("preserves visible non-interactive text nodes with normalized whitespace", () => {
+    document.body.innerHTML = `
+      <main>
+        <section>
+          <h1>   Instances   </h1>
+          <div>
+            <span>Primary</span>
+            <span>US East</span>
+          </div>
+          <button aria-label="Create instance">Create</button>
+          <p style="display: none">Hidden text</p>
+          <div aria-hidden="true" style="display: none">
+            <span>Also hidden</span>
+          </div>
+        </section>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("Instances");
+    expect(tree).toContain("Primary");
+    expect(tree).toContain("US East");
+    expect(tree).toContain("[e1]<button>Create instance</button>");
+    expect(tree).not.toContain("Hidden text");
+    expect(tree).not.toContain("Also hidden");
+  });
+
   test("returns structured DOM ref suggestions for visible interactive elements", () => {
     document.body.innerHTML = `
       <main>
