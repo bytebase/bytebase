@@ -230,6 +230,34 @@ describe("useAgentStore", () => {
     );
   });
 
+  test("orders equally updated threads by recency of creation", () => {
+    const dateNow = vi.spyOn(Date, "now");
+    dateNow.mockReturnValue(1000);
+
+    const store = createStore();
+    const firstThreadId = store.currentThreadId!;
+
+    dateNow.mockReturnValue(2000);
+    store.addMessage({
+      threadId: firstThreadId,
+      role: "user",
+      content: "Summarize the production incident timeline",
+    });
+
+    dateNow.mockReturnValue(2000);
+    const secondThread = store.createThread({
+      title: "Renamed thread",
+      select: false,
+    });
+
+    expect(store.orderedThreads.map((thread) => thread.id)).toEqual([
+      secondThread.id,
+      firstThreadId,
+    ]);
+
+    dateNow.mockRestore();
+  });
+
   test("does not switch threads while another thread is running", () => {
     const store = createStore();
     const firstThreadId = store.currentThreadId!;

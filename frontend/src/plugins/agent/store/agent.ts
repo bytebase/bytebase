@@ -303,7 +303,12 @@ export const useAgentStore = defineStore("agent", () => {
   const abortControllersByThreadId = ref<Record<string, AbortController>>({});
 
   const orderedThreads = computed(() =>
-    [...threads.value].sort((a, b) => b.updatedTs - a.updatedTs)
+    [...threads.value].sort((a, b) => {
+      if (b.updatedTs !== a.updatedTs) {
+        return b.updatedTs - a.updatedTs;
+      }
+      return b.createdTs - a.createdTs;
+    })
   );
   const currentThread = computed(
     () =>
