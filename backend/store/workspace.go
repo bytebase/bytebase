@@ -90,7 +90,7 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 			EnableMetricCollection: true,
 			DirectorySyncToken:     uuid.New().String(),
 			DisallowSignup:         true,
-			DisallowPasswordSignin: true,
+			DisallowPasswordSignin: false,
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
 		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{
