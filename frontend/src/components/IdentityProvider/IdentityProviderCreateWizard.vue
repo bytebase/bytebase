@@ -413,6 +413,7 @@
 
 <script setup lang="ts">
 import { create as createProto } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { head } from "lodash-es";
 import {
   ArrowRightIcon,
@@ -925,12 +926,16 @@ const handleCreate = async () => {
 
     emit("created", createdProvider);
   } catch (error) {
-    console.error("Failed to create identity provider:", error);
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("identity-provider.identity-provider-create-failed"),
-    });
+    if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+      resourceIdField.value?.addValidationError(error.message);
+    } else {
+      console.error("Failed to create identity provider:", error);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("identity-provider.identity-provider-create-failed"),
+      });
+    }
   } finally {
     isCreating.value = false;
   }

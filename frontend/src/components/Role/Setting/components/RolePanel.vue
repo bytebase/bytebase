@@ -138,6 +138,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, uniq } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NInput, NTransfer } from "naive-ui";
@@ -254,6 +255,12 @@ const handleSave = async () => {
       title: props.mode === "ADD" ? t("common.added") : t("common.updated"),
     });
     emit("close");
+  } catch (error) {
+    if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+      resourceIdField.value?.addValidationError(error.message);
+    } else {
+      throw error;
+    }
   } finally {
     state.loading = false;
   }

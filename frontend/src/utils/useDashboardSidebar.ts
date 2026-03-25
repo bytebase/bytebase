@@ -41,6 +41,7 @@ import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
+import { useActuatorV1Store } from "@/store";
 
 export interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
@@ -73,6 +74,7 @@ export const useDashboardSidebar = () => {
   };
 
   const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
+    const actuatorStore = useActuatorV1Store();
     const sidebarList: DashboardSidebarItem[] = [
       {
         navigationId: "bb.navigation.home",
@@ -124,7 +126,9 @@ export const useDashboardSidebar = () => {
         type: "div",
         children: [
           {
-            title: t("settings.sidebar.users-and-groups"),
+            title: actuatorStore.isSaaSMode
+              ? t("settings.sidebar.members-and-groups")
+              : t("settings.sidebar.users-and-groups"),
             name: WORKSPACE_ROUTE_USERS,
             type: "route",
           },
@@ -132,16 +136,19 @@ export const useDashboardSidebar = () => {
             title: t("settings.members.service-accounts"),
             name: WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
             type: "route",
+            hide: actuatorStore.isSaaSMode,
           },
           {
             title: t("settings.members.workload-identities"),
             name: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
             type: "route",
+            hide: actuatorStore.isSaaSMode,
           },
           {
             title: t("settings.sidebar.members"),
             name: WORKSPACE_ROUTE_MEMBERS,
             type: "route",
+            hide: actuatorStore.isSaaSMode,
           },
           {
             title: t("settings.sidebar.custom-roles"),

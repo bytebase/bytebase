@@ -156,8 +156,8 @@ interface LocalState {
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    accessTokenDuration: defaultAccessTokenDurationInHours * 60,
-    accessTokenTimeFormat: "MINUTES",
+    accessTokenDuration: defaultAccessTokenDurationInHours,
+    accessTokenTimeFormat: "HOURS",
     refreshTokenDuration: defaultRefreshTokenDurationInHours / 24,
     refreshTokenTimeFormat: "DAYS",
     inactiveTimeout: -1,

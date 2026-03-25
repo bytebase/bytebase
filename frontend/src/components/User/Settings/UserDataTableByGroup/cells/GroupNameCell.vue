@@ -8,27 +8,23 @@
           :tooltip="true"
           :class="deleted ? 'line-through' : ''"
         >
-          <router-link
-            v-if="allowGetGroup && link"
+          <component
+            :is="allowGetGroup && link ? 'router-link' : 'div'"
+            :class="allowGetGroup && link && 'normal-link'"
+            :active-class="''"
+            :exact-active-class="''"
             :to="{
               name: WORKSPACE_ROUTE_USERS,
               query: {
                 name: group.name,
               },
             }"
-            class="normal-link font-medium"
           >
             <HighlightLabelText
               :text="group.title"
               :keyword="keyword"
             />
-          </router-link>
-          <HighlightLabelText
-            v-else
-            class="font-medium"
-            :text="group.title"
-            :keyword="keyword"
-          />
+          </component>
         </NEllipsis>
         <NTag v-if="deleted" size="small" round type="error">
           {{ $t("common.deleted") }}

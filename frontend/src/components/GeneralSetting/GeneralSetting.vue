@@ -24,34 +24,25 @@
             url="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
           />
         </div>
-        <div v-if="externalUrlFromFlag && !isSaaSMode" class="mb-2 text-sm text-accent">
-          {{ $t("settings.general.workspace.external-url.managed-by-flag") }}
-        </div>
+        <BBAttention
+          v-if="externalUrlFromFlag"
+          :type="'info'"
+          class="mb-3"
+          :description="
+            $t('settings.general.workspace.external-url.cannot-edit-flag')
+          "
+        />
         <PermissionGuardWrapper
           v-slot="slotProps"
           :permissions="[
             'bb.settings.setWorkspaceProfile'
           ]"
         >
-          <NTooltip
-            placement="top-start"
-            :disabled="slotProps.disabled || !externalUrlFromFlag"
-          >
-            <template #trigger>
-              <NInput
-                v-model:value="state.externalUrl"
-                class="mb-4 w-full"
-                :disabled="slotProps.disabled || isSaaSMode || externalUrlFromFlag"
-              />
-            </template>
-            <span class="text-sm text-gray-400 -translate-y-2">
-              {{
-                externalUrlFromFlag
-                  ? $t("settings.general.workspace.external-url.cannot-edit-flag")
-                  : ''
-              }}
-            </span>
-          </NTooltip>
+          <NInput
+            v-model:value="state.externalUrl"
+            class="mb-4 w-full"
+            :disabled="slotProps.disabled || isSaaSMode || externalUrlFromFlag"
+          />
         </PermissionGuardWrapper>
       </div>
     </div>
@@ -88,10 +79,10 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
-import { BBModal } from "@/bbkit";
+import { BBAttention, BBModal } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { router } from "@/router";
@@ -105,10 +96,18 @@ interface LocalState {
   externalUrl: string;
 }
 
+const props = defineProps<{
+  title: string;
+}>();
+
+const settingV1Store = useSettingV1Store();
+const actuatorV1Store = useActuatorV1Store();
+const { isSaaSMode } = storeToRefs(actuatorV1Store);
+
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     databaseChangeMode: DatabaseChangeMode.PIPELINE,
-    externalUrl: settingV1Store.workspaceProfile.externalUrl,
+    externalUrl: actuatorV1Store.serverInfo?.externalUrl ?? "",
   };
   if (
     [DatabaseChangeMode.PIPELINE, DatabaseChangeMode.EDITOR].includes(
@@ -120,14 +119,6 @@ const getInitialState = (): LocalState => {
   }
   return defaultState;
 };
-
-const props = defineProps<{
-  title: string;
-}>();
-
-const settingV1Store = useSettingV1Store();
-const actuatorV1Store = useActuatorV1Store();
-const { isSaaSMode } = storeToRefs(actuatorV1Store);
 
 const state = reactive<LocalState>(getInitialState());
 const showModal = ref(false);

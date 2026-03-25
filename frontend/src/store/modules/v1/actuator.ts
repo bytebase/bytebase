@@ -164,7 +164,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     const [info, pkg] = await Promise.all([
       fetchActuatorInfo(workspace),
       actuatorServiceClientConnect.getResourcePackage({
-        name: workspace,
+        name: workspace ?? "",
       }),
     ]);
     setServerInfo(info);

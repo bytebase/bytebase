@@ -14,12 +14,7 @@ import {
 } from "@/router/auth";
 import { SETUP_MODULE } from "@/router/setup";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import {
-  useActuatorV1Store,
-  useAppFeature,
-  useSubscriptionV1Store,
-  useUserStore,
-} from "@/store";
+import { useActuatorV1Store, useAppFeature, useUserStore } from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import {
   type LoginRequest,
@@ -122,7 +117,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
     setRequireResetPassword(resp.requireResetPassword);
     await actuatorStore.fetchServerInfo(user?.workspace);
-    await useSubscriptionV1Store().fetchSubscription();
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
@@ -165,7 +159,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
 
     await actuatorStore.fetchServerInfo(user?.workspace);
-    await useSubscriptionV1Store().fetchSubscription();
     authSessionKey.value = uniqueId();
 
     if (actuatorStore.enableOnboarding) {

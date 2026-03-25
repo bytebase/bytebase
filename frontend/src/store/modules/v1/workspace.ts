@@ -2,9 +2,13 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { workspaceServiceClientConnect } from "@/connect";
+import {
+  authServiceClientConnect,
+  workspaceServiceClientConnect,
+} from "@/connect";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
+import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   BindingSchema,
@@ -12,12 +16,21 @@ import {
   IamPolicySchema,
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
 import { useActuatorV1Store } from "./actuator";
 import { composePolicyBindings } from "./projectIamPolicy";
 
+// Notify other tabs when the user switches workspace.
+const workspaceSwitchChannel = new BroadcastChannel("bb-workspace-switch");
+workspaceSwitchChannel.onmessage = () => {
+  // Another tab switched workspace — reload to pick up the new cookie.
+  window.location.reload();
+};
+
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
+  const workspaceList = ref<Workspace[]>([]);
 
   const workspaceIamPolicy = computed(() => {
     return _workspaceIamPolicy.value;
@@ -165,6 +178,29 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     return specificRoles;
   };
 
+  const currentWorkspace = computed(() => {
+    const currentName = useActuatorV1Store().workspaceResourceName;
+    return workspaceList.value.find((ws) => ws.name === currentName);
+  });
+
+  const fetchWorkspaceList = async () => {
+    const resp = await workspaceServiceClientConnect.listWorkspaces({});
+    workspaceList.value = resp.workspaces;
+  };
+
+  const switchWorkspace = async (workspaceName: string) => {
+    await authServiceClientConnect.switchWorkspace(
+      create(SwitchWorkspaceRequestSchema, {
+        workspace: workspaceName,
+        web: true,
+      })
+    );
+    // Notify other tabs to reload with the new workspace.
+    workspaceSwitchChannel.postMessage(workspaceName);
+    // Full page reload to reset all frontend state with new workspace context.
+    window.location.reload();
+  };
+
   return {
     userMapToRoles,
     workspaceIamPolicy,
@@ -173,5 +209,9 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     findRolesByMember,
     roleMapToUsers,
     getWorkspaceRolesByName,
+    workspaceList,
+    currentWorkspace,
+    fetchWorkspaceList,
+    switchWorkspace,
   };
 });

@@ -16,7 +16,7 @@
             :text="true"
             :disabled="!allowEdit || !hasAuditLogFeature"
           />
-          <div class="flex items-center gap-x-2 text-sm">
+          <div class="flex items-center gap-x-2 font-medium">
             {{ $t("settings.general.workspace.audit-log-stdout.enable") }}
             <FeatureBadge :feature="PlanFeature.FEATURE_AUDIT_LOG" />
           </div>
@@ -32,7 +32,7 @@
           :text="true"
           :disabled="!allowEdit"
         />
-        <span class="text-sm">
+        <span class="font-medium">
           {{ $t("settings.general.workspace.enable-debug.enable") }}
         </span>
       </div>

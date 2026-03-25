@@ -1,14 +1,14 @@
 <template>
-  <div class="w-full px-4 overflow-x-hidden flex flex-col py-4">
+  <div class="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
     <BBAttention
-      v-if="remainingUserCount <= 3"
+      v-if="!isSaaSMode && remainingUserCount <= 3"
       class="mb-2"
       :type="'warning'"
       :title="$t('subscription.usage.user-count.title')"
       :description="userCountAttention"
     />
     <NTabs v-model:value="state.typeTab" type="line" animated>
-      <NTabPane name="USERS">
+      <NTabPane v-if="!isSaaSMode" name="USERS">
         <template #tab>
           <div class="flex-1 flex gap-x-2">
             <p class="text-base font-medium leading-7 text-main">
@@ -41,6 +41,17 @@
             </template>
           </PagedTable>
         </ComponentPermissionGuard>
+      </NTabPane>
+
+      <NTabPane v-if="isSaaSMode" name="MEMBERS">
+        <template #tab>
+          <div class="flex-1 flex gap-x-2">
+            <p class="text-base font-medium leading-7 text-main">
+              <span>{{ $t("common.members", 2) }}</span>
+            </p>
+          </div>
+        </template>
+        <WorkspaceMembers :tab-type="'bar'" />
       </NTabPane>
 
       <NTabPane name="GROUPS">
@@ -189,8 +200,8 @@
       </template>
     </NTabs>
 
-    <!-- Inactive users section for USERS tab -->
-    <div v-if="state.typeTab === 'USERS' && hasListPermission">
+    <!-- Inactive users section for USERS tab (self-hosted only) -->
+    <div v-if="!isSaaSMode && state.typeTab === 'USERS' && hasListPermission">
       <NCheckbox v-model:checked="state.showInactiveUserList">
         <span class="textinfolabel">
           {{ $t("settings.members.show-inactive") }}
@@ -261,12 +272,13 @@
 <script setup lang="ts">
 import { PlusIcon, SettingsIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NPopover, NTabPane, NTabs } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
+import WorkspaceMembers from "@/components/Member/Views/WorkspaceMembers.vue";
 import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
@@ -295,11 +307,12 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const tabList = ["USERS", "GROUPS"] as const;
+const tabList = ["USERS", "MEMBERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
 const isMemberTab = (tab: unknown): tab is MemberTab =>
   tabList.includes(tab as MemberTab);
-const defaultTab: MemberTab = "USERS";
+const isSaaSMode = useActuatorV1Store().isSaaSMode;
+const defaultTab: MemberTab = isSaaSMode ? "MEMBERS" : "USERS";
 
 type LocalState = {
   typeTab: MemberTab;
@@ -433,7 +446,9 @@ onMounted(async () => {
       newState: true,
     });
   }
+});
 
+watchEffect(async () => {
   const name = route.query.name as string;
   if (name?.startsWith(groupNamePrefix)) {
     state.typeTab = "GROUPS";

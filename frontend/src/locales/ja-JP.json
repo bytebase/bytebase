@@ -434,6 +434,7 @@
       "general": "全般",
       "members": "メンバー",
       "users-and-groups": "ユーザーとグループ",
+      "members-and-groups": "メンバーとグループ",
       "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
       "mcp": "MCP",
@@ -531,6 +532,7 @@
       "view-by-roles": "ロールごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "not-a-member": "未参加",
       "update-user": "ユーザーを更新",
       "entra-sync": {
         "self": "SCIM から同期",
@@ -670,6 +672,7 @@
     "general": {
       "workspace": {
         "id": "ワークスペースID",
+        "title": "ワークスペース名",
         "id-description": "一意の読み取り専用ワークスペース ID",
         "branding": "ブランド",
         "logo": "ロゴ",
@@ -718,7 +721,6 @@
         "external-url": {
           "self": "外部URL",
           "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。",
-          "managed-by-flag": "この設定は --external-url コマンドラインフラグによって管理されています",
           "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません"
         },
         "access-token-duration": {
@@ -790,7 +792,6 @@
         "failed-to-update-setting": "設定「{title}」の更新に失敗しました",
         "ai-assistant": {
           "self": "AI アシスタント",
-          "enabled-in-saas": "Gemini AIはSaaSモードで自動的に有効化されます",
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "provider": {
@@ -1612,7 +1613,7 @@
     "password-forget": {
       "title": "パスワードをお忘れですか？",
       "selfhost": "Bytebase 管理者に連絡してパスワードをリセットしてください",
-      "cloud": "{link} にログインしてパスワードをリセットしてください",
+      "contact-us": "{email} までお問い合わせください。",
       "return-to-sign-in": "ログインに戻る"
     },
     "password-forgot": "パスワードを忘れる",

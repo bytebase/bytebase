@@ -300,5 +300,9 @@ defineExpose({
   isValidated: computed(() => {
     return state.validatedMessages.length === 0;
   }),
+  // Allow parent to inject validation errors (e.g. from Create API returning ALREADY_EXISTS).
+  addValidationError: (message: string) => {
+    state.validatedMessages.push({ type: "error", message });
+  },
 });
 </script>

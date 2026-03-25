@@ -11,15 +11,7 @@
       <ComponentPermissionGuard
         :permissions="['bb.settings.get']"
       >
-        <div v-if="actuatorStore.isSaaSMode">
-          <BBAttention
-            :type="'info'"
-            :description="
-              t('settings.general.workspace.ai-assistant.enabled-in-saas')
-            "
-          />
-        </div>
-        <div v-else class="mt-4 lg:mt-0 flex flex-col gap-y-4">
+        <div class="mt-4 lg:mt-0 flex flex-col gap-y-4">
           <div>
             <div class="flex items-center gap-x-2">
               <PermissionGuardWrapper
@@ -182,12 +174,12 @@ import { NCollapseTransition, NSelect } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAttention, BBTextField } from "@/bbkit";
+import { BBTextField } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { Switch } from "@/components/v2";
-import { useActuatorV1Store, useSettingV1Store } from "@/store/modules";
+import { useSettingV1Store } from "@/store/modules";
 import {
   AISetting_Provider,
   AISettingSchema,
@@ -208,7 +200,6 @@ const props = defineProps<{
 }>();
 
 const settingV1Store = useSettingV1Store();
-const actuatorStore = useActuatorV1Store();
 const containerRef = ref<HTMLDivElement>();
 const { t } = useI18n();
 

@@ -5,8 +5,8 @@
     :disabled="disabled"
     :size="size"
     :value="value"
-    :tag="!hasPermission"
-    :remote="hasPermission"
+    :tag="true"
+    :remote="true"
     :additional-options="additionalOptions"
     :render-label="renderLabel"
     :render-tag="renderTag"
@@ -19,11 +19,11 @@
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { getUserFullNameByType, useUserStore } from "@/store";
 import { type User } from "@/types/proto-es/v1/user_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -32,6 +32,8 @@ import type {
 import {
   getRenderLabelFunc,
   getRenderTagFunc,
+  searchUsersWithFallback,
+  type UserResource,
 } from "./RemoteResourceSelector/utils";
 
 const props = defineProps<{
@@ -41,6 +43,7 @@ const props = defineProps<{
   value?: string | string[] | undefined; // user fullname
   projectName?: string;
   filter?: (user: User) => boolean;
+  allowArbitraryEmail?: boolean;
 }>();
 
 defineEmits<{
@@ -49,17 +52,16 @@ defineEmits<{
 }>();
 
 const userStore = useUserStore();
+const { t } = useI18n();
 
-const hasPermission = computed(() => hasWorkspacePermissionV2("bb.users.list"));
-
-const getOption = (user: User): ResourceSelectOption<User> => ({
+const getOption = (user: User): ResourceSelectOption<UserResource> => ({
   resource: user,
   value: getUserFullNameByType(user),
   label: user.title,
 });
 
 const additionalOptions = computedAsync(async () => {
-  const options: ResourceSelectOption<User>[] = [];
+  const options: ResourceSelectOption<UserResource>[] = [];
 
   let userEmails: string[] = [];
   if (Array.isArray(props.value)) {
@@ -87,13 +89,10 @@ const handleSearch = async (params: {
   pageToken: string;
   pageSize: number;
 }) => {
-  const { users, nextPageToken } = await userStore.fetchUserList({
-    filter: {
-      query: params.search,
-      project: props.projectName,
-    },
-    pageToken: params.pageToken,
-    pageSize: params.pageSize,
+  const { users, nextPageToken } = await searchUsersWithFallback({
+    ...params,
+    project: props.projectName,
+    allowArbitraryEmail: props.allowArbitraryEmail,
   });
   return {
     nextPageToken,
@@ -101,7 +100,18 @@ const handleSearch = async (params: {
   };
 };
 
-const customLabel = (user: User, keyword: string) => {
+const customLabel = (user: UserResource, keyword: string) => {
+  if (user.isExternal) {
+    return (
+      <div class="flex items-center shrink gap-x-2 py-0.5">
+        <HighlightLabelText keyword={keyword} text={user.email} />
+        <span class="text-xs text-gray-400 whitespace-nowrap">
+          {t("settings.members.not-a-member")}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <UserNameCell
       user={user}

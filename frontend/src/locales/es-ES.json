@@ -434,6 +434,7 @@
       "general": "General",
       "members": "Miembros",
       "users-and-groups": "Usuarios y grupos",
+      "members-and-groups": "Miembros y grupos",
       "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
       "mcp": "MCP",
@@ -531,6 +532,7 @@
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
+      "not-a-member": "Aún no es miembro",
       "update-user": "Actualizar usuario",
       "entra-sync": {
         "self": "Sincronización desde SCIM",
@@ -670,6 +672,7 @@
     "general": {
       "workspace": {
         "id": "ID del espacio de trabajo",
+        "title": "Nombre del espacio de trabajo",
         "id-description": "La identificación única del espacio de trabajo de solo lectura.",
         "branding": "Marca",
         "logo": "Logo",
@@ -718,7 +721,6 @@
         "external-url": {
           "self": "URL Externa",
           "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://.",
-          "managed-by-flag": "Esta configuración está gestionada a través del parámetro de línea de comandos --external-url",
           "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url"
         },
         "access-token-duration": {
@@ -790,7 +792,6 @@
         "failed-to-update-setting": "No se pudo actualizar la configuración \"{title}\"",
         "ai-assistant": {
           "self": "Asistente de AI",
-          "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "provider": {
@@ -1612,7 +1613,7 @@
     "password-forget": {
       "title": "¿Olvidaste tu contraseña?",
       "selfhost": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
-      "cloud": "Vaya al {link} y restablezca su contraseña.",
+      "contact-us": "Contáctenos en {email} para obtener ayuda.",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
     "password-forgot": "Contraseña olvidada",

@@ -434,6 +434,7 @@
       "general": "通用",
       "members": "成员",
       "users-and-groups": "用户和群组",
+      "members-and-groups": "成员和群组",
       "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
       "mcp": "MCP",
@@ -531,6 +532,7 @@
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
       "add-user": "添加用户",
+      "not-a-member": "尚未加入",
       "update-user": "更新用户",
       "entra-sync": {
         "self": "从 SCIM 同步",
@@ -670,6 +672,7 @@
     "general": {
       "workspace": {
         "id": "工作空间 ID",
+        "title": "工作空间名称",
         "id-description": "唯一且只读的工作空间 ID",
         "branding": "品牌",
         "logo": "Logo",
@@ -718,7 +721,6 @@
         "external-url": {
           "self": "External URL",
           "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。",
-          "managed-by-flag": "此设置由 --external-url 命令行参数管理",
           "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的"
         },
         "access-token-duration": {
@@ -790,7 +792,6 @@
         "failed-to-update-setting": "无法更新设置“{title}”",
         "ai-assistant": {
           "self": "AI 助手",
-          "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用",
           "enable-ai-assistant": "启用 AI 助手",
           "description": "使用 AI 来辅助数据库开发任务。",
           "provider": {
@@ -1612,7 +1613,7 @@
     "password-forget": {
       "title": "忘记了您的密码？",
       "selfhost": "请联系您的 Bytebase 管理员重置密码",
-      "cloud": "请登录 {link} 并重置密码",
+      "contact-us": "请联系 {email} 获取帮助。",
       "return-to-sign-in": "返回登录"
     },
     "password-forgot": "忘记密码",
