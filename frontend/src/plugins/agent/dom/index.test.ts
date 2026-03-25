@@ -41,6 +41,30 @@ describe("lazyExecuteDomAction", () => {
     expect(result).toEqual({ success: true, message: "hello" });
   });
 
+  test("clicks pointer-cursor containers via refs without changing ref lookup semantics", async () => {
+    const onClick = vi.fn();
+    const row = document.createElement("div");
+    row.style.cursor = "pointer";
+    row.textContent = "Prod Primary";
+    row.addEventListener("click", onClick);
+    document.body.append(row);
+
+    await expect(lazyExtractDomRefSuggestions()).resolves.toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Prod Primary",
+        value: undefined,
+      },
+    ]);
+
+    await expect(
+      lazyExecuteDomAction({ type: "click", ref: "e1" })
+    ).resolves.toEqual({ success: true, message: "Clicked div" });
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   test("returns refresh guidance for malformed, missing, and stale refs", async () => {
     document.body.innerHTML = `<button>Save</button>`;
     await lazyExtractDomTree();

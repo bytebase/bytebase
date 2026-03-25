@@ -68,6 +68,72 @@ describe("extractDomTree", () => {
     expect(tree).not.toContain("Also hidden");
   });
 
+  test("treats clickable containers with pointer cursor as interactive and preserves descendant text", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer">
+          <span>Prod Primary</span>
+          <span>us-east-1</span>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain(
+      "[e1]<div>Prod Primary us-east-1</div>"
+    );
+    expect(tree).toContain("  Prod Primary");
+    expect(tree).toContain("  us-east-1");
+    expect(getElementByRef("e1")?.tag).toBe("div");
+  });
+
+  test("skips disabled and hidden pointer-cursor containers", () => {
+    document.body.innerHTML = `
+      <main>
+        <div style="cursor: pointer" disabled>Disabled row</div>
+        <div style="cursor: pointer" aria-disabled="true">Aria disabled row</div>
+        <div style="cursor: pointer" inert>Inert row</div>
+        <div style="cursor: pointer" aria-hidden="true">Aria hidden row</div>
+        <div style="cursor: pointer">Active row</div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Active row</div>");
+    expect(tree).toContain("Disabled row");
+    expect(tree).toContain("Aria disabled row");
+    expect(tree).not.toContain("Inert row");
+    expect(tree).not.toContain("Aria hidden row");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "div",
+        role: undefined,
+        label: "Active row",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("treats contenteditable regions as interactive without duplicating descendants", () => {
+    document.body.innerHTML = `
+      <main>
+        <div contenteditable="true">Editable SQL</div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<div>Editable SQL</div>");
+    expect(tree.match(/Editable SQL/g)).toHaveLength(1);
+  });
+
   test("returns structured DOM ref suggestions for visible interactive elements", () => {
     document.body.innerHTML = `
       <main>

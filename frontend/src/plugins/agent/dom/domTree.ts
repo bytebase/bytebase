@@ -37,6 +37,15 @@ const INTERACTIVE_ROLES = new Set([
 
 const NAIVE_INTERACTIVE_CLASSES = ["n-button", "n-switch", "n-checkbox"];
 
+const TERMINAL_INTERACTIVE_TAGS = new Set([
+  "A",
+  "BUTTON",
+  "INPUT",
+  "SELECT",
+  "TEXTAREA",
+  "SUMMARY",
+]);
+
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "PATH"]);
 const MAX_TEXT_NODE_LENGTH = 200;
 
@@ -92,6 +101,34 @@ function isVisible(el: Element): boolean {
   );
 }
 
+function hasHiddenAncestor(el: Element): boolean {
+  return el.closest('[hidden], [aria-hidden="true"], [inert]') !== null;
+}
+
+function isPerceivable(el: Element): boolean {
+  return isVisible(el) && !hasHiddenAncestor(el);
+}
+
+function hasDisabledState(el: Element): boolean {
+  if (el.matches(":disabled") || el.hasAttribute("disabled")) return true;
+  return el.closest('[aria-disabled="true"], [disabled]') !== null;
+}
+
+function isContentEditableElement(el: Element): boolean {
+  const contentEditable = el.getAttribute("contenteditable");
+  return (
+    el instanceof HTMLElement &&
+    (el.isContentEditable ||
+      contentEditable === "" ||
+      contentEditable === "true" ||
+      contentEditable === "plaintext-only")
+  );
+}
+
+function hasPointerCursor(el: Element): boolean {
+  return window.getComputedStyle(el).cursor === "pointer";
+}
+
 function isMonacoEditor(el: Element): boolean {
   return el.classList.contains("monaco-editor");
 }
@@ -109,6 +146,7 @@ function getMonacoContent(el: Element): string | undefined {
 }
 
 function isInteractive(el: Element): boolean {
+  if (!isPerceivable(el) || hasDisabledState(el)) return false;
   if (INTERACTIVE_TAGS.has(el.tagName)) return true;
 
   const role = el.getAttribute("role");
@@ -118,7 +156,16 @@ function isInteractive(el: Element): boolean {
     if (el.classList.contains(cls)) return true;
   }
 
+  if (isContentEditableElement(el)) return true;
+  if (hasPointerCursor(el)) return true;
+
   return false;
+}
+
+function shouldRecurseIntoInteractive(el: Element): boolean {
+  if (TERMINAL_INTERACTIVE_TAGS.has(el.tagName)) return false;
+  if (isContentEditableElement(el)) return false;
+  return Array.from(el.children).length > 0;
 }
 
 function extractLabel(el: Element): string {
@@ -218,7 +265,7 @@ function toDomRefSuggestion({
 
 function walkDomNode(node: Node, depth: number, lines: string[]): void {
   if (node instanceof Text) {
-    if (!node.parentElement || !isVisible(node.parentElement)) return;
+    if (!node.parentElement || !isPerceivable(node.parentElement)) return;
     const text = normalizeTextContent(node.textContent ?? "");
     if (!text) return;
     const indent = "  ".repeat(depth);
@@ -229,7 +276,7 @@ function walkDomNode(node: Node, depth: number, lines: string[]): void {
   if (!(node instanceof Element)) return;
   if (SKIP_TAGS.has(node.tagName)) return;
   if (node.hasAttribute("data-agent-window")) return;
-  if (!isVisible(node)) return;
+  if (!isPerceivable(node)) return;
 
   // Monaco editor — register as a single interactive element
   if (isMonacoEditor(node)) {
@@ -249,7 +296,8 @@ function walkDomNode(node: Node, depth: number, lines: string[]): void {
     return;
   }
 
-  if (isInteractive(node)) {
+  const isInteractiveNode = isInteractive(node);
+  if (isInteractiveNode) {
     const tag = node.tagName.toLowerCase();
     const label = extractLabel(node);
     const value = extractValue(node);
@@ -260,12 +308,16 @@ function walkDomNode(node: Node, depth: number, lines: string[]): void {
     const valueAttr = value ? ` value="${value}"` : "";
     lines.push(`${indent}[${entry.ref}]<${tag}${valueAttr}>${label}</${tag}>`);
 
-    // Don't recurse into interactive elements
-    return;
+    if (!shouldRecurseIntoInteractive(node)) {
+      return;
+    }
   }
 
-  // Only increment depth at landmark/semantic containers
-  const childDepth = isLandmark(node) ? depth + 1 : depth;
+  const childDepth = isInteractiveNode
+    ? depth + 1
+    : isLandmark(node)
+      ? depth + 1
+      : depth;
   for (const child of Array.from(node.childNodes)) {
     walkDomNode(child, childDepth, lines);
   }
