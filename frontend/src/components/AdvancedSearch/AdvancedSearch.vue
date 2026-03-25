@@ -82,7 +82,7 @@
 
 <script lang="ts" setup>
 import { onClickOutside, useDebounceFn } from "@vueuse/core";
-import { cloneDeep, isEqual, last } from "lodash-es";
+import { cloneDeep, last } from "lodash-es";
 import { FilterIcon, XIcon } from "lucide-vue-next";
 import { type InputInst, NButton, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
@@ -692,14 +692,19 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
 });
 
 watch(
-  () => props.params,
-  (newParams, oldParams) => {
-    if (isEqual(newParams, oldParams)) {
-      return;
+  () => props.params.query,
+  (query) => {
+    if (query !== inputText.value) {
+      inputText.value = query;
     }
-    inputText.value = newParams.query;
+  }
+);
+
+watch(
+  () => props.params,
+  (params) => {
     if (props.cacheQuery) {
-      cachedQuery.value = buildSearchTextBySearchParams(newParams);
+      cachedQuery.value = buildSearchTextBySearchParams(params);
     }
   },
   { deep: true }
