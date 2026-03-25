@@ -87,10 +87,10 @@ const i18n = createI18n({
         stop: "Stop",
         confirm: "Confirm",
         cancel: "Cancel",
-        "pending-input-hint": "Reply below to continue this thread.",
+        "pending-input-hint": "Reply below to continue this chat.",
         "pending-confirm-hint":
-          "Choose confirm or cancel to continue this thread.",
-        "pending-choose-hint": "Choose an option to continue this thread.",
+          "Choose confirm or cancel to continue this chat.",
+        "pending-choose-hint": "Choose an option to continue this chat.",
       },
     },
   },

@@ -44,20 +44,20 @@ const i18n = createI18n({
         minimize: "Minimize",
         close: "Close",
         resize: "Resize",
-        "thread-list-label": "Threads",
+        "thread-list-label": "Chats",
         "thread-switch-locked":
-          "Finish the running thread before switching to another one.",
-        "new-thread": "New thread",
+          "Finish the running chat before switching to another one.",
+        "new-thread": "New chat",
         "rename-thread": "Rename",
-        "rename-thread-placeholder": "Enter a thread name",
+        "rename-thread-placeholder": "Enter a chat name",
         "archive-thread": "Archive",
         "unarchive-thread": "Unarchive",
         "delete-thread": "Delete",
-        "show-archived-threads": "Show archived",
-        "hide-archived-threads": "Hide archived",
-        "archive-thread-confirmation": "Archive this thread?",
-        "delete-thread-confirmation": "Delete this thread?",
-        "thread-default-title": "New thread",
+        "show-archived-threads": "Show archived chats",
+        "hide-archived-threads": "Hide archived chats",
+        "archive-thread-confirmation": "Archive this chat?",
+        "delete-thread-confirmation": "Delete this chat?",
+        "thread-default-title": "New chat",
         "thread-archived-label": "Archived",
         "thread-status-idle": "Idle",
         "thread-status-running": "Running",
@@ -148,10 +148,10 @@ describe("AgentWindow", () => {
     );
     const newThreadButton = wrapper
       .findAll("button")
-      .find((button) => button.text() === "New thread");
+      .find((button) => button.text() === "New chat");
 
     expect(wrapper.find("[data-agent-thread-lock-message]").text()).toContain(
-      "Finish the running thread before switching to another one."
+      "Finish the running chat before switching to another one."
     );
     expect(currentRow?.attributes("disabled")).toBeUndefined();
     expect(otherRow?.attributes("disabled")).toBe("");
