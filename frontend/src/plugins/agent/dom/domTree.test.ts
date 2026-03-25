@@ -271,7 +271,7 @@ describe("extractDomTree", () => {
     expect(tree).not.toContain("<span>Healthy");
   });
 
-  test("keeps clickable table rows while suppressing wrapper descendants", () => {
+  test("drops utility action cells from clickable row summaries while keeping controls actionable", () => {
     document.body.innerHTML = `
       <main>
         <table>
@@ -279,7 +279,7 @@ describe("extractDomTree", () => {
             <tr>
               <th>Name</th>
               <th>Enabled</th>
-              <th>Action</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -292,7 +292,7 @@ describe("extractDomTree", () => {
               </td>
               <td>
                 <div>
-                  <button aria-label="More actions"></button>
+                  <button></button>
                 </div>
               </td>
             </tr>
@@ -305,10 +305,11 @@ describe("extractDomTree", () => {
     const suggestions = extractDomRefSuggestions();
 
     expect(count).toBe(3);
-    expect(tree).toContain("<thead>Name | Enabled | Action</thead>");
-    expect(tree).toContain("[e1]<tr>Prod Primary | switch | More actions</tr>");
+    expect(tree).toContain("<thead>Name | Enabled | Actions</thead>");
+    expect(tree).toContain("[e1]<tr>Prod Primary | switch</tr>");
     expect(tree).toContain('[e2]<div value="checked">switch</div>');
-    expect(tree).toContain("[e3]<button>More actions</button>");
+    expect(tree).toContain("[e3]<button>Actions</button>");
+    expect(tree).not.toContain("More actions");
     expect(tree).not.toContain("n-switch__rail");
     expect(tree).not.toContain("Prod PrimaryProd Primary");
     expect(suggestions).toEqual([
@@ -316,7 +317,7 @@ describe("extractDomTree", () => {
         ref: "e1",
         tag: "tr",
         role: undefined,
-        label: "Prod Primary | switch | More actions",
+        label: "Prod Primary | switch",
         value: undefined,
       },
       {
@@ -330,8 +331,115 @@ describe("extractDomTree", () => {
         ref: "e3",
         tag: "button",
         role: undefined,
-        label: "More actions",
+        label: "Actions",
         value: undefined,
+      },
+    ]);
+  });
+
+  test("drops utility selection cells from table row summaries while keeping checkboxes actionable", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Name</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td><input type="checkbox" checked /></td>
+              <td>Prod Primary</td>
+              <td>Healthy</td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(2);
+    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
+    expect(tree).toContain('[e2]<input value="checked">checkbox</input>');
+    expect(tree).not.toContain("checkbox | Prod Primary");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | Healthy",
+        value: undefined,
+      },
+      {
+        ref: "e2",
+        tag: "input",
+        role: undefined,
+        label: "checkbox",
+        value: "checked",
+      },
+    ]);
+  });
+
+  test("suppresses Naive input prefix text while preserving the textbox ref", () => {
+    document.body.innerHTML = `
+      <main>
+        <div class="n-input">
+          <div class="n-input-prefix">
+            <span>Filter</span>
+          </div>
+          <div class="n-input-wrapper">
+            <input placeholder="Search instances" />
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<input>Search instances</input>");
+    expect(tree).not.toContain("Filter");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "input",
+        role: undefined,
+        label: "Search instances",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("serializes Naive select controls with sibling labels and selected values", () => {
+    document.body.innerHTML = `
+      <main>
+        <div class="flex items-center gap-x-2">
+          <div class="textinfolabel">Rows per page</div>
+          <div class="n-base-selection" role="combobox">
+            <div class="n-base-selection-label">50</div>
+          </div>
+        </div>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain('[e1]<select value="50">Rows per page</select>');
+    expect(tree).not.toContain("<div>50</div>");
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "select",
+        role: "combobox",
+        label: "Rows per page",
+        value: "50",
       },
     ]);
   });

@@ -35,7 +35,12 @@ const INTERACTIVE_ROLES = new Set([
   "slider",
 ]);
 
-const NAIVE_INTERACTIVE_CLASSES = ["n-button", "n-switch", "n-checkbox"];
+const NAIVE_INTERACTIVE_CLASSES = [
+  "n-button",
+  "n-switch",
+  "n-checkbox",
+  "n-base-selection",
+];
 
 const TERMINAL_INTERACTIVE_TAGS = new Set([
   "A",
@@ -85,6 +90,24 @@ const MAX_LABEL_LENGTH = 120;
 const MAX_EDITOR_PREVIEW_LENGTH = 160;
 const MAX_DOM_TREE_LINES = 120;
 const MAX_DOM_TREE_CHARS = 6000;
+const ACTION_LIKE_HEADERS = new Set([
+  "action",
+  "actions",
+  "operation",
+  "operations",
+  "menu",
+]);
+const NAIVE_CONTROL_TEXT_SELECTORS = [
+  ".n-input-prefix",
+  ".n-input-suffix",
+  ".n-input__placeholder",
+  ".n-base-selection-label",
+  ".n-base-selection-placeholder",
+  ".n-base-selection-tags",
+  ".n-base-selection-input",
+  ".n-base-suffix",
+  ".n-base-loading",
+].join(",");
 
 const MAIN_CONTENT_SELECTOR = [
   "main",
@@ -262,6 +285,14 @@ function hasPointerCursor(el: Element): boolean {
   return window.getComputedStyle(el).cursor === "pointer";
 }
 
+function isNaiveSelectElement(el: Element): boolean {
+  return el.classList.contains("n-base-selection");
+}
+
+function isNaiveControlTextElement(el: Element): boolean {
+  return Boolean(el.closest(NAIVE_CONTROL_TEXT_SELECTORS));
+}
+
 function isMonacoEditor(el: Element): boolean {
   return el.classList.contains("monaco-editor");
 }
@@ -317,6 +348,62 @@ function normalizeTextContent(text: string): string | undefined {
   return truncateText(normalized, MAX_TEXT_NODE_LENGTH);
 }
 
+function getSiblingControlLabel(el: Element): string | undefined {
+  const parent = el.parentElement;
+  if (!parent) return undefined;
+
+  for (
+    let sibling = el.previousElementSibling;
+    sibling;
+    sibling = sibling.previousElementSibling
+  ) {
+    if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
+    const text = normalizeTextContent(sibling.textContent ?? "");
+    if (text) return truncateText(text, MAX_LABEL_LENGTH);
+  }
+
+  if (parent.children.length <= 3) {
+    for (
+      let sibling = parent.previousElementSibling;
+      sibling;
+      sibling = sibling.previousElementSibling
+    ) {
+      if (!isPerceivable(sibling) || isInteractive(sibling)) continue;
+      const text = normalizeTextContent(sibling.textContent ?? "");
+      if (text) return truncateText(text, MAX_LABEL_LENGTH);
+    }
+  }
+
+  return undefined;
+}
+
+function getTableColumnHeaderLabel(el: Element): string | undefined {
+  const cell = el.closest("td, th");
+  if (!cell || !cell.parentElement) return undefined;
+
+  const cells = Array.from(cell.parentElement.children).filter(
+    (child): child is Element =>
+      child instanceof Element && TABLE_CELL_TAGS.has(child.tagName)
+  );
+  const columnIndex = cells.indexOf(cell);
+  if (columnIndex < 0) return undefined;
+
+  const table = cell.closest("table");
+  if (!table) return undefined;
+
+  const headerRow = table.querySelector("thead tr");
+  if (!headerRow) return undefined;
+
+  const headerCells = Array.from(headerRow.children).filter(
+    (child): child is Element =>
+      child instanceof Element && TABLE_CELL_TAGS.has(child.tagName)
+  );
+  const headerText = normalizeTextContent(
+    headerCells[columnIndex]?.textContent ?? ""
+  );
+  return headerText ? truncateText(headerText, MAX_LABEL_LENGTH) : undefined;
+}
+
 function extractLabel(el: Element): string {
   // aria-label
   const ariaLabel = normalizeTextContent(el.getAttribute("aria-label") ?? "");
@@ -359,6 +446,24 @@ function extractLabel(el: Element): string {
   // title
   const title = normalizeTextContent(el.getAttribute("title") ?? "");
   if (title) return truncateText(title, MAX_LABEL_LENGTH);
+
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement ||
+    isNaiveSelectElement(el)
+  ) {
+    const siblingLabel = getSiblingControlLabel(el);
+    if (siblingLabel) return siblingLabel;
+  }
+
+  const columnHeaderLabel = getTableColumnHeaderLabel(el);
+  if (columnHeaderLabel) {
+    const normalizedHeader = normalizeLineSignature(columnHeaderLabel);
+    if (normalizedHeader && ACTION_LIKE_HEADERS.has(normalizedHeader)) {
+      return truncateText(columnHeaderLabel, MAX_LABEL_LENGTH);
+    }
+  }
 
   // text content (truncated)
   const text = normalizeTextContent(el.textContent ?? "");
@@ -422,7 +527,9 @@ function getFallbackLabel(el: Element, reason: InteractiveReason): string {
   }
 
   if (el instanceof HTMLTextAreaElement) return "textbox";
-  if (el instanceof HTMLSelectElement) return "select";
+  if (el instanceof HTMLSelectElement || isNaiveSelectElement(el)) {
+    return "select";
+  }
 
   const role = el.getAttribute("role") ?? "";
   if (STATEFUL_INTERACTIVE_ROLES.has(role)) return role;
@@ -530,6 +637,7 @@ function classifyTextLine(
 
 function pushTextLine(node: Text, depth: number, context: WalkContext): void {
   if (!node.parentElement || !isPerceivable(node.parentElement)) return;
+  if (isNaiveControlTextElement(node.parentElement)) return;
   const text = normalizeTextContent(node.textContent ?? "");
   if (!text) return;
   if (context.interactiveLabels.includes(text)) return;
@@ -646,6 +754,36 @@ function collectSemanticTextSegments(node: Node, segments: string[]): void {
   if (text) segments.push(text);
 }
 
+function collectNonInteractiveTextSegments(
+  node: Node,
+  segments: string[],
+  isRoot = false
+): void {
+  if (node instanceof Text) {
+    const text = normalizeTextContent(node.textContent ?? "");
+    if (text) segments.push(text);
+    return;
+  }
+
+  if (!(node instanceof Element)) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.hasAttribute("data-agent-window")) return;
+  if (!isPerceivable(node)) return;
+  if (!isRoot && getInteractiveReason(node)) return;
+  if (isNaiveControlTextElement(node)) return;
+
+  Array.from(node.childNodes).forEach((child) => {
+    collectNonInteractiveTextSegments(child, segments);
+  });
+}
+
+function extractNonInteractiveText(node: Node): string | undefined {
+  const segments: string[] = [];
+  collectNonInteractiveTextSegments(node, segments, true);
+  const uniqueSegments = [...new Set(segments)];
+  return normalizeTextContent(uniqueSegments.join(" "));
+}
+
 function extractSemanticText(node: Node): string | undefined {
   const segments: string[] = [];
   collectSemanticTextSegments(node, segments);
@@ -725,6 +863,29 @@ function walkTableActionableDescendants(
   });
 }
 
+function isUtilityTableCell(
+  cell: Element,
+  columnHeader: string | undefined,
+  cellText: string
+): boolean {
+  if (!cellText) return false;
+
+  const normalizedHeader = normalizeLineSignature(columnHeader ?? "") ?? "";
+  if (normalizedHeader && !ACTION_LIKE_HEADERS.has(normalizedHeader)) {
+    return false;
+  }
+
+  if (
+    !cell.querySelector(
+      "a, button, input, select, textarea, .n-button, .n-switch, .n-checkbox, .n-base-selection"
+    )
+  ) {
+    return false;
+  }
+
+  return !extractNonInteractiveText(cell);
+}
+
 function walkTableNode(
   table: Element,
   depth: number,
@@ -756,6 +917,19 @@ function walkTableNode(
     return child.tagName === "TR" ? [child] : [];
   });
 
+  const headerLabels = rows.reduce<string[] | undefined>((labels, row) => {
+    if (labels) return labels;
+    const cells = Array.from(row.children).filter(
+      (cell): cell is Element =>
+        TABLE_CELL_TAGS.has(cell.tagName) && isPerceivable(cell)
+    );
+    const isHeaderRow =
+      row.parentElement?.tagName === "THEAD" ||
+      cells.every((cell) => cell.tagName === "TH");
+    if (!isHeaderRow) return labels;
+    return cells.map((cell) => extractSemanticText(cell) ?? "");
+  }, undefined);
+
   rows.forEach((row, rowIndex) => {
     const cells = Array.from(row.children).filter(
       (cell): cell is Element =>
@@ -763,9 +937,16 @@ function walkTableNode(
     );
     if (cells.length === 0) return;
 
-    const cellTexts = cells.map((cell) => extractSemanticText(cell) ?? "");
+    const cellTexts = cells.map((cell, cellIndex) => {
+      const cellText = extractSemanticText(cell) ?? "";
+      if (isUtilityTableCell(cell, headerLabels?.[cellIndex], cellText)) {
+        return "";
+      }
+      return cellText;
+    });
     const rowLabel =
-      normalizeTextContent(cellTexts.join(" | ")) ?? extractLabel(row);
+      normalizeTextContent(cellTexts.filter(Boolean).join(" | ")) ??
+      extractLabel(row);
     const isHeaderRow =
       row.parentElement?.tagName === "THEAD" ||
       cells.every((cell) => cell.tagName === "TH");
@@ -887,7 +1068,9 @@ function walkDomNode(
   let nextInteractiveLabels = context.interactiveLabels;
   let hasInteractiveAncestor = context.hasInteractiveAncestor;
   if (interactiveReason) {
-    const tag = node.tagName.toLowerCase();
+    const tag = isNaiveSelectElement(node)
+      ? "select"
+      : node.tagName.toLowerCase();
     const value = extractValue(node);
     const rawLabel = extractLabel(node);
     const label = rawLabel || getFallbackLabel(node, interactiveReason);
