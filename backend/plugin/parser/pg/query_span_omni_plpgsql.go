@@ -16,16 +16,15 @@ import (
 // analyzeFunctionBody analyzes a user-defined function body and returns per-column
 // source column sets. Results are cached by function OID on the extractor.
 // A nil value in the cache means analysis is in progress (recursion sentinel).
-//
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
-func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) ([]base.SourceColumnSet, error) {
+// On parse errors, it degrades gracefully by returning empty sets.
+func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
 	// Check cache.
 	if cached, ok := e.funcBodyCache[proc.OID]; ok {
 		if cached == nil {
 			// In-progress sentinel — recursive call. Return empty sets.
-			return makeEmptySets(proc), nil
+			return makeEmptySets(proc)
 		}
-		return cached, nil
+		return cached
 	}
 
 	// Store nil sentinel to detect recursion.
@@ -47,14 +46,13 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) ([]
 	if err != nil {
 		// On error, cache empty sets so we don't retry.
 		e.funcBodyCache[proc.OID] = makeEmptySets(proc)
-		return e.funcBodyCache[proc.OID], nil //nolint:nilerr // intentional: degrade gracefully on parse errors
+		return e.funcBodyCache[proc.OID]
 	}
 
 	e.funcBodyCache[proc.OID] = result
-	return result, nil
+	return result
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func makeEmptySets(proc *catalog.UserProc) []base.SourceColumnSet {
 	n := countOutputParams(proc)
 	if n == 0 {
@@ -67,7 +65,6 @@ func makeEmptySets(proc *catalog.UserProc) []base.SourceColumnSet {
 	return sets
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func countOutputParams(proc *catalog.UserProc) int {
 	count := 0
 	for _, mode := range proc.ArgModes {
@@ -78,7 +75,6 @@ func countOutputParams(proc *catalog.UserProc) int {
 	return count
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (e *omniQuerySpanExtractor) analyzeSQLBody(proc *catalog.UserProc) ([]base.SourceColumnSet, error) {
 	if proc.Body == "" {
 		return makeEmptySets(proc), nil
@@ -105,7 +101,6 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(proc *catalog.UserProc) ([]base.
 	return makeEmptySets(proc), nil
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
 	var result []base.SourceColumnSet
 	for _, te := range q.TargetList {
@@ -120,14 +115,11 @@ func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.Sou
 }
 
 // variableScope tracks PL/pgSQL variable source columns with nested scoping.
-//
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 type variableScope struct {
 	vars   map[string]base.SourceColumnSet
 	parent *variableScope
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func newVariableScope(parent *variableScope) *variableScope {
 	return &variableScope{
 		vars:   make(map[string]base.SourceColumnSet),
@@ -135,12 +127,10 @@ func newVariableScope(parent *variableScope) *variableScope {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (s *variableScope) set(name string, sources base.SourceColumnSet) {
 	s.vars[strings.ToLower(name)] = sources
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (s *variableScope) get(name string) (base.SourceColumnSet, bool) {
 	lower := strings.ToLower(name)
 	for scope := s; scope != nil; scope = scope.parent {
@@ -151,7 +141,6 @@ func (s *variableScope) get(name string) (base.SourceColumnSet, bool) {
 	return nil, false
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (s *variableScope) merge(name string, sources base.SourceColumnSet) {
 	lower := strings.ToLower(name)
 	existing, ok := s.get(lower)
@@ -169,8 +158,6 @@ func (s *variableScope) merge(name string, sources base.SourceColumnSet) {
 }
 
 // plpgsqlAnalyzer holds state for analyzing a single PL/pgSQL function body.
-//
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 type plpgsqlAnalyzer struct {
 	extractor *omniQuerySpanExtractor
 	scope     *variableScope
@@ -178,7 +165,6 @@ type plpgsqlAnalyzer struct {
 	returnResults [][]base.SourceColumnSet
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc) ([]base.SourceColumnSet, error) {
 	if proc.Body == "" {
 		return makeEmptySets(proc), nil
@@ -204,7 +190,6 @@ func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc) ([]b
 	return analyzer.mergeReturnResults(nCols), nil
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) walkBlock(block *plpgsqlast.PLBlock) {
 	// Push scope for declarations.
 	a.scope = newVariableScope(a.scope)
@@ -243,7 +228,6 @@ func (a *plpgsqlAnalyzer) walkBlock(block *plpgsqlast.PLBlock) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 	switch stmt := node.(type) {
 	case *plpgsqlast.PLAssign:
@@ -295,14 +279,12 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleAssign(stmt *plpgsqlast.PLAssign) {
 	varName := extractBaseVarName(stmt.Target)
 	sources := a.analyzeEmbeddedExpr(stmt.Expr)
 	a.scope.merge(varName, sources)
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleReturnQuery(stmt *plpgsqlast.PLReturnQuery) {
 	if stmt.Query == "" {
 		return
@@ -313,7 +295,6 @@ func (a *plpgsqlAnalyzer) handleReturnQuery(stmt *plpgsqlast.PLReturnQuery) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleReturn(stmt *plpgsqlast.PLReturn) {
 	if stmt.Expr == "" {
 		return
@@ -322,7 +303,6 @@ func (a *plpgsqlAnalyzer) handleReturn(stmt *plpgsqlast.PLReturn) {
 	a.returnResults = append(a.returnResults, []base.SourceColumnSet{sources})
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleReturnNext(stmt *plpgsqlast.PLReturnNext) {
 	if stmt.Expr == "" {
 		return
@@ -331,7 +311,6 @@ func (a *plpgsqlAnalyzer) handleReturnNext(stmt *plpgsqlast.PLReturnNext) {
 	a.returnResults = append(a.returnResults, []base.SourceColumnSet{sources})
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
 	if len(stmt.Into) == 0 {
 		return
@@ -344,7 +323,6 @@ func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
 	results := a.analyzeEmbeddedSQL(stmt.Query)
 	merged := make(base.SourceColumnSet)
@@ -359,7 +337,6 @@ func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
 	for _, s := range stmt.ThenBody {
 		a.walkStmt(s)
@@ -376,7 +353,6 @@ func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) handleCase(stmt *plpgsqlast.PLCase) {
 	for _, when := range stmt.Whens {
 		if cw, ok := when.(*plpgsqlast.PLCaseWhen); ok {
@@ -390,7 +366,6 @@ func (a *plpgsqlAnalyzer) handleCase(stmt *plpgsqlast.PLCase) {
 	}
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet {
 	substituted := a.substituteVariables(sql)
 
@@ -428,7 +403,6 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 	return results
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func extractSelectItemNames(sql string) []string {
 	upper := strings.ToUpper(strings.TrimSpace(sql))
 	idx := strings.Index(upper, "SELECT")
@@ -485,7 +459,6 @@ func extractSelectItemNames(sql string) []string {
 	return items
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) analyzeEmbeddedExpr(expr string) base.SourceColumnSet {
 	results := a.analyzeEmbeddedSQL("SELECT " + expr)
 	merged := make(base.SourceColumnSet)
@@ -505,7 +478,6 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedExpr(expr string) base.SourceColumnSet 
 	return merged
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) substituteVariables(sql string) string {
 	stmts, err := ParsePg(sql)
 	if err == nil && len(stmts) > 0 {
@@ -526,7 +498,6 @@ func (a *plpgsqlAnalyzer) substituteVariables(sql string) string {
 	return result
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func replaceWholeWord(s, old, replacement string) string {
 	lower := strings.ToLower(s)
 	oldLower := strings.ToLower(old)
@@ -557,12 +528,10 @@ func replaceWholeWord(s, old, replacement string) string {
 	return result.String()
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func isWordChar(b byte) bool {
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') || b == '_'
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func extractBaseVarName(target string) string {
 	for i, c := range target {
 		if c == '.' || c == '[' {
@@ -572,7 +541,6 @@ func extractBaseVarName(target string) string {
 	return target
 }
 
-//nolint:unused // Will be called from query_span_omni.go in Task 5.
 func (a *plpgsqlAnalyzer) mergeReturnResults(nCols int) []base.SourceColumnSet {
 	result := make([]base.SourceColumnSet, nCols)
 	for i := range result {
