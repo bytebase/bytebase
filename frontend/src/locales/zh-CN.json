@@ -2976,7 +2976,7 @@
     "new-thread": "新线程",
     "reset-thread": "重置线程",
     "rename-thread": "重命名",
-    "rename-thread-prompt": "输入线程名称",
+    "rename-thread-placeholder": "输入线程名称",
     "archive-thread": "归档",
     "unarchive-thread": "取消归档",
     "delete-thread": "删除",

@@ -2976,7 +2976,7 @@
     "new-thread": "New thread",
     "reset-thread": "Reset thread",
     "rename-thread": "Rename",
-    "rename-thread-prompt": "Enter a thread name",
+    "rename-thread-placeholder": "Enter a thread name",
     "archive-thread": "Archive",
     "unarchive-thread": "Unarchive",
     "delete-thread": "Delete",

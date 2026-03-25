@@ -2485,7 +2485,7 @@
     "new-thread": "新しいスレッド",
     "reset-thread": "スレッドをリセット",
     "rename-thread": "名前を変更",
-    "rename-thread-prompt": "スレッド名を入力してください",
+    "rename-thread-placeholder": "スレッド名を入力してください",
     "archive-thread": "アーカイブ",
     "unarchive-thread": "アーカイブ解除",
     "delete-thread": "削除",

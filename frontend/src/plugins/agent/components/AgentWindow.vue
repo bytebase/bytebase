@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { NInput, NPopconfirm } from "naive-ui";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import type { AgentThread } from "../logic/types";
@@ -158,12 +166,15 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
-const getThreadLabel = (thread: AgentThread) => {
-  const baseLabel = thread.title
+const getEditableThreadTitle = (thread: AgentThread) =>
+  thread.title
     ? thread.title
     : `${t("agent.thread-default-title")} · ${new Date(
         thread.createdTs
       ).toLocaleString()}`;
+
+const getThreadLabel = (thread: AgentThread) => {
+  const baseLabel = getEditableThreadTitle(thread);
   return thread.archived
     ? `${baseLabel} (${t("agent.thread-archived-label")})`
     : baseLabel;
@@ -173,19 +184,55 @@ function toggleArchivedThreads() {
   showArchivedThreads.value = !showArchivedThreads.value;
 }
 
-function renameCurrentThread() {
+const isRenamingCurrentThread = ref(false);
+const renamingTitle = ref("");
+const renameInputRef = ref<InstanceType<typeof NInput> | null>(null);
+
+function beginRenameCurrentThread() {
   const thread = agentStore.currentThread;
   if (!thread) {
     return;
   }
-  const nextTitle = window.prompt(
-    t("agent.rename-thread-prompt"),
-    thread.title || getThreadLabel(thread)
-  );
-  if (nextTitle === null) {
+  renamingTitle.value = getEditableThreadTitle(thread);
+  isRenamingCurrentThread.value = true;
+  nextTick(() => {
+    renameInputRef.value?.focus();
+    renameInputRef.value?.select();
+  });
+}
+
+function cancelRenameCurrentThread() {
+  isRenamingCurrentThread.value = false;
+  renamingTitle.value = "";
+}
+
+function commitRenameCurrentThread() {
+  const thread = agentStore.currentThread;
+  const title = renamingTitle.value.trim();
+  if (!thread || !isRenamingCurrentThread.value) {
     return;
   }
-  agentStore.renameThread(thread.id, nextTitle);
+  if (!title) {
+    cancelRenameCurrentThread();
+    return;
+  }
+  agentStore.renameThread(thread.id, title);
+  cancelRenameCurrentThread();
+}
+
+function onRenameCurrentThreadKeydown(event: KeyboardEvent) {
+  if (event.isComposing) {
+    return;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelRenameCurrentThread();
+    return;
+  }
+  if (event.key === "Enter") {
+    event.preventDefault();
+    commitRenameCurrentThread();
+  }
 }
 
 function toggleArchiveCurrentThread() {
@@ -197,15 +244,12 @@ function toggleArchiveCurrentThread() {
     agentStore.unarchiveThread(thread.id);
     return;
   }
-  if (!window.confirm(t("agent.archive-thread-confirmation"))) {
-    return;
-  }
   agentStore.archiveThread(thread.id);
 }
 
 function deleteCurrentThread() {
   const thread = agentStore.currentThread;
-  if (!thread || !window.confirm(t("agent.delete-thread-confirmation"))) {
+  if (!thread) {
     return;
   }
   agentStore.deleteThread(thread.id);
@@ -340,8 +384,20 @@ function resetCurrentThread() {
 }
 
 function selectThread(threadId: string) {
+  if (isRenamingCurrentThread.value) {
+    cancelRenameCurrentThread();
+  }
   agentStore.setCurrentThread(threadId);
 }
+
+watch(
+  () => agentStore.currentThreadId,
+  () => {
+    if (isRenamingCurrentThread.value) {
+      cancelRenameCurrentThread();
+    }
+  }
+);
 
 onMounted(() => {
   agentStore.loadWindowState();
@@ -478,45 +534,72 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="border-t border-gray-200 px-3 py-3">
-            <div class="flex flex-wrap gap-x-2 gap-y-2">
-              <button
-                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                @click="resetCurrentThread"
-              >
-                {{ $t("agent.reset-thread") }}
-              </button>
-              <button
-                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                @click="renameCurrentThread"
-              >
-                {{ $t("agent.rename-thread") }}
-              </button>
-              <button
-                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                @click="toggleArchiveCurrentThread"
-              >
-                {{
-                  agentStore.currentThread?.archived
-                    ? $t("agent.unarchive-thread")
-                    : $t("agent.archive-thread")
-                }}
-              </button>
-              <button
-                class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                @click="deleteCurrentThread"
-              >
-                {{ $t("agent.delete-thread") }}
-              </button>
-              <button
-                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                @click="toggleArchivedThreads"
-              >
-                {{
-                  showArchivedThreads
-                    ? $t("agent.hide-archived-threads")
-                    : $t("agent.show-archived-threads")
-                }}
-              </button>
+            <div class="flex flex-col gap-y-2">
+              <NInput
+                v-if="isRenamingCurrentThread"
+                ref="renameInputRef"
+                v-model:value="renamingTitle"
+                size="small"
+                :placeholder="$t('agent.rename-thread-placeholder')"
+                @blur="commitRenameCurrentThread"
+                @keydown="onRenameCurrentThreadKeydown"
+              />
+              <div class="flex flex-wrap gap-x-2 gap-y-2">
+                <button
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="resetCurrentThread"
+                >
+                  {{ $t("agent.reset-thread") }}
+                </button>
+                <button
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="beginRenameCurrentThread"
+                >
+                  {{ $t("agent.rename-thread") }}
+                </button>
+                <button
+                  v-if="agentStore.currentThread?.archived"
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="toggleArchiveCurrentThread"
+                >
+                  {{ $t("agent.unarchive-thread") }}
+                </button>
+                <NPopconfirm
+                  v-else
+                  @positive-click="toggleArchiveCurrentThread"
+                >
+                  <template #trigger>
+                    <button
+                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                    >
+                      {{ $t("agent.archive-thread") }}
+                    </button>
+                  </template>
+                  {{ $t("agent.archive-thread-confirmation") }}
+                </NPopconfirm>
+                <NPopconfirm
+                  @positive-click="deleteCurrentThread"
+                >
+                  <template #trigger>
+                    <button
+                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      {{ $t("agent.delete-thread") }}
+                    </button>
+                  </template>
+                  {{ $t("agent.delete-thread-confirmation") }}
+                </NPopconfirm>
+                <button
+                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  @click="toggleArchivedThreads"
+                >
+                  {{
+                    showArchivedThreads
+                      ? $t("agent.hide-archived-threads")
+                      : $t("agent.show-archived-threads")
+                  }}
+                </button>
+              </div>
             </div>
           </div>
         </aside>

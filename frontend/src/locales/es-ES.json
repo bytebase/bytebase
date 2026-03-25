@@ -2485,7 +2485,7 @@
     "new-thread": "Nuevo hilo",
     "reset-thread": "Restablecer hilo",
     "rename-thread": "Renombrar",
-    "rename-thread-prompt": "Introduce un nombre para el hilo",
+    "rename-thread-placeholder": "Introduce un nombre para el hilo",
     "archive-thread": "Archivar",
     "unarchive-thread": "Desarchivar",
     "delete-thread": "Eliminar",

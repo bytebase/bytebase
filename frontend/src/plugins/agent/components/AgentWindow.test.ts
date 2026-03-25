@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { NInput, NPopconfirm } from "naive-ui";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { nextTick } from "vue";
 import { createI18n } from "vue-i18n";
 import { useAgentStore } from "../store/agent";
 
@@ -48,7 +50,7 @@ const i18n = createI18n({
         "new-thread": "New thread",
         "reset-thread": "Reset thread",
         "rename-thread": "Rename",
-        "rename-thread-prompt": "Enter a thread name",
+        "rename-thread-placeholder": "Enter a thread name",
         "archive-thread": "Archive",
         "unarchive-thread": "Unarchive",
         "delete-thread": "Delete",
@@ -79,6 +81,10 @@ const mountAgentWindow = () => {
     wrapper: mount(AgentWindow, {
       global: {
         plugins: [pinia, i18n],
+        components: {
+          NInput,
+          NPopconfirm,
+        },
         stubs: {
           Teleport: true,
         },
@@ -155,5 +161,67 @@ describe("AgentWindow", () => {
     await otherRow?.trigger("click");
     expect(store.currentThreadId).toBe(firstThreadId);
     expect(store.canSelectThread(secondThread.id)).toBe(false);
+  });
+
+  test("renames the current thread with inline editing", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const renameButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Rename");
+
+    await renameButton?.trigger("click");
+    await nextTick();
+
+    const input = wrapper.find("input");
+    expect(input.exists()).toBe(true);
+    await input.setValue("  Renamed thread in app  ");
+    await input.trigger("keydown", { key: "Enter" });
+    await nextTick();
+
+    expect(store.currentThread?.title).toBe("Renamed thread in app");
+    expect(wrapper.find("input").exists()).toBe(false);
+  });
+
+  test("cancels inline rename on escape", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const originalTitle = store.currentThread?.title;
+    const renameButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Rename");
+
+    await renameButton?.trigger("click");
+    await nextTick();
+
+    const input = wrapper.find("input");
+    await input.setValue("Should not save");
+    await input.trigger("keydown", { key: "Escape" });
+    await nextTick();
+
+    expect(store.currentThread?.title).toBe(originalTitle);
+    expect(wrapper.find("input").exists()).toBe(false);
+  });
+
+  test("archives and deletes threads through popconfirm", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const originalThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({ title: "Disposable thread" });
+    store.setCurrentThread(secondThread.id);
+    await nextTick();
+
+    const popconfirms = wrapper.findAllComponents(NPopconfirm);
+    expect(popconfirms).toHaveLength(2);
+
+    await popconfirms[0].vm.$emit("positive-click");
+    await nextTick();
+    expect(store.getThread(secondThread.id)?.archived).toBe(true);
+
+    store.setCurrentThread(originalThreadId);
+    await nextTick();
+    const deletePopconfirm = wrapper.findAllComponents(NPopconfirm)[1];
+    await deletePopconfirm.vm.$emit("positive-click");
+    await nextTick();
+
+    expect(store.getThread(originalThreadId)).toBeNull();
+    expect(store.currentThreadId).toBe(secondThread.id);
   });
 });

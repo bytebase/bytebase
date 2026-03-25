@@ -2485,7 +2485,7 @@
     "new-thread": "Luồng mới",
     "reset-thread": "Đặt lại luồng",
     "rename-thread": "Đổi tên",
-    "rename-thread-prompt": "Nhập tên luồng",
+    "rename-thread-placeholder": "Nhập tên luồng",
     "archive-thread": "Lưu trữ",
     "unarchive-thread": "Bỏ lưu trữ",
     "delete-thread": "Xóa",
