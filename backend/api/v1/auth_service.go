@@ -661,8 +661,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	if workspaceID == "" {
 		// Global IDP: create a new workspace for the user (same as Signup flow).
+		wsID, err := common.RandomString(16)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
+		}
 		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
-			Name: "My Workspace",
+			ResourceID: wsID,
+			Name:       "My Workspace",
 		}, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
