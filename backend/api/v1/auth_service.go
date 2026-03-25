@@ -592,7 +592,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if ws != nil {
 			workspaceID = ws.ResourceID
 		}
-		// If no workspace found, workspaceID stays empty — the user will need to be invited first.
+		// If no workspace found, workspaceID stays empty — user will get their own workspace.
 	}
 
 	// If the email is still invalid, we will return an error.
@@ -659,19 +659,37 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 
-	// Add the new user to the workspace IAM policy as a member.
-	// The IDP is workspace-scoped, so authenticating through it grants workspace access.
-	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Workspace: workspaceID,
-		Member:    common.FormatUserEmail(email),
-		Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+	if workspaceID == "" {
+		// Global IDP: create a new workspace for the user (same as Signup flow).
+		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
+			Name: "My Workspace",
+		}, email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
+		}
+		workspaceID = ws.ResourceID
+	} else {
+		// Workspace-scoped IDP: add user as member only if not already in the workspace.
+		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &workspaceID,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check workspace membership"))
+		}
+		if ws == nil {
+			if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+				Workspace: workspaceID,
+				Member:    common.FormatUserEmail(email),
+				Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+			}); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+			}
+		}
 	}
 
 	if userInfo.HasGroups {
-		// Sync user groups with the identity provider.
-		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
 		if err := s.syncUserGroups(ctx, newUser, workspaceID, userInfo.Groups); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync user groups"))
 		}
