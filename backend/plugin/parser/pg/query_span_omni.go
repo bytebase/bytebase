@@ -26,8 +26,9 @@ type omniQuerySpanExtractor struct {
 	searchPath      []string
 	// metaCache is a lazy-load cache for database metadata.
 	// Use getDatabaseMetadata() instead of accessing directly.
-	metaCache map[string]*model.DatabaseMetadata
-	cat       *catalog.Catalog
+	metaCache     map[string]*model.DatabaseMetadata
+	cat           *catalog.Catalog
+	funcBodyCache map[uint32][]base.SourceColumnSet
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -40,6 +41,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		searchPath:      searchPath,
 		gCtx:            gCtx,
 		metaCache:       make(map[string]*model.DatabaseMetadata),
+		funcBodyCache:   make(map[uint32][]base.SourceColumnSet),
 	}
 }
 
