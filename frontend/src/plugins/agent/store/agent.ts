@@ -440,7 +440,10 @@ export const useAgentStore = defineStore("agent", () => {
     const thread = createThreadRecord(options);
     threads.value.push(thread);
     messagesByThreadId.value[thread.id] = [];
-    if (options.select ?? true) {
+    const shouldSelect =
+      (options.select ?? true) &&
+      (!hasRunningThread.value || currentThreadId.value === null);
+    if (shouldSelect) {
       currentThreadId.value = thread.id;
     }
     return thread;
@@ -457,8 +460,15 @@ export const useAgentStore = defineStore("agent", () => {
     return fallbackThread;
   };
 
+  const canSelectThread = (threadId?: string | null) => {
+    if (!threadId || !getThread(threadId)) {
+      return false;
+    }
+    return !hasRunningThread.value || currentThreadId.value === threadId;
+  };
+
   const setCurrentThread = (threadId: string) => {
-    if (getThread(threadId)) {
+    if (canSelectThread(threadId)) {
       currentThreadId.value = threadId;
     }
   };
@@ -819,6 +829,7 @@ export const useAgentStore = defineStore("agent", () => {
     getPendingAsk,
     getAbortController,
     isThreadRunning,
+    canSelectThread,
     setAbortController,
     createThread,
     ensureCurrentThread,

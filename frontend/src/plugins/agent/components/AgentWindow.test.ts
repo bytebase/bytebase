@@ -1,0 +1,159 @@
+import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { createI18n } from "vue-i18n";
+import { useAgentStore } from "../store/agent";
+
+vi.mock("./AgentChat.vue", () => ({
+  default: {
+    name: "AgentChat",
+    template: "<div data-agent-chat />",
+  },
+}));
+
+vi.mock("./AgentInput.vue", () => ({
+  default: {
+    name: "AgentInput",
+    template: "<div data-agent-input />",
+  },
+}));
+
+import AgentWindow from "./AgentWindow.vue";
+
+const mockRoute = vi.hoisted(() => ({ fullPath: "/projects/demo" }));
+
+vi.mock("vue-router", () => ({
+  useRoute: () => mockRoute,
+}));
+
+class ResizeObserverMock {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+}
+
+const i18n = createI18n({
+  legacy: false,
+  locale: "en-US",
+  messages: {
+    "en-US": {
+      agent: {
+        "assistant-title": "Bytebase Assistant",
+        minimize: "Minimize",
+        close: "Close",
+        resize: "Resize",
+        "thread-list-label": "Threads",
+        "thread-switch-locked":
+          "Finish the running thread before switching to another one.",
+        "new-thread": "New thread",
+        "reset-thread": "Reset thread",
+        "rename-thread": "Rename",
+        "rename-thread-prompt": "Enter a thread name",
+        "archive-thread": "Archive",
+        "unarchive-thread": "Unarchive",
+        "delete-thread": "Delete",
+        "show-archived-threads": "Show archived",
+        "hide-archived-threads": "Hide archived",
+        "archive-thread-confirmation": "Archive this thread?",
+        "delete-thread-confirmation": "Delete this thread?",
+        "thread-default-title": "New thread",
+        "thread-archived-label": "Archived",
+        "thread-status-idle": "Idle",
+        "thread-status-running": "Running",
+        "thread-status-awaiting-user": "Awaiting input",
+        "thread-status-error": "Error",
+        "thread-status-interrupted": "Interrupted",
+        "thread-total-tokens": "Tokens used: {count}",
+      },
+    },
+  },
+});
+
+const mountAgentWindow = () => {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const store = useAgentStore();
+  store.visible = true;
+  return {
+    store,
+    wrapper: mount(AgentWindow, {
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          Teleport: true,
+        },
+      },
+    }),
+  };
+};
+
+describe("AgentWindow", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+    document.title = "Demo Page";
+  });
+
+  test("renders threads in a left sidebar instead of a select picker", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const firstThreadId = store.currentThreadId!;
+    store.addMessage({
+      threadId: firstThreadId,
+      role: "user",
+      content: "Summarize the production incident timeline",
+    });
+    const secondThread = store.createThread({
+      title: "Renamed thread",
+      select: false,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find("select").exists()).toBe(false);
+    const threadRows = wrapper.findAll("[data-agent-thread-list] button");
+    expect(threadRows).toHaveLength(2);
+    expect(threadRows[0].text()).toContain("Renamed thread");
+    expect(threadRows[1].text()).toContain(
+      "Summarize the production incident timeline"
+    );
+    await threadRows[0].trigger("click");
+    expect(store.currentThreadId).toBe(secondThread.id);
+  });
+
+  test("disables switching threads while a thread is running", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const firstThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({
+      title: "Second thread",
+      select: false,
+    });
+
+    store.startRun(firstThreadId, {
+      path: "/projects/demo",
+      title: "Demo Page",
+    });
+    await wrapper.vm.$nextTick();
+
+    const threadRows = wrapper.findAll("[data-agent-thread-list] button");
+    const currentRow = threadRows.find(
+      (row) => row.attributes("aria-current") === "true"
+    );
+    const otherRow = threadRows.find((row) =>
+      row.text().includes("Second thread")
+    );
+    const newThreadButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "New thread");
+
+    expect(wrapper.find("[data-agent-thread-lock-message]").text()).toContain(
+      "Finish the running thread before switching to another one."
+    );
+    expect(currentRow?.attributes("disabled")).toBeUndefined();
+    expect(otherRow?.attributes("disabled")).toBe("");
+    expect(newThreadButton?.attributes("disabled")).toBe("");
+
+    await otherRow?.trigger("click");
+    expect(store.currentThreadId).toBe(firstThreadId);
+    expect(store.canSelectThread(secondThread.id)).toBe(false);
+  });
+});

@@ -967,20 +967,16 @@ describe("AgentInput", () => {
     expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
   });
 
-  test("allows sending on the selected thread while another thread is running", async () => {
+  test("keeps the running thread selected while another thread is running", async () => {
     const store = useAgentStore();
     const firstThreadId = store.currentThreadId!;
-    const secondThread = store.createThread({ title: "Second thread" });
-    store.setCurrentThread(firstThreadId);
+    const secondThread = store.createThread({
+      title: "Second thread",
+      select: false,
+    });
     const firstRun = createDeferred<AgentLoopOutcome>();
 
-    mockRunAgentLoop
-      .mockImplementationOnce(async () => firstRun.promise)
-      .mockResolvedValueOnce({
-        kind: "completed",
-        text: "Second done",
-        success: true,
-      });
+    mockRunAgentLoop.mockImplementationOnce(async () => firstRun.promise);
 
     const wrapper = mount(AgentInput, {
       global: {
@@ -998,22 +994,10 @@ describe("AgentInput", () => {
     await flushPromises();
 
     const textarea = wrapper.find("textarea");
-    expect((textarea.element as HTMLTextAreaElement).disabled).toBe(false);
-
-    await textarea.setValue("second request");
-    await findButtonByText(wrapper, "Send")!.trigger("click");
-    await flushPromises();
-
-    expect(mockRunAgentLoop).toHaveBeenCalledTimes(2);
-    expect(store.isThreadRunning(secondThread.id)).toBe(false);
-    expect(store.getMessages(secondThread.id)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          role: "user",
-          content: "second request",
-        }),
-      ])
-    );
+    expect(store.currentThreadId).toBe(firstThreadId);
+    expect((textarea.element as HTMLTextAreaElement).disabled).toBe(true);
+    expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
+    expect(store.getMessages(secondThread.id)).toEqual([]);
 
     firstRun.resolve({ kind: "completed", text: "First done", success: true });
     await flushPromises();

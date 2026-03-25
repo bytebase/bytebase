@@ -127,6 +127,8 @@ const currentThreadTokenUsageLabel = computed(() =>
     ),
   })
 );
+const isThreadSwitchLocked = computed(() => agentStore.hasRunningThread);
+const isThreadCreationDisabled = computed(() => agentStore.hasRunningThread);
 
 function syncSize(width: number, height: number) {
   const size = getDisplaySize(width, height);
@@ -327,6 +329,9 @@ watch(windowRef, () => {
 });
 
 function createThread() {
+  if (isThreadCreationDisabled.value) {
+    return;
+  }
   agentStore.createThread({ page: getCurrentPageSnapshot() });
 }
 
@@ -334,9 +339,8 @@ function resetCurrentThread() {
   agentStore.clearConversation();
 }
 
-function selectThread(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  agentStore.setCurrentThread(target.value);
+function selectThread(threadId: string) {
+  agentStore.setCurrentThread(threadId);
 }
 
 onMounted(() => {
@@ -422,75 +426,106 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="border-b bg-white px-3 py-2">
-        <label class="mb-1 block text-xs font-medium text-gray-500">
-          {{ $t("agent.thread-select-label") }}
-        </label>
-        <div class="flex items-center gap-x-2">
-          <select
-            class="min-w-0 flex-1 rounded-md border px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-            :value="agentStore.currentThreadId ?? ''"
-            @change="selectThread"
-          >
-            <option
-              v-for="thread in displayedThreads"
-              :key="thread.id"
-              :value="thread.id"
-            >
-              {{ getThreadLabel(thread) }}
-            </option>
-          </select>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-            @click="createThread"
-          >
-            {{ $t("agent.new-thread") }}
-          </button>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-            @click="resetCurrentThread"
-          >
-            {{ $t("agent.reset-thread") }}
-          </button>
-        </div>
-        <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-2">
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-            @click="renameCurrentThread"
-          >
-            {{ $t("agent.rename-thread") }}
-          </button>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-            @click="toggleArchiveCurrentThread"
-          >
-            {{
-              agentStore.currentThread?.archived
-                ? $t("agent.unarchive-thread")
-                : $t("agent.archive-thread")
-            }}
-          </button>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-            @click="deleteCurrentThread"
-          >
-            {{ $t("agent.delete-thread") }}
-          </button>
-          <button
-            class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
-            @click="toggleArchivedThreads"
-          >
-            {{
-              showArchivedThreads
-                ? $t("agent.hide-archived-threads")
-                : $t("agent.show-archived-threads")
-            }}
-          </button>
+      <div class="flex min-h-0 flex-1 overflow-hidden bg-white">
+        <aside class="flex w-64 shrink-0 flex-col border-r border-gray-200 bg-gray-50">
+          <div class="border-b border-gray-200 px-3 py-3">
+            <div class="flex items-center justify-between gap-x-2">
+              <div>
+                <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {{ $t("agent.thread-list-label") }}
+                </h2>
+                <p
+                  v-if="isThreadSwitchLocked"
+                  class="mt-1 text-xs text-amber-600"
+                  data-agent-thread-lock-message
+                >
+                  {{ $t("agent.thread-switch-locked") }}
+                </p>
+              </div>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                :disabled="isThreadCreationDisabled"
+                @click="createThread"
+              >
+                {{ $t("agent.new-thread") }}
+              </button>
+            </div>
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            <div class="flex flex-col gap-y-1" data-agent-thread-list>
+              <button
+                v-for="thread in displayedThreads"
+                :key="thread.id"
+                type="button"
+                class="w-full rounded-md px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                :class="
+                  thread.id === agentStore.currentThreadId
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:bg-white'
+                "
+                :disabled="!agentStore.canSelectThread(thread.id)"
+                :aria-current="
+                  thread.id === agentStore.currentThreadId ? 'true' : undefined
+                "
+                @click="selectThread(thread.id)"
+              >
+                <div class="truncate font-medium">
+                  {{ getThreadLabel(thread) }}
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 px-3 py-3">
+            <div class="flex flex-wrap gap-x-2 gap-y-2">
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                @click="resetCurrentThread"
+              >
+                {{ $t("agent.reset-thread") }}
+              </button>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                @click="renameCurrentThread"
+              >
+                {{ $t("agent.rename-thread") }}
+              </button>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                @click="toggleArchiveCurrentThread"
+              >
+                {{
+                  agentStore.currentThread?.archived
+                    ? $t("agent.unarchive-thread")
+                    : $t("agent.archive-thread")
+                }}
+              </button>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                @click="deleteCurrentThread"
+              >
+                {{ $t("agent.delete-thread") }}
+              </button>
+              <button
+                class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                @click="toggleArchivedThreads"
+              >
+                {{
+                  showArchivedThreads
+                    ? $t("agent.hide-archived-threads")
+                    : $t("agent.show-archived-threads")
+                }}
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="flex min-w-0 flex-1 flex-col">
+          <AgentChat class="min-h-0 flex-1" />
+          <AgentInput />
         </div>
       </div>
-
-      <AgentChat class="min-h-0 flex-1" />
-      <AgentInput />
 
       <button
         type="button"

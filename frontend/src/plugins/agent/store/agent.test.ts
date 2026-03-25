@@ -215,6 +215,56 @@ describe("useAgentStore", () => {
     });
   });
 
+  test("uses the first user message as the default thread title", () => {
+    const store = createStore();
+    const threadId = store.currentThreadId!;
+
+    store.addMessage({
+      threadId,
+      role: "user",
+      content: "Investigate unexpected production migration failures now",
+    });
+
+    expect(store.getThread(threadId)?.title).toBe(
+      "Investigate unexpected production migration f..."
+    );
+  });
+
+  test("does not switch threads while another thread is running", () => {
+    const store = createStore();
+    const firstThreadId = store.currentThreadId!;
+    const secondThread = store.createThread({
+      title: "Second",
+      select: false,
+    });
+
+    store.startRun(firstThreadId, {
+      path: "/projects/demo",
+      title: "Demo",
+    });
+    store.setCurrentThread(secondThread.id);
+
+    expect(store.currentThreadId).toBe(firstThreadId);
+    expect(store.canSelectThread(secondThread.id)).toBe(false);
+    expect(store.canSelectThread(firstThreadId)).toBe(true);
+  });
+
+  test("creates a new thread without switching while a thread is running", () => {
+    const store = createStore();
+    const firstThreadId = store.currentThreadId!;
+
+    store.startRun(firstThreadId, {
+      path: "/projects/demo",
+      title: "Demo",
+    });
+    const secondThread = store.createThread({
+      title: "Second",
+    });
+
+    expect(store.currentThreadId).toBe(firstThreadId);
+    expect(store.getThread(secondThread.id)?.title).toBe("Second");
+  });
+
   test("persists pending choose asks for awaiting-user threads", async () => {
     const store = createStore();
     const threadId = store.currentThreadId!;
