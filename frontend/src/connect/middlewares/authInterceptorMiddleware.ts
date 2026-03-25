@@ -62,13 +62,12 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
 
         try {
           await refreshTokens();
-        } catch (e) {
+        } catch {
           handleUnauthenticatedFailure({
             silent,
             isLoggedIn: authStore.isLoggedIn,
           });
-          console.error(e);
-          throw e;
+          throw error;
         }
 
         try {
