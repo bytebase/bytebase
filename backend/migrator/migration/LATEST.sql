@@ -99,7 +99,8 @@ CREATE UNIQUE INDEX idx_policy_unique_workspace_resource ON policy(workspace, re
 CREATE TABLE idp (
     -- golbal unique
     resource_id text NOT NULL PRIMARY KEY,
-    workspace text NOT NULL REFERENCES workspace(resource_id),
+    -- NULL for global IDPs (SaaS login), non-NULL for workspace-scoped IDPs.
+    workspace text REFERENCES workspace(resource_id),
     name text NOT NULL,
     domain text NOT NULL,
     type text NOT NULL CONSTRAINT idp_type_check CHECK (type IN ('OAUTH2', 'OIDC', 'LDAP')),

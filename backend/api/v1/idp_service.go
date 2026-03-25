@@ -54,15 +54,33 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 // ListIdentityProviders lists all identity providers.
 func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
 	// allow_without_credential: workspace may not be in context (login page).
-	// In self-hosted (single workspace), fall back to store lookup.
+	// List global IDPs (workspace IS NULL) and workspace-scoped IDPs separately.
+	var identityProviders []*store.IdentityProviderMessage
+
+	// TODO(ed): how to let SaaS users get their workspace IDPs before login?
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" && !s.profile.SaaS {
-		workspaceID, _ = s.store.GetWorkspaceID(ctx)
+		defaultWorkspaceID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace id"))
+		}
+		workspaceID = defaultWorkspaceID
 	}
-	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: workspaceID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+
+	if workspaceID != "" {
+		wsIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &workspaceID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		identityProviders = append(identityProviders, wsIDPs...)
+	} else {
+		globalIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		identityProviders = append(identityProviders, globalIDPs...)
 	}
+
 	response := &v1pb.ListIdentityProvidersResponse{}
 	for _, identityProviderMessage := range identityProviders {
 		identityProvider := convertToIdentityProvider(identityProviderMessage)
@@ -135,8 +153,9 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	wsID := common.GetWorkspaceIDFromContext(ctx)
 	identityProviderMessage, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  &wsID,
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {
@@ -154,7 +173,6 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProviderMessage.ResourceID,
-		Workspace:  identityProviderMessage.Workspace,
 	}
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
@@ -207,7 +225,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 
-	if err := s.store.DeleteIdentityProvider(ctx, identityProvider.Workspace, identityProvider.ResourceID); err != nil {
+	if err := s.store.DeleteIdentityProvider(ctx, identityProvider.ResourceID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -394,8 +412,9 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	wsID := common.GetWorkspaceIDFromContext(ctx)
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  &wsID,
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {

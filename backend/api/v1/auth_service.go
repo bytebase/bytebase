@@ -488,6 +488,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
+	// For workspace-scoped IDPs, use the IDP's workspace.
+	// For global IDPs (SaaS), workspace is resolved after authentication from user membership.
 	workspaceID := idp.Workspace
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
@@ -578,15 +580,33 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", userInfo.Identifier))
 		}
 	}
+	// For global IDPs (SaaS), resolve workspace from user's IAM membership.
+	if workspaceID == "" {
+		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace for SSO user"))
+		}
+		if ws != nil {
+			workspaceID = ws.ResourceID
+		}
+		// If no workspace found, workspaceID stays empty — the user will need to be invited first.
+	}
+
 	// If the email is still invalid, we will return an error.
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
-		return nil, err
+	if workspaceID != "" {
+		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
+			return nil, err
+		}
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list users by email %s", email))
 	}
+
 	if user != nil {
 		if user.MemberDeleted {
 			if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
