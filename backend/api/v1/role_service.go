@@ -108,6 +108,9 @@ func (s *RoleService) CreateRole(ctx context.Context, req *connect.Request[v1pb.
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("role ID %q already exists", req.Msg.RoleId))
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create role"))
 	}
 	if err := s.iamManager.ReloadCache(ctx); err != nil {

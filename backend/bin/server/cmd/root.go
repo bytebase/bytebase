@@ -64,6 +64,7 @@ var (
 		dataDir     string
 		ha          bool
 		saas        bool
+		debug       bool
 		// output logs in json format
 		enableJSONLogging bool
 		// demo mode.
@@ -108,6 +109,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", defaultDataDir, "not recommended for production. Directory where Bytebase stores data if PG_URL is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "enable debug level log")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")

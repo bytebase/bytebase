@@ -45,6 +45,9 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, req *conne
 
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("review config ID %q already exists", reviewConfigMessage.ID))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := s.convertToV1ReviewConfig(ctx, created)

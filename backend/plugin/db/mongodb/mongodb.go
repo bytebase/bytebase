@@ -117,7 +117,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			// gomongo doesn't support this operation; fall back to mongosh.
 			if mongoshErr := d.executeWithMongoshSingle(ctx, stmt.Text); mongoshErr == nil {
 				slog.Debug("executed statement with mongosh fallback", slog.String("statement", stmt.Text), log.BBError(gomongoErr))
-				telemetry.ReportGomongoFallback(ctx, stmt.Text, gomongoErr.Error())
+				telemetry.ReportGomongoFallback(ctx, "", stmt.Text, gomongoErr.Error())
 				gomongoErr = nil
 			} else {
 				gomongoErr = mongoshErr
@@ -319,7 +319,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	results, err := d.queryConnWithMongosh(ctx, statement, queryContext, startTime)
 	if err == nil && gomongoErr != nil {
 		slog.Debug("executed query with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
-		telemetry.ReportGomongoFallback(ctx, statement, gomongoErr.Error())
+		telemetry.ReportGomongoFallback(ctx, "", statement, gomongoErr.Error())
 	}
 	return results, err
 }

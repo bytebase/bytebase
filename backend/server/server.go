@@ -154,6 +154,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.store = stores
 	sheetManager := sheet.NewManager()
 
+	logSetup := &storepb.WorkspaceProfileSetting{
+		EnableAuditLogStdout:   false,
+		EnableMetricCollection: true,
+		EnableDebug:            profile.Debug,
+	}
 	if !s.profile.SaaS {
 		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
 
@@ -165,25 +170,24 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 				slog.Warn("failed to start sample instances", log.BBError(err))
 			}
 
-			if workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID); err == nil {
-				profile.RuntimeDebug.Store(workspaceProfile.EnableDebug)
-				if workspaceProfile.EnableDebug {
-					log.LogLevel.Set(slog.LevelDebug)
+			if workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID); err == nil {
+				logSetup = workspaceProfileSetting
+				if logSetup.GetEnableAuditLogStdout() && s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG) == nil {
+					s.profile.RuntimeEnableAuditLogStdout.Store(true)
 				}
-				if workspaceProfile.GetEnableAuditLogStdout() {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err == nil {
-						s.profile.RuntimeEnableAuditLogStdout.Store(true)
-					}
-				}
-				telemetry.InitGlobalReporter(
-					workspaceID,
-					profile.Version,
-					profile.GitCommit,
-					workspaceProfile.GetEnableMetricCollection(),
-				)
 			}
 		}
 	}
+
+	profile.RuntimeDebug.Store(logSetup.EnableDebug)
+	if logSetup.EnableDebug {
+		log.LogLevel.Set(slog.LevelDebug)
+	}
+	telemetry.InitGlobalReporter(
+		profile.Version,
+		profile.GitCommit,
+		logSetup.GetEnableMetricCollection(),
+	)
 
 	s.bus, err = bus.New()
 	if err != nil {

@@ -109,6 +109,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 
 	identityProviderMessage, err := s.store.CreateIdentityProvider(ctx, identityProviderMessage)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("identity provider ID %q already exists", req.Msg.IdentityProviderId))
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create identity provider"))
 	}
 	identityProvider := convertToIdentityProvider(identityProviderMessage)
