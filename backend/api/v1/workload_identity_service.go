@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -20,13 +21,15 @@ import (
 type WorkloadIdentityService struct {
 	v1connect.UnimplementedWorkloadIdentityServiceHandler
 	store      *store.Store
+	profile    *config.Profile
 	iamManager *iam.Manager
 }
 
 // NewWorkloadIdentityService creates a new WorkloadIdentityService.
-func NewWorkloadIdentityService(store *store.Store, iamManager *iam.Manager) *WorkloadIdentityService {
+func NewWorkloadIdentityService(store *store.Store, profile *config.Profile, iamManager *iam.Manager) *WorkloadIdentityService {
 	return &WorkloadIdentityService{
 		store:      store,
+		profile:    profile,
 		iamManager: iamManager,
 	}
 }
@@ -49,6 +52,10 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		// projectID remains nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
+	}
+
+	if projectID == nil && s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("donot support create workload identity in workspace"))
 	}
 
 	workloadIdentityID := request.Msg.WorkloadIdentityId

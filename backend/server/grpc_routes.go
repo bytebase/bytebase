@@ -114,8 +114,8 @@ func configureGrpcRouters(
 	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager)
 	subscriptionService := apiv1.NewSubscriptionService(profile, licenseService)
 	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
-	serviceAccountService := apiv1.NewServiceAccountService(stores, iamManager)
-	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, iamManager)
+	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
+	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, profile, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager, profile)
 
