@@ -283,7 +283,7 @@ import {
   type Webhook,
 } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { projectWebhookV1Slug } from "../utils";
+import { extractProjectWebhookID } from "../utils";
 import WebhookTypeIcon from "./Project/WebhookTypeIcon.vue";
 
 interface LocalState {
@@ -484,7 +484,7 @@ const createWebhook = () => {
       router.push({
         name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
         params: {
-          projectWebhookSlug: projectWebhookV1Slug(createdWebhook),
+          webhookResourceId: extractProjectWebhookID(createdWebhook.name),
         },
       });
     }
