@@ -507,26 +507,44 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = storeSemanticTypeSetting
 	case storepb.SettingName_AI:
-		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAi())
-		if aiSetting.Enabled {
-			if aiSetting.Endpoint == "" || aiSetting.Model == "" {
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := convertAISetting(request.Msg.Setting.Value.GetAi())
+		oldAISetting, err := s.store.GetAISetting(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
+		}
+		// Clone to avoid mutating the cached store object if validation fails later.
+		oldAISetting = proto.CloneOf(oldAISetting)
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.ai.enabled":
+				oldAISetting.Enabled = payload.Enabled
+			case "value.ai.provider":
+				oldAISetting.Provider = storepb.AISetting_Provider(payload.Provider)
+			case "value.ai.endpoint":
+				oldAISetting.Endpoint = payload.Endpoint
+			case "value.ai.api_key":
+				oldAISetting.ApiKey = payload.ApiKey
+			case "value.ai.model":
+				oldAISetting.Model = payload.Model
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+			}
+		}
+
+		if oldAISetting.Enabled {
+			if oldAISetting.Endpoint == "" || oldAISetting.Model == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
 			}
-			if existedSetting != nil {
-				existedAISetting, err := convertToSettingMessage(existedSetting)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal existed ai setting with error: %v", err))
-				}
-				if aiSetting.ApiKey == "" {
-					aiSetting.ApiKey = existedAISetting.Value.GetAi().GetApiKey()
-				}
-			}
-			if aiSetting.ApiKey == "" {
+			if oldAISetting.ApiKey == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required"))
 			}
 		}
 
-		storeSettingValue = aiSetting
+		storeSettingValue = oldAISetting
 	case storepb.SettingName_ENVIRONMENT:
 		if serr := s.validateEnvironments(ctx, workspaceID, request.Msg.Setting.Value.GetEnvironment().GetEnvironments()); serr != nil {
 			return nil, serr

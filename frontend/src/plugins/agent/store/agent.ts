@@ -13,9 +13,8 @@ import type {
   ToolCall,
 } from "../logic/types";
 
-export const AGENT_STATE_KEY = "bb-agent-state";
+export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
-export const LEGACY_AGENT_MESSAGES_KEY = "bb-agent-messages";
 
 interface PersistedAgentState {
   currentThreadId: string | null;
@@ -45,9 +44,11 @@ const createThreadRecord = (options: CreateThreadOptions = {}): AgentThread => {
     createdTs: now,
     updatedTs: now,
     status: DEFAULT_THREAD_STATUS,
+    totalTokensUsed: 0,
     page: options.page,
     lastError: null,
     interrupted: false,
+    runId: null,
   };
 };
 
@@ -173,6 +174,12 @@ const normalizeThread = (raw: unknown): AgentThread => {
     createdTs: typeof thread.createdTs === "number" ? thread.createdTs : now,
     updatedTs: typeof thread.updatedTs === "number" ? thread.updatedTs : now,
     status,
+    totalTokensUsed:
+      typeof thread.totalTokensUsed === "number" &&
+      Number.isFinite(thread.totalTokensUsed) &&
+      thread.totalTokensUsed >= 0
+        ? thread.totalTokensUsed
+        : 0,
     page:
       isRecord(thread.page) &&
       typeof thread.page.path === "string" &&
@@ -189,36 +196,13 @@ const normalizeThread = (raw: unknown): AgentThread => {
           ? null
           : null,
     interrupted: Boolean(thread.interrupted),
+    runId: typeof thread.runId === "string" ? thread.runId : null,
   };
 };
 
 const sortMessages = (messages: AgentMessage[]) => {
   messages.sort((a, b) => a.createdTs - b.createdTs);
   return messages;
-};
-
-const migrateLegacyState = (legacyMessages: unknown[]): PersistedAgentState => {
-  const thread = createThreadRecord();
-  const startTs = Date.now();
-  const messages = sortMessages(
-    legacyMessages.map((message, index) =>
-      normalizeMessage(message, thread.id, startTs + index)
-    )
-  );
-  const firstUserMessage = messages.find((message) => message.role === "user");
-  const lastMessage = messages.at(-1);
-  thread.title = getThreadTitleFromMessage(firstUserMessage?.content);
-  if (lastMessage) {
-    thread.updatedTs = lastMessage.createdTs;
-  }
-  return {
-    currentThreadId: thread.id,
-    threads: [thread],
-    messagesByThreadId: {
-      [thread.id]: messages,
-    },
-    pendingAskByThreadId: {},
-  };
 };
 
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
@@ -267,7 +251,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       thread.updatedTs = Math.max(thread.updatedTs, lastMessage.createdTs);
     }
     if (thread.status === "running") {
-      thread.status = "error";
+      thread.status = DEFAULT_THREAD_STATUS;
       thread.interrupted = true;
       thread.lastError = null;
     }
@@ -472,6 +456,28 @@ export const useAgentStore = defineStore("agent", () => {
     return agentMessage;
   };
 
+  const removeMessagesByRunId = (threadId: string, runId?: string | null) => {
+    if (!runId) {
+      return [];
+    }
+    const thread = getThread(threadId);
+    if (!thread) {
+      return [];
+    }
+    const existingMessages = getMessages(threadId);
+    const removedMessages = existingMessages.filter(
+      (message) => message.metadata?.runId === runId
+    );
+    if (removedMessages.length === 0) {
+      return [];
+    }
+    messagesByThreadId.value[threadId] = existingMessages.filter(
+      (message) => message.metadata?.runId !== runId
+    );
+    touchThread(threadId);
+    return removedMessages;
+  };
+
   const appendToolCall = (
     threadId: string,
     messageId: string,
@@ -486,6 +492,19 @@ export const useAgentStore = defineStore("agent", () => {
     message.toolCalls = [...(message.toolCalls ?? []), toolCall];
     touchThread(threadId);
     return message;
+  };
+
+  const incrementThreadTotalTokens = (
+    threadId: string,
+    totalTokensUsed: number
+  ) => {
+    const thread = getThread(threadId);
+    if (!thread || totalTokensUsed <= 0) {
+      return null;
+    }
+    thread.totalTokensUsed += totalTokensUsed;
+    touchThread(threadId);
+    return thread;
   };
 
   const awaitUser = (threadId: string, pendingAsk: AgentPendingAsk) => {
@@ -523,8 +542,10 @@ export const useAgentStore = defineStore("agent", () => {
     thread.title = "";
     thread.page = undefined;
     thread.status = DEFAULT_THREAD_STATUS;
+    thread.totalTokensUsed = 0;
     thread.lastError = null;
     thread.interrupted = false;
+    thread.runId = null;
     thread.updatedTs = Date.now();
   };
 
@@ -542,25 +563,45 @@ export const useAgentStore = defineStore("agent", () => {
     }
     thread.lastError = null;
     thread.interrupted = false;
+    thread.runId = null;
     if (thread.status === "error") {
       thread.status = DEFAULT_THREAD_STATUS;
     }
     touchThread(thread.id);
   };
 
+  const interruptRun = (threadId: string, page?: AgentThreadSnapshot) => {
+    setThreadStatus(threadId, DEFAULT_THREAD_STATUS, {
+      interrupted: true,
+      page,
+    });
+  };
+
   const cancel = () => {
     abortController.value?.abort();
     abortController.value = null;
     if (runningThreadId.value) {
-      setThreadStatus(runningThreadId.value, DEFAULT_THREAD_STATUS);
+      interruptRun(runningThreadId.value);
     }
   };
 
-  const startRun = (threadId: string, page?: AgentThreadSnapshot) => {
+  const startRun = (
+    threadId: string,
+    page?: AgentThreadSnapshot,
+    options: {
+      replacePage?: boolean;
+      runId?: string;
+    } = {}
+  ) => {
     const thread = getThread(threadId);
+    const nextPage = options.replacePage ? page : (thread?.page ?? page);
     setThreadStatus(threadId, "running", {
-      page: thread?.page ?? page,
+      page: nextPage,
     });
+    const updatedThread = getThread(threadId);
+    if (updatedThread) {
+      updatedThread.runId = options.runId ?? updatedThread.runId ?? null;
+    }
   };
 
   const finishRun = (
@@ -574,6 +615,10 @@ export const useAgentStore = defineStore("agent", () => {
       lastError: options.lastError ?? null,
       interrupted: false,
     });
+    const thread = getThread(threadId);
+    if (thread) {
+      thread.runId = null;
+    }
   };
 
   const saveWindowState = () => {
@@ -604,23 +649,6 @@ export const useAgentStore = defineStore("agent", () => {
         currentThreadId.value = state.currentThreadId;
       } catch {
         localStorage.removeItem(AGENT_STATE_KEY);
-      }
-    } else {
-      const legacySaved = localStorage.getItem(LEGACY_AGENT_MESSAGES_KEY);
-      if (legacySaved) {
-        try {
-          const parsed = JSON.parse(legacySaved);
-          if (Array.isArray(parsed)) {
-            const state = migrateLegacyState(parsed);
-            threads.value = state.threads;
-            messagesByThreadId.value = state.messagesByThreadId;
-            pendingAskByThreadId.value = state.pendingAskByThreadId;
-            currentThreadId.value = state.currentThreadId;
-          }
-        } catch {
-          localStorage.removeItem(LEGACY_AGENT_MESSAGES_KEY);
-        }
-        localStorage.removeItem(LEGACY_AGENT_MESSAGES_KEY);
       }
     }
 
@@ -707,10 +735,13 @@ export const useAgentStore = defineStore("agent", () => {
     setThreadStatus,
     startRun,
     finishRun,
+    interruptRun,
     awaitUser,
     answerPendingAsk,
     touchThread,
+    incrementThreadTotalTokens,
     addMessage,
+    removeMessagesByRunId,
     appendToolCall,
     clearMessages,
     clearConversation,

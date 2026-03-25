@@ -140,4 +140,5 @@ export type Permission =
   | "bb.workloadIdentities.undelete"
   | "bb.workloadIdentities.update"
   | "bb.workspaces.getIamPolicy"
+  | "bb.workspaces.update"
   | "bb.workspaces.setIamPolicy";

@@ -962,7 +962,17 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 	}
 
 	// Get all users with the specified role
-	users := utils.GetUsersByRoleInIAMPolicy(ctx, stores, project.Workspace, role, projectIAM.Policy, workspaceIAM.Policy)
+	users := utils.GetUsersByRoleInIAMPolicy(
+		ctx,
+		stores,
+		project.Workspace,
+		role,
+		// TODO(ed): tmp hack
+		// It's not allowed set AllUsers in the IAM, so will not break the new SaaS workflow.
+		true,
+		projectIAM.Policy,
+		workspaceIAM.Policy,
+	)
 
 	// Convert to webhook.User format, filtering by END_USER principal type
 	approvers := make([]webhook.User, 0, len(users))

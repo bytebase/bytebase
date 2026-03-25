@@ -7,6 +7,7 @@
 {{- $port := .Values.bytebase.option.port -}}
 {{- $data := .Values.bytebase.option.data -}}
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
+{{- $enableJSONLogging := index .Values.bytebase.option "enable-json-logging" -}}
 # bytebase.option.externalPg
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
@@ -187,6 +188,9 @@ spec:
               {{ $port | quote }} \
               --external-url \
               {{ $external_url | quote }} \
+              {{- if $enableJSONLogging }}
+              --enable-json-logging \
+              {{- end }}
           ports:
             - containerPort: {{ $port }}
               name: web

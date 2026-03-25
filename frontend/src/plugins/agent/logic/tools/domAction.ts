@@ -2,8 +2,8 @@ import type { Router } from "vue-router";
 import { lazyExecuteDomAction } from "../../dom";
 
 export interface DomActionArgs {
-  type: "click" | "input" | "select" | "scroll";
-  index: number;
+  type: "click" | "input" | "select" | "read" | "scroll";
+  ref: string;
   value?: string;
 }
 

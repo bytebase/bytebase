@@ -178,3 +178,28 @@ func (x *RefreshResponse) Equal(y *RefreshResponse) bool {
 	}
 	return true
 }
+
+func (x *SwitchWorkspaceRequest) Equal(y *SwitchWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
+	if x.Web != y.Web {
+		return false
+	}
+	if p, q := x.OtpCode, y.OtpCode; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.RecoveryCode, y.RecoveryCode; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.MfaTempToken, y.MfaTempToken; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	return true
+}

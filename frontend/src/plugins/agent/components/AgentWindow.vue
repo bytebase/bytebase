@@ -110,6 +110,15 @@ const currentThreadStatusClass = computed(() => {
   return "bg-amber-50 text-amber-600";
 });
 
+const tokenFormatter = new Intl.NumberFormat();
+const currentThreadTokenUsageLabel = computed(() =>
+  t("agent.thread-total-tokens", {
+    count: tokenFormatter.format(
+      agentStore.currentThread?.totalTokensUsed ?? 0
+    ),
+  })
+);
+
 function syncSize(width: number, height: number) {
   const size = getDisplaySize(width, height);
   agentStore.size.width = size.width;
@@ -335,6 +344,9 @@ onBeforeUnmount(() => {
             :class="currentThreadStatusClass"
           >
             {{ currentThreadStatusLabel }}
+          </span>
+          <span class="truncate text-xs text-gray-500">
+            {{ currentThreadTokenUsageLabel }}
           </span>
         </div>
         <div class="flex items-center gap-x-1">

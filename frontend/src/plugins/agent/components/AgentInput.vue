@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { v4 as uuidv4 } from "uuid";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import type { DomRefSuggestion } from "../dom";
+import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -15,7 +18,9 @@ const agentStore = useAgentStore();
 const input = ref("");
 let currentRunToken = 0;
 
+const currentThread = computed(() => agentStore.currentThread);
 const currentPendingAsk = computed(() => agentStore.currentPendingAsk);
+const isInterrupted = computed(() => Boolean(currentThread.value?.interrupted));
 const chooseOptions = computed(() =>
   currentPendingAsk.value?.kind === "choose"
     ? (currentPendingAsk.value.options ?? [])
@@ -57,6 +62,179 @@ const isSendDisabled = computed(() => {
   return !input.value.trim();
 });
 
+const inputRef = ref<HTMLTextAreaElement>();
+const domRefSuggestions = ref<DomRefSuggestion[]>([]);
+const isDomRefMenuOpen = ref(false);
+const activeDomRefIndex = ref(0);
+const selectionStart = ref(0);
+const selectionEnd = ref(0);
+let domRefRequestToken = 0;
+
+const DOM_REF_SUGGESTION_LIMIT = 8;
+
+const normalizeSearchText = (value?: string) =>
+  value?.toLowerCase().trim() ?? "";
+
+const matchDomRefSuggestion = (suggestion: DomRefSuggestion, query: string) => {
+  if (!query) {
+    return true;
+  }
+  const normalizedQuery = normalizeSearchText(query);
+  return [
+    suggestion.ref,
+    suggestion.tag,
+    suggestion.role,
+    suggestion.label,
+    suggestion.value,
+  ].some((value) => normalizeSearchText(value).includes(normalizedQuery));
+};
+
+const getDomRefQuery = (
+  text: string,
+  start: number,
+  end: number
+): { query: string; start: number; end: number } | null => {
+  if (start !== end) {
+    return null;
+  }
+  const prefix = text.slice(0, start);
+  const matches = prefix.match(/(^|\s)@([^\s@]*)$/);
+  if (!matches) {
+    return null;
+  }
+  return {
+    query: matches[2] ?? "",
+    start: start - matches[2].length - 1,
+    end,
+  };
+};
+
+const activeDomRefQuery = computed(() =>
+  getDomRefQuery(input.value, selectionStart.value, selectionEnd.value)
+);
+
+const filteredDomRefSuggestions = computed(() => {
+  const query = activeDomRefQuery.value?.query ?? "";
+  return domRefSuggestions.value
+    .filter((suggestion: DomRefSuggestion) =>
+      matchDomRefSuggestion(suggestion, query)
+    )
+    .slice(0, DOM_REF_SUGGESTION_LIMIT);
+});
+
+const updateSelection = () => {
+  const textarea = inputRef.value;
+  if (!textarea) {
+    return;
+  }
+  selectionStart.value = textarea.selectionStart ?? 0;
+  selectionEnd.value = textarea.selectionEnd ?? selectionStart.value;
+};
+
+const closeDomRefMenu = () => {
+  isDomRefMenuOpen.value = false;
+  activeDomRefIndex.value = 0;
+};
+
+const openDomRefMenu = () => {
+  isDomRefMenuOpen.value = true;
+  activeDomRefIndex.value = 0;
+};
+
+const loadDomRefSuggestions = async () => {
+  const query = activeDomRefQuery.value;
+  if (!query) {
+    closeDomRefMenu();
+    domRefSuggestions.value = [];
+    return;
+  }
+
+  const requestToken = ++domRefRequestToken;
+  const suggestions = await lazyExtractDomRefSuggestions();
+  if (requestToken !== domRefRequestToken || !activeDomRefQuery.value) {
+    return;
+  }
+
+  domRefSuggestions.value = suggestions;
+  if (filteredDomRefSuggestions.value.length > 0) {
+    openDomRefMenu();
+    return;
+  }
+  closeDomRefMenu();
+};
+
+const selectDomRefSuggestion = async (suggestion: DomRefSuggestion) => {
+  const query = activeDomRefQuery.value;
+  const textarea = inputRef.value;
+  if (!query || !textarea) {
+    return;
+  }
+
+  const before = input.value.slice(0, query.start);
+  const after = input.value.slice(query.end);
+  const token = `[${suggestion.ref}]`;
+  const suffix = after.startsWith(" ") ? "" : " ";
+  const nextValue = `${before}${token}${suffix}${after}`;
+  const caret = before.length + token.length + suffix.length;
+
+  input.value = nextValue;
+  closeDomRefMenu();
+  await nextTick();
+  textarea.focus();
+  textarea.setSelectionRange(caret, caret);
+  updateSelection();
+};
+
+const moveDomRefSelection = (offset: number) => {
+  const total = filteredDomRefSuggestions.value.length;
+  if (total === 0) {
+    return;
+  }
+  activeDomRefIndex.value = (activeDomRefIndex.value + offset + total) % total;
+};
+
+const handleTextareaKeydown = async (event: KeyboardEvent) => {
+  if (isDomRefMenuOpen.value) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveDomRefSelection(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveDomRefSelection(-1);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDomRefMenu();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const suggestion =
+        filteredDomRefSuggestions.value[activeDomRefIndex.value];
+      if (suggestion) {
+        await selectDomRefSuggestion(suggestion);
+      } else {
+        closeDomRefMenu();
+      }
+      return;
+    }
+  }
+
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    await send();
+  }
+};
+
+const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) => {
+  return [suggestion.tag.toLowerCase(), suggestion.role]
+    .filter((value): value is string => Boolean(value))
+    .join(" · ");
+};
+
 const getThreadPageSnapshot = (threadId: string) => {
   return agentStore.getThread(threadId)?.page;
 };
@@ -97,15 +275,7 @@ const handleOutcome = (
       agentStore.awaitUser(threadId, outcome.ask);
       return;
     case "aborted":
-      agentStore.addMessage({
-        threadId,
-        role: "assistant",
-        content: `_${t("agent.interrupted")}_`,
-        metadata: {
-          route: page.path,
-        },
-      });
-      agentStore.finishRun(threadId);
+      agentStore.interruptRun(threadId, getCurrentPageSnapshot());
       return;
     case "error":
       agentStore.addMessage({
@@ -127,7 +297,8 @@ const handleOutcome = (
 
 async function runThread(
   threadId: string,
-  page: { path: string; title: string }
+  page: { path: string; title: string },
+  runId: string
 ) {
   const controller = new AbortController();
   const runToken = ++currentRunToken;
@@ -158,6 +329,7 @@ async function runThread(
             toolCalls: message.toolCalls,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
@@ -169,6 +341,7 @@ async function runThread(
             content: result,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
@@ -182,11 +355,17 @@ async function runThread(
             content: text,
             metadata: {
               route: page.path,
+              runId,
             },
           });
         },
       },
       controller.signal
+    );
+
+    agentStore.incrementThreadTotalTokens(
+      threadId,
+      outcome.totalTokensUsed ?? 0
     );
 
     if (runToken !== currentRunToken) {
@@ -204,6 +383,29 @@ async function runThread(
   }
 }
 
+async function startThreadRun(
+  threadId: string,
+  currentPage: { path: string; title: string },
+  options: {
+    preferCurrentPage?: boolean;
+  } = {}
+) {
+  const threadPage = options.preferCurrentPage
+    ? currentPage
+    : resolveThreadPageSnapshot(threadId, currentPage);
+  const runId = uuidv4();
+
+  if (options.preferCurrentPage) {
+    agentStore.updateThreadPage(threadId, threadPage);
+  }
+
+  agentStore.startRun(threadId, threadPage, {
+    replacePage: options.preferCurrentPage,
+    runId,
+  });
+  await runThread(threadId, threadPage, runId);
+}
+
 async function send() {
   if (agentStore.hasRunningThread) {
     return;
@@ -212,7 +414,6 @@ async function send() {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
 
@@ -249,8 +450,7 @@ async function send() {
     } else {
       return;
     }
-    agentStore.startRun(threadId, threadPage);
-    await runThread(threadId, threadPage);
+    await startThreadRun(threadId, currentPage);
     return;
   }
 
@@ -268,8 +468,32 @@ async function send() {
       route: currentPage.path,
     },
   });
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
+}
+
+async function retryLastTurn() {
+  if (agentStore.hasRunningThread || !currentThread.value?.interrupted) {
+    return;
+  }
+
+  const threadId = currentThread.value.id;
+  const currentPage = getCurrentPageSnapshot();
+  agentStore.removeMessagesByRunId(threadId, currentThread.value.runId);
+  agentStore.clearError(threadId);
+  await startThreadRun(threadId, currentPage, {
+    preferCurrentPage: true,
+  });
+}
+
+function dismissInterrupted() {
+  if (!currentThread.value) {
+    return;
+  }
+  agentStore.removeMessagesByRunId(
+    currentThread.value.id,
+    currentThread.value.runId
+  );
+  agentStore.clearError(currentThread.value.id);
 }
 
 async function submitConfirmation(confirmed: boolean) {
@@ -285,7 +509,6 @@ async function submitConfirmation(confirmed: boolean) {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
   const answer = confirmed ? confirmLabel.value : cancelLabel.value;
 
   agentStore.clearError(threadId);
@@ -300,8 +523,7 @@ async function submitConfirmation(confirmed: boolean) {
       route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
 }
 
 async function submitChoice(option: AgentAskUserOption) {
@@ -317,7 +539,6 @@ async function submitChoice(option: AgentAskUserOption) {
   const currentPage = getCurrentPageSnapshot();
   const thread = agentStore.ensureCurrentThread(currentPage);
   const threadId = thread.id;
-  const threadPage = resolveThreadPageSnapshot(threadId, currentPage);
 
   agentStore.clearError(threadId);
   agentStore.answerPendingAsk(
@@ -331,8 +552,7 @@ async function submitChoice(option: AgentAskUserOption) {
       route: currentPage.path,
     }
   );
-  agentStore.startRun(threadId, threadPage);
-  await runThread(threadId, threadPage);
+  await startThreadRun(threadId, currentPage);
 }
 
 watch(
@@ -354,6 +574,21 @@ watch(
   },
   { immediate: true }
 );
+watch(
+  () => [input.value, selectionStart.value, selectionEnd.value],
+  () => {
+    void loadDomRefSuggestions();
+  }
+);
+
+watch(
+  () => agentStore.hasRunningThread,
+  (running) => {
+    if (running) {
+      closeDomRefMenu();
+    }
+  }
+);
 </script>
 
 <template>
@@ -371,6 +606,30 @@ watch(
               ? $t("agent.pending-choose-hint")
               : $t("agent.pending-input-hint")
         }}
+      </div>
+    </div>
+
+    <div
+      v-if="isInterrupted"
+      class="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+    >
+      <div class="font-medium">{{ $t("agent.interrupted") }}</div>
+      <div class="mt-1">{{ $t("agent.interrupted-retry-hint") }}</div>
+      <div class="mt-2 flex flex-wrap gap-x-2 gap-y-2">
+        <button
+          class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="retryLastTurn"
+        >
+          {{ $t("agent.retry-last-turn") }}
+        </button>
+        <button
+          class="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="dismissInterrupted"
+        >
+          {{ $t("common.dismiss") }}
+        </button>
       </div>
     </div>
 
@@ -407,14 +666,48 @@ watch(
     </div>
 
     <div v-else class="flex items-end gap-x-2">
-      <textarea
-        v-model="input"
-        rows="1"
-        :placeholder="inputPlaceholder"
-        class="flex-1 resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-        :disabled="agentStore.hasRunningThread"
-        @keydown.enter.exact.prevent="send"
-      />
+      <div class="relative min-w-0 flex-1">
+        <textarea
+          ref="inputRef"
+          v-model="input"
+          rows="1"
+          :placeholder="inputPlaceholder"
+          class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+          :disabled="agentStore.hasRunningThread"
+          @click="updateSelection"
+          @blur="closeDomRefMenu"
+          @input="updateSelection"
+          @keyup="updateSelection"
+          @select="updateSelection"
+          @keydown.exact="handleTextareaKeydown"
+        />
+        <div
+          v-if="isDomRefMenuOpen"
+          data-testid="dom-ref-autocomplete"
+          class="absolute bottom-full left-0 z-10 mb-2 w-full overflow-hidden rounded-md border bg-white shadow-lg"
+        >
+          <button
+            v-for="(suggestion, index) in filteredDomRefSuggestions"
+            :key="suggestion.ref"
+            type="button"
+            data-testid="dom-ref-autocomplete-item"
+            class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-gray-50"
+            :class="index === activeDomRefIndex ? 'bg-blue-50' : 'bg-white'"
+            @mousedown.prevent="selectDomRefSuggestion(suggestion)"
+          >
+            <div class="flex items-center gap-x-2 text-gray-800">
+              <span class="font-medium">[{{ suggestion.ref }}]</span>
+              <span class="truncate">{{ suggestion.label }}</span>
+            </div>
+            <div
+              v-if="formatDomRefSuggestionMeta(suggestion)"
+              class="mt-1 text-xs text-gray-500"
+            >
+              {{ formatDomRefSuggestionMeta(suggestion) }}
+            </div>
+          </button>
+        </div>
+      </div>
       <button
         v-if="agentStore.loading"
         class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"

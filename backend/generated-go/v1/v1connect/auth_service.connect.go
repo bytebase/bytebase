@@ -45,6 +45,9 @@ const (
 	AuthServiceSignupProcedure = "/bytebase.v1.AuthService/Signup"
 	// AuthServiceRefreshProcedure is the fully-qualified name of the AuthService's Refresh RPC.
 	AuthServiceRefreshProcedure = "/bytebase.v1.AuthService/Refresh"
+	// AuthServiceSwitchWorkspaceProcedure is the fully-qualified name of the AuthService's
+	// SwitchWorkspace RPC.
+	AuthServiceSwitchWorkspaceProcedure = "/bytebase.v1.AuthService/SwitchWorkspace"
 )
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
@@ -67,6 +70,9 @@ type AuthServiceClient interface {
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	// Switches the current user's active workspace and issues new tokens.
+	// The user must be a member of the target workspace.
+	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the bytebase.v1.AuthService service. By default, it
@@ -110,16 +116,23 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("Refresh")),
 			connect.WithClientOptions(opts...),
 		),
+		switchWorkspace: connect.NewClient[v1.SwitchWorkspaceRequest, v1.LoginResponse](
+			httpClient,
+			baseURL+AuthServiceSwitchWorkspaceProcedure,
+			connect.WithSchema(authServiceMethods.ByName("SwitchWorkspace")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login         *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	logout        *connect.Client[v1.LogoutRequest, emptypb.Empty]
-	exchangeToken *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
-	signup        *connect.Client[v1.SignupRequest, v1.LoginResponse]
-	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	login           *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout          *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	exchangeToken   *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	signup          *connect.Client[v1.SignupRequest, v1.LoginResponse]
+	refresh         *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	switchWorkspace *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -147,6 +160,11 @@ func (c *authServiceClient) Refresh(ctx context.Context, req *connect.Request[v1
 	return c.refresh.CallUnary(ctx, req)
 }
 
+// SwitchWorkspace calls bytebase.v1.AuthService.SwitchWorkspace.
+func (c *authServiceClient) SwitchWorkspace(ctx context.Context, req *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return c.switchWorkspace.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
 	// Authenticates a user and returns access tokens.
@@ -167,6 +185,9 @@ type AuthServiceHandler interface {
 	// Refreshes the access token using the refresh token cookie.
 	// Permissions required: None (validates via refresh token cookie)
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	// Switches the current user's active workspace and issues new tokens.
+	// The user must be a member of the target workspace.
+	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -206,6 +227,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("Refresh")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceSwitchWorkspaceHandler := connect.NewUnaryHandler(
+		AuthServiceSwitchWorkspaceProcedure,
+		svc.SwitchWorkspace,
+		connect.WithSchema(authServiceMethods.ByName("SwitchWorkspace")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceLoginProcedure:
@@ -218,6 +245,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceSignupHandler.ServeHTTP(w, r)
 		case AuthServiceRefreshProcedure:
 			authServiceRefreshHandler.ServeHTTP(w, r)
+		case AuthServiceSwitchWorkspaceProcedure:
+			authServiceSwitchWorkspaceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -245,4 +274,8 @@ func (UnimplementedAuthServiceHandler) Signup(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Refresh is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.SwitchWorkspace is not implemented"))
 }
