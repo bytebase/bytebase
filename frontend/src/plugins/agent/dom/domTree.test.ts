@@ -336,6 +336,73 @@ describe("extractDomTree", () => {
     ]);
   });
 
+  test("prefers clickable list items over nested wrapper clones with the same label", () => {
+    document.body.innerHTML = `
+      <main>
+        <ul>
+          <li style="cursor: pointer">
+            <div role="button">
+              <span>Prod Primary</span>
+            </div>
+          </li>
+        </ul>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<li>Prod Primary</li>");
+    expect(tree).not.toContain("[e2]");
+    expect(tree.match(/Prod Primary/g)).toHaveLength(1);
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "li",
+        role: undefined,
+        label: "Prod Primary",
+        value: undefined,
+      },
+    ]);
+  });
+
+  test("drops nested wrapper refs when a clickable row already captures the same content", () => {
+    document.body.innerHTML = `
+      <main>
+        <table>
+          <tbody>
+            <tr style="cursor: pointer">
+              <td>
+                <div role="button">
+                  <span>Prod Primary</span>
+                </div>
+              </td>
+              <td><span>Healthy</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+    `;
+
+    const { tree, count } = extractDomTree();
+    const suggestions = extractDomRefSuggestions();
+
+    expect(count).toBe(1);
+    expect(tree).toContain("[e1]<tr>Prod Primary | Healthy</tr>");
+    expect(tree).not.toContain("[e2]<div>Prod Primary</div>");
+    expect(tree.match(/Prod Primary/g)).toHaveLength(1);
+    expect(suggestions).toEqual([
+      {
+        ref: "e1",
+        tag: "tr",
+        role: undefined,
+        label: "Prod Primary | Healthy",
+        value: undefined,
+      },
+    ]);
+  });
+
   test("truncates long labels and values deterministically", () => {
     const longText = "x".repeat(180);
     document.body.innerHTML = `

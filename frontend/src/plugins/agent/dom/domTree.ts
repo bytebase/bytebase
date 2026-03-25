@@ -120,6 +120,9 @@ interface DomLine {
   kind: "interactive" | "context" | "text";
   entry?: IndexedElement;
   dedupeKey?: string;
+  sourceElement?: Element;
+  signature?: string;
+  semanticTag?: string;
 }
 
 type InteractiveReason = "native" | "role" | "class" | "editable" | "pointer";
@@ -431,6 +434,17 @@ function toDomRefSuggestion({
   };
 }
 
+function normalizeLineSignature(text: string): string | undefined {
+  return normalizeTextContent(text)?.toLowerCase();
+}
+
+function splitStructuredSignature(signature: string): string[] {
+  return signature
+    .split("|")
+    .map((segment) => normalizeLineSignature(segment) ?? "")
+    .filter(Boolean);
+}
+
 function classifyTextLine(
   parent: Element,
   depth: number,
@@ -459,6 +473,9 @@ function pushTextLine(node: Text, depth: number, context: WalkContext): void {
     text: `${indent}${text}`,
     kind: classifyTextLine(node.parentElement, depth, text),
     dedupeKey: `${depth}:${text}`,
+    sourceElement: node.parentElement,
+    signature: normalizeLineSignature(text),
+    semanticTag: node.parentElement.tagName.toLowerCase(),
   });
 }
 
@@ -474,6 +491,9 @@ function pushInteractiveLine(
     text: `${indent}[${entry.ref}]<${entry.tag}${valueAttr}>${entry.label}</${entry.tag}>`,
     kind: "interactive",
     entry,
+    sourceElement: entry.element,
+    signature: normalizeLineSignature(entry.label),
+    semanticTag: entry.tag,
   });
 }
 
@@ -481,13 +501,19 @@ function pushContextLine(
   depth: number,
   text: string,
   context: WalkContext,
-  dedupeKey?: string
+  dedupeKey?: string,
+  sourceElement?: Element,
+  signature?: string,
+  semanticTag?: string
 ): void {
   const indent = "  ".repeat(depth);
   context.lines.push({
     text: `${indent}${text}`,
     kind: "context",
     dedupeKey,
+    sourceElement,
+    signature,
+    semanticTag,
   });
 }
 
@@ -633,7 +659,15 @@ function walkTableNode(
   context: WalkContext,
   path: string
 ): void {
-  pushContextLine(depth, "<table>", context, `${path}:table`);
+  pushContextLine(
+    depth,
+    "<table>",
+    context,
+    `${path}:table`,
+    table,
+    undefined,
+    "table"
+  );
 
   const sectionChildren = Array.from(table.children).filter(
     (child): child is Element =>
@@ -670,7 +704,10 @@ function walkTableNode(
           depth + 1,
           `<thead>${rowLabel}</thead>`,
           context,
-          `${path}:thead:${rowLabel}`
+          `${path}:thead:${rowLabel}`,
+          row,
+          normalizeLineSignature(rowLabel),
+          "thead"
         );
       }
       return;
@@ -716,7 +753,10 @@ function walkTableNode(
         depth + 1,
         `<tr>${rowLabel}</tr>`,
         context,
-        `${path}:tr:${rowIndex}:${rowLabel}`
+        `${path}:tr:${rowIndex}:${rowLabel}`,
+        row,
+        normalizeLineSignature(rowLabel),
+        "tr"
       );
     }
 
@@ -843,6 +883,104 @@ function dedupeAdjacentLines(lines: DomLine[]): DomLine[] {
   return deduped;
 }
 
+const WRAPPER_TAGS = new Set(["div", "span"]);
+const SEMANTIC_LINE_TAG_SCORES = new Map([
+  ["table", 50],
+  ["thead", 80],
+  ["tbody", 60],
+  ["tfoot", 60],
+  ["tr", 90],
+  ["th", 85],
+  ["td", 80],
+  ["ul", 55],
+  ["ol", 55],
+  ["li", 88],
+  ["button", 85],
+  ["a", 85],
+  ["input", 85],
+  ["select", 85],
+  ["textarea", 85],
+  ["editor", 85],
+  ["summary", 82],
+]);
+
+function getLineValueScore(line: DomLine): number {
+  const kindScore =
+    line.kind === "interactive" ? 200 : line.kind === "context" ? 120 : 40;
+  const tagScore = line.semanticTag
+    ? (SEMANTIC_LINE_TAG_SCORES.get(line.semanticTag) ??
+      (WRAPPER_TAGS.has(line.semanticTag) ? 0 : 20))
+    : 0;
+  return kindScore + tagScore;
+}
+
+function canDropEquivalentLine(line: DomLine): boolean {
+  if (line.kind !== "interactive") return true;
+  return WRAPPER_TAGS.has(line.semanticTag ?? "") && !line.entry?.value;
+}
+
+function isAncestralDuplicate(keeper: DomLine, candidate: DomLine): boolean {
+  if (!keeper.signature || !candidate.signature) return false;
+  if (!keeper.sourceElement || !candidate.sourceElement) return false;
+  if (
+    keeper.sourceElement !== candidate.sourceElement &&
+    !keeper.sourceElement.contains(candidate.sourceElement) &&
+    !candidate.sourceElement.contains(keeper.sourceElement)
+  ) {
+    return false;
+  }
+
+  if (keeper.signature === candidate.signature) {
+    return true;
+  }
+
+  if (
+    candidate.kind === "interactive" &&
+    !WRAPPER_TAGS.has(candidate.semanticTag ?? "")
+  ) {
+    return false;
+  }
+
+  const keeperSegments = splitStructuredSignature(keeper.signature);
+  if (keeperSegments.length <= 1) return false;
+
+  const candidateSegments = splitStructuredSignature(candidate.signature);
+  return (
+    candidateSegments.length === 1 &&
+    keeperSegments.includes(candidateSegments[0])
+  );
+}
+
+function dedupeEquivalentAncestorLines(lines: DomLine[]): DomLine[] {
+  return lines.filter((line, index) => {
+    if (!canDropEquivalentLine(line)) return true;
+
+    return !lines.some((other, otherIndex) => {
+      if (index === otherIndex) return false;
+      if (!isAncestralDuplicate(other, line)) return false;
+
+      const otherScore = getLineValueScore(other);
+      const lineScore = getLineValueScore(line);
+      if (otherScore !== lineScore) {
+        return otherScore > lineScore;
+      }
+
+      const otherIsCloserSemanticAncestor = Boolean(
+        other.sourceElement &&
+          line.sourceElement &&
+          other.sourceElement.contains(line.sourceElement) &&
+          other.semanticTag &&
+          !WRAPPER_TAGS.has(other.semanticTag)
+      );
+      if (otherIsCloserSemanticAncestor) {
+        return true;
+      }
+
+      return otherIndex < index;
+    });
+  });
+}
+
 function selectBudgetedLines(lines: DomLine[]): DomLine[] {
   const selected = new Set<number>();
   let usedLines = 0;
@@ -895,7 +1033,9 @@ function extractDomState(root?: Element): {
     walkDomNode(child, 0, context, `root[${index}]`);
   });
 
-  const keptLines = selectBudgetedLines(dedupeAdjacentLines(lines));
+  const keptLines = selectBudgetedLines(
+    dedupeEquivalentAncestorLines(dedupeAdjacentLines(lines))
+  );
   const keptEntries = keptLines
     .flatMap((line) => (line.entry ? [line.entry] : []))
     .map((entry) => [entry.ref, entry] as const);
