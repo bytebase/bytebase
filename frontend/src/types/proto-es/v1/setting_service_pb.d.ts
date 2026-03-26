@@ -964,11 +964,6 @@ export declare type DataClassificationSetting_DataClassificationConfig_DataClass
   title: string;
 
   /**
-   * @generated from field: string description = 3;
-   */
-  description: string;
-
-  /**
    * The sensitivity level. Maps to Level.level.
    *
    * @generated from field: optional int32 level = 4;

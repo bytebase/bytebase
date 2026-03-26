@@ -483,9 +483,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 	if x.Title != y.Title {
 		return false
 	}
-	if x.Description != y.Description {
-		return false
-	}
 	if p, q := x.Level, y.Level; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}

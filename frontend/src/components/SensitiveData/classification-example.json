@@ -7,31 +7,27 @@
     { "title": "Level 4", "level": 4 }
   ],
   "classification": {
-    "1": { "id": "1", "title": "Basic", "description": "" },
-    "1-1": { "id": "1-1", "title": "Basic", "description": "", "level": 1 },
+    "1": { "id": "1", "title": "Basic" },
+    "1-1": { "id": "1-1", "title": "Basic", "level": 1 },
     "1-2": {
       "id": "1-2",
       "title": "Contact",
-      "description": "",
       "level": 2
     },
     "1-3": {
       "id": "1-3",
       "title": "Health",
-      "description": "",
       "level": 4
     },
-    "2": { "id": "2", "title": "Relationship", "description": "" },
+    "2": { "id": "2", "title": "Relationship" },
     "2-1": {
       "id": "2-1",
       "title": "Social",
-      "description": "",
       "level": 1
     },
     "2-2": {
       "id": "2-2",
       "title": "Business",
-      "description": "",
       "level": 3
     }
   }

@@ -505,10 +505,9 @@ func convertDataClassificationSettingClassification(classification map[string]*v
 	storeClassification := make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
 	for k, v := range classification {
 		storeClassification[k] = &storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
-			Id:          v.Id,
-			Title:       v.Title,
-			Description: v.Description,
-			Level:       v.Level,
+			Id:    v.Id,
+			Title: v.Title,
+			Level: v.Level,
 		}
 	}
 	return storeClassification
@@ -563,10 +562,9 @@ func convertToDataClassificationSettingClassification(classification map[string]
 	v1Classification := make(map[string]*v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification, len(classification))
 	for k, v := range classification {
 		v1Classification[k] = &v1pb.DataClassificationSetting_DataClassificationConfig_DataClassification{
-			Id:          v.Id,
-			Title:       v.Title,
-			Description: v.Description,
-			Level:       v.Level,
+			Id:    v.Id,
+			Title: v.Title,
+			Level: v.Level,
 		}
 	}
 	return v1Classification
