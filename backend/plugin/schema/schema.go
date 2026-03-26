@@ -24,6 +24,8 @@ var (
 	getDatabaseMetadataMap          = make(map[storepb.Engine]getDatabaseMetadata)
 	generateMigrations              = make(map[storepb.Engine]generateMigration)
 	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
+	sdlMigrations                   = make(map[storepb.Engine]sdlMigration)
+	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
@@ -41,6 +43,8 @@ type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, erro
 type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
+type sdlMigration func(userSDLText string, currentSchema *model.DatabaseMetadata) (string, error)
+type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
@@ -260,6 +264,43 @@ func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText strin
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(currentSDLText, previousUserSDLText, currentSchema)
+}
+
+func RegisterSDLMigration(engine storepb.Engine, f sdlMigration) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := sdlMigrations[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	sdlMigrations[engine] = f
+}
+
+// SDLMigration computes the migration SQL from a user-provided SDL text and the
+// current database schema. It combines diff and migration generation in one step.
+func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) (string, error) {
+	f, ok := sdlMigrations[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported for SDL migration", engine)
+	}
+	return f(userSDLText, currentSchema)
+}
+
+func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := sdlDropAdvicesFns[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	sdlDropAdvicesFns[engine] = f
+}
+
+// SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
+func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error) {
+	f, ok := sdlDropAdvicesFns[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported for SDL drop advices", engine)
+	}
+	return f(userSDLText, currentSchema)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
