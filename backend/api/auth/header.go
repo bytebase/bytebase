@@ -76,6 +76,10 @@ func GetRefreshTokenDuration(ctx context.Context, store *store.Store, licenseSer
 	if workspaceProfile.GetRefreshTokenDuration().GetSeconds() > 0 {
 		refreshTokenDuration = workspaceProfile.GetRefreshTokenDuration().AsDuration()
 	}
+
+	if err := licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
+		return refreshTokenDuration
+	}
 	// Currently we implement the password rotation restriction in a simple way:
 	// 1. Only check if users need to reset their password during login.
 	// 2. For the 1st time login, if `RequireResetPasswordForFirstLogin` is true, `require_reset_password` in the response will be true

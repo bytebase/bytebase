@@ -208,7 +208,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				log.LogLevel.Set(level)
 			case "value.workspace_profile.disallow_signup":
 				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The disallow_signup cannot be changed in SaaS mode."))
 				}
 				if payload.DisallowSignup {
 					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
@@ -218,7 +218,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.DisallowSignup = payload.DisallowSignup
 			case "value.workspace_profile.external_url":
 				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The external_url cannot be changed in SaaS mode."))
 				}
 				// Prevent changing external URL via UI when it's set via command-line flag
 				if s.profile.ExternalURL != "" {
@@ -286,6 +286,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			case "value.workspace_profile.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
 			case "value.workspace_profile.disallow_password_signin":
+				if s.profile.SaaS {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The disallow_password_signin cannot be changed in SaaS mode."))
+				}
 				if payload.DisallowPasswordSignin {
 					// We should still allow users to turn it off.
 					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {

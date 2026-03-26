@@ -129,19 +129,25 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 	if user.Type != storepb.PrincipalType_END_USER {
 		return false
 	}
+
 	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 		return false
 	}
 
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
 	if err != nil {
-		slog.Error("failed to get workspace setting", log.BBError(err))
+		slog.Error("failed to get workspace restriction", log.BBError(err), slog.String("workspace", workspaceID))
 		return false
 	}
-	passwordRestriction := setting.GetPasswordRestriction()
 
 	if user.Profile.LastLoginTime == nil {
-		if !passwordRestriction.GetRequireResetPasswordForFirstLogin() {
+		if !restriction.PasswordRestriction.GetRequireResetPasswordForFirstLogin() {
 			return false
 		}
 		count, err := s.store.CountActiveEndUsersPerWorkspace(ctx, workspaceID)
@@ -153,12 +159,12 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return count > 1
 	}
 
-	if passwordRestriction.GetPasswordRotation() != nil {
+	if restriction.PasswordRestriction.GetPasswordRotation() != nil {
 		lastChangePasswordTime := user.CreatedAt
 		if user.Profile.LastChangePasswordTime != nil {
 			lastChangePasswordTime = user.Profile.LastChangePasswordTime.AsTime()
 		}
-		if lastChangePasswordTime.Add(passwordRestriction.GetPasswordRotation().AsDuration()).Before(time.Now()) {
+		if lastChangePasswordTime.Add(restriction.PasswordRestriction.GetPasswordRotation().AsDuration()).Before(time.Now()) {
 			return true
 		}
 	}
@@ -218,23 +224,20 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		workspaceID = existingWsID
 	}
 
-	if workspaceID != "" {
-		if !s.profile.SaaS {
-			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
-				setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
-				}
-				if setting.DisallowSignup {
-					return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
-				}
-			}
-		}
-
-		if err := validatePassword(ctx, s.store, workspaceID, request.Password); err != nil {
-			return nil, err
-		}
-	} else if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(defaultAccountRestriction.PasswordRestriction)); err != nil {
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if restriction.DisallowSignup {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace %v", workspaceID))
+	}
+	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
 		return nil, err
 	}
 
@@ -1330,4 +1333,53 @@ func (s *AuthService) accountToUser(ctx context.Context, account *store.AccountM
 		Type:          account.Type,
 		MemberDeleted: account.MemberDeleted,
 	}, nil
+}
+
+func getAccountRestriction(
+	ctx context.Context,
+	stores *store.Store,
+	licenseService *enterprise.LicenseService,
+	saas bool,
+	workspaceID string,
+) (*v1pb.Restriction, error) {
+	defaultPasswordRestriction := &v1pb.WorkspaceProfileSetting_PasswordRestriction{
+		MinLength: 8,
+	}
+	restriction := &v1pb.Restriction{
+		DisallowSignup:         false,
+		DisallowPasswordSignin: false,
+		PasswordRestriction:    defaultPasswordRestriction,
+	}
+
+	if workspaceID != "" {
+		setting, err := stores.GetWorkspaceProfileSetting(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find profile setting for workspace %v", workspaceID))
+		}
+
+		restriction = &v1pb.Restriction{
+			PasswordRestriction:    convertToV1PasswordRestriction(setting.GetPasswordRestriction()),
+			DisallowSignup:         setting.DisallowSignup,
+			DisallowPasswordSignin: setting.DisallowPasswordSignin,
+		}
+
+		// Override if features are not enabled
+		if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP) != nil {
+			restriction.DisallowSignup = false
+		}
+		if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN) != nil {
+			restriction.DisallowPasswordSignin = false
+		}
+		if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS) != nil {
+			restriction.PasswordRestriction = defaultPasswordRestriction
+		}
+	}
+
+	// Override for SaaS
+	if saas {
+		restriction.DisallowSignup = true
+		restriction.DisallowPasswordSignin = true
+	}
+
+	return restriction, nil
 }
