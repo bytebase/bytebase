@@ -143,6 +143,68 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want: "",
 		},
 		{
+			description:     "Exemption By Classification Level",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `resource.classification_level <= 3`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: "",
+		},
+		{
+			description:     "Exemption By Classification Level Not Matched",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `resource.classification_level <= 1`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want:           "default",
+			wantAlgorithm:  "Full mask",
+			wantClassLevel: 2,
+		},
+		{
 			description:     "Column Catalog",
 			databaseMessage: defaultDatabaseMessage,
 			schemaName:      "hiring",
