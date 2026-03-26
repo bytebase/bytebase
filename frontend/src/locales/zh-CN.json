@@ -924,14 +924,15 @@
         }
       },
       "classification": {
-        "upload": "导入分类分级",
-        "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",
-        "override-title": "覆盖分类分级数据",
-        "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
-        "override-confirm": "继续导入"
-      },
-      "json-format-example": "JSON 格式样例",
-      "view-example": "查看样例"
+        "guide-intro": "在下方编辑分类分级的 JSON 配置。未配置时将显示示例模板。",
+        "guide-levels": "\"levels\" 定义敏感级别，级别编号从 1 开始连续递增（例如 1 = 公开、2 = 内部、3 = 机密）。",
+        "guide-classification": "\"classification\" 以 ID 为键映射各分类。叶子分类必须引用级别编号，父分类省略级别。",
+        "guide-hierarchy": "ID 使用短横线分隔的层级结构（例如 \"1\" 为父分类，\"1-1\" 和 \"1-2\" 为其子分类）。",
+        "invalid-json": "JSON 格式无效",
+        "missing-classification": "缺少 \"classification\" 字段",
+        "empty-classification": "\"classification\" 字段为空",
+        "missing-levels": "缺少 \"levels\" 字段"
+      }
     }
   },
   "remind": {
@@ -1749,7 +1750,7 @@
     "transfer-database-to": "将数据库转移到目标项目",
     "classification": {
       "self": "分类分级",
-      "description": "通过分类分级，来批量管理列的脱敏规则。"
+      "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
     "partitioned": "分区",
     "partition-tables": "分区表",

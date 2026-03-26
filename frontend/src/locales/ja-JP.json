@@ -924,14 +924,15 @@
         }
       },
       "classification": {
-        "upload": "分類をアップロード",
-        "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",
-        "override-title": "カバレッジの分類および等級付けされたデータ",
-        "override-desc": "既存の分類およびグレーディング データは上書きされ、関連するすべてのプロジェクトが影響を受けます。",
-        "override-confirm": "インポートを続行する"
-      },
-      "json-format-example": "JSON形式の例",
-      "view-example": "サンプルを見る"
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field"
+      }
     }
   },
   "remind": {
@@ -1749,7 +1750,7 @@
     "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "classification": {
       "self": "分類",
-      "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。"
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "partitioned": "パーティション",
     "partition-tables": "パーティションテーブル",
