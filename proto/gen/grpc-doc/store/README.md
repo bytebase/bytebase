@@ -331,6 +331,9 @@
 - [store/worksheet.proto](#store_worksheet-proto)
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
   
+- [store/workspace.proto](#store_workspace-proto)
+    - [WorkspacePayload](#bytebase-store-WorkspacePayload)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -4503,7 +4506,6 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
-| branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -5290,6 +5292,38 @@ ProviderType identifies the CI/CD platform.
 | ----- | ---- | ----- | ----------- |
 | starred | [bool](#bool) |  |  |
 | folders | [string](#string) | repeated | The folder path for a worksheet. For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_workspace-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/workspace.proto
+
+
+
+<a name="bytebase-store-WorkspacePayload"></a>
+
+### WorkspacePayload
+WorkspacePayload stores workspace-level metadata.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| branding_logo | [string](#string) |  |  |
 
 
 

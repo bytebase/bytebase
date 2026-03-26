@@ -586,13 +586,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   directorySyncToken: string;
 
   /**
-   * The branding logo as a data URI (e.g. data:image/png;base64,...).
-   *
-   * @generated from field: string branding_logo = 16;
-   */
-  brandingLogo: string;
-
-  /**
    * Password restriction settings.
    *
    * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;

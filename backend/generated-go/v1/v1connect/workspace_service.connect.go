@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// WorkspaceServiceGetWorkspaceProcedure is the fully-qualified name of the WorkspaceService's
+	// GetWorkspace RPC.
+	WorkspaceServiceGetWorkspaceProcedure = "/bytebase.v1.WorkspaceService/GetWorkspace"
 	// WorkspaceServiceListWorkspacesProcedure is the fully-qualified name of the WorkspaceService's
 	// ListWorkspaces RPC.
 	WorkspaceServiceListWorkspacesProcedure = "/bytebase.v1.WorkspaceService/ListWorkspaces"
@@ -49,6 +52,12 @@ const (
 
 // WorkspaceServiceClient is a client for the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceClient interface {
+	// Gets a workspace by name.
+	// Supports "workspaces/-" to resolve the current workspace:
+	// - Authenticated: uses the workspace from JWT context
+	// - Self-hosted unauthenticated: returns the single workspace
+	// - SaaS unauthenticated: returns minimal response
+	GetWorkspace(context.Context, *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.Workspace], error)
 	// Lists all workspaces the current user is a member of.
 	ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error)
 	// Updates a workspace. Currently only title can be updated.
@@ -72,6 +81,12 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
 	return &workspaceServiceClient{
+		getWorkspace: connect.NewClient[v1.GetWorkspaceRequest, v1.Workspace](
+			httpClient,
+			baseURL+WorkspaceServiceGetWorkspaceProcedure,
+			connect.WithSchema(workspaceServiceMethods.ByName("GetWorkspace")),
+			connect.WithClientOptions(opts...),
+		),
 		listWorkspaces: connect.NewClient[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse](
 			httpClient,
 			baseURL+WorkspaceServiceListWorkspacesProcedure,
@@ -101,10 +116,16 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // workspaceServiceClient implements WorkspaceServiceClient.
 type workspaceServiceClient struct {
+	getWorkspace    *connect.Client[v1.GetWorkspaceRequest, v1.Workspace]
 	listWorkspaces  *connect.Client[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse]
 	updateWorkspace *connect.Client[v1.UpdateWorkspaceRequest, v1.Workspace]
 	getIamPolicy    *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
 	setIamPolicy    *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+}
+
+// GetWorkspace calls bytebase.v1.WorkspaceService.GetWorkspace.
+func (c *workspaceServiceClient) GetWorkspace(ctx context.Context, req *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.Workspace], error) {
+	return c.getWorkspace.CallUnary(ctx, req)
 }
 
 // ListWorkspaces calls bytebase.v1.WorkspaceService.ListWorkspaces.
@@ -129,6 +150,12 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.
 
 // WorkspaceServiceHandler is an implementation of the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceHandler interface {
+	// Gets a workspace by name.
+	// Supports "workspaces/-" to resolve the current workspace:
+	// - Authenticated: uses the workspace from JWT context
+	// - Self-hosted unauthenticated: returns the single workspace
+	// - SaaS unauthenticated: returns minimal response
+	GetWorkspace(context.Context, *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.Workspace], error)
 	// Lists all workspaces the current user is a member of.
 	ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error)
 	// Updates a workspace. Currently only title can be updated.
@@ -148,6 +175,12 @@ type WorkspaceServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	workspaceServiceMethods := v1.File_v1_workspace_service_proto.Services().ByName("WorkspaceService").Methods()
+	workspaceServiceGetWorkspaceHandler := connect.NewUnaryHandler(
+		WorkspaceServiceGetWorkspaceProcedure,
+		svc.GetWorkspace,
+		connect.WithSchema(workspaceServiceMethods.ByName("GetWorkspace")),
+		connect.WithHandlerOptions(opts...),
+	)
 	workspaceServiceListWorkspacesHandler := connect.NewUnaryHandler(
 		WorkspaceServiceListWorkspacesProcedure,
 		svc.ListWorkspaces,
@@ -174,6 +207,8 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 	)
 	return "/bytebase.v1.WorkspaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case WorkspaceServiceGetWorkspaceProcedure:
+			workspaceServiceGetWorkspaceHandler.ServeHTTP(w, r)
 		case WorkspaceServiceListWorkspacesProcedure:
 			workspaceServiceListWorkspacesHandler.ServeHTTP(w, r)
 		case WorkspaceServiceUpdateWorkspaceProcedure:
@@ -190,6 +225,10 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 
 // UnimplementedWorkspaceServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWorkspaceServiceHandler struct{}
+
+func (UnimplementedWorkspaceServiceHandler) GetWorkspace(context.Context, *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.Workspace], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.GetWorkspace is not implemented"))
+}
 
 func (UnimplementedWorkspaceServiceHandler) ListWorkspaces(context.Context, *connect.Request[v1.ListWorkspacesRequest]) (*connect.Response[v1.ListWorkspacesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.ListWorkspaces is not implemented"))

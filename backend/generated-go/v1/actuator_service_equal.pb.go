@@ -3,32 +3,6 @@
 
 package v1
 
-func (x *GetResourcePackageRequest) Equal(y *GetResourcePackageRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	return true
-}
-
-func (x *ResourcePackage) Equal(y *ResourcePackage) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if string(x.Logo) != string(y.Logo) {
-		return false
-	}
-	return true
-}
-
 func (x *SetupSampleRequest) Equal(y *SetupSampleRequest) bool {
 	if x == y {
 		return true

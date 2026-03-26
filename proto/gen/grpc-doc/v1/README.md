@@ -126,9 +126,7 @@
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
-    - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest)
-    - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
@@ -714,6 +712,7 @@
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [GetWorkspaceRequest](#bytebase-v1-GetWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
@@ -2389,7 +2388,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
-| branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 | access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
@@ -2594,21 +2592,6 @@ Request message for getting actuator information.
 
 
 
-<a name="bytebase-v1-GetResourcePackageRequest"></a>
-
-### GetResourcePackageRequest
-Request message for getting branding resources.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Optional workspace name, format: workspaces/{workspace}. Set when using the workspace-scoped URL pattern. |
-
-
-
-
-
-
 <a name="bytebase-v1-GetWorkspaceActuatorInfoRequest"></a>
 
 ### GetWorkspaceActuatorInfoRequest
@@ -2618,21 +2601,6 @@ Request message for getting workspace-scoped actuator information.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. |
-
-
-
-
-
-
-<a name="bytebase-v1-ResourcePackage"></a>
-
-### ResourcePackage
-Custom branding resources for the Bytebase instance.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| logo | [bytes](#bytes) |  | The branding logo. |
 
 
 
@@ -2682,7 +2650,6 @@ ActuatorService manages system health and operational information.
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. Permissions required: None |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
-| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) | Gets custom branding resources such as logos. Permissions required: None |
 | GetWorkspaceActuatorInfo | [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets workspace-scoped actuator info. Requires authentication. |
 
  
@@ -11485,6 +11452,21 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
+<a name="bytebase-v1-GetWorkspaceRequest"></a>
+
+### GetWorkspaceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. Use &#34;workspaces/-&#34; to get the current/default workspace. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListWorkspacesRequest"></a>
 
 ### ListWorkspacesRequest
@@ -11536,6 +11518,7 @@ WorksheetService manages SQL worksheets for query development.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: workspaces/{workspace} |
 | title | [string](#string) |  |  |
+| logo | [string](#string) |  | The branding logo. |
 
 
 
@@ -11555,6 +11538,7 @@ WorkspaceService manages workspace-level operations and profile.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
+| GetWorkspace | [GetWorkspaceRequest](#bytebase-v1-GetWorkspaceRequest) | [Workspace](#bytebase-v1-Workspace) | Gets a workspace by name. Supports &#34;workspaces/-&#34; to resolve the current workspace: - Authenticated: uses the workspace from JWT context - Self-hosted unauthenticated: returns the single workspace - SaaS unauthenticated: returns minimal response |
 | ListWorkspaces | [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest) | [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse) | Lists all workspaces the current user is a member of. |
 | UpdateWorkspace | [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest) | [Workspace](#bytebase-v1-Workspace) | Updates a workspace. Currently only title can be updated. |
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves IAM policy for the workspace. Permissions required: bb.workspaces.getIamPolicy |

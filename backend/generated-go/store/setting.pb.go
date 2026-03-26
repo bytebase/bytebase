@@ -437,8 +437,6 @@ type WorkspaceProfileSetting struct {
 	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
 	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
-	// The branding logo as a data URI (e.g. data:image/png;base64,...).
-	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Password restriction settings.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// The duration for access token. Default is 1 hour.
@@ -585,13 +583,6 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
 	if x != nil {
 		return x.DirectorySyncToken
-	}
-	return ""
-}
-
-func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
-	if x != nil {
-		return x.BrandingLogo
 	}
 	return ""
 }
@@ -2397,7 +2388,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xcf\x0f\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xb0\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2415,8 +2406,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
 	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12#\n" +
-	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12n\n" +
+	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12n\n" +
 	"\x14password_restriction\x18\x11 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
@@ -2445,7 +2435,7 @@ const file_store_setting_proto_rawDesc = "" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
 	"\n" +
-	"\x06EDITOR\x10\x02\"\xa9\x03\n" +
+	"\x06EDITOR\x10\x02J\x04\b\x10\x10\x11\"\xa9\x03\n" +
 	"\x18WorkspaceApprovalSetting\x12C\n" +
 	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.WorkspaceApprovalSetting.RuleR\x05rules\x1a\xc7\x02\n" +
 	"\x04Rule\x12<\n" +

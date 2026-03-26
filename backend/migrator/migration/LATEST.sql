@@ -11,7 +11,8 @@ CREATE TABLE server_config (
 
 CREATE TABLE workspace (
     resource_id text PRIMARY KEY,
-    name        text NOT NULL,
+    -- Stored as WorkspacePayload (proto/store/store/workspace.proto)
+    payload     jsonb NOT NULL DEFAULT '{}',
     created_at  timestamptz NOT NULL DEFAULT now(),
     deleted     boolean NOT NULL DEFAULT FALSE
 );

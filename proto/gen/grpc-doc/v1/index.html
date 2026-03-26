@@ -650,15 +650,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetResourcePackageRequest"><span class="badge">M</span>GetResourcePackageRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest"><span class="badge">M</span>GetWorkspaceActuatorInfoRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ResourcePackage"><span class="badge">M</span>ResourcePackage</a>
                 </li>
               
                 <li>
@@ -2892,6 +2884,10 @@
           <li>
             <a href="#v1%2fworkspace_service.proto">v1/workspace_service.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.GetWorkspaceRequest"><span class="badge">M</span>GetWorkspaceRequest</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.ListWorkspacesRequest"><span class="badge">M</span>ListWorkspacesRequest</a>
@@ -7346,13 +7342,6 @@ Requires ENTERPRISE license. </p></td>
                 </tr>
               
                 <tr>
-                  <td>branding_logo</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branding logo as a data URI (e.g. data:image/png;base64,...). </p></td>
-                </tr>
-              
-                <tr>
                   <td>password_restriction</td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
@@ -7973,31 +7962,6 @@ Format: projects/{id} </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetResourcePackageRequest">GetResourcePackageRequest</h3>
-        <p>Request message for getting branding resources.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional workspace name, format: workspaces/{workspace}.
-Set when using the workspace-scoped URL pattern. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</h3>
         <p>Request message for getting workspace-scoped actuator information.</p>
 
@@ -8013,30 +7977,6 @@ Set when using the workspace-scoped URL pattern. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The workspace name, format: workspaces/{workspace}. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ResourcePackage">ResourcePackage</h3>
-        <p>Custom branding resources for the Bytebase instance.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>logo</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p>The branding logo. </p></td>
                 </tr>
               
             </tbody>
@@ -8130,14 +8070,6 @@ Permissions required: None</p></td>
               </tr>
             
               <tr>
-                <td>GetResourcePackage</td>
-                <td><a href="#bytebase.v1.GetResourcePackageRequest">GetResourcePackageRequest</a></td>
-                <td><a href="#bytebase.v1.ResourcePackage">ResourcePackage</a></td>
-                <td><p>Gets custom branding resources such as logos.
-Permissions required: None</p></td>
-              </tr>
-            
-              <tr>
                 <td>GetWorkspaceActuatorInfo</td>
                 <td><a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
@@ -8188,23 +8120,6 @@ Permissions required: None</p></td>
                 <td>DeleteCache</td>
                 <td>DELETE</td>
                 <td>/v1/actuator/cache</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetResourcePackage</td>
-                <td>GET</td>
-                <td>/v1/actuator/resources</td>
-                <td></td>
-              </tr>
-              
-              <tr>
-                <td>GetResourcePackage</td>
-                <td>GET</td>
-                <td>/v1/{name=workspaces/*}/actuator/resources</td>
                 <td></td>
               </tr>
               
@@ -32496,6 +32411,31 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
       <p></p>
 
       
+        <h3 id="bytebase.v1.GetWorkspaceRequest">GetWorkspaceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The workspace name, format: workspaces/{workspace}.
+Use &#34;workspaces/-&#34; to get the current/default workspace. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListWorkspacesRequest">ListWorkspacesRequest</h3>
         <p></p>
 
@@ -32582,6 +32522,13 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>logo</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The branding logo. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -32602,6 +32549,17 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
             <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
           </thead>
           <tbody>
+            
+              <tr>
+                <td>GetWorkspace</td>
+                <td><a href="#bytebase.v1.GetWorkspaceRequest">GetWorkspaceRequest</a></td>
+                <td><a href="#bytebase.v1.Workspace">Workspace</a></td>
+                <td><p>Gets a workspace by name.
+Supports &#34;workspaces/-&#34; to resolve the current workspace:
+- Authenticated: uses the workspace from JWT context
+- Self-hosted unauthenticated: returns the single workspace
+- SaaS unauthenticated: returns minimal response</p></td>
+              </tr>
             
               <tr>
                 <td>ListWorkspaces</td>
@@ -32650,6 +32608,16 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
               </tr>
             </thead>
             <tbody>
+            
+              
+              
+              <tr>
+                <td>GetWorkspace</td>
+                <td>GET</td>
+                <td>/v1/{name=workspaces/*}</td>
+                <td></td>
+              </tr>
+              
             
               
               

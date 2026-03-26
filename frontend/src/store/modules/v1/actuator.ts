@@ -10,10 +10,7 @@ import {
   type Release,
   type ReleaseInfo,
 } from "@/types";
-import type {
-  ActuatorInfo,
-  ResourcePackage,
-} from "@/types/proto-es/v1/actuator_service_pb";
+import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import {
   STORAGE_KEY_ONBOARDING,
   STORAGE_KEY_RELEASE,
@@ -30,7 +27,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   const initialized = ref(false);
   const serverInfo = ref<ActuatorInfo | undefined>(undefined);
   const serverInfoTs = ref(0);
-  const resourcePackage = ref<ResourcePackage | undefined>(undefined);
   const releaseInfo = useLocalStorage<ReleaseInfo>(STORAGE_KEY_RELEASE, {
     ignoreRemindModalTillNextRelease: false,
     nextCheckTs: 0,
@@ -52,13 +48,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   });
 
   const info = computed(() => serverInfo.value);
-
-  const brandingLogo = computed(() => {
-    if (!resourcePackage.value?.logo) {
-      return "";
-    }
-    return new TextDecoder().decode(resourcePackage.value?.logo);
-  });
 
   const version = computed(() => serverInfo.value?.version || "");
 
@@ -140,12 +129,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return activeUserCount.value <= 1;
   });
 
-  const setLogo = (logo: string) => {
-    if (resourcePackage.value) {
-      resourcePackage.value.logo = new TextEncoder().encode(logo);
-    }
-  };
-
   const setServerInfo = (info: ActuatorInfo) => {
     serverInfo.value = info;
     serverInfoTs.value = Date.now();
@@ -161,14 +144,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   };
 
   const fetchServerInfo = async (workspace?: string) => {
-    const [info, pkg] = await Promise.all([
-      fetchActuatorInfo(workspace),
-      actuatorServiceClientConnect.getResourcePackage({
-        name: workspace ?? "",
-      }),
-    ]);
+    const info = await fetchActuatorInfo(workspace);
     setServerInfo(info);
-    resourcePackage.value = pkg;
     return info;
   };
 
@@ -244,14 +221,12 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     initialized,
     serverInfo,
     serverInfoTs,
-    resourcePackage,
     releaseInfo,
     appProfile,
     onboardingState,
     // Getters
     changelogURL,
     info,
-    brandingLogo,
     version,
     gitCommitBE,
     gitCommitFE,
@@ -269,7 +244,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     activeUserCount,
     // Actions
     updateUserStat,
-    setLogo,
     setServerInfo,
     fetchServerInfo,
     fetchLatestRelease,

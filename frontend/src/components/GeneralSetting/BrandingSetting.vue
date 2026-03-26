@@ -38,7 +38,7 @@
           <PermissionGuardWrapper
             v-slot="slotProps"
             :permissions="[
-              'bb.settings.setWorkspaceProfile'
+              'bb.workspaces.update'
             ]"
           >
             <div
@@ -90,22 +90,12 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import { workspaceServiceClientConnect } from "@/connect";
-import {
-  featureToRef,
-  useActuatorV1Store,
-  useSettingV1Store,
-  useWorkspaceV1Store,
-} from "@/store";
+import { featureToRef, useWorkspaceV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  UpdateWorkspaceRequestSchema,
-  WorkspaceSchema,
-} from "@/types/proto-es/v1/workspace_service_pb";
+import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
 
@@ -132,16 +122,14 @@ const convertFileToBase64 = (file: File) =>
     reader.onerror = (error) => reject(error);
   });
 
-const settingV1Store = useSettingV1Store();
 const workspaceStore = useWorkspaceV1Store();
-const actuatorV1Store = useActuatorV1Store();
 
 const initialTitle = computed(() => {
   return workspaceStore.currentWorkspace?.title ?? "";
 });
 
 const state = reactive<LocalState>({
-  logoUrl: settingV1Store.workspaceProfile.brandingLogo,
+  logoUrl: workspaceStore.currentWorkspace?.logo,
   workspaceTitle: initialTitle.value,
   loading: false,
   showFeatureModal: false,
@@ -155,7 +143,7 @@ const workspaceID = computed(() => {
 const allowSave = computed((): boolean => {
   return (
     state.workspaceTitle !== initialTitle.value ||
-    state.logoUrl !== settingV1Store.workspaceProfile.brandingLogo
+    state.logoUrl !== workspaceStore.currentWorkspace?.logo
   );
 });
 
@@ -166,37 +154,24 @@ const doUpdate = async (content: string) => {
     return;
   }
   state.loading = true;
+
+  const updateMasks: string[] = [];
+  const workspace = create(WorkspaceSchema, workspaceStore.currentWorkspace);
   try {
     if (
       state.workspaceTitle !== initialTitle.value &&
       state.workspaceTitle.trim() !== ""
     ) {
-      const name = workspaceStore.currentWorkspace?.name ?? "";
-      await workspaceServiceClientConnect.updateWorkspace(
-        create(UpdateWorkspaceRequestSchema, {
-          workspace: create(WorkspaceSchema, {
-            name,
-            title: state.workspaceTitle,
-          }),
-          updateMask: create(FieldMaskSchema, {
-            paths: ["title"],
-          }),
-        })
-      );
-      await workspaceStore.fetchWorkspaceList();
+      workspace.title = state.workspaceTitle;
+      updateMasks.push("title");
     }
 
-    if (state.logoUrl !== settingV1Store.workspaceProfile.brandingLogo) {
-      await settingV1Store.updateWorkspaceProfile({
-        payload: {
-          brandingLogo: content,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: ["value.workspace_profile.branding_logo"],
-        }),
-      });
-      actuatorV1Store.setLogo(content);
+    if (state.logoUrl !== workspaceStore.currentWorkspace?.logo) {
+      workspace.logo = content;
+      updateMasks.push("logo");
     }
+
+    await workspaceStore.updateWorkspace(workspace, updateMasks);
   } finally {
     state.loading = false;
   }
@@ -216,7 +191,7 @@ defineExpose({
   isDirty: allowSave,
   update: uploadLogo,
   revert: () => {
-    state.logoUrl = settingV1Store.workspaceProfile.brandingLogo;
+    state.logoUrl = workspaceStore.currentWorkspace?.logo;
     state.workspaceTitle = initialTitle.value;
   },
 });

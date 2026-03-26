@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	WorkspaceService_GetWorkspace_FullMethodName    = "/bytebase.v1.WorkspaceService/GetWorkspace"
 	WorkspaceService_ListWorkspaces_FullMethodName  = "/bytebase.v1.WorkspaceService/ListWorkspaces"
 	WorkspaceService_UpdateWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
 	WorkspaceService_GetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/GetIamPolicy"
@@ -31,6 +32,12 @@ const (
 //
 // WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceClient interface {
+	// Gets a workspace by name.
+	// Supports "workspaces/-" to resolve the current workspace:
+	// - Authenticated: uses the workspace from JWT context
+	// - Self-hosted unauthenticated: returns the single workspace
+	// - SaaS unauthenticated: returns minimal response
+	GetWorkspace(ctx context.Context, in *GetWorkspaceRequest, opts ...grpc.CallOption) (*Workspace, error)
 	// Lists all workspaces the current user is a member of.
 	ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error)
 	// Updates a workspace. Currently only title can be updated.
@@ -49,6 +56,16 @@ type workspaceServiceClient struct {
 
 func NewWorkspaceServiceClient(cc grpc.ClientConnInterface) WorkspaceServiceClient {
 	return &workspaceServiceClient{cc}
+}
+
+func (c *workspaceServiceClient) GetWorkspace(ctx context.Context, in *GetWorkspaceRequest, opts ...grpc.CallOption) (*Workspace, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Workspace)
+	err := c.cc.Invoke(ctx, WorkspaceService_GetWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *workspaceServiceClient) ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error) {
@@ -97,6 +114,12 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 //
 // WorkspaceService manages workspace-level operations and profile.
 type WorkspaceServiceServer interface {
+	// Gets a workspace by name.
+	// Supports "workspaces/-" to resolve the current workspace:
+	// - Authenticated: uses the workspace from JWT context
+	// - Self-hosted unauthenticated: returns the single workspace
+	// - SaaS unauthenticated: returns minimal response
+	GetWorkspace(context.Context, *GetWorkspaceRequest) (*Workspace, error)
 	// Lists all workspaces the current user is a member of.
 	ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error)
 	// Updates a workspace. Currently only title can be updated.
@@ -117,6 +140,9 @@ type WorkspaceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedWorkspaceServiceServer struct{}
 
+func (UnimplementedWorkspaceServiceServer) GetWorkspace(context.Context, *GetWorkspaceRequest) (*Workspace, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWorkspace not implemented")
+}
 func (UnimplementedWorkspaceServiceServer) ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListWorkspaces not implemented")
 }
@@ -148,6 +174,24 @@ func RegisterWorkspaceServiceServer(s grpc.ServiceRegistrar, srv WorkspaceServic
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&WorkspaceService_ServiceDesc, srv)
+}
+
+func _WorkspaceService_GetWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).GetWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_GetWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).GetWorkspace(ctx, req.(*GetWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkspaceService_ListWorkspaces_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -229,6 +273,10 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.WorkspaceService",
 	HandlerType: (*WorkspaceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetWorkspace",
+			Handler:    _WorkspaceService_GetWorkspace_Handler,
+		},
 		{
 			MethodName: "ListWorkspaces",
 			Handler:    _WorkspaceService_ListWorkspaces_Handler,

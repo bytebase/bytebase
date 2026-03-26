@@ -1501,6 +1501,21 @@
             </ul>
           </li>
         
+          
+          <li>
+            <a href="#store%2fworkspace.proto">store/workspace.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.WorkspacePayload"><span class="badge">M</span>WorkspacePayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
         <li><a href="#scalar-value-types">Scalar Value Types</a></li>
       </ul>
     </div>
@@ -12345,13 +12360,6 @@ Requires ENTERPRISE license. </p></td>
                 </tr>
               
                 <tr>
-                  <td>branding_logo</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branding logo as a data URI (e.g. data:image/png;base64,...). </p></td>
-                </tr>
-              
-                <tr>
                   <td>password_restriction</td>
                   <td><a href="#bytebase.store.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
@@ -14085,6 +14093,51 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
                   <td>repeated</td>
                   <td><p>The folder path for a worksheet.
 For example, if the folders is [A, B, C], means the worksheet is in the A/B/C subfolder. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/workspace.proto">store/workspace.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.WorkspacePayload">WorkspacePayload</h3>
+        <p>WorkspacePayload stores workspace-level metadata.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branding_logo</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

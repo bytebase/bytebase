@@ -93,40 +93,6 @@ func (s *ActuatorService) DeleteCache(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// GetResourcePackage gets the theme resources.
-// Serves both /v1/actuator/resources and /v1/{name=workspaces/*}/actuator/resources.
-func (s *ActuatorService) GetResourcePackage(
-	ctx context.Context,
-	req *connect.Request[v1pb.GetResourcePackageRequest],
-) (*connect.Response[v1pb.ResourcePackage], error) {
-	var workspaceID string
-	if !s.profile.SaaS {
-		ws, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		workspaceID = ws
-	} else if req.Msg.Name != "" {
-		reqWorkspaceID, err := common.GetWorkspaceID(req.Msg.Name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		workspaceID = reqWorkspaceID
-	}
-
-	pkg := &v1pb.ResourcePackage{}
-
-	if workspaceID != "" {
-		workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace profile setting"))
-		}
-		pkg.Logo = []byte(workspaceProfileSetting.BrandingLogo)
-	}
-
-	return connect.NewResponse(pkg), nil
-}
-
 // SetupSample sets up the sample project and instance.
 func (s *ActuatorService) SetupSample(
 	ctx context.Context,
@@ -266,7 +232,8 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 	if setting.Watermark {
 		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
 	}
-	if setting.BrandingLogo != "" {
+	ws, err := s.store.GetWorkspaceByID(ctx, workspaceID)
+	if err == nil && ws != nil && ws.Payload.GetBrandingLogo() != "" {
 		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
 	}
 
