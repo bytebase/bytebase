@@ -100,6 +100,16 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		}
 		query, err := e.cat.AnalyzeSelectStmt(selStmt)
 		if err != nil {
+			// Fall back to parse-tree extraction when analysis fails
+			// (e.g., nested function calls, parameter references).
+			fallbackResults := e.extractFallbackColumns(selStmt)
+			if len(fallbackResults) > 0 {
+				result := make([]base.SourceColumnSet, len(fallbackResults))
+				for j, fr := range fallbackResults {
+					result[j] = fr.SourceColumns
+				}
+				return result, nil
+			}
 			return nil, errors.Wrapf(err, "failed to analyze SQL function body")
 		}
 		return e.extractFuncLineage(query), nil
@@ -740,6 +750,30 @@ func (a *plpgsqlAnalyzer) collectTablesFromNode(node ast.Node, tables map[string
 		if v.Alias != nil && v.Alias.Aliasname != "" {
 			tables[strings.ToLower(v.Alias.Aliasname)] = resource
 		}
+	case *ast.RangeSubselect:
+		// For subquery aliases like (SELECT * FROM t) result, collect inner tables
+		// and map them under the alias so column refs can be resolved.
+		if v.Subquery != nil {
+			if subSel, ok := v.Subquery.(*ast.SelectStmt); ok {
+				innerTables := a.collectFromTables(subSel)
+				// Add inner tables to the outer fromTables.
+				for k, res := range innerTables {
+					if _, exists := tables[k]; !exists {
+						tables[k] = res
+					}
+				}
+				// If the subquery has an alias, also map all inner tables'
+				// columns as accessible through the alias.
+				if v.Alias != nil && v.Alias.Aliasname != "" {
+					alias := strings.ToLower(v.Alias.Aliasname)
+					// Use the first inner table as the primary source for column lookup.
+					for _, res := range innerTables {
+						tables[alias] = res
+						break
+					}
+				}
+			}
+		}
 	case *ast.JoinExpr:
 		if v.Larg != nil {
 			a.collectTablesFromNode(v.Larg, tables)
@@ -853,6 +887,10 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 		}
 	case *ast.JsonValueExpr:
 		a.extractColumnRefsFromExpr(v.RawExpr, fromTables, result)
+	case *ast.List:
+		for _, item := range v.Items {
+			a.extractColumnRefsFromExpr(item, fromTables, result)
+		}
 	default:
 	}
 }

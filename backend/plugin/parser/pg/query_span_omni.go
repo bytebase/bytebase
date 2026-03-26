@@ -39,6 +39,13 @@ type omniQuerySpanExtractor struct {
 	// funcPredicateColumns accumulates columns used in WHERE/JOIN conditions
 	// inside function bodies. Merged into the top-level QuerySpan.PredicateColumns.
 	funcPredicateColumns base.SourceColumnSet
+	// fallbackCTEMap holds CTE definitions during fallback column extraction.
+	// Set by extractFallbackColumns and used by extractColumnsFromRangeVar
+	// to resolve CTE references.
+	fallbackCTEMap map[string]*ast.SelectStmt
+	// fallbackCTEAliases holds CTE column aliases (e.g., WITH t1(cc1, cc2) AS (...)).
+	// Keyed by lowercase CTE name.
+	fallbackCTEAliases map[string][]string
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -813,6 +820,12 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 							result[k] = val
 						}
 					}
+				} else {
+					// Built-in function (no user proc) — trace lineage through
+					// the function's arguments. E.g., jsonb_each(a) depends on column a.
+					for _, arg := range fc.Args {
+						e.walkExpr(q, arg, result)
+					}
 				}
 			}
 		}
@@ -840,6 +853,9 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 	// Build CTE map so we can trace through CTEs to real tables.
 	cteMap := collectCTEDefinitions(selStmt)
 	analyzer.cteMap = cteMap
+	// Store cteMap on the extractor so extractColumnsFromRangeVar can resolve CTEs.
+	e.fallbackCTEMap = cteMap
+	e.fallbackCTEAliases = collectCTEAliases(selStmt)
 
 	// Check if SELECT has explicit target list (not *).
 	if selStmt.TargetList != nil {
@@ -882,7 +898,7 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 	if selStmt.FromClause != nil {
 		var allCols []base.QuerySpanResult
 		for _, item := range selStmt.FromClause.Items {
-			allCols = append(allCols, e.extractColumnsFromFromItem(item)...)
+			allCols = append(allCols, e.extractColumnsFromFromItem(item, analyzer, fromTables)...)
 		}
 		if len(allCols) > 0 {
 			return allCols
@@ -931,7 +947,9 @@ func figureResTargetName(rt *ast.ResTarget) string {
 // extractColumnsFromFromItem extracts column names from a FROM clause item.
 // For RangeVar (tables), it looks up the catalog for column names and lineage.
 // For RangeFunction, it uses function name or alias column names.
-func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node) []base.QuerySpanResult {
+// analyzer and fromTables are optional (may be nil) and used for resolving
+// function argument column refs in the fallback path.
+func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
 	if item == nil {
 		return nil
 	}
@@ -940,7 +958,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node) []bas
 	case *ast.RangeVar:
 		return e.extractColumnsFromRangeVar(v)
 	case *ast.RangeFunction:
-		return extractColumnsFromRangeFunction(v)
+		return e.extractColumnsFromRangeFunction(v, analyzer, fromTables)
 	case *ast.RangeSubselect:
 		if v.Alias != nil && v.Alias.Colnames != nil {
 			return extractColnamesFromAlias(v.Alias)
@@ -948,8 +966,8 @@ func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node) []bas
 		return nil
 	case *ast.JoinExpr:
 		var results []base.QuerySpanResult
-		results = append(results, e.extractColumnsFromFromItem(v.Larg)...)
-		results = append(results, e.extractColumnsFromFromItem(v.Rarg)...)
+		results = append(results, e.extractColumnsFromFromItem(v.Larg, analyzer, fromTables)...)
+		results = append(results, e.extractColumnsFromFromItem(v.Rarg, analyzer, fromTables)...)
 		return results
 	default:
 		return nil
@@ -957,7 +975,15 @@ func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node) []bas
 }
 
 // extractColumnsFromRangeVar looks up a table in the catalog and returns its columns with lineage.
+// If the table name matches a CTE in fallbackCTEMap, it extracts columns from the CTE definition.
 func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []base.QuerySpanResult {
+	// Check if this is a CTE reference.
+	if rv.Schemaname == "" && e.fallbackCTEMap != nil {
+		if cteSel, ok := e.fallbackCTEMap[strings.ToLower(rv.Relname)]; ok {
+			return e.extractColumnsFromCTE(rv.Relname, cteSel)
+		}
+	}
+
 	schema := rv.Schemaname
 	if schema == "" && len(e.searchPath) > 0 {
 		schema = e.searchPath[0]
@@ -984,12 +1010,195 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []
 	return results
 }
 
-// extractColumnsFromRangeFunction extracts columns from a function in FROM clause.
-func extractColumnsFromRangeFunction(rf *ast.RangeFunction) []base.QuerySpanResult {
-	if rf.Alias != nil && rf.Alias.Colnames != nil && len(rf.Alias.Colnames.Items) > 0 {
-		return extractColnamesFromAlias(rf.Alias)
+// extractColumnsFromCTE extracts columns from a CTE definition.
+// For UNION CTEs, it uses the left branch (the non-recursive term) for column names
+// and merges lineage from both branches.
+func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *ast.SelectStmt) []base.QuerySpanResult {
+	if cteSel == nil {
+		return nil
 	}
-	return extractFuncColumnNames(rf, rf.Alias)
+
+	// Build a helper analyzer.
+	analyzer := &plpgsqlAnalyzer{
+		extractor: e,
+		scope:     newVariableScope(nil),
+		cteMap:    e.fallbackCTEMap,
+	}
+
+	// For UNION (recursive or not), use the left branch for column names
+	// and extract lineage from both branches.
+	if cteSel.Larg != nil {
+		leftResults := e.extractCTEBranchColumns(analyzer, cteSel.Larg)
+		rightResults := e.extractCTEBranchColumns(analyzer, cteSel.Rarg)
+
+		// Merge right-branch lineage into left-branch results.
+		for i := range leftResults {
+			if i < len(rightResults) {
+				for k, v := range rightResults[i].SourceColumns {
+					leftResults[i].SourceColumns[k] = v
+				}
+			}
+		}
+
+		// Look up CTE column aliases from the WithClause.
+		if aliases := e.getCTEColumnAliases(cteName); len(aliases) > 0 {
+			for i := range leftResults {
+				if i < len(aliases) {
+					leftResults[i].Name = aliases[i]
+				}
+			}
+		}
+
+		return leftResults
+	}
+
+	// Simple CTE (no UNION) — extract directly.
+	return e.extractCTEBranchColumns(analyzer, cteSel)
+}
+
+// extractCTEBranchColumns extracts column names and lineage from a single CTE branch.
+func (*omniQuerySpanExtractor) extractCTEBranchColumns(analyzer *plpgsqlAnalyzer, sel *ast.SelectStmt) []base.QuerySpanResult {
+	if sel == nil || sel.TargetList == nil {
+		return nil
+	}
+
+	fromTables := analyzer.collectFromTables(sel)
+
+	var results []base.QuerySpanResult
+	for _, item := range sel.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		name := rt.Name
+		if name == "" {
+			name = figureResTargetName(rt)
+		}
+		colSet := make(base.SourceColumnSet)
+		analyzer.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
+		results = append(results, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: colSet,
+		})
+	}
+	return results
+}
+
+// getCTEColumnAliases returns the column aliases defined on a CTE (e.g., t1(cc1, cc2, cc3)).
+func (e *omniQuerySpanExtractor) getCTEColumnAliases(cteName string) []string {
+	if e.fallbackCTEAliases == nil {
+		return nil
+	}
+	return e.fallbackCTEAliases[strings.ToLower(cteName)]
+}
+
+// collectCTEAliases extracts CTE column aliases from the WITH clause.
+func collectCTEAliases(selStmt *ast.SelectStmt) map[string][]string {
+	if selStmt == nil || selStmt.WithClause == nil {
+		return nil
+	}
+
+	aliasMap := make(map[string][]string)
+	for _, item := range selStmt.WithClause.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if cte.Aliascolnames == nil || len(cte.Aliascolnames.Items) == 0 {
+			continue
+		}
+		var aliases []string
+		for _, nameItem := range cte.Aliascolnames.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				aliases = append(aliases, s.Str)
+			}
+		}
+		if len(aliases) > 0 {
+			aliasMap[strings.ToLower(cte.Ctename)] = aliases
+		}
+	}
+	return aliasMap
+}
+
+// extractColumnsFromRangeFunction extracts columns from a function in FROM clause.
+// It first tries to look up user-defined functions in the catalog for lineage tracing.
+// analyzer and fromTables are optional and used for resolving function argument column refs.
+func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
+	// Try to resolve user-defined function for lineage tracing.
+	funcName := extractFuncNameFromRange(rf)
+	if funcName != "" && e.cat != nil {
+		// First try catalog lookup.
+		if proc := e.lookupUserProcByName(funcName); proc != nil {
+			outNames := getOutputParamNames(proc)
+			if len(outNames) > 0 {
+				bodySets := e.analyzeFunctionBody(proc)
+				var results []base.QuerySpanResult
+				for i, name := range outNames {
+					colSet := make(base.SourceColumnSet)
+					if i < len(bodySets) {
+						for k, v := range bodySets[i] {
+							colSet[k] = v
+						}
+					}
+					results = append(results, base.QuerySpanResult{
+						Name:          name,
+						SourceColumns: colSet,
+					})
+				}
+				return results
+			}
+		}
+		// Catalog lookup failed — try metadata (for RETURNS TABLE functions).
+		dummyAccesses := make(base.SourceColumnSet)
+		if metaResults := e.tryMetadataFuncLookup(funcName, dummyAccesses); metaResults != nil {
+			return metaResults
+		}
+	}
+
+	if rf.Alias != nil && rf.Alias.Colnames != nil && len(rf.Alias.Colnames.Items) > 0 {
+		// Even with alias column names, resolve function arg column refs for lineage.
+		results := extractColnamesFromAlias(rf.Alias)
+		e.enrichFuncResultsWithArgLineage(rf, analyzer, fromTables, results)
+		return results
+	}
+	results := extractFuncColumnNames(rf, rf.Alias)
+	e.enrichFuncResultsWithArgLineage(rf, analyzer, fromTables, results)
+	return results
+}
+
+// enrichFuncResultsWithArgLineage resolves column references from function arguments
+// and adds them as source columns to all function result columns.
+// For built-in functions like jsonb_each(a), the output depends on the input column a.
+func (*omniQuerySpanExtractor) enrichFuncResultsWithArgLineage(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource, results []base.QuerySpanResult) {
+	if analyzer == nil || fromTables == nil || rf.Functions == nil || len(results) == 0 {
+		return
+	}
+
+	// Collect source columns from all function arguments.
+	argSources := make(base.SourceColumnSet)
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Args == nil {
+			continue
+		}
+		for _, arg := range fc.Args.Items {
+			analyzer.extractColumnRefsFromExpr(arg, fromTables, argSources)
+		}
+	}
+
+	// Apply argument source columns to all result columns.
+	for i := range results {
+		for k, v := range argSources {
+			if results[i].SourceColumns == nil {
+				results[i].SourceColumns = make(base.SourceColumnSet)
+			}
+			results[i].SourceColumns[k] = v
+		}
+	}
 }
 
 // extractColnamesFromAlias extracts column names from an alias's column name list.
