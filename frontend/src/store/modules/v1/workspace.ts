@@ -70,8 +70,10 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
         }),
       })
     );
-    await fetchWorkspaceList();
-
+    const index = workspaceList.value.findIndex(ws => ws.name === updated.name)
+    if (index >= 0) {
+      workspaceList.value[0] = updated
+    }
     currentWorkspace.value = updated;
   };
 
