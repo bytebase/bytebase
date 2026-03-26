@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { NButton, NMention } from "naive-ui";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
@@ -57,6 +58,8 @@ const findButtonByText = (wrapper: ReturnType<typeof mount>, text: string) => {
 };
 const flushPromises = async () => {
   await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => window.setTimeout(resolve, 0));
   await Promise.resolve();
 };
 
@@ -128,6 +131,29 @@ describe("AgentInput", () => {
     document.title = "Demo Page";
   });
 
+  test("renders the composer as a Naive UI textarea with a primary send button", () => {
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const inputRow = wrapper.find("[data-agent-input-row]");
+    expect(inputRow.exists()).toBe(true);
+
+    const input = wrapper.findComponent(NMention);
+    expect(input.exists()).toBe(true);
+    expect(input.props("type")).toBe("textarea");
+    expect(input.props("placement")).toBe("top-start");
+    expect(input.props("to")).toBe("body");
+
+    const sendButton = wrapper.findComponent(NButton);
+    expect(sendButton.exists()).toBe(true);
+    expect(sendButton.props("type")).toBe("primary");
+    expect(sendButton.text()).toBe("Send");
+    expect(sendButton.classes()).not.toContain("h-[38px]");
+  });
+
   test("submits pending input as a tool result and resumes the same chat", async () => {
     const store = useAgentStore();
     const chatId = store.currentChatId!;
@@ -175,7 +201,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("demo-project");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     const toolMessages = store
@@ -232,7 +258,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("demo-project");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
@@ -358,7 +384,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("navigate first");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
     expect(store.getChat(chatId)?.page).toEqual({
@@ -375,7 +401,7 @@ describe("AgentInput", () => {
     document.title = "Elsewhere Page";
 
     await wrapper.find("textarea").setValue("continue");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(1, {
@@ -716,7 +742,7 @@ describe("AgentInput", () => {
     expect(getTextareaValue(wrapper)).toBe("demo-project");
   });
 
-  test("shows filtered DOM ref suggestions and inserts the selected ref", async () => {
+  test("filters DOM ref mention options and keeps bracket insertion semantics", async () => {
     mockLazyExtractDomRefSuggestions.mockResolvedValue([
       createDomRefSuggestion({
         ref: "e1",
@@ -739,27 +765,29 @@ describe("AgentInput", () => {
     });
 
     const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
     await textarea.setValue("Click @sav");
     (textarea.element as HTMLTextAreaElement).setSelectionRange(10, 10);
-    await textarea.trigger("select");
+    await textarea.trigger("keyup");
     await flushPromises();
 
     expect(mockLazyExtractDomRefSuggestions).toHaveBeenCalled();
-    const items = wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]');
-    expect(items).toHaveLength(1);
-    expect(items[0].text()).toContain("[e1]");
-    expect(items[0].text()).toContain("Save changes");
+    const options = mention.props("options") as {
+      value: string;
+      label: string;
+      suggestion: DomRefSuggestion;
+    }[];
+    expect(options).toHaveLength(1);
+    expect(options[0]?.value).toBe("[e1]");
+    expect(options[0]?.suggestion.label).toBe("Save changes");
 
-    await textarea.trigger("keydown", { key: "Enter" });
+    mention.vm.$emit("update:value", "Click [e1] ");
     await flushPromises();
 
     expect(getTextareaValue(wrapper)).toBe("Click [e1] ");
-    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
-      false
-    );
   });
 
-  test("uses arrow keys to change the active DOM ref suggestion before selecting", async () => {
+  test("keeps DOM ref mention options ordered for keyboard navigation", async () => {
     mockLazyExtractDomRefSuggestions.mockResolvedValue([
       createDomRefSuggestion({
         ref: "e1",
@@ -782,19 +810,78 @@ describe("AgentInput", () => {
     });
 
     const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
     await textarea.setValue("Use @");
     (textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5);
-    await textarea.trigger("select");
+    await textarea.trigger("keyup");
     await flushPromises();
 
-    await textarea.trigger("keydown", { key: "ArrowDown" });
-    await textarea.trigger("keydown", { key: "Enter" });
-    await flushPromises();
-
-    expect(getTextareaValue(wrapper)).toBe("Use [e2] ");
+    const options = mention.props("options") as { value: string }[];
+    expect(options.map((option) => option.value)).toEqual(["[e1]", "[e2]"]);
   });
 
-  test("does not send while the DOM ref menu is open and escape closes it", async () => {
+  test("keeps all DOM ref mention options accessible and scrollable", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue(
+      Array.from({ length: 10 }, (_, index) =>
+        createDomRefSuggestion({
+          ref: `e${index + 1}`,
+          tag: "BUTTON",
+          role: "button",
+          label: `Option ${index + 1}`,
+        })
+      )
+    );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
+    await textarea.setValue("Use @");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5);
+    await textarea.trigger("keyup");
+    await flushPromises();
+
+    const options = mention.props("options") as { value: string }[];
+    expect(options).toHaveLength(10);
+    expect(options[0]?.value).toBe("[e1]");
+    expect(options[9]?.value).toBe("[e10]");
+    expect(mention.props("scrollbarProps")).toEqual({
+      containerStyle: { maxHeight: "320px" },
+    });
+  });
+
+  test("keeps the active DOM ref option scrolled into view during keyboard navigation", async () => {
+    const scrollIntoView = vi.fn();
+    const pendingOption = document.createElement("div");
+    pendingOption.className = "n-base-select-option--pending";
+    pendingOption.scrollIntoView = scrollIntoView;
+    const menu = document.createElement("div");
+    menu.className = "n-base-select-menu";
+    menu.appendChild(pendingOption);
+    document.body.appendChild(menu);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
+    mention.vm.$emit("update:show", true);
+    await textarea.trigger("keydown", { key: "ArrowDown" });
+    await flushPromises();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+
+    menu.remove();
+  });
+
+  test("does not send when Enter selects a DOM ref mention", async () => {
     mockRunAgentLoop.mockResolvedValue({
       kind: "completed",
       text: "Done",
@@ -816,16 +903,19 @@ describe("AgentInput", () => {
     });
 
     const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
     await textarea.setValue("Inspect @save");
     (textarea.element as HTMLTextAreaElement).setSelectionRange(13, 13);
-    await textarea.trigger("select");
+    await textarea.trigger("keyup");
     await flushPromises();
 
-    await textarea.trigger("keydown", { key: "Escape" });
+    mention.vm.$emit("update:show", true);
+    await textarea.trigger("keydown", { key: "Enter" });
+    mention.vm.$emit("update:value", "Inspect [e1] ");
+    mention.vm.$emit("update:show", false);
     await flushPromises();
-    expect(wrapper.find('[data-testid="dom-ref-autocomplete"]').exists()).toBe(
-      false
-    );
+    expect(mockRunAgentLoop).not.toHaveBeenCalled();
+    expect(getTextareaValue(wrapper)).toBe("Inspect [e1] ");
 
     await textarea.trigger("keydown", { key: "Enter" });
     await flushPromises();
