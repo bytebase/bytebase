@@ -836,7 +836,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ia
+        - name: approver_emails
           sourcecolumns:
             - server: ""
               database: db
@@ -846,7 +846,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ir
+        - name: releaser_emails
           sourcecolumns:
             - server: ""
               database: db

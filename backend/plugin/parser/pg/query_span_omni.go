@@ -862,18 +862,25 @@ func figureResTargetName(rt *ast.ResTarget) string {
 		return ""
 	}
 	if cr, ok := rt.Val.(*ast.ColumnRef); ok && cr.Fields != nil {
+		// Use the last String field — for "ia.approver_emails", return "approver_emails".
+		// For unqualified "col", return "col". Skip A_Star nodes.
+		name := ""
 		for _, f := range cr.Fields.Items {
 			if s, ok := f.(*ast.String); ok {
-				return s.Str
+				name = s.Str
 			}
 		}
+		return name
 	}
 	if fc, ok := rt.Val.(*ast.FuncCall); ok && fc.Funcname != nil {
+		// Use the last name part — for "pg_catalog.func", return "func".
+		name := ""
 		for _, f := range fc.Funcname.Items {
 			if s, ok := f.(*ast.String); ok {
-				return s.Str
+				name = s.Str
 			}
 		}
+		return name
 	}
 	return ""
 }
