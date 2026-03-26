@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type InputInst, NButton, NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -65,7 +66,8 @@ const isSendDisabled = computed(() => {
   return !input.value.trim();
 });
 
-const inputRef = ref<HTMLTextAreaElement>();
+const inputInstRef = ref<InputInst | null>(null);
+const getTextareaEl = () => inputInstRef.value?.textareaElRef ?? null;
 const domRefSuggestions = ref<DomRefSuggestion[]>([]);
 const isDomRefMenuOpen = ref(false);
 const activeDomRefIndex = ref(0);
@@ -118,15 +120,27 @@ const activeDomRefQuery = computed(() =>
 
 const filteredDomRefSuggestions = computed(() => {
   const query = activeDomRefQuery.value?.query ?? "";
-  return domRefSuggestions.value
-    .filter((suggestion: DomRefSuggestion) =>
-      matchDomRefSuggestion(suggestion, query)
-    )
-    .slice(0, DOM_REF_SUGGESTION_LIMIT);
+  return domRefSuggestions.value.filter((suggestion: DomRefSuggestion) =>
+    matchDomRefSuggestion(suggestion, query)
+  );
 });
+const domRefSuggestionPageStart = computed(
+  () =>
+    Math.floor(activeDomRefIndex.value / DOM_REF_SUGGESTION_LIMIT) *
+    DOM_REF_SUGGESTION_LIMIT
+);
+const visibleDomRefSuggestions = computed(() =>
+  filteredDomRefSuggestions.value.slice(
+    domRefSuggestionPageStart.value,
+    domRefSuggestionPageStart.value + DOM_REF_SUGGESTION_LIMIT
+  )
+);
+const activeVisibleDomRefIndex = computed(
+  () => activeDomRefIndex.value - domRefSuggestionPageStart.value
+);
 
 const updateSelection = () => {
-  const textarea = inputRef.value;
+  const textarea = getTextareaEl();
   if (!textarea) {
     return;
   }
@@ -168,7 +182,7 @@ const loadDomRefSuggestions = async () => {
 
 const selectDomRefSuggestion = async (suggestion: DomRefSuggestion) => {
   const query = activeDomRefQuery.value;
-  const textarea = inputRef.value;
+  const textarea = getTextareaEl();
   if (!query || !textarea) {
     return;
   }
@@ -226,7 +240,13 @@ const handleTextareaKeydown = async (event: KeyboardEvent) => {
     }
   }
 
-  if (event.key === "Enter" && !event.shiftKey) {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  ) {
     event.preventDefault();
     await send();
   }
@@ -558,6 +578,19 @@ watch(
 );
 
 watch(
+  () => filteredDomRefSuggestions.value.length,
+  (length) => {
+    if (length === 0) {
+      activeDomRefIndex.value = 0;
+      return;
+    }
+    if (activeDomRefIndex.value >= length) {
+      activeDomRefIndex.value = length - 1;
+    }
+  }
+);
+
+watch(
   () => isCurrentChatRunning.value,
   (running) => {
     if (running) {
@@ -641,64 +674,77 @@ watch(
       </button>
     </div>
 
-    <div v-else class="flex items-end gap-x-2">
-      <div class="relative min-w-0 flex-1">
-        <textarea
-          ref="inputRef"
-          v-model="input"
-          rows="1"
-          :placeholder="inputPlaceholder"
-          class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-          :disabled="isCurrentChatRunning"
-          @click="updateSelection"
-          @blur="closeDomRefMenu"
-          @input="updateSelection"
-          @keyup="updateSelection"
-          @select="updateSelection"
-          @keydown.exact="handleTextareaKeydown"
-        />
-        <div
-          v-if="isDomRefMenuOpen"
-          data-testid="dom-ref-autocomplete"
-          class="absolute bottom-full left-0 z-10 mb-2 w-full overflow-hidden rounded-md border bg-white shadow-lg"
-        >
-          <button
-            v-for="(suggestion, index) in filteredDomRefSuggestions"
-            :key="suggestion.ref"
-            type="button"
-            data-testid="dom-ref-autocomplete-item"
-            class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-gray-50"
-            :class="index === activeDomRefIndex ? 'bg-blue-50' : 'bg-white'"
-            @mousedown.prevent="selectDomRefSuggestion(suggestion)"
+    <div v-else class="relative" data-agent-input-row>
+      <NInput
+        ref="inputInstRef"
+        v-model:value="input"
+        type="textarea"
+        size="small"
+        class="w-full"
+        :autosize="{
+          minRows: 1,
+          maxRows: 6,
+        }"
+        :resizable="false"
+        :placeholder="inputPlaceholder"
+        :disabled="isCurrentChatRunning"
+        :input-props="{
+          onSelect: updateSelection,
+        }"
+        @blur="closeDomRefMenu"
+        @click="updateSelection"
+        @input="updateSelection"
+        @keyup="updateSelection"
+        @keydown="handleTextareaKeydown"
+      >
+        <template #suffix>
+          <NButton
+            v-if="agentStore.loading"
+            type="error"
+            size="small"
+            class="whitespace-nowrap"
+            @click="agentStore.cancel(currentChat?.id)"
           >
-            <div class="flex items-center gap-x-2 text-gray-800">
-              <span class="font-medium">[{{ suggestion.ref }}]</span>
-              <span class="truncate">{{ suggestion.label }}</span>
-            </div>
-            <div
-              v-if="formatDomRefSuggestionMeta(suggestion)"
-              class="mt-1 text-xs text-gray-500"
-            >
-              {{ formatDomRefSuggestionMeta(suggestion) }}
-            </div>
-          </button>
-        </div>
+            {{ $t("agent.stop") }}
+          </NButton>
+          <NButton
+            v-else
+            type="primary"
+            size="small"
+            class="whitespace-nowrap"
+            :disabled="isSendDisabled"
+            @click="send"
+          >
+            {{ sendLabel }}
+          </NButton>
+        </template>
+      </NInput>
+      <div
+        v-if="isDomRefMenuOpen"
+        data-testid="dom-ref-autocomplete"
+        class="absolute bottom-full left-0 z-10 mb-2 w-full overflow-hidden rounded-md border bg-white shadow-lg"
+      >
+        <button
+          v-for="(suggestion, index) in visibleDomRefSuggestions"
+          :key="suggestion.ref"
+          type="button"
+          data-testid="dom-ref-autocomplete-item"
+          class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-gray-50"
+          :class="index === activeVisibleDomRefIndex ? 'bg-blue-50' : 'bg-white'"
+          @mousedown.prevent="selectDomRefSuggestion(suggestion)"
+        >
+          <div class="flex items-center gap-x-2 text-gray-800">
+            <span class="font-medium">[{{ suggestion.ref }}]</span>
+            <span class="truncate">{{ suggestion.label }}</span>
+          </div>
+          <div
+            v-if="formatDomRefSuggestionMeta(suggestion)"
+            class="mt-1 text-xs text-gray-500"
+          >
+            {{ formatDomRefSuggestionMeta(suggestion) }}
+          </div>
+        </button>
       </div>
-      <button
-        v-if="agentStore.loading"
-        class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
-        @click="agentStore.cancel(currentChat?.id)"
-      >
-        {{ $t("agent.stop") }}
-      </button>
-      <button
-        v-else
-        class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
-        :disabled="isSendDisabled"
-        @click="send"
-      >
-        {{ sendLabel }}
-      </button>
     </div>
   </div>
 </template>

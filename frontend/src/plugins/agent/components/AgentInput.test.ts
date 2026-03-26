@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { NButton, NInput } from "naive-ui";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createI18n } from "vue-i18n";
@@ -128,6 +129,27 @@ describe("AgentInput", () => {
     document.title = "Demo Page";
   });
 
+  test("renders the composer as a Naive UI textarea with a primary send button", () => {
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const inputRow = wrapper.find("[data-agent-input-row]");
+    expect(inputRow.exists()).toBe(true);
+
+    const input = wrapper.findComponent(NInput);
+    expect(input.exists()).toBe(true);
+    expect(input.props("type")).toBe("textarea");
+
+    const sendButton = wrapper.findComponent(NButton);
+    expect(sendButton.exists()).toBe(true);
+    expect(sendButton.props("type")).toBe("primary");
+    expect(sendButton.text()).toBe("Send");
+    expect(sendButton.classes()).not.toContain("h-[38px]");
+  });
+
   test("submits pending input as a tool result and resumes the same chat", async () => {
     const store = useAgentStore();
     const chatId = store.currentChatId!;
@@ -175,7 +197,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("demo-project");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     const toolMessages = store
@@ -232,7 +254,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("demo-project");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenCalledWith({
@@ -358,7 +380,7 @@ describe("AgentInput", () => {
     });
 
     await wrapper.find("textarea").setValue("navigate first");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
     await flushPromises();
 
     expect(store.getChat(chatId)?.page).toEqual({
@@ -375,7 +397,7 @@ describe("AgentInput", () => {
     document.title = "Elsewhere Page";
 
     await wrapper.find("textarea").setValue("continue");
-    await wrapper.find("button").trigger("click");
+    await findButtonByText(wrapper, "Reply")!.trigger("click");
     await flushPromises();
 
     expect(mockBuildSystemPrompt).toHaveBeenNthCalledWith(1, {
@@ -792,6 +814,53 @@ describe("AgentInput", () => {
     await flushPromises();
 
     expect(getTextareaValue(wrapper)).toBe("Use [e2] ");
+  });
+
+  test("pages DOM ref suggestions when moving past the visible limit with arrow keys", async () => {
+    mockLazyExtractDomRefSuggestions.mockResolvedValue(
+      Array.from({ length: 10 }, (_, index) =>
+        createDomRefSuggestion({
+          ref: `e${index + 1}`,
+          tag: "BUTTON",
+          role: "button",
+          label: `Option ${index + 1}`,
+        })
+      )
+    );
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("Use @");
+    (textarea.element as HTMLTextAreaElement).setSelectionRange(5, 5);
+    await textarea.trigger("select");
+    await flushPromises();
+
+    expect(
+      wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]')
+    ).toHaveLength(8);
+    expect(
+      wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]')[0].text()
+    ).toContain("[e1]");
+
+    for (let i = 0; i < 8; i++) {
+      await textarea.trigger("keydown", { key: "ArrowDown" });
+    }
+    await flushPromises();
+
+    const items = wrapper.findAll('[data-testid="dom-ref-autocomplete-item"]');
+    expect(items).toHaveLength(2);
+    expect(items[0].text()).toContain("[e9]");
+    expect(items[1].text()).toContain("[e10]");
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(getTextareaValue(wrapper)).toBe("Use [e9] ");
   });
 
   test("does not send while the DOM ref menu is open and escape closes it", async () => {

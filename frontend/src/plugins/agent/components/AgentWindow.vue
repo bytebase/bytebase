@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArchiveIcon, InboxIcon } from "lucide-vue-next";
 import { NInput, NPopconfirm } from "naive-ui";
 import {
   computed,
@@ -112,16 +113,16 @@ const windowStyle = computed(() => ({
   height: `${displayWindowState.value.size.height}px`,
 }));
 
-const showArchivedChats = ref(false);
+const showArchivedOnly = ref(false);
 const displayedChats = computed(() =>
-  agentStore.orderedChats.filter((chat) => {
-    return (
-      showArchivedChats.value ||
-      !chat.archived ||
-      chat.id === agentStore.currentChatId
-    );
-  })
+  agentStore.orderedChats.filter(
+    (chat) => chat.archived === showArchivedOnly.value
+  )
 );
+const isCurrentChatInDisplayedMode = computed(() => {
+  const chat = agentStore.currentChat;
+  return !!chat && chat.archived === showArchivedOnly.value;
+});
 const currentChatStatusLabel = computed(() => {
   const chat = agentStore.currentChat;
   if (!chat) {
@@ -209,8 +210,42 @@ const getChatLabel = (chat: AgentChatRecord) => {
     : baseLabel;
 };
 
-function toggleArchivedChats() {
-  showArchivedChats.value = !showArchivedChats.value;
+function selectFirstDisplayedChat() {
+  const firstDisplayedChat = displayedChats.value[0];
+  if (!firstDisplayedChat || !agentStore.canSelectChat(firstDisplayedChat.id)) {
+    return false;
+  }
+  agentStore.setCurrentChat(firstDisplayedChat.id);
+  return agentStore.currentChatId === firstDisplayedChat.id;
+}
+
+function ensureCurrentChatMatchesDisplayedMode(
+  options: { fallbackToActiveWhenEmpty?: boolean } = {}
+) {
+  if (isCurrentChatInDisplayedMode.value) {
+    return;
+  }
+  if (selectFirstDisplayedChat()) {
+    return;
+  }
+  if (showArchivedOnly.value) {
+    if (!options.fallbackToActiveWhenEmpty) {
+      return;
+    }
+    showArchivedOnly.value = false;
+    if (isCurrentChatInDisplayedMode.value || selectFirstDisplayedChat()) {
+      return;
+    }
+  }
+  if (agentStore.hasRunningChat) {
+    return;
+  }
+  agentStore.createChat({ page: getCurrentPageSnapshot() });
+}
+
+function toggleChatListMode() {
+  showArchivedOnly.value = !showArchivedOnly.value;
+  ensureCurrentChatMatchesDisplayedMode();
 }
 
 const isRenamingCurrentChat = ref(false);
@@ -280,9 +315,11 @@ function toggleArchiveCurrentChat() {
   }
   if (chat.archived) {
     agentStore.unarchiveChat(chat.id);
+    ensureCurrentChatMatchesDisplayedMode({ fallbackToActiveWhenEmpty: true });
     return;
   }
   agentStore.archiveChat(chat.id);
+  ensureCurrentChatMatchesDisplayedMode();
 }
 
 function deleteCurrentChat() {
@@ -291,6 +328,7 @@ function deleteCurrentChat() {
     return;
   }
   agentStore.deleteChat(chat.id);
+  ensureCurrentChatMatchesDisplayedMode({ fallbackToActiveWhenEmpty: true });
 }
 
 const isDragging = ref(false);
@@ -654,48 +692,68 @@ onBeforeUnmount(() => {
 
           <div class="border-t border-gray-200 px-3 py-3">
             <div class="flex flex-col gap-y-2">
-              <div class="flex flex-wrap gap-x-2 gap-y-2">
+              <div
+                class="flex flex-wrap gap-x-2 gap-y-2"
+                data-agent-chat-sidebar-actions
+              >
+                <template v-if="isCurrentChatInDisplayedMode">
+                  <button
+                    v-if="showArchivedOnly"
+                    class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                    data-agent-unarchive-chat
+                    @click="toggleArchiveCurrentChat"
+                  >
+                    {{ $t("agent.unarchive-chat") }}
+                  </button>
+                  <NPopconfirm
+                    v-else
+                    @positive-click="toggleArchiveCurrentChat"
+                  >
+                    <template #trigger>
+                      <button
+                        class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                        data-agent-archive-chat
+                      >
+                        {{ $t("agent.archive-chat") }}
+                      </button>
+                    </template>
+                    {{ $t("agent.archive-chat-confirmation") }}
+                  </NPopconfirm>
+                  <NPopconfirm
+                    v-if="showArchivedOnly"
+                    @positive-click="deleteCurrentChat"
+                  >
+                    <template #trigger>
+                      <button
+                        class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                        data-agent-delete-chat
+                      >
+                        {{ $t("agent.delete-chat") }}
+                      </button>
+                    </template>
+                    {{ $t("agent.delete-chat-confirmation") }}
+                  </NPopconfirm>
+                </template>
                 <button
-                  v-if="agentStore.currentChat?.archived"
-                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="toggleArchiveCurrentChat"
+                  class="ml-auto inline-flex items-center rounded-md border p-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  :aria-label="
+                    showArchivedOnly
+                      ? $t('agent.archived-only-chats')
+                      : $t('agent.active-only-chats')
+                  "
+                  :title="
+                    showArchivedOnly
+                      ? $t('agent.archived-only-chats')
+                      : $t('agent.active-only-chats')
+                  "
+                  data-agent-chat-list-mode
+                  @click="toggleChatListMode"
                 >
-                  {{ $t("agent.unarchive-chat") }}
-                </button>
-                <NPopconfirm
-                  v-else
-                  @positive-click="toggleArchiveCurrentChat"
-                >
-                  <template #trigger>
-                    <button
-                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                    >
-                      {{ $t("agent.archive-chat") }}
-                    </button>
-                  </template>
-                  {{ $t("agent.archive-chat-confirmation") }}
-                </NPopconfirm>
-                <NPopconfirm
-                  @positive-click="deleteCurrentChat"
-                >
-                  <template #trigger>
-                    <button
-                      class="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                    >
-                      {{ $t("agent.delete-chat") }}
-                    </button>
-                  </template>
-                  {{ $t("agent.delete-chat-confirmation") }}
-                </NPopconfirm>
-                <button
-                  class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
-                  @click="toggleArchivedChats"
-                >
-                  {{
-                    showArchivedChats
-                      ? $t("agent.hide-archived-chats")
-                      : $t("agent.show-archived-chats")
-                  }}
+                  <component
+                    :is="showArchivedOnly ? ArchiveIcon : InboxIcon"
+                    class="h-3.5 w-3.5"
+                    aria-hidden="true"
+                  />
                 </button>
               </div>
             </div>

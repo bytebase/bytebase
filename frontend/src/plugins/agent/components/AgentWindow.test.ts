@@ -52,8 +52,8 @@ const i18n = createI18n({
         "archive-chat": "Archive",
         "unarchive-chat": "Unarchive",
         "delete-chat": "Delete",
-        "show-archived-chats": "Show archived chats",
-        "hide-archived-chats": "Hide archived chats",
+        "active-only-chats": "Active only",
+        "archived-only-chats": "Archived only",
         "archive-chat-confirmation": "Archive this chat?",
         "delete-chat-confirmation": "Delete this chat?",
         "chat-default-title": "New chat",
@@ -268,27 +268,94 @@ describe("AgentWindow", () => {
     expect(wrapper.find("aside").attributes("style")).toContain("width: 180px");
   });
 
-  test("archives and deletes chats through popconfirm", async () => {
+  test("shows mode-specific sidebar actions for active and archived chats", async () => {
     const { store, wrapper } = mountAgentWindow();
     const originalChatId = store.currentChatId!;
     const secondChat = store.createChat({ title: "Disposable thread" });
     store.setCurrentChat(secondChat.id);
     await nextTick();
 
-    const popconfirms = wrapper.findAllComponents(NPopconfirm);
-    expect(popconfirms).toHaveLength(2);
+    const actionArea = () => wrapper.find("[data-agent-chat-sidebar-actions]");
+    const modeToggle = () => wrapper.find("[data-agent-chat-list-mode]");
+    const buttonLabels = () =>
+      actionArea()
+        .findAll("button")
+        .map((button) => button.text());
 
-    await popconfirms[0].vm.$emit("positive-click");
+    expect(modeToggle().text()).toBe("");
+    expect(modeToggle().attributes("aria-label")).toBe("Active only");
+    expect(buttonLabels()).toEqual(["Archive", ""]);
+    expect(
+      actionArea()
+        .findAll("button")
+        .at(-1)
+        ?.attributes("data-agent-chat-list-mode")
+    ).toBe("");
+    expect(modeToggle().classes()).toContain("ml-auto");
+    expect(modeToggle().find("svg").exists()).toBe(true);
+    expect(wrapper.findAllComponents(NPopconfirm)).toHaveLength(1);
+
+    await wrapper.findComponent(NPopconfirm).vm.$emit("positive-click");
     await nextTick();
+
     expect(store.getChat(secondChat.id)?.archived).toBe(true);
+    expect(store.currentChatId).toBe(originalChatId);
 
-    store.setCurrentChat(originalChatId);
-    await nextTick();
-    const deletePopconfirm = wrapper.findAllComponents(NPopconfirm)[1];
-    await deletePopconfirm.vm.$emit("positive-click");
+    await modeToggle().trigger("click");
     await nextTick();
 
-    expect(store.getChat(originalChatId)).toBeNull();
+    expect(modeToggle().text()).toBe("");
+    expect(modeToggle().attributes("aria-label")).toBe("Archived only");
     expect(store.currentChatId).toBe(secondChat.id);
+    expect(buttonLabels()).toEqual(["Unarchive", "Delete", ""]);
+    expect(
+      actionArea()
+        .findAll("button")
+        .at(-1)
+        ?.attributes("data-agent-chat-list-mode")
+    ).toBe("");
+    expect(modeToggle().classes()).toContain("ml-auto");
+    expect(modeToggle().find("svg").exists()).toBe(true);
+    expect(wrapper.findAllComponents(NPopconfirm)).toHaveLength(1);
+  });
+
+  test("unarchives and deletes chats from archived-only mode", async () => {
+    const { store, wrapper } = mountAgentWindow();
+    const originalChatId = store.currentChatId!;
+    const archivedChat = store.createChat({ title: "Disposable thread" });
+    store.setCurrentChat(archivedChat.id);
+    await nextTick();
+
+    await wrapper.findComponent(NPopconfirm).vm.$emit("positive-click");
+    await nextTick();
+    await wrapper.find("[data-agent-chat-list-mode]").trigger("click");
+    await nextTick();
+
+    await wrapper.find("[data-agent-unarchive-chat]").trigger("click");
+    await nextTick();
+
+    expect(store.getChat(archivedChat.id)?.archived).toBe(false);
+    expect(
+      wrapper.find("[data-agent-chat-list-mode]").attributes("aria-label")
+    ).toBe("Active only");
+    expect(wrapper.find("[data-agent-chat-list-mode]").text()).toBe("");
+    expect(store.currentChatId).toBe(archivedChat.id);
+
+    await wrapper.findComponent(NPopconfirm).vm.$emit("positive-click");
+    await nextTick();
+    await wrapper.find("[data-agent-chat-list-mode]").trigger("click");
+    await nextTick();
+
+    expect(store.currentChatId).toBe(archivedChat.id);
+
+    await wrapper.findComponent(NPopconfirm).vm.$emit("positive-click");
+    await nextTick();
+
+    expect(store.getChat(archivedChat.id)).toBeNull();
+    expect(
+      wrapper.find("[data-agent-chat-list-mode]").attributes("aria-label")
+    ).toBe("Active only");
+    expect(wrapper.find("[data-agent-chat-list-mode]").text()).toBe("");
+    expect(store.currentChatId).toBe(originalChatId);
   });
 });
