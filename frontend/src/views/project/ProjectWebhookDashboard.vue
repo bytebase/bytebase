@@ -53,7 +53,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";
 import type { Webhook } from "@/types/proto-es/v1/project_service_pb";
 import { Activity_Type } from "@/types/proto-es/v1/project_service_pb";
-import { projectWebhookV1Slug } from "@/utils";
+import { extractProjectWebhookID } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -84,7 +84,7 @@ const rowProps = (webhook: Webhook) => {
       router.push({
         name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
         params: {
-          projectWebhookSlug: projectWebhookV1Slug(webhook),
+          webhookResourceId: extractProjectWebhookID(webhook.name),
         },
       });
     },

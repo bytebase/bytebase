@@ -326,7 +326,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
           {
-            path: ":projectWebhookSlug",
+            path: ":webhookResourceId",
             name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
             component: () => import("@/views/project/ProjectWebhookDetail.vue"),
             props: true,
