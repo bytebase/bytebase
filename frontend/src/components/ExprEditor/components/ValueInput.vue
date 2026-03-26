@@ -119,7 +119,7 @@ const inputType = computed((): InputType => {
   if (isArrayValue.value) {
     return hasOption ? "MULTI-SELECT" : "MULTI-INPUT";
   }
-  if (isEqualityOperator(operator.value)) {
+  if (isEqualityOperator(operator.value) || isCompareOperator(operator.value)) {
     if (hasOption) {
       return "SINGLE-SELECT";
     }
