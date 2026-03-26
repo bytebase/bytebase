@@ -393,6 +393,10 @@ func (a *plpgsqlAnalyzer) handleCase(stmt *plpgsqlast.PLCase) {
 func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet {
 	substituted := a.substituteVariables(sql)
 
+	// Always collect access tables from embedded SQL for the top-level QuerySpan,
+	// regardless of whether full analysis succeeds.
+	a.collectAccessTablesFromSQL(substituted)
+
 	stmts, err := ParsePg(substituted)
 	if err != nil {
 		return nil
@@ -413,6 +417,10 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 		// them against known tables in the catalog.
 		return a.fallbackExtractLineage(sql, selStmt)
 	}
+
+	// Also collect from the analyzed query for precise column-level tracking
+	// (WHERE clause → predicate columns).
+	a.collectQueryAccessColumns(query)
 
 	results := a.extractor.extractFuncLineage(query)
 
@@ -568,6 +576,72 @@ func extractBaseVarName(target string) string {
 	return target
 }
 
+// collectAccessTablesFromSQL extracts all table/column references from embedded SQL
+// and adds them to the extractor's funcSourceColumns. This works even when
+// AnalyzeSelectStmt fails, because it uses the AST-level ExtractAccessTables.
+func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
+	accessTables, err := ExtractAccessTables(sql, ExtractAccessTablesOption{
+		DefaultDatabase:        a.extractor.defaultDatabase,
+		DefaultSchema:          a.extractor.searchPath[0],
+		GetDatabaseMetadata:    a.extractor.gCtx.GetDatabaseMetadataFunc,
+		Ctx:                    a.extractor.ctx,
+		InstanceID:             a.extractor.gCtx.InstanceID,
+		SkipMetadataValidation: false,
+	})
+	if err != nil {
+		return
+	}
+	for _, resource := range accessTables {
+		a.extractor.funcSourceColumns[resource] = true
+	}
+}
+
+// collectQueryAccessColumns walks all expressions in an analyzed query and collects
+// all accessed columns into funcSourceColumns, and WHERE/HAVING columns into funcPredicateColumns.
+func (a *plpgsqlAnalyzer) collectQueryAccessColumns(q *catalog.Query) {
+	if q == nil {
+		return
+	}
+
+	// Handle set operations recursively.
+	if q.SetOp != catalog.SetOpNone {
+		a.collectQueryAccessColumns(q.LArg)
+		a.collectQueryAccessColumns(q.RArg)
+		return
+	}
+
+	// Collect from ALL target entries (including junk — ORDER BY helpers etc.).
+	for _, te := range q.TargetList {
+		a.extractor.walkExpr(q, te.Expr, a.extractor.funcSourceColumns)
+	}
+
+	// Collect from WHERE clause → both source and predicate columns.
+	if q.JoinTree != nil && q.JoinTree.Quals != nil {
+		a.extractor.walkExpr(q, q.JoinTree.Quals, a.extractor.funcSourceColumns)
+		a.extractor.walkExpr(q, q.JoinTree.Quals, a.extractor.funcPredicateColumns)
+	}
+
+	// Collect from HAVING clause → both source and predicate columns.
+	if q.HavingQual != nil {
+		a.extractor.walkExpr(q, q.HavingQual, a.extractor.funcSourceColumns)
+		a.extractor.walkExpr(q, q.HavingQual, a.extractor.funcPredicateColumns)
+	}
+
+	// Recurse into CTEs.
+	for _, cte := range q.CTEList {
+		if cte.Query != nil {
+			a.collectQueryAccessColumns(cte.Query)
+		}
+	}
+
+	// Recurse into subqueries in FROM clause.
+	for _, rte := range q.RangeTable {
+		if rte.Kind == catalog.RTESubquery && rte.Subquery != nil {
+			a.collectQueryAccessColumns(rte.Subquery)
+		}
+	}
+}
+
 func (a *plpgsqlAnalyzer) mergeReturnResults(nCols int) []base.SourceColumnSet {
 	result := make([]base.SourceColumnSet, nCols)
 	for i := range result {
@@ -611,6 +685,11 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		// Try to extract column references from the expression.
 		a.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
 
+		// Also add to funcSourceColumns for top-level tracking.
+		for k, v := range colSet {
+			a.extractor.funcSourceColumns[k] = v
+		}
+
 		// If still empty, try the original item name as a variable reference.
 		if len(colSet) == 0 && i < len(origItems) {
 			varName := strings.TrimSpace(origItems[i])
@@ -625,6 +704,16 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		}
 
 		results = append(results, colSet)
+	}
+
+	// Extract column refs from WHERE clause for predicate and source tracking.
+	if selStmt.WhereClause != nil {
+		whereColSet := make(base.SourceColumnSet)
+		a.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
+		for k, v := range whereColSet {
+			a.extractor.funcSourceColumns[k] = v
+			a.extractor.funcPredicateColumns[k] = v
+		}
 	}
 
 	return results
@@ -704,6 +793,15 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 						if rt, ok := item.(*ast.ResTarget); ok {
 							a.extractColumnRefsFromExpr(rt.Val, subTables, result)
 						}
+					}
+				}
+				// Also collect from subquery WHERE clause for source/predicate tracking.
+				if subSel.WhereClause != nil {
+					whereColSet := make(base.SourceColumnSet)
+					a.extractColumnRefsFromExpr(subSel.WhereClause, subTables, whereColSet)
+					for k, val := range whereColSet {
+						a.extractor.funcSourceColumns[k] = val
+						a.extractor.funcPredicateColumns[k] = val
 					}
 				}
 			}

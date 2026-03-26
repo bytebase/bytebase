@@ -33,6 +33,13 @@ type omniQuerySpanExtractor struct {
 	// by lowercase function name. Used by analyzeFunctionBody to get the real
 	// body when it was stubbed during catalog loading.
 	funcOrigDefs map[string]string
+	// funcSourceColumns accumulates all columns accessed inside function bodies
+	// (SELECT targets, WHERE conditions, JOIN conditions, etc.).
+	// Merged into the top-level QuerySpan.SourceColumns.
+	funcSourceColumns base.SourceColumnSet
+	// funcPredicateColumns accumulates columns used in WHERE/JOIN conditions
+	// inside function bodies. Merged into the top-level QuerySpan.PredicateColumns.
+	funcPredicateColumns base.SourceColumnSet
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -41,12 +48,14 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		searchPath = []string{"public"}
 	}
 	return &omniQuerySpanExtractor{
-		defaultDatabase: defaultDatabase,
-		searchPath:      searchPath,
-		gCtx:            gCtx,
-		metaCache:       make(map[string]*model.DatabaseMetadata),
-		funcBodyCache:   make(map[uint32][]base.SourceColumnSet),
-		funcOrigDefs:    make(map[string]string),
+		defaultDatabase:      defaultDatabase,
+		searchPath:           searchPath,
+		gCtx:                 gCtx,
+		metaCache:            make(map[string]*model.DatabaseMetadata),
+		funcBodyCache:        make(map[uint32][]base.SourceColumnSet),
+		funcOrigDefs:         make(map[string]string),
+		funcSourceColumns:    make(base.SourceColumnSet),
+		funcPredicateColumns: make(base.SourceColumnSet),
 	}
 }
 
@@ -354,10 +363,16 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// from ExtractAccessTables above — no need to re-extract from the query.
 	results := e.extractLineage(query, selStmt)
 
+	// Merge columns discovered inside function bodies into the top-level sets.
+	for col := range e.funcSourceColumns {
+		accessesMap[col] = true
+	}
+
 	return &base.QuerySpan{
-		Type:          base.Select,
-		SourceColumns: accessesMap,
-		Results:       results,
+		Type:             base.Select,
+		SourceColumns:    accessesMap,
+		PredicateColumns: e.funcPredicateColumns,
+		Results:          results,
 	}, nil
 }
 

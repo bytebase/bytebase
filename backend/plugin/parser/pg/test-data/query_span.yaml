@@ -278,8 +278,48 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-    sourcecolumns: []
-    predicatecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: c
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: d
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: d
     predicatepaths: []
 - description: Function Overloading
   statement: SELECT plpgsql_t(1, 2);
@@ -345,7 +385,22 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: c
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: d
     predicatecolumns: []
     predicatepaths: []
 - description: Bytebase Regression Test
@@ -853,8 +908,28 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-    sourcecolumns: []
-    predicatecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: b
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
     predicatepaths: []
 - description: json_object as target field
   statement: 'SELECT json_object(''id'': a) FROM t'
