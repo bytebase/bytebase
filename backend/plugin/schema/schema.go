@@ -26,6 +26,7 @@ var (
 	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
 	sdlMigrations                   = make(map[storepb.Engine]sdlMigration)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
+	schemaDiffMigrations            = make(map[storepb.Engine]schemaDiffMigration)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
@@ -45,6 +46,7 @@ type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type sdlMigration func(userSDLText string, currentSchema *model.DatabaseMetadata) (string, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
+type schemaDiffMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
@@ -301,6 +303,30 @@ func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *mo
 		return nil, errors.Errorf("engine %s is not supported for SDL drop advices", engine)
 	}
 	return f(userSDLText, currentSchema)
+}
+
+func RegisterDiffMigration(engine storepb.Engine, f schemaDiffMigration) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := schemaDiffMigrations[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	schemaDiffMigrations[engine] = f
+}
+
+// DiffMigration computes the migration SQL between two database metadata states.
+// Falls back to the legacy GetDatabaseSchemaDiff + GenerateMigration path if no
+// engine-specific implementation is registered.
+func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	if f, ok := schemaDiffMigrations[engine]; ok {
+		return f(oldSchema, newSchema)
+	}
+	// Fallback to legacy path for engines that haven't migrated yet.
+	diff, err := GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
+	if err != nil {
+		return "", err
+	}
+	return GenerateMigration(engine, diff)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
