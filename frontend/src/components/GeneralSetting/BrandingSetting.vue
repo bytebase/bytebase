@@ -19,7 +19,7 @@
           :permissions="['bb.workspaces.update']"
         >
           <NInput
-            v-model:value="state.workspaceTitle"
+            v-model:value="state.title"
             class="mt-1"
             :disabled="slotProps.disabled"
           />
@@ -102,7 +102,7 @@ import SingleFileSelector from "../SingleFileSelector.vue";
 interface LocalState {
   logoUrl?: string;
   loading: boolean;
-  workspaceTitle: string;
+  title?: string;
   showFeatureModal: boolean;
 }
 
@@ -124,13 +124,9 @@ const convertFileToBase64 = (file: File) =>
 
 const workspaceStore = useWorkspaceV1Store();
 
-const initialTitle = computed(() => {
-  return workspaceStore.currentWorkspace?.title ?? "";
-});
-
 const state = reactive<LocalState>({
   logoUrl: workspaceStore.currentWorkspace?.logo,
-  workspaceTitle: initialTitle.value,
+  title: workspaceStore.currentWorkspace?.title,
   loading: false,
   showFeatureModal: false,
 });
@@ -140,7 +136,7 @@ const state = reactive<LocalState>({
 watchEffect(() => {
   const ws = workspaceStore.currentWorkspace;
   if (!ws || allowSave.value) return;
-  state.workspaceTitle = ws.title ?? "";
+  state.title = ws.title ?? "";
   state.logoUrl = ws.logo;
 });
 
@@ -150,9 +146,13 @@ const workspaceID = computed(() => {
 });
 
 const allowSave = computed((): boolean => {
+  if (!workspaceStore.currentWorkspace) {
+    return false;
+  }
   return (
-    (state.workspaceTitle !== initialTitle.value &&
-      state.workspaceTitle.trim() !== "") ||
+    (state.title &&
+      state.title !== workspaceStore.currentWorkspace?.title &&
+      state.title.trim() !== "") ||
     state.logoUrl !== workspaceStore.currentWorkspace?.logo
   );
 });
@@ -169,10 +169,11 @@ const doUpdate = async (content: string) => {
   const workspace = create(WorkspaceSchema, workspaceStore.currentWorkspace);
   try {
     if (
-      state.workspaceTitle !== initialTitle.value &&
-      state.workspaceTitle.trim() !== ""
+      state.title &&
+      state.title !== workspaceStore.currentWorkspace?.title &&
+      state.title.trim() !== ""
     ) {
-      workspace.title = state.workspaceTitle;
+      workspace.title = state.title;
       updateMasks.push("title");
     }
 
@@ -202,7 +203,7 @@ defineExpose({
   update: uploadLogo,
   revert: () => {
     state.logoUrl = workspaceStore.currentWorkspace?.logo;
-    state.workspaceTitle = initialTitle.value;
+    state.title = workspaceStore.currentWorkspace?.title;
   },
 });
 </script>

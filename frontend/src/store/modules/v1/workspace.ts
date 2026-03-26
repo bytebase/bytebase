@@ -18,10 +18,7 @@ import {
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
-import {
-  UpdateWorkspaceRequestSchema,
-  WorkspaceSchema,
-} from "@/types/proto-es/v1/workspace_service_pb";
+import { UpdateWorkspaceRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
 import { useActuatorV1Store } from "./actuator";
 import { composePolicyBindings } from "./projectIamPolicy";
@@ -61,10 +58,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   ) => {
     const updated = await workspaceServiceClientConnect.updateWorkspace(
       create(UpdateWorkspaceRequestSchema, {
-        workspace: create(WorkspaceSchema, {
-          ...currentWorkspace.value,
-          ...workspace,
-        }),
+        workspace: workspace,
         updateMask: create(FieldMaskSchema, {
           paths: updateMask,
         }),
