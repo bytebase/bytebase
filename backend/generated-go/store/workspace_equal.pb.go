@@ -13,7 +13,7 @@ func (x *WorkspacePayload) Equal(y *WorkspacePayload) bool {
 	if x.Title != y.Title {
 		return false
 	}
-	if x.BrandingLogo != y.BrandingLogo {
+	if x.Logo != y.Logo {
 		return false
 	}
 	return true

@@ -25,7 +25,7 @@ const (
 type WorkspacePayload struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	BrandingLogo  string                 `protobuf:"bytes,2,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	Logo          string                 `protobuf:"bytes,2,opt,name=logo,proto3" json:"logo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -67,9 +67,9 @@ func (x *WorkspacePayload) GetTitle() string {
 	return ""
 }
 
-func (x *WorkspacePayload) GetBrandingLogo() string {
+func (x *WorkspacePayload) GetLogo() string {
 	if x != nil {
-		return x.BrandingLogo
+		return x.Logo
 	}
 	return ""
 }
@@ -78,10 +78,10 @@ var File_store_workspace_proto protoreflect.FileDescriptor
 
 const file_store_workspace_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/workspace.proto\x12\x0ebytebase.store\"M\n" +
+	"\x15store/workspace.proto\x12\x0ebytebase.store\"<\n" +
 	"\x10WorkspacePayload\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12#\n" +
-	"\rbranding_logo\x18\x02 \x01(\tR\fbrandingLogoB\x91\x01\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x12\n" +
+	"\x04logo\x18\x02 \x01(\tR\x04logoB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eWorkspaceProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

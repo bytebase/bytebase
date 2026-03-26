@@ -93,7 +93,7 @@ func (s *WorkspaceService) GetWorkspace(ctx context.Context, req *connect.Reques
 		}
 		result.Name = common.FormatWorkspace(ws.ResourceID)
 		result.Title = ws.Payload.GetTitle()
-		result.Logo = ws.Payload.GetBrandingLogo()
+		result.Logo = ws.Payload.GetLogo()
 	}
 
 	return connect.NewResponse(result), nil
@@ -164,7 +164,7 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 	return connect.NewResponse(&v1pb.Workspace{
 		Name:  ws.Name,
 		Title: updated.Payload.GetTitle(),
-		Logo:  updated.Payload.GetBrandingLogo(),
+		Logo:  updated.Payload.GetLogo(),
 	}), nil
 }
 

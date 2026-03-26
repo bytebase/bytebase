@@ -5323,7 +5323,7 @@ WorkspacePayload stores workspace-level metadata.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  |  |
-| branding_logo | [string](#string) |  |  |
+| logo | [string](#string) |  |  |
 
 
 

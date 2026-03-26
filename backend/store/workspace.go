@@ -209,7 +209,7 @@ func (s *Store) UpdateWorkspace(ctx context.Context, patch *UpdateWorkspaceMessa
 		payload.Title = *v
 	}
 	if v := patch.Logo; v != nil {
-		payload.BrandingLogo = *v
+		payload.Logo = *v
 	}
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {

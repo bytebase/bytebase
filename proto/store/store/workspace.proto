@@ -7,5 +7,5 @@ option go_package = "generated-go/store";
 // WorkspacePayload stores workspace-level metadata.
 message WorkspacePayload {
   string title = 1;
-  string branding_logo = 2;
+  string logo = 2;
 }

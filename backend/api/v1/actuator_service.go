@@ -233,7 +233,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
 	}
 	ws, err := s.store.GetWorkspaceByID(ctx, workspaceID)
-	if err == nil && ws != nil && ws.Payload.GetBrandingLogo() != "" {
+	if err == nil && ws != nil && ws.Payload.GetLogo() != "" {
 		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
 	}
 
