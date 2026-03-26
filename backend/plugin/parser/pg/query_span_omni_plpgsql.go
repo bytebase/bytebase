@@ -867,6 +867,14 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
 	case *ast.BooleanTest:
 		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+	case *ast.A_Indirection:
+		// Array subscript or field selection — the source is the base expression.
+		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+		if v.Indirection != nil {
+			for _, ind := range v.Indirection.Items {
+				a.extractColumnRefsFromExpr(ind, fromTables, result)
+			}
+		}
 	case *ast.JsonObjectConstructor:
 		if v.Exprs != nil {
 			for _, item := range v.Exprs.Items {

@@ -872,6 +872,10 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 				if name == "" {
 					name = figureResTargetName(rt)
 				}
+				// PostgreSQL uses "?column?" for unnamed result columns.
+				if name == "" {
+					name = "?column?"
+				}
 				// Extract column references from the expression for lineage.
 				colSet := make(base.SourceColumnSet)
 				analyzer.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
@@ -1040,6 +1044,25 @@ func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *a
 			}
 		}
 
+		// For recursive CTEs, the recursive term can mix columns freely
+		// (e.g., cc1*cc2 combines columns a and b). Merge all source columns
+		// from all result positions into every result column.
+		if selectReferencesTable(cteSel.Rarg, cteName) {
+			allSources := make(base.SourceColumnSet)
+			for _, r := range leftResults {
+				for k, v := range r.SourceColumns {
+					allSources[k] = v
+				}
+			}
+			if len(allSources) > 0 {
+				for i := range leftResults {
+					for k, v := range allSources {
+						leftResults[i].SourceColumns[k] = v
+					}
+				}
+			}
+		}
+
 		// Look up CTE column aliases from the WithClause.
 		if aliases := e.getCTEColumnAliases(cteName); len(aliases) > 0 {
 			for i := range leftResults {
@@ -1090,6 +1113,35 @@ func (e *omniQuerySpanExtractor) getCTEColumnAliases(cteName string) []string {
 		return nil
 	}
 	return e.fallbackCTEAliases[strings.ToLower(cteName)]
+}
+
+// selectReferencesTable checks if a SELECT statement references a table name
+// in its FROM clause. Used to detect recursive CTEs.
+func selectReferencesTable(sel *ast.SelectStmt, tableName string) bool {
+	if sel == nil || sel.FromClause == nil {
+		return false
+	}
+	lower := strings.ToLower(tableName)
+	for _, item := range sel.FromClause.Items {
+		if nodeReferencesTable(item, lower) {
+			return true
+		}
+	}
+	return false
+}
+
+func nodeReferencesTable(node ast.Node, tableName string) bool {
+	if node == nil {
+		return false
+	}
+	switch v := node.(type) {
+	case *ast.RangeVar:
+		return strings.ToLower(v.Relname) == tableName
+	case *ast.JoinExpr:
+		return nodeReferencesTable(v.Larg, tableName) || nodeReferencesTable(v.Rarg, tableName)
+	default:
+		return false
+	}
 }
 
 // collectCTEAliases extracts CTE column aliases from the WITH clause.

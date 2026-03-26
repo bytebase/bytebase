@@ -2163,7 +2163,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ""
+        - name: ?column?
           sourcecolumns:
             - server: ""
               database: db
@@ -2178,7 +2178,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: ""
+        - name: ?column?
           sourcecolumns:
             - server: ""
               database: db
@@ -2661,6 +2661,16 @@
               schema: public
               table: t
               column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -2670,7 +2680,17 @@
               database: db
               schema: public
               table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
               column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -2680,12 +2700,37 @@
               database: db
               schema: public
               table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t
               column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: "n"
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -3108,7 +3153,12 @@
           sourcefieldpaths: []
           selectasterisk: false
         - name: last_score
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: scores
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
