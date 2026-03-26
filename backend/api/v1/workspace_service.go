@@ -126,6 +126,7 @@ func (s *WorkspaceService) ListWorkspaces(ctx context.Context, _ *connect.Reques
 		result = append(result, &v1pb.Workspace{
 			Name:  common.FormatWorkspace(ws.ResourceID),
 			Title: ws.Payload.GetTitle(),
+			Logo:  ws.Payload.GetLogo(),
 		})
 	}
 	return connect.NewResponse(&v1pb.ListWorkspacesResponse{Workspaces: result}), nil
