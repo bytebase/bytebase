@@ -722,19 +722,9 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
-	schemaDiff, err := schema.GetDatabaseSchemaDiff(engine, sourceDBSchema, targetDBSchema)
+	migrationSQL, err := schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
-	}
-
-	// Filter out bbdataarchive schema changes for Postgres
-	if engine == storepb.Engine_POSTGRES {
-		schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
-	}
-
-	migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate migration SQL"))
 	}
 
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{
