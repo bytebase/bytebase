@@ -2107,7 +2107,6 @@ IssueService manages issues for tracking database changes and tasks.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 | title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
 | level | [int32](#int32) | optional | The sensitivity level. Maps to Level.level. |
 
 
@@ -2124,7 +2123,6 @@ IssueService manages issues for tracking database changes and tasks.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
 | level | [int32](#int32) |  | The numeric level for ordering. Higher = more sensitive. |
 
 

@@ -18602,9 +18602,6 @@ components:
         title:
           type: string
           title: title
-        description:
-          type: string
-          title: description
         level:
           type:
             - integer
@@ -18620,9 +18617,6 @@ components:
         title:
           type: string
           title: title
-        description:
-          type: string
-          title: description
         level:
           type: integer
           title: level
