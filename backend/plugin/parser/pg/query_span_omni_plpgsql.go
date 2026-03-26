@@ -422,7 +422,7 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 
 	// Also collect from the analyzed query for precise column-level tracking
 	// (WHERE clause → predicate columns).
-	a.collectQueryAccessColumns(query)
+	a.collectQueryPredicateColumns(query)
 
 	results := a.extractor.extractFuncLineage(query)
 
@@ -598,48 +598,43 @@ func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
 	}
 }
 
-// collectQueryAccessColumns walks all expressions in an analyzed query and collects
-// all accessed columns into funcSourceColumns, and WHERE/HAVING columns into funcPredicateColumns.
-func (a *plpgsqlAnalyzer) collectQueryAccessColumns(q *catalog.Query) {
+// collectQueryPredicateColumns walks WHERE/HAVING clauses in an analyzed query
+// and collects predicate columns (column-level) into funcPredicateColumns.
+// Note: funcSourceColumns only stores table-level access (via collectAccessTablesFromSQL),
+// so we don't add column-level entries to it here.
+func (a *plpgsqlAnalyzer) collectQueryPredicateColumns(q *catalog.Query) {
 	if q == nil {
 		return
 	}
 
 	// Handle set operations recursively.
 	if q.SetOp != catalog.SetOpNone {
-		a.collectQueryAccessColumns(q.LArg)
-		a.collectQueryAccessColumns(q.RArg)
+		a.collectQueryPredicateColumns(q.LArg)
+		a.collectQueryPredicateColumns(q.RArg)
 		return
 	}
 
-	// Collect from ALL target entries (including junk — ORDER BY helpers etc.).
-	for _, te := range q.TargetList {
-		a.extractor.walkExpr(q, te.Expr, a.extractor.funcSourceColumns)
-	}
-
-	// Collect from WHERE clause → both source and predicate columns.
+	// Collect from WHERE clause → predicate columns only.
 	if q.JoinTree != nil && q.JoinTree.Quals != nil {
-		a.extractor.walkExpr(q, q.JoinTree.Quals, a.extractor.funcSourceColumns)
 		a.extractor.walkExpr(q, q.JoinTree.Quals, a.extractor.funcPredicateColumns)
 	}
 
-	// Collect from HAVING clause → both source and predicate columns.
+	// Collect from HAVING clause → predicate columns only.
 	if q.HavingQual != nil {
-		a.extractor.walkExpr(q, q.HavingQual, a.extractor.funcSourceColumns)
 		a.extractor.walkExpr(q, q.HavingQual, a.extractor.funcPredicateColumns)
 	}
 
 	// Recurse into CTEs.
 	for _, cte := range q.CTEList {
 		if cte.Query != nil {
-			a.collectQueryAccessColumns(cte.Query)
+			a.collectQueryPredicateColumns(cte.Query)
 		}
 	}
 
 	// Recurse into subqueries in FROM clause.
 	for _, rte := range q.RangeTable {
 		if rte.Kind == catalog.RTESubquery && rte.Subquery != nil {
-			a.collectQueryAccessColumns(rte.Subquery)
+			a.collectQueryPredicateColumns(rte.Subquery)
 		}
 	}
 }
@@ -687,11 +682,6 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		// Try to extract column references from the expression.
 		a.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
 
-		// Also add to funcSourceColumns for top-level tracking.
-		for k, v := range colSet {
-			a.extractor.funcSourceColumns[k] = v
-		}
-
 		// If still empty, try the original item name as a variable reference.
 		if len(colSet) == 0 && i < len(origItems) {
 			varName := strings.TrimSpace(origItems[i])
@@ -708,12 +698,11 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		results = append(results, colSet)
 	}
 
-	// Extract column refs from WHERE clause for predicate and source tracking.
+	// Extract column refs from WHERE clause for predicate tracking.
 	if selStmt.WhereClause != nil {
 		whereColSet := make(base.SourceColumnSet)
 		a.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
 		for k, v := range whereColSet {
-			a.extractor.funcSourceColumns[k] = v
 			a.extractor.funcPredicateColumns[k] = v
 		}
 	}
@@ -797,12 +786,11 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 						}
 					}
 				}
-				// Also collect from subquery WHERE clause for source/predicate tracking.
+				// Also collect from subquery WHERE clause for predicate tracking.
 				if subSel.WhereClause != nil {
 					whereColSet := make(base.SourceColumnSet)
 					a.extractColumnRefsFromExpr(subSel.WhereClause, subTables, whereColSet)
 					for k, val := range whereColSet {
-						a.extractor.funcSourceColumns[k] = val
 						a.extractor.funcPredicateColumns[k] = val
 					}
 				}

@@ -287,28 +287,8 @@
         - server: ""
           database: db
           schema: public
-          table: t
-          column: a
-        - server: ""
-          database: db
-          schema: public
-          table: t
-          column: b
-        - server: ""
-          database: db
-          schema: public
           table: t2
           column: ""
-        - server: ""
-          database: db
-          schema: public
-          table: t2
-          column: c
-        - server: ""
-          database: db
-          schema: public
-          table: t2
-          column: d
     predicatecolumns:
         - server: ""
           database: db
@@ -391,16 +371,6 @@
           schema: public
           table: t2
           column: ""
-        - server: ""
-          database: db
-          schema: public
-          table: t2
-          column: c
-        - server: ""
-          database: db
-          schema: public
-          table: t2
-          column: d
     predicatecolumns: []
     predicatepaths: []
 - description: Bytebase Regression Test
@@ -944,16 +914,6 @@
           schema: public
           table: t
           column: ""
-        - server: ""
-          database: db
-          schema: public
-          table: t
-          column: a
-        - server: ""
-          database: db
-          schema: public
-          table: t
-          column: b
     predicatecolumns:
         - server: ""
           database: db

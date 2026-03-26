@@ -33,9 +33,8 @@ type omniQuerySpanExtractor struct {
 	// by lowercase function name. Used by analyzeFunctionBody to get the real
 	// body when it was stubbed during catalog loading.
 	funcOrigDefs map[string]string
-	// funcSourceColumns accumulates all columns accessed inside function bodies
-	// (SELECT targets, WHERE conditions, JOIN conditions, etc.).
-	// Merged into the top-level QuerySpan.SourceColumns.
+	// funcSourceColumns accumulates table-level access (column="") discovered inside
+	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
 	funcSourceColumns base.SourceColumnSet
 	// funcPredicateColumns accumulates columns used in WHERE/JOIN conditions
 	// inside function bodies. Merged into the top-level QuerySpan.PredicateColumns.
@@ -840,7 +839,6 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 				whereColSet := make(base.SourceColumnSet)
 				analyzer.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
 				for k, v := range whereColSet {
-					e.funcSourceColumns[k] = v
 					e.funcPredicateColumns[k] = v
 				}
 			}
@@ -885,6 +883,13 @@ func figureResTargetName(rt *ast.ResTarget) string {
 			}
 		}
 		return name
+	}
+	// SQL/JSON constructors.
+	if _, ok := rt.Val.(*ast.JsonObjectConstructor); ok {
+		return "json_object"
+	}
+	if _, ok := rt.Val.(*ast.JsonArrayConstructor); ok {
+		return "json_array"
 	}
 	return ""
 }
