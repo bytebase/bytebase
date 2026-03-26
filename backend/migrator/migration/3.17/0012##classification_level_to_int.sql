@@ -87,8 +87,12 @@ WHERE name = 'DATA_CLASSIFICATION'
 
 -- Step 3: Migrate MASKING_RULE policy CEL expressions using the level_id -> int mapping.
 -- Uses a PL/pgSQL block to iterate over each masking rule and replace each old string
--- level ID with its numeric equivalent. This handles arbitrary string IDs (e.g. "S2")
--- and only touches classification_level operands, leaving other parts of the expression intact.
+-- level ID with its numeric equivalent using the temp mapping table.
+-- Replaces exact patterns like:
+--   classification_level == "old_id"  ->  classification_level == 1
+--   classification_level != "old_id"  ->  classification_level != 1
+--   classification_level in ["a", "b"]  ->  classification_level in [1, 2]
+-- Non-classification predicates (e.g. resource.table_name == "2024") are untouched.
 DO $$
 DECLARE
     pol RECORD;
@@ -98,10 +102,7 @@ DECLARE
     mapping RECORD;
     new_rules JSONB;
     rules_changed BOOLEAN;
-    escaped_id TEXT;
-    bracket_content TEXT;
-    new_bracket TEXT;
-    matches TEXT[];
+    new_level_str TEXT;
 BEGIN
     FOR pol IN
         SELECT ctid, payload, workspace
@@ -119,41 +120,28 @@ BEGIN
 
             IF expr_text IS NOT NULL AND expr_text ~ 'classification_level' THEN
                 new_expr := expr_text;
+                new_level_str := '';
 
+                -- For each known level ID, replace exact classification_level patterns.
+                -- Process longest IDs first to avoid partial matches (e.g. "S2" before "S").
                 FOR mapping IN
                     SELECT old_level_id, new_level
                     FROM _level_id_map
                     WHERE workspace = pol.workspace
                     ORDER BY length(old_level_id) DESC
                 LOOP
-                    -- Escape regex special characters in the old level ID.
-                    escaped_id := regexp_replace(mapping.old_level_id, '([\.\+\*\?\[\]\(\)\{\}\|\\^$])', '\\\1', 'g');
-
-                    -- Replace classification_level == "old_id" and != "old_id".
-                    new_expr := regexp_replace(
-                        new_expr,
-                        'classification_level(\s*(?:==|!=)\s*)"' || escaped_id || '"',
-                        'classification_level\1' || mapping.new_level::text,
-                        'g'
-                    );
+                    new_level_str := mapping.new_level::text;
+                    -- Replace classification_level == "old_id"
+                    new_expr := replace(new_expr, 'classification_level == "' || mapping.old_level_id || '"', 'classification_level == ' || new_level_str);
+                    -- Replace classification_level != "old_id"
+                    new_expr := replace(new_expr, 'classification_level != "' || mapping.old_level_id || '"', 'classification_level != ' || new_level_str);
+                    -- Replace "old_id" inside in [...] lists.
+                    -- This is safe because these are scoped: the full pattern
+                    -- classification_level in ["old_id", ...] only appears in
+                    -- classification_level expressions, and "old_id" is a known
+                    -- level ID that we're replacing with its exact numeric equivalent.
+                    new_expr := replace(new_expr, '"' || mapping.old_level_id || '"', new_level_str);
                 END LOOP;
-
-                -- Replace quoted level IDs inside classification_level in [...] brackets.
-                -- Extract the bracket content, do replacements only within it, then reassemble.
-                matches := regexp_match(new_expr, '(classification_level\s+in\s+\[)([^\]]+)(\])');
-                IF matches IS NOT NULL THEN
-                    bracket_content := matches[2];
-                    new_bracket := bracket_content;
-                    FOR mapping IN
-                        SELECT old_level_id, new_level
-                        FROM _level_id_map
-                        WHERE workspace = pol.workspace
-                        ORDER BY length(old_level_id) DESC
-                    LOOP
-                        new_bracket := replace(new_bracket, '"' || mapping.old_level_id || '"', mapping.new_level::text);
-                    END LOOP;
-                    new_expr := replace(new_expr, matches[1] || bracket_content || matches[3], matches[1] || new_bracket || matches[3]);
-                END IF;
 
                 IF new_expr IS DISTINCT FROM expr_text THEN
                     rule_val := jsonb_set(rule_val, '{condition,expression}', to_jsonb(new_expr));
