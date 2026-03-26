@@ -14,11 +14,10 @@ import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectByName, useProjectWebhookV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownProjectWebhook } from "@/types/v1/projectWebhook";
-import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
-  projectWebhookSlug: string;
+  webhookResourceId: string;
   allowEdit: boolean;
 }>();
 
@@ -28,10 +27,11 @@ const { project } = useProjectByName(
 );
 
 const projectWebhook = computed(() => {
-  const id = idFromSlug(props.projectWebhookSlug);
   return (
-    projectWebhookV1Store.getProjectWebhookFromProjectById(project.value, id) ??
-    unknownProjectWebhook()
+    projectWebhookV1Store.getProjectWebhookFromProjectById(
+      project.value,
+      props.webhookResourceId
+    ) ?? unknownProjectWebhook()
   );
 });
 </script>
