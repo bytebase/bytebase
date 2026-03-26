@@ -2207,7 +2207,6 @@ type DataClassificationSetting_DataClassificationConfig struct {
 	Id    string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// levels is user defined level list for classification.
-	// The order for the level decides its priority.
 	Levels []*DataClassificationSetting_DataClassificationConfig_Level `protobuf:"bytes,3,rep,name=levels,proto3" json:"levels,omitempty"`
 	// classification is the id - DataClassification map.
 	// The id should in [0-9]+-[0-9]+-[0-9]+ format.
@@ -2275,10 +2274,11 @@ func (x *DataClassificationSetting_DataClassificationConfig) GetClassification()
 }
 
 type DataClassificationSetting_DataClassificationConfig_Level struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Title       string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// The numeric level for ordering. Higher = more sensitive.
+	Level         int32 `protobuf:"varint,4,opt,name=level,proto3" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2313,13 +2313,6 @@ func (*DataClassificationSetting_DataClassificationConfig_Level) Descriptor() ([
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{11, 0, 0}
 }
 
-func (x *DataClassificationSetting_DataClassificationConfig_Level) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
 func (x *DataClassificationSetting_DataClassificationConfig_Level) GetTitle() string {
 	if x != nil {
 		return x.Title
@@ -2334,13 +2327,21 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) GetDescriptio
 	return ""
 }
 
+func (x *DataClassificationSetting_DataClassificationConfig_Level) GetLevel() int32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
 type DataClassificationSetting_DataClassificationConfig_DataClassification struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
-	Id            string  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title         string  `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string  `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	LevelId       *string `protobuf:"bytes,4,opt,name=level_id,json=levelId,proto3,oneof" json:"level_id,omitempty"`
+	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title       string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// The sensitivity level. Maps to Level.level.
+	Level         *int32 `protobuf:"varint,4,opt,name=level,proto3,oneof" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2396,11 +2397,11 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 	return ""
 }
 
-func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetLevelId() string {
-	if x != nil && x.LevelId != nil {
-		return *x.LevelId
+func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetLevel() int32 {
+	if x != nil && x.Level != nil {
+		return *x.Level
 	}
-	return ""
+	return 0
 }
 
 type SemanticTypeSetting_SemanticType struct {
@@ -2968,24 +2969,24 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
 	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\x8a\x06\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\x88\x06\n" +
 	"\x19DataClassificationSetting\x12Y\n" +
-	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x91\x05\n" +
+	"\aconfigs\x18\x01 \x03(\v2?.bytebase.v1.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x8f\x05\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12]\n" +
 	"\x06levels\x18\x03 \x03(\v2E.bytebase.v1.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12{\n" +
-	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1aO\n" +
-	"\x05Level\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x0eclassification\x18\x04 \x03(\v2S.bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1aU\n" +
+	"\x05Level\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x1a\x89\x01\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05level\x18\x04 \x01(\x05R\x05level\x1a\x81\x01\n" +
 	"\x12DataClassification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1e\n" +
-	"\blevel_id\x18\x04 \x01(\tH\x00R\alevelId\x88\x01\x01B\v\n" +
-	"\t_level_id\x1a\x95\x01\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x19\n" +
+	"\x05level\x18\x04 \x01(\x05H\x00R\x05level\x88\x01\x01B\b\n" +
+	"\x06_level\x1a\x95\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12h\n" +
 	"\x05value\x18\x02 \x01(\v2R.bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xfd\x01\n" +

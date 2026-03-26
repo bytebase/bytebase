@@ -452,13 +452,14 @@ export declare type MaskingRulePolicy_MaskingRule = Message<"bytebase.v1.Masking
    * resource.database_name: the database name.
    * resource.table_name: the table name.
    * resource.column_name: the column name.
-   * resource.classification_level: the classification level.
+   * resource.classification_level: the classification level (integer).
    *
    * Each variable support following operations:
    * ==: the value equals the target.
    * !=: the value not equals the target.
    * in: the value matches one of the targets.
    * !(in): the value not matches any of the targets.
+   * <, <=, >, >=: numeric comparison (classification_level only).
    *
    * For example:
    * resource.environment_id == "test" && resource.project_id == "sample-project"

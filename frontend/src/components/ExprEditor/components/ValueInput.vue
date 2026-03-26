@@ -33,9 +33,13 @@
   </template>
   <template v-if="inputType === 'MULTI-SELECT'">
     <MultiSelect
-      :value="getStringArrayValue()"
+      :value="getArrayValue().map(String)"
       :expr="expr"
-      @update:value="setArrayValue($event)"
+      @update:value="
+        isNumberFactor(factor)
+          ? setArrayValue($event.map(Number))
+          : setArrayValue($event)
+      "
     />
   </template>
   <template v-if="inputType === 'MULTI-INPUT'">
@@ -115,7 +119,7 @@ const inputType = computed((): InputType => {
   if (isArrayValue.value) {
     return hasOption ? "MULTI-SELECT" : "MULTI-INPUT";
   }
-  if (isEqualityOperator(operator.value)) {
+  if (isEqualityOperator(operator.value) || isCompareOperator(operator.value)) {
     if (hasOption) {
       return "SINGLE-SELECT";
     }
@@ -165,7 +169,11 @@ watch(
   [factor, operator],
   ([factor, operator]) => {
     if (isNumberFactor(factor)) {
-      setNumberValue(0);
+      if (isCollectionOperator(operator)) {
+        setArrayValue([]);
+      } else {
+        setNumberValue(0);
+      }
     }
     if (isBooleanFactor(factor)) {
       setBoolValue(true);

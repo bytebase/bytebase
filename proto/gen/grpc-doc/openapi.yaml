@@ -18569,9 +18569,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level'
           title: levels
-          description: |-
-            levels is user defined level list for classification.
-             The order for the level decides its priority.
+          description: levels is user defined level list for classification.
         classification:
           type: object
           title: classification
@@ -18607,25 +18605,29 @@ components:
         description:
           type: string
           title: description
-        levelId:
+        level:
           type:
-            - string
+            - integer
             - "null"
-          title: level_id
+          title: level
+          format: int32
+          description: The sensitivity level. Maps to Level.level.
       title: DataClassification
       additionalProperties: false
     bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level:
       type: object
       properties:
-        id:
-          type: string
-          title: id
         title:
           type: string
           title: title
         description:
           type: string
           title: description
+        level:
+          type: integer
+          title: level
+          format: int32
+          description: The numeric level for ordering. Higher = more sensitive.
       title: Level
       additionalProperties: false
     bytebase.v1.DataSource:
@@ -23049,9 +23051,10 @@ components:
           title: context
           description: 'Additional context (e.g., "Matched global rule: PII Protection").'
         classificationLevel:
-          type: string
+          type: integer
           title: classification_level
-          description: Whether masking was due to classification level.
+          format: int32
+          description: The classification level that triggered masking.
         semanticTypeIcon:
           type: string
           title: semantic_type_icon
@@ -23090,13 +23093,14 @@ components:
              resource.database_name: the database name.
              resource.table_name: the table name.
              resource.column_name: the column name.
-             resource.classification_level: the classification level.
+             resource.classification_level: the classification level (integer).
 
              Each variable support following operations:
              ==: the value equals the target.
              !=: the value not equals the target.
              in: the value matches one of the targets.
              !(in): the value not matches any of the targets.
+             <, <=, >, >=: numeric comparison (classification_level only).
 
              For example:
              resource.environment_id == "test" && resource.project_id == "sample-project"

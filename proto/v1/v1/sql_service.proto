@@ -297,8 +297,8 @@ message MaskingReason {
   // Additional context (e.g., "Matched global rule: PII Protection").
   string context = 5;
 
-  // Whether masking was due to classification level.
-  string classification_level = 6;
+  // The classification level that triggered masking.
+  int32 classification_level = 6;
 
   // Icon associated with the semantic type (if any).
   string semantic_type_icon = 7;

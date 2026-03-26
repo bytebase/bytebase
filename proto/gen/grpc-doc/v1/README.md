@@ -2073,7 +2073,7 @@ IssueService manages issues for tracking database changes and tasks.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | id is the uuid for classification. Each project can chose one classification config. |
 | title | [string](#string) |  |  |
-| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
+| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 
 
@@ -2108,7 +2108,7 @@ IssueService manages issues for tracking database changes and tasks.
 | id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| level_id | [string](#string) | optional |  |
+| level | [int32](#int32) | optional | The sensitivity level. Maps to Level.level. |
 
 
 
@@ -2123,9 +2123,9 @@ IssueService manages issues for tracking database changes and tasks.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+| level | [int32](#int32) |  | The numeric level for ordering. Higher = more sensitive. |
 
 
 
@@ -6975,9 +6975,9 @@ A rule that defines when and how to mask data.
 | id | [string](#string) |  | A unique identifier for the rule in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition for the masking rule. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.environment_id: the environment resource id. resource.project_id: the project resource id. resource.instance_id: the instance resource id. resource.database_name: the database name. resource.table_name: the table name. resource.column_name: the column name. resource.classification_level: the classification level.
+Support variables: resource.environment_id: the environment resource id. resource.project_id: the project resource id. resource.instance_id: the instance resource id. resource.database_name: the database name. resource.table_name: the table name. resource.column_name: the column name. resource.classification_level: the classification level (integer).
 
-Each variable support following operations: ==: the value equals the target. !=: the value not equals the target. in: the value matches one of the targets. !(in): the value not matches any of the targets.
+Each variable support following operations: ==: the value equals the target. !=: the value not equals the target. in: the value matches one of the targets. !(in): the value not matches any of the targets. &lt;, &lt;=, &gt;, &gt;=: numeric comparison (classification_level only).
 
 For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.project_id == &#34;sample-project&#34; resource.instance_id == &#34;sample-instance&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; resource.table_name in [&#34;table1&#34;, &#34;table2&#34;] resource.environment_id != &#34;test&#34; || !(resource.project_id in [&#34;poject1&#34;, &#34;prject2&#34;]) resource.instance_id == &#34;sample-instance&#34; &amp;&amp; (resource.database_name == &#34;db1&#34; || resource.database_name == &#34;db2&#34;) |
 | semantic_type | [string](#string) |  | The semantic type of data to mask (e.g., &#34;SSN&#34;, &#34;EMAIL&#34;). |
@@ -7383,7 +7383,7 @@ OrgPolicyService manages organizational policies at various resource levels.
 | masking_rule_id | [string](#string) |  | The masking rule ID that matched (if applicable). |
 | algorithm | [string](#string) |  | The masking algorithm used. |
 | context | [string](#string) |  | Additional context (e.g., &#34;Matched global rule: PII Protection&#34;). |
-| classification_level | [string](#string) |  | Whether masking was due to classification level. |
+| classification_level | [int32](#int32) |  | The classification level that triggered masking. |
 | semantic_type_icon | [string](#string) |  | Icon associated with the semantic type (if any). |
 
 

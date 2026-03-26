@@ -960,8 +960,8 @@ type MaskingReason struct {
 	Algorithm string `protobuf:"bytes,4,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
 	// Additional context (e.g., "Matched global rule: PII Protection").
 	Context string `protobuf:"bytes,5,opt,name=context,proto3" json:"context,omitempty"`
-	// Whether masking was due to classification level.
-	ClassificationLevel string `protobuf:"bytes,6,opt,name=classification_level,json=classificationLevel,proto3" json:"classification_level,omitempty"`
+	// The classification level that triggered masking.
+	ClassificationLevel int32 `protobuf:"varint,6,opt,name=classification_level,json=classificationLevel,proto3" json:"classification_level,omitempty"`
 	// Icon associated with the semantic type (if any).
 	SemanticTypeIcon string `protobuf:"bytes,7,opt,name=semantic_type_icon,json=semanticTypeIcon,proto3" json:"semantic_type_icon,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -1033,11 +1033,11 @@ func (x *MaskingReason) GetContext() string {
 	return ""
 }
 
-func (x *MaskingReason) GetClassificationLevel() string {
+func (x *MaskingReason) GetClassificationLevel() int32 {
 	if x != nil {
 		return x.ClassificationLevel
 	}
-	return ""
+	return 0
 }
 
 func (x *MaskingReason) GetSemanticTypeIcon() string {
@@ -2801,7 +2801,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x0fmasking_rule_id\x18\x03 \x01(\tR\rmaskingRuleId\x12\x1c\n" +
 	"\talgorithm\x18\x04 \x01(\tR\talgorithm\x12\x18\n" +
 	"\acontext\x18\x05 \x01(\tR\acontext\x121\n" +
-	"\x14classification_level\x18\x06 \x01(\tR\x13classificationLevel\x12,\n" +
+	"\x14classification_level\x18\x06 \x01(\x05R\x13classificationLevel\x12,\n" +
 	"\x12semantic_type_icon\x18\a \x01(\tR\x10semanticTypeIcon\"9\n" +
 	"\bQueryRow\x12-\n" +
 	"\x06values\x18\x01 \x03(\v2\x15.bytebase.v1.RowValueR\x06values\"\xf9\x06\n" +

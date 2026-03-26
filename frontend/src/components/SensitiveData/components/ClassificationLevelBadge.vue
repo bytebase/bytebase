@@ -48,15 +48,13 @@ const columnClassification = computed(() => {
 });
 
 const levelColor = computed(() => {
-  const index = (props.classificationConfig?.levels ?? []).findIndex(
-    (level) => level.id === columnClassification.value?.levelId
-  );
-  return bgColorList[index] ?? "bg-gray-200";
+  const lvl = columnClassification.value?.level ?? 0;
+  return bgColorList[lvl - 1] ?? "bg-gray-200";
 });
 
 const level = computed(() => {
   return (props.classificationConfig?.levels ?? []).find(
-    (level) => level.id === columnClassification.value?.levelId
+    (l) => l.level === columnClassification.value?.level
   );
 });
 </script>

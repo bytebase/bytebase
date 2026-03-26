@@ -28,7 +28,7 @@ type MaskingEvaluation struct {
 	MaskingRuleID       string
 	Algorithm           string
 	Context             string
-	ClassificationLevel string
+	ClassificationLevel int32
 }
 
 func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
@@ -143,7 +143,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			common.CELAttributeResourceSchemaName:          schemaName,
 			common.CELAttributeResourceTableName:           tableName,
 			common.CELAttributeResourceColumnName:          columnName,
-			common.CELAttributeResourceClassificationLevel: classificationLevel,
+			common.CELAttributeResourceClassificationLevel: int64(classificationLevel),
 		}
 		if databaseMessage.EffectiveEnvironmentID != nil {
 			maskingRuleAttributes[common.CELAttributeResourceEnvironmentID] = *databaseMessage.EffectiveEnvironmentID
@@ -212,20 +212,20 @@ func evaluateExemptionOfColumn(databaseMessage *store.DatabaseMessage, schemaNam
 	return false, nil
 }
 
-func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
+func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) int32 {
 	if columnClassificationID == "" || classificationConfig == nil {
-		return ""
+		return 0
 	}
 
 	classification, ok := classificationConfig.Classification[columnClassificationID]
 	if !ok {
-		return ""
+		return 0
 	}
-	if classification.LevelId == nil {
-		return ""
+	if classification.Level == nil {
+		return 0
 	}
 
-	return *classification.LevelId
+	return *classification.Level
 }
 
 func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes map[string]any) (bool, error) {

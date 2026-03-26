@@ -49,7 +49,7 @@ interface LocalState {
 interface TreeNode extends TreeOption {
   key: string;
   label: string;
-  levelId?: string;
+  level?: number;
   children?: TreeNode[];
 }
 
@@ -57,7 +57,7 @@ interface ClassificationMap {
   [key: string]: {
     id: string;
     label: string;
-    levelId?: string;
+    level?: number;
     children: ClassificationMap;
   };
 }
@@ -121,7 +121,7 @@ const treeData = computed((): TreeNode[] => {
       tmp[classification.id] = {
         id: classification.id,
         label: classification.title,
-        levelId: classification.levelId,
+        level: classification.level,
         children: {},
       };
     }
@@ -137,7 +137,7 @@ const getTreeNodeList = (classificationMap: ClassificationMap): TreeNode[] => {
       return {
         key: item.id,
         label: `${item.id} ${item.label}`,
-        levelId: item.levelId,
+        level: item.level,
         isLeaf: children.length === 0,
         children,
       };
@@ -146,7 +146,7 @@ const getTreeNodeList = (classificationMap: ClassificationMap): TreeNode[] => {
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
   const node = option as TreeNode;
-  if (!node.levelId) {
+  if (node.level == null) {
     return null;
   }
 
