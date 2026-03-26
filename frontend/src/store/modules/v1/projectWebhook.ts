@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { defineStore } from "pinia";
 import { projectServiceClientConnect } from "@/connect";
-import type { IdType } from "@/types";
+
 import {
   AddWebhookRequestSchema,
   type Project,
@@ -15,13 +15,10 @@ import { extractProjectWebhookID } from "@/utils";
 export const useProjectWebhookV1Store = defineStore("projectWebhook_v1", () => {
   const getProjectWebhookFromProjectById = (
     project: Project,
-    webhookId: IdType
+    webhookId: string
   ) => {
-    if (typeof webhookId === "string") {
-      webhookId = parseInt(webhookId, 10);
-    }
     return project.webhooks.find((webhook) => {
-      return parseInt(extractProjectWebhookID(webhook.name), 10) === webhookId;
+      return extractProjectWebhookID(webhook.name) === webhookId;
     });
   };
   const createProjectWebhook = async (project: string, webhook: Webhook) => {
