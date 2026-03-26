@@ -1057,7 +1057,22 @@
     }
   querySpan:
     type: 1
-    results: []
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: jsonb_each
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1091,7 +1106,12 @@
     type: 1
     results:
         - name: to_jsonb
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -1128,7 +1148,12 @@
     type: 1
     results:
         - name: row_to_json
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -1163,7 +1188,17 @@
     }
   querySpan:
     type: 1
-    results: []
+    results:
+        - name: unnest
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: unnest
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
 - description: Test For unnest function
@@ -2734,6 +2769,16 @@
   querySpan:
     type: 1
     results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: jsonb_array_elements
           sourcecolumns: []
           isplainfield: false
@@ -2771,6 +2816,16 @@
   querySpan:
     type: 1
     results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
         - name: val
           sourcecolumns: []
           isplainfield: false
@@ -2807,7 +2862,22 @@
     }
   querySpan:
     type: 1
-    results: []
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: jsonb_array_elements_text
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db

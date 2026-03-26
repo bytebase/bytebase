@@ -865,12 +865,14 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 		}
 	}
 
-	// For SELECT *, try to extract column names from FROM clause aliases.
+	// For SELECT *, combine columns from ALL FROM clause items.
 	if selStmt.FromClause != nil {
+		var allCols []base.QuerySpanResult
 		for _, item := range selStmt.FromClause.Items {
-			if cols := extractColumnsFromFromItem(item); len(cols) > 0 {
-				return cols
-			}
+			allCols = append(allCols, e.extractColumnsFromFromItem(item)...)
+		}
+		if len(allCols) > 0 {
+			return allCols
 		}
 	}
 
@@ -913,48 +915,85 @@ func figureResTargetName(rt *ast.ResTarget) string {
 	return ""
 }
 
-// extractColumnsFromFromItem extracts column names from a FROM clause item's alias.
-func extractColumnsFromFromItem(item ast.Node) []base.QuerySpanResult {
+// extractColumnsFromFromItem extracts column names from a FROM clause item.
+// For RangeVar (tables), it looks up the catalog for column names and lineage.
+// For RangeFunction, it uses function name or alias column names.
+func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node) []base.QuerySpanResult {
 	if item == nil {
 		return nil
 	}
 
-	var alias *ast.Alias
 	switch v := item.(type) {
-	case *ast.RangeFunction:
-		alias = v.Alias
 	case *ast.RangeVar:
-		alias = v.Alias
+		return e.extractColumnsFromRangeVar(v)
+	case *ast.RangeFunction:
+		return extractColumnsFromRangeFunction(v)
 	case *ast.RangeSubselect:
-		alias = v.Alias
+		if v.Alias != nil && v.Alias.Colnames != nil {
+			return extractColnamesFromAlias(v.Alias)
+		}
+		return nil
+	case *ast.JoinExpr:
+		var results []base.QuerySpanResult
+		results = append(results, e.extractColumnsFromFromItem(v.Larg)...)
+		results = append(results, e.extractColumnsFromFromItem(v.Rarg)...)
+		return results
 	default:
 		return nil
 	}
+}
 
-	if alias == nil {
+// extractColumnsFromRangeVar looks up a table in the catalog and returns its columns with lineage.
+func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []base.QuerySpanResult {
+	schema := rv.Schemaname
+	if schema == "" && len(e.searchPath) > 0 {
+		schema = e.searchPath[0]
+	}
+	rel := e.cat.GetRelation(schema, rv.Relname)
+	if rel == nil {
 		return nil
 	}
+	var results []base.QuerySpanResult
+	for _, col := range rel.Columns {
+		colSet := make(base.SourceColumnSet)
+		colSet[base.ColumnResource{
+			Database: e.defaultDatabase,
+			Schema:   rel.Schema.Name,
+			Table:    rel.Name,
+			Column:   col.Name,
+		}] = true
+		results = append(results, base.QuerySpanResult{
+			Name:          col.Name,
+			SourceColumns: colSet,
+			IsPlainField:  true,
+		})
+	}
+	return results
+}
 
-	// If alias has column names, use those.
-	if alias.Colnames != nil && len(alias.Colnames.Items) > 0 {
-		var results []base.QuerySpanResult
-		for _, item := range alias.Colnames.Items {
-			if s, ok := item.(*ast.String); ok {
-				results = append(results, base.QuerySpanResult{
-					Name:          s.Str,
-					SourceColumns: base.SourceColumnSet{},
-				})
-			}
+// extractColumnsFromRangeFunction extracts columns from a function in FROM clause.
+func extractColumnsFromRangeFunction(rf *ast.RangeFunction) []base.QuerySpanResult {
+	if rf.Alias != nil && rf.Alias.Colnames != nil && len(rf.Alias.Colnames.Items) > 0 {
+		return extractColnamesFromAlias(rf.Alias)
+	}
+	return extractFuncColumnNames(rf, rf.Alias)
+}
+
+// extractColnamesFromAlias extracts column names from an alias's column name list.
+func extractColnamesFromAlias(alias *ast.Alias) []base.QuerySpanResult {
+	if alias == nil || alias.Colnames == nil {
+		return nil
+	}
+	var results []base.QuerySpanResult
+	for _, item := range alias.Colnames.Items {
+		if s, ok := item.(*ast.String); ok {
+			results = append(results, base.QuerySpanResult{
+				Name:          s.Str,
+				SourceColumns: base.SourceColumnSet{},
+			})
 		}
-		return results
 	}
-
-	// If it's a RangeFunction without explicit column names, use function name(s).
-	if rf, ok := item.(*ast.RangeFunction); ok {
-		return extractFuncColumnNames(rf, alias)
-	}
-
-	return nil
+	return results
 }
 
 // extractFuncColumnNames extracts column names from a RangeFunction.

@@ -857,6 +857,7 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 		if _, ok := a.scope.get(colName); ok {
 			return
 		}
+		// Check if it's a column name in any FROM table.
 		for _, resource := range fromTables {
 			rel := a.extractor.cat.GetRelation(resource.Schema, resource.Table)
 			if rel != nil && relationHasColumn(rel, colName) {
@@ -866,6 +867,21 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 					Table:    resource.Table,
 					Column:   colName,
 				}] = true
+				return
+			}
+		}
+		// Check if it's a whole-row reference (table alias used as value, e.g., to_jsonb(t1)).
+		if resource, ok := fromTables[strings.ToLower(colName)]; ok {
+			rel := a.extractor.cat.GetRelation(resource.Schema, resource.Table)
+			if rel != nil {
+				for _, col := range rel.Columns {
+					result[base.ColumnResource{
+						Database: resource.Database,
+						Schema:   resource.Schema,
+						Table:    resource.Table,
+						Column:   col.Name,
+					}] = true
+				}
 				return
 			}
 		}
