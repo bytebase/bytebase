@@ -924,15 +924,19 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		return nil
 	}
 
-	loginViaIDP := request.GetIdpName() != ""
-
-	// Check disallow password signin
-	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
-		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+	// Check disallow password signin when not through IDP
+	if request.GetIdpName() == "" {
+		restriction, err := getAccountRestriction(
+			ctx,
+			s.store,
+			s.licenseService,
+			s.profile.SaaS,
+			workspaceID,
+		)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
+			return err
 		}
-		if setting.DisallowPasswordSignin && !loginViaIDP {
+		if restriction.DisallowPasswordSignin {
 			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
 		}
 	}
