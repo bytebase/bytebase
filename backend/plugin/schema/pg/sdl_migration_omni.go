@@ -25,7 +25,14 @@ func init() {
 
 // catalogFromMetadata builds an omni Catalog from database metadata.
 func catalogFromMetadata(meta *model.DatabaseMetadata) (*catalog.Catalog, error) {
-	ddl, err := convertDatabaseSchemaToSDL(meta)
+	if meta == nil {
+		return catalog.LoadSDL("")
+	}
+	proto := meta.GetProto()
+	if proto == nil {
+		return catalog.LoadSDL("")
+	}
+	ddl, err := getSDLFormat(proto)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert metadata to DDL")
 	}
@@ -52,9 +59,16 @@ func pgSchemaDiffMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 
 // buildSDLCatalogs builds the from/to catalogs for an SDL migration.
 func buildSDLCatalogs(userSDLText string, currentSchema *model.DatabaseMetadata) (*catalog.Catalog, *catalog.Catalog, error) {
-	fromDDL, err := convertDatabaseSchemaToSDL(currentSchema)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to convert current schema to DDL")
+	var fromDDL string
+	if currentSchema != nil {
+		proto := currentSchema.GetProto()
+		if proto != nil {
+			var ddlErr error
+			fromDDL, ddlErr = getSDLFormat(proto)
+			if ddlErr != nil {
+				return nil, nil, errors.Wrap(ddlErr, "failed to convert current schema to DDL")
+			}
+		}
 	}
 
 	from, err := catalog.LoadSDL(fromDDL)
