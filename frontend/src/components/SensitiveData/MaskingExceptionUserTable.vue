@@ -20,6 +20,7 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NDatePicker, NEllipsis, useDialog } from "naive-ui";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { MiniActionButton } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
@@ -39,6 +40,11 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { hasProjectPermissionV2 } from "@/utils";
+import {
+  batchConvertFromCELString,
+  type ConditionExpression,
+} from "@/utils/issue/cel";
 import { type AccessUser } from "./types";
 
 interface LocalState {
@@ -60,9 +66,14 @@ const state = reactive<LocalState>({
   rawAccessList: [],
 });
 const { t } = useI18n();
+const router = useRouter();
 const groupStore = useGroupStore();
 const policyStore = usePolicyV1Store();
 const $dialog = useDialog();
+
+const hasGetDatabasePermission = computed(() =>
+  hasProjectPermissionV2(props.project, "bb.databases.get")
+);
 
 const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
@@ -87,7 +98,8 @@ const getConditionExpression = (expression: string): string => {
 };
 
 const getAccessUsers = (
-  exception: MaskingExemptionPolicy_Exemption
+  exception: MaskingExemptionPolicy_Exemption,
+  condition: ConditionExpression
 ): AccessUser[] => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
@@ -98,6 +110,10 @@ const getAccessUsers = (
   }
 
   const conditionExpression = getConditionExpression(expression);
+  const databaseResources =
+    condition.databaseResources && condition.databaseResources.length > 0
+      ? condition.databaseResources
+      : undefined;
 
   const result: AccessUser[] = [];
   for (const member of exception.members) {
@@ -109,6 +125,7 @@ const getAccessUsers = (
       rawExpression: expression,
       description,
       conditionExpression,
+      databaseResources,
     });
   }
 
@@ -128,10 +145,14 @@ const updateAccessUserList = async () => {
 
   const memberMap = new Map<string, AccessUser>();
   const { exemptions } = policy.value.policy.value;
+  const expressionList = exemptions.map((e) =>
+    e.condition?.expression ? e.condition.expression : "true"
+  );
+  const conditionList = await batchConvertFromCELString(expressionList);
 
   await composePolicyBindings(exemptions, true);
-  for (const exception of exemptions) {
-    const items = getAccessUsers(exception);
+  for (let i = 0; i < exemptions.length; i++) {
+    const items = getAccessUsers(exemptions[i], conditionList[i]);
     for (const item of items) {
       memberMap.set(item.key, item);
     }
@@ -174,6 +195,56 @@ const accessTableColumns = computed(
           if (!item.conditionExpression) {
             return <span class="textinfo">{t("database.all")}</span>;
           }
+          // Best-effort: render database resources nicely if parseable.
+          if (item.databaseResources && item.databaseResources.length > 0) {
+            return (
+              <div class="flex flex-col gap-y-1">
+                {item.databaseResources.map((res) => (
+                  <div class="flex flex-col gap-y-0.5 text-sm textinfo">
+                    <div class="flex items-center gap-x-1">
+                      <span class="font-medium">{t("common.database")}:</span>
+                      {hasGetDatabasePermission.value ? (
+                        <span
+                          class="normal-link hover:underline cursor-pointer"
+                          onClick={() => {
+                            const query: Record<string, string> = {};
+                            if (res.schema) query.schema = res.schema;
+                            if (res.table) query.table = res.table;
+                            router.push({ path: res.databaseFullName, query });
+                          }}
+                        >
+                          {res.databaseFullName}
+                        </span>
+                      ) : (
+                        <span>{res.databaseFullName}</span>
+                      )}
+                    </div>
+                    {res.schema && (
+                      <div class="flex items-center gap-x-1">
+                        <span class="font-medium">{t("common.schema")}:</span>
+                        <span>{res.schema}</span>
+                      </div>
+                    )}
+                    {res.table && (
+                      <div class="flex items-center gap-x-1">
+                        <span class="font-medium">{t("common.table")}:</span>
+                        <span>{res.table}</span>
+                      </div>
+                    )}
+                    {res.columns && res.columns.length > 0 && (
+                      <div class="flex items-center gap-x-1">
+                        <span class="font-medium">
+                          {t("database.columns")}:
+                        </span>
+                        <span>{res.columns.join(", ")}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          // Fallback: show raw CEL expression.
           return (
             <NEllipsis class="text-sm font-mono">
               {item.conditionExpression}
@@ -248,8 +319,21 @@ const revokeAccessAlert = (item: AccessUser) => {
             })}
           </div>
           {item.conditionExpression && (
-            <div class="text-sm font-mono textinfo">
-              {item.conditionExpression}
+            <div class="text-sm textinfo">
+              {item.databaseResources && item.databaseResources.length > 0
+                ? item.databaseResources
+                    .map((r) =>
+                      [
+                        r.databaseFullName,
+                        r.schema,
+                        r.table,
+                        r.columns?.join(", "),
+                      ]
+                        .filter(Boolean)
+                        .join(" / ")
+                    )
+                    .join("; ")
+                : item.conditionExpression}
             </div>
           )}
         </div>

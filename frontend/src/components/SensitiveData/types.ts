@@ -1,3 +1,4 @@
+import type { DatabaseResource } from "@/types";
 import type {
   ColumnCatalog,
   ObjectSchema,
@@ -32,4 +33,7 @@ export interface AccessUser {
   description: string;
   // The condition portion of the CEL expression, excluding request.time.
   conditionExpression: string;
+  // Best-effort parsed database resources. If the CEL expression maps
+  // cleanly to database resources, they are populated here for rich display.
+  databaseResources?: DatabaseResource[];
 }
