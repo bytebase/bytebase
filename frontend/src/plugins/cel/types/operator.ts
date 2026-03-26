@@ -137,6 +137,8 @@ const OperatorList: Record<Factor, Operator[]> = {
   ]),
   [CEL_ATTRIBUTE_STATEMENT_TEXT]: uniq([...StringOperatorList]),
   [CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL]: uniq([
+    ...EqualityOperatorList,
+    ...CompareOperatorList,
     ...CollectionOperatorList,
   ]),
 

@@ -4,6 +4,7 @@ import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_p
 import { extractDatabaseResourceName } from "@/utils";
 import {
   CEL_ATTRIBUTE_REQUEST_TIME,
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
@@ -36,7 +37,11 @@ export const isCurrentColumnException = (
   }
   const databaseExpression = expression
     .split(" && ")
-    .filter((expr) => !expr.startsWith(CEL_ATTRIBUTE_REQUEST_TIME))
+    .filter(
+      (expr) =>
+        !expr.startsWith(CEL_ATTRIBUTE_REQUEST_TIME) &&
+        !expr.startsWith(CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL)
+    )
     .join(" && ");
   const matches = getExpressionsForDatabaseResource(
     convertSensitiveColumnToDatabaseResource(sensitiveColumn)

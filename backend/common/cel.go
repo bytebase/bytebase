@@ -88,7 +88,7 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
 	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
-	cel.Variable(CELAttributeResourceClassificationLevel, cel.StringType),
+	cel.Variable(CELAttributeResourceClassificationLevel, cel.IntType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -99,6 +99,7 @@ var MaskingExemptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
 	cel.Variable(CELAttributeResourceSchemaName, cel.StringType),
 	cel.Variable(CELAttributeResourceColumnName, cel.StringType),
+	cel.Variable(CELAttributeResourceClassificationLevel, cel.IntType),
 	cel.Variable(CELAttributeRequestTime, cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }

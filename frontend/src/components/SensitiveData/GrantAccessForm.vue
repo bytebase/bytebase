@@ -15,6 +15,7 @@
             :project-name="projectName"
             :required-feature="PlanFeature.FEATURE_DATA_MASKING"
             :include-cloumn="true"
+            :include-classification-level="true"
           />
         </div>
 
@@ -77,13 +78,14 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton, NDatePicker, NInput } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DatabaseResourceForm from "@/components/RoleGrantPanel/DatabaseResourceForm/index.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
-import { pushNotification, usePolicyV1Store } from "@/store";
+import { buildCELExpr } from "@/plugins/cel";
+import { pushNotification, usePolicyV1Store, useSettingV1Store } from "@/store";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   MaskingExemptionPolicy_Exemption,
@@ -95,7 +97,9 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { batchConvertParsedExprToCELString } from "@/utils";
 import type { SensitiveColumn } from "./types";
 import {
   convertSensitiveColumnToDatabaseResource,
@@ -109,6 +113,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["dismiss"]);
+
+const settingStore = useSettingV1Store();
+onMounted(async () => {
+  await settingStore.getOrFetchSettingByName(
+    Setting_SettingName.DATA_CLASSIFICATION,
+    true
+  );
+});
 
 interface LocalState {
   memberList: string[];
@@ -175,34 +187,58 @@ const getPendingUpdatePolicy = async (
 ): Promise<Partial<Policy>> => {
   const exemptions: MaskingExemptionPolicy_Exemption[] = [];
 
-  const expressions = [];
+  const extraExpressions: string[] = [];
   if (state.expirationTimestamp) {
-    expressions.push(
+    extraExpressions.push(
       `request.time < timestamp("${new Date(
         state.expirationTimestamp
       ).toISOString()}")`
     );
   }
 
-  const databaseResources =
-    await databaseResourceFormRef.value?.getDatabaseResources();
+  // When using CEL expression mode, build the expression string directly
+  // to preserve non-resource conditions like resource.classification_level.
+  const expr = databaseResourceFormRef.value?.getExpr?.();
+  if (expr) {
+    const parsedExpr = await buildCELExpr(expr);
+    if (parsedExpr) {
+      const [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
+      const parts = [celString, ...extraExpressions].filter((e) => e);
+      exemptions.push(
+        create(MaskingExemptionPolicy_ExemptionSchema, {
+          members: state.memberList,
+          condition: create(ExprSchema, {
+            description: state.description,
+            expression: parts.length > 0 ? parts.join(" && ") : "",
+          }),
+        })
+      );
+    }
+  } else {
+    // ALL or SELECT mode: use database resource conversion
+    const databaseResources =
+      await databaseResourceFormRef.value?.getDatabaseResources();
 
-  const resourceExpressions = databaseResources?.map(
-    getExpressionsForDatabaseResource
-  ) ?? [[""]];
-  for (const expressionList of resourceExpressions) {
-    const resourceExpression = [...expressionList, ...expressions].filter(
-      (e) => e
-    );
+    const resourceExpressions = (
+      databaseResources?.map(getExpressionsForDatabaseResource) ?? [[""]]
+    ).map((parts) => parts.filter((e) => e).join(" && "));
+
+    // Combine multiple resources with || into a single condition.
+    let resourceCondition = "";
+    const nonEmpty = resourceExpressions.filter((e) => e);
+    if (nonEmpty.length === 1) {
+      resourceCondition = nonEmpty[0];
+    } else if (nonEmpty.length > 1) {
+      resourceCondition = nonEmpty.map((e) => `(${e})`).join(" || ");
+    }
+
+    const parts = [resourceCondition, ...extraExpressions].filter((e) => e);
     exemptions.push(
       create(MaskingExemptionPolicy_ExemptionSchema, {
         members: state.memberList,
         condition: create(ExprSchema, {
           description: state.description,
-          expression:
-            resourceExpression.length > 0
-              ? resourceExpression.join(" && ")
-              : "",
+          expression: parts.length > 0 ? parts.join(" && ") : "",
         }),
       })
     );

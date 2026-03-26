@@ -8,7 +8,6 @@
     :striped="true"
     :loading="!ready || state.loading"
     :max-height="'calc(100vh - 15rem)'"
-    :scroll-x="scrollX"
     virtual-scroll
   />
 </template>
@@ -34,7 +33,7 @@ import {
   usePolicyByParentAndType,
   usePolicyV1Store,
 } from "@/store";
-import { groupBindingPrefix } from "@/types";
+import { type DatabaseResource, groupBindingPrefix } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
@@ -89,66 +88,79 @@ const filteredList = computed(() =>
   state.rawAccessList.filter(props.filterAccessUser)
 );
 
-const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
-  if (!access.databaseResource) {
-    return <div class="textinfo">{t("database.all")}</div>;
-  }
-
+const renderDatabaseResource = (res: DatabaseResource): VNodeChild => {
   return (
-    <div class="flex flex-col gap-y-1">
-      <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+    <div class="flex flex-col gap-y-0.5 text-sm textinfo">
+      <div class="flex items-center gap-x-1">
         <span class="font-medium">{`${t("common.database")}:`}</span>
-        <NEllipsis>
-          {hasGetDatabasePermission.value ? (
-            <div
-              class="normal-link hover:underline cursor-pointer"
-              onClick={() => {
-                const query: Record<string, string> = {};
-                if (access.databaseResource?.schema) {
-                  query.schema = access.databaseResource.schema;
-                }
-                if (access.databaseResource?.table) {
-                  query.table = access.databaseResource.table;
-                }
-                router.push({
-                  path: access.databaseResource?.databaseFullName,
-                  query,
-                });
-              }}
-            >
-              {access.databaseResource.databaseFullName}
-            </div>
-          ) : (
-            <div class="flex items-center gap-x-1">
-              {access.databaseResource.databaseFullName}
-            </div>
-          )}
-        </NEllipsis>
-      </div>
-      {access.databaseResource.schema && (
-        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-          <span class="font-medium">{`${t("common.schema")}:`}</span>
-          <span>{access.databaseResource.schema}</span>
-        </div>
-      )}
-      {access.databaseResource.table && (
-        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-          <span class="font-medium">{`${t("common.table")}:`}</span>
-          <span>{access.databaseResource.table}</span>
-        </div>
-      )}
-      {access.databaseResource.columns &&
-        access.databaseResource.columns.length > 0 && (
-          <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-            <span class="font-medium">{`${t("database.columns")}:`}</span>
-            <span>{access.databaseResource.columns.join(", ")}</span>
-          </div>
+        {hasGetDatabasePermission.value ? (
+          <span
+            class="normal-link hover:underline cursor-pointer"
+            onClick={() => {
+              const query: Record<string, string> = {};
+              if (res.schema) query.schema = res.schema;
+              if (res.table) query.table = res.table;
+              router.push({ path: res.databaseFullName, query });
+            }}
+          >
+            {res.databaseFullName}
+          </span>
+        ) : (
+          <span>{res.databaseFullName}</span>
         )}
+      </div>
+      {res.schema && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("common.schema")}:`}</span>
+          <span>{res.schema}</span>
+        </div>
+      )}
+      {res.table && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("common.table")}:`}</span>
+          <span>{res.table}</span>
+        </div>
+      )}
+      {res.columns && res.columns.length > 0 && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("database.columns")}:`}</span>
+          <span>{res.columns.join(", ")}</span>
+        </div>
+      )}
     </div>
   );
 };
 
-const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
+const getConditionDisplay = (access: AccessUser): VNodeChild => {
+  if (!access.databaseResources) {
+    // No parseable database resources — show raw CEL or "All".
+    if (access.conditionExpression) {
+      return (
+        <NEllipsis class="text-sm font-mono textinfo">
+          {access.conditionExpression}
+        </NEllipsis>
+      );
+    }
+    return <div class="textinfo">{t("database.all")}</div>;
+  }
+
+  return (
+    <div class="flex flex-col gap-y-2">
+      {access.databaseResources.map((res) => renderDatabaseResource(res))}
+    </div>
+  );
+};
+
+const expirationTimeRegex = /request\.time\s*<\s*timestamp\("(.+)?"\)/;
+
+// Extract the condition portion of a CEL expression, excluding request.time.
+const getConditionExpression = (expression: string): string => {
+  if (!expression) return "";
+  return expression
+    .split(" && ")
+    .filter((part) => !part.match(expirationTimeRegex))
+    .join(" && ");
+};
 
 const getAccessUsers = (
   exception: MaskingExemptionPolicy_Exemption,
@@ -162,6 +174,8 @@ const getAccessUsers = (
     expirationTimestamp = new Date(matches[1]).getTime();
   }
 
+  const conditionExpression = getConditionExpression(expression);
+
   const result: AccessUser[] = [];
   for (const member of exception.members) {
     const access: AccessUser = {
@@ -171,9 +185,11 @@ const getAccessUsers = (
       expirationTimestamp,
       rawExpression: expression,
       description,
-      databaseResource: condition.databaseResources
-        ? condition.databaseResources[0]
-        : undefined,
+      databaseResources:
+        condition.databaseResources && condition.databaseResources.length > 0
+          ? condition.databaseResources
+          : undefined,
+      conditionExpression,
     };
 
     result.push(access);
@@ -229,14 +245,13 @@ const accessTableColumns = computed(
         expandable: (_: AccessUser) => true,
         hide: props.showDatabaseColumn,
         renderExpand: (item: AccessUser) => {
-          return getDatabaseAccessResource(item);
+          return getConditionDisplay(item);
         },
       },
       {
         key: "member",
         title: t("common.members"),
-        minWidth: 140,
-        resizable: true,
+        width: 180,
         render: (item: AccessUser) => {
           if (item.member.startsWith(groupBindingPrefix)) {
             const group = groupStore.getGroupByIdentifier(item.member);
@@ -251,19 +266,17 @@ const accessTableColumns = computed(
         },
       },
       {
-        key: "resource",
-        title: t("common.resource"),
-        minWidth: 200,
-        resizable: true,
+        key: "condition",
+        title: t("cel.condition.self"),
         hide: !props.showDatabaseColumn,
         render: (item: AccessUser) => {
-          return getDatabaseAccessResource(item);
+          return getConditionDisplay(item);
         },
       },
       {
         key: "expire",
         title: t("common.expiration"),
-        minWidth: 200,
+        width: 220,
         render: (item: AccessUser) => {
           return (
             <NDatePicker
@@ -287,7 +300,7 @@ const accessTableColumns = computed(
       {
         key: "reason",
         title: t("common.reason"),
-        minWidth: 120,
+        width: 120,
         render: (item: AccessUser) => {
           return item.description;
         },
@@ -315,12 +328,6 @@ const accessTableColumns = computed(
   }
 );
 
-const scrollX = computed(() => {
-  return accessTableColumns.value.reduce((sum, col) => {
-    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
-  }, 0);
-});
-
 const revokeAccessAlert = (item: AccessUser) => {
   $dialog.warning({
     title: t("common.warning"),
@@ -332,7 +339,7 @@ const revokeAccessAlert = (item: AccessUser) => {
               member: item.member,
             })}
           </div>
-          {getDatabaseAccessResource(item)}
+          {getConditionDisplay(item)}
         </div>
       );
     },

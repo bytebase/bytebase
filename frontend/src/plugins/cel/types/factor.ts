@@ -27,6 +27,9 @@ export const NumberFactorList = [
 
   // Request query/export factors
   CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS,
+
+  // Masking rule
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
 ] as const;
 export type NumberFactor = (typeof NumberFactorList)[number];
 
@@ -51,8 +54,6 @@ export const StringFactorList = [
 
   // Masking
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
-  // Masking rule
-  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
 ] as const;
 export type StringFactor = (typeof StringFactorList)[number];
 

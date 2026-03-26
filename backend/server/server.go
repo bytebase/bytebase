@@ -154,6 +154,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.store = stores
 	sheetManager := sheet.NewManager()
 
+	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores, profile.SaaS)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create license service")
+	}
+
 	logSetup := &storepb.WorkspaceProfileSetting{
 		EnableAuditLogStdout:   false,
 		EnableMetricCollection: true,
@@ -192,11 +197,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.bus, err = bus.New()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create message bus")
-	}
-
-	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores, profile.SaaS)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create license service")
 	}
 
 	// The auth secret is a global infrastructure value stored in server_config.

@@ -31,5 +31,8 @@ export interface AccessUser {
   expirationTimestamp?: number;
   rawExpression: string;
   description: string;
-  databaseResource?: DatabaseResource;
+  databaseResources?: DatabaseResource[];
+  // The condition portion of the CEL expression, excluding request.time.
+  // Used as fallback display when databaseResources can't be parsed.
+  conditionExpression: string;
 }

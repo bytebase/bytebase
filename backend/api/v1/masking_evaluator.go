@@ -28,7 +28,7 @@ type MaskingEvaluation struct {
 	MaskingRuleID       string
 	Algorithm           string
 	Context             string
-	ClassificationLevel string
+	ClassificationLevel int32
 }
 
 func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
@@ -113,7 +113,9 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 	}
 
 	if eval != nil && eval.SemanticTypeID != "" {
-		pass, err := evaluateExemptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExemptions)
+		dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
+		classificationLevel := getClassificationLevelOfColumn(columnConfig.GetClassification(), dataClassificationConfig)
+		pass, err := evaluateExemptionOfColumn(databaseMessage, schemaName, tableName, columnName, classificationLevel, filteredMaskingExemptions)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +145,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 			common.CELAttributeResourceSchemaName:          schemaName,
 			common.CELAttributeResourceTableName:           tableName,
 			common.CELAttributeResourceColumnName:          columnName,
-			common.CELAttributeResourceClassificationLevel: classificationLevel,
+			common.CELAttributeResourceClassificationLevel: int64(classificationLevel),
 		}
 		if databaseMessage.EffectiveEnvironmentID != nil {
 			maskingRuleAttributes[common.CELAttributeResourceEnvironmentID] = *databaseMessage.EffectiveEnvironmentID
@@ -187,15 +189,16 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	return nil, nil
 }
 
-func evaluateExemptionOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName string, filteredMaskingExemptions []*storepb.MaskingExemptionPolicy_Exemption) (bool, error) {
+func evaluateExemptionOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName string, classificationLevel int32, filteredMaskingExemptions []*storepb.MaskingExemptionPolicy_Exemption) (bool, error) {
 	for _, filteredMaskingExemption := range filteredMaskingExemptions {
 		maskingExemptionAttributes := map[string]any{
 			"resource": map[string]any{
-				"instance_id":   databaseMessage.InstanceID,
-				"database_name": databaseMessage.DatabaseName,
-				"schema_name":   schemaName,
-				"table_name":    tableName,
-				"column_name":   columnName,
+				"instance_id":          databaseMessage.InstanceID,
+				"database_name":        databaseMessage.DatabaseName,
+				"schema_name":          schemaName,
+				"table_name":           tableName,
+				"column_name":          columnName,
+				"classification_level": int64(classificationLevel),
 			},
 			"request": map[string]any{
 				"time": time.Now(),
@@ -212,20 +215,20 @@ func evaluateExemptionOfColumn(databaseMessage *store.DatabaseMessage, schemaNam
 	return false, nil
 }
 
-func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) string {
+func getClassificationLevelOfColumn(columnClassificationID string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) int32 {
 	if columnClassificationID == "" || classificationConfig == nil {
-		return ""
+		return 0
 	}
 
 	classification, ok := classificationConfig.Classification[columnClassificationID]
 	if !ok {
-		return ""
+		return 0
 	}
-	if classification.LevelId == nil {
-		return ""
+	if classification.Level == nil {
+		return 0
 	}
 
-	return *classification.LevelId
+	return *classification.Level
 }
 
 func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes map[string]any) (bool, error) {

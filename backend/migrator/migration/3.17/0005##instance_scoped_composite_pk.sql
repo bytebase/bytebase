@@ -1,7 +1,8 @@
 -- Step 2e: Switch revision, sync_history, changelog to resource_id PKs.
 
--- Phase A: Drop FKs
+-- Phase A: Drop FKs (drop both old and new names for idempotency on re-run)
 ALTER TABLE changelog DROP CONSTRAINT IF EXISTS changelog_sync_history_id_fkey;
+ALTER TABLE changelog DROP CONSTRAINT IF EXISTS changelog_sync_history_fkey;
 
 -- Phase B: revision — promote resource_id to PK
 DROP INDEX IF EXISTS idx_revision_unique_resource_id;
@@ -23,8 +24,11 @@ ALTER TABLE changelog ADD PRIMARY KEY (resource_id);
 
 -- Phase E: changelog — add sync_history text column, backfill, drop old sync_history_id
 ALTER TABLE changelog ADD COLUMN IF NOT EXISTS sync_history text;
-UPDATE changelog SET sync_history = sync_history.resource_id
-    FROM sync_history WHERE changelog.sync_history IS NULL AND changelog.sync_history_id = sync_history.id;
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'changelog' AND column_name = 'sync_history_id') THEN
+        EXECUTE 'UPDATE changelog SET sync_history = sync_history.resource_id FROM sync_history WHERE changelog.sync_history IS NULL AND changelog.sync_history_id = sync_history.id';
+    END IF;
+END $$;
 ALTER TABLE changelog DROP COLUMN IF EXISTS sync_history_id;
 
 -- Phase F: Re-add FK from changelog.sync_history to sync_history.resource_id

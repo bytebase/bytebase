@@ -17,9 +17,9 @@ export const getClassificationLevelOptions = () => {
   if (!config?.levels) {
     return [];
   }
-  return config.levels.map<ResourceSelectOption<unknown>>((level) => ({
-    label: level.title,
-    value: level.id,
+  return config.levels.map<ResourceSelectOption<unknown>>((l) => ({
+    label: l.title,
+    value: String(l.level),
   }));
 };
 
