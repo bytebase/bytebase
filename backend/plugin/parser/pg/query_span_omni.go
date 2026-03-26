@@ -806,6 +806,10 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 	}
 	fromTables := analyzer.collectFromTables(selStmt)
 
+	// Build CTE map so we can trace through CTEs to real tables.
+	cteMap := collectCTEDefinitions(selStmt)
+	analyzer.cteMap = cteMap
+
 	// Check if SELECT has explicit target list (not *).
 	if selStmt.TargetList != nil {
 		var results []base.QuerySpanResult

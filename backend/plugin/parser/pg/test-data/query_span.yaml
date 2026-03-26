@@ -841,8 +841,8 @@
             - server: ""
               database: db
               schema: public
-              table: issue_approvers
-              column: approver_emails
+              table: principal
+              column: email
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -851,8 +851,8 @@
             - server: ""
               database: db
               schema: public
-              table: issue_releasers
-              column: releaser_emails
+              table: principal
+              column: email
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -886,13 +886,8 @@
         - server: ""
           database: db
           schema: public
-          table: issue_approvers
-          column: approver_emails
-        - server: ""
-          database: db
-          schema: public
-          table: issue_releasers
-          column: releaser_emails
+          table: principal
+          column: email
     predicatepaths: []
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);

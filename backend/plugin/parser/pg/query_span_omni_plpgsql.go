@@ -170,6 +170,8 @@ type plpgsqlAnalyzer struct {
 	scope     *variableScope
 	// returnResults collects per-column source sets from all RETURN QUERY paths.
 	returnResults [][]base.SourceColumnSet
+	// cteMap holds CTE definitions for resolving column refs through CTEs.
+	cteMap map[string]*ast.SelectStmt
 }
 
 func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc, body string) ([]base.SourceColumnSet, error) {
@@ -836,6 +838,7 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 }
 
 // resolveColumnRef resolves a ColumnRef to a source column using known tables.
+// If the table is a CTE, it traces through the CTE to find real source columns.
 func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[string]base.ColumnResource, result base.SourceColumnSet) {
 	if cr == nil || cr.Fields == nil || len(cr.Fields.Items) == 0 {
 		return
@@ -870,6 +873,14 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 		tableName := strings.ToLower(parts[0])
 		colName := parts[1]
 		if resource, ok := fromTables[tableName]; ok {
+			// Check if this table is actually a CTE — trace through to real sources.
+			// The CTE name is the original table name (resource.Table), not the alias.
+			if a.cteMap != nil {
+				if cteSel, isCTE := a.cteMap[strings.ToLower(resource.Table)]; isCTE {
+					a.resolveThroughCTE(cteSel, colName, fromTables, result)
+					return
+				}
+			}
 			result[base.ColumnResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
@@ -879,6 +890,66 @@ func (a *plpgsqlAnalyzer) resolveColumnRef(cr *ast.ColumnRef, fromTables map[str
 		}
 	default:
 	}
+}
+
+// resolveThroughCTE traces a column reference through a CTE to find real source columns.
+func (a *plpgsqlAnalyzer) resolveThroughCTE(cteSel *ast.SelectStmt, colName string, _ map[string]base.ColumnResource, result base.SourceColumnSet) {
+	if cteSel == nil || cteSel.TargetList == nil {
+		return
+	}
+
+	// Build FROM tables for the CTE's query.
+	cteTables := a.collectFromTables(cteSel)
+	// Include parent CTEs for nested CTE references.
+	if a.cteMap != nil {
+		for name := range a.cteMap {
+			if _, exists := cteTables[name]; !exists {
+				cteTables[name] = base.ColumnResource{
+					Database: a.extractor.defaultDatabase,
+					Schema:   "public",
+					Table:    name,
+				}
+			}
+		}
+	}
+
+	// Find the target entry matching the column name.
+	for _, item := range cteSel.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		// Match by alias first, then by expression name.
+		rtName := rt.Name
+		if rtName == "" {
+			rtName = figureResTargetName(rt)
+		}
+		if !strings.EqualFold(rtName, colName) {
+			continue
+		}
+		// Found matching column — extract source refs from its expression.
+		a.extractColumnRefsFromExpr(rt.Val, cteTables, result)
+		return
+	}
+}
+
+// collectCTEDefinitions extracts CTE names and their SelectStmt definitions from a query.
+func collectCTEDefinitions(selStmt *ast.SelectStmt) map[string]*ast.SelectStmt {
+	if selStmt == nil || selStmt.WithClause == nil {
+		return nil
+	}
+
+	cteMap := make(map[string]*ast.SelectStmt)
+	for _, item := range selStmt.WithClause.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if sel, ok := cte.Ctequery.(*ast.SelectStmt); ok {
+			cteMap[strings.ToLower(cte.Ctename)] = sel
+		}
+	}
+	return cteMap
 }
 
 // relationHasColumn checks if a catalog relation has a column with the given name.
