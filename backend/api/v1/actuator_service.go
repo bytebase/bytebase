@@ -154,8 +154,8 @@ func (s *ActuatorService) SetupSample(
 }
 
 var defaultAccountRestriction = &v1pb.Restriction{
-	DisallowSignup:         false,
-	DisallowPasswordSignin: false,
+	DisallowSignup:         true,
+	DisallowPasswordSignin: true,
 	PasswordRestriction: &v1pb.WorkspaceProfileSetting_PasswordRestriction{
 		MinLength: 8,
 	},
@@ -241,7 +241,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 	var features []v1pb.PlanFeature
 
 	// idp
-	idps, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: workspaceID})
+	idps, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &workspaceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list identity providers")
 	}

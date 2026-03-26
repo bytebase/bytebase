@@ -488,6 +488,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
+	// For workspace-scoped IDPs, use the IDP's workspace.
+	// For global IDPs (SaaS), workspace is resolved after authentication from user membership.
 	workspaceID := idp.Workspace
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
@@ -578,85 +580,116 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", userInfo.Identifier))
 		}
 	}
-	// If the email is still invalid, we will return an error.
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
-		return nil, err
-	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list users by email %s", email))
 	}
-	if user != nil {
-		if user.MemberDeleted {
+	// User login through global SSO, then we should auth-resolve the workspace id.
+	if user != nil && workspaceID == "" {
+		wsID, err := s.resolveWorkspaceForLogin(ctx, user)
+		if err != nil {
+			slog.Warn("failed to resolve workspace", slog.String("user", user.Email), log.BBError(err))
+		}
+		workspaceID = wsID
+	}
+	// First time login through SSO
+	if user == nil {
+		if workspaceID != "" {
+			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
+				return nil, err
+			}
+
+			// We will only block new create creation and still allow SSO login from existing users.
+			featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
+			if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
+				featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
+			}
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, featurePlan); err != nil {
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
+			}
+
 			if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
 				return nil, err
 			}
-			// Undelete the user when login via SSO.
-			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete user"))
-			}
 		}
-		if userInfo.HasGroups {
-			// Sync user groups with the identity provider.
-			// The userInfo.Groups is the groups that the user belongs to in the identity provider.
-			if err := s.syncUserGroups(ctx, user, workspaceID, userInfo.Groups); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync user groups"))
-			}
+
+		// Create new user from identity provider.
+		password, err := common.RandomString(20)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password"))
 		}
-		return user, nil
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash"))
+		}
+
+		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+			Name:         userInfo.DisplayName,
+			Email:        email,
+			Phone:        userInfo.Phone,
+			Type:         storepb.PrincipalType_END_USER,
+			PasswordHash: string(passwordHash),
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+		}
+
+		user = newUser
 	}
 
-	// For expired license, we will only block new create creation and still allow SSO login from existing users.
-	featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
-	if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
-		featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
-	}
-	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, featurePlan); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, err)
-	}
-	// Create new user from identity provider.
-	password, err := common.RandomString(20)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password"))
-	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash"))
-	}
-	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
-		return nil, err
-	}
-	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-		Name:         userInfo.DisplayName,
-		Email:        email,
-		Phone:        userInfo.Phone,
-		Type:         storepb.PrincipalType_END_USER,
-		PasswordHash: string(passwordHash),
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+	if workspaceID == "" {
+		// Global IDP: create a new workspace for the user (same as Signup flow).
+		wsID, err := common.RandomString(16)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
+		}
+		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
+			ResourceID: wsID,
+			Name:       "Default workspace",
+		}, email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
+		}
+		workspaceID = ws.ResourceID
+	} else {
+		// Workspace-scoped IDP: add user as member only if not already in the workspace.
+		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &workspaceID,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check workspace membership"))
+		}
+		if ws == nil {
+			if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+				Workspace: workspaceID,
+				Member:    common.FormatUserEmail(email),
+				Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+			}); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+			}
+		}
 	}
 
-	// Add the new user to the workspace IAM policy as a member.
-	// The IDP is workspace-scoped, so authenticating through it grants workspace access.
-	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Workspace: workspaceID,
-		Member:    common.FormatUserEmail(email),
-		Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
+	if user.MemberDeleted {
+		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
+			return nil, err
+		}
+		// Undelete the user when login via SSO.
+		user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete user"))
+		}
 	}
 
 	if userInfo.HasGroups {
-		// Sync user groups with the identity provider.
-		// The userInfo.Groups is the groups that the user belongs to in the identity provider.
-		if err := s.syncUserGroups(ctx, newUser, workspaceID, userInfo.Groups); err != nil {
+		if err := s.syncUserGroups(ctx, user, workspaceID, userInfo.Groups); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync user groups"))
 		}
 	}
-	return newUser, nil
+	return user, nil
 }
 
 // countRecentLoginFailures counts the number of failed login attempts for a given email

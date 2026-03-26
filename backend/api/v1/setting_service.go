@@ -292,7 +292,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 						return nil, connect.NewError(connect.CodePermissionDenied, err)
 					}
 
-					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
+					settingWsID := common.GetWorkspaceIDFromContext(ctx)
+					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &settingWsID})
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
 					}

@@ -1,9 +1,9 @@
 <template>
   <template v-if="initialized">
     <div class="mx-auto w-full max-w-sm">
-      <BytebaseLogo class="mx-auto" />
+      <BytebaseLogo class="mx-auto mb-8" />
 
-      <div v-if="showSignInForm" class="mt-8">
+      <div v-if="showSignInForm">
         <NCard>
           <NTabs
             class="card-tabs"

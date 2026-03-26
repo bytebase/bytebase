@@ -31,12 +31,8 @@ func GetSSHClient(ds *storepb.DataSource) (*ssh.Client, error) {
 		// we will try to connect to the ssh-agent to get the private key.
 		if conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
 			defer conn.Close()
-			// Create a new instance of the ssh agent
 			agentClient := agent.NewClient(conn)
-			// When the agentClient connection succeeded, add them as AuthMethod
-			if agentClient != nil {
-				sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
-			}
+			sshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeysCallback(agentClient.Signers))
 		}
 	}
 	// When there's a non empty password add the password AuthMethod.

@@ -42,8 +42,8 @@
       />
       <NDivider />
 
-      <div>
-        <div class="mb-7 mt-4 lg:mt-0">
+      <div class="flex flex-col gap-y-7">
+        <div class="lg:mt-0">
           <div class="flex items-center gap-x-2">
             <PermissionGuardWrapper
               v-slot="slotProps"
@@ -62,11 +62,11 @@
               <FeatureBadge :feature="PlanFeature.FEATURE_TWO_FA" />
             </div>
           </div>
-          <div class="mt-1 mb-3 text-sm text-gray-400">
+          <div class="mt-1 text-sm text-gray-400">
             {{ $t("settings.general.workspace.require-2fa.description") }}
           </div>
         </div>
-        <div class="mb-7 mt-4 lg:mt-0">
+        <div v-if="!isSaaSMode" class="lg:mt-0">
           <div class="flex items-center gap-x-2">
             <PermissionGuardWrapper
               v-slot="slotProps"
@@ -109,7 +109,7 @@
               />
             </div>
           </div>
-          <div class="mt-1 mb-3 text-sm text-gray-400">
+          <div class="mt-1 text-sm text-gray-400">
             {{
               $t(
                 "settings.general.workspace.disallow-password-signin.description"
@@ -118,6 +118,7 @@
           </div>
         </div>
       </div>
+
       <NDivider />
 
       <TokenDurationSetting

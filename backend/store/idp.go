@@ -15,11 +15,12 @@ import (
 // IdentityProviderMessage is the message for identity provider.
 type IdentityProviderMessage struct {
 	ResourceID string
-	Workspace  string
-	Title      string
-	Domain     string
-	Type       storepb.IdentityProviderType
-	Config     *storepb.IdentityProviderConfig
+	// Empty string for global IDPs (SaaS login), non-empty for workspace-scoped IDPs.
+	Workspace string
+	Title     string
+	Domain    string
+	Type      storepb.IdentityProviderType
+	Config    *storepb.IdentityProviderConfig
 }
 
 func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
@@ -38,14 +39,17 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 
 // FindIdentityProviderMessage is the message for finding identity providers.
 type FindIdentityProviderMessage struct {
-	Workspace  string
+	// Workspace filters by workspace:
+	// - non-nil: query WHERE workspace = ? (workspace-scoped IDPs)
+	// - nil: query WHERE workspace IS NULL (global IDPs)
+	// Use separate calls to get both workspace-scoped and global IDPs.
+	Workspace  *string
 	ResourceID *string
 }
 
 // UpdateIdentityProviderMessage is the message for updating an identity provider.
 type UpdateIdentityProviderMessage struct {
 	ResourceID string
-	Workspace  string
 
 	Title  *string
 	Domain *string
@@ -67,6 +71,12 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		return nil, errors.Wrap(err, "failed to marshal identity provider config")
 	}
 
+	// Use NULL for global IDPs (empty workspace).
+	var workspaceArg any
+	if create.Workspace != "" {
+		workspaceArg = create.Workspace
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO idp (
 			resource_id,
@@ -77,7 +87,7 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 			config
 		)
 		VALUES (?, ?, ?, ?, ?, ?)
-	`, create.ResourceID, create.Workspace, create.Title, create.Domain, create.Type.String(), configBytes)
+	`, create.ResourceID, workspaceArg, create.Title, create.Domain, create.Type.String(), configBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -91,7 +101,6 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	return identityProvider, nil
 }
 
-// GetIdentityProvider gets an identity provider.
 // GetIdentityProviderByID gets an identity provider by its globally unique resource ID without workspace filter.
 // For use by login flow where workspace is not yet known — the workspace is resolved from the IDP entity.
 func (s *Store) GetIdentityProviderByID(ctx context.Context, resourceID string) (*IdentityProviderMessage, error) {
@@ -107,15 +116,19 @@ func (s *Store) GetIdentityProviderByID(ctx context.Context, resourceID string) 
 	}
 
 	var idp IdentityProviderMessage
+	var workspace sql.NullString
 	var idpType string
 	var idpConfig string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&idp.ResourceID, &idp.Workspace, &idp.Title, &idp.Domain, &idpType, &idpConfig,
+		&idp.ResourceID, &workspace, &idp.Title, &idp.Domain, &idpType, &idpConfig,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to get identity provider")
+	}
+	if workspace.Valid {
+		idp.Workspace = workspace.String
 	}
 	idp.Type = convertIdentityProviderType(idpType)
 	idp.Config = convertIdentityProviderConfigString(idp.Type, idpConfig)
@@ -148,8 +161,14 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 			type,
 			config
 		FROM idp
-		WHERE workspace = ?
-	`, find.Workspace)
+		WHERE TRUE
+	`)
+
+	if v := find.Workspace; v != nil {
+		q.And("workspace = ?", *v)
+	} else {
+		q.And("workspace IS NULL")
+	}
 
 	if v := find.ResourceID; v != nil {
 		q.And("resource_id = ?", *v)
@@ -171,17 +190,21 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 	var identityProviderMessages []*IdentityProviderMessage
 	for rows.Next() {
 		var identityProviderMessage IdentityProviderMessage
+		var workspace sql.NullString
 		var identityProviderType string
 		var identityProviderConfig string
 		if err := rows.Scan(
 			&identityProviderMessage.ResourceID,
-			&identityProviderMessage.Workspace,
+			&workspace,
 			&identityProviderMessage.Title,
 			&identityProviderMessage.Domain,
 			&identityProviderType,
 			&identityProviderConfig,
 		); err != nil {
 			return nil, err
+		}
+		if workspace.Valid {
+			identityProviderMessage.Workspace = workspace.String
 		}
 		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
 		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)
@@ -217,7 +240,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 	q := qb.Q().Space(`
 		UPDATE idp
 		SET ?
-		WHERE resource_id = ? AND workspace = ?
+		WHERE resource_id = ?
 		RETURNING
 			resource_id,
 			workspace,
@@ -225,7 +248,7 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 			domain,
 			type,
 			config
-	`, set, patch.ResourceID, patch.Workspace)
+	`, set, patch.ResourceID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -233,11 +256,12 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 	}
 
 	identityProvider := &IdentityProviderMessage{}
+	var workspace sql.NullString
 	var identityProviderType string
 	var identityProviderConfig string
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&identityProvider.ResourceID,
-		&identityProvider.Workspace,
+		&workspace,
 		&identityProvider.Title,
 		&identityProvider.Domain,
 		&identityProviderType,
@@ -248,14 +272,17 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		}
 		return nil, err
 	}
+	if workspace.Valid {
+		identityProvider.Workspace = workspace.String
+	}
 
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
 	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
 	return identityProvider, nil
 }
 
-func (s *Store) DeleteIdentityProvider(ctx context.Context, workspace string, resourceID string) error {
-	q := qb.Q().Space("DELETE FROM idp WHERE resource_id = ? AND workspace = ?", resourceID, workspace)
+func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) error {
+	q := qb.Q().Space("DELETE FROM idp WHERE resource_id = ?", resourceID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
