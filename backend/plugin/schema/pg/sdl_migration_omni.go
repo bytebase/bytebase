@@ -21,6 +21,20 @@ func init() {
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 }
 
+// convertDatabaseSchemaToSDL converts a model.DatabaseMetadata to SDL format string.
+func convertDatabaseSchemaToSDL(dbMetadata *model.DatabaseMetadata) (string, error) {
+	if dbMetadata == nil {
+		return "", nil
+	}
+
+	metadata := dbMetadata.GetProto()
+	if metadata == nil {
+		return "", nil
+	}
+
+	return getSDLFormat(metadata)
+}
+
 // buildSDLCatalogs builds the from/to catalogs for an SDL migration.
 func buildSDLCatalogs(userSDLText string, currentSchema *model.DatabaseMetadata) (*catalog.Catalog, *catalog.Catalog, error) {
 	fromDDL, err := convertDatabaseSchemaToSDL(currentSchema)

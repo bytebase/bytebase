@@ -2918,6 +2918,3 @@ func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *
 
 	return dependencies
 }
-
-// TODO: Add support for more PostgreSQL constructs if needed
-// (e.g., triggers, materialized views, custom types, etc.)

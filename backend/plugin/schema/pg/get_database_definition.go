@@ -4255,3 +4255,104 @@ func writeTriggerCommentSDL(out io.Writer, schemaName, tableName string, trigger
 	_, err := io.WriteString(out, "\n\n")
 	return err
 }
+
+// functionExtractor is an ANTLR walker to extract CREATE FUNCTION AST nodes.
+type functionExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreatefunctionstmtContext
+}
+
+func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
+// PostgreSQLIndexComparer provides PostgreSQL-specific index comparison logic.
+type PostgreSQLIndexComparer struct{}
+
+var _ schema.IndexComparer = &PostgreSQLIndexComparer{}
+
+func (c *PostgreSQLIndexComparer) CompareIndexWhereConditions(def1, def2 string) bool {
+	whereClause1 := c.ExtractWhereClauseFromIndexDef(def1)
+	whereClause2 := c.ExtractWhereClauseFromIndexDef(def2)
+	if whereClause1 == "" && whereClause2 == "" {
+		return true
+	}
+	if whereClause1 == "" || whereClause2 == "" {
+		return false
+	}
+	return schema.CompareExpressionsSemantically(storepb.Engine_POSTGRES, whereClause1, whereClause2)
+}
+
+func (*PostgreSQLIndexComparer) ExtractWhereClauseFromIndexDef(definition string) string {
+	if definition == "" {
+		return ""
+	}
+	parseResults, err := pgparser.ParsePostgreSQL(definition)
+	if err != nil || len(parseResults) == 0 {
+		return ""
+	}
+	tree := parseResults[0].Tree
+	if tree == nil {
+		return ""
+	}
+	listener := &indexWhereExtractor{}
+	antlr.NewParseTreeWalker().Walk(listener, tree)
+	return listener.whereClause
+}
+
+func (*PostgreSQLIndexComparer) ExtractIncludeClauseFromIndexDef(definition string) string {
+	if definition == "" {
+		return ""
+	}
+	parseResults, err := pgparser.ParsePostgreSQL(definition)
+	if err != nil || len(parseResults) == 0 {
+		return ""
+	}
+	tree := parseResults[0].Tree
+	if tree == nil {
+		return ""
+	}
+	listener := &indexIncludeExtractor{}
+	antlr.NewParseTreeWalker().Walk(listener, tree)
+	return listener.includeClause
+}
+
+type indexWhereExtractor struct {
+	parser.BasePostgreSQLParserListener
+	whereClause string
+}
+
+func (l *indexWhereExtractor) EnterOpt_where_clause(ctx *parser.Opt_where_clauseContext) {
+	if ctx.WHERE() != nil && ctx.A_expr() != nil {
+		start := ctx.A_expr().GetStart()
+		stop := ctx.A_expr().GetStop()
+		if start != nil && stop != nil {
+			if p := ctx.GetParser(); p != nil {
+				if ts := p.GetTokenStream(); ts != nil {
+					l.whereClause = ts.GetTextFromTokens(start, stop)
+				}
+			}
+		}
+	}
+}
+
+type indexIncludeExtractor struct {
+	parser.BasePostgreSQLParserListener
+	includeClause string
+}
+
+func (l *indexIncludeExtractor) EnterOpt_include(ctx *parser.Opt_includeContext) {
+	if ctx.INCLUDE() != nil {
+		start := ctx.GetStart()
+		stop := ctx.GetStop()
+		if start != nil && stop != nil {
+			if p := ctx.GetParser(); p != nil {
+				if ts := p.GetTokenStream(); ts != nil {
+					l.includeClause = ts.GetTextFromTokens(start, stop)
+				}
+			}
+		}
+	}
+}
