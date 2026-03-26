@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { featureToRef, useWorkspaceV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -135,6 +135,15 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+// Re-sync local state when the workspace loads asynchronously,
+// but only if the user hasn't made edits yet.
+watchEffect(() => {
+  const ws = workspaceStore.currentWorkspace;
+  if (!ws || allowSave.value) return;
+  state.workspaceTitle = ws.title ?? "";
+  state.logoUrl = ws.logo;
+});
+
 const workspaceID = computed(() => {
   const name = workspaceStore.currentWorkspace?.name ?? "";
   return name.replace(/^workspaces\//, "");
@@ -142,7 +151,8 @@ const workspaceID = computed(() => {
 
 const allowSave = computed((): boolean => {
   return (
-    state.workspaceTitle !== initialTitle.value ||
+    (state.workspaceTitle !== initialTitle.value &&
+      state.workspaceTitle.trim() !== "") ||
     state.logoUrl !== workspaceStore.currentWorkspace?.logo
   );
 });
