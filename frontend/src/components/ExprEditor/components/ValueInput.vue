@@ -33,7 +33,7 @@
   </template>
   <template v-if="inputType === 'MULTI-SELECT'">
     <MultiSelect
-      :value="getStringArrayValue()"
+      :value="getArrayValue().map(String)"
       :expr="expr"
       @update:value="
         isNumberFactor(factor)
