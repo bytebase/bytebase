@@ -399,6 +399,14 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 		}
 	}
 
+	// Build a helper analyzer for parse-tree fallback extraction.
+	var analyzer *plpgsqlAnalyzer
+	var fromTables map[string]base.ColumnResource
+	if selStmt != nil {
+		analyzer = &plpgsqlAnalyzer{extractor: e, scope: newVariableScope(nil)}
+		fromTables = analyzer.collectFromTables(selStmt)
+	}
+
 	var results []base.QuerySpanResult
 	idx := 0
 	for _, te := range q.TargetList {
@@ -414,12 +422,17 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 			isPlain = isUltimatelyPlainColumn(q, te.Expr)
 		}
 		name := te.ResName
-		// When the catalog produces a default name like "?column?", try to
-		// derive a better name from the original parse tree (e.g., function
-		// name for json_object, json_array constructors).
-		if name == "?column?" && idx < len(parseTargets) {
-			if better := figureResTargetName(parseTargets[idx]); better != "" {
-				name = better
+		// When the catalog reduces an expression to ConstExpr (losing column refs,
+		// e.g., json_object('id': a)), fall back to the parse tree to extract
+		// column references and derive a better name.
+		if idx < len(parseTargets) {
+			if name == "?column?" {
+				if better := figureResTargetName(parseTargets[idx]); better != "" {
+					name = better
+				}
+			}
+			if len(sourceColSet) == 0 && analyzer != nil {
+				analyzer.extractColumnRefsFromExpr(parseTargets[idx].Val, fromTables, sourceColSet)
 			}
 		}
 		results = append(results, base.QuerySpanResult{

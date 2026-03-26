@@ -833,6 +833,26 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
 	case *ast.BooleanTest:
 		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+	case *ast.JsonObjectConstructor:
+		if v.Exprs != nil {
+			for _, item := range v.Exprs.Items {
+				if kv, ok := item.(*ast.JsonKeyValue); ok {
+					if kv.Value != nil {
+						a.extractColumnRefsFromExpr(kv.Value.RawExpr, fromTables, result)
+					}
+				}
+			}
+		}
+	case *ast.JsonArrayConstructor:
+		if v.Exprs != nil {
+			for _, item := range v.Exprs.Items {
+				if jve, ok := item.(*ast.JsonValueExpr); ok {
+					a.extractColumnRefsFromExpr(jve.RawExpr, fromTables, result)
+				}
+			}
+		}
+	case *ast.JsonValueExpr:
+		a.extractColumnRefsFromExpr(v.RawExpr, fromTables, result)
 	default:
 	}
 }

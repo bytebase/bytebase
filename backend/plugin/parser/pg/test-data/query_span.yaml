@@ -943,7 +943,12 @@
     type: 1
     results:
         - name: json_object
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -980,7 +985,12 @@
     type: 1
     results:
         - name: json_array
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -2053,7 +2063,17 @@
           schema: public
           table: paintings
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: galleries
+          column: id
+        - server: ""
+          database: db
+          schema: public
+          table: paintings
+          column: gallery_id
 - description: Test for functions
   statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT * FROM t) result;
   defaultDatabase: db
