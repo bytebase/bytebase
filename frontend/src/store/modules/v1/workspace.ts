@@ -70,9 +70,11 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
         }),
       })
     );
-    const index = workspaceList.value.findIndex(ws => ws.name === updated.name)
+    const index = workspaceList.value.findIndex(
+      (ws) => ws.name === updated.name
+    );
     if (index >= 0) {
-      workspaceList.value[0] = updated
+      workspaceList.value[0] = updated;
     }
     currentWorkspace.value = updated;
   };
