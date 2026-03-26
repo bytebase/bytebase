@@ -140,6 +140,7 @@ describe("AgentInput", () => {
 
     const inputRow = wrapper.find("[data-agent-input-row]");
     expect(inputRow.exists()).toBe(true);
+    expect(inputRow.classes()).toContain("items-center");
 
     const input = wrapper.findComponent(NMention);
     expect(input.exists()).toBe(true);

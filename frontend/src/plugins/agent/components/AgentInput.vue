@@ -627,7 +627,7 @@ watch(
       </button>
     </div>
 
-    <div v-else class="flex items-end gap-x-2" data-agent-input-row>
+    <div v-else class="flex items-center gap-x-2" data-agent-input-row>
       <NMention
         ref="inputInstRef"
         v-model:value="input"
