@@ -78,7 +78,7 @@
 
   <DataExampleModal
     v-if="state.showExampleModal"
-    :example="JSON.stringify(example, null, 2)"
+    :example="exampleJSON"
     @dismiss="state.showExampleModal = false"
   />
 </template>
@@ -111,6 +111,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import SingleFileSelector from "../SingleFileSelector.vue";
+import classificationExample from "./classification-example.json";
 import ClassificationTree from "./components/ClassificationTree.vue";
 import DataExampleModal from "./components/DataExampleModal.vue";
 
@@ -332,92 +333,5 @@ const onFileSelect = (file: File) => {
   fr.readAsText(file);
 };
 
-const example = {
-  title: "Classification Example",
-  levels: [
-    create(DataClassificationSetting_DataClassificationConfig_LevelSchema, {
-      id: "1",
-      title: "Level 1",
-      description: "",
-    }),
-    create(DataClassificationSetting_DataClassificationConfig_LevelSchema, {
-      id: "2",
-      title: "Level 2",
-      description: "",
-    }),
-    create(DataClassificationSetting_DataClassificationConfig_LevelSchema, {
-      id: "3",
-      title: "Level 3",
-      description: "",
-    }),
-    create(DataClassificationSetting_DataClassificationConfig_LevelSchema, {
-      id: "4",
-      title: "Level 4",
-      description: "",
-    }),
-  ],
-  classification: {
-    "1": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "1",
-        title: "Basic",
-        description: "",
-      }
-    ),
-    "1-1": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "1-1",
-        title: "Basic",
-        description: "",
-        levelId: "1",
-      }
-    ),
-    "1-2": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "1-2",
-        title: "Contact",
-        description: "",
-        levelId: "2",
-      }
-    ),
-    "1-3": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "1-3",
-        title: "Health",
-        description: "",
-        levelId: "4",
-      }
-    ),
-    "2": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "2",
-        title: "Relationship",
-        description: "",
-      }
-    ),
-    "2-1": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "2-1",
-        title: "Social",
-        description: "",
-        levelId: "1",
-      }
-    ),
-    "2-2": create(
-      DataClassificationSetting_DataClassificationConfig_DataClassificationSchema,
-      {
-        id: "2-2",
-        title: "Business",
-        description: "",
-        levelId: "3",
-      }
-    ),
-  },
-} satisfies UploadClassificationConfig;
+const exampleJSON = JSON.stringify(classificationExample, null, 2);
 </script>
