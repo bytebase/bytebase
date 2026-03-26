@@ -29,7 +29,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: unnest as table source with alias
   statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[0,0,0]) as t(a, b);
   defaultDatabase: db
@@ -57,7 +56,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: unnest as table source with alias
   statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[0,0,0]) as t;
   defaultDatabase: db
@@ -85,7 +83,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: unnest as table source with alias
   statement: SELECT * FROM unnest(ARRAY[1,2,3]) as t;
   defaultDatabase: db
@@ -108,7 +105,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Function with if-else
   statement: SELECT * from IF_QUERY();
   defaultDatabase: db
@@ -217,7 +213,6 @@
           table: t2
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Function with variables
   statement: SELECT plpgsql_t(1);
   defaultDatabase: db
@@ -300,7 +295,6 @@
           schema: public
           table: t2
           column: d
-    predicatepaths: []
 - description: Function Overloading
   statement: SELECT plpgsql_t(1, 2);
   defaultDatabase: db
@@ -372,7 +366,6 @@
           table: t2
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Bytebase Regression Test
   statement: |-
     WITH
@@ -863,7 +856,6 @@
           schema: public
           table: task_run
           column: creator_id
-    predicatepaths: []
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);
   defaultDatabase: db
@@ -925,7 +917,6 @@
           schema: public
           table: t
           column: a
-    predicatepaths: []
 - description: json_object as target field
   statement: 'SELECT json_object(''id'': a) FROM t'
   defaultDatabase: db
@@ -963,7 +954,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: json_array as target field
   statement: SELECT json_array(a) FROM t;
   defaultDatabase: db
@@ -1001,7 +991,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: json_each as target field
   statement: SELECT jsonb_each(a) FROM t;
   defaultDatabase: db
@@ -1044,7 +1033,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: json_each acted as table source
   statement: SELECT * FROM t, jsonb_each(a) WHERE id = 1;
   defaultDatabase: db
@@ -1077,7 +1065,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: to_jsonb accept table as argument with from table alias
   statement: SELECT to_jsonb(t1) FROM t t1;
   defaultDatabase: db
@@ -1115,7 +1102,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for JSON function
   statement: SELECT row_to_json(t) FROM t;
   defaultDatabase: db
@@ -1153,7 +1139,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For unnest function
   statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[4,5,6]);
   defaultDatabase: db
@@ -1181,7 +1166,6 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For unnest function
   statement: SELECT * FROM unnest(ARRAY[1,2,3]);
   defaultDatabase: db
@@ -1214,7 +1198,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For System Function As Table Source
   statement: SELECT * FROM generate_series(1, 3);
   defaultDatabase: db
@@ -1247,7 +1230,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For System Function As Table Source
   statement: SELECT * FROM generate_subscripts(ARRAY[1,2,3], 1);
   defaultDatabase: db
@@ -1280,7 +1262,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For alias.* with join
   statement: SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
   defaultDatabase: db
@@ -1333,7 +1314,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For Complex PLpgSQL Function As Table Source
   statement: SELECT * FROM plpgsql_complex_t(1);
   defaultDatabase: db
@@ -1400,7 +1380,6 @@
           table: t2
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For PLpgSQL Function As Table Source
   statement: SELECT * FROM plpgsql_t(1);
   defaultDatabase: db
@@ -1449,7 +1428,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For Cascade Function As Table Source
   statement: SELECT * FROM cascade_t(1);
   defaultDatabase: db
@@ -1492,7 +1470,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For Function As Table Source
   statement: SELECT * FROM select_t(1);
   defaultDatabase: db
@@ -1541,7 +1518,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   defaultDatabase: db
@@ -1569,7 +1545,6 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for simple select const
   statement: SELECT 1;
   defaultDatabase: db
@@ -1602,7 +1577,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test asterisk and column
   statement: SELECT a, * FROM t;
   defaultDatabase: db
@@ -1694,7 +1668,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Happy path for a simple select statement
   statement: SELECT * FROM t
   defaultDatabase: db
@@ -1776,7 +1749,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Referenced table fields by different format
   statement: SELECT a, t.b, public.t.c, db.public.t.d FROM t;
   defaultDatabase: db
@@ -1858,7 +1830,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Scalar subquery in select fields
   statement: SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM t) AS avg_a_b_c FROM t;
   defaultDatabase: db
@@ -1930,7 +1901,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Multiple-Row subquery in where clause
   statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
   defaultDatabase: db
@@ -1977,7 +1947,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: db
@@ -2050,7 +2019,6 @@
           table: paintings
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for functions
   statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT * FROM t) result;
   defaultDatabase: db
@@ -2117,7 +2085,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for SELECT partial FROM JOIN clause
   statement: SELECT t1.*, t2.c, 0 FROM t1 JOIN t2 ON 1 = 1;
   defaultDatabase: db
@@ -2204,7 +2171,6 @@
           table: t2
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for JOIN with USING clause
   statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
   defaultDatabase: db
@@ -2316,7 +2282,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Simple CTE
   statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -2398,7 +2363,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Multi-level CTE
   statement: WITH tt2 AS (WITH tt2 AS (SELECT * FROM t) SELECT MAX(a) FROM tt2) SELECT * FROM tt2;
   defaultDatabase: db
@@ -2450,7 +2414,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for CTE rename fields name
   statement: WITH t1(d, c, b, a) AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -2532,7 +2495,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for Recursive Common Table Expression dependent closures
   statement: WITH RECURSIVE t1(cc1, cc2, cc3, n) AS (SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM t UNION SELECT cc1*cc2, cc2 + cc1, cc3 * cc2, n+1 FROM t1 WHERE n < 10) SELECT * FROM t1;
   defaultDatabase: db
@@ -2574,7 +2536,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
   statement: WITH RECURSIVE t1 AS (SELECT 1 AS c1, 2 AS c2, 3 AS c3, 4 AS c4 UNION SELECT a, b, d, c FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -2616,7 +2577,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: query system tables
   statement: select * from information_schema.tables;
   defaultDatabase: db
@@ -2644,7 +2604,6 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: Test table.* with JOIN on different tables for masking
   statement: SELECT users.*, payments.* FROM users JOIN payments ON users.id = payments.user_id;
   defaultDatabase: db
@@ -2750,7 +2709,6 @@
           table: users
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: jsonb_array_elements as table source
   statement: SELECT * FROM t, jsonb_array_elements(a) AS elems WHERE id = 1;
   defaultDatabase: db
@@ -2788,7 +2746,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: jsonb_array_elements with column alias
   statement: SELECT * FROM t, jsonb_array_elements(a) AS elems(val) WHERE id = 1;
   defaultDatabase: db
@@ -2826,7 +2783,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: jsonb_array_elements_text as table source with alias
   statement: SELECT * FROM t CROSS JOIN LATERAL jsonb_array_elements_text(a) AS part WHERE id = 1;
   defaultDatabase: db
@@ -2859,7 +2815,6 @@
           table: t
           column: ""
     predicatecolumns: []
-    predicatepaths: []
 - description: array subscript in select list
   statement: |-
     SELECT
@@ -2914,4 +2869,3 @@
           table: t1
           column: ""
     predicatecolumns: []
-    predicatepaths: []

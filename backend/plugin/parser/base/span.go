@@ -355,7 +355,6 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		Results:          []YamlQuerySpanResult{},
 		SourceColumns:    []ColumnResource{},
 		PredicateColumns: []ColumnResource{},
-		PredicatePaths:   []string{},
 	}
 	for _, result := range s.Results {
 		yamlResult := &YamlQuerySpanResult{
@@ -433,7 +432,7 @@ type YamlQuerySpan struct {
 	Results          []YamlQuerySpanResult
 	SourceColumns    []ColumnResource
 	PredicateColumns []ColumnResource
-	PredicatePaths   []string
+	PredicatePaths   []string `yaml:"predicatepaths,omitempty"`
 }
 
 type YamlQuerySpanResult struct {
