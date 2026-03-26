@@ -349,12 +349,13 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 				Results:       results,
 			}, nil
 		}
-		// Fail-open: return access tables with best-effort column names when analysis fails
-		// (e.g., unsupported built-in functions like unnest with certain signatures).
+		// Fail-open: return access tables with best-effort column names and lineage
+		// when analysis fails (e.g., unsupported built-in functions).
 		return &base.QuerySpan{
-			Type:          base.Select,
-			SourceColumns: accessesMap,
-			Results:       extractFallbackColumns(selStmt),
+			Type:             base.Select,
+			SourceColumns:    accessesMap,
+			Results:          e.extractFallbackColumns(selStmt),
+			PredicateColumns: e.funcPredicateColumns,
 		}, nil
 	}
 
@@ -790,13 +791,20 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 	}
 }
 
-// extractFallbackColumns attempts to extract column names from the parse tree
-// when AnalyzeSelectStmt fails. For SELECT * FROM func() AS t(a, b), it extracts
-// the alias column names. For explicit target lists, it extracts column names/aliases.
-func extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
+// extractFallbackColumns attempts to extract column names and lineage from the parse tree
+// when AnalyzeSelectStmt fails. It walks the AST to find column references and resolves
+// them against tables in the FROM clause.
+func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
 	if selStmt == nil {
 		return nil
 	}
+
+	// Build a helper analyzer to reuse column reference extraction.
+	analyzer := &plpgsqlAnalyzer{
+		extractor: e,
+		scope:     newVariableScope(nil),
+	}
+	fromTables := analyzer.collectFromTables(selStmt)
 
 	// Check if SELECT has explicit target list (not *).
 	if selStmt.TargetList != nil {
@@ -813,13 +821,25 @@ func extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
 				if name == "" {
 					name = figureResTargetName(rt)
 				}
+				// Extract column references from the expression for lineage.
+				colSet := make(base.SourceColumnSet)
+				analyzer.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
 				results = append(results, base.QuerySpanResult{
 					Name:          name,
-					SourceColumns: base.SourceColumnSet{},
+					SourceColumns: colSet,
 				})
 			}
 		}
 		if !allStar && len(results) > 0 {
+			// Also extract WHERE clause columns for predicate tracking.
+			if selStmt.WhereClause != nil {
+				whereColSet := make(base.SourceColumnSet)
+				analyzer.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
+				for k, v := range whereColSet {
+					e.funcSourceColumns[k] = v
+					e.funcPredicateColumns[k] = v
+				}
+			}
 			return results
 		}
 	}

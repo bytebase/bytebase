@@ -817,22 +817,42 @@
     type: 1
     results:
         - name: month
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue
+              column: created_ts
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: issue_count
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue
+              column: id
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: ia
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue_approvers
+              column: approver_emails
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: ir
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue_releasers
+              column: releaser_emails
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -857,7 +877,22 @@
           schema: public
           table: task_run
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: issue
+          column: status
+        - server: ""
+          database: db
+          schema: public
+          table: issue_approvers
+          column: approver_emails
+        - server: ""
+          database: db
+          schema: public
+          table: issue_releasers
+          column: releaser_emails
     predicatepaths: []
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);
@@ -1033,7 +1068,12 @@
     type: 1
     results:
         - name: jsonb_each
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -1904,7 +1944,22 @@
           sourcefieldpaths: []
           selectasterisk: false
         - name: avg_a_b_c
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
