@@ -924,14 +924,15 @@
         }
       },
       "classification": {
-        "upload": "Tải lên phân loại",
-        "upload-label": "Bạn có thể tải lên tệp phân loại với định dạng JSON.",
-        "override-title": "Ghi đè dữ liệu phân loại",
-        "override-desc": "Dữ liệu phân loại hiện có sẽ bị ghi đè và ảnh hưởng đến tất cả các dự án.",
-        "override-confirm": "Vẫn tải lên"
-      },
-      "json-format-example": "Ví dụ định dạng JSON",
-      "view-example": "Xem ví dụ"
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field"
+      }
     }
   },
   "remind": {
@@ -1749,7 +1750,7 @@
     "transfer-database-to": "Chuyển cơ sở dữ liệu sang dự án đích",
     "classification": {
       "self": "Phân loại",
-      "description": "Sử dụng phân loại dữ liệu để quản lý chính sách che giấu cho nhiều cột bằng cách chỉ kiểm soát một số lượng nhỏ các phân loại."
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "partitioned": "Đã phân vùng",
     "partition-tables": "Bảng phân vùng",

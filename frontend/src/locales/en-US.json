@@ -924,14 +924,15 @@
         }
       },
       "classification": {
-        "upload": "Upload classification",
-        "upload-label": "You can upload classification file with JSON format.",
-        "override-title": "Classification data override",
-        "override-desc": "Existed classification data will be overridden and affect all projects.",
-        "override-confirm": "Still upload"
-      },
-      "json-format-example": "JSON format example",
-      "view-example": "View example"
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field"
+      }
     }
   },
   "remind": {
@@ -1749,7 +1750,7 @@
     "transfer-database-to": "Transfer databases to target project",
     "classification": {
       "self": "Classification",
-      "description": "Use data classification to manage masking policy for many columns by controlling only a small number of classifications."
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "partitioned": "Partitioned",
     "partition-tables": "Partition tables",
