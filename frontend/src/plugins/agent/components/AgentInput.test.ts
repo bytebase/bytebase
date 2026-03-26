@@ -144,6 +144,8 @@ describe("AgentInput", () => {
     const input = wrapper.findComponent(NMention);
     expect(input.exists()).toBe(true);
     expect(input.props("type")).toBe("textarea");
+    expect(input.props("placement")).toBe("top-start");
+    expect(input.props("to")).toBe("body");
 
     const sendButton = wrapper.findComponent(NButton);
     expect(sendButton.exists()).toBe(true);
@@ -818,7 +820,7 @@ describe("AgentInput", () => {
     expect(options.map((option) => option.value)).toEqual(["[e1]", "[e2]"]);
   });
 
-  test("limits DOM ref mention options to the visible result cap", async () => {
+  test("keeps all DOM ref mention options accessible and scrollable", async () => {
     mockLazyExtractDomRefSuggestions.mockResolvedValue(
       Array.from({ length: 10 }, (_, index) =>
         createDomRefSuggestion({
@@ -844,9 +846,39 @@ describe("AgentInput", () => {
     await flushPromises();
 
     const options = mention.props("options") as { value: string }[];
-    expect(options).toHaveLength(8);
+    expect(options).toHaveLength(10);
     expect(options[0]?.value).toBe("[e1]");
-    expect(options[7]?.value).toBe("[e8]");
+    expect(options[9]?.value).toBe("[e10]");
+    expect(mention.props("scrollbarProps")).toEqual({
+      containerStyle: { maxHeight: "320px" },
+    });
+  });
+
+  test("keeps the active DOM ref option scrolled into view during keyboard navigation", async () => {
+    const scrollIntoView = vi.fn();
+    const pendingOption = document.createElement("div");
+    pendingOption.className = "n-base-select-option--pending";
+    pendingOption.scrollIntoView = scrollIntoView;
+    const menu = document.createElement("div");
+    menu.className = "n-base-select-menu";
+    menu.appendChild(pendingOption);
+    document.body.appendChild(menu);
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    const textarea = wrapper.find("textarea");
+    const mention = wrapper.findComponent(NMention);
+    mention.vm.$emit("update:show", true);
+    await textarea.trigger("keydown", { key: "ArrowDown" });
+    await flushPromises();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+
+    menu.remove();
   });
 
   test("does not send while the DOM ref menu is open and escape closes it", async () => {

@@ -85,7 +85,8 @@ const selectionStart = ref(0);
 const selectionEnd = ref(0);
 let domRefRequestToken = 0;
 
-const DOM_REF_SUGGESTION_LIMIT = 8;
+const DOM_REF_PENDING_OPTION_SELECTOR =
+  ".n-base-select-menu .n-base-select-option--pending";
 
 const normalizeSearchText = (value?: string) =>
   value?.toLowerCase().trim() ?? "";
@@ -139,11 +140,9 @@ const updateSelection = () => {
 
 const filteredDomRefSuggestions = computed(() => {
   const query = activeDomRefQuery.value?.query ?? "";
-  return domRefSuggestions.value
-    .filter((suggestion: DomRefSuggestion) =>
-      matchDomRefSuggestion(suggestion, query)
-    )
-    .slice(0, DOM_REF_SUGGESTION_LIMIT);
+  return domRefSuggestions.value.filter((suggestion: DomRefSuggestion) =>
+    matchDomRefSuggestion(suggestion, query)
+  );
 });
 
 const domRefMentionOptions = computed<DomRefMentionOption[]>(() =>
@@ -178,8 +177,19 @@ const handleDomRefMenuShow = (show: boolean) => {
   isDomRefMenuOpen.value = show;
 };
 
+const scrollPendingDomRefOptionIntoView = () => {
+  window.setTimeout(() => {
+    document
+      .querySelector<HTMLElement>(DOM_REF_PENDING_OPTION_SELECTOR)
+      ?.scrollIntoView({ block: "nearest" });
+  }, 0);
+};
+
 const handleTextareaKeydown = async (event: KeyboardEvent) => {
   if (isDomRefMenuOpen.value) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      scrollPendingDomRefOptionIntoView();
+    }
     return;
   }
 
@@ -633,7 +643,9 @@ watch(
         prefix="@"
         :options="domRefMentionOptions"
         :filter="() => true"
-        :to="false"
+        placement="top-start"
+        to="body"
+        :scrollbar-props="{ containerStyle: { maxHeight: '320px' } }"
         @update:show="handleDomRefMenuShow"
         @click="updateSelection"
         @input="updateSelection"
