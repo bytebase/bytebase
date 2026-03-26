@@ -4290,7 +4290,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | id is the uuid for classification. Each project can chose one classification config. |
 | title | [string](#string) |  |  |
-| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. The order for the level decides its priority. |
+| levels | [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level) | repeated | levels is user defined level list for classification. |
 | classification | [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry) | repeated | classification is the id - DataClassification map. The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 
 
@@ -4325,7 +4325,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | id | [string](#string) |  | id is the classification id in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| level_id | [string](#string) | optional |  |
+| level | [int32](#int32) | optional | The sensitivity level. Maps to Level.level. |
 
 
 
@@ -4340,9 +4340,9 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+| level | [int32](#int32) |  | The numeric level for ordering. Higher = more sensitive. |
 
 
 

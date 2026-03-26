@@ -6596,8 +6596,7 @@ Uses character indices (not byte offsets) for display-oriented masking. </p></td
                   <td>levels</td>
                   <td><a href="#bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level">DataClassificationSetting.DataClassificationConfig.Level</a></td>
                   <td>repeated</td>
-                  <td><p>levels is user defined level list for classification.
-The order for the level decides its priority. </p></td>
+                  <td><p>levels is user defined level list for classification. </p></td>
                 </tr>
               
                 <tr>
@@ -6678,10 +6677,10 @@ The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
                 </tr>
               
                 <tr>
-                  <td>level_id</td>
-                  <td><a href="#string">string</a></td>
+                  <td>level</td>
+                  <td><a href="#int32">int32</a></td>
                   <td>optional</td>
-                  <td><p> </p></td>
+                  <td><p>The sensitivity level. Maps to Level.level. </p></td>
                 </tr>
               
             </tbody>
@@ -6702,13 +6701,6 @@ The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
             <tbody>
               
                 <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6720,6 +6712,13 @@ The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The numeric level for ordering. Higher = more sensitive. </p></td>
                 </tr>
               
             </tbody>
@@ -19814,13 +19813,14 @@ resource.instance_id: the instance resource id.
 resource.database_name: the database name.
 resource.table_name: the table name.
 resource.column_name: the column name.
-resource.classification_level: the classification level.
+resource.classification_level: the classification level (integer).
 
 Each variable support following operations:
 ==: the value equals the target.
 !=: the value not equals the target.
 in: the value matches one of the targets.
 !(in): the value not matches any of the targets.
+&lt;, &lt;=, &gt;, &gt;=: numeric comparison (classification_level only).
 
 For example:
 resource.environment_id == &#34;test&#34; &amp;&amp; resource.project_id == &#34;sample-project&#34;
@@ -20991,9 +20991,9 @@ Oracle and search path in Postgres. </p></td>
               
                 <tr>
                   <td>classification_level</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Whether masking was due to classification level. </p></td>
+                  <td><p>The classification level that triggered masking. </p></td>
                 </tr>
               
                 <tr>

@@ -904,7 +904,6 @@ export declare type DataClassificationSetting_DataClassificationConfig = Message
 
   /**
    * levels is user defined level list for classification.
-   * The order for the level decides its priority.
    *
    * @generated from field: repeated bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level levels = 3;
    */
@@ -930,11 +929,6 @@ export declare const DataClassificationSetting_DataClassificationConfigSchema: G
  */
 export declare type DataClassificationSetting_DataClassificationConfig_Level = Message<"bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level"> & {
   /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
    * @generated from field: string title = 2;
    */
   title: string;
@@ -943,6 +937,13 @@ export declare type DataClassificationSetting_DataClassificationConfig_Level = M
    * @generated from field: string description = 3;
    */
   description: string;
+
+  /**
+   * The numeric level for ordering. Higher = more sensitive.
+   *
+   * @generated from field: int32 level = 4;
+   */
+  level: number;
 };
 
 /**
@@ -973,9 +974,11 @@ export declare type DataClassificationSetting_DataClassificationConfig_DataClass
   description: string;
 
   /**
-   * @generated from field: optional string level_id = 4;
+   * The sensitivity level. Maps to Level.level.
+   *
+   * @generated from field: optional int32 level = 4;
    */
-  levelId?: string;
+  level?: number;
 };
 
 /**

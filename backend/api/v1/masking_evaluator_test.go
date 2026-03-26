@@ -28,18 +28,18 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				Id: defaultProjectDatabaseDataClassificationID,
 				Levels: []*storepb.DataClassificationSetting_DataClassificationConfig_Level{
 					{
-						Id: "S1",
+						Level: 1,
 					},
 					{
-						Id: "S2",
+						Level: 2,
 					},
 				},
 				Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
 					"1-1-1": {
 						Id:    "1-1-1",
 						Title: "personal",
-						LevelId: func() *string {
-							a := "S2"
+						Level: func() *int32 {
+							a := int32(2)
 							return &a
 						}(),
 					},
@@ -83,7 +83,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		want           string
 		wantAlgorithm  string
 		wantContext    string
-		wantClassLevel string
+		wantClassLevel int32
 	}{
 		{
 			description:     "Follow The Global Masking Rule",
@@ -98,7 +98,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
 						// Classification hit.
-						Condition:    &expr.Expr{Expression: `(resource.table_name == "no_table") || (resource.classification_level == "S2")`},
+						Condition:    &expr.Expr{Expression: `(resource.table_name == "no_table") || (resource.classification_level == 2)`},
 						SemanticType: "default",
 					},
 				},
@@ -109,7 +109,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 
 			want:           "default",
 			wantAlgorithm:  "Full mask",
-			wantClassLevel: "S2",
+			wantClassLevel: 2,
 		},
 		{
 			description:     "Respect The Exception",
@@ -124,7 +124,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
 						// Classification hit.
-						Condition:    &expr.Expr{Expression: `(resource.table_name == "no_table") || (resource.classification_level == "S2")`},
+						Condition:    &expr.Expr{Expression: `(resource.table_name == "no_table") || (resource.classification_level == 2)`},
 						SemanticType: "default",
 					},
 				},
@@ -177,7 +177,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			if tc.wantContext != "" {
 				a.Equal(tc.wantContext, result.Context, tc.description)
 			}
-			if tc.wantClassLevel != "" {
+			if tc.wantClassLevel != 0 {
 				a.Equal(tc.wantClassLevel, result.ClassificationLevel, tc.description)
 			}
 		}

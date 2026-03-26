@@ -1,38 +1,38 @@
 {
   "title": "Classification Example",
   "levels": [
-    { "id": "1", "title": "Level 1", "description": "" },
-    { "id": "2", "title": "Level 2", "description": "" },
-    { "id": "3", "title": "Level 3", "description": "" },
-    { "id": "4", "title": "Level 4", "description": "" }
+    { "title": "Level 1", "description": "", "level": 1 },
+    { "title": "Level 2", "description": "", "level": 2 },
+    { "title": "Level 3", "description": "", "level": 3 },
+    { "title": "Level 4", "description": "", "level": 4 }
   ],
   "classification": {
     "1": { "id": "1", "title": "Basic", "description": "" },
-    "1-1": { "id": "1-1", "title": "Basic", "description": "", "levelId": "1" },
+    "1-1": { "id": "1-1", "title": "Basic", "description": "", "level": 1 },
     "1-2": {
       "id": "1-2",
       "title": "Contact",
       "description": "",
-      "levelId": "2"
+      "level": 2
     },
     "1-3": {
       "id": "1-3",
       "title": "Health",
       "description": "",
-      "levelId": "4"
+      "level": 4
     },
     "2": { "id": "2", "title": "Relationship", "description": "" },
     "2-1": {
       "id": "2-1",
       "title": "Social",
       "description": "",
-      "levelId": "1"
+      "level": 1
     },
     "2-2": {
       "id": "2-2",
       "title": "Business",
       "description": "",
-      "levelId": "3"
+      "level": 3
     }
   }
 }

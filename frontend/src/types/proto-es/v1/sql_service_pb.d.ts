@@ -645,11 +645,11 @@ export declare type MaskingReason = Message<"bytebase.v1.MaskingReason"> & {
   context: string;
 
   /**
-   * Whether masking was due to classification level.
+   * The classification level that triggered masking.
    *
-   * @generated from field: string classification_level = 6;
+   * @generated from field: int32 classification_level = 6;
    */
-  classificationLevel: string;
+  classificationLevel: number;
 
   /**
    * Icon associated with the semantic type (if any).

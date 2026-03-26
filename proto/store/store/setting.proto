@@ -171,13 +171,13 @@ message DataClassificationSetting {
     string title = 2;
 
     message Level {
-      string id = 1;
       string title = 2;
       string description = 3;
+      // The numeric level for ordering. Higher = more sensitive.
+      int32 level = 4;
     }
 
     // levels is user defined level list for classification.
-    // The order for the level decides its priority.
     repeated Level levels = 3;
 
     message DataClassification {
@@ -185,7 +185,8 @@ message DataClassificationSetting {
       string id = 1;
       string title = 2;
       string description = 3;
-      optional string level_id = 4;
+      // The sensitivity level. Maps to Level.level.
+      optional int32 level = 4;
     }
 
     // classification is the id - DataClassification map.
