@@ -205,7 +205,7 @@ describe("useAgentStore", () => {
     });
   });
 
-  test("uses the first user message as the default chat title", () => {
+  test("uses the first user message as the generated chat title", () => {
     const store = createStore();
     const chatId = store.currentChatId!;
 

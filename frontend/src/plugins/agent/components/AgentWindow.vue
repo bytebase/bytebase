@@ -10,6 +10,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import AgentChat from "./AgentChat.vue";
@@ -199,11 +200,7 @@ const getCurrentPageSnapshot = () => ({
 });
 
 const getEditableChatTitle = (chat: AgentChatRecord) =>
-  chat.title
-    ? chat.title
-    : `${t("agent.chat-default-title")} · ${new Date(
-        chat.createdTs
-      ).toLocaleString()}`;
+  chat.title || t("agent.chat-default-title");
 
 const getChatLabel = (chat: AgentChatRecord) => {
   const baseLabel = getEditableChatTitle(chat);
@@ -630,16 +627,26 @@ onBeforeUnmount(() => {
                 <button
                   v-else
                   type="button"
-                  class="w-full text-left font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                  class="w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="!agentStore.canSelectChat(chat.id)"
                   :aria-current="
                     chat.id === agentStore.currentChatId ? 'true' : undefined
                   "
                   @click="handleChatRowClick(chat.id)"
                 >
-                  <div class="truncate">
+                  <div class="truncate font-medium" data-agent-chat-title>
                     {{ getChatLabel(chat) }}
                   </div>
+                  <HumanizeTs
+                    :ts="Math.floor(chat.updatedTs / 1000)"
+                    class="mt-1 block truncate text-xs"
+                    :class="
+                      chat.id === agentStore.currentChatId
+                        ? 'text-blue-600/80'
+                        : 'text-gray-500'
+                    "
+                    data-agent-chat-updated-ts
+                  />
                 </button>
               </div>
             </div>
