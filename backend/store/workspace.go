@@ -191,31 +191,17 @@ type UpdateWorkspaceMessage struct {
 	Logo       *string
 }
 
-// UpdateWorkspace updates a workspace payload fields.
+// UpdateWorkspace updates workspace payload fields atomically using jsonb_set.
+// Each field is updated independently in SQL to avoid lost-update races.
 func (s *Store) UpdateWorkspace(ctx context.Context, patch *UpdateWorkspaceMessage) error {
-	// Read current payload, merge updates, write back.
-	ws, err := s.GetWorkspaceByID(ctx, patch.ResourceID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get workspace for update")
-	}
-	if ws == nil {
-		return errors.Errorf("workspace %q not found", patch.ResourceID)
-	}
-	payload := ws.Payload
-	if payload == nil {
-		payload = &storepb.WorkspacePayload{}
-	}
+	q := qb.Q().Space("UPDATE workspace SET payload = payload")
 	if v := patch.Title; v != nil {
-		payload.Title = *v
+		q.Space("|| jsonb_build_object('title', ?::text)", *v)
 	}
 	if v := patch.Logo; v != nil {
-		payload.Logo = *v
+		q.Space("|| jsonb_build_object('logo', ?::text)", *v)
 	}
-	payloadBytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal workspace payload")
-	}
-	q := qb.Q().Space("UPDATE workspace SET payload = ? WHERE resource_id = ? AND deleted = FALSE", payloadBytes, patch.ResourceID)
+	q.Space("WHERE resource_id = ? AND deleted = FALSE", patch.ResourceID)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")

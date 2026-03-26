@@ -64,7 +64,7 @@
           <PermissionGuardWrapper
             v-slot="slotProps"
             :permissions="[
-              'bb.settings.setWorkspaceProfile'
+              'bb.workspaces.update'
             ]"
           >
             <NButton
