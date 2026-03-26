@@ -62,6 +62,7 @@ import { computed, reactive, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { getClassificationLevelOptions } from "@/components/SensitiveData/components/utils";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -78,6 +79,7 @@ import {
   getDatabaseNameOptionConfig,
 } from "@/utils";
 import {
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
@@ -105,10 +107,12 @@ const props = withDefaults(
     projectName: string;
     requiredFeature: PlanFeature;
     includeCloumn: boolean;
+    includeClassificationLevel?: boolean;
     databaseResources?: DatabaseResource[];
   }>(),
   {
     disabled: false,
+    includeClassificationLevel: false,
     databaseResources: undefined,
   }
 );
@@ -214,6 +218,9 @@ const factorList = computed((): Factor[] => {
   if (props.includeCloumn) {
     list.push(CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME);
   }
+  if (props.includeClassificationLevel) {
+    list.push(CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL);
+  }
   return list;
 });
 
@@ -222,16 +229,24 @@ const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
   [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
   [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
   [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
+  [
+    CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
+    ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
+  ],
 ]);
 
 const factorOptionConfigMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
-    if (factor !== CEL_ATTRIBUTE_RESOURCE_DATABASE) {
+    if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
+      map.set(factor, getDatabaseNameOptionConfig(props.projectName));
+    } else if (factor === CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL) {
+      map.set(factor, {
+        options: getClassificationLevelOptions(),
+      });
+    } else {
       map.set(factor, {
         options: [],
       });
-    } else {
-      map.set(factor, getDatabaseNameOptionConfig(props.projectName));
     }
     return map;
   }, new Map<Factor, OptionConfig>());
@@ -250,6 +265,12 @@ defineExpose({
         return undefined;
     }
   },
+  getExpr: () => {
+    if (state.radioValue !== "EXPRESSION") {
+      return undefined;
+    }
+    return state.expr;
+  },
   isValid: computed(() => {
     switch (state.radioValue) {
       case "SELECT":
@@ -260,5 +281,6 @@ defineExpose({
         return true;
     }
   }),
+  isExpression: computed(() => state.radioValue === "EXPRESSION"),
 });
 </script>

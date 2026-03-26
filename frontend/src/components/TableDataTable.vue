@@ -46,6 +46,7 @@ import type {
   Database,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   bytesToString,
@@ -80,11 +81,15 @@ const router = useRouter();
 const state = reactive<LocalState>({});
 const settingStore = useSettingV1Store();
 
-onMounted(() => {
+onMounted(async () => {
   const table = route.query.table as string;
   if (table) {
     state.selectedTableName = table;
   }
+  await settingStore.getOrFetchSettingByName(
+    Setting_SettingName.DATA_CLASSIFICATION,
+    true
+  );
 });
 
 watch(

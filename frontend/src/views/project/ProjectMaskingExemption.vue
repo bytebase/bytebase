@@ -4,22 +4,14 @@
       <div
         class="flex flex-row justify-between items-center gap-x-2"
       >
-      <DatabaseSelect
-        class="hidden sm:block"
-        style="max-width: max-content"
-        :placeholder="$t('database.select')"
-        :project-name="project.name"
-        :show-instance="false"
-        v-model:value="state.selectedDatabaseName"
-      />
-
-      <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
+      <div class="flex-1">
         <SearchBox
           ref="searchField"
           v-model:value="state.searchText"
           style="max-width: 100%"
           :placeholder="$t('settings.members.search-member')"
         />
+      </div>
         <PermissionGuardWrapper
           v-slot="slotProps"
           :project="project"
@@ -57,12 +49,10 @@
         </PermissionGuardWrapper>
       </div>
     </div>
-    </div>
     <MaskingExceptionUserTable
       size="medium"
       :disabled="!hasPermission"
       :project="project"
-      :show-database-column="true"
       :filter-access-user="filterAccessUser"
     />
   </div>
@@ -83,7 +73,7 @@ import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import { type AccessUser } from "@/components/SensitiveData/types";
-import { DatabaseSelect, SearchBox } from "@/components/v2";
+import { SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import { hasFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -93,7 +83,6 @@ import { hasProjectPermissionV2 } from "@/utils";
 interface LocalState {
   searchText: string;
   showFeatureModal: boolean;
-  selectedDatabaseName?: string;
 }
 
 const props = defineProps<{
@@ -128,15 +117,6 @@ const filterAccessUser = (user: AccessUser): boolean => {
   ) {
     return false;
   }
-  if (state.selectedDatabaseName) {
-    if (!user.databaseResource) {
-      return true;
-    }
-    return (
-      user.databaseResource.databaseFullName === state.selectedDatabaseName
-    );
-  }
-
   return true;
 };
 </script>

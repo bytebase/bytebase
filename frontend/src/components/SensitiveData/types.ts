@@ -1,4 +1,3 @@
-import type { DatabaseResource } from "@/types";
 import type {
   ColumnCatalog,
   ObjectSchema,
@@ -31,5 +30,6 @@ export interface AccessUser {
   expirationTimestamp?: number;
   rawExpression: string;
   description: string;
-  databaseResource?: DatabaseResource;
+  // The condition portion of the CEL expression, excluding request.time.
+  conditionExpression: string;
 }
