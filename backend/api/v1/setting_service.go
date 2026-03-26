@@ -333,11 +333,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					payload.DirectorySyncToken = uuid.New().String()
 				}
 				oldSetting.DirectorySyncToken = payload.DirectorySyncToken
-			case "value.workspace_profile.branding_logo":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.BrandingLogo = payload.BrandingLogo
 			case "value.workspace_profile.password_restriction":
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)

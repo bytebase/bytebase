@@ -109,8 +109,7 @@ message WorkspaceProfileSetting {
   // The token for directory sync authentication.
   string directory_sync_token = 15;
 
-  // The branding logo as a data URI (e.g. data:image/png;base64,...).
-  string branding_logo = 16;
+  reserved 16;
 
   message PasswordRestriction {
     // min_length is the minimum length for password, should be no less than 8.

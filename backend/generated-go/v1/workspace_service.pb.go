@@ -103,18 +103,66 @@ func (x *ListWorkspacesResponse) GetWorkspaces() []*Workspace {
 	return nil
 }
 
+type GetWorkspaceRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The workspace name, format: workspaces/{workspace}.
+	// Use "workspaces/-" to get the current/default workspace.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWorkspaceRequest) Reset() {
+	*x = GetWorkspaceRequest{}
+	mi := &file_v1_workspace_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWorkspaceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWorkspaceRequest) ProtoMessage() {}
+
+func (x *GetWorkspaceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_workspace_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWorkspaceRequest.ProtoReflect.Descriptor instead.
+func (*GetWorkspaceRequest) Descriptor() ([]byte, []int) {
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetWorkspaceRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 type Workspace struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: workspaces/{workspace}
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Title         string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// The branding logo.
+	Logo          string `protobuf:"bytes,3,opt,name=logo,proto3" json:"logo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Workspace) Reset() {
 	*x = Workspace{}
-	mi := &file_v1_workspace_service_proto_msgTypes[2]
+	mi := &file_v1_workspace_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -126,7 +174,7 @@ func (x *Workspace) String() string {
 func (*Workspace) ProtoMessage() {}
 
 func (x *Workspace) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[2]
+	mi := &file_v1_workspace_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -139,7 +187,7 @@ func (x *Workspace) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Workspace.ProtoReflect.Descriptor instead.
 func (*Workspace) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Workspace) GetName() string {
@@ -156,6 +204,13 @@ func (x *Workspace) GetTitle() string {
 	return ""
 }
 
+func (x *Workspace) GetLogo() string {
+	if x != nil {
+		return x.Logo
+	}
+	return ""
+}
+
 type UpdateWorkspaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Workspace     *Workspace             `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
@@ -166,7 +221,7 @@ type UpdateWorkspaceRequest struct {
 
 func (x *UpdateWorkspaceRequest) Reset() {
 	*x = UpdateWorkspaceRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[3]
+	mi := &file_v1_workspace_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -178,7 +233,7 @@ func (x *UpdateWorkspaceRequest) String() string {
 func (*UpdateWorkspaceRequest) ProtoMessage() {}
 
 func (x *UpdateWorkspaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[3]
+	mi := &file_v1_workspace_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -191,7 +246,7 @@ func (x *UpdateWorkspaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkspaceRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorkspaceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UpdateWorkspaceRequest) GetWorkspace() *Workspace {
@@ -217,15 +272,19 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\x16ListWorkspacesResponse\x126\n" +
 	"\n" +
 	"workspaces\x18\x01 \x03(\v2\x16.bytebase.v1.WorkspaceR\n" +
-	"workspaces\"5\n" +
+	"workspaces\")\n" +
+	"\x13GetWorkspaceRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"I\n" +
 	"\tWorkspace\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\"\x90\x01\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
+	"\x04logo\x18\x03 \x01(\tR\x04logo\"\x90\x01\n" +
 	"\x16UpdateWorkspaceRequest\x129\n" +
 	"\tworkspace\x18\x01 \x01(\v2\x16.bytebase.v1.WorkspaceB\x03\xe0A\x02R\tworkspace\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask2\xed\x04\n" +
-	"\x10WorkspaceService\x12u\n" +
+	"updateMask2\xdc\x05\n" +
+	"\x10WorkspaceService\x12m\n" +
+	"\fGetWorkspace\x12 .bytebase.v1.GetWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"#\x80\xea0\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=workspaces/*}\x12u\n" +
 	"\x0eListWorkspaces\x12\".bytebase.v1.ListWorkspacesRequest\x1a#.bytebase.v1.ListWorkspacesResponse\"\x1a\x90\xea0\x02\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/workspaces\x12\x9c\x01\n" +
 	"\x0fUpdateWorkspace\x12#.bytebase.v1.UpdateWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"L\x8a\xea0\x14bb.workspaces.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02&:\x01*2!/v1/{workspace.name=workspaces/*}\x12\x9c\x01\n" +
 	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"R\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\xa3\x01\n" +
@@ -244,31 +303,34 @@ func file_v1_workspace_service_proto_rawDescGZIP() []byte {
 	return file_v1_workspace_service_proto_rawDescData
 }
 
-var file_v1_workspace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_v1_workspace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_v1_workspace_service_proto_goTypes = []any{
 	(*ListWorkspacesRequest)(nil),  // 0: bytebase.v1.ListWorkspacesRequest
 	(*ListWorkspacesResponse)(nil), // 1: bytebase.v1.ListWorkspacesResponse
-	(*Workspace)(nil),              // 2: bytebase.v1.Workspace
-	(*UpdateWorkspaceRequest)(nil), // 3: bytebase.v1.UpdateWorkspaceRequest
-	(*fieldmaskpb.FieldMask)(nil),  // 4: google.protobuf.FieldMask
-	(*GetIamPolicyRequest)(nil),    // 5: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),    // 6: bytebase.v1.SetIamPolicyRequest
-	(*IamPolicy)(nil),              // 7: bytebase.v1.IamPolicy
+	(*GetWorkspaceRequest)(nil),    // 2: bytebase.v1.GetWorkspaceRequest
+	(*Workspace)(nil),              // 3: bytebase.v1.Workspace
+	(*UpdateWorkspaceRequest)(nil), // 4: bytebase.v1.UpdateWorkspaceRequest
+	(*fieldmaskpb.FieldMask)(nil),  // 5: google.protobuf.FieldMask
+	(*GetIamPolicyRequest)(nil),    // 6: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),    // 7: bytebase.v1.SetIamPolicyRequest
+	(*IamPolicy)(nil),              // 8: bytebase.v1.IamPolicy
 }
 var file_v1_workspace_service_proto_depIdxs = []int32{
-	2, // 0: bytebase.v1.ListWorkspacesResponse.workspaces:type_name -> bytebase.v1.Workspace
-	2, // 1: bytebase.v1.UpdateWorkspaceRequest.workspace:type_name -> bytebase.v1.Workspace
-	4, // 2: bytebase.v1.UpdateWorkspaceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0, // 3: bytebase.v1.WorkspaceService.ListWorkspaces:input_type -> bytebase.v1.ListWorkspacesRequest
-	3, // 4: bytebase.v1.WorkspaceService.UpdateWorkspace:input_type -> bytebase.v1.UpdateWorkspaceRequest
-	5, // 5: bytebase.v1.WorkspaceService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	6, // 6: bytebase.v1.WorkspaceService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	1, // 7: bytebase.v1.WorkspaceService.ListWorkspaces:output_type -> bytebase.v1.ListWorkspacesResponse
-	2, // 8: bytebase.v1.WorkspaceService.UpdateWorkspace:output_type -> bytebase.v1.Workspace
-	7, // 9: bytebase.v1.WorkspaceService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	7, // 10: bytebase.v1.WorkspaceService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
+	3, // 0: bytebase.v1.ListWorkspacesResponse.workspaces:type_name -> bytebase.v1.Workspace
+	3, // 1: bytebase.v1.UpdateWorkspaceRequest.workspace:type_name -> bytebase.v1.Workspace
+	5, // 2: bytebase.v1.UpdateWorkspaceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	2, // 3: bytebase.v1.WorkspaceService.GetWorkspace:input_type -> bytebase.v1.GetWorkspaceRequest
+	0, // 4: bytebase.v1.WorkspaceService.ListWorkspaces:input_type -> bytebase.v1.ListWorkspacesRequest
+	4, // 5: bytebase.v1.WorkspaceService.UpdateWorkspace:input_type -> bytebase.v1.UpdateWorkspaceRequest
+	6, // 6: bytebase.v1.WorkspaceService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	7, // 7: bytebase.v1.WorkspaceService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	3, // 8: bytebase.v1.WorkspaceService.GetWorkspace:output_type -> bytebase.v1.Workspace
+	1, // 9: bytebase.v1.WorkspaceService.ListWorkspaces:output_type -> bytebase.v1.ListWorkspacesResponse
+	3, // 10: bytebase.v1.WorkspaceService.UpdateWorkspace:output_type -> bytebase.v1.Workspace
+	8, // 11: bytebase.v1.WorkspaceService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	8, // 12: bytebase.v1.WorkspaceService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	8, // [8:13] is the sub-list for method output_type
+	3, // [3:8] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -287,7 +349,7 @@ func file_v1_workspace_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_workspace_service_proto_rawDesc), len(file_v1_workspace_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

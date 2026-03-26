@@ -41,6 +41,25 @@ export declare type ListWorkspacesResponse = Message<"bytebase.v1.ListWorkspaces
 export declare const ListWorkspacesResponseSchema: GenMessage<ListWorkspacesResponse>;
 
 /**
+ * @generated from message bytebase.v1.GetWorkspaceRequest
+ */
+export declare type GetWorkspaceRequest = Message<"bytebase.v1.GetWorkspaceRequest"> & {
+  /**
+   * The workspace name, format: workspaces/{workspace}.
+   * Use "workspaces/-" to get the current/default workspace.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetWorkspaceRequest.
+ * Use `create(GetWorkspaceRequestSchema)` to create a new message.
+ */
+export declare const GetWorkspaceRequestSchema: GenMessage<GetWorkspaceRequest>;
+
+/**
  * @generated from message bytebase.v1.Workspace
  */
 export declare type Workspace = Message<"bytebase.v1.Workspace"> & {
@@ -55,6 +74,13 @@ export declare type Workspace = Message<"bytebase.v1.Workspace"> & {
    * @generated from field: string title = 2;
    */
   title: string;
+
+  /**
+   * The branding logo.
+   *
+   * @generated from field: string logo = 3;
+   */
+  logo: string;
 };
 
 /**
@@ -90,6 +116,20 @@ export declare const UpdateWorkspaceRequestSchema: GenMessage<UpdateWorkspaceReq
  * @generated from service bytebase.v1.WorkspaceService
  */
 export declare const WorkspaceService: GenService<{
+  /**
+   * Gets a workspace by name.
+   * Supports "workspaces/-" to resolve the current workspace:
+   * - Authenticated: uses the workspace from JWT context
+   * - Self-hosted unauthenticated: returns the single workspace
+   * - SaaS unauthenticated: returns minimal response
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.GetWorkspace
+   */
+  getWorkspace: {
+    methodKind: "unary";
+    input: typeof GetWorkspaceRequestSchema;
+    output: typeof WorkspaceSchema;
+  },
   /**
    * Lists all workspaces the current user is a member of.
    *

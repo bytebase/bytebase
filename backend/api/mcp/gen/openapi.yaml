@@ -331,44 +331,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-  /bytebase.v1.ActuatorService/GetResourcePackage:
-    post:
-      tags:
-        - bytebase.v1.ActuatorService
-      summary: GetResourcePackage
-      description: |-
-        Gets custom branding resources such as logos.
-         Permissions required: None
-      operationId: bytebase.v1.ActuatorService.GetResourcePackage
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.GetResourcePackageRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ResourcePackage'
   /bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo:
     post:
       tags:
@@ -6979,6 +6941,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.IamPolicy'
+  /bytebase.v1.WorkspaceService/GetWorkspace:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: GetWorkspace
+      description: |-
+        Gets a workspace by name.
+         Supports "workspaces/-" to resolve the current workspace:
+         - Authenticated: uses the workspace from JWT context
+         - Self-hosted unauthenticated: returns the single workspace
+         - SaaS unauthenticated: returns minimal response
+      operationId: bytebase.v1.WorkspaceService.GetWorkspace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetWorkspaceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Workspace'
   /bytebase.v1.WorkspaceService/ListWorkspaces:
     post:
       tags:
@@ -11151,18 +11154,6 @@ components:
           description: 'Format: projects/{project}/releases/{release}'
       title: GetReleaseRequest
       additionalProperties: false
-    bytebase.v1.GetResourcePackageRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            Optional workspace name, format: workspaces/{workspace}.
-             Set when using the workspace-scoped URL pattern.
-      title: GetResourcePackageRequest
-      additionalProperties: false
-      description: Request message for getting branding resources.
     bytebase.v1.GetReviewConfigRequest:
       type: object
       properties:
@@ -11378,6 +11369,17 @@ components:
       title: GetWorkspaceActuatorInfoRequest
       additionalProperties: false
       description: Request message for getting workspace-scoped actuator information.
+    bytebase.v1.GetWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The workspace name, format: workspaces/{workspace}.
+             Use "workspaces/-" to get the current/default workspace.
+      title: GetWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.GridLevel:
       type: object
       properties:
@@ -15369,17 +15371,6 @@ components:
       title: RequestMetadata
       additionalProperties: false
       description: Metadata about the incoming request.
-    bytebase.v1.ResourcePackage:
-      type: object
-      properties:
-        logo:
-          type: string
-          title: logo
-          format: byte
-          description: The branding logo.
-      title: ResourcePackage
-      additionalProperties: false
-      description: Custom branding resources for the Bytebase instance.
     bytebase.v1.Restriction:
       type: object
       properties:
@@ -19365,6 +19356,10 @@ components:
         title:
           type: string
           title: title
+        logo:
+          type: string
+          title: logo
+          description: The branding logo.
       title: Workspace
       additionalProperties: false
     bytebase.v1.WorkspaceApprovalSetting:
@@ -19499,10 +19494,6 @@ components:
           type: string
           title: directory_sync_token
           description: The token for directory sync authentication.
-        brandingLogo:
-          type: string
-          title: branding_logo
-          description: The branding logo as a data URI (e.g. data:image/png;base64,...).
         passwordRestriction:
           title: password_restriction
           description: Password restriction settings.

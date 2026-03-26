@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -21,18 +22,89 @@ import (
 // WorkspaceService implements the workspace service.
 type WorkspaceService struct {
 	v1connect.UnimplementedWorkspaceServiceHandler
-	store      *store.Store
-	iamManager *iam.Manager
-	profile    *config.Profile
+	store          *store.Store
+	licenseService *enterprise.LicenseService
+	iamManager     *iam.Manager
+	profile        *config.Profile
 }
 
 // NewWorkspaceService creates a new WorkspaceService.
-func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *WorkspaceService {
+func NewWorkspaceService(
+	store *store.Store,
+	iamManager *iam.Manager,
+	profile *config.Profile,
+	licenseService *enterprise.LicenseService,
+) *WorkspaceService {
 	return &WorkspaceService{
-		store:      store,
-		iamManager: iamManager,
-		profile:    profile,
+		store:          store,
+		iamManager:     iamManager,
+		profile:        profile,
+		licenseService: licenseService,
 	}
+}
+
+// GetWorkspace gets a workspace by name.
+// Supports "workspaces/-" to resolve the current/default workspace.
+func (s *WorkspaceService) GetWorkspace(ctx context.Context, req *connect.Request[v1pb.GetWorkspaceRequest]) (*connect.Response[v1pb.Workspace], error) {
+	var workspaceID string
+
+	name := req.Msg.Name
+	if name == "workspaces/-" {
+		// "workspaces/-" is allowed without auth (login page logo).
+		// Resolve from context (authenticated) or fall back to default (self-hosted).
+		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+		if workspaceID == "" && !s.profile.SaaS {
+			ws, err := s.store.GetWorkspaceID(ctx)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+			workspaceID = ws
+		}
+	} else {
+		var err error
+		workspaceID, err = common.GetWorkspaceID(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workspace name"))
+		}
+
+		// Require authentication for non-saas mode.
+		if s.profile.SaaS {
+			// Specific workspace requires authentication and membership.
+			user, ok := GetUserFromContext(ctx)
+			if !ok || user == nil {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
+			}
+
+			// Verify the user is a member of the requested workspace.
+			ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+				WorkspaceID:    &workspaceID,
+				Email:          user.Email,
+				IncludeAllUser: !s.profile.SaaS,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify workspace membership"))
+			}
+			if ws == nil {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("failed to verify workspace membership"))
+			}
+		}
+	}
+
+	result := &v1pb.Workspace{}
+	if workspaceID != "" {
+		ws, err := s.store.GetWorkspaceByID(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+		}
+		if ws == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("workspace %q not found", name))
+		}
+		result.Name = common.FormatWorkspace(ws.ResourceID)
+		result.Title = ws.Payload.GetTitle()
+		result.Logo = ws.Payload.GetLogo()
+	}
+
+	return connect.NewResponse(result), nil
 }
 
 func (s *WorkspaceService) ListWorkspaces(ctx context.Context, _ *connect.Request[v1pb.ListWorkspacesRequest]) (*connect.Response[v1pb.ListWorkspacesResponse], error) {
@@ -53,7 +125,8 @@ func (s *WorkspaceService) ListWorkspaces(ctx context.Context, _ *connect.Reques
 	for _, ws := range workspaces {
 		result = append(result, &v1pb.Workspace{
 			Name:  common.FormatWorkspace(ws.ResourceID),
-			Title: ws.Name,
+			Title: ws.Payload.GetTitle(),
+			Logo:  ws.Payload.GetLogo(),
 		})
 	}
 	return connect.NewResponse(&v1pb.ListWorkspacesResponse{Workspaces: result}), nil
@@ -71,8 +144,9 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
 	}
 
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	patch := &store.UpdateWorkspaceMessage{
-		ResourceID: common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: workspaceID,
 	}
 	for _, path := range req.Msg.UpdateMask.GetPaths() {
 		switch path {
@@ -81,6 +155,11 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("title cannot be empty"))
 			}
 			patch.Title = &ws.Title
+		case "logo":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
+			}
+			patch.Logo = &ws.Logo
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported field: %q", path))
 		}
@@ -90,9 +169,15 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update workspace"))
 	}
 
+	// Read back the updated workspace to return the full state.
+	updated, err := s.store.GetWorkspaceByID(ctx, patch.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get updated workspace"))
+	}
 	return connect.NewResponse(&v1pb.Workspace{
 		Name:  ws.Name,
-		Title: ws.Title,
+		Title: updated.Payload.GetTitle(),
+		Logo:  updated.Payload.GetLogo(),
 	}), nil
 }
 

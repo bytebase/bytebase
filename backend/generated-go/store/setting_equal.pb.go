@@ -128,9 +128,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.DirectorySyncToken != y.DirectorySyncToken {
 		return false
 	}
-	if x.BrandingLogo != y.BrandingLogo {
-		return false
-	}
 	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
 		return false
 	}

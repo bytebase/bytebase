@@ -266,7 +266,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		}
 		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
 			ResourceID: wsID,
-			Name:       "Default workspace",
+			Payload:    &storepb.WorkspacePayload{Title: "Default workspace"},
 		}, request.Email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
@@ -649,7 +649,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
 			ResourceID: wsID,
-			Name:       "Default workspace",
+			Payload:    &storepb.WorkspacePayload{Title: "My Workspace"},
 		}, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))

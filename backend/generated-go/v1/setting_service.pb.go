@@ -898,8 +898,6 @@ type WorkspaceProfileSetting struct {
 	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
 	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
-	// The branding logo as a data URI (e.g. data:image/png;base64,...).
-	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Password restriction settings.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// The duration for access token. Default is 1 hour.
@@ -1046,13 +1044,6 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
 	if x != nil {
 		return x.DirectorySyncToken
-	}
-	return ""
-}
-
-func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
-	if x != nil {
-		return x.BrandingLogo
 	}
 	return ""
 }
@@ -2897,7 +2888,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xe0\f\n" +
+	"\apayload\"\xc1\f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2915,8 +2906,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
 	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12#\n" +
-	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12k\n" +
+	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12k\n" +
 	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x12M\n" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
@@ -2930,7 +2920,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\xc2\x01\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x10\x10\x11\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +

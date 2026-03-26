@@ -15,8 +15,8 @@
       exact-active-class=""
     >
       <img
-        v-if="customBrandingLogo"
-        :src="customBrandingLogo"
+        v-if="workspaceStore.currentWorkspace?.logo"
+        :src="workspaceStore.currentWorkspace?.logo"
         alt="branding logo"
         class="h-full object-contain"
       />
@@ -35,7 +35,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useActuatorV1Store } from "@/store/modules/v1/actuator";
+import { useWorkspaceV1Store } from "@/store";
 
 const props = withDefaults(
   defineProps<{
@@ -49,10 +49,7 @@ const props = withDefaults(
 const component = computed(() => (props.redirect ? "router-link" : "span"));
 const { record } = useRecentVisit();
 const router = useRouter();
-
-const customBrandingLogo = computed((): string => {
-  return useActuatorV1Store().brandingLogo;
-});
+const workspaceStore = useWorkspaceV1Store();
 
 const recordRedirect = () => {
   if (!props.redirect) {

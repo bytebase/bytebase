@@ -60,7 +60,7 @@
         </NButton>
       </router-link>
 
-      <ProfileBrandingLogo>
+      <ProfileBrandingLogo size="medium">
         <ProfileDropdown :link="true" />
       </ProfileBrandingLogo>
     </div>

@@ -33,34 +33,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-  /v1/actuator/resources:
-    get:
-      tags:
-        - ActuatorService
-      summary: GetResourcePackage
-      description: |-
-        Gets custom branding resources such as logos.
-         Permissions required: None
-      operationId: ActuatorService_GetResourcePackage
-      parameters:
-        - name: name
-          in: query
-          description: |-
-            Optional workspace name, format: workspaces/{workspace}.
-             Set when using the workspace-scoped URL pattern.
-          schema:
-            type: string
-            title: name
-            description: |-
-              Optional workspace name, format: workspaces/{workspace}.
-               Set when using the workspace-scoped URL pattern.
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ResourcePackage'
   /v1/actuator:setupSample:
     post:
       tags:
@@ -15086,6 +15058,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListWorkspacesResponse'
   /v1/workspaces/{workspace}:
+    get:
+      tags:
+        - WorkspaceService
+      summary: GetWorkspace
+      description: |-
+        Gets a workspace by name.
+         Supports "workspaces/-" to resolve the current workspace:
+         - Authenticated: uses the workspace from JWT context
+         - Self-hosted unauthenticated: returns the single workspace
+         - SaaS unauthenticated: returns minimal response
+      operationId: WorkspaceService_GetWorkspace
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Workspace'
     patch:
       tags:
         - WorkspaceService
@@ -15144,29 +15141,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-  /v1/workspaces/{workspace}/actuator/resources:
-    get:
-      tags:
-        - ActuatorService
-      summary: GetResourcePackage
-      description: |-
-        Gets custom branding resources such as logos.
-         Permissions required: None
-      operationId: ActuatorService_GetResourcePackage2
-      parameters:
-        - name: workspace
-          in: path
-          description: The workspace id.
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.ResourcePackage'
   /v1/workspaces/{workspace}/databases:
     get:
       tags:
@@ -20459,18 +20433,6 @@ components:
       required:
         - name
       additionalProperties: false
-    bytebase.v1.GetResourcePackageRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            Optional workspace name, format: workspaces/{workspace}.
-             Set when using the workspace-scoped URL pattern.
-      title: GetResourcePackageRequest
-      additionalProperties: false
-      description: Request message for getting branding resources.
     bytebase.v1.GetReviewConfigRequest:
       type: object
       properties:
@@ -20716,6 +20678,17 @@ components:
         - name
       additionalProperties: false
       description: Request message for getting workspace-scoped actuator information.
+    bytebase.v1.GetWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The workspace name, format: workspaces/{workspace}.
+             Use "workspaces/-" to get the current/default workspace.
+      title: GetWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.GridLevel:
       type: object
       properties:
@@ -24791,17 +24764,6 @@ components:
       title: RequestMetadata
       additionalProperties: false
       description: Metadata about the incoming request.
-    bytebase.v1.ResourcePackage:
-      type: object
-      properties:
-        logo:
-          type: string
-          title: logo
-          format: byte
-          description: The branding logo.
-      title: ResourcePackage
-      additionalProperties: false
-      description: Custom branding resources for the Bytebase instance.
     bytebase.v1.Restriction:
       type: object
       properties:
@@ -28940,6 +28902,10 @@ components:
         title:
           type: string
           title: title
+        logo:
+          type: string
+          title: logo
+          description: The branding logo.
       title: Workspace
       additionalProperties: false
     bytebase.v1.WorkspaceApprovalSetting:
@@ -29074,10 +29040,6 @@ components:
           type: string
           title: directory_sync_token
           description: The token for directory sync authentication.
-        brandingLogo:
-          type: string
-          title: branding_logo
-          description: The branding logo as a data URI (e.g. data:image/png;base64,...).
         passwordRestriction:
           title: password_restriction
           description: Password restriction settings.

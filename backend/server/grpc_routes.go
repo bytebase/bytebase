@@ -117,7 +117,7 @@ func configureGrpcRouters(
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
 	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, profile, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
-	workspaceService := apiv1.NewWorkspaceService(stores, iamManager, profile)
+	workspaceService := apiv1.NewWorkspaceService(stores, iamManager, profile, licenseService)
 
 	onPanic := func(_ context.Context, s connect.Spec, _ http.Header, p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)

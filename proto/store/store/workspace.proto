@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// WorkspacePayload stores workspace-level metadata.
+message WorkspacePayload {
+  string title = 1;
+  string logo = 2;
+}

@@ -49,11 +49,12 @@
       </div>
     </NScrollbar>
 
-    <div class="flex items-center gap-2">
-      <BrandingLogoWrapper>
-        <ProfileDropdown :link="true" />
-      </BrandingLogoWrapper>
-    </div>
+    <ProfileBrandingLogo
+      size="small"
+      :logo-url="workspaceStore.currentWorkspace?.logo"
+    >
+      <ProfileDropdown :link="true" />
+    </ProfileBrandingLogo>
 
     <ContextMenu ref="contextMenuRef" />
   </div>
@@ -67,13 +68,13 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { useI18n } from "vue-i18n";
+import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore, useWorkspaceV1Store } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { defer, usePreventBackAndForward } from "@/utils";
 import { useSQLEditorContext } from "../context";
-import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
 import { useTabListContext } from "./context";
 import TabItem from "./TabItem/TabItem.vue";
@@ -86,6 +87,7 @@ type LocalState = {
 const tabStore = useSQLEditorTabStore();
 const editorContext = useSQLEditorContext();
 const context = useTabListContext();
+const workspaceStore = useWorkspaceV1Store();
 
 const { t } = useI18n();
 const dialog = useDialog();

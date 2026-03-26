@@ -41,17 +41,6 @@ service ActuatorService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Gets custom branding resources such as logos.
-  // Permissions required: None
-  rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
-    option (google.api.http) = {
-      get: "/v1/actuator/resources"
-      additional_bindings: {get: "/v1/{name=workspaces/*}/actuator/resources"}
-    };
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
   // Gets workspace-scoped actuator info. Requires authentication.
   rpc GetWorkspaceActuatorInfo(GetWorkspaceActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {get: "/v1/{name=workspaces/*}/actuator/info"};
@@ -59,19 +48,6 @@ service ActuatorService {
     option (bytebase.v1.permission) = "bb.settings.getWorkspaceProfile";
     option (bytebase.v1.auth_method) = IAM;
   }
-}
-
-// Request message for getting branding resources.
-message GetResourcePackageRequest {
-  // Optional workspace name, format: workspaces/{workspace}.
-  // Set when using the workspace-scoped URL pattern.
-  string name = 1;
-}
-
-// Custom branding resources for the Bytebase instance.
-message ResourcePackage {
-  // The branding logo.
-  bytes logo = 1;
 }
 
 // Request message for setting up sample data.

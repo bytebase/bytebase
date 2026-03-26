@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   authServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
-import { userNamePrefix } from "@/store/modules/v1/common";
+import { userNamePrefix, workspaceNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
@@ -17,6 +18,7 @@ import {
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
+import { UpdateWorkspaceRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
 import { useActuatorV1Store } from "./actuator";
 import { composePolicyBindings } from "./projectIamPolicy";
@@ -31,10 +33,45 @@ workspaceSwitchChannel.onmessage = () => {
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
   const workspaceList = ref<Workspace[]>([]);
+  const currentWorkspace = ref<Workspace | undefined>();
+  const actuatorStore = useActuatorV1Store();
 
   const workspaceIamPolicy = computed(() => {
     return _workspaceIamPolicy.value;
   });
+
+  watch(
+    () => actuatorStore.workspaceResourceName,
+    async (name) => {
+      const requestName = name || `${workspaceNamePrefix}-`;
+      const workspace = await workspaceServiceClientConnect.getWorkspace({
+        name: requestName,
+      });
+      currentWorkspace.value = workspace;
+    },
+    { immediate: true }
+  );
+
+  const updateWorkspace = async (
+    workspace: Workspace,
+    updateMask: string[]
+  ) => {
+    const updated = await workspaceServiceClientConnect.updateWorkspace(
+      create(UpdateWorkspaceRequestSchema, {
+        workspace: workspace,
+        updateMask: create(FieldMaskSchema, {
+          paths: updateMask,
+        }),
+      })
+    );
+    const index = workspaceList.value.findIndex(
+      (ws) => ws.name === updated.name
+    );
+    if (index >= 0) {
+      workspaceList.value[index] = updated;
+    }
+    currentWorkspace.value = updated;
+  };
 
   // roleMapToUsers returns Map<roles/{role}, Set<userfullname>>
   // the user fullname can be
@@ -80,7 +117,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
 
   const fetchIamPolicy = async () => {
     const request = create(GetIamPolicyRequestSchema, {
-      resource: useActuatorV1Store().workspaceResourceName,
+      resource: actuatorStore.workspaceResourceName,
     });
     const policy = await workspaceServiceClientConnect.getIamPolicy(request);
     await composePolicyBindings(policy.bindings);
@@ -145,7 +182,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     }
 
     const request = create(SetIamPolicyRequestSchema, {
-      resource: useActuatorV1Store().workspaceResourceName,
+      resource: actuatorStore.workspaceResourceName,
       policy: workspacePolicy,
       etag: workspacePolicy.etag,
     });
@@ -178,11 +215,6 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     return specificRoles;
   };
 
-  const currentWorkspace = computed(() => {
-    const currentName = useActuatorV1Store().workspaceResourceName;
-    return workspaceList.value.find((ws) => ws.name === currentName);
-  });
-
   const fetchWorkspaceList = async () => {
     const resp = await workspaceServiceClientConnect.listWorkspaces({});
     workspaceList.value = resp.workspaces;
@@ -211,6 +243,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     getWorkspaceRolesByName,
     workspaceList,
     currentWorkspace,
+    updateWorkspace,
     fetchWorkspaceList,
     switchWorkspace,
   };

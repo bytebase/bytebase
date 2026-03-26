@@ -13,47 +13,6 @@ import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_actuator_service: GenFile;
 
 /**
- * Request message for getting branding resources.
- *
- * @generated from message bytebase.v1.GetResourcePackageRequest
- */
-export declare type GetResourcePackageRequest = Message<"bytebase.v1.GetResourcePackageRequest"> & {
-  /**
-   * Optional workspace name, format: workspaces/{workspace}.
-   * Set when using the workspace-scoped URL pattern.
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message bytebase.v1.GetResourcePackageRequest.
- * Use `create(GetResourcePackageRequestSchema)` to create a new message.
- */
-export declare const GetResourcePackageRequestSchema: GenMessage<GetResourcePackageRequest>;
-
-/**
- * Custom branding resources for the Bytebase instance.
- *
- * @generated from message bytebase.v1.ResourcePackage
- */
-export declare type ResourcePackage = Message<"bytebase.v1.ResourcePackage"> & {
-  /**
-   * The branding logo.
-   *
-   * @generated from field: bytes logo = 1;
-   */
-  logo: Uint8Array;
-};
-
-/**
- * Describes the message bytebase.v1.ResourcePackage.
- * Use `create(ResourcePackageSchema)` to create a new message.
- */
-export declare const ResourcePackageSchema: GenMessage<ResourcePackage>;
-
-/**
  * Request message for setting up sample data.
  *
  * @generated from message bytebase.v1.SetupSampleRequest
@@ -339,17 +298,6 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof DeleteCacheRequestSchema;
     output: typeof EmptySchema;
-  },
-  /**
-   * Gets custom branding resources such as logos.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.GetResourcePackage
-   */
-  getResourcePackage: {
-    methodKind: "unary";
-    input: typeof GetResourcePackageRequestSchema;
-    output: typeof ResourcePackageSchema;
   },
   /**
    * Gets workspace-scoped actuator info. Requires authentication.

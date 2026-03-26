@@ -36,6 +36,19 @@ func (x *ListWorkspacesResponse) Equal(y *ListWorkspacesResponse) bool {
 	return true
 }
 
+func (x *GetWorkspaceRequest) Equal(y *GetWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *Workspace) Equal(y *Workspace) bool {
 	if x == y {
 		return true
@@ -47,6 +60,9 @@ func (x *Workspace) Equal(y *Workspace) bool {
 		return false
 	}
 	if x.Title != y.Title {
+		return false
+	}
+	if x.Logo != y.Logo {
 		return false
 	}
 	return true
