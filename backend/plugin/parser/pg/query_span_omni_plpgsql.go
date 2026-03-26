@@ -767,6 +767,14 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 				a.extractColumnRefsFromExpr(arg, fromTables, result)
 			}
 		}
+		// FILTER (WHERE ...) clause on aggregates → predicate columns.
+		if v.AggFilter != nil {
+			filterColSet := make(base.SourceColumnSet)
+			a.extractColumnRefsFromExpr(v.AggFilter, fromTables, filterColSet)
+			for k, val := range filterColSet {
+				a.extractor.funcPredicateColumns[k] = val
+			}
+		}
 	case *ast.A_Expr:
 		a.extractColumnRefsFromExpr(v.Lexpr, fromTables, result)
 		a.extractColumnRefsFromExpr(v.Rexpr, fromTables, result)
@@ -821,6 +829,10 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 				a.extractColumnRefsFromExpr(arg, fromTables, result)
 			}
 		}
+	case *ast.NullTest:
+		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
+	case *ast.BooleanTest:
+		a.extractColumnRefsFromExpr(v.Arg, fromTables, result)
 	default:
 	}
 }
@@ -917,6 +929,15 @@ func (a *plpgsqlAnalyzer) resolveThroughCTE(cteSel *ast.SelectStmt, colName stri
 		}
 		// Found matching column — extract source refs from its expression.
 		a.extractColumnRefsFromExpr(rt.Val, cteTables, result)
+
+		// Also collect predicate columns from the CTE's WHERE clause.
+		if cteSel.WhereClause != nil {
+			whereColSet := make(base.SourceColumnSet)
+			a.extractColumnRefsFromExpr(cteSel.WhereClause, cteTables, whereColSet)
+			for k, v := range whereColSet {
+				a.extractor.funcPredicateColumns[k] = v
+			}
+		}
 		return
 	}
 }

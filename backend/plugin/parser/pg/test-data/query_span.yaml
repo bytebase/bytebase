@@ -858,6 +858,11 @@
           schema: public
           table: principal
           column: email
+        - server: ""
+          database: db
+          schema: public
+          table: task_run
+          column: creator_id
     predicatepaths: []
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);
