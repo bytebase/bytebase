@@ -1071,11 +1071,6 @@ func (v *prependStatementsVisitor) extractStatementText(ctx *postgresql.Variable
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {
-	pengine, err := common.ConvertToParserEngine(instance.Metadata.GetEngine())
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to convert %q to parser engine", instance.Metadata.GetEngine())
-	}
-
 	dbMetadata, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
@@ -1088,94 +1083,12 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
-	// Get the previous SDL text from the database's release field
-	previousUserSDLText, err := getPreviousSDL(ctx, s, database.InstanceID, database.DatabaseName)
+	migrationSQL, err := schema.SDLMigration(instance.Metadata.GetEngine(), sheetContent, dbMetadata)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get previous SDL text for database %q", database.DatabaseName)
-	}
-
-	// Use GetSDLDiff to compute the schema diff
-	// - engine: the database engine
-	// - currentSDLText: user's target SDL input
-	// - previousUserSDLText: previous SDL text (empty triggers initialization scenario)
-	// - currentSchema: current database schema
-	schemaDiff, err := schema.GetSDLDiff(pengine, sheetContent, previousUserSDLText, dbMetadata)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to compute SDL schema diff")
-	}
-
-	// Filter out bbdataarchive schema changes for Postgres
-	if instance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
-		schemaDiff = schema.FilterPostgresArchiveSchema(schemaDiff)
-	}
-
-	migrationSQL, err := schema.GenerateMigration(pengine, schemaDiff)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to generate migration SQL")
+		return "", errors.Wrapf(err, "failed to compute SDL migration")
 	}
 
 	return migrationSQL, nil
-}
-
-// getPreviousSDL gets the SDL text from the database's tracked release field.
-// Returns empty string if no previous release exists.
-func getPreviousSDL(ctx context.Context, s *store.Store, instanceID string, databaseName string) (string, error) {
-	// Get the database to access the last applied release
-	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get database %s", databaseName)
-	}
-	if database == nil {
-		return "", errors.Errorf("database %s not found", databaseName)
-	}
-
-	// Get the previous SDL text from the database's release field
-	if database.Metadata == nil || database.Metadata.Release == "" {
-		return "", nil
-	}
-
-	// Parse release name to get project ID and release ID
-	projectID, releaseID, err := common.GetProjectReleaseID(database.Metadata.Release)
-	if err != nil {
-		slog.Warn("Failed to parse release name, treating as initialization", "release", database.Metadata.Release, "error", err)
-		return "", nil
-	}
-
-	// Load the release
-	release, err := s.GetRelease(ctx, &store.FindReleaseMessage{
-		ProjectID: &projectID,
-		ReleaseID: &releaseID,
-	})
-	if err != nil {
-		slog.Warn("Failed to get release, treating as initialization", "project", projectID, "release", releaseID, "error", err)
-		return "", nil
-	}
-	if release == nil {
-		slog.Warn("Release not found, treating as initialization", "project", projectID, "release", releaseID)
-		return "", nil
-	}
-
-	// For SDL/declarative releases, there should be exactly one file
-	if len(release.Payload.Files) != 1 {
-		slog.Warn("Unexpected number of files in SDL release, treating as initialization", "expected", 1, "got", len(release.Payload.Files))
-		return "", nil
-	}
-
-	file := release.Payload.Files[0]
-	sheet, err := s.GetSheetFull(ctx, file.SheetSha256)
-	if err != nil {
-		slog.Warn("Failed to get sheet, treating as initialization", "sha256", file.SheetSha256, "error", err)
-		return "", nil
-	}
-	if sheet == nil {
-		slog.Warn("Sheet not found, treating as initialization", "sha256", file.SheetSha256)
-		return "", nil
-	}
-
-	return sheet.Statement, nil
 }
 
 // computeNeedDump determines if schema dump is needed based on task type and statements.

@@ -103,6 +103,9 @@ CREATE INDEX "idx_posts_user_id" ON "public"."posts"("user_id");`
 		a.NoError(err)
 		a.NotEmpty(result.ExecutedStatements, "Expected SQL statements to be executed")
 
+		// Sync database metadata after rollout so the next step sees the latest state
+		syncDatabaseMetadata(ctx, a, ctl, database)
+
 		// Verify initial schema was created
 		a.True(verifyTableExists(ctx, ctl, database, "users"))
 		a.True(verifyTableExists(ctx, ctl, database, "posts"))
@@ -140,6 +143,9 @@ CREATE TABLE "public"."comments" (
 		result, err = executeSDLRolloutWithResult(ctx, ctl, database, updatedSDL)
 		a.NoError(err)
 		a.NotEmpty(result.ExecutedStatements, "Expected ALTER/CREATE statements to be executed")
+
+		// Sync database metadata after rollout
+		syncDatabaseMetadata(ctx, a, ctl, database)
 
 		// Verify schema was updated
 		a.True(verifyTableExists(ctx, ctl, database, "users"))
@@ -205,6 +211,7 @@ CREATE TABLE "public"."posts" (
 
 		_, err = executeSDLRolloutWithResult(ctx, ctl, database, initialSDL)
 		a.NoError(err)
+		syncDatabaseMetadata(ctx, a, ctl, database)
 		a.True(verifyTableExists(ctx, ctl, database, "test_table"))
 
 		// Apply empty SDL to drop all objects
@@ -246,6 +253,7 @@ CREATE TABLE "public"."posts" (
 
 		_, err = executeSDLRolloutWithResult(ctx, ctl, database, sdl)
 		a.NoError(err)
+		syncDatabaseMetadata(ctx, a, ctl, database)
 
 		// Apply same SDL again - should be a no-op
 		result, err := executeSDLRolloutWithResult(ctx, ctl, database, sdl)
@@ -257,6 +265,14 @@ CREATE TABLE "public"."posts" (
 			len(result.ExecutedStatements),
 			strings.Join(result.ExecutedStatements, "\n---\n"))
 	})
+}
+
+// syncDatabaseMetadata forces a metadata sync so the next SDL rollout sees the latest schema state.
+func syncDatabaseMetadata(ctx context.Context, a *require.Assertions, ctl *controller, database *v1pb.Database) {
+	_, err := ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{
+		Name: database.Name,
+	}))
+	a.NoError(err, "Failed to sync database metadata")
 }
 
 // executeSDLRolloutWithResult performs a complete SDL rollout and returns the result including executed SQL.
