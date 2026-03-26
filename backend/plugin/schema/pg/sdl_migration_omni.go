@@ -19,13 +19,56 @@ func init() {
 	schema.RegisterSDLMigration(storepb.Engine_COCKROACHDB, pgSDLMigration)
 	schema.RegisterSDLDropAdvices(storepb.Engine_POSTGRES, pgSDLDropAdvices)
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
+	schema.RegisterDiffMigration(storepb.Engine_POSTGRES, pgSchemaDiffMigration)
+	schema.RegisterDiffMigration(storepb.Engine_COCKROACHDB, pgSchemaDiffMigration)
+}
+
+// catalogFromMetadata builds an omni Catalog from database metadata.
+func catalogFromMetadata(meta *model.DatabaseMetadata) (*catalog.Catalog, error) {
+	if meta == nil {
+		return catalog.LoadSDL("")
+	}
+	proto := meta.GetProto()
+	if proto == nil {
+		return catalog.LoadSDL("")
+	}
+	ddl, err := getSDLFormat(proto)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert metadata to DDL")
+	}
+	return catalog.LoadSDL(ddl)
+}
+
+// pgSchemaDiffMigration computes migration SQL between two metadata states using omni.
+func pgSchemaDiffMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	from, err := catalogFromMetadata(oldSchema)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load source schema")
+	}
+	to, err := catalogFromMetadata(newSchema)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load target schema")
+	}
+	diff := catalog.Diff(from, to)
+	if diff.IsEmpty() {
+		return "", nil
+	}
+	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
+	return plan.SQL(), nil
 }
 
 // buildSDLCatalogs builds the from/to catalogs for an SDL migration.
 func buildSDLCatalogs(userSDLText string, currentSchema *model.DatabaseMetadata) (*catalog.Catalog, *catalog.Catalog, error) {
-	fromDDL, err := convertDatabaseSchemaToSDL(currentSchema)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to convert current schema to DDL")
+	var fromDDL string
+	if currentSchema != nil {
+		proto := currentSchema.GetProto()
+		if proto != nil {
+			var ddlErr error
+			fromDDL, ddlErr = getSDLFormat(proto)
+			if ddlErr != nil {
+				return nil, nil, errors.Wrap(ddlErr, "failed to convert current schema to DDL")
+			}
+		}
 	}
 
 	from, err := catalog.LoadSDL(fromDDL)

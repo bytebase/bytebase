@@ -171,7 +171,6 @@ message DataClassificationSetting {
 
     message Level {
       string title = 2;
-      string description = 3;
       // The numeric level for ordering. Higher = more sensitive.
       int32 level = 4;
     }
@@ -183,7 +182,6 @@ message DataClassificationSetting {
       // id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
       string id = 1;
       string title = 2;
-      string description = 3;
       // The sensitivity level. Maps to Level.level.
       optional int32 level = 4;
     }

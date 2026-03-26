@@ -195,9 +195,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) Equal(y *Data
 	if x.Title != y.Title {
 		return false
 	}
-	if x.Description != y.Description {
-		return false
-	}
 	if x.Level != y.Level {
 		return false
 	}
@@ -215,9 +212,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 		return false
 	}
 	if x.Title != y.Title {
-		return false
-	}
-	if x.Description != y.Description {
 		return false
 	}
 	if p, q := x.Level, y.Level; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {

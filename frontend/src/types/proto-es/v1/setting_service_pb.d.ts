@@ -927,11 +927,6 @@ export declare type DataClassificationSetting_DataClassificationConfig_Level = M
   title: string;
 
   /**
-   * @generated from field: string description = 3;
-   */
-  description: string;
-
-  /**
    * The numeric level for ordering. Higher = more sensitive.
    *
    * @generated from field: int32 level = 4;
@@ -960,11 +955,6 @@ export declare type DataClassificationSetting_DataClassificationConfig_DataClass
    * @generated from field: string title = 2;
    */
   title: string;
-
-  /**
-   * @generated from field: string description = 3;
-   */
-  description: string;
 
   /**
    * The sensitivity level. Maps to Level.level.

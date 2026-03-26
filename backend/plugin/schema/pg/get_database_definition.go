@@ -2240,6 +2240,19 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 	return nil
 }
 
+// functionExtractor walks a PostgreSQL parse tree and captures the first
+// CREATE FUNCTION/PROCEDURE statement it encounters.
+type functionExtractor struct {
+	parser.BasePostgreSQLParserListener
+	result **parser.CreatefunctionstmtContext
+}
+
+func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
+	if e.result != nil && *e.result == nil {
+		*e.result = ctx
+	}
+}
+
 // isDefinitionProcedure checks if the definition string represents a PROCEDURE (not a FUNCTION)
 // Returns true if it's a PROCEDURE, false if it's a FUNCTION
 // This function uses AST-based parsing for robust detection

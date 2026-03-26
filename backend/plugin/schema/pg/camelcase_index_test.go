@@ -32,38 +32,6 @@ func TestQuoteIndexExpression(t *testing.T) {
 	}
 }
 
-// TestCamelCaseIndexColumnQuoting_SDL reproduces https://github.com/bytebase/bytebase/issues/19348
-// via the SDL diff path (AST-based).
-func TestCamelCaseIndexColumnQuoting_SDL(t *testing.T) {
-	previousSDL := ""
-
-	currentSDL := `
-CREATE TABLE "public"."ba_account" (
-    "userId" text NOT NULL,
-    "accountName" text
-);
-
-CREATE INDEX ba_account_userId_idx ON "public"."ba_account" ("userId");
-`
-
-	currentSchema := model.NewDatabaseMetadata(
-		&storepb.DatabaseSchemaMetadata{
-			Name:    "testdb",
-			Schemas: []*storepb.SchemaMetadata{},
-		}, nil, nil, storepb.Engine_POSTGRES, false)
-
-	diff, err := GetSDLDiff(currentSDL, previousSDL, currentSchema)
-	require.NoError(t, err)
-	require.NotNil(t, diff)
-
-	ddl, err := generateMigration(diff)
-	require.NoError(t, err)
-
-	t.Logf("Generated DDL:\n%s", ddl)
-
-	require.Contains(t, ddl, `("userId")`, "CamelCase column in CREATE INDEX must be quoted")
-}
-
 // TestCamelCaseIndexColumnQuoting_SyncSchema reproduces https://github.com/bytebase/bytebase/issues/19348
 // via the Sync Schema path: the source schema is exported (with proper quoting), then
 // parsed into metadata by GetDatabaseMetadata (which calls generateIndexDefinition).

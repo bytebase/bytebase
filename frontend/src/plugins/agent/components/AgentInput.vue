@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { type InputInst, NButton, NMention } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import type { DomRefSuggestion } from "../dom";
@@ -65,15 +66,27 @@ const isSendDisabled = computed(() => {
   return !input.value.trim();
 });
 
-const inputRef = ref<HTMLTextAreaElement>();
+type MentionInst = {
+  inputInstRef?: InputInst | null;
+};
+
+type DomRefMentionOption = {
+  label: string;
+  value: string;
+  suggestion: DomRefSuggestion;
+};
+
+const inputInstRef = ref<MentionInst | null>(null);
+const getTextareaEl = () =>
+  inputInstRef.value?.inputInstRef?.textareaElRef ?? null;
 const domRefSuggestions = ref<DomRefSuggestion[]>([]);
 const isDomRefMenuOpen = ref(false);
-const activeDomRefIndex = ref(0);
 const selectionStart = ref(0);
 const selectionEnd = ref(0);
 let domRefRequestToken = 0;
 
-const DOM_REF_SUGGESTION_LIMIT = 8;
+const DOM_REF_PENDING_OPTION_SELECTOR =
+  ".n-base-select-menu .n-base-select-option--pending";
 
 const normalizeSearchText = (value?: string) =>
   value?.toLowerCase().trim() ?? "";
@@ -116,17 +129,8 @@ const activeDomRefQuery = computed(() =>
   getDomRefQuery(input.value, selectionStart.value, selectionEnd.value)
 );
 
-const filteredDomRefSuggestions = computed(() => {
-  const query = activeDomRefQuery.value?.query ?? "";
-  return domRefSuggestions.value
-    .filter((suggestion: DomRefSuggestion) =>
-      matchDomRefSuggestion(suggestion, query)
-    )
-    .slice(0, DOM_REF_SUGGESTION_LIMIT);
-});
-
 const updateSelection = () => {
-  const textarea = inputRef.value;
+  const textarea = getTextareaEl();
   if (!textarea) {
     return;
   }
@@ -134,21 +138,28 @@ const updateSelection = () => {
   selectionEnd.value = textarea.selectionEnd ?? selectionStart.value;
 };
 
-const closeDomRefMenu = () => {
-  isDomRefMenuOpen.value = false;
-  activeDomRefIndex.value = 0;
-};
+const filteredDomRefSuggestions = computed(() => {
+  const query = activeDomRefQuery.value?.query ?? "";
+  return domRefSuggestions.value.filter((suggestion: DomRefSuggestion) =>
+    matchDomRefSuggestion(suggestion, query)
+  );
+});
 
-const openDomRefMenu = () => {
-  isDomRefMenuOpen.value = true;
-  activeDomRefIndex.value = 0;
-};
+const domRefMentionOptions = computed<DomRefMentionOption[]>(() =>
+  filteredDomRefSuggestions.value.map((suggestion) => ({
+    label: `[${suggestion.ref}] ${suggestion.label}`,
+    value: `[${suggestion.ref}]`,
+    suggestion,
+  }))
+);
 
 const loadDomRefSuggestions = async () => {
   const query = activeDomRefQuery.value;
   if (!query) {
-    closeDomRefMenu();
     domRefSuggestions.value = [];
+    return;
+  }
+  if (domRefSuggestions.value.length > 0) {
     return;
   }
 
@@ -159,74 +170,36 @@ const loadDomRefSuggestions = async () => {
   }
 
   domRefSuggestions.value = suggestions;
-  if (filteredDomRefSuggestions.value.length > 0) {
-    openDomRefMenu();
-    return;
-  }
-  closeDomRefMenu();
+  getTextareaEl()?.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
-const selectDomRefSuggestion = async (suggestion: DomRefSuggestion) => {
-  const query = activeDomRefQuery.value;
-  const textarea = inputRef.value;
-  if (!query || !textarea) {
-    return;
-  }
-
-  const before = input.value.slice(0, query.start);
-  const after = input.value.slice(query.end);
-  const token = `[${suggestion.ref}]`;
-  const suffix = after.startsWith(" ") ? "" : " ";
-  const nextValue = `${before}${token}${suffix}${after}`;
-  const caret = before.length + token.length + suffix.length;
-
-  input.value = nextValue;
-  closeDomRefMenu();
-  await nextTick();
-  textarea.focus();
-  textarea.setSelectionRange(caret, caret);
-  updateSelection();
+const handleDomRefMenuShow = (show: boolean) => {
+  isDomRefMenuOpen.value = show;
 };
 
-const moveDomRefSelection = (offset: number) => {
-  const total = filteredDomRefSuggestions.value.length;
-  if (total === 0) {
-    return;
-  }
-  activeDomRefIndex.value = (activeDomRefIndex.value + offset + total) % total;
+const scrollPendingDomRefOptionIntoView = () => {
+  window.setTimeout(() => {
+    document
+      .querySelector<HTMLElement>(DOM_REF_PENDING_OPTION_SELECTOR)
+      ?.scrollIntoView({ block: "nearest" });
+  }, 0);
 };
 
 const handleTextareaKeydown = async (event: KeyboardEvent) => {
   if (isDomRefMenuOpen.value) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      moveDomRefSelection(1);
-      return;
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      scrollPendingDomRefOptionIntoView();
     }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      moveDomRefSelection(-1);
-      return;
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeDomRefMenu();
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      const suggestion =
-        filteredDomRefSuggestions.value[activeDomRefIndex.value];
-      if (suggestion) {
-        await selectDomRefSuggestion(suggestion);
-      } else {
-        closeDomRefMenu();
-      }
-      return;
-    }
+    return;
   }
 
-  if (event.key === "Enter" && !event.shiftKey) {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  ) {
     event.preventDefault();
     await send();
   }
@@ -236,6 +209,19 @@ const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) => {
   return [suggestion.tag.toLowerCase(), suggestion.role]
     .filter((value): value is string => Boolean(value))
     .join(" · ");
+};
+
+const renderDomRefMentionLabel = (option: DomRefMentionOption) => {
+  const suggestion = option.suggestion;
+  const meta = formatDomRefSuggestionMeta(suggestion);
+
+  return h("div", { class: "flex flex-col text-sm" }, [
+    h("div", { class: "flex items-center gap-x-2 text-gray-800" }, [
+      h("span", { class: "font-medium" }, `[${suggestion.ref}]`),
+      h("span", { class: "truncate" }, suggestion.label),
+    ]),
+    meta ? h("div", { class: "mt-1 text-xs text-gray-500" }, meta) : null,
+  ]);
 };
 
 const getCurrentPageSnapshot = () => ({
@@ -561,7 +547,7 @@ watch(
   () => isCurrentChatRunning.value,
   (running) => {
     if (running) {
-      closeDomRefMenu();
+      isDomRefMenuOpen.value = false;
     }
   }
 );
@@ -641,64 +627,51 @@ watch(
       </button>
     </div>
 
-    <div v-else class="flex items-end gap-x-2">
-      <div class="relative min-w-0 flex-1">
-        <textarea
-          ref="inputRef"
-          v-model="input"
-          rows="1"
-          :placeholder="inputPlaceholder"
-          class="block w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
-          :disabled="isCurrentChatRunning"
-          @click="updateSelection"
-          @blur="closeDomRefMenu"
-          @input="updateSelection"
-          @keyup="updateSelection"
-          @select="updateSelection"
-          @keydown.exact="handleTextareaKeydown"
-        />
-        <div
-          v-if="isDomRefMenuOpen"
-          data-testid="dom-ref-autocomplete"
-          class="absolute bottom-full left-0 z-10 mb-2 w-full overflow-hidden rounded-md border bg-white shadow-lg"
-        >
-          <button
-            v-for="(suggestion, index) in filteredDomRefSuggestions"
-            :key="suggestion.ref"
-            type="button"
-            data-testid="dom-ref-autocomplete-item"
-            class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-gray-50"
-            :class="index === activeDomRefIndex ? 'bg-blue-50' : 'bg-white'"
-            @mousedown.prevent="selectDomRefSuggestion(suggestion)"
-          >
-            <div class="flex items-center gap-x-2 text-gray-800">
-              <span class="font-medium">[{{ suggestion.ref }}]</span>
-              <span class="truncate">{{ suggestion.label }}</span>
-            </div>
-            <div
-              v-if="formatDomRefSuggestionMeta(suggestion)"
-              class="mt-1 text-xs text-gray-500"
-            >
-              {{ formatDomRefSuggestionMeta(suggestion) }}
-            </div>
-          </button>
-        </div>
-      </div>
-      <button
+    <div v-else class="flex items-center gap-x-2" data-agent-input-row>
+      <NMention
+        ref="inputInstRef"
+        v-model:value="input"
+        type="textarea"
+        size="small"
+        class="w-full"
+        :autosize="{
+          minRows: 1,
+          maxRows: 6,
+        }"
+        :placeholder="inputPlaceholder"
+        :disabled="isCurrentChatRunning"
+        prefix="@"
+        :options="domRefMentionOptions"
+        :filter="() => true"
+        placement="top-start"
+        to="body"
+        :scrollbar-props="{ containerStyle: { maxHeight: '320px' } }"
+        @update:show="handleDomRefMenuShow"
+        @click="updateSelection"
+        @input="updateSelection"
+        @keyup="updateSelection"
+        @keydown.capture="handleTextareaKeydown"
+        :render-label="renderDomRefMentionLabel"
+      />
+      <NButton
         v-if="agentStore.loading"
-        class="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600"
+        type="error"
+        size="small"
+        class="whitespace-nowrap"
         @click="agentStore.cancel(currentChat?.id)"
       >
         {{ $t("agent.stop") }}
-      </button>
-      <button
+      </NButton>
+      <NButton
         v-else
-        class="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+        type="primary"
+        size="small"
+        class="whitespace-nowrap"
         :disabled="isSendDisabled"
         @click="send"
       >
         {{ sendLabel }}
-      </button>
+      </NButton>
     </div>
   </div>
 </template>

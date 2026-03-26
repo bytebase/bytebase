@@ -1336,9 +1336,8 @@ func (x *DataClassificationSetting_DataClassificationConfig) GetClassification()
 }
 
 type DataClassificationSetting_DataClassificationConfig_Level struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	Title       string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Title string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The numeric level for ordering. Higher = more sensitive.
 	Level         int32 `protobuf:"varint,4,opt,name=level,proto3" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1382,13 +1381,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) GetTitle() st
 	return ""
 }
 
-func (x *DataClassificationSetting_DataClassificationConfig_Level) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
 func (x *DataClassificationSetting_DataClassificationConfig_Level) GetLevel() int32 {
 	if x != nil {
 		return x.Level
@@ -1399,9 +1391,8 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) GetLevel() in
 type DataClassificationSetting_DataClassificationConfig_DataClassification struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
-	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title       string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Id    string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The sensitivity level. Maps to Level.level.
 	Level         *int32 `protobuf:"varint,4,opt,name=level,proto3,oneof" json:"level,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1448,13 +1439,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetTitle() string {
 	if x != nil {
 		return x.Title
-	}
-	return ""
-}
-
-func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) GetDescription() string {
-	if x != nil {
-		return x.Description
 	}
 	return ""
 }
@@ -2448,22 +2432,20 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x0fCREATE_DATABASE\x10\x02\x12\x0f\n" +
 	"\vEXPORT_DATA\x10\x03\x12\x10\n" +
 	"\fREQUEST_ROLE\x10\x04\x12\x12\n" +
-	"\x0eREQUEST_ACCESS\x10\x05\"\x94\x06\n" +
+	"\x0eREQUEST_ACCESS\x10\x05\"\xcf\x05\n" +
 	"\x19DataClassificationSetting\x12\\\n" +
-	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\x98\x05\n" +
+	"\aconfigs\x18\x01 \x03(\v2B.bytebase.store.DataClassificationSetting.DataClassificationConfigR\aconfigs\x1a\xd3\x04\n" +
 	"\x18DataClassificationConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12`\n" +
 	"\x06levels\x18\x03 \x03(\v2H.bytebase.store.DataClassificationSetting.DataClassificationConfig.LevelR\x06levels\x12~\n" +
-	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1aU\n" +
+	"\x0eclassification\x18\x04 \x03(\v2V.bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntryR\x0eclassification\x1a3\n" +
 	"\x05Level\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05level\x18\x04 \x01(\x05R\x05level\x1a\x81\x01\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x14\n" +
+	"\x05level\x18\x04 \x01(\x05R\x05level\x1a_\n" +
 	"\x12DataClassification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x19\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x19\n" +
 	"\x05level\x18\x04 \x01(\x05H\x00R\x05level\x88\x01\x01B\b\n" +
 	"\x06_level\x1a\x98\x01\n" +
 	"\x13ClassificationEntry\x12\x10\n" +
