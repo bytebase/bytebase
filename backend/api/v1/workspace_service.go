@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -21,17 +22,24 @@ import (
 // WorkspaceService implements the workspace service.
 type WorkspaceService struct {
 	v1connect.UnimplementedWorkspaceServiceHandler
-	store      *store.Store
-	iamManager *iam.Manager
-	profile    *config.Profile
+	store          *store.Store
+	licenseService *enterprise.LicenseService
+	iamManager     *iam.Manager
+	profile        *config.Profile
 }
 
 // NewWorkspaceService creates a new WorkspaceService.
-func NewWorkspaceService(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *WorkspaceService {
+func NewWorkspaceService(
+	store *store.Store,
+	iamManager *iam.Manager,
+	profile *config.Profile,
+	licenseService *enterprise.LicenseService,
+) *WorkspaceService {
 	return &WorkspaceService{
-		store:      store,
-		iamManager: iamManager,
-		profile:    profile,
+		store:          store,
+		iamManager:     iamManager,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
@@ -135,8 +143,9 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("update_mask is required"))
 	}
 
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	patch := &store.UpdateWorkspaceMessage{
-		ResourceID: common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: workspaceID,
 	}
 	for _, path := range req.Msg.UpdateMask.GetPaths() {
 		switch path {
@@ -146,6 +155,9 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 			}
 			patch.Title = &ws.Title
 		case "logo":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
+			}
 			patch.Logo = &ws.Logo
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported field: %q", path))
