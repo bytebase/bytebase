@@ -230,7 +230,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	// Validate password.
 	password := request.Msg.User.Password
 	if password != "" {
-		if err := validatePassword(ctx, s.store, workspaceID, password); err != nil {
+		if err := s.validatePassword(ctx, workspaceID, password); err != nil {
 			return nil, err
 		}
 	} else {
@@ -264,13 +264,18 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	return connect.NewResponse(userResponse), nil
 }
 
-func validatePassword(ctx context.Context, store *store.Store, workspace, password string) error {
-	setting, err := store.GetWorkspaceProfileSetting(ctx, workspace)
+func (s *UserService) validatePassword(ctx context.Context, workspaceID, password string) error {
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get password restriction with error: %v", err))
+		return err
 	}
-	passwordRestriction := setting.GetPasswordRestriction()
-
+	passwordRestriction := convertToStorePasswordRestriction(restriction.PasswordRestriction)
 	return validatePasswordWithRestriction(password, passwordRestriction)
 }
 
@@ -364,7 +369,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			if user.Type != storepb.PrincipalType_END_USER {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password can be mutated for end users only"))
 			}
-			if err := validatePassword(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), request.Msg.User.Password); err != nil {
+			if err := s.validatePassword(ctx, common.GetWorkspaceIDFromContext(ctx), request.Msg.User.Password); err != nil {
 				return nil, err
 			}
 			passwordPatch = &request.Msg.User.Password

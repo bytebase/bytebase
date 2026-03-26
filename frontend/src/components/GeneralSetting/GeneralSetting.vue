@@ -25,7 +25,7 @@
           />
         </div>
         <BBAttention
-          v-if="externalUrlFromFlag"
+          v-if="externalUrlFromFlag && !isSaaSMode"
           :type="'info'"
           class="mb-3"
           :description="

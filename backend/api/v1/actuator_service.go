@@ -153,15 +153,18 @@ func (s *ActuatorService) SetupSample(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-var defaultAccountRestriction = &v1pb.Restriction{
-	DisallowSignup:         true,
-	DisallowPasswordSignin: true,
-	PasswordRestriction: &v1pb.WorkspaceProfileSetting_PasswordRestriction{
-		MinLength: 8,
-	},
-}
-
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
 		GitCommit:           s.profile.GitCommit,
@@ -171,7 +174,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		Docker:              s.profile.IsDocker,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
-		Restriction:         defaultAccountRestriction,
+		Restriction:         restriction,
 	}
 
 	if workspaceID != "" {
@@ -200,20 +203,14 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.ActivatedUserCount = int32(activeEndUserCount)
 
-		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
-		}
-		serverInfo.Restriction = &v1pb.Restriction{
-			PasswordRestriction:    convertToV1PasswordRestriction(setting.GetPasswordRestriction()),
-			DisallowSignup:         setting.DisallowSignup,
-			DisallowPasswordSignin: setting.DisallowPasswordSignin,
-		}
-
 		// Check if sample instances are available
 		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
 		serverInfo.EnableSample = hasSampleInstances
 
+		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
+		}
 		// Prefer command-line flag over database value for external URL
 		externalURL := setting.ExternalUrl
 		if s.profile.ExternalURL != "" {
