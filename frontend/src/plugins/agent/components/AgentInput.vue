@@ -650,7 +650,7 @@ watch(
         @click="updateSelection"
         @input="updateSelection"
         @keyup="updateSelection"
-        @keydown="handleTextareaKeydown"
+        @keydown.capture="handleTextareaKeydown"
         :render-label="renderDomRefMentionLabel"
       />
       <NButton

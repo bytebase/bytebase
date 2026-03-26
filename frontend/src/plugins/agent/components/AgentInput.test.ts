@@ -881,7 +881,7 @@ describe("AgentInput", () => {
     menu.remove();
   });
 
-  test("does not send while the DOM ref menu is open and escape closes it", async () => {
+  test("does not send when Enter selects a DOM ref mention", async () => {
     mockRunAgentLoop.mockResolvedValue({
       kind: "completed",
       text: "Done",
@@ -911,10 +911,12 @@ describe("AgentInput", () => {
 
     mention.vm.$emit("update:show", true);
     await textarea.trigger("keydown", { key: "Enter" });
+    mention.vm.$emit("update:value", "Inspect [e1] ");
+    mention.vm.$emit("update:show", false);
     await flushPromises();
     expect(mockRunAgentLoop).not.toHaveBeenCalled();
+    expect(getTextareaValue(wrapper)).toBe("Inspect [e1] ");
 
-    mention.vm.$emit("update:show", false);
     await textarea.trigger("keydown", { key: "Enter" });
     await flushPromises();
 
