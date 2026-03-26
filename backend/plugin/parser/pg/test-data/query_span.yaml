@@ -951,7 +951,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_object
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
@@ -989,7 +989,7 @@
   querySpan:
     type: 1
     results:
-        - name: ?column?
+        - name: json_array
           sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []

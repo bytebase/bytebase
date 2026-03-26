@@ -389,6 +389,16 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 	// IsPlainField = true only for columns expanded from SELECT * or SELECT t.*.
 	plainMask := buildPlainFieldMask(selStmt, q)
 
+	// Collect parse tree ResTargets for name fixups.
+	var parseTargets []*ast.ResTarget
+	if selStmt != nil && selStmt.TargetList != nil {
+		for _, item := range selStmt.TargetList.Items {
+			if rt, ok := item.(*ast.ResTarget); ok {
+				parseTargets = append(parseTargets, rt)
+			}
+		}
+	}
+
 	var results []base.QuerySpanResult
 	idx := 0
 	for _, te := range q.TargetList {
@@ -403,8 +413,17 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 		if isPlain {
 			isPlain = isUltimatelyPlainColumn(q, te.Expr)
 		}
+		name := te.ResName
+		// When the catalog produces a default name like "?column?", try to
+		// derive a better name from the original parse tree (e.g., function
+		// name for json_object, json_array constructors).
+		if name == "?column?" && idx < len(parseTargets) {
+			if better := figureResTargetName(parseTargets[idx]); better != "" {
+				name = better
+			}
+		}
 		results = append(results, base.QuerySpanResult{
-			Name:          te.ResName,
+			Name:          name,
 			SourceColumns: sourceColSet,
 			IsPlainField:  isPlain,
 		})
