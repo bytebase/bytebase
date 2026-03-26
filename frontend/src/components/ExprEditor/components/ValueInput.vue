@@ -35,7 +35,11 @@
     <MultiSelect
       :value="getStringArrayValue()"
       :expr="expr"
-      @update:value="setArrayValue($event)"
+      @update:value="
+        isNumberFactor(factor)
+          ? setArrayValue($event.map(Number))
+          : setArrayValue($event)
+      "
     />
   </template>
   <template v-if="inputType === 'MULTI-INPUT'">
@@ -165,7 +169,11 @@ watch(
   [factor, operator],
   ([factor, operator]) => {
     if (isNumberFactor(factor)) {
-      setNumberValue(0);
+      if (isCollectionOperator(operator)) {
+        setArrayValue([]);
+      } else {
+        setNumberValue(0);
+      }
     }
     if (isBooleanFactor(factor)) {
       setBoolValue(true);
