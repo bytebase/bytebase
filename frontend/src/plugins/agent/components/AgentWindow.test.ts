@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { NInput, NPopconfirm } from "naive-ui";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
 import { createI18n } from "vue-i18n";
 import { useAgentStore } from "../store/agent";
@@ -91,6 +91,10 @@ const mountAgentWindow = () => {
   };
 };
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("AgentWindow", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -125,6 +129,26 @@ describe("AgentWindow", () => {
     expect(
       wrapper.findAll("button").some((button) => button.text() === "Rename")
     ).toBe(false);
+  });
+
+  test("shows a plain default title and humanized updated time for untitled chats", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+
+    const { store, wrapper } = mountAgentWindow();
+    const chatId = store.currentChatId!;
+
+    store.getChat(chatId)!.updatedTs = Date.now() - 60_000;
+    await nextTick();
+
+    const currentRow = wrapper.find(`[data-agent-chat-row='${chatId}']`);
+    expect(currentRow.find("[data-agent-chat-title]").text()).toBe("New chat");
+    expect(currentRow.find("[data-agent-chat-title]").text()).not.toContain(
+      "·"
+    );
+    expect(currentRow.find("[data-agent-chat-updated-ts]").text()).toBe(
+      "1 minute ago"
+    );
   });
 
   test("disables switching chats while a chat is running", async () => {
