@@ -172,7 +172,6 @@ message DataClassificationSetting {
 
     message Level {
       string title = 2;
-      string description = 3;
       // The numeric level for ordering. Higher = more sensitive.
       int32 level = 4;
     }

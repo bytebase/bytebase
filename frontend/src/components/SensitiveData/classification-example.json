@@ -1,10 +1,10 @@
 {
   "title": "Classification Example",
   "levels": [
-    { "title": "Level 1", "description": "", "level": 1 },
-    { "title": "Level 2", "description": "", "level": 2 },
-    { "title": "Level 3", "description": "", "level": 3 },
-    { "title": "Level 4", "description": "", "level": 4 }
+    { "title": "Level 1", "level": 1 },
+    { "title": "Level 2", "level": 2 },
+    { "title": "Level 3", "level": 3 },
+    { "title": "Level 4", "level": 4 }
   ],
   "classification": {
     "1": { "id": "1", "title": "Basic", "description": "" },

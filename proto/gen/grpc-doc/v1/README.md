@@ -2124,7 +2124,6 @@ IssueService manages issues for tracking database changes and tasks.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
 | level | [int32](#int32) |  | The numeric level for ordering. Higher = more sensitive. |
 
 

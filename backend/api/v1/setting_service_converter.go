@@ -490,9 +490,8 @@ func convertDataClassificationSettingLevels(levels []*v1pb.DataClassificationSet
 	storeLevels := make([]*storepb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
 	for i, level := range levels {
 		storeLevels[i] = &storepb.DataClassificationSetting_DataClassificationConfig_Level{
-			Title:       level.Title,
-			Description: level.Description,
-			Level:       level.Level,
+			Title: level.Title,
+			Level: level.Level,
 		}
 	}
 	return storeLevels
@@ -549,9 +548,8 @@ func convertToDataClassificationSettingLevels(levels []*storepb.DataClassificati
 	v1Levels := make([]*v1pb.DataClassificationSetting_DataClassificationConfig_Level, len(levels))
 	for i, level := range levels {
 		v1Levels[i] = &v1pb.DataClassificationSetting_DataClassificationConfig_Level{
-			Title:       level.Title,
-			Description: level.Description,
-			Level:       level.Level,
+			Title: level.Title,
+			Level: level.Level,
 		}
 	}
 	return v1Levels

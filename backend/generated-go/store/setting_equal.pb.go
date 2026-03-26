@@ -198,9 +198,6 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) Equal(y *Data
 	if x.Title != y.Title {
 		return false
 	}
-	if x.Description != y.Description {
-		return false
-	}
 	if x.Level != y.Level {
 		return false
 	}
