@@ -33,7 +33,7 @@ import {
   usePolicyByParentAndType,
   usePolicyV1Store,
 } from "@/store";
-import { groupBindingPrefix } from "@/types";
+import { type DatabaseResource, groupBindingPrefix } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
@@ -88,9 +88,52 @@ const filteredList = computed(() =>
   state.rawAccessList.filter(props.filterAccessUser)
 );
 
-const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
-  if (!access.databaseResource) {
-    // No parseable database resource — show raw CEL or "All".
+const renderDatabaseResource = (res: DatabaseResource): VNodeChild => {
+  return (
+    <div class="flex flex-col gap-y-0.5 text-sm textinfo">
+      <div class="flex items-center gap-x-1">
+        <span class="font-medium">{`${t("common.database")}:`}</span>
+        {hasGetDatabasePermission.value ? (
+          <span
+            class="normal-link hover:underline cursor-pointer"
+            onClick={() => {
+              const query: Record<string, string> = {};
+              if (res.schema) query.schema = res.schema;
+              if (res.table) query.table = res.table;
+              router.push({ path: res.databaseFullName, query });
+            }}
+          >
+            {res.databaseFullName}
+          </span>
+        ) : (
+          <span>{res.databaseFullName}</span>
+        )}
+      </div>
+      {res.schema && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("common.schema")}:`}</span>
+          <span>{res.schema}</span>
+        </div>
+      )}
+      {res.table && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("common.table")}:`}</span>
+          <span>{res.table}</span>
+        </div>
+      )}
+      {res.columns && res.columns.length > 0 && (
+        <div class="flex items-center gap-x-1">
+          <span class="font-medium">{`${t("database.columns")}:`}</span>
+          <span>{res.columns.join(", ")}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const getConditionDisplay = (access: AccessUser): VNodeChild => {
+  if (!access.databaseResources) {
+    // No parseable database resources — show raw CEL or "All".
     if (access.conditionExpression) {
       return (
         <NEllipsis class="text-sm font-mono textinfo">
@@ -102,55 +145,8 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
   }
 
   return (
-    <div class="flex flex-col gap-y-1">
-      <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-        <span class="font-medium">{`${t("common.database")}:`}</span>
-        <NEllipsis>
-          {hasGetDatabasePermission.value ? (
-            <div
-              class="normal-link hover:underline cursor-pointer"
-              onClick={() => {
-                const query: Record<string, string> = {};
-                if (access.databaseResource?.schema) {
-                  query.schema = access.databaseResource.schema;
-                }
-                if (access.databaseResource?.table) {
-                  query.table = access.databaseResource.table;
-                }
-                router.push({
-                  path: access.databaseResource?.databaseFullName,
-                  query,
-                });
-              }}
-            >
-              {access.databaseResource.databaseFullName}
-            </div>
-          ) : (
-            <div class="flex items-center gap-x-1">
-              {access.databaseResource.databaseFullName}
-            </div>
-          )}
-        </NEllipsis>
-      </div>
-      {access.databaseResource.schema && (
-        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-          <span class="font-medium">{`${t("common.schema")}:`}</span>
-          <span>{access.databaseResource.schema}</span>
-        </div>
-      )}
-      {access.databaseResource.table && (
-        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-          <span class="font-medium">{`${t("common.table")}:`}</span>
-          <span>{access.databaseResource.table}</span>
-        </div>
-      )}
-      {access.databaseResource.columns &&
-        access.databaseResource.columns.length > 0 && (
-          <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
-            <span class="font-medium">{`${t("database.columns")}:`}</span>
-            <span>{access.databaseResource.columns.join(", ")}</span>
-          </div>
-        )}
+    <div class="flex flex-col gap-y-2">
+      {access.databaseResources.map((res) => renderDatabaseResource(res))}
     </div>
   );
 };
@@ -189,9 +185,10 @@ const getAccessUsers = (
       expirationTimestamp,
       rawExpression: expression,
       description,
-      databaseResource: condition.databaseResources
-        ? condition.databaseResources[0]
-        : undefined,
+      databaseResources:
+        condition.databaseResources && condition.databaseResources.length > 0
+          ? condition.databaseResources
+          : undefined,
       conditionExpression,
     };
 
@@ -248,7 +245,7 @@ const accessTableColumns = computed(
         expandable: (_: AccessUser) => true,
         hide: props.showDatabaseColumn,
         renderExpand: (item: AccessUser) => {
-          return getDatabaseAccessResource(item);
+          return getConditionDisplay(item);
         },
       },
       {
@@ -273,7 +270,7 @@ const accessTableColumns = computed(
         title: t("cel.condition.self"),
         hide: !props.showDatabaseColumn,
         render: (item: AccessUser) => {
-          return getDatabaseAccessResource(item);
+          return getConditionDisplay(item);
         },
       },
       {
@@ -342,7 +339,7 @@ const revokeAccessAlert = (item: AccessUser) => {
               member: item.member,
             })}
           </div>
-          {getDatabaseAccessResource(item)}
+          {getConditionDisplay(item)}
         </div>
       );
     },

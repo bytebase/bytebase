@@ -129,11 +129,11 @@ const filterAccessUser = (user: AccessUser): boolean => {
     return false;
   }
   if (state.selectedDatabaseName) {
-    if (!user.databaseResource) {
+    if (!user.databaseResources) {
       return true;
     }
-    return (
-      user.databaseResource.databaseFullName === state.selectedDatabaseName
+    return user.databaseResources.some(
+      (r) => r.databaseFullName === state.selectedDatabaseName
     );
   }
 
