@@ -75,7 +75,7 @@ func makeEmptySets(proc *catalog.UserProc) []base.SourceColumnSet {
 func countOutputParams(proc *catalog.UserProc) int {
 	count := 0
 	for _, mode := range proc.ArgModes {
-		if mode == 'o' || mode == 't' {
+		if mode == 'o' || mode == 't' || mode == 'b' {
 			count++
 		}
 	}

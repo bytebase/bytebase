@@ -1436,11 +1436,14 @@ func extractFuncNameFromRange(rf *ast.RangeFunction) string {
 		if !ok || fc.Funcname == nil {
 			continue
 		}
+		// Use the last name part — for "schema.func", return "func".
+		name := ""
 		for _, nameItem := range fc.Funcname.Items {
 			if s, ok := nameItem.(*ast.String); ok {
-				return s.Str
+				name = s.Str
 			}
 		}
+		return name
 	}
 	return ""
 }
@@ -1459,12 +1462,12 @@ func (e *omniQuerySpanExtractor) lookupUserProcByName(name string) *catalog.User
 	return nil
 }
 
-// getOutputParamNames returns the names of output parameters (TABLE or OUT mode)
+// getOutputParamNames returns the names of output parameters (TABLE, OUT, or INOUT mode)
 // for a user-defined function. Returns nil if the function has no output params.
 func getOutputParamNames(proc *catalog.UserProc) []string {
 	var names []string
 	for i, mode := range proc.ArgModes {
-		if mode == 't' || mode == 'o' {
+		if mode == 't' || mode == 'o' || mode == 'b' {
 			if i < len(proc.ArgNames) {
 				names = append(names, proc.ArgNames[i])
 			}
@@ -1644,11 +1647,28 @@ func parseInputParamNames(definition string) []string {
 		paramSection = paramSection[:lastParen]
 	}
 
+	modeKeywords := map[string]bool{
+		"IN": true, "OUT": true, "INOUT": true, "VARIADIC": true,
+	}
 	var names []string
 	for _, param := range strings.Split(paramSection, ",") {
 		parts := strings.Fields(strings.TrimSpace(param))
-		if len(parts) >= 2 {
-			names = append(names, parts[0])
+		if len(parts) < 2 {
+			continue
+		}
+		// If the first word is a mode keyword (IN, OUT, INOUT, VARIADIC),
+		// the parameter name is the second word. Otherwise the first word is the name.
+		nameIdx := 0
+		if modeKeywords[strings.ToUpper(parts[0])] {
+			nameIdx = 1
+		}
+		if nameIdx < len(parts) {
+			// Skip OUT/INOUT params — we only want input params for variable scope.
+			upperFirst := strings.ToUpper(parts[0])
+			if upperFirst == "OUT" {
+				continue
+			}
+			names = append(names, parts[nameIdx])
 		}
 	}
 	return names
