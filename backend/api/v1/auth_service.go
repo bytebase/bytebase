@@ -580,86 +580,62 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid email %q", userInfo.Identifier))
 		}
 	}
-	// For global IDPs (SaaS), resolve workspace from user's IAM membership.
-	if workspaceID == "" {
-		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-			Email:          email,
-			IncludeAllUser: !s.profile.SaaS,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace for SSO user"))
-		}
-		if ws != nil {
-			workspaceID = ws.ResourceID
-		}
-		// If no workspace found, workspaceID stays empty — user will get their own workspace.
-	}
-
-	// If the email is still invalid, we will return an error.
-	if workspaceID != "" {
-		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
-			return nil, err
-		}
-	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list users by email %s", email))
 	}
+	// User login through global SSO, then we should auth-resolve the workspace id.
+	if user != nil && workspaceID == "" {
+		wsID, err := s.resolveWorkspaceForLogin(ctx, user)
+		if err != nil {
+			slog.Warn("failed to resolve workspace", slog.String("user", user.Email), log.BBError(err))
+		}
+		workspaceID = wsID
+	}
+	// First time login through SSO
+	if user == nil {
+		if workspaceID != "" {
+			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
+				return nil, err
+			}
 
-	if user != nil {
-		if user.MemberDeleted {
+			// We will only block new create creation and still allow SSO login from existing users.
+			featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
+			if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
+				featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
+			}
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, featurePlan); err != nil {
+				return nil, connect.NewError(connect.CodePermissionDenied, err)
+			}
+
 			if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
 				return nil, err
 			}
-			// Undelete the user when login via SSO.
-			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete user"))
-			}
 		}
-		if userInfo.HasGroups {
-			// Sync user groups with the identity provider.
-			// The userInfo.Groups is the groups that the user belongs to in the identity provider.
-			if err := s.syncUserGroups(ctx, user, workspaceID, userInfo.Groups); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync user groups"))
-			}
-		}
-		return user, nil
-	}
 
-	if workspaceID != "" {
-		// We will only block new create creation and still allow SSO login from existing users.
-		featurePlan := v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO
-		if idp.Type == storepb.IdentityProviderType_OAUTH2 && googleGitHubDomains[idp.Domain] {
-			featurePlan = v1pb.PlanFeature_FEATURE_GOOGLE_AND_GITHUB_SSO
+		// Create new user from identity provider.
+		password, err := common.RandomString(20)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password"))
 		}
-		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, featurePlan); err != nil {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash"))
 		}
-	}
 
-	// Create new user from identity provider.
-	password, err := common.RandomString(20)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password"))
-	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash"))
-	}
-	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
-		return nil, err
-	}
-	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
-		Name:         userInfo.DisplayName,
-		Email:        email,
-		Phone:        userInfo.Phone,
-		Type:         storepb.PrincipalType_END_USER,
-		PasswordHash: string(passwordHash),
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+		newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+			Name:         userInfo.DisplayName,
+			Email:        email,
+			Phone:        userInfo.Phone,
+			Type:         storepb.PrincipalType_END_USER,
+			PasswordHash: string(passwordHash),
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+		}
+
+		user = newUser
 	}
 
 	if workspaceID == "" {
@@ -697,12 +673,23 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 	}
 
+	if user.MemberDeleted {
+		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
+			return nil, err
+		}
+		// Undelete the user when login via SSO.
+		user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete user"))
+		}
+	}
+
 	if userInfo.HasGroups {
-		if err := s.syncUserGroups(ctx, newUser, workspaceID, userInfo.Groups); err != nil {
+		if err := s.syncUserGroups(ctx, user, workspaceID, userInfo.Groups); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to sync user groups"))
 		}
 	}
-	return newUser, nil
+	return user, nil
 }
 
 // countRecentLoginFailures counts the number of failed login attempts for a given email
