@@ -11,7 +11,8 @@
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { formatAbsoluteDateTime, humanizeTs } from "@/utils";
+import { formatAbsoluteDateTime } from "@/utils/datetime";
+import { humanizeTs } from "@/utils/util";
 
 const props = defineProps({
   ts: {
