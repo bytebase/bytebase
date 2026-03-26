@@ -1044,23 +1044,18 @@ func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *a
 			}
 		}
 
-		// For recursive CTEs, the recursive term can mix columns freely
-		// (e.g., cc1*cc2 combines columns a and b). Merge all source columns
-		// from all result positions into every result column.
+		// For recursive CTEs, the recursive term references CTE columns
+		// (e.g., cc1*cc2). Track which CTE columns each recursive expression
+		// depends on, then resolve those to source columns from the non-recursive term.
 		if selectReferencesTable(cteSel.Rarg, cteName) {
-			allSources := make(base.SourceColumnSet)
-			for _, r := range leftResults {
-				for k, v := range r.SourceColumns {
-					allSources[k] = v
+			aliases := e.getCTEColumnAliases(cteName)
+			if len(aliases) == 0 {
+				// No explicit aliases — use the column names from leftResults.
+				for _, r := range leftResults {
+					aliases = append(aliases, r.Name)
 				}
 			}
-			if len(allSources) > 0 {
-				for i := range leftResults {
-					for k, v := range allSources {
-						leftResults[i].SourceColumns[k] = v
-					}
-				}
-			}
+			e.mergeRecursiveCTELineage(leftResults, cteSel.Rarg, cteName, aliases)
 		}
 
 		// Look up CTE column aliases from the WithClause.
@@ -1142,6 +1137,74 @@ func nodeReferencesTable(node ast.Node, tableName string) bool {
 	default:
 		return false
 	}
+}
+
+// mergeRecursiveCTELineage tracks which CTE columns each expression in the
+// recursive term depends on, then resolves those to source columns from the
+// non-recursive term results.
+func (*omniQuerySpanExtractor) mergeRecursiveCTELineage(results []base.QuerySpanResult, recursiveSel *ast.SelectStmt, _ string, cteColNames []string) {
+	if recursiveSel == nil || recursiveSel.TargetList == nil {
+		return
+	}
+
+	// Build a map of CTE column name → index (for resolving references).
+	cteColIndex := make(map[string]int)
+	for i, name := range cteColNames {
+		cteColIndex[strings.ToLower(name)] = i
+	}
+
+	// For each expression in the recursive term, find which CTE columns it references.
+	for i, item := range recursiveSel.TargetList.Items {
+		if i >= len(results) {
+			break
+		}
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+
+		// Collect all column references from this expression.
+		refs := collectColumnRefNames(rt.Val)
+
+		// For each referenced column, if it's a CTE column, merge that column's
+		// source set into this result's source set.
+		for _, ref := range refs {
+			if idx, ok := cteColIndex[strings.ToLower(ref)]; ok && idx < len(results) {
+				for k, v := range results[idx].SourceColumns {
+					results[i].SourceColumns[k] = v
+				}
+			}
+		}
+	}
+}
+
+// collectColumnRefNames extracts all unqualified column reference names from an expression.
+func collectColumnRefNames(node ast.Node) []string {
+	if node == nil {
+		return nil
+	}
+	var names []string
+	switch v := node.(type) {
+	case *ast.ColumnRef:
+		if v.Fields != nil && len(v.Fields.Items) == 1 {
+			if s, ok := v.Fields.Items[0].(*ast.String); ok {
+				names = append(names, s.Str)
+			}
+		}
+	case *ast.FuncCall:
+		if v.Args != nil {
+			for _, arg := range v.Args.Items {
+				names = append(names, collectColumnRefNames(arg)...)
+			}
+		}
+	case *ast.A_Expr:
+		names = append(names, collectColumnRefNames(v.Lexpr)...)
+		names = append(names, collectColumnRefNames(v.Rexpr)...)
+	case *ast.TypeCast:
+		names = append(names, collectColumnRefNames(v.Arg)...)
+	default:
+	}
+	return names
 }
 
 // collectCTEAliases extracts CTE column aliases from the WITH clause.

@@ -2666,11 +2666,6 @@
               schema: public
               table: t
               column: b
-            - server: ""
-              database: db
-              schema: public
-              table: t
-              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -2686,11 +2681,6 @@
               schema: public
               table: t
               column: b
-            - server: ""
-              database: db
-              schema: public
-              table: t
-              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -2715,22 +2705,7 @@
           sourcefieldpaths: []
           selectasterisk: false
         - name: "n"
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: public
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: public
-              table: t
-              column: b
-            - server: ""
-              database: db
-              schema: public
-              table: t
-              column: c
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
