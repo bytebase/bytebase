@@ -8,6 +8,7 @@
     :striped="true"
     :loading="!ready || state.loading"
     :max-height="'calc(100vh - 15rem)'"
+    :scroll-x="scrollX"
     virtual-scroll
   />
 </template>
@@ -18,6 +19,7 @@ import { orderBy } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable, NDatePicker, NEllipsis, useDialog } from "naive-ui";
+import type { VNodeChild } from "vue";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -57,6 +59,7 @@ const props = defineProps<{
   size: "small" | "medium";
   disabled: boolean;
   project: Project;
+  showDatabaseColumn: boolean;
   filterAccessUser: (accessUser: AccessUser) => boolean;
 }>();
 
@@ -86,6 +89,73 @@ const filteredList = computed(() =>
   state.rawAccessList.filter(props.filterAccessUser)
 );
 
+const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
+  if (!access.databaseResource) {
+    // No parseable database resource — show raw CEL or "All".
+    if (access.conditionExpression) {
+      return (
+        <NEllipsis class="text-sm font-mono textinfo">
+          {access.conditionExpression}
+        </NEllipsis>
+      );
+    }
+    return <div class="textinfo">{t("database.all")}</div>;
+  }
+
+  return (
+    <div class="flex flex-col gap-y-1">
+      <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+        <span class="font-medium">{`${t("common.database")}:`}</span>
+        <NEllipsis>
+          {hasGetDatabasePermission.value ? (
+            <div
+              class="normal-link hover:underline cursor-pointer"
+              onClick={() => {
+                const query: Record<string, string> = {};
+                if (access.databaseResource?.schema) {
+                  query.schema = access.databaseResource.schema;
+                }
+                if (access.databaseResource?.table) {
+                  query.table = access.databaseResource.table;
+                }
+                router.push({
+                  path: access.databaseResource?.databaseFullName,
+                  query,
+                });
+              }}
+            >
+              {access.databaseResource.databaseFullName}
+            </div>
+          ) : (
+            <div class="flex items-center gap-x-1">
+              {access.databaseResource.databaseFullName}
+            </div>
+          )}
+        </NEllipsis>
+      </div>
+      {access.databaseResource.schema && (
+        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+          <span class="font-medium">{`${t("common.schema")}:`}</span>
+          <span>{access.databaseResource.schema}</span>
+        </div>
+      )}
+      {access.databaseResource.table && (
+        <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+          <span class="font-medium">{`${t("common.table")}:`}</span>
+          <span>{access.databaseResource.table}</span>
+        </div>
+      )}
+      {access.databaseResource.columns &&
+        access.databaseResource.columns.length > 0 && (
+          <div class="flex flex-col xl:flex-row xl:items-center gap-x-1 text-sm textinfo">
+            <span class="font-medium">{`${t("database.columns")}:`}</span>
+            <span>{access.databaseResource.columns.join(", ")}</span>
+          </div>
+        )}
+    </div>
+  );
+};
+
 const expirationTimeRegex = /request\.time\s*<\s*timestamp\("(.+)?"\)/;
 
 // Extract the condition portion of a CEL expression, excluding request.time.
@@ -110,23 +180,23 @@ const getAccessUsers = (
   }
 
   const conditionExpression = getConditionExpression(expression);
-  const databaseResources =
-    condition.databaseResources && condition.databaseResources.length > 0
-      ? condition.databaseResources
-      : undefined;
 
   const result: AccessUser[] = [];
   for (const member of exception.members) {
-    result.push({
+    const access: AccessUser = {
       type: member.startsWith(groupBindingPrefix) ? "group" : "user",
       member,
       key: `${member}:${expression}.${description}`,
       expirationTimestamp,
       rawExpression: expression,
       description,
+      databaseResource: condition.databaseResources
+        ? condition.databaseResources[0]
+        : undefined,
       conditionExpression,
-      databaseResources,
-    });
+    };
+
+    result.push(access);
   }
 
   return result;
@@ -146,13 +216,16 @@ const updateAccessUserList = async () => {
   const memberMap = new Map<string, AccessUser>();
   const { exemptions } = policy.value.policy.value;
   const expressionList = exemptions.map((e) =>
-    e.condition?.expression ? e.condition.expression : "true"
+    e.condition?.expression ? e.condition?.expression : "true"
   );
   const conditionList = await batchConvertFromCELString(expressionList);
 
   await composePolicyBindings(exemptions, true);
   for (let i = 0; i < exemptions.length; i++) {
-    const items = getAccessUsers(exemptions[i], conditionList[i]);
+    const exception = exemptions[i];
+    const condition = conditionList[i];
+
+    const items = getAccessUsers(exception, condition);
     for (const item of items) {
       memberMap.set(item.key, item);
     }
@@ -172,9 +245,18 @@ const accessTableColumns = computed(
   (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
     return [
       {
+        type: "expand",
+        expandable: (_: AccessUser) => true,
+        hide: props.showDatabaseColumn,
+        renderExpand: (item: AccessUser) => {
+          return getDatabaseAccessResource(item);
+        },
+      },
+      {
         key: "member",
         title: t("common.members"),
-        width: 180,
+        minWidth: 140,
+        resizable: true,
         render: (item: AccessUser) => {
           if (item.member.startsWith(groupBindingPrefix)) {
             const group = groupStore.getGroupByIdentifier(item.member);
@@ -189,73 +271,19 @@ const accessTableColumns = computed(
         },
       },
       {
-        key: "condition",
-        title: t("cel.condition.self"),
+        key: "resource",
+        title: t("common.resource"),
+        minWidth: 200,
+        resizable: true,
+        hide: !props.showDatabaseColumn,
         render: (item: AccessUser) => {
-          if (!item.conditionExpression) {
-            return <span class="textinfo">{t("database.all")}</span>;
-          }
-          // Best-effort: render database resources nicely if parseable.
-          if (item.databaseResources && item.databaseResources.length > 0) {
-            return (
-              <div class="flex flex-col gap-y-1">
-                {item.databaseResources.map((res) => (
-                  <div class="flex flex-col gap-y-0.5 text-sm textinfo">
-                    <div class="flex items-center gap-x-1">
-                      <span class="font-medium">{t("common.database")}:</span>
-                      {hasGetDatabasePermission.value ? (
-                        <span
-                          class="normal-link hover:underline cursor-pointer"
-                          onClick={() => {
-                            const query: Record<string, string> = {};
-                            if (res.schema) query.schema = res.schema;
-                            if (res.table) query.table = res.table;
-                            router.push({ path: res.databaseFullName, query });
-                          }}
-                        >
-                          {res.databaseFullName}
-                        </span>
-                      ) : (
-                        <span>{res.databaseFullName}</span>
-                      )}
-                    </div>
-                    {res.schema && (
-                      <div class="flex items-center gap-x-1">
-                        <span class="font-medium">{t("common.schema")}:</span>
-                        <span>{res.schema}</span>
-                      </div>
-                    )}
-                    {res.table && (
-                      <div class="flex items-center gap-x-1">
-                        <span class="font-medium">{t("common.table")}:</span>
-                        <span>{res.table}</span>
-                      </div>
-                    )}
-                    {res.columns && res.columns.length > 0 && (
-                      <div class="flex items-center gap-x-1">
-                        <span class="font-medium">
-                          {t("database.columns")}:
-                        </span>
-                        <span>{res.columns.join(", ")}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          }
-          // Fallback: show raw CEL expression.
-          return (
-            <NEllipsis class="text-sm font-mono">
-              {item.conditionExpression}
-            </NEllipsis>
-          );
+          return getDatabaseAccessResource(item);
         },
       },
       {
         key: "expire",
         title: t("common.expiration"),
-        width: 220,
+        minWidth: 200,
         render: (item: AccessUser) => {
           return (
             <NDatePicker
@@ -279,7 +307,7 @@ const accessTableColumns = computed(
       {
         key: "reason",
         title: t("common.reason"),
-        width: 120,
+        minWidth: 120,
         render: (item: AccessUser) => {
           return item.description;
         },
@@ -307,6 +335,12 @@ const accessTableColumns = computed(
   }
 );
 
+const scrollX = computed(() => {
+  return accessTableColumns.value.reduce((sum, col) => {
+    return sum + ((col as { minWidth?: number }).minWidth ?? 100);
+  }, 0);
+});
+
 const revokeAccessAlert = (item: AccessUser) => {
   $dialog.warning({
     title: t("common.warning"),
@@ -318,24 +352,7 @@ const revokeAccessAlert = (item: AccessUser) => {
               member: item.member,
             })}
           </div>
-          {item.conditionExpression && (
-            <div class="text-sm textinfo">
-              {item.databaseResources && item.databaseResources.length > 0
-                ? item.databaseResources
-                    .map((r) =>
-                      [
-                        r.databaseFullName,
-                        r.schema,
-                        r.table,
-                        r.columns?.join(", "),
-                      ]
-                        .filter(Boolean)
-                        .join(" / ")
-                    )
-                    .join("; ")
-                : item.conditionExpression}
-            </div>
-          )}
+          {getDatabaseAccessResource(item)}
         </div>
       );
     },
