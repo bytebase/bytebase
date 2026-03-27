@@ -64,8 +64,10 @@ export default defineConfig({
           jsx: "automatic",
           jsxImportSource: "react",
           tsconfigRaw: { compilerOptions: {} },
+          sourcemap: true,
+          sourcefile: id,
         });
-        return { code: result.code, map: result.map };
+        return { code: result.code, map: result.map || null };
       },
     },
     vue(),

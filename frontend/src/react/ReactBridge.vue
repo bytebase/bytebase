@@ -23,8 +23,8 @@ import {
   useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
