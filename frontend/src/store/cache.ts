@@ -63,6 +63,7 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
           setEntity(keys, entity);
         }
       })
+      .catch(() => undefined)
       .finally(() => {
         invalidateRequest(keys);
       });
