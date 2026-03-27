@@ -164,11 +164,69 @@ Other locales: use English as placeholder (existing pattern for non-translated s
 - **No `ROLLOUT_READY` event.** The old system had `NOTIFY_PIPELINE_ROLLOUT` alongside `NOTIFY_ISSUE_APPROVED`, but `PIPELINE_COMPLETED` already covers the rollout-done case. Adding `ROLLOUT_READY` would re-introduce the noise the redesign intentionally removed.
 - **No webhook plugin changes.** All platforms (Slack, Discord, Teams, DingTalk, Feishu, WeCom, Lark) use the same `webhook.Context` struct. The new event works automatically across all platforms.
 
-## Known limitations (pre-existing, out of scope)
+## Bug fixes in `manager.go` (pre-existing, fixed as part of this change)
 
-1. **`webhookCtx.Issue.Creator` uses `actor.Email`** — In `manager.go` line 185, the shared post-switch code populates `Issue.Creator` using `actor.Email`. For `ISSUE_APPROVED`, `actor` is the approver, so the webhook payload's `Issue.Creator` will contain the approver's info instead of the actual issue creator. This same bug exists in `ISSUE_SENT_BACK`. The DM targeting via `mentionUsers` is correct — only the payload metadata is wrong.
+### Fix 1: `Issue.Creator` incorrectly uses `actor.Email` instead of `issue.CreatorEmail`
 
-2. **`webhookCtx.Description` is overwritten** — In `manager.go` line 162, the `webhookCtx` struct is fully reassigned without carrying over `Description`. Any `.Description` set in the switch cases is silently wiped. This affects all event types that set descriptions (`ISSUE_SENT_BACK`, `PIPELINE_FAILED`, `PIPELINE_COMPLETED`). We follow the existing pattern for consistency.
+**Bug:** In `getWebhookContextFromEvent`, the shared post-switch code (line 185) populates `webhookCtx.Issue.Creator` using `actor.Email`. For events where the actor is not the issue creator (`ISSUE_SENT_BACK`, and our new `ISSUE_APPROVED`), the "Issue Creator" field in webhook messages (rendered by `GetMetaList()` in all plugins — Slack, Discord, Teams, DingTalk, Feishu, WeCom, Lark) shows the approver instead of the actual issue creator.
+
+**Fix:** Use `issue.CreatorEmail` instead of `actor.Email` in the shared post-switch code:
+
+```go
+// Before (buggy):
+creatorAccount, err := m.store.GetAccountByEmail(ctx, actor.Email)
+...
+    Creator: webhook.Creator{
+        Name:  creatorName,
+        Email: actor.Email,
+    },
+
+// After (fixed):
+creatorAccount, err := m.store.GetAccountByEmail(ctx, issue.CreatorEmail)
+...
+    Creator: webhook.Creator{
+        Name:  creatorName,
+        Email: issue.CreatorEmail,
+    },
+```
+
+This fixes `ISSUE_SENT_BACK` (existing) and `ISSUE_APPROVED` (new) at once. For `ISSUE_CREATED` and `ISSUE_APPROVAL_REQUESTED`, actor is already the creator, so behavior is unchanged.
+
+### Fix 2: `Description` and `Environment` silently wiped by struct reassignment
+
+**Bug:** In `getWebhookContextFromEvent`, switch cases set `webhookCtx.Description` and `webhookCtx.Environment` on the initial `webhookCtx` variable (line 64). But line 162 fully reassigns `webhookCtx = webhook.Context{...}` without including `Description` or `Environment`, silently discarding them. This affects all events that set descriptions (`ISSUE_CREATED`, `ISSUE_SENT_BACK`, `PIPELINE_FAILED`, `PIPELINE_COMPLETED`) and environment (`PIPELINE_FAILED`, `PIPELINE_COMPLETED`).
+
+`Description` is rendered by all webhook plugins (e.g., Slack renders it as a code block at slack.go line 98). `Environment` is rendered in the metadata list for rollout events (webhook.go line 146-150).
+
+**Fix:** Capture `description` and `environment` as local variables (like `title`, `link`, etc.) and include them in the struct literal:
+
+```go
+// Add to local variable declarations (after line 76):
+description := ""
+environment := ""
+
+// In switch cases, use local vars instead of webhookCtx fields:
+description = fmt.Sprintf("%s approved the issue", e.IssueApproved.Approver.Name)
+environment = e.RolloutFailed.Environment
+
+// Include in struct literal (line 162):
+webhookCtx = webhook.Context{
+    Level:           level,
+    EventType:       string(eventType),
+    Title:           title,
+    TitleZh:         titleZh,
+    Description:     description,
+    Link:            link,
+    Environment:     environment,
+    MentionEndUsers: mentionEndUsers,
+    Project: &webhook.Project{
+        Name:  common.FormatProject(e.Project.ResourceID),
+        Title: e.Project.Title,
+    },
+}
+```
+
+All existing switch cases that set `webhookCtx.Description` or `webhookCtx.Environment` must be updated to use the local variables instead.
 
 ## Differences from old implementation
 
