@@ -37,6 +37,8 @@ const (
 	Activity_PIPELINE_FAILED Activity_Type = 13
 	// PIPELINE_COMPLETED represents a pipeline completion event.
 	Activity_PIPELINE_COMPLETED Activity_Type = 14
+	// ISSUE_APPROVED represents an issue being fully approved.
+	Activity_ISSUE_APPROVED Activity_Type = 15
 )
 
 // Enum value maps for Activity_Type.
@@ -48,6 +50,7 @@ var (
 		12: "ISSUE_SENT_BACK",
 		13: "PIPELINE_FAILED",
 		14: "PIPELINE_COMPLETED",
+		15: "ISSUE_APPROVED",
 	}
 	Activity_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":         0,
@@ -56,6 +59,7 @@ var (
 		"ISSUE_SENT_BACK":          12,
 		"PIPELINE_FAILED":          13,
 		"PIPELINE_COMPLETED":       14,
+		"ISSUE_APPROVED":           15,
 	}
 )
 
@@ -210,8 +214,8 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9c\x01\n" +
-	"\bActivity\"\x8f\x01\n" +
+	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xb0\x01\n" +
+	"\bActivity\"\xa3\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rISSUE_CREATED\x10\n" +
@@ -219,7 +223,8 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\x18ISSUE_APPROVAL_REQUESTED\x10\v\x12\x13\n" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
-	"\x12PIPELINE_COMPLETED\x10\x0e\"\xcf\x01\n" +
+	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\xcf\x01\n" +
 	"\x0eProjectWebhook\x12/\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.WebhookTypeR\x04type\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

@@ -63,6 +63,8 @@ func convertToStoreActivityTypes(types []v1pb.Activity_Type) ([]storepb.Activity
 			result = append(result, storepb.Activity_ISSUE_APPROVAL_REQUESTED)
 		case v1pb.Activity_ISSUE_SENT_BACK:
 			result = append(result, storepb.Activity_ISSUE_SENT_BACK)
+		case v1pb.Activity_ISSUE_APPROVED:
+			result = append(result, storepb.Activity_ISSUE_APPROVED)
 		case v1pb.Activity_PIPELINE_FAILED:
 			result = append(result, storepb.Activity_PIPELINE_FAILED)
 		case v1pb.Activity_PIPELINE_COMPLETED:
@@ -84,6 +86,8 @@ func convertToV1ActivityTypes(types []storepb.Activity_Type) []v1pb.Activity_Typ
 			result = append(result, v1pb.Activity_ISSUE_APPROVAL_REQUESTED)
 		case storepb.Activity_ISSUE_SENT_BACK:
 			result = append(result, v1pb.Activity_ISSUE_SENT_BACK)
+		case storepb.Activity_ISSUE_APPROVED:
+			result = append(result, v1pb.Activity_ISSUE_APPROVED)
 		case storepb.Activity_PIPELINE_FAILED:
 			result = append(result, v1pb.Activity_PIPELINE_FAILED)
 		case storepb.Activity_PIPELINE_COMPLETED:

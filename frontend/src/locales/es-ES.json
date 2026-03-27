@@ -1846,6 +1846,10 @@
           "title": "Incidencia devuelta",
           "label": "Cuando un aprobador devuelve la incidencia"
         },
+        "issue-approved": {
+          "title": "Incidencia aprobada",
+          "label": "Cuando se completan todos los pasos de aprobación"
+        },
         "pipeline-failed": {
           "title": "Pipeline fallido",
           "label": "Cuando las tareas del pipeline fallan"

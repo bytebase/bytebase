@@ -7074,6 +7074,7 @@ components:
         - ISSUE_SENT_BACK
         - PIPELINE_FAILED
         - PIPELINE_COMPLETED
+        - ISSUE_APPROVED
       description: Activity type enumeration.
     bytebase.v1.ActuatorInfo:
       type: object
@@ -18701,6 +18702,7 @@ components:
              - ISSUE_CREATED
              - ISSUE_APPROVAL_REQUESTED
              - ISSUE_SENT_BACK
+             - ISSUE_APPROVED
              - PIPELINE_FAILED
              - PIPELINE_COMPLETED
       title: Webhook

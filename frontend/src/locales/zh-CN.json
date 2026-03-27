@@ -1846,6 +1846,10 @@
           "title": "工单被退回",
           "label": "当工单被审批人退回"
         },
+        "issue-approved": {
+          "title": "工单审批通过",
+          "label": "当所有审批步骤完成时通知"
+        },
         "pipeline-failed": {
           "title": "流水线失败",
           "label": "当流水线任务失败"
