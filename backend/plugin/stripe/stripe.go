@@ -95,25 +95,36 @@ func CreateCheckoutSession(params *CheckoutParams) (string, error) {
 
 // CancelSubscription cancels a Stripe subscription.
 // If prorate is true, cancels immediately with proration and processes refund.
-// If prorate is false, the subscription continues until period end.
-func CancelSubscription(stripeSubID string, prorate bool) (*stripego.Subscription, error) {
+// If prorate is false, schedules cancellation at the end of the current billing period.
+func CancelSubscription(stripeSubID string, workspace string, prorate bool) (*stripego.Subscription, error) {
+	if !prorate {
+		// Schedule cancellation at period end — subscription remains active until then.
+		sub, err := stripesubscription.Update(stripeSubID, &stripego.SubscriptionParams{
+			CancelAtPeriodEnd: stripego.Bool(true),
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to schedule cancellation for stripe subscription %s", stripeSubID)
+		}
+		return sub, nil
+	}
+
+	// Immediate cancellation with proration.
 	sub, err := stripesubscription.Cancel(stripeSubID, &stripego.SubscriptionCancelParams{
 		InvoiceNow: stripego.Bool(true),
-		Prorate:    stripego.Bool(prorate),
+		Prorate:    stripego.Bool(true),
 		Expand:     []*string{stripego.String("customer")},
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to cancel stripe subscription %s", stripeSubID)
 	}
 
-	if prorate {
-		if err := RefundFromSubscription(sub, stripeSubID); err != nil {
-			slog.Error("failed to refund after cancellation",
-				log.BBError(err),
-				slog.String("stripe_subscription_id", stripeSubID),
-			)
-			// Don't fail the cancellation itself
-		}
+	if err := RefundFromSubscription(sub, workspace); err != nil {
+		slog.Error("failed to refund after cancellation",
+			log.BBError(err),
+			slog.String("stripe_subscription_id", stripeSubID),
+			slog.String("workspace", workspace),
+		)
+		// Don't fail the cancellation itself
 	}
 
 	return sub, nil
@@ -220,13 +231,13 @@ func findLastInvoiceByStatus(sub *stripego.Subscription, status stripego.Invoice
 		ListParams:   stripego.ListParams{Limit: stripego.Int64(1)},
 	})
 	if !invoices.Next() {
+		if err := invoices.Err(); err != nil {
+			return nil, errors.Wrapf(err, "error listing invoices for subscription %s", sub.ID)
+		}
 		return nil, errors.Errorf("no %s invoices found for subscription %s", status, sub.ID)
 	}
 
 	inv := invoices.Invoice()
-	if err := invoices.Err(); err != nil {
-		return nil, errors.Wrapf(err, "error retrieving invoices for subscription %s", sub.ID)
-	}
 	if len(inv.Lines.Data) == 0 {
 		return nil, errors.Errorf("no line items in invoice for subscription %s", sub.ID)
 	}
