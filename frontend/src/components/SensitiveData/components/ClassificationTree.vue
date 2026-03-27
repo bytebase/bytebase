@@ -15,6 +15,7 @@
       :selectable="true"
       :pattern="state.searchText"
       :show-irrelevant-nodes="false"
+      :default-expand-all="true"
       :expand-on-click="true"
       :render-suffix="renderSuffix"
       :render-label="renderLabel"

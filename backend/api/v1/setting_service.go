@@ -481,8 +481,33 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if len(payload.Configs) > 1 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only support define 1 classification config for now"))
 		}
-		if len(payload.Configs) == 1 && len(payload.Configs[0].Classification) == 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing classification map"))
+		if len(payload.Configs) == 1 {
+			config := payload.Configs[0]
+			if len(config.Classification) == 0 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing classification map"))
+			}
+			if len(config.Levels) == 0 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("levels must not be empty"))
+			}
+			// Validate that level numbers are unique and consecutive starting from 1.
+			seen := make(map[int32]bool, len(config.Levels))
+			for _, level := range config.Levels {
+				if seen[level.Level] {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate level number: %d", level.Level))
+				}
+				seen[level.Level] = true
+			}
+			for i := 1; i <= len(config.Levels); i++ {
+				if !seen[int32(i)] {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("levels must be consecutive integers starting from 1, missing level %d", i))
+				}
+			}
+			// Validate that classification level references are valid.
+			for id, c := range config.Classification {
+				if c.Level != nil && (*c.Level < 1 || *c.Level > int32(len(config.Levels))) {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("classification %q references invalid level %d", id, *c.Level))
+				}
+			}
 		}
 		resetClassification = true
 		storeSettingValue = payload

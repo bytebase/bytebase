@@ -924,14 +924,15 @@
         }
       },
       "classification": {
-        "upload": "Subir clasificación",
-        "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
-        "override-title": "Anulación de datos de clasificación",
-        "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
-        "override-confirm": "Aún subiendo"
-      },
-      "json-format-example": "Ejemplo de formato JSON",
-      "view-example": "Ver ejemplo"
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field"
+      }
     }
   },
   "remind": {
@@ -1749,7 +1750,7 @@
     "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "classification": {
       "self": "Clasificación",
-      "description": "Utilice la clasificación de datos para administrar la política de enmascaramiento para muchas columnas controlando solo una pequeña cantidad de clasificaciones."
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "partitioned": "Particionado",
     "partition-tables": "Tablas de particiones",
