@@ -747,21 +747,17 @@ func (s *DatabaseService) diffSchemaViaSDL(ctx context.Context, req *v1pb.DiffSc
 		return "", errors.Wrap(err, "failed to generate source SDL")
 	}
 
-	var targetSDL string
-	switch {
-	case req.GetSchema() != "":
-		targetSDL = req.GetSchema()
-	case req.GetChangelog() != "":
-		targetMetadata, err := s.getSourceDBMetadata(ctx, &v1pb.DiffSchemaRequest{Name: req.GetChangelog()})
-		if err != nil {
-			return "", errors.Wrap(err, "failed to resolve target changelog")
-		}
-		targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to generate target SDL")
-		}
-	default:
-		return "", errors.Errorf("target must be either schema text or changelog")
+	// Resolve target metadata, then convert to SDL.
+	// We always go through metadata → MetadataToSDL to ensure both sides are
+	// in the same SDL format. The schema text target from GetDatabaseSchema is
+	// a raw dump (contains SET/SELECT) which LoadSDL would reject.
+	targetMetadata, err := s.getTargetDBMetadata(ctx, req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to resolve target schema")
+	}
+	targetSDL, err := schema.MetadataToSDL(engine, targetMetadata)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate target SDL")
 	}
 
 	return schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
