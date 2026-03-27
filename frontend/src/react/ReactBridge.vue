@@ -5,12 +5,17 @@
     :title="$t('subscription.request-with-qr')"
     @close="showQRCodeModal = false"
   />
+  <InstanceAssignment
+    :show="showInstanceAssignmentDrawer"
+    @dismiss="showInstanceAssignmentDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import {
   getWorkspaceId,
@@ -37,6 +42,7 @@ let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
 const showQRCodeModal = ref(false);
+const showInstanceAssignmentDrawer = ref(false);
 
 const handleRequireEnterprise = () => {
   if (locale.value === "zh-CN") {
@@ -124,6 +130,9 @@ async function renderReact() {
       props.allowEdit && hasWorkspacePermissionV2("bb.instances.list"),
     onUploadLicense: handleUploadLicense,
     onRequireEnterprise: handleRequireEnterprise,
+    onManageInstanceLicenses: () => {
+      showInstanceAssignmentDrawer.value = true;
+    },
   };
   if (!root) {
     root = await mountSubscriptionPage(container.value, opts);

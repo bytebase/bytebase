@@ -1,4 +1,3 @@
-import { Dialog } from "@base-ui/react/dialog";
 import { Copy, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +9,7 @@ interface SubscriptionPageProps {
   allowManageInstanceLicenses: boolean;
   onUploadLicense: (license: string) => Promise<boolean>;
   onRequireEnterprise: () => void;
+  onManageInstanceLicenses: () => void;
 }
 
 export function SubscriptionPage({
@@ -18,6 +18,7 @@ export function SubscriptionPage({
   allowManageInstanceLicenses,
   onUploadLicense,
   onRequireEnterprise,
+  onManageInstanceLicenses,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
   const [license, setLicense] = useState("");
@@ -134,6 +135,7 @@ export function SubscriptionPage({
             instanceCountLimit={data.instanceCountLimit}
             activatedCount={data.activatedInstanceCount}
             totalLicenseCount={totalLicenseCount}
+            onManageInstanceLicenses={onManageInstanceLicenses}
           />
         )}
 
@@ -237,14 +239,15 @@ function InstanceLicenseStats({
   instanceCountLimit,
   activatedCount,
   totalLicenseCount,
+  onManageInstanceLicenses,
 }: {
   planType: string;
   instanceCountLimit: number;
   activatedCount: number;
   totalLicenseCount: string;
+  onManageInstanceLicenses: () => void;
 }) {
   const { t } = useTranslation();
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (planType === "FREE") {
     return (
@@ -269,33 +272,12 @@ function InstanceLicenseStats({
           </span>
           <button
             className="text-gray-500 hover:text-gray-700"
-            onClick={() => setDrawerOpen(true)}
+            onClick={onManageInstanceLicenses}
           >
             <Pencil className="h-8 w-8" />
           </button>
         </div>
       </div>
-
-      {/* Instance assignment drawer - placeholder for future migration */}
-      <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="fixed inset-0 bg-black/50 z-40" />
-          <Dialog.Popup className="fixed right-0 top-0 h-full w-[600px] bg-white shadow-xl z-50 p-6 overflow-y-auto">
-            <Dialog.Title className="text-lg font-semibold mb-4">
-              {t("subscription.instance-assignment.manage-license")}
-            </Dialog.Title>
-            <Dialog.Description className="text-sm text-gray-500">
-              Instance license assignment will be available after the
-              InstanceAssignment component is migrated to React.
-            </Dialog.Description>
-            <div className="mt-6">
-              <Dialog.Close className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
-                {t("common.close")}
-              </Dialog.Close>
-            </div>
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
     </>
   );
 }
