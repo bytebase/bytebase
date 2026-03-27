@@ -1207,8 +1207,17 @@ func (c *Completer) extractFromItem(item ast.Node, wrappedSQL string) {
 		}
 
 	case *ast.JoinExpr:
-		c.extractFromItem(v.Larg, wrappedSQL)
-		c.extractFromItem(v.Rarg, wrappedSQL)
+		if v.Alias != nil {
+			// Parenthesized JOIN with alias: FROM (t1 JOIN t2 USING (c1)) AS j(ca, cb)
+			virtualReference := &base.VirtualTableReference{
+				Table:   v.Alias.Aliasname,
+				Columns: extractAliasColnames(v.Alias),
+			}
+			c.referencesStack[0] = append(c.referencesStack[0], virtualReference)
+		} else {
+			c.extractFromItem(v.Larg, wrappedSQL)
+			c.extractFromItem(v.Rarg, wrappedSQL)
+		}
 
 	case *ast.RangeFunction:
 		if v.Alias != nil {
