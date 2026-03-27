@@ -136,7 +136,7 @@ func TestWebhookIntegration(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "test instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
 		},

@@ -544,7 +544,7 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -583,7 +583,7 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 		Instance: &v1pb.Instance{
 			Title:       "Test MySQL Instance",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
@@ -625,7 +625,7 @@ func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *test
 		Instance: &v1pb.Instance{
 			Title:       "Test PostgreSQL Instance",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
