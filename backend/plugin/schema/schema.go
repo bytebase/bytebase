@@ -28,6 +28,7 @@ var (
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	schemaDiffMigrations            = make(map[storepb.Engine]schemaDiffMigration)
 	diffSchemaTextMigrations        = make(map[storepb.Engine]diffSchemaTextMigration)
+	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
@@ -49,6 +50,7 @@ type sdlMigration func(userSDLText string, currentSchema *model.DatabaseMetadata
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
 type schemaDiffMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type diffSchemaTextMigration func(sourceSchema *model.DatabaseMetadata, targetSchemaText string) (string, error)
+type diffSDLMigration func(sourceSDL, targetSDL string) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
@@ -353,6 +355,24 @@ func DiffSchemaTextMigration(engine storepb.Engine, sourceSchema *model.Database
 	}
 	targetSchema := model.NewDatabaseMetadata(targetMetadata, nil, nil, engine, true)
 	return DiffMigration(engine, sourceSchema, targetSchema)
+}
+
+func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := diffSDLMigrations[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	diffSDLMigrations[engine] = f
+}
+
+// DiffSDLMigration computes migration SQL between two SDL texts.
+func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL string) (string, error) {
+	f, ok := diffSDLMigrations[engine]
+	if !ok {
+		return "", errors.Errorf("engine %s is not supported for SDL diff migration", engine)
+	}
+	return f(sourceSDL, targetSDL)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {

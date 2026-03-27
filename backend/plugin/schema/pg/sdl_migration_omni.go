@@ -23,6 +23,8 @@ func init() {
 	schema.RegisterDiffMigration(storepb.Engine_COCKROACHDB, pgSchemaDiffMigration)
 	schema.RegisterDiffSchemaTextMigration(storepb.Engine_POSTGRES, pgDiffSchemaTextMigration)
 	schema.RegisterDiffSchemaTextMigration(storepb.Engine_COCKROACHDB, pgDiffSchemaTextMigration)
+	schema.RegisterDiffSDLMigration(storepb.Engine_POSTGRES, pgDiffSDLMigration)
+	schema.RegisterDiffSDLMigration(storepb.Engine_COCKROACHDB, pgDiffSDLMigration)
 }
 
 // catalogFromMetadata builds an omni Catalog from database metadata.
@@ -39,6 +41,24 @@ func catalogFromMetadata(meta *model.DatabaseMetadata) (*catalog.Catalog, error)
 		return nil, errors.Wrap(err, "failed to convert metadata to DDL")
 	}
 	return catalog.LoadSDL(ddl)
+}
+
+// pgDiffSDLMigration computes migration SQL between two SDL texts using omni.
+func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
+	from, err := catalog.LoadSDL(strings.TrimSpace(sourceSDL))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load source SDL")
+	}
+	to, err := catalog.LoadSDL(strings.TrimSpace(targetSDL))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load target SDL")
+	}
+	diff := catalog.Diff(from, to)
+	if diff.IsEmpty() {
+		return "", nil
+	}
+	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
+	return plan.SQL(), nil
 }
 
 // pgDiffSchemaTextMigration computes migration SQL from source metadata to target schema text.

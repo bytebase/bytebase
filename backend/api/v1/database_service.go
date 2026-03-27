@@ -719,19 +719,38 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
-	var migrationSQL string
+	// Get source SDL text from metadata.
+	sourceSDL, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
+		SkipBackupSchema: true,
+		SDLFormat:        true,
+	}, sourceMetadata.GetProto())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate source SDL"))
+	}
+
+	// Get target SDL text: either directly from request or from changelog metadata.
+	var targetSDL string
 	switch {
 	case req.Msg.GetSchema() != "":
-		migrationSQL, err = schema.DiffSchemaTextMigration(engine, sourceMetadata, req.Msg.GetSchema())
+		targetSDL = req.Msg.GetSchema()
 	case req.Msg.GetChangelog() != "":
-		targetMetadata, err2 := s.resolveMetadata(ctx, req.Msg.GetChangelog())
-		if err2 != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err2, "failed to resolve target schema"))
+		targetMetadata, err := s.resolveMetadata(ctx, req.Msg.GetChangelog())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target schema"))
 		}
-		migrationSQL, err = schema.DiffMigration(engine, sourceMetadata, targetMetadata)
+		targetSDL, err = schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
+			SkipBackupSchema: true,
+			SDLFormat:        true,
+		}, targetMetadata.GetProto())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate target SDL"))
+		}
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target must be either schema text or changelog"))
 	}
+
+	// Compute migration using SDL diff.
+	migrationSQL, err := schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}
