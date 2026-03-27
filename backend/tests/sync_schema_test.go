@@ -56,7 +56,7 @@ func TestSyncSchema(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "pgTestSyncSchema",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
@@ -198,7 +198,7 @@ func TestSyncSchemaWithTempSchema(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "pgTestSyncSchemaWithTemp",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "testuser", Password: "testpass", Id: "admin"}},
 		},

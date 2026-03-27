@@ -52,7 +52,7 @@ func TestGitOpsCheck(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -65,7 +65,7 @@ func TestGitOpsCheck(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-check-prod",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
@@ -183,7 +183,7 @@ func TestGitOpsRollout(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -354,7 +354,7 @@ func TestGitOpsRolloutGhostDirective(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-rollout-ghost",
 			Engine:      v1pb.Engine_MYSQL,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
@@ -490,7 +490,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -503,7 +503,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-prod",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: prodInstanceDir, Id: "admin"}},
 		},
@@ -734,7 +734,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-changed-test",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: testInstanceDir, Id: "admin"}},
 		},
@@ -940,7 +940,7 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-decl-pg",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
@@ -1081,7 +1081,7 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 				Instance: &v1pb.Instance{
 					Title:       "gitops-disallow-pg",
 					Engine:      v1pb.Engine_POSTGRES,
-					Environment: stringPtr("environments/test"),
+					Environment: new("environments/test"),
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{
 						Type:     v1pb.DataSourceType_ADMIN,
@@ -1263,7 +1263,7 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 				Instance: &v1pb.Instance{
 					Title:       "gitops-dep-pg",
 					Engine:      v1pb.Engine_POSTGRES,
-					Environment: stringPtr("environments/test"),
+					Environment: new("environments/test"),
 					Activation:  true,
 					DataSources: []*v1pb.DataSource{{
 						Type:     v1pb.DataSourceType_ADMIN,
@@ -1361,7 +1361,7 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "gitops-multi-decl-pg",
 			Engine:      v1pb.Engine_POSTGRES,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,

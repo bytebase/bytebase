@@ -78,11 +78,8 @@ func TestConvertRowValuePrimitives(t *testing.T) {
 		expected *v1pb.RowValue
 	}{
 		{
-			name: "string pointer",
-			value: func() *string {
-				s := "hello"
-				return &s
-			}(),
+			name:     "string pointer",
+			value:    new("hello"),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "hello"}},
 		},
 		{
@@ -93,43 +90,28 @@ func TestConvertRowValuePrimitives(t *testing.T) {
 			expected: util.NullRowValue,
 		},
 		{
-			name: "int64 pointer",
-			value: func() *int64 {
-				i := int64(42)
-				return &i
-			}(),
+			name:     "int64 pointer",
+			value:    new(int64(42)),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: 42}},
 		},
 		{
-			name: "bool pointer true",
-			value: func() *bool {
-				b := true
-				return &b
-			}(),
+			name:     "bool pointer true",
+			value:    new(true),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: true}},
 		},
 		{
-			name: "bool pointer false",
-			value: func() *bool {
-				b := false
-				return &b
-			}(),
+			name:     "bool pointer false",
+			value:    new(false),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: false}},
 		},
 		{
-			name: "float64 pointer",
-			value: func() *float64 {
-				f := 3.14159
-				return &f
-			}(),
+			name:     "float64 pointer",
+			value:    new(3.14159),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: 3.14159}},
 		},
 		{
-			name: "bytes pointer",
-			value: func() *[]byte {
-				b := []byte("hello")
-				return &b
-			}(),
+			name:     "bytes pointer",
+			value:    new([]byte("hello")),
 			expected: &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte("hello")}},
 		},
 	}

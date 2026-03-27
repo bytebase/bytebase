@@ -356,11 +356,10 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	for _, database := range databases {
 		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *storepb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
 		if idx < 0 {
-			d := true
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: database.DatabaseName,
-				Deleted:      &d,
+				Deleted:      new(true),
 			}); err != nil {
 				return nil, nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
@@ -427,7 +426,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:      database.InstanceID,
 		DatabaseName:    database.DatabaseName,
-		Deleted:         proto.Bool(false),
+		Deleted:         new(false),
 		MetadataUpdates: metadataUpdates,
 	}); err != nil {
 		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)

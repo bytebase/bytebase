@@ -352,8 +352,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		case "environment":
 			if req.Msg.Instance.Environment == nil || *req.Msg.Instance.Environment == "" {
 				// Clear the environment if null or empty string is provided
-				emptyStr := ""
-				patch.EnvironmentID = &emptyStr
+				patch.EnvironmentID = new("")
 			} else {
 				envID, err := common.GetEnvironmentID(*req.Msg.Instance.Environment)
 				if err != nil {

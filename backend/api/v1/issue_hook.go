@@ -109,8 +109,7 @@ func completeAccessRequestIssue(ctx context.Context, stores *store.Store, userEm
 		return issue, nil
 	}
 
-	newStatus := storepb.Issue_DONE
-	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: new(storepb.Issue_DONE)})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}

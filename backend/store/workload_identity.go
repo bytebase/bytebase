@@ -286,13 +286,11 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 
 // DeleteWorkloadIdentity soft-deletes a workload identity.
 func (s *Store) DeleteWorkloadIdentity(ctx context.Context, wi *WorkloadIdentityMessage) error {
-	deleted := true
-	_, err := s.UpdateWorkloadIdentity(ctx, wi, &UpdateWorkloadIdentityMessage{Delete: &deleted})
+	_, err := s.UpdateWorkloadIdentity(ctx, wi, &UpdateWorkloadIdentityMessage{Delete: new(true)})
 	return err
 }
 
 // UndeleteWorkloadIdentity restores a soft-deleted workload identity.
 func (s *Store) UndeleteWorkloadIdentity(ctx context.Context, wi *WorkloadIdentityMessage) (*WorkloadIdentityMessage, error) {
-	deleted := false
-	return s.UpdateWorkloadIdentity(ctx, wi, &UpdateWorkloadIdentityMessage{Delete: &deleted})
+	return s.UpdateWorkloadIdentity(ctx, wi, &UpdateWorkloadIdentityMessage{Delete: new(false)})
 }

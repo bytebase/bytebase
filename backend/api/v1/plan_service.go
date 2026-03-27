@@ -294,14 +294,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "title":
-			title := req.Plan.Title
-			planUpdate.Name = &title
+			planUpdate.Name = new(req.Plan.Title)
 		case "description":
-			description := req.Plan.Description
-			planUpdate.Description = &description
+			planUpdate.Description = new(req.Plan.Description)
 		case "state":
-			deleted := req.Plan.State == v1pb.State_DELETED
-			planUpdate.Deleted = &deleted
+			planUpdate.Deleted = new(req.Plan.State == v1pb.State_DELETED)
 		case "specs":
 			// Block all spec changes if plan has a rollout (pipeline).
 			// Block all spec changes if plan has a rollout (pipeline).

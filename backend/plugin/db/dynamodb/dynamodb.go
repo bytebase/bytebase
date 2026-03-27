@@ -67,9 +67,8 @@ func (*Driver) Close(_ context.Context) error {
 func (d *Driver) Ping(ctx context.Context) error {
 	// DynamoDB does not support ping method, we list tables instead. To avoid network overhead,
 	// we set the limit to 1.
-	var limit int32 = 1
 	_, err := d.client.ListTables(ctx, &dynamodb.ListTablesInput{
-		Limit: &limit,
+		Limit: new(int32(1)),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to list dynamodb tables")
@@ -171,8 +170,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement string, query
 		Statement: &statement,
 	}
 	if queryContext.Limit > 0 {
-		limit := int32(queryContext.Limit)
-		input.Limit = &limit
+		input.Limit = new(int32(queryContext.Limit))
 	}
 
 	var nextToken *string

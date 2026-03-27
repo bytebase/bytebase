@@ -108,8 +108,7 @@ func (h *Handler) ShutDown() {
 func (h *Handler) setMetadata(arg SetMetadataCommandArguments) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	tmp := arg
-	h.metadata = &tmp
+	h.metadata = new(arg)
 }
 
 func (h *Handler) getDefaultDatabase() string {

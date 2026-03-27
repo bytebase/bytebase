@@ -129,11 +129,10 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 // ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
 func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, _ *store.InstanceMessage) error {
 	// Check if this database has any existing changelogs
-	limit := 1
 	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: &database.DatabaseName,
-		Limit:        &limit,
+		Limit:        new(1),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check for existing changelogs")
@@ -275,11 +274,9 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		}
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -426,11 +423,9 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -582,11 +577,9 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -713,11 +706,9 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
