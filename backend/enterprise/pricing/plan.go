@@ -20,7 +20,7 @@ var planLimits = map[storepb.SubscriptionPayload_Plan]*PlanLimitConfig{
 		Plan:                 storepb.SubscriptionPayload_TEAM,
 		SelfServicePurchase:  true,
 		FreeSeatCount:        0,
-		MaximumSeatCount:     -1, // unlimited
+		MaximumSeatCount:     -1,   // unlimited
 		PricePerSeatPerMonth: 2000, // $20/user/month
 		InstanceCount:        10,
 	},

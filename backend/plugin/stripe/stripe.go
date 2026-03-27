@@ -335,9 +335,14 @@ func refundCustomerBalance(customerID string, totalRefundAmount int64, workspace
 		return errors.Wrap(err, "error listing charges for refund")
 	}
 
+	if remaining > 0 {
+		return errors.Errorf("incomplete refund for workspace %s: %d of %d cents remain unrefunded after %d charges",
+			workspace, remaining, totalRefundAmount, refundCount)
+	}
+
 	slog.Info("refund complete",
 		slog.String("workspace", workspace),
-		slog.Int64("total_refunded_cents", totalRefundAmount-remaining),
+		slog.Int64("total_refunded_cents", totalRefundAmount),
 		slog.Int("refund_count", refundCount),
 	)
 	return nil
