@@ -706,15 +706,9 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
-	// Use unified SDL-based approach for all scenarios
 	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
-	}
-
-	targetDBSchema, err := s.getTargetDBMetadata(ctx, req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get target schema"))
 	}
 
 	engine, err := s.getParserEngine(ctx, req.Msg)
@@ -722,7 +716,16 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
-	migrationSQL, err := schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
+	var migrationSQL string
+	if schemaText := req.Msg.GetSchema(); schemaText != "" {
+		migrationSQL, err = schema.DiffSchemaTextMigration(engine, sourceDBSchema, schemaText)
+	} else {
+		targetDBSchema, err2 := s.getTargetDBMetadata(ctx, req.Msg)
+		if err2 != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err2, "failed to get target schema"))
+		}
+		migrationSQL, err = schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
+	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}

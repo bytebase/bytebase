@@ -6,15 +6,14 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/postgresql"
+	omnipg "github.com/bytebase/omni/pg"
+	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -2240,60 +2239,26 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 	return nil
 }
 
-// functionExtractor walks a PostgreSQL parse tree and captures the first
-// CREATE FUNCTION/PROCEDURE statement it encounters.
-type functionExtractor struct {
-	parser.BasePostgreSQLParserListener
-	result **parser.CreatefunctionstmtContext
-}
-
-func (e *functionExtractor) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
-	if e.result != nil && *e.result == nil {
-		*e.result = ctx
-	}
-}
-
-// isDefinitionProcedure checks if the definition string represents a PROCEDURE (not a FUNCTION)
-// Returns true if it's a PROCEDURE, false if it's a FUNCTION
-// This function uses AST-based parsing for robust detection
+// isDefinitionProcedure checks if the definition string represents a PROCEDURE (not a FUNCTION).
+// Uses omni parser: procedures have a DefElem{Defname: "isProcedure"} in Options.
 func isDefinitionProcedure(definition string) bool {
 	if definition == "" {
 		return false
 	}
-
-	// Parse the definition to get AST
-	parseResults, err := pgparser.ParsePostgreSQL(definition)
-	if err != nil {
-		// If parsing fails, fall back to string-based detection
-		// This should rarely happen for valid definitions
-		upperDef := strings.ToUpper(definition)
-		return strings.Contains(upperDef, " PROCEDURE ") ||
-			strings.HasPrefix(upperDef, "CREATE PROCEDURE") ||
-			strings.HasPrefix(upperDef, "CREATE OR REPLACE PROCEDURE")
-	}
-
-	// For function/procedure definition, we expect exactly one statement
-	if len(parseResults) != 1 {
+	stmts, err := omnipg.Parse(definition)
+	if err != nil || len(stmts) == 0 {
 		return false
 	}
-
-	tree := parseResults[0].Tree
-	if tree == nil {
+	fn, ok := stmts[0].AST.(*ast.CreateFunctionStmt)
+	if !ok || fn == nil || fn.Options == nil {
 		return false
 	}
-
-	// Walk the AST to find CREATE FUNCTION/PROCEDURE statement
-	var result *parser.CreatefunctionstmtContext
-	extractor := &functionExtractor{result: &result}
-	antlr.NewParseTreeWalker().Walk(extractor, tree)
-
-	if result == nil {
-		return false
+	for _, item := range fn.Options.Items {
+		if def, ok := item.(*ast.DefElem); ok && def.Defname == "isProcedure" {
+			return true
+		}
 	}
-
-	// Check if it's a PROCEDURE by examining the AST node
-	// CreatefunctionstmtContext has both FUNCTION() and PROCEDURE() methods
-	return result.PROCEDURE() != nil
+	return false
 }
 
 func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
@@ -3246,15 +3211,14 @@ func writeIndexInternal(out io.Writer, schema string, table string, index *store
 	}
 
 	// Write INCLUDE and WHERE clauses from the full index definition (from pg_get_indexdef).
-	// SQL syntax order: (keys) INCLUDE (cols) WHERE (predicate)
 	if index.Definition != "" {
-		comparer := &PostgreSQLIndexComparer{}
-		if includeClause := comparer.ExtractIncludeClauseFromIndexDef(index.Definition); includeClause != "" {
+		includeClause, whereClause := extractIndexClauses(index.Definition)
+		if includeClause != "" {
 			if _, err := fmt.Fprintf(out, " %s", includeClause); err != nil {
 				return err
 			}
 		}
-		if whereClause := comparer.ExtractWhereClauseFromIndexDef(index.Definition); whereClause != "" {
+		if whereClause != "" {
 			if _, err := fmt.Fprintf(out, " WHERE %s", whereClause); err != nil {
 				return err
 			}
@@ -4267,4 +4231,42 @@ func writeTriggerCommentSDL(out io.Writer, schemaName, tableName string, trigger
 
 	_, err := io.WriteString(out, "\n\n")
 	return err
+}
+
+// extractIndexClauses parses a CREATE INDEX statement using the omni parser and
+// extracts the INCLUDE clause and WHERE clause as strings.
+func extractIndexClauses(definition string) (includeClause, whereClause string) {
+	stmts, err := omnipg.Parse(definition)
+	if err != nil || len(stmts) == 0 {
+		return "", ""
+	}
+	idx, ok := stmts[0].AST.(*ast.IndexStmt)
+	if !ok || idx == nil {
+		return "", ""
+	}
+
+	if idx.IndexIncludingParams != nil {
+		var cols []string
+		for _, item := range idx.IndexIncludingParams.Items {
+			if elem, ok := item.(*ast.IndexElem); ok && elem.Name != "" {
+				cols = append(cols, elem.Name)
+			}
+		}
+		if len(cols) > 0 {
+			includeClause = "INCLUDE (" + strings.Join(cols, ", ") + ")"
+		}
+	}
+
+	if idx.WhereClause != nil {
+		upper := strings.ToUpper(definition)
+		if i := strings.LastIndex(upper, " WHERE "); i >= 0 {
+			raw := strings.TrimRight(strings.TrimSpace(definition[i+7:]), ";")
+			if strings.HasPrefix(raw, "(") && strings.HasSuffix(raw, ")") {
+				raw = raw[1 : len(raw)-1]
+			}
+			whereClause = strings.TrimSpace(raw)
+		}
+	}
+
+	return includeClause, whereClause
 }
