@@ -704,11 +704,14 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 	}
 }
 
-// DiffSchema diff the database schema.
+// DiffSchema computes the migration SQL between a source and target schema.
+//
+// The source is identified by request.Name (a database or changelog resource name).
+// The target is a oneof: either a schema text string or a changelog resource name.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
-	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
+	sourceMetadata, err := s.resolveMetadata(ctx, req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve source schema"))
 	}
 
 	engine, err := s.getParserEngine(ctx, req.Msg)
@@ -717,14 +720,17 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	}
 
 	var migrationSQL string
-	if schemaText := req.Msg.GetSchema(); schemaText != "" {
-		migrationSQL, err = schema.DiffSchemaTextMigration(engine, sourceDBSchema, schemaText)
-	} else {
-		targetDBSchema, err2 := s.getTargetDBMetadata(ctx, req.Msg)
+	switch {
+	case req.Msg.GetSchema() != "":
+		migrationSQL, err = schema.DiffSchemaTextMigration(engine, sourceMetadata, req.Msg.GetSchema())
+	case req.Msg.GetChangelog() != "":
+		targetMetadata, err2 := s.resolveMetadata(ctx, req.Msg.GetChangelog())
 		if err2 != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err2, "failed to get target schema"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err2, "failed to resolve target schema"))
 		}
-		migrationSQL, err = schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
+		migrationSQL, err = schema.DiffMigration(engine, sourceMetadata, targetMetadata)
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target must be either schema text or changelog"))
 	}
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
@@ -735,75 +741,15 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	}), nil
 }
 
-func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
-	if strings.Contains(request.Name, common.ChangelogPrefix) {
-		instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(request.Name)
-		if err != nil {
-			return nil, err
-		}
-
-		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if changelog == nil {
-			return nil, errors.Errorf("changelog %q not found", changelogID)
-		}
-
-		// Use SyncHistory to get historical metadata
-		if changelog.SyncHistory != nil {
-			syncHistory, err := s.store.GetSyncHistory(ctx, *changelog.SyncHistory)
-			if err != nil {
-				return nil, err
-			}
-			if syncHistory == nil {
-				return nil, errors.Errorf("sync history %s not found", *changelog.SyncHistory)
-			}
-
-			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-				Workspace:  common.GetWorkspaceIDFromContext(ctx),
-				ResourceID: &instanceID,
-			})
-			if err != nil {
-				return nil, err
-			}
-			if instance == nil {
-				return nil, errors.Errorf("instance %s not found", instanceID)
-			}
-
-			return model.NewDatabaseMetadata(
-				syncHistory.Metadata,
-				[]byte(syncHistory.Schema),
-				&storepb.DatabaseConfig{},
-				instance.Metadata.GetEngine(),
-				store.IsObjectCaseSensitive(instance),
-			), nil
-		}
-
-		// Fallback to current database schema if no sync history
-		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			InstanceID:   instanceID,
-			DatabaseName: databaseName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if dbMetadata == nil {
-			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
-		}
-		return dbMetadata, nil
+// resolveMetadata resolves a database or changelog resource name to DatabaseMetadata.
+func (s *DatabaseService) resolveMetadata(ctx context.Context, resourceName string) (*model.DatabaseMetadata, error) {
+	if strings.Contains(resourceName, common.ChangelogPrefix) {
+		return s.resolveChangelogMetadata(ctx, resourceName)
 	}
-
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(resourceName)
 	if err != nil {
 		return nil, err
 	}
-
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    common.GetWorkspaceIDFromContext(ctx),
 		InstanceID:   instanceID,
@@ -818,93 +764,33 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 	return dbMetadata, nil
 }
 
-func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {
-	changeHistoryID := request.GetChangelog()
-
-	// If the change history id is set, use the schema of the change history as the target.
-	if changeHistoryID != "" {
-		instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(changeHistoryID)
-		if err != nil {
-			return nil, err
-		}
-
-		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if changelog == nil {
-			return nil, errors.Errorf("changelog %q not found", changelogID)
-		}
-
-		// Use SyncHistory to get historical metadata
-		if changelog.SyncHistory != nil {
-			syncHistory, err := s.store.GetSyncHistory(ctx, *changelog.SyncHistory)
-			if err != nil {
-				return nil, err
-			}
-			if syncHistory == nil {
-				return nil, errors.Errorf("sync history %s not found", *changelog.SyncHistory)
-			}
-
-			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-				Workspace:  common.GetWorkspaceIDFromContext(ctx),
-				ResourceID: &instanceID,
-			})
-			if err != nil {
-				return nil, err
-			}
-			if instance == nil {
-				return nil, errors.Errorf("instance %s not found", instanceID)
-			}
-
-			return model.NewDatabaseMetadata(
-				syncHistory.Metadata,
-				[]byte(syncHistory.Schema),
-				&storepb.DatabaseConfig{},
-				instance.Metadata.GetEngine(),
-				store.IsObjectCaseSensitive(instance),
-			), nil
-		}
-
-		// Fallback to current database schema if no sync history
-		dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			InstanceID:   instanceID,
-			DatabaseName: databaseName,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if dbMetadata == nil {
-			return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
-		}
-		return dbMetadata, nil
+// resolveChangelogMetadata resolves a changelog resource name to DatabaseMetadata.
+func (s *DatabaseService) resolveChangelogMetadata(ctx context.Context, resourceName string) (*model.DatabaseMetadata, error) {
+	instanceID, databaseName, changelogID, err := common.GetInstanceDatabaseChangelogID(resourceName)
+	if err != nil {
+		return nil, err
 	}
 
-	// If schema is provided, we need to parse it using GetDatabaseMetadata
-	schemaStr := request.GetSchema()
-	if schemaStr != "" {
-		// Get the engine from the source database
-		engine, err := s.getParserEngine(ctx, request)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get parser engine")
-		}
+	changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
+		InstanceID: instanceID,
+		ResourceID: &changelogID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if changelog == nil {
+		return nil, errors.Errorf("changelog %q not found", changelogID)
+	}
 
-		// Parse the schema string into metadata
-		metadata, err := schema.GetDatabaseMetadata(engine, schemaStr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse target schema")
-		}
-
-		// Get instance to determine case sensitivity
-		instanceID, _, err := common.GetInstanceDatabaseID(request.Name)
+	if changelog.SyncHistory != nil {
+		syncHistory, err := s.store.GetSyncHistory(ctx, *changelog.SyncHistory)
 		if err != nil {
 			return nil, err
 		}
+		if syncHistory == nil {
+			return nil, errors.Errorf("sync history %s not found", *changelog.SyncHistory)
+		}
+
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &instanceID,
@@ -916,17 +802,28 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 			return nil, errors.Errorf("instance %s not found", instanceID)
 		}
 
-		// Create DatabaseSchema from the parsed metadata
 		return model.NewDatabaseMetadata(
-			metadata,
-			[]byte(schemaStr),
+			syncHistory.Metadata,
+			[]byte(syncHistory.Schema),
 			&storepb.DatabaseConfig{},
-			engine,
+			instance.Metadata.GetEngine(),
 			store.IsObjectCaseSensitive(instance),
 		), nil
 	}
 
-	return nil, errors.Errorf("must set the schema or change history id as the target")
+	// Fallback to current database schema if no sync history.
+	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if dbMetadata == nil {
+		return nil, errors.Errorf("database schema not found for %s/%s", instanceID, databaseName)
+	}
+	return dbMetadata, nil
 }
 
 func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.DiffSchemaRequest) (storepb.Engine, error) {
