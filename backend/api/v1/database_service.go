@@ -720,10 +720,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	}
 
 	// Get source SDL text from metadata.
-	sourceSDL, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
-		SkipBackupSchema: true,
-		SDLFormat:        true,
-	}, sourceMetadata.GetProto())
+	sourceSDL, err := schema.MetadataToSDL(engine, sourceMetadata)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate source SDL"))
 	}
@@ -738,10 +735,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target schema"))
 		}
-		targetSDL, err = schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
-			SkipBackupSchema: true,
-			SDLFormat:        true,
-		}, targetMetadata.GetProto())
+		targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate target SDL"))
 		}

@@ -15,33 +15,13 @@ import (
 )
 
 func init() {
-	schema.RegisterSDLMigration(storepb.Engine_POSTGRES, pgSDLMigration)
-	schema.RegisterSDLMigration(storepb.Engine_COCKROACHDB, pgSDLMigration)
-	schema.RegisterSDLDropAdvices(storepb.Engine_POSTGRES, pgSDLDropAdvices)
-	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
-	schema.RegisterDiffMigration(storepb.Engine_POSTGRES, pgSchemaDiffMigration)
-	schema.RegisterDiffMigration(storepb.Engine_COCKROACHDB, pgSchemaDiffMigration)
 	schema.RegisterDiffSDLMigration(storepb.Engine_POSTGRES, pgDiffSDLMigration)
 	schema.RegisterDiffSDLMigration(storepb.Engine_COCKROACHDB, pgDiffSDLMigration)
+	schema.RegisterSDLDropAdvices(storepb.Engine_POSTGRES, pgSDLDropAdvices)
+	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 }
 
-// catalogFromMetadata builds an omni Catalog from database metadata.
-func catalogFromMetadata(meta *model.DatabaseMetadata) (*catalog.Catalog, error) {
-	if meta == nil {
-		return catalog.LoadSDL("")
-	}
-	proto := meta.GetProto()
-	if proto == nil {
-		return catalog.LoadSDL("")
-	}
-	ddl, err := getSDLFormat(proto)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert metadata to DDL")
-	}
-	return catalog.LoadSDL(ddl)
-}
-
-// pgDiffSDLMigration computes migration SQL between two SDL texts using omni.
+// pgDiffSDLMigration is the core migration function: two SDL texts in, migration SQL out.
 func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
 	from, err := catalog.LoadSDL(strings.TrimSpace(sourceSDL))
 	if err != nil {
@@ -55,93 +35,35 @@ func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
 	if diff.IsEmpty() {
 		return "", nil
 	}
-	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
-	return plan.SQL(), nil
-}
-
-// pgSchemaDiffMigration computes migration SQL between two metadata states using omni.
-func pgSchemaDiffMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	from, err := catalogFromMetadata(oldSchema)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load source schema")
-	}
-	to, err := catalogFromMetadata(newSchema)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load target schema")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return "", nil
-	}
-	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
-	return plan.SQL(), nil
-}
-
-// buildSDLCatalogs builds the from/to catalogs for an SDL migration.
-func buildSDLCatalogs(userSDLText string, currentSchema *model.DatabaseMetadata) (*catalog.Catalog, *catalog.Catalog, error) {
-	var fromDDL string
-	if currentSchema != nil {
-		proto := currentSchema.GetProto()
-		if proto != nil {
-			var ddlErr error
-			fromDDL, ddlErr = getSDLFormat(proto)
-			if ddlErr != nil {
-				return nil, nil, errors.Wrap(ddlErr, "failed to convert current schema to DDL")
-			}
-		}
-	}
-
-	from, err := catalog.LoadSDL(fromDDL)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to load current schema into catalog")
-	}
-
-	to, err := catalog.LoadSDL(strings.TrimSpace(userSDLText))
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to load user SDL into catalog")
-	}
-
-	return from, to, nil
-}
-
-// filterArchiveOps filters out bbdataarchive schema changes from a migration plan.
-func filterArchiveOps(plan *catalog.MigrationPlan) *catalog.MigrationPlan {
-	return plan.Filter(func(op catalog.MigrationOp) bool {
+	plan := catalog.GenerateMigration(from, to, diff)
+	plan = plan.Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
 	})
-}
-
-// pgSDLMigration computes the migration SQL from a user-provided SDL text and
-// the current database schema using the omni catalog engine.
-func pgSDLMigration(userSDLText string, currentSchema *model.DatabaseMetadata) (string, error) {
-	from, to, err := buildSDLCatalogs(userSDLText, currentSchema)
-	if err != nil {
-		return "", err
-	}
-
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return "", nil
-	}
-
-	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
 	return plan.SQL(), nil
 }
 
-// pgSDLDropAdvices analyzes the SDL migration plan for destructive operations
-// and returns warnings.
+// pgSDLDropAdvices analyzes the SDL migration plan for destructive operations.
 func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error) {
-	from, to, err := buildSDLCatalogs(userSDLText, currentSchema)
+	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, currentSchema)
 	if err != nil {
 		return nil, err
 	}
-
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
+	migrationSQL, err := pgDiffSDLMigration(sourceSDL, userSDLText)
+	if err != nil {
+		return nil, err
+	}
+	if migrationSQL == "" {
 		return nil, nil
 	}
 
-	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
+	// Re-run to get the plan for advice generation.
+	from, _ := catalog.LoadSDL(strings.TrimSpace(sourceSDL))
+	to, _ := catalog.LoadSDL(strings.TrimSpace(userSDLText))
+	diff := catalog.Diff(from, to)
+	plan := catalog.GenerateMigration(from, to, diff)
+	plan = plan.Filter(func(op catalog.MigrationOp) bool {
+		return op.SchemaName != "bbdataarchive"
+	})
 
 	var advices []*storepb.Advice
 	for _, op := range plan.Ops {
