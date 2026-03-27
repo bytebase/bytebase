@@ -8,9 +8,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
+	omnipg "github.com/bytebase/omni/pg"
+	"github.com/bytebase/omni/pg/ast"
 	pgparser "github.com/bytebase/omni/pg/parser"
-	pg "github.com/bytebase/parser/postgresql"
+	pgantlr "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -269,7 +270,7 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) insertFunctions() {
-	for _, name := range pg.GetBuiltinFunctions() {
+	for _, name := range pgantlr.GetBuiltinFunctions() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeFunction,
 			Text: name + "()",
@@ -768,59 +769,81 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 		return nil
 	}
 
-	input := antlr.NewInputStream(followingText)
-	lexer := pg.NewPostgreSQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
+	// Wrap the WITH fragment into a complete statement so omni can parse it.
+	// The followingText may contain an incomplete main query after the CTE definitions,
+	// so try progressively shorter token prefixes until parsing succeeds.
+	const suffix = " SELECT 1"
+	tokens := pgparser.Tokenize(followingText)
 
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.With_clause()
-
-	listener := &CTETableListener{context: c}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-
-	c.cteCache[pos] = listener.tables
-	return listener.tables
-}
-
-type CTETableListener struct {
-	*pg.BasePostgreSQLParserListener
-
-	context *Completer
-	tables  []*base.VirtualTableReference
-}
-
-func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprContext) {
-	table := &base.VirtualTableReference{}
-	if ctx.Name() != nil {
-		table.Table = normalizePostgreSQLName(ctx.Name())
-	}
-	if ctx.Opt_name_list() != nil {
-		for _, column := range ctx.Opt_name_list().Name_list().AllName() {
-			table.Columns = append(table.Columns, normalizePostgreSQLName(column))
+	var selStmt *ast.SelectStmt
+	var wrappedSQL string
+	for end := len(tokens); end > 0; end-- {
+		if end < len(tokens) {
+			lastTok := tokens[end-1]
+			wrappedSQL = followingText[:lastTok.End] + suffix
+		} else {
+			wrappedSQL = followingText + suffix
 		}
-	} else {
-		if span, err := GetQuerySpan(
-			l.context.ctx,
-			base.GetQuerySpanContext{
-				InstanceID:              l.context.instanceID,
-				GetDatabaseMetadataFunc: l.context.getMetadata,
-				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
-			},
-			base.Statement{Text: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt())},
-			l.context.defaultDatabase,
-			"",
-			false,
-		); err == nil && span.NotFoundError == nil {
-			for _, column := range span.Results {
-				table.Columns = append(table.Columns, column.Name)
+		stmts, err := omnipg.Parse(wrappedSQL)
+		if err != nil || len(stmts) == 0 {
+			continue
+		}
+		sel, ok := stmts[0].AST.(*ast.SelectStmt)
+		if ok && sel.WithClause != nil && sel.WithClause.Ctes != nil {
+			selStmt = sel
+			break
+		}
+	}
+	if selStmt == nil {
+		c.cteCache[pos] = nil
+		return nil
+	}
+
+	var tables []*base.VirtualTableReference
+	for _, item := range selStmt.WithClause.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		table := &base.VirtualTableReference{
+			Table: cte.Ctename,
+		}
+		if cte.Aliascolnames != nil && len(cte.Aliascolnames.Items) > 0 {
+			for _, nameItem := range cte.Aliascolnames.Items {
+				if s, ok := nameItem.(*ast.String); ok {
+					table.Columns = append(table.Columns, s.Str)
+				}
+			}
+		} else if cte.Ctequery != nil {
+			// Extract the CTE query text from the wrapped SQL using Loc.
+			var queryText string
+			if sel, ok := cte.Ctequery.(*ast.SelectStmt); ok && sel.Loc.Start >= 0 && sel.Loc.End > sel.Loc.Start && sel.Loc.End <= len(wrappedSQL) {
+				queryText = wrappedSQL[sel.Loc.Start:sel.Loc.End]
+			}
+			if queryText != "" {
+				if span, err := GetQuerySpan(
+					c.ctx,
+					base.GetQuerySpanContext{
+						InstanceID:              c.instanceID,
+						GetDatabaseMetadataFunc: c.getMetadata,
+						ListDatabaseNamesFunc:   c.listDatabaseNames,
+					},
+					base.Statement{Text: queryText},
+					c.defaultDatabase,
+					"",
+					false,
+				); err == nil && span.NotFoundError == nil {
+					for _, column := range span.Results {
+						table.Columns = append(table.Columns, column.Name)
+					}
+				}
 			}
 		}
+		tables = append(tables, table)
 	}
 
-	l.tables = append(l.tables, table)
+	c.cteCache[pos] = tables
+	return tables
 }
 
 // isInAliasAllowedContext checks if the caret is in a context where SELECT item
@@ -878,33 +901,21 @@ func (c *Completer) extractAliasText(pos int) string {
 		return ""
 	}
 
-	input := antlr.NewInputStream(followingText)
-	lexer := pg.NewPostgreSQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.Target_alias()
-
-	listener := &TargetAliasListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	return listener.result
-}
-
-type TargetAliasListener struct {
-	*pg.BasePostgreSQLParserListener
-
-	result string
-}
-
-func (l *TargetAliasListener) EnterTarget_alias(ctx *pg.Target_aliasContext) {
-	if ctx.Bare_col_label() != nil {
-		l.result = normalizePostgreSQLBareColLabel(ctx.Bare_col_label())
-	} else if ctx.Collabel() != nil {
-		l.result = normalizePostgreSQLCollabel(ctx.Collabel())
+	// The alias position may point to AS keyword or directly to the identifier.
+	// Use the omni tokenizer to extract the alias name.
+	tokens := pgparser.Tokenize(followingText)
+	if len(tokens) == 0 {
+		return ""
 	}
+	idx := 0
+	// Skip the AS keyword if present.
+	if tokens[0].Type == pgparser.AS && len(tokens) > 1 {
+		idx = 1
+	}
+	if idx >= len(tokens) || !pgparser.IsIdentifierTokenType(tokens[idx].Type) {
+		return ""
+	}
+	return normalizeIdentifier(tokens[idx].Str)
 }
 
 type ObjectFlags int
@@ -1099,89 +1110,90 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 }
 
 func (c *Completer) parseTableReferences(fromClause string) {
-	input := antlr.NewInputStream(fromClause)
-	lexer := pg.NewPostgreSQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := pg.NewPostgreSQLParser(tokens)
+	// Wrap the FROM fragment into a complete SELECT statement for omni parsing.
+	// The fragment may be incomplete (user is still typing), so try progressively
+	// shorter token prefixes until we find one that parses.
+	const prefix = "SELECT * "
+	tokens := pgparser.Tokenize(fromClause)
 
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	tree := parser.From_clause()
-
-	listener := &TableRefListener{
-		context: c,
+	var selStmt *ast.SelectStmt
+	var wrappedSQL string
+	for end := len(tokens); end > 0; end-- {
+		if end < len(tokens) {
+			lastTok := tokens[end-1]
+			wrappedSQL = prefix + fromClause[:lastTok.End]
+		} else {
+			wrappedSQL = prefix + fromClause
+		}
+		stmts, err := omnipg.Parse(wrappedSQL)
+		if err != nil || len(stmts) == 0 {
+			continue
+		}
+		sel, ok := stmts[0].AST.(*ast.SelectStmt)
+		if ok && sel.FromClause != nil {
+			selStmt = sel
+			break
+		}
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	if selStmt == nil {
+		return
+	}
+
+	for _, item := range selStmt.FromClause.Items {
+		c.extractFromItem(item, wrappedSQL)
+	}
 }
 
-type TableRefListener struct {
-	*pg.BasePostgreSQLParserListener
+// extractFromItem extracts table references from a single FROM clause item.
+// It only processes top-level references (not nested JOINs' subqueries).
+func (c *Completer) extractFromItem(item ast.Node, wrappedSQL string) {
+	switch v := item.(type) {
+	case *ast.RangeVar:
+		var reference base.TableReference
+		physicalReference := &base.PhysicalTableReference{}
+		reference = physicalReference
 
-	context *Completer
-	level   int
-}
+		// omni already normalizes identifiers: lowercase for unquoted, preserve case for quoted.
+		physicalReference.Database = v.Catalogname
+		physicalReference.Schema = v.Schemaname
+		physicalReference.Table = v.Relname
 
-func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
-	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
-		// if the table reference is nested, we should not process it.
-		l.level++
-	}
-
-	if l.level == 0 {
-		switch {
-		case ctx.Relation_expr() != nil:
-			var reference base.TableReference
-			physicalReference := &base.PhysicalTableReference{}
-			// We should use the physical reference as the default reference.
-			reference = physicalReference
-			list := NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
-			switch len(list) {
-			case 1:
-				physicalReference.Table = list[0]
-			case 2:
-				physicalReference.Schema = list[0]
-				physicalReference.Table = list[1]
-			case 3:
-				physicalReference.Database = list[0]
-				physicalReference.Schema = list[1]
-				physicalReference.Table = list[2]
-			default:
-				return
-			}
-
-			if ctx.Opt_alias_clause() != nil {
-				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
-				if len(columnAlias) > 0 {
-					virtualReference := &base.VirtualTableReference{
-						Table:   tableAlias,
-						Columns: columnAlias,
-					}
-					// If the table alias has the column alias, we should use the virtual reference.
-					reference = virtualReference
-				} else {
-					physicalReference.Alias = tableAlias
+		if v.Alias != nil {
+			tableAlias := v.Alias.Aliasname
+			columnAlias := extractAliasColnames(v.Alias)
+			if len(columnAlias) > 0 {
+				reference = &base.VirtualTableReference{
+					Table:   tableAlias,
+					Columns: columnAlias,
 				}
+			} else {
+				physicalReference.Alias = tableAlias
 			}
+		}
 
-			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-		case ctx.Select_with_parens() != nil:
-			if ctx.Opt_alias_clause() != nil {
-				virtualReference := &base.VirtualTableReference{}
-				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
-				virtualReference.Table = tableAlias
-				if len(columnAlias) > 0 {
-					virtualReference.Columns = columnAlias
-				} else {
+		c.referencesStack[0] = append(c.referencesStack[0], reference)
+
+	case *ast.RangeSubselect:
+		if v.Alias != nil {
+			virtualReference := &base.VirtualTableReference{}
+			tableAlias := v.Alias.Aliasname
+			virtualReference.Table = tableAlias
+			columnAlias := extractAliasColnames(v.Alias)
+			if len(columnAlias) > 0 {
+				virtualReference.Columns = columnAlias
+			} else if v.Subquery != nil {
+				// Extract subquery text from wrappedSQL using Loc.
+				if sel, ok := v.Subquery.(*ast.SelectStmt); ok && sel.Loc.Start >= 0 && sel.Loc.End > sel.Loc.Start && sel.Loc.End <= len(wrappedSQL) {
+					subqueryText := wrappedSQL[sel.Loc.Start:sel.Loc.End]
 					if span, err := GetQuerySpan(
-						l.context.ctx,
+						c.ctx,
 						base.GetQuerySpanContext{
-							InstanceID:              l.context.instanceID,
-							GetDatabaseMetadataFunc: l.context.getMetadata,
-							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
+							InstanceID:              c.instanceID,
+							GetDatabaseMetadataFunc: c.getMetadata,
+							ListDatabaseNamesFunc:   c.listDatabaseNames,
 						},
-						base.Statement{Text: fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias)},
-						l.context.defaultDatabase,
+						base.Statement{Text: fmt.Sprintf("SELECT * FROM (%s) AS %s;", subqueryText, tableAlias)},
+						c.defaultDatabase,
 						"",
 						false,
 					); err == nil && span.NotFoundError == nil {
@@ -1190,57 +1202,53 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 						}
 					}
 				}
-
-				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
 			}
-		case ctx.OPEN_PAREN() != nil:
-			if ctx.Opt_alias_clause() != nil {
-				virtualReference := &base.VirtualTableReference{}
-				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
-				virtualReference.Table = tableAlias
-				if len(columnAlias) > 0 {
-					virtualReference.Columns = columnAlias
-				}
+			c.referencesStack[0] = append(c.referencesStack[0], virtualReference)
+		}
 
-				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
+	case *ast.JoinExpr:
+		if v.Alias != nil {
+			// Parenthesized JOIN with alias: FROM (t1 JOIN t2 USING (c1)) AS j(ca, cb)
+			virtualReference := &base.VirtualTableReference{
+				Table:   v.Alias.Aliasname,
+				Columns: extractAliasColnames(v.Alias),
 			}
-		default:
-			// Other cases
+			c.referencesStack[0] = append(c.referencesStack[0], virtualReference)
+		} else {
+			c.extractFromItem(v.Larg, wrappedSQL)
+			c.extractFromItem(v.Rarg, wrappedSQL)
+		}
+
+	case *ast.RangeFunction:
+		if v.Alias != nil {
+			columnAlias := extractAliasColnames(v.Alias)
+			if len(columnAlias) > 0 {
+				c.referencesStack[0] = append(c.referencesStack[0], &base.VirtualTableReference{
+					Table:   v.Alias.Aliasname,
+					Columns: columnAlias,
+				})
+			}
+			// Functions without explicit column aliases (e.g. generate_series(1,10) g)
+			// are not added as references since their return columns are unknown.
+		}
+
+	default:
+	}
+}
+
+// extractAliasColnames extracts column alias names from an ast.Alias.
+func extractAliasColnames(alias *ast.Alias) []string {
+	if alias == nil || alias.Colnames == nil {
+		return nil
+	}
+	var result []string
+	for _, item := range alias.Colnames.Items {
+		if s, ok := item.(*ast.String); ok {
+			// omni already normalizes: lowercase for unquoted, preserve case for quoted.
+			result = append(result, s.Str)
 		}
 	}
-}
-
-func (l *TableRefListener) ExitTable_ref(ctx *pg.Table_refContext) {
-	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
-		l.level--
-	}
-}
-
-func (l *TableRefListener) EnterSelect_with_parens(_ *pg.Select_with_parensContext) {
-	l.level++
-}
-
-func (l *TableRefListener) ExitSelect_with_parens(_ *pg.Select_with_parensContext) {
-	l.level--
-}
-
-func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
-	if ctx == nil || ctx.Table_alias_clause() == nil {
-		return "", nil
-	}
-
-	tableAlias := ""
-	aliasClause := ctx.Table_alias_clause()
-	if aliasClause.Table_alias() != nil {
-		tableAlias = normalizePostgreSQLTableAlias(aliasClause.Table_alias())
-	}
-
-	var columnAliases []string
-	if aliasClause.Name_list() != nil {
-		columnAliases = append(columnAliases, normalizePostgreSQLNameList(aliasClause.Name_list())...)
-	}
-
-	return tableAlias, columnAliases
+	return result
 }
 
 // caretLine is 1-based and caretOffset is 0-based.
