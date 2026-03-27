@@ -4245,11 +4245,12 @@ func extractIndexClauses(definition string) (includeClause, whereClause string) 
 		return "", ""
 	}
 
+	// Extract INCLUDE columns using Loc to preserve original quoting.
 	if idx.IndexIncludingParams != nil {
 		var cols []string
 		for _, item := range idx.IndexIncludingParams.Items {
-			if elem, ok := item.(*ast.IndexElem); ok && elem.Name != "" {
-				cols = append(cols, elem.Name)
+			if elem, ok := item.(*ast.IndexElem); ok && elem.Loc.Start >= 0 && elem.Loc.End > elem.Loc.Start {
+				cols = append(cols, definition[elem.Loc.Start:elem.Loc.End])
 			}
 		}
 		if len(cols) > 0 {
@@ -4257,16 +4258,40 @@ func extractIndexClauses(definition string) (includeClause, whereClause string) 
 		}
 	}
 
+	// Extract WHERE clause using AST node Loc for precise extraction.
 	if idx.WhereClause != nil {
-		upper := strings.ToUpper(definition)
-		if i := strings.LastIndex(upper, " WHERE "); i >= 0 {
-			raw := strings.TrimRight(strings.TrimSpace(definition[i+7:]), ";")
+		loc := ast.NodeLoc(idx.WhereClause)
+		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(definition) {
+			raw := definition[loc.Start:loc.End]
+			// Strip outer parentheses if the entire predicate is wrapped.
 			if strings.HasPrefix(raw, "(") && strings.HasSuffix(raw, ")") {
-				raw = raw[1 : len(raw)-1]
+				inner := raw[1 : len(raw)-1]
+				// Only strip if parentheses are balanced.
+				if isBalancedParens(inner) {
+					raw = inner
+				}
 			}
 			whereClause = strings.TrimSpace(raw)
 		}
 	}
 
 	return includeClause, whereClause
+}
+
+// isBalancedParens checks if a string has balanced parentheses.
+func isBalancedParens(s string) bool {
+	depth := 0
+	for _, c := range s {
+		switch c {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth < 0 {
+				return false
+			}
+		default:
+		}
+	}
+	return depth == 0
 }
