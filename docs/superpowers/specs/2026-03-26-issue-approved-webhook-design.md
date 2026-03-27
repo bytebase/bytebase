@@ -60,6 +60,7 @@ case storepb.Activity_ISSUE_APPROVED:
     if e.IssueApproved != nil {
         actor = e.IssueApproved.Approver
         issue = e.IssueApproved.Issue
+        link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
         webhookCtx.Description = fmt.Sprintf("%s approved the issue", e.IssueApproved.Approver.Name)
         mentionUsers = []*store.UserMessage{{
             Name:  e.IssueApproved.Creator.Name,
@@ -73,6 +74,7 @@ Key choices:
 - **Level:** `WebhookSuccess` (positive event, same as `PIPELINE_COMPLETED`)
 - **Actor:** The approver who gave the final approval (not SystemBot like old system)
 - **DM target:** Issue creator via `mentionUsers`
+- **Link:** Points to the issue page (same pattern as other issue events)
 
 ### 4. Helper function: `backend/runner/approval/runner.go`
 
@@ -83,6 +85,10 @@ func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManage
     creatorAccount, err := stores.GetAccountByEmail(ctx, issue.CreatorEmail)
     if err != nil {
         slog.Warn("failed to get issue creator", log.BBError(err))
+        return
+    }
+    if creatorAccount == nil {
+        slog.Warn("issue creator account not found", slog.String("email", issue.CreatorEmail))
         return
     }
 
@@ -98,7 +104,7 @@ func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManage
 }
 ```
 
-Same error-handling style as `NotifyApprovalRequested` — warn and return on failure, don't block the approval flow.
+Same error-handling style as `NotifyApprovalRequested` — warn and return on failure, don't block the approval flow. Includes nil check for `creatorAccount` since `GetAccountByEmail` can return `(nil, nil)`.
 
 ### 5. Trigger: `backend/api/v1/issue_service.go`
 
@@ -157,6 +163,12 @@ Other locales: use English as placeholder (existing pattern for non-translated s
 - **No database migration.** The `project_webhook` table stores activities as a JSONB proto payload. Existing webhooks won't have `ISSUE_APPROVED` selected until users configure it.
 - **No `ROLLOUT_READY` event.** The old system had `NOTIFY_PIPELINE_ROLLOUT` alongside `NOTIFY_ISSUE_APPROVED`, but `PIPELINE_COMPLETED` already covers the rollout-done case. Adding `ROLLOUT_READY` would re-introduce the noise the redesign intentionally removed.
 - **No webhook plugin changes.** All platforms (Slack, Discord, Teams, DingTalk, Feishu, WeCom, Lark) use the same `webhook.Context` struct. The new event works automatically across all platforms.
+
+## Known limitations (pre-existing, out of scope)
+
+1. **`webhookCtx.Issue.Creator` uses `actor.Email`** — In `manager.go` line 185, the shared post-switch code populates `Issue.Creator` using `actor.Email`. For `ISSUE_APPROVED`, `actor` is the approver, so the webhook payload's `Issue.Creator` will contain the approver's info instead of the actual issue creator. This same bug exists in `ISSUE_SENT_BACK`. The DM targeting via `mentionUsers` is correct — only the payload metadata is wrong.
+
+2. **`webhookCtx.Description` is overwritten** — In `manager.go` line 162, the `webhookCtx` struct is fully reassigned without carrying over `Description`. Any `.Description` set in the switch cases is silently wiped. This affects all event types that set descriptions (`ISSUE_SENT_BACK`, `PIPELINE_FAILED`, `PIPELINE_COMPLETED`). We follow the existing pattern for consistency.
 
 ## Differences from old implementation
 
