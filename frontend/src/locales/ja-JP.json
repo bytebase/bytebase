@@ -1849,8 +1849,8 @@
           "label": "承認者がイシューを差し戻したとき"
         },
         "issue-approved": {
-          "title": "Issue approved",
-          "label": "Notify when all approval steps are completed"
+          "title": "イシューが承認されました",
+          "label": "すべての承認ステップが完了したとき"
         },
         "pipeline-failed": {
           "title": "パイプラインが失敗しました",

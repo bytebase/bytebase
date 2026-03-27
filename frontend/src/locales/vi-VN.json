@@ -1849,8 +1849,8 @@
           "label": "Khi người phê duyệt trả lại vấn đề"
         },
         "issue-approved": {
-          "title": "Issue approved",
-          "label": "Notify when all approval steps are completed"
+          "title": "Vấn đề đã được phê duyệt",
+          "label": "Khi tất cả các bước phê duyệt hoàn tất"
         },
         "pipeline-failed": {
           "title": "Pipeline thất bại",

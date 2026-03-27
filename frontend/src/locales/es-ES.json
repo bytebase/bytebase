@@ -1849,8 +1849,8 @@
           "label": "Cuando un aprobador devuelve la incidencia"
         },
         "issue-approved": {
-          "title": "Issue approved",
-          "label": "Notify when all approval steps are completed"
+          "title": "Incidencia aprobada",
+          "label": "Cuando se completan todos los pasos de aprobación"
         },
         "pipeline-failed": {
           "title": "Pipeline fallido",
