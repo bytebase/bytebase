@@ -3,7 +3,7 @@ package pg
 import (
 	"testing"
 
-	"github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,24 +73,28 @@ $$ LANGUAGE SQL;`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseResults, err := ParsePostgreSQL(tt.definition)
-			require.NoError(t, err, "failed to parse function definition")
-			require.Len(t, parseResults, 1, "expected exactly 1 statement")
-
-			root, ok := parseResults[0].Tree.(*postgresql.RootContext)
-			require.True(t, ok, "expected RootContext")
-			stmtblock := root.Stmtblock()
-			stmtmulti := stmtblock.Stmtmulti()
-			stmts := stmtmulti.AllStmt()
+			// Parse with omni.
+			stmts, err := ParsePg(tt.definition)
+			require.NoError(t, err)
 			require.Len(t, stmts, 1)
 
-			createFuncStmt := stmts[0].Createfunctionstmt()
-			require.NotNil(t, createFuncStmt)
+			createFuncStmt, ok := stmts[0].AST.(*ast.CreateFunctionStmt)
+			require.True(t, ok, "expected CreateFunctionStmt")
 
-			q := &querySpanExtractor{}
-			got := q.extractParameterNamesFromCreateFunction(createFuncStmt)
+			// Extract OUT/TABLE parameter names from omni AST.
+			var got []string
+			if createFuncStmt.Parameters != nil {
+				for _, item := range createFuncStmt.Parameters.Items {
+					fp, ok := item.(*ast.FunctionParameter)
+					if !ok {
+						continue
+					}
+					if fp.Mode == ast.FUNC_PARAM_OUT || fp.Mode == ast.FUNC_PARAM_TABLE || fp.Mode == ast.FUNC_PARAM_INOUT {
+						got = append(got, fp.Name)
+					}
+				}
+			}
 
-			require.NoError(t, err)
 			assert.Equal(t, tt.want, got, "parameter names mismatch")
 		})
 	}
