@@ -3052,6 +3052,16 @@
       definition: public.t1 | int, NOT NULL
       comment: ""
       priority: 0
+    - text: c1
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: public.t2 | int, NOT NULL
+      comment: ""
+      priority: 0
     - text: ft1
       type: FOREIGNTABLE
       definition: ""

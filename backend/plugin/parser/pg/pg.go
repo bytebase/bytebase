@@ -170,33 +170,6 @@ func parseSinglePostgreSQL(sql string, baseLine int) (*base.ANTLRAST, error) {
 	return result, nil
 }
 
-func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
-	if ctx == nil {
-		return ""
-	}
-
-	switch {
-	case ctx.Identifier() != nil:
-		return normalizePostgreSQLIdentifier(ctx.Identifier())
-	default:
-		// For non-quote identifier, we just return the lower string for PostgreSQL.
-		return strings.ToLower(ctx.GetText())
-	}
-}
-
-func normalizePostgreSQLNameList(ctx parser.IName_listContext) []string {
-	if ctx == nil {
-		return nil
-	}
-
-	var result []string
-	for _, item := range ctx.AllName() {
-		result = append(result, normalizePostgreSQLName(item))
-	}
-
-	return result
-}
-
 func normalizePostgreSQLName(ctx parser.INameContext) string {
 	if ctx == nil {
 		return ""
@@ -275,16 +248,6 @@ func normalizePostgreSQLAttrName(ctx parser.IAttr_nameContext) string {
 }
 
 func normalizePostgreSQLCollabel(ctx parser.ICollabelContext) string {
-	if ctx == nil {
-		return ""
-	}
-	if ctx.Identifier() != nil {
-		return normalizePostgreSQLIdentifier(ctx.Identifier())
-	}
-	return strings.ToLower(ctx.GetText())
-}
-
-func normalizePostgreSQLBareColLabel(ctx parser.IBare_col_labelContext) string {
 	if ctx == nil {
 		return ""
 	}
