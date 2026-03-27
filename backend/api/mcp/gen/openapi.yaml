@@ -20665,6 +20665,8 @@ components:
          documentation for additional information.
 security: []
 tags:
+  - name: bytebase.v1.SubscriptionService
+    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: bytebase.v1.AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
   - name: bytebase.v1.IssueService
@@ -20719,8 +20721,6 @@ tags:
     description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService
     description: SheetService manages SQL scripts and saved queries.
-  - name: bytebase.v1.SubscriptionService
-    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: bytebase.v1.WorkloadIdentityService
     description: WorkloadIdentityService manages workload identities for external CI/CD integrations.
   - name: bytebase.v1.WorksheetService

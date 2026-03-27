@@ -284,6 +284,13 @@
   
     - [Signal.Type](#bytebase-store-Signal-Type)
   
+- [store/subscription.proto](#store_subscription-proto)
+    - [SubscriptionPayload](#bytebase-store-SubscriptionPayload)
+  
+    - [SubscriptionPayload.BillingInterval](#bytebase-store-SubscriptionPayload-BillingInterval)
+    - [SubscriptionPayload.Plan](#bytebase-store-SubscriptionPayload-Plan)
+    - [SubscriptionPayload.Status](#bytebase-store-SubscriptionPayload-Status)
+  
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
   
@@ -4688,6 +4695,87 @@ Type represents the type of signal.
 | TYPE_UNSPECIFIED | 0 |  |
 | CANCEL_PLAN_CHECK_RUN | 1 |  |
 | CANCEL_TASK_RUN | 2 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_subscription-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/subscription.proto
+
+
+
+<a name="bytebase-store-SubscriptionPayload"></a>
+
+### SubscriptionPayload
+SubscriptionPayload stores all subscription data for a workspace.
+Serialized as JSONB in the subscription table&#39;s payload column.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [SubscriptionPayload.Status](#bytebase-store-SubscriptionPayload-Status) |  | Lifecycle |
+| started_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan | [SubscriptionPayload.Plan](#bytebase-store-SubscriptionPayload-Plan) |  | Billing details |
+| interval | [SubscriptionPayload.BillingInterval](#bytebase-store-SubscriptionPayload-BillingInterval) |  |  |
+| seat | [int32](#int32) |  |  |
+| instance_count | [int32](#int32) |  |  |
+| stripe_subscription_id | [string](#string) |  | Stripe integration |
+| stripe_customer_id | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-SubscriptionPayload-BillingInterval"></a>
+
+### SubscriptionPayload.BillingInterval
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BILLING_INTERVAL_UNSPECIFIED | 0 |  |
+| MONTH | 1 |  |
+| YEAR | 2 |  |
+
+
+
+<a name="bytebase-store-SubscriptionPayload-Plan"></a>
+
+### SubscriptionPayload.Plan
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_UNSPECIFIED | 0 |  |
+| TEAM | 1 |  |
+| ENTERPRISE | 2 |  |
+
+
+
+<a name="bytebase-store-SubscriptionPayload-Status"></a>
+
+### SubscriptionPayload.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| ACTIVE | 2 |  |
+| PAUSED | 3 |  |
+| CANCELED | 4 |  |
 
 
  

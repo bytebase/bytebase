@@ -1316,6 +1316,33 @@
         
           
           <li>
+            <a href="#store%2fsubscription.proto">store/subscription.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.SubscriptionPayload"><span class="badge">M</span>SubscriptionPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.SubscriptionPayload.BillingInterval"><span class="badge">E</span>SubscriptionPayload.BillingInterval</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SubscriptionPayload.Plan"><span class="badge">E</span>SubscriptionPayload.Plan</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SubscriptionPayload.Status"><span class="badge">E</span>SubscriptionPayload.Status</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2ftask.proto">store/task.proto</a>
             <ul>
               
@@ -12816,6 +12843,199 @@ Default to this mode.</p></td>
               <tr>
                 <td>CANCEL_TASK_RUN</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/subscription.proto">store/subscription.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.SubscriptionPayload">SubscriptionPayload</h3>
+        <p>SubscriptionPayload stores all subscription data for a workspace.</p><p>Serialized as JSONB in the subscription table's payload column.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.store.SubscriptionPayload.Status">SubscriptionPayload.Status</a></td>
+                  <td></td>
+                  <td><p>Lifecycle </p></td>
+                </tr>
+              
+                <tr>
+                  <td>started_at</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expires_at</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.store.SubscriptionPayload.Plan">SubscriptionPayload.Plan</a></td>
+                  <td></td>
+                  <td><p>Billing details </p></td>
+                </tr>
+              
+                <tr>
+                  <td>interval</td>
+                  <td><a href="#bytebase.store.SubscriptionPayload.BillingInterval">SubscriptionPayload.BillingInterval</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seat</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>stripe_subscription_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Stripe integration </p></td>
+                </tr>
+              
+                <tr>
+                  <td>stripe_customer_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.SubscriptionPayload.BillingInterval">SubscriptionPayload.BillingInterval</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>BILLING_INTERVAL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MONTH</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>YEAR</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.SubscriptionPayload.Plan">SubscriptionPayload.Plan</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PLAN_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TEAM</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENTERPRISE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.SubscriptionPayload.Status">SubscriptionPayload.Status</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PENDING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ACTIVE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PAUSED</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CANCELED</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             

@@ -30142,6 +30142,8 @@ components:
          documentation for additional information.
 security: []
 tags:
+  - name: SubscriptionService
+    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
   - name: IssueService
@@ -30196,8 +30198,6 @@ tags:
     description: ServiceAccountService manages service accounts for API integrations.
   - name: SheetService
     description: SheetService manages SQL scripts and saved queries.
-  - name: SubscriptionService
-    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: WorkloadIdentityService
     description: WorkloadIdentityService manages workload identities for external CI/CD integrations.
   - name: WorksheetService

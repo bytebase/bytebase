@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/store";
+
+// SubscriptionPayload stores all subscription data for a workspace.
+// Serialized as JSONB in the subscription table's payload column.
+message SubscriptionPayload {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    ACTIVE = 2;
+    PAUSED = 3;
+    CANCELED = 4;
+  }
+
+  enum Plan {
+    PLAN_UNSPECIFIED = 0;
+    TEAM = 1;
+    ENTERPRISE = 2;
+  }
+
+  enum BillingInterval {
+    BILLING_INTERVAL_UNSPECIFIED = 0;
+    MONTH = 1;
+    YEAR = 2;
+  }
+
+  // Lifecycle
+  Status status = 1;
+  google.protobuf.Timestamp started_at = 2;
+  google.protobuf.Timestamp expires_at = 3;
+
+  // Billing details
+  Plan plan = 4;
+  BillingInterval interval = 5;
+  int32 seat = 6;
+  int32 instance_count = 7;
+
+  // Stripe integration
+  string stripe_subscription_id = 8;
+  string stripe_customer_id = 9;
+}
