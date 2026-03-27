@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bytebase Slack Webhook Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --slack-bg: #1a1d21;
+    --slack-msg-bg: #1a1d21;
+    --slack-text: #d1d2d3;
+    --slack-text-muted: #ababad;
+    --slack-link: #1d9bd1;
+    --slack-border: #35373b;
+    --slack-code-bg: #1e2126;
+    --slack-bold: #e8e8e8;
+    --green: #2eb67d;
+    --yellow: #ecb22e;
+    --red: #e01e5a;
+    --blue: #36c5f0;
+    --sidebar-width: 4px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d0d0d;
+    color: #e0e0e0;
+    font-family: 'Noto Sans', sans-serif;
+    padding: 40px 20px;
+  }
+
+  .page-header {
+    max-width: 900px;
+    margin: 0 auto 60px;
+    text-align: center;
+  }
+
+  .page-header h1 {
+    font-family: 'Lato', sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: -0.5px;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    color: #888;
+    font-size: 15px;
+  }
+
+  .comparison {
+    max-width: 900px;
+    margin: 0 auto 80px;
+  }
+
+  .comparison h2 {
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .comparison h2 .badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-before { background: #3a1a1a; color: #e55; }
+  .badge-after { background: #1a3a1a; color: #5e5; }
+  .badge-event { background: #1a2a3a; color: #5ae; font-size: 10px !important; }
+
+  .slack-container {
+    background: var(--slack-bg);
+    border: 1px solid var(--slack-border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  /* Slack message structure */
+  .slack-msg {
+    display: flex;
+    gap: 12px;
+  }
+
+  .slack-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4285f4, #1a73e8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .slack-body { flex: 1; min-width: 0; }
+
+  .slack-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .slack-username {
+    font-weight: 700;
+    color: var(--slack-bold);
+    font-size: 15px;
+  }
+
+  .slack-app-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--slack-text-muted);
+    background: #35373b;
+    padding: 1px 4px;
+    border-radius: 3px;
+    vertical-align: middle;
+  }
+
+  .slack-time {
+    font-size: 12px;
+    color: var(--slack-text-muted);
+  }
+
+  .slack-fallback {
+    color: var(--slack-text);
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  /* Current design blocks */
+  .slack-block {
+    margin: 6px 0;
+    font-size: 15px;
+    color: var(--slack-text);
+    line-height: 1.5;
+  }
+
+  .slack-block strong {
+    color: var(--slack-bold);
+    font-weight: 700;
+  }
+
+  .slack-code-block {
+    background: var(--slack-code-bg);
+    border: 1px solid var(--slack-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    color: var(--slack-text);
+    margin: 6px 0;
+  }
+
+  .slack-link {
+    color: var(--slack-link);
+    text-decoration: none;
+  }
+  .slack-link:hover { text-decoration: underline; }
+
+  .slack-btn {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid var(--slack-border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--slack-text);
+    background: transparent;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* NEW DESIGN: Attachment with colored sidebar */
+  .slack-attachment {
+    display: flex;
+    margin: 8px 0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .slack-attachment-bar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+  }
+
+  .bar-green { background: var(--green); }
+  .bar-yellow { background: var(--yellow); }
+  .bar-red { background: var(--red); }
+  .bar-blue { background: var(--blue); }
+
+  .slack-attachment-body {
+    flex: 1;
+    padding: 10px 14px;
+    min-width: 0;
+  }
+
+  .att-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slack-bold);
+    margin-bottom: 2px;
+  }
+
+  .att-issue-link {
+    display: block;
+    font-size: 15px;
+    color: var(--slack-link);
+    text-decoration: none;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .att-issue-link:hover { text-decoration: underline; }
+
+  .att-desc {
+    font-size: 14px;
+    color: var(--slack-text);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .att-meta {
+    font-size: 13px;
+    color: var(--slack-text-muted);
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+
+  .att-meta strong {
+    color: var(--slack-text);
+    font-weight: 600;
+  }
+
+  .att-meta .sep {
+    margin: 0 6px;
+    color: #555;
+  }
+
+  .att-footer {
+    font-size: 12px;
+    color: #6b6b6e;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .att-footer-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #4285f4, #1a73e8);
+  }
+
+  /* Failed tasks table */
+  .att-tasks {
+    margin: 6px 0 8px;
+    font-size: 13px;
+    color: var(--slack-text);
+  }
+
+  .att-task-row {
+    display: flex;
+    gap: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid #2a2a2e;
+  }
+
+  .att-task-row:last-child { border-bottom: none; }
+
+  .att-task-name { color: var(--slack-bold); min-width: 120px; }
+  .att-task-db { color: var(--slack-text-muted); flex: 1; }
+  .att-task-err { color: var(--red); flex: 2; }
+
+  /* Quote style for description */
+  .att-quote {
+    border-left: 3px solid #444;
+    padding-left: 10px;
+    margin: 6px 0 8px;
+    font-size: 14px;
+    color: var(--slack-text-muted);
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #222;
+  }
+
+  /* Arrow between before/after */
+  .arrow {
+    text-align: center;
+    font-size: 28px;
+    color: #444;
+    margin: 24px 0;
+  }
+
+  /* Annotation callouts */
+  .callout {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.5;
+  }
+
+  .callout strong { color: #ccc; }
+
+  .callout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .callout-item {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 4px;
+    padding: 10px 12px;
+  }
+
+  .callout-item .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+
+  .callout-item .value { font-size: 13px; color: #bbb; }
+
+  .color-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Slack Webhook Message Redesign</h1>
+  <p>Bytebase webhook notifications - before and after</p>
+</div>
+
+<!-- ==================== BEFORE ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-before">BEFORE</span> Current Design - Issue Created</h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">bytebase demo</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">2:37 AM</span>
+        </div>
+        <div class="slack-fallback">Test webhook "Slack test"</div>
+
+        <div class="slack-code-block">This is a test</div>
+
+        <div class="slack-block"><strong>Project Title:</strong> Sample Project</div>
+        <div class="slack-block"><strong>Project ID:</strong> projects/project-sample</div>
+        <div class="slack-block"><strong>Issue:</strong> Test issue</div>
+        <div class="slack-block"><strong>Issue Creator:</strong> Admin (<a href="#" class="slack-link">admin@bytebase.com</a>)</div>
+        <div class="slack-block"><strong>Issue Description:</strong> This is a test issue</div>
+        <div class="slack-block">Actor: Admin (<a href="#" class="slack-link">admin@bytebase.com</a>)</div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Problems:</strong> Flat key-value dump with no visual hierarchy. Project ID is technical noise. Actor duplicates Issue Creator. Description in code block looks like an error log. No color coding for event type. No linked issue title.
+  </div>
+</div>
+
+<!-- ==================== AFTER: ISSUE CREATED ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">ISSUE_CREATED</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">2:37 AM</span>
+        </div>
+        <div class="slack-fallback">Issue created - Test issue</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-blue"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">Issue created</div>
+            <a class="att-issue-link" href="#">#101 Test issue</a>
+            <div class="att-desc">Admin created issue Test issue</div>
+            <div class="att-meta">
+              <strong>Project</strong> Sample Project
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AFTER: ISSUE APPROVED ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">ISSUE_APPROVED</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">3:14 PM</span>
+        </div>
+        <div class="slack-fallback">Issue approved - Grant read access to prod</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-green"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">:white_check_mark: Issue approved</div>
+            <a class="att-issue-link" href="#">#42 Grant read access to prod</a>
+            <div class="att-desc">Bob approved the issue</div>
+            <div class="att-meta">
+              <strong>Project</strong> Sample Project<span class="sep">|</span><strong>Creator</strong> Alice (alice@example.com)
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AFTER: APPROVAL REQUESTED ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">ISSUE_APPROVAL_REQUESTED</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">10:22 AM</span>
+        </div>
+        <div class="slack-fallback">Approval required - Schema migration for users table</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-yellow"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">:warning: Approval required</div>
+            <a class="att-issue-link" href="#">#88 Schema migration for users table</a>
+            <div class="att-meta">
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave (dave@example.com)
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AFTER: ISSUE SENT BACK ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">ISSUE_SENT_BACK</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">11:05 AM</span>
+        </div>
+        <div class="slack-fallback">Issue sent back - Schema migration for users table</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-yellow"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">:warning: Issue sent back</div>
+            <a class="att-issue-link" href="#">#88 Schema migration for users table</a>
+            <div class="att-desc">Carol sent back the issue: Missing index on email column</div>
+            <div class="att-meta">
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave (dave@example.com)
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AFTER: PIPELINE FAILED ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">PIPELINE_FAILED</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">4:30 PM</span>
+        </div>
+        <div class="slack-fallback">Rollout failed - Deploy v2.0</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-red"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">:exclamation: Rollout failed</div>
+            <a class="att-issue-link" href="#">Deploy v2.0</a>
+            <div class="att-desc">Rollout failed</div>
+            <div class="att-meta">
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Environment</strong> prod
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AFTER: PIPELINE COMPLETED ==================== -->
+<div class="comparison">
+  <h2><span class="badge badge-after">AFTER</span> Redesigned <span class="badge badge-event">PIPELINE_COMPLETED</span></h2>
+
+  <div class="slack-container">
+    <div class="slack-msg">
+      <div class="slack-avatar">B</div>
+      <div class="slack-body">
+        <div class="slack-header">
+          <span class="slack-username">Bytebase</span>
+          <span class="slack-app-badge">APP</span>
+          <span class="slack-time">4:45 PM</span>
+        </div>
+        <div class="slack-fallback">Rollout completed - Deploy v2.0</div>
+
+        <div class="slack-attachment">
+          <div class="slack-attachment-bar bar-green"></div>
+          <div class="slack-attachment-body">
+            <div class="att-title">:white_check_mark: Rollout completed</div>
+            <a class="att-issue-link" href="#">Deploy v2.0</a>
+            <div class="att-desc">Rollout completed successfully</div>
+            <div class="att-meta">
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Environment</strong> staging
+            </div>
+            <div class="att-footer">
+              <div class="att-footer-icon"></div>
+              Bytebase
+            </div>
+          </div>
+        </div>
+
+        <button class="slack-btn">View in Bytebase</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DESIGN SPEC ==================== -->
+<div class="comparison">
+  <h2>Design Specification</h2>
+
+  <div class="callout">
+    <strong>Key Changes:</strong>
+    <br><br>
+    1. <strong>Colored sidebar bar</strong> via Slack <code>attachments.color</code> — instant visual status<br>
+    2. <strong>Issue title as a clickable link</strong> — the primary CTA, not buried in metadata<br>
+    3. <strong>Compact metadata line</strong> — Project + Creator/Environment on one line with <code>|</code> separator<br>
+    4. <strong>Removed noise</strong> — No Project ID, no redundant Actor field<br>
+    5. <strong>Description as plain text</strong> — not wrapped in code block<br>
+    6. <strong>Bytebase footer</strong> — clean branding like GitHub's footer
+  </div>
+
+  <div class="callout-grid">
+    <div class="callout-item">
+      <div class="label">Color Mapping</div>
+      <div class="value">
+        <span class="color-swatch" style="background:#36c5f0"></span> INFO (created)<br>
+        <span class="color-swatch" style="background:#ecb22e"></span> WARN (approval, sent back)<br>
+        <span class="color-swatch" style="background:#2eb67d"></span> SUCCESS (approved, completed)<br>
+        <span class="color-swatch" style="background:#e01e5a"></span> ERROR (failed)
+      </div>
+    </div>
+    <div class="callout-item">
+      <div class="label">Slack Block Kit Structure</div>
+      <div class="value">
+        <code>attachments[0].color</code> = sidebar<br>
+        <code>attachments[0].blocks</code> = content<br>
+        Top-level <code>blocks</code> = button
+      </div>
+    </div>
+    <div class="callout-item">
+      <div class="label">Removed Fields</div>
+      <div class="value">
+        Project ID (technical noise)<br>
+        Actor line (redundant with description)
+      </div>
+    </div>
+    <div class="callout-item">
+      <div class="label">Added Elements</div>
+      <div class="value">
+        Linked issue/rollout title<br>
+        Compact metadata row<br>
+        Bytebase footer
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
