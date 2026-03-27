@@ -183,7 +183,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	var nonTransactionStmts []base.Statement
 	var totalCommands int
 	var commands []base.Statement
 	oneshot := true
@@ -196,20 +195,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		totalCommands = len(singleSQLs)
+		commands = singleSQLs
+		totalCommands = len(commands)
 		if totalCommands <= common.MaximumCommands {
 			oneshot = false
-			// Find non-transactional statements.
-			// TiDB cannot run create table and create index in a single transaction.
-			var remainingSQLs []base.Statement
-			for _, singleSQL := range singleSQLs {
-				if isNonTransactionStatement(singleSQL.Text) {
-					nonTransactionStmts = append(nonTransactionStmts, singleSQL)
-					continue
-				}
-				remainingSQLs = append(remainingSQLs, singleSQL)
-			}
-			commands = remainingSQLs
 		}
 	}
 	if oneshot {
@@ -222,13 +211,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		return d.executeInAutoCommitMode(ctx, conn, commands, nonTransactionStmts, opts, connectionID)
+		return d.executeInAutoCommitMode(ctx, conn, commands, opts, connectionID)
 	}
-	return d.executeInTransactionMode(ctx, conn, commands, nonTransactionStmts, opts, connectionID)
+	return d.executeInTransactionMode(ctx, conn, commands, opts, connectionID)
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, nonTransactionStmts []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -299,33 +288,18 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 		return 0, err
 	}
 
-	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionStmts {
-		opts.LogCommandExecute(stmt.Range, stmt.Text)
-		if _, err := d.db.ExecContext(ctx, stmt.Text); err != nil {
-			opts.LogCommandResponse(0, []int64{0}, err.Error())
-			return 0, err
-		}
-		opts.LogCommandResponse(0, []int64{0}, "")
-	}
 	return totalRowsAffected, nil
 }
 
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, nonTransactionStmts []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string) (int64, error) {
 	var totalRowsAffected int64
-
-	// Execute all statements (including non-transactional ones)
-	// In auto-commit mode, execute commands followed by non-transactional statements
-	allCommands := make([]base.Statement, 0, len(commands)+len(nonTransactionStmts))
-	allCommands = append(allCommands, commands...)
-	allCommands = append(allCommands, nonTransactionStmts...)
 
 	if err := conn.Raw(func(driverConn any) error {
 		//nolint
 		exer := driverConn.(driver.ExecerContext)
 
-		for _, command := range allCommands {
+		for _, command := range commands {
 			opts.LogCommandExecute(command.Range, command.Text)
 
 			sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(command.Text)
@@ -362,16 +336,6 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, co
 	}
 
 	return totalRowsAffected, nil
-}
-
-var (
-	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
-	// CREATE [ UNIQUE ] [ SPATIAL ] [ FULLTEXT ] INDEX ... ON table_name ...
-	createIndexReg = regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?(SPATIAL\s+)?(FULLTEXT\s+)?)INDEX(\s+)`)
-)
-
-func isNonTransactionStatement(stmt string) bool {
-	return len(createIndexReg.FindString(stmt)) > 0
 }
 
 // QueryConn queries a SQL statement in a given connection.
