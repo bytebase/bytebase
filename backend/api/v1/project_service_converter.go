@@ -19,12 +19,11 @@ import (
 func convertToProtoAny(i any) (*anypb.Any, error) {
 	switch deltas := i.(type) {
 	case []*v1pb.BindingDelta:
-		auditData := v1pb.AuditData{
+		return anypb.New(&v1pb.AuditData{
 			PolicyDelta: &v1pb.PolicyDelta{
 				BindingDeltas: deltas,
 			},
-		}
-		return anypb.New(&auditData)
+		})
 	default:
 		return &anypb.Any{}, nil
 	}
@@ -315,23 +314,22 @@ func convertToStoreExecutionRetryPolicy(policy *v1pb.Project_ExecutionRetryPolic
 }
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.ProjectMessage {
-	setting := &storepb.Project{
-		EnforceIssueTitle:          project.EnforceIssueTitle,
-		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
-		AllowSelfApproval:          project.AllowSelfApproval,
-		CiSamplingSize:             project.CiSamplingSize,
-		ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
-		Labels:                     project.Labels,
-		EnforceSqlReview:           project.EnforceSqlReview,
-		RequireIssueApproval:       project.RequireIssueApproval,
-		RequirePlanCheckNoError:    project.RequirePlanCheckNoError,
-		AllowRequestRole:           project.AllowRequestRole,
-		AllowJustInTimeAccess:      project.AllowJustInTimeAccess,
-		DataClassificationConfigId: project.DataClassificationConfigId,
-	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
 		Title:      project.Title,
-		Setting:    setting,
+		Setting: &storepb.Project{
+			EnforceIssueTitle:          project.EnforceIssueTitle,
+			PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
+			AllowSelfApproval:          project.AllowSelfApproval,
+			CiSamplingSize:             project.CiSamplingSize,
+			ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
+			Labels:                     project.Labels,
+			EnforceSqlReview:           project.EnforceSqlReview,
+			RequireIssueApproval:       project.RequireIssueApproval,
+			RequirePlanCheckNoError:    project.RequirePlanCheckNoError,
+			AllowRequestRole:           project.AllowRequestRole,
+			AllowJustInTimeAccess:      project.AllowJustInTimeAccess,
+			DataClassificationConfigId: project.DataClassificationConfigId,
+		},
 	}
 }
