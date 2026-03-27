@@ -824,7 +824,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		}
 		if request.GetRunTime() != nil {
 			t := request.GetRunTime().AsTime()
-			create.RunAt = &t
+			create.RunAt = new(t)
 		}
 		if request.GetSkipPriorBackup() {
 			create.PayloadProto = &storepb.TaskRunPayload{

@@ -973,7 +973,7 @@ func buildEnvironmentName(environmentID *string) *string {
 	_, _ = b.WriteString("environments/")
 	_, _ = b.WriteString(*environmentID)
 	result := b.String()
-	return &result
+	return new(result)
 }
 
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {

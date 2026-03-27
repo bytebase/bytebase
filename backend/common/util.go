@@ -244,7 +244,7 @@ func IsNil(val any) bool {
 }
 
 func NewP[T any](x T) *T {
-	return &x
+	return new(x)
 }
 
 // Uniq returns a new slice with duplicate elements removed, preserving order.
