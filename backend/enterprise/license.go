@@ -388,8 +388,7 @@ func (s *LicenseService) GetAuditLogRetentionCutoff(ctx context.Context, workspa
 	if days <= 0 {
 		return nil // Either no access (0) or unlimited (-1)
 	}
-	cutoff := time.Now().AddDate(0, 0, -days)
-	return &cutoff
+	return new(time.Now().AddDate(0, 0, -days))
 }
 
 // CountActiveReplicas returns the count of active replicas.

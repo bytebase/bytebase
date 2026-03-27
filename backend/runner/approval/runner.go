@@ -466,12 +466,11 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 			}
 			// For CREATE_DATABASE, create a synthetic database message
 			// since the database doesn't exist yet
-			envID := config.CreateDatabaseConfig.Environment
 			targets = append(targets, specTarget{
 				database: &store.DatabaseMessage{
 					InstanceID:             instanceID,
 					DatabaseName:           config.CreateDatabaseConfig.Database,
-					EffectiveEnvironmentID: &envID,
+					EffectiveEnvironmentID: new(config.CreateDatabaseConfig.Environment),
 				},
 				sheetSha256: "",
 			})

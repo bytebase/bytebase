@@ -140,11 +140,10 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 
 func (d *Driver) listAllTables(ctx context.Context) ([]string, error) {
 	var result []string
-	var limit int32 = 100
 	var exclusiveStartTableName *string
 	for {
 		out, err := d.client.ListTables(ctx, &dynamodb.ListTablesInput{
-			Limit:                   &limit,
+			Limit:                   new(int32(100)),
 			ExclusiveStartTableName: exclusiveStartTableName,
 		})
 		if err != nil {
