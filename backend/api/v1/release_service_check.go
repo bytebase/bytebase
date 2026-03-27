@@ -189,12 +189,11 @@ loop:
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
 		finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, engine, store.IsObjectCaseSensitive(instance))
-		revisionType := storepb.SchemaChangeType_VERSIONED
 		// Batch fetch all revisions for this database
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Type:         &revisionType,
+			Type:         new(storepb.SchemaChangeType_VERSIONED),
 			Versions:     &releaseFileVersions,
 			ShowDeleted:  false,
 		})
@@ -369,13 +368,11 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 		}
 
 		engine := instance.Metadata.GetEngine()
-		revisionType := storepb.SchemaChangeType_DECLARATIVE
-		limit := 1
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Type:         &revisionType,
-			Limit:        &limit,
+			Type:         new(storepb.SchemaChangeType_DECLARATIVE),
+			Limit:        new(1),
 			ShowDeleted:  false,
 		})
 		if err != nil {
