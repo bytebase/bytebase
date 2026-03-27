@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -56,13 +57,20 @@ type Element struct {
 type Block struct {
 	Type        string         `json:"type"`
 	Text        *BlockMarkdown `json:"text,omitempty"`
-	ElementList []Element      `json:"elements,omitempty"`
+	ElementList []any          `json:"elements,omitempty"`
+}
+
+// Attachment is a Slack attachment with a colored sidebar.
+type Attachment struct {
+	Color     string  `json:"color"`
+	BlockList []Block `json:"blocks"`
 }
 
 // MessagePayload is the API message for Slack webhook.
 type MessagePayload struct {
-	Text      string  `json:"text"`
-	BlockList []Block `json:"blocks"`
+	Text        string       `json:"text"`
+	BlockList   []Block      `json:"blocks,omitempty"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
 func init() {
@@ -73,73 +81,105 @@ func init() {
 type Receiver struct {
 }
 
-func GetBlocks(context webhook.Context) []Block {
-	blockList := []Block{}
-
-	status := ""
-	switch context.Level {
+func levelColor(level webhook.Level) string {
+	switch level {
 	case webhook.WebhookSuccess:
-		status = ":white_check_mark: "
+		return "#2EB67D"
 	case webhook.WebhookWarn:
-		status = ":warning: "
+		return "#ECB22E"
 	case webhook.WebhookError:
-		status = ":exclamation: "
+		return "#E01E5A"
 	default:
-		status = ""
+		return "#1264A3"
 	}
-	blockList = append(blockList, Block{
+}
+
+func levelEmoji(level webhook.Level) string {
+	switch level {
+	case webhook.WebhookSuccess:
+		return "✅ "
+	case webhook.WebhookWarn:
+		return "⚠️ "
+	case webhook.WebhookError:
+		return "❗ "
+	default:
+		return ""
+	}
+}
+
+// BuildMessage constructs the Slack message payload with a colored attachment sidebar.
+func BuildMessage(ctx webhook.Context) MessagePayload {
+	var blocks []Block
+
+	// Title — linked when Link is present.
+	titleText := ctx.Title
+	if ctx.Link != "" {
+		titleText = fmt.Sprintf("<%s|%s>", ctx.Link, ctx.Title)
+	}
+	blocks = append(blocks, Block{
 		Type: "section",
-		Text: &BlockMarkdown{
-			Type: "mrkdwn",
-			Text: fmt.Sprintf("*%s%s*", status, context.Title),
-		},
+		Text: &BlockMarkdown{Type: "mrkdwn", Text: levelEmoji(ctx.Level) + "*" + titleText + "*"},
 	})
 
-	if context.Description != "" {
-		blockList = append(blockList, Block{
+	// Description.
+	if ctx.Description != "" {
+		blocks = append(blocks, Block{
 			Type: "section",
-			Text: &BlockMarkdown{
-				Type: "mrkdwn",
-				Text: fmt.Sprintf("```%s```", context.Description),
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: ctx.Description},
+		})
+	}
+
+	// Compact context metadata.
+	var parts []string
+	if ctx.Project != nil {
+		parts = append(parts, fmt.Sprintf("*Project:* %s", ctx.Project.Title))
+	}
+	if ctx.Issue != nil {
+		parts = append(parts, fmt.Sprintf("*Issue:* %s", ctx.Issue.Name))
+		if ctx.Issue.Creator.Name != "" {
+			parts = append(parts, fmt.Sprintf("*Creator:* %s", ctx.Issue.Creator.Name))
+		}
+	} else if ctx.Rollout != nil {
+		if ctx.Rollout.Title != "" {
+			parts = append(parts, fmt.Sprintf("*Rollout:* %s", ctx.Rollout.Title))
+		}
+		if ctx.Environment != "" {
+			parts = append(parts, fmt.Sprintf("*Env:* %s", ctx.Environment))
+		}
+	}
+	if ctx.ActorName != "" {
+		parts = append(parts, fmt.Sprintf("*By:* %s", ctx.ActorName))
+	}
+	if len(parts) > 0 {
+		blocks = append(blocks, Block{
+			Type: "context",
+			ElementList: []any{
+				BlockMarkdown{Type: "mrkdwn", Text: strings.Join(parts, "  |  ")},
 			},
 		})
 	}
 
-	for _, meta := range context.GetMetaList() {
-		blockList = append(blockList, Block{
-			Type: "section",
-			Text: &BlockMarkdown{
-				Type: "mrkdwn",
-				Text: fmt.Sprintf("*%s:* %s", meta.Name, meta.Value),
-			},
-		})
-	}
-
-	if context.ActorName != "" {
-		blockList = append(blockList, Block{
-			Type: "section",
-			Text: &BlockMarkdown{
-				Type: "mrkdwn",
-				Text: fmt.Sprintf("Actor: %s (%s)", context.ActorName, context.ActorEmail),
-			},
-		})
-	}
-
-	blockList = append(blockList, Block{
-		Type: "actions",
-		ElementList: []Element{
-			{
-				Type: "button",
-				Button: ElementButton{
-					Type: "plain_text",
-					Text: "View in Bytebase",
+	// "View in Bytebase" button.
+	if ctx.Link != "" {
+		blocks = append(blocks, Block{
+			Type: "actions",
+			ElementList: []any{
+				Element{
+					Type:   "button",
+					Button: ElementButton{Type: "plain_text", Text: "View in Bytebase"},
+					URL:    ctx.Link,
 				},
-				URL: context.Link,
 			},
-		},
-	})
+		})
+	}
 
-	return blockList
+	return MessagePayload{
+		Text: ctx.Title,
+		Attachments: []Attachment{{
+			Color:     levelColor(ctx.Level),
+			BlockList: blocks,
+		}},
+	}
 }
 
 func (*Receiver) Post(context webhook.Context) error {
@@ -153,12 +193,7 @@ func (*Receiver) Post(context webhook.Context) error {
 }
 
 func postMessage(context webhook.Context) error {
-	blockList := GetBlocks(context)
-
-	post := MessagePayload{
-		Text:      context.Title,
-		BlockList: blockList,
-	}
+	post := BuildMessage(context)
 	body, err := json.Marshal(post)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)
