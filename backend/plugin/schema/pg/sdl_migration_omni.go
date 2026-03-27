@@ -21,15 +21,30 @@ func init() {
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 }
 
-// pgDiffSDLMigration is the core migration function: two SDL texts in, migration SQL out.
-func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
-	from, err := catalog.LoadSDL(strings.TrimSpace(sourceSDL))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load source SDL")
+// loadCatalog loads a schema text into a catalog. It tries LoadSDL first
+// (declarative CREATE/COMMENT/GRANT only). If that fails (e.g. raw dump with
+// SET/SELECT), it falls back to LoadSQL which accepts any SQL.
+func loadCatalog(text string) (*catalog.Catalog, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return catalog.LoadSDL("")
 	}
-	to, err := catalog.LoadSDL(strings.TrimSpace(targetSDL))
+	c, err := catalog.LoadSDL(text)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to load target SDL")
+		return catalog.LoadSQL(text)
+	}
+	return c, nil
+}
+
+// pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL out.
+func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
+	from, err := loadCatalog(sourceSDL)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load source schema")
+	}
+	to, err := loadCatalog(targetSDL)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load target schema")
 	}
 	diff := catalog.Diff(from, to)
 	if diff.IsEmpty() {
