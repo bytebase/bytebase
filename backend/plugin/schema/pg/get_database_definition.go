@@ -36,14 +36,16 @@ SET row_security = off;
 )
 
 func init() {
-	schema.RegisterGetDatabaseDefinition(storepb.Engine_POSTGRES, GetDatabaseDefinition)
-	schema.RegisterGetSchemaDefinition(storepb.Engine_POSTGRES, GetSchemaDefinition)
-	schema.RegisterGetTableDefinition(storepb.Engine_POSTGRES, GetTableDefinition)
-	schema.RegisterGetViewDefinition(storepb.Engine_POSTGRES, GetViewDefinition)
-	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_POSTGRES, GetMaterializedViewDefinition)
-	schema.RegisterGetFunctionDefinition(storepb.Engine_POSTGRES, GetFunctionDefinition)
-	schema.RegisterGetSequenceDefinition(storepb.Engine_POSTGRES, GetSequenceDefinition)
-	schema.RegisterGetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, GetMultiFileDatabaseDefinition)
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		schema.RegisterGetDatabaseDefinition(engine, GetDatabaseDefinition)
+		schema.RegisterGetSchemaDefinition(engine, GetSchemaDefinition)
+		schema.RegisterGetTableDefinition(engine, GetTableDefinition)
+		schema.RegisterGetViewDefinition(engine, GetViewDefinition)
+		schema.RegisterGetMaterializedViewDefinition(engine, GetMaterializedViewDefinition)
+		schema.RegisterGetFunctionDefinition(engine, GetFunctionDefinition)
+		schema.RegisterGetSequenceDefinition(engine, GetSequenceDefinition)
+		schema.RegisterGetMultiFileDatabaseDefinition(engine, GetMultiFileDatabaseDefinition)
+	}
 }
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
