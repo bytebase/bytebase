@@ -107,14 +107,23 @@ func levelEmoji(level webhook.Level) string {
 	}
 }
 
+// escapeMrkdwn escapes Slack mrkdwn special characters in user-provided text.
+func escapeMrkdwn(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	return s
+}
+
 // BuildMessage constructs the Slack message payload with a colored attachment sidebar.
 func BuildMessage(ctx webhook.Context) MessagePayload {
 	var blocks []Block
 
 	// Title — linked when Link is present.
-	titleText := ctx.Title
+	escapedTitle := escapeMrkdwn(ctx.Title)
+	titleText := escapedTitle
 	if ctx.Link != "" {
-		titleText = fmt.Sprintf("<%s|%s>", ctx.Link, ctx.Title)
+		titleText = fmt.Sprintf("<%s|%s>", ctx.Link, escapedTitle)
 	}
 	blocks = append(blocks, Block{
 		Type: "section",
@@ -125,7 +134,7 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 	if ctx.Description != "" {
 		blocks = append(blocks, Block{
 			Type: "section",
-			Text: &BlockMarkdown{Type: "mrkdwn", Text: ctx.Description},
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: escapeMrkdwn(ctx.Description)},
 		})
 	}
 
@@ -133,28 +142,28 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 	if ctx.Issue != nil {
 		blocks = append(blocks, Block{
 			Type: "section",
-			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", ctx.Issue.Name)},
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", escapeMrkdwn(ctx.Issue.Name))},
 		})
 	} else if ctx.Rollout != nil && ctx.Rollout.Title != "" {
 		blocks = append(blocks, Block{
 			Type: "section",
-			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", ctx.Rollout.Title)},
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", escapeMrkdwn(ctx.Rollout.Title))},
 		})
 	}
 
 	// Compact context metadata (issue/rollout name shown above as tile).
 	var parts []string
 	if ctx.Project != nil {
-		parts = append(parts, fmt.Sprintf("*Project:* %s", ctx.Project.Title))
+		parts = append(parts, fmt.Sprintf("*Project:* %s", escapeMrkdwn(ctx.Project.Title)))
 	}
 	if ctx.Issue != nil && ctx.Issue.Creator.Name != "" {
-		parts = append(parts, fmt.Sprintf("*Creator:* %s", ctx.Issue.Creator.Name))
+		parts = append(parts, fmt.Sprintf("*Creator:* %s", escapeMrkdwn(ctx.Issue.Creator.Name)))
 	}
 	if ctx.Rollout != nil && ctx.Environment != "" {
-		parts = append(parts, fmt.Sprintf("*Env:* %s", ctx.Environment))
+		parts = append(parts, fmt.Sprintf("*Env:* %s", escapeMrkdwn(ctx.Environment)))
 	}
 	if ctx.ActorName != "" {
-		parts = append(parts, fmt.Sprintf("*By:* %s", ctx.ActorName))
+		parts = append(parts, fmt.Sprintf("*By:* %s", escapeMrkdwn(ctx.ActorName)))
 	}
 	if len(parts) > 0 {
 		blocks = append(blocks, Block{

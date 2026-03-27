@@ -96,10 +96,8 @@ func TestEventIssueApproved_Structure(t *testing.T) {
 func TestEvent_IssueApproved_TypeField(t *testing.T) {
 	a := require.New(t)
 
-	project := &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"}
 	event := &Event{
-		Type:    storepb.Activity_ISSUE_APPROVED,
-		Project: project,
+		Type: storepb.Activity_ISSUE_APPROVED,
 		IssueApproved: &EventIssueApproved{
 			Approver: &User{Name: "Bob", Email: "bob@example.com"},
 			Creator:  &User{Name: "Alice", Email: "alice@example.com"},

@@ -169,6 +169,51 @@ func TestBuildMessage_JSONStructure(t *testing.T) {
 	a.NotNil(att["blocks"])
 }
 
+func TestEscapeMrkdwn(t *testing.T) {
+	a := require.New(t)
+	a.Equal("hello &amp; world", escapeMrkdwn("hello & world"))
+	a.Equal("a &lt;b&gt; c", escapeMrkdwn("a <b> c"))
+	a.Equal("no special chars", escapeMrkdwn("no special chars"))
+	a.Equal("&amp;&lt;&gt;", escapeMrkdwn("&<>"))
+}
+
+func TestBuildMessage_EscapesUserContent(t *testing.T) {
+	a := require.New(t)
+
+	ctx := webhook.Context{
+		Level:       webhook.WebhookWarn,
+		Title:       "Issue <sent> back",
+		Description: "Bob & Alice sent back: <script>alert('xss')</script>",
+		Link:        "https://bb.example.com/issues/1",
+		Project:     &webhook.Project{Name: "p", Title: "Project <A>"},
+		Issue: &webhook.Issue{
+			Name:    "Issue with <angle> brackets",
+			Creator: webhook.Creator{Name: "O'Brien & Sons"},
+		},
+		ActorName: "Admin <root>",
+	}
+
+	msg := BuildMessage(ctx)
+	blocks := msg.Attachments[0].BlockList
+
+	// Title should have escaped angle brackets
+	a.Contains(blocks[0].Text.Text, "Issue &lt;sent&gt; back")
+
+	// Description should escape HTML
+	a.Contains(blocks[1].Text.Text, "&amp;")
+	a.Contains(blocks[1].Text.Text, "&lt;script&gt;")
+
+	// Issue tile should escape
+	a.Contains(blocks[2].Text.Text, "&lt;angle&gt;")
+
+	// Context should escape — check via the BlockMarkdown Text field directly.
+	contextElem, ok := blocks[3].ElementList[0].(BlockMarkdown)
+	a.True(ok)
+	a.Contains(contextElem.Text, "Project &lt;A&gt;")
+	a.Contains(contextElem.Text, "O'Brien &amp; Sons")
+	a.Contains(contextElem.Text, "Admin &lt;root&gt;")
+}
+
 func TestLevelColor(t *testing.T) {
 	a := require.New(t)
 	a.Equal("#1264A3", levelColor(webhook.WebhookInfo))
