@@ -11,19 +11,21 @@ import (
 
 func getBaseProfile(dataDir string) *config.Profile {
 	config := &config.Profile{
-		ExternalURL:   flags.externalURL,
-		Port:          flags.port,     // Using flags.port as our gRPC server port.
-		DatastorePort: flags.port + 2, // Using flags.port + 2 as our datastore port.
-		HA:            flags.ha,
-		SaaS:          flags.saas,
-		Debug:         flags.debug,
-		IsDocker:      isDocker(),
-		DataDir:       dataDir,
-		Demo:          flags.demo,
-		Version:       version,
-		GitCommit:     gitcommit,
-		PgURL:         os.Getenv("PG_URL"),
-		ReplicaID:     uuid.NewString(),
+		ExternalURL:         flags.externalURL,
+		Port:                flags.port,     // Using flags.port as our gRPC server port.
+		DatastorePort:       flags.port + 2, // Using flags.port + 2 as our datastore port.
+		HA:                  flags.ha,
+		SaaS:                flags.saas,
+		Debug:               flags.debug,
+		IsDocker:            isDocker(),
+		DataDir:             dataDir,
+		Demo:                flags.demo,
+		Version:             version,
+		GitCommit:           gitcommit,
+		PgURL:               os.Getenv("PG_URL"),
+		ReplicaID:           uuid.NewString(),
+		StripeAPIKey:        os.Getenv("STRIPE_API_KEY"),
+		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())

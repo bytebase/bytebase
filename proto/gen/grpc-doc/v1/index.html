@@ -2725,7 +2725,39 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.CancelPurchaseRequest"><span class="badge">M</span>CancelPurchaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CancelPurchaseResponse"><span class="badge">M</span>CancelPurchaseResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CreatePurchaseRequest"><span class="badge">M</span>CreatePurchaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CreatePurchaseResponse"><span class="badge">M</span>CreatePurchaseResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetPaymentInfoRequest"><span class="badge">M</span>GetPaymentInfoRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetSubscriptionRequest"><span class="badge">M</span>GetSubscriptionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPurchasePlansRequest"><span class="badge">M</span>ListPurchasePlansRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListPurchasePlansResponse"><span class="badge">M</span>ListPurchasePlansResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PaymentInfo"><span class="badge">M</span>PaymentInfo</a>
                 </li>
               
                 <li>
@@ -2737,7 +2769,31 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PurchaseBillingMethod"><span class="badge">M</span>PurchaseBillingMethod</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PurchaseDiscount"><span class="badge">M</span>PurchaseDiscount</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PurchasePlan"><span class="badge">M</span>PurchasePlan</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PurchasePlanAdditional"><span class="badge">M</span>PurchasePlanAdditional</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Subscription"><span class="badge">M</span>Subscription</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdatePurchaseRequest"><span class="badge">M</span>UpdatePurchaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdatePurchaseResponse"><span class="badge">M</span>UpdatePurchaseResponse</a>
                 </li>
               
                 <li>
@@ -2746,11 +2802,19 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.BillingInterval"><span class="badge">E</span>BillingInterval</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.PlanFeature"><span class="badge">E</span>PlanFeature</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.PlanType"><span class="badge">E</span>PlanType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PurchasePlanAdditional.Type"><span class="badge">E</span>PurchasePlanAdditional.Type</a>
                 </li>
               
               
@@ -30444,10 +30508,176 @@ Permissions required: bb.sheets.get</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.CancelPurchaseRequest">CancelPurchaseRequest</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.CancelPurchaseResponse">CancelPurchaseResponse</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>interval</td>
+                  <td><a href="#bytebase.v1.BillingInterval">BillingInterval</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seats</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CreatePurchaseResponse">CreatePurchaseResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>payment_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Stripe Checkout URL for the user to complete payment. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetPaymentInfoRequest">GetPaymentInfoRequest</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.GetSubscriptionRequest">GetSubscriptionRequest</h3>
         <p></p>
 
         
+
+        
+      
+        <h3 id="bytebase.v1.ListPurchasePlansRequest">ListPurchasePlansRequest</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.ListPurchasePlansResponse">ListPurchasePlansResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plans</td>
+                  <td><a href="#bytebase.v1.PurchasePlan">PurchasePlan</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PaymentInfo">PaymentInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>total_price</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>currency</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>period_start</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>period_end</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>invoice_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Stripe Billing Portal URL for invoice management. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -30518,6 +30748,165 @@ Permissions required: bb.sheets.get</p></td>
                   <td><a href="#bytebase.v1.PlanFeature">PlanFeature</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PurchaseBillingMethod">PurchaseBillingMethod</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>interval</td>
+                  <td><a href="#bytebase.v1.BillingInterval">BillingInterval</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>discount</td>
+                  <td><a href="#bytebase.v1.PurchaseDiscount">PurchaseDiscount</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PurchaseDiscount">PurchaseDiscount</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>promotion_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PurchasePlan">PurchasePlan</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>self_service_purchase</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>additionals</td>
+                  <td><a href="#bytebase.v1.PurchasePlanAdditional">PurchasePlanAdditional</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>billing_methods</td>
+                  <td><a href="#bytebase.v1.PurchaseBillingMethod">PurchaseBillingMethod</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PurchasePlanAdditional">PurchasePlanAdditional</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PurchasePlanAdditional.Type">PurchasePlanAdditional.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>unit_price</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Price in USD cents per month. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>free_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>minimum_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>maximum_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>-1 means unlimited. </p></td>
                 </tr>
               
             </tbody>
@@ -30600,6 +30989,76 @@ Permissions required: bb.sheets.get</p></td>
 
         
       
+        <h3 id="bytebase.v1.UpdatePurchaseRequest">UpdatePurchaseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.PlanType">PlanType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>interval</td>
+                  <td><a href="#bytebase.v1.BillingInterval">BillingInterval</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>seats</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>etag</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdatePurchaseResponse">UpdatePurchaseResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>payment_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>If set, redirect to this Stripe Checkout URL.
+If empty, the update was applied directly using the existing payment method. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</h3>
         <p></p>
 
@@ -30633,6 +31092,35 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.BillingInterval">BillingInterval</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>BILLING_INTERVAL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MONTH</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>YEAR</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.PlanFeature">PlanFeature</h3>
         <p>PlanFeature represents the available features in Bytebase</p>
@@ -31112,6 +31600,29 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.PurchasePlanAdditional.Type">PurchasePlanAdditional.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>USER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -31138,8 +31649,45 @@ Permissions required: None</p></td>
                 <td>UpdateSubscription</td>
                 <td><a href="#bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
-                <td><p>Updates the enterprise license subscription.
+                <td><p>Updates the enterprise license subscription (self-hosted only).
 Permissions required: bb.settings.set</p></td>
+              </tr>
+            
+              <tr>
+                <td>CreatePurchase</td>
+                <td><a href="#bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</a></td>
+                <td><a href="#bytebase.v1.CreatePurchaseResponse">CreatePurchaseResponse</a></td>
+                <td><p>CreatePurchase creates a new subscription purchase (SaaS only).
+Returns a Stripe Checkout URL for the user to complete payment.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdatePurchase</td>
+                <td><a href="#bytebase.v1.UpdatePurchaseRequest">UpdatePurchaseRequest</a></td>
+                <td><a href="#bytebase.v1.UpdatePurchaseResponse">UpdatePurchaseResponse</a></td>
+                <td><p>UpdatePurchase updates an existing subscription (SaaS only).
+May return a Stripe Checkout URL if payment method change is needed.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CancelPurchase</td>
+                <td><a href="#bytebase.v1.CancelPurchaseRequest">CancelPurchaseRequest</a></td>
+                <td><a href="#bytebase.v1.CancelPurchaseResponse">CancelPurchaseResponse</a></td>
+                <td><p>CancelPurchase cancels an active subscription (SaaS only).</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetPaymentInfo</td>
+                <td><a href="#bytebase.v1.GetPaymentInfoRequest">GetPaymentInfoRequest</a></td>
+                <td><a href="#bytebase.v1.PaymentInfo">PaymentInfo</a></td>
+                <td><p>GetPaymentInfo returns payment details for the current subscription (SaaS only).</p></td>
+              </tr>
+            
+              <tr>
+                <td>ListPurchasePlans</td>
+                <td><a href="#bytebase.v1.ListPurchasePlansRequest">ListPurchasePlansRequest</a></td>
+                <td><a href="#bytebase.v1.ListPurchasePlansResponse">ListPurchasePlansResponse</a></td>
+                <td><p>ListPurchasePlans returns available plans for self-service purchase.</p></td>
               </tr>
             
           </tbody>
@@ -31177,6 +31725,56 @@ Permissions required: bb.settings.set</p></td>
                 <td>PATCH</td>
                 <td>/v1/subscription</td>
                 <td>license</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreatePurchase</td>
+                <td>POST</td>
+                <td>/v1/subscription:purchase</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdatePurchase</td>
+                <td>POST</td>
+                <td>/v1/subscription:updatePurchase</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CancelPurchase</td>
+                <td>POST</td>
+                <td>/v1/subscription:cancelPurchase</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetPaymentInfo</td>
+                <td>GET</td>
+                <td>/v1/subscription/paymentInfo</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListPurchasePlans</td>
+                <td>GET</td>
+                <td>/v1/subscription/plans</td>
+                <td></td>
               </tr>
               
             

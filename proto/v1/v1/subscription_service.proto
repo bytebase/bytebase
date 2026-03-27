@@ -22,7 +22,7 @@ service SubscriptionService {
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Updates the enterprise license subscription.
+  // Updates the enterprise license subscription (self-hosted only).
   // Permissions required: bb.settings.set
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
@@ -32,6 +32,51 @@ service SubscriptionService {
     option (google.api.method_signature) = "patch";
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // CreatePurchase creates a new subscription purchase (SaaS only).
+  // Returns a Stripe Checkout URL for the user to complete payment.
+  rpc CreatePurchase(CreatePurchaseRequest) returns (CreatePurchaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/subscription:purchase"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // UpdatePurchase updates an existing subscription (SaaS only).
+  // May return a Stripe Checkout URL if payment method change is needed.
+  rpc UpdatePurchase(UpdatePurchaseRequest) returns (UpdatePurchaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/subscription:updatePurchase"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // CancelPurchase cancels an active subscription (SaaS only).
+  rpc CancelPurchase(CancelPurchaseRequest) returns (CancelPurchaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/subscription:cancelPurchase"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // GetPaymentInfo returns payment details for the current subscription (SaaS only).
+  rpc GetPaymentInfo(GetPaymentInfoRequest) returns (PaymentInfo) {
+    option (google.api.http) = {get: "/v1/subscription/paymentInfo"};
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  // ListPurchasePlans returns available plans for self-service purchase.
+  rpc ListPurchasePlans(ListPurchasePlansRequest) returns (ListPurchasePlansResponse) {
+    option (google.api.http) = {get: "/v1/subscription/plans"};
+    option (bytebase.v1.allow_without_credential) = true;
   }
 }
 
@@ -44,6 +89,92 @@ message UpdateSubscriptionRequest {
   // In this situation, `update_mask` is ignored.
   bool allow_missing = 2;
 }
+
+// Purchase messages
+
+message CreatePurchaseRequest {
+  PlanType plan = 1;
+  BillingInterval interval = 2;
+  int32 seats = 3;
+}
+
+message CreatePurchaseResponse {
+  // Stripe Checkout URL for the user to complete payment.
+  string payment_url = 1;
+}
+
+message UpdatePurchaseRequest {
+  PlanType plan = 1;
+  BillingInterval interval = 2;
+  int32 seats = 3;
+  string etag = 4;
+}
+
+message UpdatePurchaseResponse {
+  // If set, redirect to this Stripe Checkout URL.
+  // If empty, the update was applied directly using the existing payment method.
+  string payment_url = 1;
+}
+
+message CancelPurchaseRequest {}
+
+message CancelPurchaseResponse {}
+
+message GetPaymentInfoRequest {}
+
+message PaymentInfo {
+  string total_price = 1;
+  string currency = 2;
+  string period_start = 3;
+  string period_end = 4;
+  // Stripe Billing Portal URL for invoice management.
+  string invoice_url = 5;
+}
+
+enum BillingInterval {
+  BILLING_INTERVAL_UNSPECIFIED = 0;
+  MONTH = 1;
+  YEAR = 2;
+}
+
+message PurchasePlan {
+  PlanType type = 1;
+  bool self_service_purchase = 2;
+  repeated PurchasePlanAdditional additionals = 3;
+  repeated PurchaseBillingMethod billing_methods = 4;
+}
+
+message PurchasePlanAdditional {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    USER = 1;
+  }
+  Type type = 1;
+  // Price in USD cents per month.
+  int32 unit_price = 2;
+  int32 free_count = 3;
+  int32 minimum_count = 4;
+  // -1 means unlimited.
+  int32 maximum_count = 5;
+}
+
+message PurchaseBillingMethod {
+  BillingInterval interval = 1;
+  PurchaseDiscount discount = 2;
+}
+
+message PurchaseDiscount {
+  string description = 1;
+  string promotion_code = 2;
+}
+
+message ListPurchasePlansRequest {}
+
+message ListPurchasePlansResponse {
+  repeated PurchasePlan plans = 1;
+}
+
+// Existing types
 
 enum PlanType {
   // Unspecified plan type.

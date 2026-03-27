@@ -21,6 +21,9 @@ type Profile struct {
 	Port int
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
+	// Stripe configuration for SaaS subscription purchase. Only used when SaaS is true.
+	StripeAPIKey        string
+	StripeWebhookSecret string
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// Demo mode.

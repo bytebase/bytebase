@@ -21,6 +21,11 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	SubscriptionService_GetSubscription_FullMethodName    = "/bytebase.v1.SubscriptionService/GetSubscription"
 	SubscriptionService_UpdateSubscription_FullMethodName = "/bytebase.v1.SubscriptionService/UpdateSubscription"
+	SubscriptionService_CreatePurchase_FullMethodName     = "/bytebase.v1.SubscriptionService/CreatePurchase"
+	SubscriptionService_UpdatePurchase_FullMethodName     = "/bytebase.v1.SubscriptionService/UpdatePurchase"
+	SubscriptionService_CancelPurchase_FullMethodName     = "/bytebase.v1.SubscriptionService/CancelPurchase"
+	SubscriptionService_GetPaymentInfo_FullMethodName     = "/bytebase.v1.SubscriptionService/GetPaymentInfo"
+	SubscriptionService_ListPurchasePlans_FullMethodName  = "/bytebase.v1.SubscriptionService/ListPurchasePlans"
 )
 
 // SubscriptionServiceClient is the client API for SubscriptionService service.
@@ -34,9 +39,21 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
-	// Updates the enterprise license subscription.
+	// Updates the enterprise license subscription (self-hosted only).
 	// Permissions required: bb.settings.set
 	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
+	// CreatePurchase creates a new subscription purchase (SaaS only).
+	// Returns a Stripe Checkout URL for the user to complete payment.
+	CreatePurchase(ctx context.Context, in *CreatePurchaseRequest, opts ...grpc.CallOption) (*CreatePurchaseResponse, error)
+	// UpdatePurchase updates an existing subscription (SaaS only).
+	// May return a Stripe Checkout URL if payment method change is needed.
+	UpdatePurchase(ctx context.Context, in *UpdatePurchaseRequest, opts ...grpc.CallOption) (*UpdatePurchaseResponse, error)
+	// CancelPurchase cancels an active subscription (SaaS only).
+	CancelPurchase(ctx context.Context, in *CancelPurchaseRequest, opts ...grpc.CallOption) (*CancelPurchaseResponse, error)
+	// GetPaymentInfo returns payment details for the current subscription (SaaS only).
+	GetPaymentInfo(ctx context.Context, in *GetPaymentInfoRequest, opts ...grpc.CallOption) (*PaymentInfo, error)
+	// ListPurchasePlans returns available plans for self-service purchase.
+	ListPurchasePlans(ctx context.Context, in *ListPurchasePlansRequest, opts ...grpc.CallOption) (*ListPurchasePlansResponse, error)
 }
 
 type subscriptionServiceClient struct {
@@ -67,6 +84,56 @@ func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *subscriptionServiceClient) CreatePurchase(ctx context.Context, in *CreatePurchaseRequest, opts ...grpc.CallOption) (*CreatePurchaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePurchaseResponse)
+	err := c.cc.Invoke(ctx, SubscriptionService_CreatePurchase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) UpdatePurchase(ctx context.Context, in *UpdatePurchaseRequest, opts ...grpc.CallOption) (*UpdatePurchaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdatePurchaseResponse)
+	err := c.cc.Invoke(ctx, SubscriptionService_UpdatePurchase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) CancelPurchase(ctx context.Context, in *CancelPurchaseRequest, opts ...grpc.CallOption) (*CancelPurchaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelPurchaseResponse)
+	err := c.cc.Invoke(ctx, SubscriptionService_CancelPurchase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) GetPaymentInfo(ctx context.Context, in *GetPaymentInfoRequest, opts ...grpc.CallOption) (*PaymentInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PaymentInfo)
+	err := c.cc.Invoke(ctx, SubscriptionService_GetPaymentInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) ListPurchasePlans(ctx context.Context, in *ListPurchasePlansRequest, opts ...grpc.CallOption) (*ListPurchasePlansResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPurchasePlansResponse)
+	err := c.cc.Invoke(ctx, SubscriptionService_ListPurchasePlans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SubscriptionServiceServer is the server API for SubscriptionService service.
 // All implementations must embed UnimplementedSubscriptionServiceServer
 // for forward compatibility.
@@ -78,9 +145,21 @@ type SubscriptionServiceServer interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	// Permissions required: None
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
-	// Updates the enterprise license subscription.
+	// Updates the enterprise license subscription (self-hosted only).
 	// Permissions required: bb.settings.set
 	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error)
+	// CreatePurchase creates a new subscription purchase (SaaS only).
+	// Returns a Stripe Checkout URL for the user to complete payment.
+	CreatePurchase(context.Context, *CreatePurchaseRequest) (*CreatePurchaseResponse, error)
+	// UpdatePurchase updates an existing subscription (SaaS only).
+	// May return a Stripe Checkout URL if payment method change is needed.
+	UpdatePurchase(context.Context, *UpdatePurchaseRequest) (*UpdatePurchaseResponse, error)
+	// CancelPurchase cancels an active subscription (SaaS only).
+	CancelPurchase(context.Context, *CancelPurchaseRequest) (*CancelPurchaseResponse, error)
+	// GetPaymentInfo returns payment details for the current subscription (SaaS only).
+	GetPaymentInfo(context.Context, *GetPaymentInfoRequest) (*PaymentInfo, error)
+	// ListPurchasePlans returns available plans for self-service purchase.
+	ListPurchasePlans(context.Context, *ListPurchasePlansRequest) (*ListPurchasePlansResponse, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()
 }
 
@@ -96,6 +175,21 @@ func (UnimplementedSubscriptionServiceServer) GetSubscription(context.Context, *
 }
 func (UnimplementedSubscriptionServiceServer) UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSubscription not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) CreatePurchase(context.Context, *CreatePurchaseRequest) (*CreatePurchaseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreatePurchase not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) UpdatePurchase(context.Context, *UpdatePurchaseRequest) (*UpdatePurchaseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdatePurchase not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) CancelPurchase(context.Context, *CancelPurchaseRequest) (*CancelPurchaseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPurchase not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) GetPaymentInfo(context.Context, *GetPaymentInfoRequest) (*PaymentInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPaymentInfo not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) ListPurchasePlans(context.Context, *ListPurchasePlansRequest) (*ListPurchasePlansResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPurchasePlans not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) mustEmbedUnimplementedSubscriptionServiceServer() {}
 func (UnimplementedSubscriptionServiceServer) testEmbeddedByValue()                             {}
@@ -154,6 +248,96 @@ func _SubscriptionService_UpdateSubscription_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SubscriptionService_CreatePurchase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePurchaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).CreatePurchase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_CreatePurchase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).CreatePurchase(ctx, req.(*CreatePurchaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_UpdatePurchase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePurchaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).UpdatePurchase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_UpdatePurchase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).UpdatePurchase(ctx, req.(*UpdatePurchaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_CancelPurchase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelPurchaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).CancelPurchase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_CancelPurchase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).CancelPurchase(ctx, req.(*CancelPurchaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_GetPaymentInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPaymentInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).GetPaymentInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_GetPaymentInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).GetPaymentInfo(ctx, req.(*GetPaymentInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_ListPurchasePlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPurchasePlansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).ListPurchasePlans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_ListPurchasePlans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).ListPurchasePlans(ctx, req.(*ListPurchasePlansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SubscriptionService_ServiceDesc is the grpc.ServiceDesc for SubscriptionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +352,26 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSubscription",
 			Handler:    _SubscriptionService_UpdateSubscription_Handler,
+		},
+		{
+			MethodName: "CreatePurchase",
+			Handler:    _SubscriptionService_CreatePurchase_Handler,
+		},
+		{
+			MethodName: "UpdatePurchase",
+			Handler:    _SubscriptionService_UpdatePurchase_Handler,
+		},
+		{
+			MethodName: "CancelPurchase",
+			Handler:    _SubscriptionService_CancelPurchase_Handler,
+		},
+		{
+			MethodName: "GetPaymentInfo",
+			Handler:    _SubscriptionService_GetPaymentInfo_Handler,
+		},
+		{
+			MethodName: "ListPurchasePlans",
+			Handler:    _SubscriptionService_ListPurchasePlans_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
