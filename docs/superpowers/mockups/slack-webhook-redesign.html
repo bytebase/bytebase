@@ -216,15 +216,14 @@
     margin-bottom: 2px;
   }
 
-  .att-issue-link {
+  .att-issue-tile {
     display: block;
     font-size: 15px;
-    color: var(--slack-link);
-    text-decoration: none;
-    margin-bottom: 6px;
-    font-weight: 500;
+    font-weight: 700;
+    color: var(--slack-bold);
+    margin: 6px 0;
+    line-height: 1.4;
   }
-  .att-issue-link:hover { text-decoration: underline; }
 
   .att-desc {
     font-size: 14px;
@@ -425,8 +424,8 @@
           <div class="slack-attachment-bar bar-blue"></div>
           <div class="slack-attachment-body">
             <div class="att-title">Issue created</div>
-            <a class="att-issue-link" href="#">#101 Test issue</a>
             <div class="att-desc">Admin created issue Test issue</div>
+            <div class="att-issue-tile">Test issue</div>
             <div class="att-meta">
               <strong>Project</strong> Sample Project
             </div>
@@ -462,10 +461,10 @@
           <div class="slack-attachment-bar bar-green"></div>
           <div class="slack-attachment-body">
             <div class="att-title">&#x2705; Issue approved</div>
-            <a class="att-issue-link" href="#">#42 Grant read access to prod</a>
             <div class="att-desc">Bob approved the issue</div>
+            <div class="att-issue-tile">Grant read access to prod</div>
             <div class="att-meta">
-              <strong>Project</strong> Sample Project<span class="sep">|</span><strong>Creator</strong> Alice (alice@example.com)
+              <strong>Project</strong> Sample Project<span class="sep">|</span><strong>Creator</strong> Alice
             </div>
             <div class="att-footer">
               <div class="att-footer-icon"></div>
@@ -499,9 +498,9 @@
           <div class="slack-attachment-bar bar-yellow"></div>
           <div class="slack-attachment-body">
             <div class="att-title">&#x26A0;&#xFE0F; Approval required</div>
-            <a class="att-issue-link" href="#">#88 Schema migration for users table</a>
+            <div class="att-issue-tile">Schema migration for users table</div>
             <div class="att-meta">
-              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave (dave@example.com)
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave
             </div>
             <div class="att-footer">
               <div class="att-footer-icon"></div>
@@ -535,10 +534,10 @@
           <div class="slack-attachment-bar bar-yellow"></div>
           <div class="slack-attachment-body">
             <div class="att-title">&#x26A0;&#xFE0F; Issue sent back</div>
-            <a class="att-issue-link" href="#">#88 Schema migration for users table</a>
             <div class="att-desc">Carol sent back the issue: Missing index on email column</div>
+            <div class="att-issue-tile">Schema migration for users table</div>
             <div class="att-meta">
-              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave (dave@example.com)
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Creator</strong> Dave
             </div>
             <div class="att-footer">
               <div class="att-footer-icon"></div>
@@ -572,10 +571,10 @@
           <div class="slack-attachment-bar bar-red"></div>
           <div class="slack-attachment-body">
             <div class="att-title">&#x2757; Rollout failed</div>
-            <a class="att-issue-link" href="#">Deploy v2.0</a>
             <div class="att-desc">Rollout failed</div>
+            <div class="att-issue-tile">Deploy v2.0</div>
             <div class="att-meta">
-              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Environment</strong> prod
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Env</strong> prod
             </div>
             <div class="att-footer">
               <div class="att-footer-icon"></div>
@@ -609,10 +608,10 @@
           <div class="slack-attachment-bar bar-green"></div>
           <div class="slack-attachment-body">
             <div class="att-title">&#x2705; Rollout completed</div>
-            <a class="att-issue-link" href="#">Deploy v2.0</a>
             <div class="att-desc">Rollout completed successfully</div>
+            <div class="att-issue-tile">Deploy v2.0</div>
             <div class="att-meta">
-              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Environment</strong> staging
+              <strong>Project</strong> Backend Services<span class="sep">|</span><strong>Env</strong> staging
             </div>
             <div class="att-footer">
               <div class="att-footer-icon"></div>

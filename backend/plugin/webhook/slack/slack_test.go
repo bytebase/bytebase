@@ -34,7 +34,8 @@ func TestBuildMessage_IssueApproved(t *testing.T) {
 	a.Equal("#2EB67D", msg.Attachments[0].Color)
 
 	blocks := msg.Attachments[0].BlockList
-	a.GreaterOrEqual(len(blocks), 3)
+	// Expected: title, description, issue tile, context, actions = 5 blocks
+	a.Len(blocks, 5)
 
 	// Title block — linked
 	a.Equal("section", blocks[0].Type)
@@ -45,19 +46,21 @@ func TestBuildMessage_IssueApproved(t *testing.T) {
 	a.Equal("section", blocks[1].Type)
 	a.Equal("Bob approved the issue", blocks[1].Text.Text)
 
-	// Context block with compact metadata
-	a.Equal("context", blocks[2].Type)
-	a.Len(blocks[2].ElementList, 1)
+	// Issue tile — prominent, bold
+	a.Equal("section", blocks[2].Type)
+	a.Equal("*Grant read access to prod*", blocks[2].Text.Text)
 
-	// Verify context text contains project, issue, creator, actor
-	contextJSON, _ := json.Marshal(blocks[2].ElementList[0])
+	// Context block — project, creator, actor (no issue name)
+	a.Equal("context", blocks[3].Type)
+	a.Len(blocks[3].ElementList, 1)
+	contextJSON, _ := json.Marshal(blocks[3].ElementList[0])
 	a.Contains(string(contextJSON), "My Project")
-	a.Contains(string(contextJSON), "Grant read access to prod")
 	a.Contains(string(contextJSON), "Alice")
 	a.Contains(string(contextJSON), "Bob")
+	a.NotContains(string(contextJSON), "Grant read access") // issue name is in tile, not context
 
 	// Actions block
-	a.Equal("actions", blocks[3].Type)
+	a.Equal("actions", blocks[4].Type)
 }
 
 func TestBuildMessage_RolloutFailed(t *testing.T) {
@@ -81,10 +84,16 @@ func TestBuildMessage_RolloutFailed(t *testing.T) {
 	// Title should have error emoji
 	a.Contains(blocks[0].Text.Text, "❗")
 
-	// Context should have rollout and env
-	contextJSON, _ := json.Marshal(blocks[2].ElementList[0])
-	a.Contains(string(contextJSON), "Deploy v2")
+	// Rollout tile — prominent
+	a.Equal("section", blocks[2].Type)
+	a.Equal("*Deploy v2*", blocks[2].Text.Text)
+
+	// Context should have project and env (rollout name is in tile)
+	a.Equal("context", blocks[3].Type)
+	contextJSON, _ := json.Marshal(blocks[3].ElementList[0])
+	a.Contains(string(contextJSON), "My Project")
 	a.Contains(string(contextJSON), "environments/prod")
+	a.NotContains(string(contextJSON), "Deploy v2")
 }
 
 func TestBuildMessage_NoLink(t *testing.T) {

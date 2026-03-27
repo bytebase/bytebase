@@ -129,23 +129,29 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 		})
 	}
 
-	// Compact context metadata.
+	// Issue/Rollout title — prominent tile between description and metadata.
+	if ctx.Issue != nil {
+		blocks = append(blocks, Block{
+			Type: "section",
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", ctx.Issue.Name)},
+		})
+	} else if ctx.Rollout != nil && ctx.Rollout.Title != "" {
+		blocks = append(blocks, Block{
+			Type: "section",
+			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", ctx.Rollout.Title)},
+		})
+	}
+
+	// Compact context metadata (issue/rollout name shown above as tile).
 	var parts []string
 	if ctx.Project != nil {
 		parts = append(parts, fmt.Sprintf("*Project:* %s", ctx.Project.Title))
 	}
-	if ctx.Issue != nil {
-		parts = append(parts, fmt.Sprintf("*Issue:* %s", ctx.Issue.Name))
-		if ctx.Issue.Creator.Name != "" {
-			parts = append(parts, fmt.Sprintf("*Creator:* %s", ctx.Issue.Creator.Name))
-		}
-	} else if ctx.Rollout != nil {
-		if ctx.Rollout.Title != "" {
-			parts = append(parts, fmt.Sprintf("*Rollout:* %s", ctx.Rollout.Title))
-		}
-		if ctx.Environment != "" {
-			parts = append(parts, fmt.Sprintf("*Env:* %s", ctx.Environment))
-		}
+	if ctx.Issue != nil && ctx.Issue.Creator.Name != "" {
+		parts = append(parts, fmt.Sprintf("*Creator:* %s", ctx.Issue.Creator.Name))
+	}
+	if ctx.Rollout != nil && ctx.Environment != "" {
+		parts = append(parts, fmt.Sprintf("*Env:* %s", ctx.Environment))
 	}
 	if ctx.ActorName != "" {
 		parts = append(parts, fmt.Sprintf("*By:* %s", ctx.ActorName))
