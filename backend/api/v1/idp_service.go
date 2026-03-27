@@ -155,7 +155,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 
 	wsID := common.GetWorkspaceIDFromContext(ctx)
 	identityProviderMessage, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		Workspace:  &wsID,
+		Workspace:  new(wsID),
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {
@@ -414,7 +414,7 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 
 	wsID := common.GetWorkspaceIDFromContext(ctx)
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
-		Workspace:  &wsID,
+		Workspace:  new(wsID),
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {

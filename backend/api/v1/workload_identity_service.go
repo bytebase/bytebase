@@ -139,8 +139,7 @@ func (s *WorkloadIdentityService) ListWorkloadIdentities(ctx context.Context, re
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
 		// workspace-level list: parent = "workspaces/{id}"
 		// use empty string to filter workspace-level WIs
-		emptyProjectID := ""
-		projectID = &emptyProjectID
+		projectID = new("")
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}

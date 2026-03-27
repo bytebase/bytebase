@@ -268,9 +268,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			})
 		}
 
-		deleteUser := true
 		if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
-			Delete: &deleteUser,
+			Delete: new(true),
 		}); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete user, error %v", err))
 		}
@@ -387,8 +386,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					slog.Warn("unsupport value, expect bool or string", slog.String("operation", op.OP), slog.String("path", op.Path), slog.Any("value", op.Value))
 					continue
 				}
-				isDelete := !active
-				updateUser.Delete = &isDelete
+				updateUser.Delete = new(!active)
 			case "":
 				// Empty path with replace operation - Okta sends full resource attributes.
 				// Per RFC 7644 Section 3.5.2.3: If path is omitted, the value must be a complex
@@ -411,8 +409,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 				}
 				if active, ok := parseBoolValue(valueMap["active"]); ok {
-					isDelete := !active
-					updateUser.Delete = &isDelete
+					updateUser.Delete = new(!active)
 				}
 				// Handle nested name object (name.givenName, name.familyName)
 				if nameObj, ok := valueMap["name"].(map[string]any); ok {
@@ -424,8 +421,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 						nameParts = append(nameParts, familyName)
 					}
 					if len(nameParts) > 0 {
-						fullName := strings.Join(nameParts, " ")
-						updateUser.Name = &fullName
+						updateUser.Name = new(strings.Join(nameParts, " "))
 					}
 				}
 			default:
@@ -929,9 +925,8 @@ func (s *Service) updateUserFromSCIM(ctx context.Context, user *store.UserMessag
 	if !common.IsValidEmail(normalizedEmail) {
 		return nil, errors.Errorf("email %q contains non-ASCII characters", scimUser.UserName)
 	}
-	deleted := !scimUser.Active
 	patch := &store.UpdateUserMessage{
-		Delete:  &deleted,
+		Delete:  new(!scimUser.Active),
 		Name:    &scimUser.DisplayName,
 		Email:   &normalizedEmail,
 		Profile: user.Profile,

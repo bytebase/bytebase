@@ -134,8 +134,7 @@ func (s *IssueService) getIssueFind(
 					if !ok {
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid approval_status %q`, value))
 					}
-					approvalStatus := v1pb.Issue_ApprovalStatus(approvalStatusValue)
-					filterIssue.ApprovalStatus = &approvalStatus
+					filterIssue.ApprovalStatus = new(v1pb.Issue_ApprovalStatus(approvalStatusValue))
 				case "current_approver", "creator":
 					user, err := s.getUserByIdentifier(ctx, value.(string))
 					if err != nil {
@@ -187,15 +186,15 @@ func (s *IssueService) getIssueFind(
 						issueFind.StatusList = append(issueFind.StatusList, newStatus)
 					}
 				case "type":
-					types := []storepb.Issue_Type{}
+					types := new([]storepb.Issue_Type{})
 					for _, raw := range rawList {
 						issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[raw.(string)]))
 						if err != nil {
 							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert to issue type, err: %v", err))
 						}
-						types = append(types, issueType)
+						*types = append(*types, issueType)
 					}
-					issueFind.Types = &types
+					issueFind.Types = types
 				case "labels":
 					for _, label := range rawList {
 						issueLabel, ok := label.(string)
@@ -1028,7 +1027,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 	// Batch create issue comments.
 	issueComments := make([]*store.IssueCommentMessage, 0, len(issueUIDs))
 	for _, issueUID := range issueUIDs {
-		oldStatus := oldIssueStatuses[issueUID]
 		issueComments = append(issueComments, &store.IssueCommentMessage{
 			ProjectID: projectID,
 			IssueUID:  issueUID,
@@ -1036,7 +1034,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 				Comment: req.Msg.Reason,
 				Event: &storepb.IssueCommentPayload_IssueUpdate_{
 					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-						FromStatus: &oldStatus,
+						FromStatus: new(oldIssueStatuses[issueUID]),
 						ToStatus:   &newStatus,
 					},
 				},
