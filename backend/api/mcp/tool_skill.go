@@ -101,7 +101,7 @@ func parseSkillMeta(filename string) *skillMeta {
 		return nil
 	}
 
-	return new(meta)
+	return &meta
 }
 
 func (*Server) getSkillContent(skillName string) string {

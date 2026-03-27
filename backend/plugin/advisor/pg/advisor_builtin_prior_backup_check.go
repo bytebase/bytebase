@@ -297,7 +297,7 @@ func omniExtractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
 	if table.Table == "" {
 		return nil
 	}
-	return new(table)
+	return &table
 }
 
 // omniTrimmedStmtText returns the statement text with leading/trailing whitespace

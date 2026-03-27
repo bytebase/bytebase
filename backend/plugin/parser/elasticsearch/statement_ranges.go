@@ -67,5 +67,5 @@ func getPositionByByteOffset(byteOffset int, bs []byte) *lsp.Position {
 		i += size
 	}
 
-	return new(position)
+	return &position
 }
