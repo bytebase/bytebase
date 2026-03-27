@@ -76,7 +76,9 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 	var blocks []any
 	if attachments, ok := payload["attachments"].([]any); ok && len(attachments) > 0 {
 		if att, ok := attachments[0].(map[string]any); ok {
-			blocks, _ = att["blocks"].([]any)
+			if b, ok := att["blocks"].([]any); ok {
+				blocks = b
+			}
 		}
 	}
 	if blocks == nil {
@@ -119,7 +121,7 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 			// Next non-bold section is the issue description.
 			if i+1 < len(sectionTexts) {
 				next := sectionTexts[i+1]
-				if !(strings.HasPrefix(next, "*") && strings.HasSuffix(next, "*")) {
+				if !strings.HasPrefix(next, "*") || !strings.HasSuffix(next, "*") {
 					description = next
 				}
 			}
