@@ -109,6 +109,22 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			}
 		}
 
+	case storepb.Activity_ISSUE_APPROVED:
+		level = webhook.WebhookSuccess
+		title = "Issue approved"
+		titleZh = "工单审批通过"
+		if e.IssueApproved != nil {
+			actor = e.IssueApproved.Approver
+			issue = e.IssueApproved.Issue
+			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
+			description = fmt.Sprintf("%s approved the issue", e.IssueApproved.Approver.Name)
+			mentionUsers = []*store.UserMessage{{
+				Name:  e.IssueApproved.Creator.Name,
+				Email: e.IssueApproved.Creator.Email,
+				Type:  storepb.PrincipalType_END_USER,
+			}}
+		}
+
 	case storepb.Activity_ISSUE_SENT_BACK:
 		level = webhook.WebhookWarn
 		title = "Issue sent back"
