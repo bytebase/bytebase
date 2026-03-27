@@ -144,6 +144,12 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 			Type: "section",
 			Text: &BlockMarkdown{Type: "mrkdwn", Text: fmt.Sprintf("*%s*", escapeMrkdwn(ctx.Issue.Name))},
 		})
+		if ctx.Issue.Description != "" {
+			blocks = append(blocks, Block{
+				Type: "section",
+				Text: &BlockMarkdown{Type: "mrkdwn", Text: escapeMrkdwn(ctx.Issue.Description)},
+			})
+		}
 	} else if ctx.Rollout != nil && ctx.Rollout.Title != "" {
 		blocks = append(blocks, Block{
 			Type: "section",

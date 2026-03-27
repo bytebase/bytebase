@@ -65,20 +65,36 @@ func (c *webhookCollector) reset() {
 }
 
 // Helper to parse Slack webhook payload.
+// Extracts section block texts from attachments[0].blocks (new format).
 func parseSlackWebhook(body []byte) (title, description string, err error) {
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return "", "", err
 	}
 
-	blocks, ok := payload["blocks"].([]any)
-	if !ok {
+	// New format: blocks are inside attachments[0].blocks.
+	var blocks []any
+	if attachments, ok := payload["attachments"].([]any); ok && len(attachments) > 0 {
+		if att, ok := attachments[0].(map[string]any); ok {
+			blocks, _ = att["blocks"].([]any)
+		}
+	}
+	if blocks == nil {
 		return "", "", nil
 	}
 
+	// Collect section block texts. Layout for issue events:
+	// [0] event title (bold, with emoji/link)
+	// [1] action description (e.g. "Admin created issue X")
+	// [2] issue tile (*IssueName*) — bold-wrapped
+	// [3] issue description (if present)
+	var sectionTexts []string
 	for _, block := range blocks {
 		blockMap, ok := block.(map[string]any)
 		if !ok {
+			continue
+		}
+		if blockMap["type"] != "section" {
 			continue
 		}
 		textMap, ok := blockMap["text"].(map[string]any)
@@ -89,11 +105,25 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 		if !ok {
 			continue
 		}
+		sectionTexts = append(sectionTexts, text)
+	}
 
-		if strings.HasPrefix(text, "*Issue:* ") {
-			title = strings.TrimPrefix(text, "*Issue:* ")
-		} else if strings.HasPrefix(text, "*Issue Description:* ") {
-			description = strings.TrimPrefix(text, "*Issue Description:* ")
+	// Walk sections: find bold tile (*text*) as issue title,
+	// and the next plain section after the tile as issue description.
+	for i, s := range sectionTexts {
+		if i == 0 {
+			continue // skip event title
+		}
+		if strings.HasPrefix(s, "*") && strings.HasSuffix(s, "*") && !strings.Contains(s, "|") {
+			title = strings.Trim(s, "*")
+			// Next non-bold section is the issue description.
+			if i+1 < len(sectionTexts) {
+				next := sectionTexts[i+1]
+				if !(strings.HasPrefix(next, "*") && strings.HasSuffix(next, "*")) {
+					description = next
+				}
+			}
+			break
 		}
 	}
 	return title, description, nil
