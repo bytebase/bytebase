@@ -21,8 +21,6 @@ func init() {
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 	schema.RegisterDiffMigration(storepb.Engine_POSTGRES, pgSchemaDiffMigration)
 	schema.RegisterDiffMigration(storepb.Engine_COCKROACHDB, pgSchemaDiffMigration)
-	schema.RegisterDiffSchemaTextMigration(storepb.Engine_POSTGRES, pgDiffSchemaTextMigration)
-	schema.RegisterDiffSchemaTextMigration(storepb.Engine_COCKROACHDB, pgDiffSchemaTextMigration)
 	schema.RegisterDiffSDLMigration(storepb.Engine_POSTGRES, pgDiffSDLMigration)
 	schema.RegisterDiffSDLMigration(storepb.Engine_COCKROACHDB, pgDiffSDLMigration)
 }
@@ -52,24 +50,6 @@ func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
 	to, err := catalog.LoadSDL(strings.TrimSpace(targetSDL))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target SDL")
-	}
-	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
-		return "", nil
-	}
-	plan := filterArchiveOps(catalog.GenerateMigration(from, to, diff))
-	return plan.SQL(), nil
-}
-
-// pgDiffSchemaTextMigration computes migration SQL from source metadata to target schema text.
-func pgDiffSchemaTextMigration(sourceSchema *model.DatabaseMetadata, targetSchemaText string) (string, error) {
-	from, err := catalogFromMetadata(sourceSchema)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load source schema")
-	}
-	to, err := catalog.LoadSDL(strings.TrimSpace(targetSchemaText))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to load target schema text")
 	}
 	diff := catalog.Diff(from, to)
 	if diff.IsEmpty() {

@@ -27,7 +27,6 @@ var (
 	sdlMigrations                   = make(map[storepb.Engine]sdlMigration)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	schemaDiffMigrations            = make(map[storepb.Engine]schemaDiffMigration)
-	diffSchemaTextMigrations        = make(map[storepb.Engine]diffSchemaTextMigration)
 	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
@@ -49,7 +48,6 @@ type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *
 type sdlMigration func(userSDLText string, currentSchema *model.DatabaseMetadata) (string, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
 type schemaDiffMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
-type diffSchemaTextMigration func(sourceSchema *model.DatabaseMetadata, targetSchemaText string) (string, error)
 type diffSDLMigration func(sourceSDL, targetSDL string) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
@@ -331,30 +329,6 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		return "", err
 	}
 	return GenerateMigration(engine, diff)
-}
-
-func RegisterDiffSchemaTextMigration(engine storepb.Engine, f diffSchemaTextMigration) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := diffSchemaTextMigrations[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	diffSchemaTextMigrations[engine] = f
-}
-
-// DiffSchemaTextMigration computes migration SQL from source metadata to a target
-// schema text. Falls back to GetDatabaseMetadata + DiffMigration for engines without
-// a registered implementation.
-func DiffSchemaTextMigration(engine storepb.Engine, sourceSchema *model.DatabaseMetadata, targetSchemaText string) (string, error) {
-	if f, ok := diffSchemaTextMigrations[engine]; ok {
-		return f(sourceSchema, targetSchemaText)
-	}
-	targetMetadata, err := GetDatabaseMetadata(engine, targetSchemaText)
-	if err != nil {
-		return "", err
-	}
-	targetSchema := model.NewDatabaseMetadata(targetMetadata, nil, nil, engine, true)
-	return DiffMigration(engine, sourceSchema, targetSchema)
 }
 
 func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
