@@ -33,12 +33,12 @@ func generateEtag(t time.Time) string {
 }
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {
-	workspaceResource := common.FormatWorkspace(workspaceID)
-	resourceType := storepb.Policy_WORKSPACE
+	workspaceResource := new(common.FormatWorkspace(workspaceID))
+	resourceType := new(storepb.Policy_WORKSPACE)
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
-		ResourceType: &resourceType,
-		Resource:     &workspaceResource,
+		ResourceType: resourceType,
+		Resource:     workspaceResource,
 	})
 }
 
@@ -111,12 +111,12 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, workspaceID string, projectID string) (*IamPolicyMessage, error) {
-	resource := common.FormatProject(projectID)
-	resourceType := storepb.Policy_PROJECT
+	resource := new(common.FormatProject(projectID))
+	resourceType := new(storepb.Policy_PROJECT)
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
-		ResourceType: &resourceType,
-		Resource:     &resource,
+		ResourceType: resourceType,
+		Resource:     resource,
 	})
 }
 
@@ -138,8 +138,7 @@ func (s *Store) GetProjectIamPolicySnapshot(ctx context.Context, workspaceID str
 }
 
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
-	pType := storepb.Policy_IAM
-	find.Type = &pType
+	find.Type = new(storepb.Policy_IAM)
 	policy, err := s.GetPolicy(ctx, find)
 	if err != nil {
 		return nil, err
@@ -176,14 +175,14 @@ func GetDefaultRolloutPolicy() *storepb.RolloutPolicy {
 }
 
 func (s *Store) GetRolloutPolicy(ctx context.Context, workspaceID string, environment string) (*storepb.RolloutPolicy, error) {
-	resource := common.FormatEnvironment(environment)
-	resourceType := storepb.Policy_ENVIRONMENT
-	pType := storepb.Policy_ROLLOUT
+	resource := new(common.FormatEnvironment(environment))
+	resourceType := new(storepb.Policy_ENVIRONMENT)
+	pType := new(storepb.Policy_ROLLOUT)
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
-		ResourceType: &resourceType,
-		Resource:     &resource,
-		Type:         &pType,
+		ResourceType: resourceType,
+		Resource:     resource,
+		Type:         pType,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get policy")
@@ -262,12 +261,12 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	if err != nil {
 		return nil, err
 	}
-	pType := storepb.Policy_QUERY_DATA
+	pType := new(storepb.Policy_QUERY_DATA)
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
-		Type:         &pType,
+		Type:         pType,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get policy")
@@ -318,13 +317,13 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, workspaceID stri
 }
 
 func (s *Store) getReviewConfigByResource(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewConfigPayload, error) {
-	pType := storepb.Policy_TAG
+	pType := new(storepb.Policy_TAG)
 
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
 		ResourceType: &resourceType,
 		Resource:     &resource,
-		Type:         &pType,
+		Type:         pType,
 	})
 	if err != nil {
 		return nil, err
@@ -366,14 +365,14 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, workspaceID strin
 
 // GetMaskingRulePolicy will get the masking rule policy.
 func (s *Store) GetMaskingRulePolicy(ctx context.Context, workspaceID string) (*storepb.MaskingRulePolicy, error) {
-	workspaceResource := common.FormatWorkspace(workspaceID)
-	resourceType := storepb.Policy_WORKSPACE
-	pType := storepb.Policy_MASKING_RULE
+	workspaceResource := new(common.FormatWorkspace(workspaceID))
+	resourceType := new(storepb.Policy_WORKSPACE)
+	pType := new(storepb.Policy_MASKING_RULE)
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
-		ResourceType: &resourceType,
-		Resource:     &workspaceResource,
-		Type:         &pType,
+		ResourceType: resourceType,
+		Resource:     workspaceResource,
+		Type:         pType,
 	})
 	if err != nil {
 		return nil, err
@@ -393,14 +392,14 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context, workspaceID string) (*
 
 // GetMaskingExemptionPolicyByProject gets the masking exemption policy for a project.
 func (s *Store) GetMaskingExemptionPolicyByProject(ctx context.Context, workspaceID string, projectID string) (*storepb.MaskingExemptionPolicy, error) {
-	resourceType := storepb.Policy_PROJECT
-	resource := common.FormatProject(projectID)
-	pType := storepb.Policy_MASKING_EXEMPTION
+	resourceType := new(storepb.Policy_PROJECT)
+	resource := new(common.FormatProject(projectID))
+	pType := new(storepb.Policy_MASKING_EXEMPTION)
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
-		ResourceType: &resourceType,
-		Resource:     &resource,
-		Type:         &pType,
+		ResourceType: resourceType,
+		Resource:     resource,
+		Type:         pType,
 	})
 	if err != nil {
 		return nil, err
