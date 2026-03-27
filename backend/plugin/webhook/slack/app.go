@@ -198,15 +198,16 @@ func (p *provider) openConversation(ctx context.Context, userID string) (string,
 
 // https://api.slack.com/methods/chat.postMessage
 func (p *provider) chatPostMessage(ctx context.Context, channelID string, webhookContext webhook.Context) error {
-	blocks := GetBlocks(webhookContext)
-	blocksJSON, err := json.Marshal(blocks)
+	msg := BuildMessage(webhookContext)
+	attachmentsJSON, err := json.Marshal(msg.Attachments)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal blocks")
+		return errors.Wrapf(err, "failed to marshal attachments")
 	}
 
 	data := url.Values{}
 	data.Set("channel", channelID)
-	data.Set("blocks", string(blocksJSON))
+	data.Set("text", msg.Text)
+	data.Set("attachments", string(attachmentsJSON))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://slack.com/api/chat.postMessage", strings.NewReader(data.Encode()))
 	if err != nil {

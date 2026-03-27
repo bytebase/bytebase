@@ -780,6 +780,7 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
    * - ISSUE_CREATED
    * - ISSUE_APPROVAL_REQUESTED
    * - ISSUE_SENT_BACK
+   * - ISSUE_APPROVED
    * - PIPELINE_FAILED
    * - PIPELINE_COMPLETED
    *
@@ -855,6 +856,13 @@ export enum Activity_Type {
    * @generated from enum value: PIPELINE_COMPLETED = 14;
    */
   PIPELINE_COMPLETED = 14,
+
+  /**
+   * ISSUE_APPROVED represents an issue being fully approved.
+   *
+   * @generated from enum value: ISSUE_APPROVED = 15;
+   */
+  ISSUE_APPROVED = 15,
 }
 
 /**

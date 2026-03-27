@@ -8575,7 +8575,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
 | direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
-| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATED - ISSUE_APPROVAL_REQUESTED - ISSUE_SENT_BACK - PIPELINE_FAILED - PIPELINE_COMPLETED |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATED - ISSUE_APPROVAL_REQUESTED - ISSUE_SENT_BACK - ISSUE_APPROVED - PIPELINE_FAILED - PIPELINE_COMPLETED |
 
 
 
@@ -8597,6 +8597,7 @@ Activity type enumeration.
 | ISSUE_SENT_BACK | 12 | ISSUE_SENT_BACK represents an issue being sent back by an approver. |
 | PIPELINE_FAILED | 13 | PIPELINE_FAILED represents a pipeline failure event. |
 | PIPELINE_COMPLETED | 14 | PIPELINE_COMPLETED represents a pipeline completion event. |
+| ISSUE_APPROVED | 15 | ISSUE_APPROVED represents an issue being fully approved. |
 
 
  

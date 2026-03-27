@@ -12,6 +12,7 @@ type Event struct {
 	// Focused event types (only one is set)
 	IssueCreated      *EventIssueCreated
 	ApprovalRequested *EventIssueApprovalRequested
+	IssueApproved     *EventIssueApproved
 	SentBack          *EventIssueSentBack
 	RolloutFailed     *EventRolloutFailed
 	RolloutCompleted  *EventRolloutCompleted
@@ -77,6 +78,12 @@ type EventIssueApprovalRequested struct {
 	Creator   *User
 	Issue     *Issue
 	Approvers []User
+}
+
+type EventIssueApproved struct {
+	Approver *User
+	Creator  *User
+	Issue    *Issue
 }
 
 type EventIssueSentBack struct {

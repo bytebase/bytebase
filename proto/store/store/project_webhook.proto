@@ -22,6 +22,8 @@ message Activity {
     PIPELINE_FAILED = 13;
     // PIPELINE_COMPLETED represents a pipeline completion event.
     PIPELINE_COMPLETED = 14;
+    // ISSUE_APPROVED represents an issue being fully approved.
+    ISSUE_APPROVED = 15;
   }
 }
 

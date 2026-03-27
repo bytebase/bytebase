@@ -74,6 +74,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	title := ""
 	titleZh := ""
 	link := ""
+	description := ""
+	environment := ""
 	var actor *User
 	var issue *Issue
 	var rollout *Rollout
@@ -86,7 +88,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			actor = e.IssueCreated.Creator
 			issue = e.IssueCreated.Issue
 			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
-			webhookCtx.Description = fmt.Sprintf("%s created issue %s", actor.Name, issue.Title)
+			description = fmt.Sprintf("%s created issue %s", actor.Name, issue.Title)
 		}
 
 	case storepb.Activity_ISSUE_APPROVAL_REQUESTED:
@@ -107,6 +109,22 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			}
 		}
 
+	case storepb.Activity_ISSUE_APPROVED:
+		level = webhook.WebhookSuccess
+		title = "Issue approved"
+		titleZh = "工单审批通过"
+		if e.IssueApproved != nil {
+			actor = e.IssueApproved.Approver
+			issue = e.IssueApproved.Issue
+			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
+			description = fmt.Sprintf("%s approved the issue", e.IssueApproved.Approver.Name)
+			mentionUsers = []*store.UserMessage{{
+				Name:  e.IssueApproved.Creator.Name,
+				Email: e.IssueApproved.Creator.Email,
+				Type:  storepb.PrincipalType_END_USER,
+			}}
+		}
+
 	case storepb.Activity_ISSUE_SENT_BACK:
 		level = webhook.WebhookWarn
 		title = "Issue sent back"
@@ -115,7 +133,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			actor = e.SentBack.Approver
 			issue = e.SentBack.Issue
 			link = fmt.Sprintf("%s/projects/%s/issues/%d", externalURL, e.Project.ResourceID, issue.UID)
-			webhookCtx.Description = fmt.Sprintf("%s sent back the issue: %s", e.SentBack.Approver.Name, e.SentBack.Reason)
+			description = fmt.Sprintf("%s sent back the issue: %s", e.SentBack.Approver.Name, e.SentBack.Reason)
 			mentionUsers = []*store.UserMessage{
 				{
 					Name:  e.SentBack.Creator.Name,
@@ -132,8 +150,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.RolloutFailed != nil {
 			rollout = e.RolloutFailed.Rollout
 			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
-			webhookCtx.Description = "Rollout failed"
-			webhookCtx.Environment = e.RolloutFailed.Environment
+			description = "Rollout failed"
+			environment = e.RolloutFailed.Environment
 		}
 
 	case storepb.Activity_PIPELINE_COMPLETED:
@@ -143,8 +161,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.RolloutCompleted != nil {
 			rollout = e.RolloutCompleted.Rollout
 			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
-			webhookCtx.Description = "Rollout completed successfully"
-			webhookCtx.Environment = e.RolloutCompleted.Environment
+			description = "Rollout completed successfully"
+			environment = e.RolloutCompleted.Environment
 		}
 
 	default:
@@ -164,7 +182,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		EventType:       string(eventType),
 		Title:           title,
 		TitleZh:         titleZh,
+		Description:     description,
 		Link:            link,
+		Environment:     environment,
 		MentionEndUsers: mentionEndUsers,
 		Project: &webhook.Project{
 			Name:  common.FormatProject(e.Project.ResourceID),
@@ -182,7 +202,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	// Set issue information if available
 	if issue != nil {
 		creatorName := issue.Title // Fallback
-		creatorAccount, err := m.store.GetAccountByEmail(ctx, actor.Email)
+		creatorAccount, err := m.store.GetAccountByEmail(ctx, issue.CreatorEmail)
 		if err != nil {
 			slog.Warn("failed to get creator user for webhook context",
 				slog.String("issue_title", issue.Title),
@@ -198,7 +218,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			Description: issue.Description,
 			Creator: webhook.Creator{
 				Name:  creatorName,
-				Email: actor.Email,
+				Email: issue.CreatorEmail,
 			},
 		}
 	}
