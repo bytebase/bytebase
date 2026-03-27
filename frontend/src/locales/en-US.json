@@ -1848,6 +1848,10 @@
           "title": "Issue sent back",
           "label": "When issue is sent back by an approver"
         },
+        "issue-approved": {
+          "title": "Issue approved",
+          "label": "Notify when all approval steps are completed"
+        },
         "pipeline-failed": {
           "title": "Pipeline failed",
           "label": "When pipeline tasks fail"
