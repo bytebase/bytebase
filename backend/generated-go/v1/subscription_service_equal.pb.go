@@ -29,6 +29,245 @@ func (x *UpdateSubscriptionRequest) Equal(y *UpdateSubscriptionRequest) bool {
 	return true
 }
 
+func (x *CreatePurchaseRequest) Equal(y *CreatePurchaseRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Plan != y.Plan {
+		return false
+	}
+	if x.Interval != y.Interval {
+		return false
+	}
+	if x.Seats != y.Seats {
+		return false
+	}
+	return true
+}
+
+func (x *CreatePurchaseResponse) Equal(y *CreatePurchaseResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.PaymentUrl != y.PaymentUrl {
+		return false
+	}
+	return true
+}
+
+func (x *UpdatePurchaseRequest) Equal(y *UpdatePurchaseRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Plan != y.Plan {
+		return false
+	}
+	if x.Interval != y.Interval {
+		return false
+	}
+	if x.Seats != y.Seats {
+		return false
+	}
+	if x.Etag != y.Etag {
+		return false
+	}
+	return true
+}
+
+func (x *UpdatePurchaseResponse) Equal(y *UpdatePurchaseResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.PaymentUrl != y.PaymentUrl {
+		return false
+	}
+	return true
+}
+
+func (x *CancelPurchaseRequest) Equal(y *CancelPurchaseRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *CancelPurchaseResponse) Equal(y *CancelPurchaseResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *GetPaymentInfoRequest) Equal(y *GetPaymentInfoRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *PaymentInfo) Equal(y *PaymentInfo) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TotalPrice != y.TotalPrice {
+		return false
+	}
+	if x.Currency != y.Currency {
+		return false
+	}
+	if x.PeriodStart != y.PeriodStart {
+		return false
+	}
+	if x.PeriodEnd != y.PeriodEnd {
+		return false
+	}
+	if x.InvoiceUrl != y.InvoiceUrl {
+		return false
+	}
+	return true
+}
+
+func (x *PurchasePlan) Equal(y *PurchasePlan) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.SelfServicePurchase != y.SelfServicePurchase {
+		return false
+	}
+	if len(x.Additionals) != len(y.Additionals) {
+		return false
+	}
+	for i := 0; i < len(x.Additionals); i++ {
+		if !x.Additionals[i].Equal(y.Additionals[i]) {
+			return false
+		}
+	}
+	if len(x.BillingMethods) != len(y.BillingMethods) {
+		return false
+	}
+	for i := 0; i < len(x.BillingMethods); i++ {
+		if !x.BillingMethods[i].Equal(y.BillingMethods[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *PurchasePlanAdditional) Equal(y *PurchasePlanAdditional) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.UnitPrice != y.UnitPrice {
+		return false
+	}
+	if x.FreeCount != y.FreeCount {
+		return false
+	}
+	if x.MinimumCount != y.MinimumCount {
+		return false
+	}
+	if x.MaximumCount != y.MaximumCount {
+		return false
+	}
+	return true
+}
+
+func (x *PurchaseBillingMethod) Equal(y *PurchaseBillingMethod) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Interval != y.Interval {
+		return false
+	}
+	if !x.Discount.Equal(y.Discount) {
+		return false
+	}
+	return true
+}
+
+func (x *PurchaseDiscount) Equal(y *PurchaseDiscount) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Description != y.Description {
+		return false
+	}
+	if x.PromotionCode != y.PromotionCode {
+		return false
+	}
+	return true
+}
+
+func (x *ListPurchasePlansRequest) Equal(y *ListPurchasePlansRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *ListPurchasePlansResponse) Equal(y *ListPurchasePlansResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Plans) != len(y.Plans) {
+		return false
+	}
+	for i := 0; i < len(x.Plans); i++ {
+		if !x.Plans[i].Equal(y.Plans[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *Subscription) Equal(y *Subscription) bool {
 	if x == y {
 		return true

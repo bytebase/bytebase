@@ -17,9 +17,11 @@ import (
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/api/mcp"
 	"github.com/bytebase/bytebase/backend/api/oauth2"
+	stripeapi "github.com/bytebase/bytebase/backend/api/stripe"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	stripeplugin "github.com/bytebase/bytebase/backend/plugin/stripe"
 )
 
 func configureEchoRouters(
@@ -28,6 +30,7 @@ func configureEchoRouters(
 	directorySyncServer *directorysync.Service,
 	oauth2Service *oauth2.Service,
 	mcpServer *mcp.Server,
+	stripeWebhookHandler *stripeapi.WebhookHandler,
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
@@ -79,6 +82,13 @@ func configureEchoRouters(
 	hookGroup := e.Group(webhookAPIPrefix)
 	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
+
+	// Stripe (SaaS only).
+	if profile.SaaS && profile.StripeAPIKey != "" {
+		stripeplugin.Init(profile.StripeAPIKey)
+		stripeGroup := hookGroup.Group("/stripe")
+		stripeWebhookHandler.RegisterRoutes(stripeGroup)
+	}
 
 	// OAuth2 server.
 	oauth2Service.RegisterRoutes(e)

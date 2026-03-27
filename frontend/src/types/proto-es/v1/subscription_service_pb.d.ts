@@ -48,6 +48,335 @@ export declare type UpdateSubscriptionRequest = Message<"bytebase.v1.UpdateSubsc
 export declare const UpdateSubscriptionRequestSchema: GenMessage<UpdateSubscriptionRequest>;
 
 /**
+ * @generated from message bytebase.v1.CreatePurchaseRequest
+ */
+export declare type CreatePurchaseRequest = Message<"bytebase.v1.CreatePurchaseRequest"> & {
+  /**
+   * @generated from field: bytebase.v1.PlanType plan = 1;
+   */
+  plan: PlanType;
+
+  /**
+   * @generated from field: bytebase.v1.BillingInterval interval = 2;
+   */
+  interval: BillingInterval;
+
+  /**
+   * @generated from field: int32 seats = 3;
+   */
+  seats: number;
+};
+
+/**
+ * Describes the message bytebase.v1.CreatePurchaseRequest.
+ * Use `create(CreatePurchaseRequestSchema)` to create a new message.
+ */
+export declare const CreatePurchaseRequestSchema: GenMessage<CreatePurchaseRequest>;
+
+/**
+ * @generated from message bytebase.v1.CreatePurchaseResponse
+ */
+export declare type CreatePurchaseResponse = Message<"bytebase.v1.CreatePurchaseResponse"> & {
+  /**
+   * Stripe Checkout URL for the user to complete payment.
+   *
+   * @generated from field: string payment_url = 1;
+   */
+  paymentUrl: string;
+};
+
+/**
+ * Describes the message bytebase.v1.CreatePurchaseResponse.
+ * Use `create(CreatePurchaseResponseSchema)` to create a new message.
+ */
+export declare const CreatePurchaseResponseSchema: GenMessage<CreatePurchaseResponse>;
+
+/**
+ * @generated from message bytebase.v1.UpdatePurchaseRequest
+ */
+export declare type UpdatePurchaseRequest = Message<"bytebase.v1.UpdatePurchaseRequest"> & {
+  /**
+   * @generated from field: bytebase.v1.PlanType plan = 1;
+   */
+  plan: PlanType;
+
+  /**
+   * @generated from field: bytebase.v1.BillingInterval interval = 2;
+   */
+  interval: BillingInterval;
+
+  /**
+   * @generated from field: int32 seats = 3;
+   */
+  seats: number;
+
+  /**
+   * @generated from field: string etag = 4;
+   */
+  etag: string;
+};
+
+/**
+ * Describes the message bytebase.v1.UpdatePurchaseRequest.
+ * Use `create(UpdatePurchaseRequestSchema)` to create a new message.
+ */
+export declare const UpdatePurchaseRequestSchema: GenMessage<UpdatePurchaseRequest>;
+
+/**
+ * @generated from message bytebase.v1.UpdatePurchaseResponse
+ */
+export declare type UpdatePurchaseResponse = Message<"bytebase.v1.UpdatePurchaseResponse"> & {
+  /**
+   * If set, redirect to this Stripe Checkout URL.
+   * If empty, the update was applied directly using the existing payment method.
+   *
+   * @generated from field: string payment_url = 1;
+   */
+  paymentUrl: string;
+};
+
+/**
+ * Describes the message bytebase.v1.UpdatePurchaseResponse.
+ * Use `create(UpdatePurchaseResponseSchema)` to create a new message.
+ */
+export declare const UpdatePurchaseResponseSchema: GenMessage<UpdatePurchaseResponse>;
+
+/**
+ * @generated from message bytebase.v1.CancelPurchaseRequest
+ */
+export declare type CancelPurchaseRequest = Message<"bytebase.v1.CancelPurchaseRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.CancelPurchaseRequest.
+ * Use `create(CancelPurchaseRequestSchema)` to create a new message.
+ */
+export declare const CancelPurchaseRequestSchema: GenMessage<CancelPurchaseRequest>;
+
+/**
+ * @generated from message bytebase.v1.CancelPurchaseResponse
+ */
+export declare type CancelPurchaseResponse = Message<"bytebase.v1.CancelPurchaseResponse"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.CancelPurchaseResponse.
+ * Use `create(CancelPurchaseResponseSchema)` to create a new message.
+ */
+export declare const CancelPurchaseResponseSchema: GenMessage<CancelPurchaseResponse>;
+
+/**
+ * @generated from message bytebase.v1.GetPaymentInfoRequest
+ */
+export declare type GetPaymentInfoRequest = Message<"bytebase.v1.GetPaymentInfoRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.GetPaymentInfoRequest.
+ * Use `create(GetPaymentInfoRequestSchema)` to create a new message.
+ */
+export declare const GetPaymentInfoRequestSchema: GenMessage<GetPaymentInfoRequest>;
+
+/**
+ * @generated from message bytebase.v1.PaymentInfo
+ */
+export declare type PaymentInfo = Message<"bytebase.v1.PaymentInfo"> & {
+  /**
+   * @generated from field: string total_price = 1;
+   */
+  totalPrice: string;
+
+  /**
+   * @generated from field: string currency = 2;
+   */
+  currency: string;
+
+  /**
+   * @generated from field: string period_start = 3;
+   */
+  periodStart: string;
+
+  /**
+   * @generated from field: string period_end = 4;
+   */
+  periodEnd: string;
+
+  /**
+   * Stripe Billing Portal URL for invoice management.
+   *
+   * @generated from field: string invoice_url = 5;
+   */
+  invoiceUrl: string;
+};
+
+/**
+ * Describes the message bytebase.v1.PaymentInfo.
+ * Use `create(PaymentInfoSchema)` to create a new message.
+ */
+export declare const PaymentInfoSchema: GenMessage<PaymentInfo>;
+
+/**
+ * @generated from message bytebase.v1.PurchasePlan
+ */
+export declare type PurchasePlan = Message<"bytebase.v1.PurchasePlan"> & {
+  /**
+   * @generated from field: bytebase.v1.PlanType type = 1;
+   */
+  type: PlanType;
+
+  /**
+   * @generated from field: bool self_service_purchase = 2;
+   */
+  selfServicePurchase: boolean;
+
+  /**
+   * @generated from field: repeated bytebase.v1.PurchasePlanAdditional additionals = 3;
+   */
+  additionals: PurchasePlanAdditional[];
+
+  /**
+   * @generated from field: repeated bytebase.v1.PurchaseBillingMethod billing_methods = 4;
+   */
+  billingMethods: PurchaseBillingMethod[];
+};
+
+/**
+ * Describes the message bytebase.v1.PurchasePlan.
+ * Use `create(PurchasePlanSchema)` to create a new message.
+ */
+export declare const PurchasePlanSchema: GenMessage<PurchasePlan>;
+
+/**
+ * @generated from message bytebase.v1.PurchasePlanAdditional
+ */
+export declare type PurchasePlanAdditional = Message<"bytebase.v1.PurchasePlanAdditional"> & {
+  /**
+   * @generated from field: bytebase.v1.PurchasePlanAdditional.Type type = 1;
+   */
+  type: PurchasePlanAdditional_Type;
+
+  /**
+   * Price in USD cents per month.
+   *
+   * @generated from field: int32 unit_price = 2;
+   */
+  unitPrice: number;
+
+  /**
+   * @generated from field: int32 free_count = 3;
+   */
+  freeCount: number;
+
+  /**
+   * @generated from field: int32 minimum_count = 4;
+   */
+  minimumCount: number;
+
+  /**
+   * -1 means unlimited.
+   *
+   * @generated from field: int32 maximum_count = 5;
+   */
+  maximumCount: number;
+};
+
+/**
+ * Describes the message bytebase.v1.PurchasePlanAdditional.
+ * Use `create(PurchasePlanAdditionalSchema)` to create a new message.
+ */
+export declare const PurchasePlanAdditionalSchema: GenMessage<PurchasePlanAdditional>;
+
+/**
+ * @generated from enum bytebase.v1.PurchasePlanAdditional.Type
+ */
+export enum PurchasePlanAdditional_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: USER = 1;
+   */
+  USER = 1,
+}
+
+/**
+ * Describes the enum bytebase.v1.PurchasePlanAdditional.Type.
+ */
+export declare const PurchasePlanAdditional_TypeSchema: GenEnum<PurchasePlanAdditional_Type>;
+
+/**
+ * @generated from message bytebase.v1.PurchaseBillingMethod
+ */
+export declare type PurchaseBillingMethod = Message<"bytebase.v1.PurchaseBillingMethod"> & {
+  /**
+   * @generated from field: bytebase.v1.BillingInterval interval = 1;
+   */
+  interval: BillingInterval;
+
+  /**
+   * @generated from field: bytebase.v1.PurchaseDiscount discount = 2;
+   */
+  discount?: PurchaseDiscount;
+};
+
+/**
+ * Describes the message bytebase.v1.PurchaseBillingMethod.
+ * Use `create(PurchaseBillingMethodSchema)` to create a new message.
+ */
+export declare const PurchaseBillingMethodSchema: GenMessage<PurchaseBillingMethod>;
+
+/**
+ * @generated from message bytebase.v1.PurchaseDiscount
+ */
+export declare type PurchaseDiscount = Message<"bytebase.v1.PurchaseDiscount"> & {
+  /**
+   * @generated from field: string description = 1;
+   */
+  description: string;
+
+  /**
+   * @generated from field: string promotion_code = 2;
+   */
+  promotionCode: string;
+};
+
+/**
+ * Describes the message bytebase.v1.PurchaseDiscount.
+ * Use `create(PurchaseDiscountSchema)` to create a new message.
+ */
+export declare const PurchaseDiscountSchema: GenMessage<PurchaseDiscount>;
+
+/**
+ * @generated from message bytebase.v1.ListPurchasePlansRequest
+ */
+export declare type ListPurchasePlansRequest = Message<"bytebase.v1.ListPurchasePlansRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.ListPurchasePlansRequest.
+ * Use `create(ListPurchasePlansRequestSchema)` to create a new message.
+ */
+export declare const ListPurchasePlansRequestSchema: GenMessage<ListPurchasePlansRequest>;
+
+/**
+ * @generated from message bytebase.v1.ListPurchasePlansResponse
+ */
+export declare type ListPurchasePlansResponse = Message<"bytebase.v1.ListPurchasePlansResponse"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.PurchasePlan plans = 1;
+   */
+  plans: PurchasePlan[];
+};
+
+/**
+ * Describes the message bytebase.v1.ListPurchasePlansResponse.
+ * Use `create(ListPurchasePlansResponseSchema)` to create a new message.
+ */
+export declare const ListPurchasePlansResponseSchema: GenMessage<ListPurchasePlansResponse>;
+
+/**
  * @generated from message bytebase.v1.Subscription
  */
 export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
@@ -155,6 +484,31 @@ export declare type PlanLimitConfig = Message<"bytebase.v1.PlanLimitConfig"> & {
  * Use `create(PlanLimitConfigSchema)` to create a new message.
  */
 export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
+
+/**
+ * @generated from enum bytebase.v1.BillingInterval
+ */
+export enum BillingInterval {
+  /**
+   * @generated from enum value: BILLING_INTERVAL_UNSPECIFIED = 0;
+   */
+  BILLING_INTERVAL_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MONTH = 1;
+   */
+  MONTH = 1,
+
+  /**
+   * @generated from enum value: YEAR = 2;
+   */
+  YEAR = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.BillingInterval.
+ */
+export declare const BillingIntervalSchema: GenEnum<BillingInterval>;
 
 /**
  * @generated from enum bytebase.v1.PlanType
@@ -594,7 +948,7 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
-   * Updates the enterprise license subscription.
+   * Updates the enterprise license subscription (self-hosted only).
    * Permissions required: bb.settings.set
    *
    * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription
@@ -603,6 +957,58 @@ export declare const SubscriptionService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSubscriptionRequestSchema;
     output: typeof SubscriptionSchema;
+  },
+  /**
+   * CreatePurchase creates a new subscription purchase (SaaS only).
+   * Returns a Stripe Checkout URL for the user to complete payment.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.CreatePurchase
+   */
+  createPurchase: {
+    methodKind: "unary";
+    input: typeof CreatePurchaseRequestSchema;
+    output: typeof CreatePurchaseResponseSchema;
+  },
+  /**
+   * UpdatePurchase updates an existing subscription (SaaS only).
+   * May return a Stripe Checkout URL if payment method change is needed.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.UpdatePurchase
+   */
+  updatePurchase: {
+    methodKind: "unary";
+    input: typeof UpdatePurchaseRequestSchema;
+    output: typeof UpdatePurchaseResponseSchema;
+  },
+  /**
+   * CancelPurchase cancels an active subscription (SaaS only).
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.CancelPurchase
+   */
+  cancelPurchase: {
+    methodKind: "unary";
+    input: typeof CancelPurchaseRequestSchema;
+    output: typeof CancelPurchaseResponseSchema;
+  },
+  /**
+   * GetPaymentInfo returns payment details for the current subscription (SaaS only).
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.GetPaymentInfo
+   */
+  getPaymentInfo: {
+    methodKind: "unary";
+    input: typeof GetPaymentInfoRequestSchema;
+    output: typeof PaymentInfoSchema;
+  },
+  /**
+   * ListPurchasePlans returns available plans for self-service purchase.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.ListPurchasePlans
+   */
+  listPurchasePlans: {
+    methodKind: "unary";
+    input: typeof ListPurchasePlansRequestSchema;
+    output: typeof ListPurchasePlansResponseSchema;
   },
 }>;
 

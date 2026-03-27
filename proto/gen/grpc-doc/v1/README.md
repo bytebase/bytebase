@@ -668,14 +668,30 @@
     - [SheetService](#bytebase-v1-SheetService)
   
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
+    - [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest)
+    - [CancelPurchaseResponse](#bytebase-v1-CancelPurchaseResponse)
+    - [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest)
+    - [CreatePurchaseResponse](#bytebase-v1-CreatePurchaseResponse)
+    - [GetPaymentInfoRequest](#bytebase-v1-GetPaymentInfoRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
+    - [ListPurchasePlansRequest](#bytebase-v1-ListPurchasePlansRequest)
+    - [ListPurchasePlansResponse](#bytebase-v1-ListPurchasePlansResponse)
+    - [PaymentInfo](#bytebase-v1-PaymentInfo)
     - [PlanConfig](#bytebase-v1-PlanConfig)
     - [PlanLimitConfig](#bytebase-v1-PlanLimitConfig)
+    - [PurchaseBillingMethod](#bytebase-v1-PurchaseBillingMethod)
+    - [PurchaseDiscount](#bytebase-v1-PurchaseDiscount)
+    - [PurchasePlan](#bytebase-v1-PurchasePlan)
+    - [PurchasePlanAdditional](#bytebase-v1-PurchasePlanAdditional)
     - [Subscription](#bytebase-v1-Subscription)
+    - [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest)
+    - [UpdatePurchaseResponse](#bytebase-v1-UpdatePurchaseResponse)
     - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
   
+    - [BillingInterval](#bytebase-v1-BillingInterval)
     - [PlanFeature](#bytebase-v1-PlanFeature)
     - [PlanType](#bytebase-v1-PlanType)
+    - [PurchasePlanAdditional.Type](#bytebase-v1-PurchasePlanAdditional-Type)
   
     - [SubscriptionService](#bytebase-v1-SubscriptionService)
   
@@ -10805,10 +10821,116 @@ SheetService manages SQL scripts and saved queries.
 
 
 
+<a name="bytebase-v1-CancelPurchaseRequest"></a>
+
+### CancelPurchaseRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-CancelPurchaseResponse"></a>
+
+### CancelPurchaseResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-CreatePurchaseRequest"></a>
+
+### CreatePurchaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| interval | [BillingInterval](#bytebase-v1-BillingInterval) |  |  |
+| seats | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CreatePurchaseResponse"></a>
+
+### CreatePurchaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payment_url | [string](#string) |  | Stripe Checkout URL for the user to complete payment. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPaymentInfoRequest"></a>
+
+### GetPaymentInfoRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-GetSubscriptionRequest"></a>
 
 ### GetSubscriptionRequest
 
+
+
+
+
+
+
+<a name="bytebase-v1-ListPurchasePlansRequest"></a>
+
+### ListPurchasePlansRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-ListPurchasePlansResponse"></a>
+
+### ListPurchasePlansResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [PurchasePlan](#bytebase-v1-PurchasePlan) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PaymentInfo"></a>
+
+### PaymentInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_price | [string](#string) |  |  |
+| currency | [string](#string) |  |  |
+| period_start | [string](#string) |  |  |
+| period_end | [string](#string) |  |  |
+| invoice_url | [string](#string) |  | Stripe Billing Portal URL for invoice management. |
 
 
 
@@ -10849,6 +10971,75 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
+<a name="bytebase-v1-PurchaseBillingMethod"></a>
+
+### PurchaseBillingMethod
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| interval | [BillingInterval](#bytebase-v1-BillingInterval) |  |  |
+| discount | [PurchaseDiscount](#bytebase-v1-PurchaseDiscount) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PurchaseDiscount"></a>
+
+### PurchaseDiscount
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| description | [string](#string) |  |  |
+| promotion_code | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PurchasePlan"></a>
+
+### PurchasePlan
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [PlanType](#bytebase-v1-PlanType) |  |  |
+| self_service_purchase | [bool](#bool) |  |  |
+| additionals | [PurchasePlanAdditional](#bytebase-v1-PurchasePlanAdditional) | repeated |  |
+| billing_methods | [PurchaseBillingMethod](#bytebase-v1-PurchaseBillingMethod) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PurchasePlanAdditional"></a>
+
+### PurchasePlanAdditional
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [PurchasePlanAdditional.Type](#bytebase-v1-PurchasePlanAdditional-Type) |  |  |
+| unit_price | [int32](#int32) |  | Price in USD cents per month. |
+| free_count | [int32](#int32) |  |  |
+| minimum_count | [int32](#int32) |  |  |
+| maximum_count | [int32](#int32) |  | -1 means unlimited. |
+
+
+
+
+
+
 <a name="bytebase-v1-Subscription"></a>
 
 ### Subscription
@@ -10871,6 +11062,39 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
+<a name="bytebase-v1-UpdatePurchaseRequest"></a>
+
+### UpdatePurchaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
+| interval | [BillingInterval](#bytebase-v1-BillingInterval) |  |  |
+| seats | [int32](#int32) |  |  |
+| etag | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePurchaseResponse"></a>
+
+### UpdatePurchaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payment_url | [string](#string) |  | If set, redirect to this Stripe Checkout URL. If empty, the update was applied directly using the existing payment method. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateSubscriptionRequest"></a>
 
 ### UpdateSubscriptionRequest
@@ -10887,6 +11111,19 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
  
+
+
+<a name="bytebase-v1-BillingInterval"></a>
+
+### BillingInterval
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BILLING_INTERVAL_UNSPECIFIED | 0 |  |
+| MONTH | 1 |  |
+| YEAR | 2 |  |
+
 
 
 <a name="bytebase-v1-PlanFeature"></a>
@@ -10984,6 +11221,18 @@ PlanFeature represents the available features in Bytebase
 | ENTERPRISE | 3 | Enterprise plan with advanced features and dedicated support. |
 
 
+
+<a name="bytebase-v1-PurchasePlanAdditional-Type"></a>
+
+### PurchasePlanAdditional.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| USER | 1 |  |
+
+
  
 
  
@@ -10997,7 +11246,12 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. Permissions required: None |
-| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | Updates the enterprise license subscription. Permissions required: bb.settings.set |
+| UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | Updates the enterprise license subscription (self-hosted only). Permissions required: bb.settings.set |
+| CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [CreatePurchaseResponse](#bytebase-v1-CreatePurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
+| UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [UpdatePurchaseResponse](#bytebase-v1-UpdatePurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |
+| CancelPurchase | [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest) | [CancelPurchaseResponse](#bytebase-v1-CancelPurchaseResponse) | CancelPurchase cancels an active subscription (SaaS only). |
+| GetPaymentInfo | [GetPaymentInfoRequest](#bytebase-v1-GetPaymentInfoRequest) | [PaymentInfo](#bytebase-v1-PaymentInfo) | GetPaymentInfo returns payment details for the current subscription (SaaS only). |
+| ListPurchasePlans | [ListPurchasePlansRequest](#bytebase-v1-ListPurchasePlansRequest) | [ListPurchasePlansResponse](#bytebase-v1-ListPurchasePlansResponse) | ListPurchasePlans returns available plans for self-service purchase. |
 
  
 

@@ -14117,7 +14117,7 @@ paths:
         - SubscriptionService
       summary: UpdateSubscription
       description: |-
-        Updates the enterprise license subscription.
+        Updates the enterprise license subscription (self-hosted only).
          Permissions required: bb.settings.set
       operationId: SubscriptionService_UpdateSubscription
       parameters:
@@ -14145,6 +14145,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Subscription'
+  /v1/subscription/paymentInfo:
+    get:
+      tags:
+        - SubscriptionService
+      summary: GetPaymentInfo
+      description: GetPaymentInfo returns payment details for the current subscription (SaaS only).
+      operationId: SubscriptionService_GetPaymentInfo
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.PaymentInfo'
+  /v1/subscription/plans:
+    get:
+      tags:
+        - SubscriptionService
+      summary: ListPurchasePlans
+      description: ListPurchasePlans returns available plans for self-service purchase.
+      operationId: SubscriptionService_ListPurchasePlans
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListPurchasePlansResponse'
+  /v1/subscription:cancelPurchase:
+    post:
+      tags:
+        - SubscriptionService
+      summary: CancelPurchase
+      description: CancelPurchase cancels an active subscription (SaaS only).
+      operationId: SubscriptionService_CancelPurchase
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CancelPurchaseRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.CancelPurchaseResponse'
+  /v1/subscription:purchase:
+    post:
+      tags:
+        - SubscriptionService
+      summary: CreatePurchase
+      description: |-
+        CreatePurchase creates a new subscription purchase (SaaS only).
+         Returns a Stripe Checkout URL for the user to complete payment.
+      operationId: SubscriptionService_CreatePurchase
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.CreatePurchaseRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.CreatePurchaseResponse'
+  /v1/subscription:updatePurchase:
+    post:
+      tags:
+        - SubscriptionService
+      summary: UpdatePurchase
+      description: |-
+        UpdatePurchase updates an existing subscription (SaaS only).
+         May return a Stripe Checkout URL if payment method change is needed.
+      operationId: SubscriptionService_UpdatePurchase
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.UpdatePurchaseRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.UpdatePurchaseResponse'
   /v1/users:
     get:
       tags:
@@ -17671,6 +17763,13 @@ components:
           title: worksheet_organizers
       title: BatchUpdateWorksheetOrganizerResponse
       additionalProperties: false
+    bytebase.v1.BillingInterval:
+      type: string
+      title: BillingInterval
+      enum:
+        - BILLING_INTERVAL_UNSPECIFIED
+        - MONTH
+        - YEAR
     bytebase.v1.Binding:
       type: object
       properties:
@@ -17794,6 +17893,14 @@ components:
     bytebase.v1.CancelPlanCheckRunResponse:
       type: object
       title: CancelPlanCheckRunResponse
+      additionalProperties: false
+    bytebase.v1.CancelPurchaseRequest:
+      type: object
+      title: CancelPurchaseRequest
+      additionalProperties: false
+    bytebase.v1.CancelPurchaseResponse:
+      type: object
+      title: CancelPurchaseResponse
       additionalProperties: false
     bytebase.v1.Changelog:
       type: object
@@ -18316,6 +18423,30 @@ components:
       title: CreateProjectRequest
       required:
         - project
+      additionalProperties: false
+    bytebase.v1.CreatePurchaseRequest:
+      type: object
+      properties:
+        plan:
+          title: plan
+          $ref: '#/components/schemas/bytebase.v1.PlanType'
+        interval:
+          title: interval
+          $ref: '#/components/schemas/bytebase.v1.BillingInterval'
+        seats:
+          type: integer
+          title: seats
+          format: int32
+      title: CreatePurchaseRequest
+      additionalProperties: false
+    bytebase.v1.CreatePurchaseResponse:
+      type: object
+      properties:
+        paymentUrl:
+          type: string
+          title: payment_url
+          description: Stripe Checkout URL for the user to complete payment.
+      title: CreatePurchaseResponse
       additionalProperties: false
     bytebase.v1.CreateReleaseRequest:
       type: object
@@ -20370,6 +20501,10 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.GetPaymentInfoRequest:
+      type: object
+      title: GetPaymentInfoRequest
+      additionalProperties: false
     bytebase.v1.GetPlanCheckRunRequest:
       type: object
       properties:
@@ -22382,6 +22517,20 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListProjectsResponse
       additionalProperties: false
+    bytebase.v1.ListPurchasePlansRequest:
+      type: object
+      title: ListPurchasePlansRequest
+      additionalProperties: false
+    bytebase.v1.ListPurchasePlansResponse:
+      type: object
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.PurchasePlan'
+          title: plans
+      title: ListPurchasePlansResponse
+      additionalProperties: false
     bytebase.v1.ListReleaseCategoriesRequest:
       type: object
       properties:
@@ -23350,6 +23499,27 @@ components:
       title: PackageMetadata
       additionalProperties: false
       description: PackageMetadata is the metadata for packages.
+    bytebase.v1.PaymentInfo:
+      type: object
+      properties:
+        totalPrice:
+          type: string
+          title: total_price
+        currency:
+          type: string
+          title: currency
+        periodStart:
+          type: string
+          title: period_start
+        periodEnd:
+          type: string
+          title: period_end
+        invoiceUrl:
+          type: string
+          title: invoice_url
+          description: Stripe Billing Portal URL for invoice management.
+      title: PaymentInfo
+      additionalProperties: false
     bytebase.v1.PermissionDeniedDetail:
       type: object
       properties:
@@ -24161,6 +24331,81 @@ components:
           title: value
       title: LabelsEntry
       additionalProperties: false
+    bytebase.v1.PurchaseBillingMethod:
+      type: object
+      properties:
+        interval:
+          title: interval
+          $ref: '#/components/schemas/bytebase.v1.BillingInterval'
+        discount:
+          title: discount
+          $ref: '#/components/schemas/bytebase.v1.PurchaseDiscount'
+      title: PurchaseBillingMethod
+      additionalProperties: false
+    bytebase.v1.PurchaseDiscount:
+      type: object
+      properties:
+        description:
+          type: string
+          title: description
+        promotionCode:
+          type: string
+          title: promotion_code
+      title: PurchaseDiscount
+      additionalProperties: false
+    bytebase.v1.PurchasePlan:
+      type: object
+      properties:
+        type:
+          title: type
+          $ref: '#/components/schemas/bytebase.v1.PlanType'
+        selfServicePurchase:
+          type: boolean
+          title: self_service_purchase
+        additionals:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.PurchasePlanAdditional'
+          title: additionals
+        billingMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.PurchaseBillingMethod'
+          title: billing_methods
+      title: PurchasePlan
+      additionalProperties: false
+    bytebase.v1.PurchasePlanAdditional:
+      type: object
+      properties:
+        type:
+          title: type
+          $ref: '#/components/schemas/bytebase.v1.PurchasePlanAdditional.Type'
+        unitPrice:
+          type: integer
+          title: unit_price
+          format: int32
+          description: Price in USD cents per month.
+        freeCount:
+          type: integer
+          title: free_count
+          format: int32
+        minimumCount:
+          type: integer
+          title: minimum_count
+          format: int32
+        maximumCount:
+          type: integer
+          title: maximum_count
+          format: int32
+          description: -1 means unlimited.
+      title: PurchasePlanAdditional
+      additionalProperties: false
+    bytebase.v1.PurchasePlanAdditional.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - USER
     bytebase.v1.QueryDataPolicy:
       type: object
       properties:
@@ -28226,6 +28471,35 @@ components:
       required:
         - project
       additionalProperties: false
+    bytebase.v1.UpdatePurchaseRequest:
+      type: object
+      properties:
+        plan:
+          title: plan
+          $ref: '#/components/schemas/bytebase.v1.PlanType'
+        interval:
+          title: interval
+          $ref: '#/components/schemas/bytebase.v1.BillingInterval'
+        seats:
+          type: integer
+          title: seats
+          format: int32
+        etag:
+          type: string
+          title: etag
+      title: UpdatePurchaseRequest
+      additionalProperties: false
+    bytebase.v1.UpdatePurchaseResponse:
+      type: object
+      properties:
+        paymentUrl:
+          type: string
+          title: payment_url
+          description: |-
+            If set, redirect to this Stripe Checkout URL.
+             If empty, the update was applied directly using the existing payment method.
+      title: UpdatePurchaseResponse
+      additionalProperties: false
     bytebase.v1.UpdateReleaseRequest:
       type: object
       properties:
@@ -30142,8 +30416,6 @@ components:
          documentation for additional information.
 security: []
 tags:
-  - name: SubscriptionService
-    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
   - name: IssueService
@@ -30198,6 +30470,8 @@ tags:
     description: ServiceAccountService manages service accounts for API integrations.
   - name: SheetService
     description: SheetService manages SQL scripts and saved queries.
+  - name: SubscriptionService
+    description: SubscriptionService manages enterprise subscriptions and licensing.
   - name: WorkloadIdentityService
     description: WorkloadIdentityService manages workload identities for external CI/CD integrations.
   - name: WorksheetService

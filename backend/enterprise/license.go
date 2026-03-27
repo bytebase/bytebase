@@ -24,6 +24,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -198,7 +199,13 @@ func (s *LicenseService) LoadSubscription(ctx context.Context, workspaceID strin
 			return sub, nil
 		}
 
-		subscription := s.loadSubscriptionFromDB(ctx, workspaceID)
+		var subscription *v1pb.Subscription
+		// TODO(ed): find if be able to unify this
+		if s.saas {
+			subscription = s.loadSubscriptionFromPurchase(ctx, workspaceID)
+		} else {
+			subscription = s.loadSubscriptionFromDB(ctx, workspaceID)
+		}
 
 		// Only cache non-free subscriptions. Free plan may be a transient failure
 		// (e.g. DB not ready during startup), and caching it would mask the real
@@ -250,6 +257,53 @@ func (s *LicenseService) loadSubscriptionFromDB(ctx context.Context, workspaceID
 	}
 
 	return subscription
+}
+
+// loadSubscriptionFromPurchase loads subscription from the subscription table (SaaS mode).
+func (s *LicenseService) loadSubscriptionFromPurchase(ctx context.Context, workspaceID string) *v1pb.Subscription {
+	sub, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
+	if err != nil {
+		slog.Debug("failed to get subscription from purchase table", log.BBError(err))
+		return defaultFreeSubscription
+	}
+	if sub == nil || sub.Payload == nil {
+		return defaultFreeSubscription
+	}
+
+	payload := sub.Payload
+	if payload.Status != storepb.SubscriptionPayload_ACTIVE {
+		return defaultFreeSubscription
+	}
+
+	subscription := &v1pb.Subscription{
+		Plan:            convertStorePlanToV1(payload.Plan),
+		Seats:           payload.Seat,
+		Instances:       payload.InstanceCount,
+		ActiveInstances: payload.InstanceCount,
+	}
+	if payload.ExpiresAt != nil {
+		subscription.ExpiresTime = payload.ExpiresAt
+	}
+
+	if isExpired(subscription) {
+		return &v1pb.Subscription{
+			Plan:        v1pb.PlanType_FREE,
+			ExpiresTime: subscription.ExpiresTime,
+		}
+	}
+
+	return subscription
+}
+
+func convertStorePlanToV1(plan storepb.SubscriptionPayload_Plan) v1pb.PlanType {
+	switch plan {
+	case storepb.SubscriptionPayload_TEAM:
+		return v1pb.PlanType_TEAM
+	case storepb.SubscriptionPayload_ENTERPRISE:
+		return v1pb.PlanType_ENTERPRISE
+	default:
+		return v1pb.PlanType_FREE
+	}
 }
 
 func isExpired(sub *v1pb.Subscription) bool {
@@ -360,6 +414,12 @@ func (s *LicenseService) StoreLicense(ctx context.Context, workspaceID string, l
 	s.cache.Remove(licenseCacheKey(workspaceID))
 
 	return nil
+}
+
+// InvalidateCache removes the cached subscription for a workspace,
+// forcing the next LoadSubscription call to reload from the database.
+func (s *LicenseService) InvalidateCache(workspaceID string) {
+	s.cache.Remove(licenseCacheKey(workspaceID))
 }
 
 // GetAuditLogRetentionDays returns the audit log retention period in days for the current plan.

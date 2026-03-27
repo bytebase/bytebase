@@ -111,6 +111,7 @@ const (
 	ServiceAccountsList                  Permission = "bb.serviceAccounts.list"
 	ServiceAccountsUndelete              Permission = "bb.serviceAccounts.undelete"
 	ServiceAccountsUpdate                Permission = "bb.serviceAccounts.update"
+	SubscriptionManage                   Permission = "bb.subscription.manage"
 	SettingsGet                          Permission = "bb.settings.get"
 	SettingsList                         Permission = "bb.settings.list"
 	SettingsSet                          Permission = "bb.settings.set"
