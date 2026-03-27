@@ -36,24 +36,37 @@ func loadCatalog(text string) (*catalog.Catalog, error) {
 	return c, nil
 }
 
-// pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL out.
-func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
-	from, err := loadCatalog(sourceSDL)
+// buildMigrationPlan loads two schema texts into catalogs, diffs them, and
+// returns the filtered migration plan. Returns nil if there are no changes.
+func buildMigrationPlan(sourceText, targetText string) (*catalog.MigrationPlan, error) {
+	from, err := loadCatalog(sourceText)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to load source schema")
+		return nil, errors.Wrap(err, "failed to load source schema")
 	}
-	to, err := loadCatalog(targetSDL)
+	to, err := loadCatalog(targetText)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to load target schema")
+		return nil, errors.Wrap(err, "failed to load target schema")
 	}
 	diff := catalog.Diff(from, to)
 	if diff.IsEmpty() {
-		return "", nil
+		return nil, nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
 	plan = plan.Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
 	})
+	return plan, nil
+}
+
+// pgDiffSDLMigration is the core migration function: two schema texts in, migration SQL out.
+func pgDiffSDLMigration(sourceSDL, targetSDL string) (string, error) {
+	plan, err := buildMigrationPlan(sourceSDL, targetSDL)
+	if err != nil {
+		return "", err
+	}
+	if plan == nil {
+		return "", nil
+	}
 	return plan.SQL(), nil
 }
 
@@ -63,22 +76,13 @@ func pgSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata)
 	if err != nil {
 		return nil, err
 	}
-	migrationSQL, err := pgDiffSDLMigration(sourceSDL, userSDLText)
+	plan, err := buildMigrationPlan(sourceSDL, userSDLText)
 	if err != nil {
 		return nil, err
 	}
-	if migrationSQL == "" {
+	if plan == nil {
 		return nil, nil
 	}
-
-	// Re-run to get the plan for advice generation.
-	from, _ := catalog.LoadSDL(strings.TrimSpace(sourceSDL))
-	to, _ := catalog.LoadSDL(strings.TrimSpace(userSDLText))
-	diff := catalog.Diff(from, to)
-	plan := catalog.GenerateMigration(from, to, diff)
-	plan = plan.Filter(func(op catalog.MigrationOp) bool {
-		return op.SchemaName != "bbdataarchive"
-	})
 
 	var advices []*storepb.Advice
 	for _, op := range plan.Ops {
