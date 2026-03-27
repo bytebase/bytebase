@@ -535,6 +535,7 @@ message Webhook {
   // - ISSUE_CREATED
   // - ISSUE_APPROVAL_REQUESTED
   // - ISSUE_SENT_BACK
+  // - ISSUE_APPROVED
   // - PIPELINE_FAILED
   // - PIPELINE_COMPLETED
   repeated Activity.Type notification_types = 5 [(google.api.field_behavior) = UNORDERED_LIST];
@@ -556,5 +557,7 @@ message Activity {
     PIPELINE_FAILED = 13;
     // PIPELINE_COMPLETED represents a pipeline completion event.
     PIPELINE_COMPLETED = 14;
+    // ISSUE_APPROVED represents an issue being fully approved.
+    ISSUE_APPROVED = 15;
   }
 }
