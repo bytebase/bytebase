@@ -165,6 +165,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const getOrFetchDatabaseMetadata = async (params: {
     database: string;
     skipCache?: boolean;
+    cacheError?: boolean;
     silent?: boolean;
     limit?: number; // limit the number of returned tables per schema
     filter?: string; // used to filter schema and table, e.g. schema == "public" && table.matches("user*")
@@ -173,6 +174,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       limit = 0,
       filter = "",
       database,
+      cacheError = false,
       silent = false,
       skipCache = false,
     } = params;
@@ -205,13 +207,15 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         // We won't create a duplicated request.
         return cachedRequest;
       }
-      const cachedError = getRequestErrorCache({
-        name: database,
-        filter,
-        limit,
-      });
-      if (cachedError) {
-        return Promise.reject(cachedError);
+      if (cacheError) {
+        const cachedError = getRequestErrorCache({
+          name: database,
+          filter,
+          limit,
+        });
+        if (cachedError) {
+          return Promise.reject(cachedError);
+        }
       }
     } else {
       clearRequestErrorCache({
@@ -245,12 +249,14 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         return setCache({ metadata: res, filter, limit });
       })
       .catch((error) => {
-        setRequestErrorCache({
-          name: database,
-          filter,
-          limit,
-          error,
-        });
+        if (cacheError) {
+          setRequestErrorCache({
+            name: database,
+            filter,
+            limit,
+            error,
+          });
+        }
         throw error;
       });
     return setRequestCache({ name: database, filter, limit, promise });
