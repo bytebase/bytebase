@@ -56,7 +56,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.subscription"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/views/SettingWorkspaceSubscription.vue"),
+        component: () => import("@/react/ReactBridge.vue"),
         props: true,
       },
     ],
