@@ -1,11 +1,17 @@
 <template>
   <div ref="container" />
+  <WeChatQRModal
+    v-if="showQRCodeModal"
+    :title="$t('subscription.request-with-qr')"
+    @close="showQRCodeModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import {
   getWorkspaceId,
   pushNotification,
@@ -13,6 +19,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -28,6 +35,16 @@ const container = ref<HTMLElement>();
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
+
+const showQRCodeModal = ref(false);
+
+const handleRequireEnterprise = () => {
+  if (locale.value === "zh-CN") {
+    showQRCodeModal.value = true;
+  } else {
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+  }
+};
 
 function getPlanType(): "FREE" | "TEAM" | "ENTERPRISE" {
   switch (subscriptionStore.currentPlan) {
@@ -106,6 +123,7 @@ async function renderReact() {
     allowManageInstanceLicenses:
       props.allowEdit && hasWorkspacePermissionV2("bb.instances.list"),
     onUploadLicense: handleUploadLicense,
+    onRequireEnterprise: handleRequireEnterprise,
   };
   if (!root) {
     root = await mountSubscriptionPage(container.value, opts);

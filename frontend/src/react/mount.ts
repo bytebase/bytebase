@@ -7,6 +7,7 @@ export interface MountOptions {
   allowEdit: boolean;
   allowManageInstanceLicenses: boolean;
   onUploadLicense: (license: string) => Promise<boolean>;
+  onRequireEnterprise: () => void;
 }
 
 async function loadDeps() {

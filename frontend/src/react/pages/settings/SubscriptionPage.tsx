@@ -9,6 +9,7 @@ interface SubscriptionPageProps {
   allowEdit: boolean;
   allowManageInstanceLicenses: boolean;
   onUploadLicense: (license: string) => Promise<boolean>;
+  onRequireEnterprise: () => void;
 }
 
 export function SubscriptionPage({
@@ -16,6 +17,7 @@ export function SubscriptionPage({
   allowEdit,
   allowManageInstanceLicenses,
   onUploadLicense,
+  onRequireEnterprise,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
   const [license, setLicense] = useState("");
@@ -96,7 +98,10 @@ export function SubscriptionPage({
           <div className="flex flex-col text-left">
             <div className="text-main">{t("subscription.try-for-free")}</div>
             <div className="mt-1">
-              <button className="rounded-md bg-indigo-600 px-4 py-2 text-white text-lg hover:bg-indigo-700">
+              <button
+                className="rounded-md bg-indigo-600 px-4 py-2 text-white text-lg hover:bg-indigo-700"
+                onClick={onRequireEnterprise}
+              >
                 {t("subscription.enterprise-free-trial", {
                   days: data.trialingDays,
                 })}
@@ -112,7 +117,10 @@ export function SubscriptionPage({
               {t("subscription.inquire-enterprise-plan")}
             </div>
             <div className="mt-1 ml-auto">
-              <button className="rounded-md bg-indigo-600 px-4 py-2 text-white text-lg hover:bg-indigo-700">
+              <button
+                className="rounded-md bg-indigo-600 px-4 py-2 text-white text-lg hover:bg-indigo-700"
+                onClick={onRequireEnterprise}
+              >
                 {t("subscription.contact-us")}
               </button>
             </div>
@@ -194,7 +202,10 @@ export function SubscriptionPage({
               {t("common.learn-more")} &gt;
             </a>
             {data.showTrial && allowEdit && (
-              <button className="ml-1 text-indigo-600 hover:underline text-sm">
+              <button
+                className="ml-1 text-indigo-600 hover:underline text-sm"
+                onClick={onRequireEnterprise}
+              >
                 {t("subscription.plan.try")}
               </button>
             )}
