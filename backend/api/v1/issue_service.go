@@ -186,15 +186,15 @@ func (s *IssueService) getIssueFind(
 						issueFind.StatusList = append(issueFind.StatusList, newStatus)
 					}
 				case "type":
-					types := new([]storepb.Issue_Type{})
+					var types []storepb.Issue_Type
 					for _, raw := range rawList {
 						issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[raw.(string)]))
 						if err != nil {
 							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert to issue type, err: %v", err))
 						}
-						*types = append(*types, issueType)
+						types = append(types, issueType)
 					}
-					issueFind.Types = types
+					issueFind.Types = &types
 				case "labels":
 					for _, label := range rawList {
 						issueLabel, ok := label.(string)

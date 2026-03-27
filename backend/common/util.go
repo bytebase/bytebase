@@ -243,10 +243,6 @@ func IsNil(val any) bool {
 	return false
 }
 
-func NewP[T any](x T) *T {
-	return new(x)
-}
-
 // Uniq returns a new slice with duplicate elements removed, preserving order.
 func Uniq[T comparable](array []T) []T {
 	res := make([]T, 0, len(array))

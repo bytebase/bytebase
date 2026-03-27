@@ -354,7 +354,7 @@ func convertToIssueCommentEventIssueUpdateStatus(s *storepb.Issue_Status) *v1pb.
 	default:
 		is = v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
 	}
-	return new(is)
+	return &is
 }
 
 func convertToIssueCommentEventApprovalStatus(s storepb.IssuePayloadApproval_Approver_Status) v1pb.IssueComment_Approval_Status {

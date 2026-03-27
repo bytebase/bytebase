@@ -165,7 +165,7 @@ func containRedundantPrefix(metaIdxList []*storepb.IndexMetadata, statColumnList
 func getIndexMapFromMetadata(dbMetadata *storepb.DatabaseSchemaMetadata) *IndexMap {
 	indexMap := IndexMap{}
 	if dbMetadata == nil {
-		return new(indexMap)
+		return &indexMap
 	}
 	for _, schema := range dbMetadata.Schemas {
 		if schema.Name == "" {
@@ -181,5 +181,5 @@ func getIndexMapFromMetadata(dbMetadata *storepb.DatabaseSchemaMetadata) *IndexM
 			}] = tbl.Indexes
 		}
 	}
-	return new(indexMap)
+	return &indexMap
 }
