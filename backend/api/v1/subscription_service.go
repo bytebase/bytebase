@@ -285,7 +285,7 @@ func (s *SubscriptionService) fallbackToCheckout(
 }
 
 // CancelPurchase cancels an active subscription (SaaS only).
-func (s *SubscriptionService) CancelPurchase(ctx context.Context, req *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.CancelPurchaseResponse], error) {
+func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.CancelPurchaseResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
 	}
