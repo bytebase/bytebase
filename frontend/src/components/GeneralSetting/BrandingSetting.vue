@@ -131,6 +131,18 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const allowSave = computed((): boolean => {
+  if (!workspaceStore.currentWorkspace) {
+    return false;
+  }
+  return (
+    (state.title &&
+      state.title !== workspaceStore.currentWorkspace?.title &&
+      state.title.trim() !== "") ||
+    state.logoUrl !== workspaceStore.currentWorkspace?.logo
+  );
+});
+
 // Re-sync local state when the workspace loads asynchronously,
 // but only if the user hasn't made edits yet.
 watchEffect(() => {
@@ -143,18 +155,6 @@ watchEffect(() => {
 const workspaceID = computed(() => {
   const name = workspaceStore.currentWorkspace?.name ?? "";
   return name.replace(/^workspaces\//, "");
-});
-
-const allowSave = computed((): boolean => {
-  if (!workspaceStore.currentWorkspace) {
-    return false;
-  }
-  return (
-    (state.title &&
-      state.title !== workspaceStore.currentWorkspace?.title &&
-      state.title.trim() !== "") ||
-    state.logoUrl !== workspaceStore.currentWorkspace?.logo
-  );
 });
 
 const hasBrandingFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_LOGO);
