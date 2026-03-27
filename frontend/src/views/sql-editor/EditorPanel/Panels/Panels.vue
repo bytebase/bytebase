@@ -101,7 +101,6 @@ const databaseMetadata = computedAsync(() => {
   }
   return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
     database: database.value.name,
-    cacheError: true,
     silent: true,
   });
 });

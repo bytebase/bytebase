@@ -183,7 +183,6 @@ const metadata = computedAsync(
     if (!isValidDatabaseName(db.name)) return null;
     const metadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: db.name,
-      cacheError: true,
     });
     totalTableCount.value = metadata.schemas.reduce(
       (sum, schema) => sum + (schema.tables?.length || 0),

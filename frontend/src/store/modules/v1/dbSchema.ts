@@ -29,19 +29,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const cacheByName = useCache<DatabaseMetadataCacheKey, DatabaseMetadata>(
     "bb.db-schema.by-name"
   );
-  const failedRequestByName = new Map<string, unknown>();
-  const getRequestKey = ({
-    name,
-    filter,
-    limit,
-  }: {
-    name: string;
-    filter: string;
-    limit: number;
-  }) => {
-    const metadataResourceName = ensureDatabaseMetadataResourceName(name);
-    return JSON.stringify([metadataResourceName, filter, limit]);
-  };
 
   // getCache try use cache.
   const getCache = ({
@@ -68,18 +55,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   }): Promise<DatabaseMetadata> | undefined => {
     const metadataResourceName = ensureDatabaseMetadataResourceName(name);
     return cacheByName.getRequest([metadataResourceName, filter, limit]);
-  };
-
-  const getRequestErrorCache = ({
-    name,
-    filter,
-    limit,
-  }: {
-    name: string;
-    filter: string;
-    limit: number;
-  }) => {
-    return failedRequestByName.get(getRequestKey({ name, filter, limit }));
   };
 
   const setCache = ({
@@ -111,32 +86,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     return promise;
   };
 
-  const setRequestErrorCache = ({
-    name,
-    filter,
-    limit,
-    error,
-  }: {
-    name: string;
-    filter: string;
-    limit: number;
-    error: unknown;
-  }) => {
-    failedRequestByName.set(getRequestKey({ name, filter, limit }), error);
-  };
-
-  const clearRequestErrorCache = ({
-    name,
-    filter,
-    limit,
-  }: {
-    name: string;
-    filter: string;
-    limit: number;
-  }) => {
-    failedRequestByName.delete(getRequestKey({ name, filter, limit }));
-  };
-
   const getDatabaseMetadataWithoutDefault = (database: string) =>
     getCache({
       name: database,
@@ -165,7 +114,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const getOrFetchDatabaseMetadata = async (params: {
     database: string;
     skipCache?: boolean;
-    cacheError?: boolean;
     silent?: boolean;
     limit?: number; // limit the number of returned tables per schema
     filter?: string; // used to filter schema and table, e.g. schema == "public" && table.matches("user*")
@@ -174,7 +122,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       limit = 0,
       filter = "",
       database,
-      cacheError = false,
       silent = false,
       skipCache = false,
     } = params;
@@ -207,22 +154,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         // We won't create a duplicated request.
         return cachedRequest;
       }
-      if (cacheError) {
-        const cachedError = getRequestErrorCache({
-          name: database,
-          filter,
-          limit,
-        });
-        if (cachedError) {
-          return Promise.reject(cachedError);
-        }
-      }
-    } else {
-      clearRequestErrorCache({
-        name: database,
-        filter,
-        limit,
-      });
     }
 
     // Send a request and cache it.
@@ -240,25 +171,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       .getDatabaseMetadata(request, {
         contextValues: createContextValues().set(silentContextKey, silent),
       })
-      .then((res) => {
-        clearRequestErrorCache({
-          name: database,
-          filter,
-          limit,
-        });
-        return setCache({ metadata: res, filter, limit });
-      })
-      .catch((error) => {
-        if (cacheError) {
-          setRequestErrorCache({
-            name: database,
-            filter,
-            limit,
-            error,
-          });
-        }
-        throw error;
-      });
+      .then((res) => setCache({ metadata: res, filter, limit }));
     return setRequestCache({ name: database, filter, limit, promise });
   };
 
@@ -502,11 +415,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     Array.from(cacheByName.entityCacheMap.values()).forEach((cache) => {
       if (cache.keys[0] === metadataResourceName) {
         cacheByName.invalidateEntity(cache.keys);
-      }
-    });
-    Array.from(failedRequestByName.keys()).forEach((key) => {
-      if (key.startsWith(`["${metadataResourceName}",`)) {
-        failedRequestByName.delete(key);
       }
     });
   };
