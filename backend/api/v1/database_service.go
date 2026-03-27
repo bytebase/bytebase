@@ -719,32 +719,56 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
-	// Get source SDL text from metadata.
-	sourceSDL, err := schema.MetadataToSDL(engine, sourceMetadata)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate source SDL"))
-	}
-
-	// Get target SDL text: either directly from request or from changelog metadata.
-	var targetSDL string
-	switch {
-	case req.Msg.GetSchema() != "":
-		targetSDL = req.Msg.GetSchema()
-	case req.Msg.GetChangelog() != "":
-		targetMetadata, err := s.resolveMetadata(ctx, req.Msg.GetChangelog())
+	var migrationSQL string
+	// PG/CockroachDB: use omni SDL diff path directly.
+	// Other engines: use legacy metadata diff path.
+	if engine == storepb.Engine_POSTGRES || engine == storepb.Engine_COCKROACHDB {
+		sourceSDL, err := schema.MetadataToSDL(engine, sourceMetadata)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target schema"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate source SDL"))
 		}
-		targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate target SDL"))
+		var targetSDL string
+		switch {
+		case req.Msg.GetSchema() != "":
+			targetSDL = req.Msg.GetSchema()
+		case req.Msg.GetChangelog() != "":
+			targetMetadata, err := s.resolveMetadata(ctx, req.Msg.GetChangelog())
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target schema"))
+			}
+			targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate target SDL"))
+			}
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target must be either schema text or changelog"))
 		}
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target must be either schema text or changelog"))
+		var diffErr error
+		migrationSQL, diffErr = schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
+		if diffErr != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(diffErr, "failed to compute schema diff"))
+		}
+	} else {
+		// Legacy path for non-PG engines.
+		var targetMetadata *model.DatabaseMetadata
+		switch {
+		case req.Msg.GetSchema() != "":
+			parsed, err := schema.GetDatabaseMetadata(engine, req.Msg.GetSchema())
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse target schema"))
+			}
+			targetMetadata = model.NewDatabaseMetadata(parsed, nil, nil, engine, true)
+		case req.Msg.GetChangelog() != "":
+			var err2 error
+			targetMetadata, err2 = s.resolveMetadata(ctx, req.Msg.GetChangelog())
+			if err2 != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err2, "failed to resolve target schema"))
+			}
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target must be either schema text or changelog"))
+		}
+		migrationSQL, err = schema.DiffMigration(engine, sourceMetadata, targetMetadata)
 	}
-
-	// Compute migration using SDL diff.
-	migrationSQL, err := schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}
