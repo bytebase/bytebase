@@ -706,30 +706,68 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
-	// Use unified SDL-based approach for all scenarios
-	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
-	}
-
-	targetDBSchema, err := s.getTargetDBMetadata(ctx, req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get target schema"))
-	}
-
 	engine, err := s.getParserEngine(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
+	// PG/CockroachDB: use omni SDL diff path.
+	if engine == storepb.Engine_POSTGRES || engine == storepb.Engine_COCKROACHDB {
+		migrationSQL, err := s.diffSchemaViaSDL(ctx, req.Msg, engine)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
+		}
+		return connect.NewResponse(&v1pb.DiffSchemaResponse{Diff: migrationSQL}), nil
+	}
+
+	// Other engines: legacy metadata diff path.
+	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
+	}
+	targetDBSchema, err := s.getTargetDBMetadata(ctx, req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get target schema"))
+	}
 	migrationSQL, err := schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}
+	return connect.NewResponse(&v1pb.DiffSchemaResponse{Diff: migrationSQL}), nil
+}
 
-	return connect.NewResponse(&v1pb.DiffSchemaResponse{
-		Diff: migrationSQL,
-	}), nil
+// diffSchemaViaSDL handles PG/CockroachDB DiffSchema using omni SDL diff.
+func (s *DatabaseService) diffSchemaViaSDL(ctx context.Context, req *v1pb.DiffSchemaRequest, engine storepb.Engine) (string, error) {
+	sourceMetadata, err := s.getSourceDBMetadata(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	sourceSDL, err := schema.MetadataToSDL(engine, sourceMetadata)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate source SDL")
+	}
+
+	// Resolve target schema text.
+	var targetSDL string
+	switch {
+	case req.GetSchema() != "":
+		// Schema text from GetDatabaseSchema (raw dump) — passed directly.
+		// pgDiffSDLMigration handles LoadSDL/LoadSQL fallback internally.
+		targetSDL = req.GetSchema()
+	case req.GetChangelog() != "":
+		targetMetadata, err := s.getSourceDBMetadata(ctx, &v1pb.DiffSchemaRequest{Name: req.GetChangelog()})
+		if err != nil {
+			return "", errors.Wrap(err, "failed to resolve target changelog")
+		}
+		targetSDL, err = schema.MetadataToSDL(engine, targetMetadata)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to generate target SDL")
+		}
+	default:
+		return "", errors.Errorf("target must be either schema text or changelog")
+	}
+
+	return schema.DiffSDLMigration(engine, sourceSDL, targetSDL)
 }
 
 func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb.DiffSchemaRequest) (*model.DatabaseMetadata, error) {

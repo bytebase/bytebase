@@ -26,8 +26,26 @@ type omniQuerySpanExtractor struct {
 	searchPath      []string
 	// metaCache is a lazy-load cache for database metadata.
 	// Use getDatabaseMetadata() instead of accessing directly.
-	metaCache map[string]*model.DatabaseMetadata
-	cat       *catalog.Catalog
+	metaCache     map[string]*model.DatabaseMetadata
+	cat           *catalog.Catalog
+	funcBodyCache map[uint32][]base.SourceColumnSet
+	// funcOrigDefs stores the original (non-stubbed) function definitions keyed
+	// by lowercase function name. Used by analyzeFunctionBody to get the real
+	// body when it was stubbed during catalog loading.
+	funcOrigDefs map[string]string
+	// funcSourceColumns accumulates table-level access (column="") discovered inside
+	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
+	funcSourceColumns base.SourceColumnSet
+	// funcPredicateColumns accumulates columns used in WHERE/JOIN conditions
+	// inside function bodies. Merged into the top-level QuerySpan.PredicateColumns.
+	funcPredicateColumns base.SourceColumnSet
+	// fallbackCTEMap holds CTE definitions during fallback column extraction.
+	// Set by extractFallbackColumns and used by extractColumnsFromRangeVar
+	// to resolve CTE references.
+	fallbackCTEMap map[string]*ast.SelectStmt
+	// fallbackCTEAliases holds CTE column aliases (e.g., WITH t1(cc1, cc2) AS (...)).
+	// Keyed by lowercase CTE name.
+	fallbackCTEAliases map[string][]string
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -36,10 +54,14 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		searchPath = []string{"public"}
 	}
 	return &omniQuerySpanExtractor{
-		defaultDatabase: defaultDatabase,
-		searchPath:      searchPath,
-		gCtx:            gCtx,
-		metaCache:       make(map[string]*model.DatabaseMetadata),
+		defaultDatabase:      defaultDatabase,
+		searchPath:           searchPath,
+		gCtx:                 gCtx,
+		metaCache:            make(map[string]*model.DatabaseMetadata),
+		funcBodyCache:        make(map[uint32][]base.SourceColumnSet),
+		funcOrigDefs:         make(map[string]string),
+		funcSourceColumns:    make(base.SourceColumnSet),
+		funcPredicateColumns: make(base.SourceColumnSet),
 	}
 }
 
@@ -80,6 +102,18 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		}
 	}
 
+	// Store original (non-stubbed) function definitions for body analysis.
+	for _, s := range meta.GetProto().GetSchemas() {
+		for _, f := range s.GetFunctions() {
+			if f.Definition != "" {
+				origBody := extractFuncBodyFromDef(f.Definition)
+				if origBody != "" {
+					e.funcOrigDefs[strings.ToLower(f.Name)] = origBody
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -106,7 +140,14 @@ func buildMinimalDDL(meta *storepb.DatabaseSchemaMetadata) string {
 		}
 		for _, f := range s.Functions {
 			if f.Definition != "" {
-				fmt.Fprintf(&b, "%s;\n", strings.TrimSuffix(strings.TrimSpace(f.Definition), ";"))
+				// Load the function with a stubbed body to avoid type validation
+				// failures. The catalog needs the function signature (name, params,
+				// return type) to resolve SELECT * FROM func(), but the actual body
+				// is analyzed separately via analyzeFunctionBody. Stubbing the body
+				// avoids errors when table column types default to text but the
+				// function declares int parameters.
+				stubbed := stubFunctionBody(f.Definition)
+				fmt.Fprintf(&b, "%s;\n", strings.TrimSuffix(strings.TrimSpace(stubbed), ";"))
 			}
 		}
 	}
@@ -147,6 +188,77 @@ func buildCreateMaterializedView(b *strings.Builder, schema string, v *storepb.M
 
 func quoteIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+// extractFuncBodyFromDef extracts the dollar-quoted function body from a
+// CREATE FUNCTION definition string.
+func extractFuncBodyFromDef(definition string) string {
+	// Find dollar-quoted body.
+	tag, bodyStart, bodyEnd := findDollarQuotedBody(definition)
+	if tag == "" {
+		return ""
+	}
+	return definition[bodyStart : bodyEnd-len(tag)]
+}
+
+// findDollarQuotedBody locates the dollar-quoted body in a function definition.
+// Returns the tag, the start of body content (after opening tag), and the end
+// position (after closing tag).
+func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd int) {
+	for i := 0; i < len(definition); i++ {
+		if definition[i] != '$' {
+			continue
+		}
+		// Find end of tag.
+		tagEnd := i + 1
+		for tagEnd < len(definition) && definition[tagEnd] != '$' {
+			tagEnd++
+		}
+		if tagEnd >= len(definition) {
+			continue
+		}
+		tag := definition[i : tagEnd+1]
+		contentStart := tagEnd + 1
+		// Find closing tag.
+		closeIdx := strings.Index(definition[contentStart:], tag)
+		if closeIdx >= 0 {
+			return tag, contentStart, contentStart + closeIdx + len(tag)
+		}
+	}
+	return "", 0, 0
+}
+
+// stubFunctionBody replaces the body of a CREATE FUNCTION statement with a
+// minimal stub. This avoids catalog type validation failures when table column
+// types are unknown (defaulting to text) while the function declares specific
+// return types. The function signature is preserved so the catalog can resolve
+// function calls.
+func stubFunctionBody(definition string) string {
+	tag, bodyStart, bodyEnd := findDollarQuotedBody(definition)
+	if tag == "" {
+		return definition
+	}
+
+	// Determine language for appropriate stub body.
+	upper := strings.ToUpper(definition)
+	lang := ""
+	if langIdx := strings.Index(upper, "LANGUAGE"); langIdx >= 0 {
+		rest := strings.TrimSpace(definition[langIdx+8:])
+		parts := strings.Fields(rest)
+		if len(parts) > 0 {
+			lang = strings.ToLower(strings.TrimRight(parts[0], ";"))
+		}
+	}
+
+	var stubBody string
+	switch lang {
+	case "plpgsql":
+		stubBody = " BEGIN RETURN; END; "
+	default:
+		stubBody = " SELECT NULL "
+	}
+
+	return definition[:bodyStart] + stubBody + definition[bodyEnd-len(tag):]
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.
@@ -227,27 +339,30 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		}, nil
 	}
 
-	// Pre-analysis check: if the parse tree contains constructs that omni
-	// doesn't fully handle (JSON constructors, function calls that may be UDFs),
-	// fall back to ANTLR immediately.
-	if selectNeedsFallback(selStmt) {
-		return e.fallbackToANTLR(ctx, stmt)
-	}
-
 	if err := e.initCatalog(); err != nil {
 		return nil, errors.Wrapf(err, "failed to initialize catalog")
 	}
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		// Fallback: use legacy ANTLR-based extractor when omni analysis fails.
-		return e.fallbackToANTLR(ctx, stmt)
-	}
-
-	// Post-analysis check: if the analyzed query has patterns that need
-	// special handling not yet in omni (function RTEs, UDFs).
-	if queryNeedsFallback(query) {
-		return e.fallbackToANTLR(ctx, stmt)
+		// Before falling back, try to handle user-defined table-returning functions
+		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
+		// used as table sources: SELECT * FROM func()).
+		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
+			return &base.QuerySpan{
+				Type:          base.Select,
+				SourceColumns: accessesMap,
+				Results:       results,
+			}, nil
+		}
+		// Fail-open: return access tables with best-effort column names and lineage
+		// when analysis fails (e.g., unsupported built-in functions).
+		return &base.QuerySpan{
+			Type:             base.Select,
+			SourceColumns:    accessesMap,
+			Results:          e.extractFallbackColumns(selStmt),
+			PredicateColumns: e.funcPredicateColumns,
+		}, nil
 	}
 
 	// Step 7: Extract lineage from analyzed query.
@@ -255,10 +370,16 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// from ExtractAccessTables above — no need to re-extract from the query.
 	results := e.extractLineage(query, selStmt)
 
+	// Merge columns discovered inside function bodies into the top-level sets.
+	for col := range e.funcSourceColumns {
+		accessesMap[col] = true
+	}
+
 	return &base.QuerySpan{
-		Type:          base.Select,
-		SourceColumns: accessesMap,
-		Results:       results,
+		Type:             base.Select,
+		SourceColumns:    accessesMap,
+		PredicateColumns: e.funcPredicateColumns,
+		Results:          results,
 	}, nil
 }
 
@@ -275,6 +396,24 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 	// IsPlainField = true only for columns expanded from SELECT * or SELECT t.*.
 	plainMask := buildPlainFieldMask(selStmt, q)
 
+	// Collect parse tree ResTargets for name fixups.
+	var parseTargets []*ast.ResTarget
+	if selStmt != nil && selStmt.TargetList != nil {
+		for _, item := range selStmt.TargetList.Items {
+			if rt, ok := item.(*ast.ResTarget); ok {
+				parseTargets = append(parseTargets, rt)
+			}
+		}
+	}
+
+	// Build a helper analyzer for parse-tree fallback extraction.
+	var analyzer *plpgsqlAnalyzer
+	var fromTables map[string]base.ColumnResource
+	if selStmt != nil {
+		analyzer = &plpgsqlAnalyzer{extractor: e, scope: newVariableScope(nil)}
+		fromTables = analyzer.collectFromTables(selStmt)
+	}
+
 	var results []base.QuerySpanResult
 	idx := 0
 	for _, te := range q.TargetList {
@@ -289,8 +428,22 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 		if isPlain {
 			isPlain = isUltimatelyPlainColumn(q, te.Expr)
 		}
+		name := te.ResName
+		// When the catalog reduces an expression to ConstExpr (losing column refs,
+		// e.g., json_object('id': a)), fall back to the parse tree to extract
+		// column references and derive a better name.
+		if idx < len(parseTargets) {
+			if name == "?column?" {
+				if better := figureResTargetName(parseTargets[idx]); better != "" {
+					name = better
+				}
+			}
+			if len(sourceColSet) == 0 && analyzer != nil {
+				analyzer.extractColumnRefsFromExpr(parseTargets[idx].Val, fromTables, sourceColSet)
+			}
+		}
 		results = append(results, base.QuerySpanResult{
-			Name:          te.ResName,
+			Name:          name,
 			SourceColumns: sourceColSet,
 			IsPlainField:  isPlain,
 		})
@@ -522,8 +675,18 @@ func (e *omniQuerySpanExtractor) walkExpr(q *catalog.Query, expr catalog.Analyze
 	case *catalog.VarExpr:
 		e.resolveVar(q, v, result)
 	case *catalog.FuncCallExpr:
+		// Walk arguments first — they contribute to access tables.
 		for _, arg := range v.Args {
 			e.walkExpr(q, arg, result)
+		}
+		// Trace lineage through user-defined function body.
+		if proc := e.cat.GetUserProcByOID(v.FuncOID); proc != nil {
+			// Expression context: merge all output columns into one set.
+			for _, colSet := range e.analyzeFunctionBody(proc) {
+				for k, val := range colSet {
+					result[k] = val
+				}
+			}
 		}
 	case *catalog.AggExpr:
 		for _, arg := range v.Args {
@@ -647,141 +810,906 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 		// After analysis, VarExprs typically point to base RTEs, not join RTEs.
 
 	case catalog.RTEFunction:
-		// Function results have no further lineage to track.
+		// Trace lineage through user-defined function body.
+		if len(rte.FuncExprs) > 0 {
+			if fc, ok := rte.FuncExprs[0].(*catalog.FuncCallExpr); ok {
+				if proc := e.cat.GetUserProcByOID(fc.FuncOID); proc != nil {
+					bodySets := e.analyzeFunctionBody(proc)
+					if colIdx >= 0 && colIdx < len(bodySets) {
+						for k, val := range bodySets[colIdx] {
+							result[k] = val
+						}
+					}
+				} else {
+					// Built-in function (no user proc) — trace lineage through
+					// the function's arguments. E.g., jsonb_each(a) depends on column a.
+					for _, arg := range fc.Args {
+						e.walkExpr(q, arg, result)
+					}
+				}
+			}
+		}
 
 	default:
 		// Unknown RTE kind — skip.
 	}
 }
 
-// selectNeedsFallback checks the raw parse tree (before analysis) for constructs
-// that omni doesn't handle well, such as JSON constructors and function calls.
-func selectNeedsFallback(sel *ast.SelectStmt) bool {
-	if sel == nil {
+// extractFallbackColumns attempts to extract column names and lineage from the parse tree
+// when AnalyzeSelectStmt fails. It walks the AST to find column references and resolves
+// them against tables in the FROM clause.
+func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
+	if selStmt == nil {
+		return nil
+	}
+
+	// Build a helper analyzer to reuse column reference extraction.
+	analyzer := &plpgsqlAnalyzer{
+		extractor: e,
+		scope:     newVariableScope(nil),
+	}
+	fromTables := analyzer.collectFromTables(selStmt)
+
+	// Build CTE map so we can trace through CTEs to real tables.
+	cteMap := collectCTEDefinitions(selStmt)
+	analyzer.cteMap = cteMap
+	// Store cteMap on the extractor so extractColumnsFromRangeVar can resolve CTEs.
+	e.fallbackCTEMap = cteMap
+	e.fallbackCTEAliases = collectCTEAliases(selStmt)
+
+	// Check if SELECT has explicit target list (not *).
+	if selStmt.TargetList != nil {
+		var results []base.QuerySpanResult
+		allStar := true
+		for _, item := range selStmt.TargetList.Items {
+			rt, ok := item.(*ast.ResTarget)
+			if !ok {
+				continue
+			}
+			if !isStarTarget(rt) {
+				allStar = false
+				name := rt.Name
+				if name == "" {
+					name = figureResTargetName(rt)
+				}
+				// PostgreSQL uses "?column?" for unnamed result columns.
+				if name == "" {
+					name = "?column?"
+				}
+				// Extract column references from the expression for lineage.
+				colSet := make(base.SourceColumnSet)
+				analyzer.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
+				results = append(results, base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: colSet,
+				})
+			}
+		}
+		if !allStar && len(results) > 0 {
+			// Also extract WHERE clause columns for predicate tracking.
+			if selStmt.WhereClause != nil {
+				whereColSet := make(base.SourceColumnSet)
+				analyzer.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
+				for k, v := range whereColSet {
+					e.funcPredicateColumns[k] = v
+				}
+			}
+			return results
+		}
+	}
+
+	// For SELECT *, combine columns from ALL FROM clause items.
+	if selStmt.FromClause != nil {
+		var allCols []base.QuerySpanResult
+		for _, item := range selStmt.FromClause.Items {
+			allCols = append(allCols, e.extractColumnsFromFromItem(item, analyzer, fromTables)...)
+		}
+		if len(allCols) > 0 {
+			return allCols
+		}
+	}
+
+	return nil
+}
+
+// figureResTargetName extracts a column name from a ResTarget's expression.
+func figureResTargetName(rt *ast.ResTarget) string {
+	if rt == nil || rt.Val == nil {
+		return ""
+	}
+	if cr, ok := rt.Val.(*ast.ColumnRef); ok && cr.Fields != nil {
+		// Use the last String field — for "ia.approver_emails", return "approver_emails".
+		// For unqualified "col", return "col". Skip A_Star nodes.
+		name := ""
+		for _, f := range cr.Fields.Items {
+			if s, ok := f.(*ast.String); ok {
+				name = s.Str
+			}
+		}
+		return name
+	}
+	if fc, ok := rt.Val.(*ast.FuncCall); ok && fc.Funcname != nil {
+		// Use the last name part — for "pg_catalog.func", return "func".
+		name := ""
+		for _, f := range fc.Funcname.Items {
+			if s, ok := f.(*ast.String); ok {
+				name = s.Str
+			}
+		}
+		return name
+	}
+	// SQL/JSON constructors.
+	if _, ok := rt.Val.(*ast.JsonObjectConstructor); ok {
+		return "json_object"
+	}
+	if _, ok := rt.Val.(*ast.JsonArrayConstructor); ok {
+		return "json_array"
+	}
+	return ""
+}
+
+// extractColumnsFromFromItem extracts column names from a FROM clause item.
+// For RangeVar (tables), it looks up the catalog for column names and lineage.
+// For RangeFunction, it uses function name or alias column names.
+// analyzer and fromTables are optional (may be nil) and used for resolving
+// function argument column refs in the fallback path.
+func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
+	if item == nil {
+		return nil
+	}
+
+	switch v := item.(type) {
+	case *ast.RangeVar:
+		return e.extractColumnsFromRangeVar(v)
+	case *ast.RangeFunction:
+		return e.extractColumnsFromRangeFunction(v, analyzer, fromTables)
+	case *ast.RangeSubselect:
+		if v.Alias != nil && v.Alias.Colnames != nil && len(v.Alias.Colnames.Items) > 0 {
+			return extractColnamesFromAlias(v.Alias)
+		}
+		// No explicit column aliases — extract column names from subquery's target list
+		// (only when the target list has explicit columns, not SELECT *).
+		if subSel, ok := v.Subquery.(*ast.SelectStmt); ok && subSel.TargetList != nil {
+			var results []base.QuerySpanResult
+			hasStar := false
+			for _, item := range subSel.TargetList.Items {
+				rt, ok := item.(*ast.ResTarget)
+				if !ok {
+					continue
+				}
+				if isStarTarget(rt) {
+					hasStar = true
+					break
+				}
+				name := rt.Name
+				if name == "" {
+					name = figureResTargetName(rt)
+				}
+				if name == "" {
+					name = "?column?"
+				}
+				results = append(results, base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: base.SourceColumnSet{},
+				})
+			}
+			if !hasStar && len(results) > 0 {
+				return results
+			}
+			// For SELECT * in subquery, try to resolve columns from the subquery's FROM tables.
+			if hasStar && subSel.FromClause != nil {
+				var starResults []base.QuerySpanResult
+				for _, fromItem := range subSel.FromClause.Items {
+					starResults = append(starResults, e.extractColumnsFromFromItem(fromItem, analyzer, fromTables)...)
+				}
+				if len(starResults) > 0 {
+					return starResults
+				}
+			}
+		}
+		return nil
+	case *ast.JoinExpr:
+		var results []base.QuerySpanResult
+		results = append(results, e.extractColumnsFromFromItem(v.Larg, analyzer, fromTables)...)
+		results = append(results, e.extractColumnsFromFromItem(v.Rarg, analyzer, fromTables)...)
+		return results
+	default:
+		return nil
+	}
+}
+
+// extractColumnsFromRangeVar looks up a table in the catalog and returns its columns with lineage.
+// If the table name matches a CTE in fallbackCTEMap, it extracts columns from the CTE definition.
+func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []base.QuerySpanResult {
+	// Check if this is a CTE reference.
+	if rv.Schemaname == "" && e.fallbackCTEMap != nil {
+		if cteSel, ok := e.fallbackCTEMap[strings.ToLower(rv.Relname)]; ok {
+			return e.extractColumnsFromCTE(rv.Relname, cteSel)
+		}
+	}
+
+	schema := rv.Schemaname
+	if schema == "" && len(e.searchPath) > 0 {
+		schema = e.searchPath[0]
+	}
+	rel := e.cat.GetRelation(schema, rv.Relname)
+	if rel == nil {
+		return nil
+	}
+	var results []base.QuerySpanResult
+	for _, col := range rel.Columns {
+		colSet := make(base.SourceColumnSet)
+		colSet[base.ColumnResource{
+			Database: e.defaultDatabase,
+			Schema:   rel.Schema.Name,
+			Table:    rel.Name,
+			Column:   col.Name,
+		}] = true
+		results = append(results, base.QuerySpanResult{
+			Name:          col.Name,
+			SourceColumns: colSet,
+			IsPlainField:  true,
+		})
+	}
+	return results
+}
+
+// extractColumnsFromCTE extracts columns from a CTE definition.
+// For UNION CTEs, it uses the left branch (the non-recursive term) for column names
+// and merges lineage from both branches.
+func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *ast.SelectStmt) []base.QuerySpanResult {
+	if cteSel == nil {
+		return nil
+	}
+
+	// Build a helper analyzer.
+	analyzer := &plpgsqlAnalyzer{
+		extractor: e,
+		scope:     newVariableScope(nil),
+		cteMap:    e.fallbackCTEMap,
+	}
+
+	// For UNION (recursive or not), use the left branch for column names
+	// and extract lineage from both branches.
+	if cteSel.Larg != nil {
+		leftResults := e.extractCTEBranchColumns(analyzer, cteSel.Larg)
+		rightResults := e.extractCTEBranchColumns(analyzer, cteSel.Rarg)
+
+		// Merge right-branch lineage into left-branch results.
+		for i := range leftResults {
+			if i < len(rightResults) {
+				for k, v := range rightResults[i].SourceColumns {
+					leftResults[i].SourceColumns[k] = v
+				}
+			}
+		}
+
+		// For recursive CTEs, the recursive term references CTE columns
+		// (e.g., cc1*cc2). Track which CTE columns each recursive expression
+		// depends on, then resolve those to source columns from the non-recursive term.
+		if selectReferencesTable(cteSel.Rarg, cteName) {
+			aliases := e.getCTEColumnAliases(cteName)
+			if len(aliases) == 0 {
+				// No explicit aliases — use the column names from leftResults.
+				for _, r := range leftResults {
+					aliases = append(aliases, r.Name)
+				}
+			}
+			e.mergeRecursiveCTELineage(leftResults, cteSel.Rarg, cteName, aliases)
+		}
+
+		// Look up CTE column aliases from the WithClause.
+		if aliases := e.getCTEColumnAliases(cteName); len(aliases) > 0 {
+			for i := range leftResults {
+				if i < len(aliases) {
+					leftResults[i].Name = aliases[i]
+				}
+			}
+		}
+
+		return leftResults
+	}
+
+	// Simple CTE (no UNION) — extract directly.
+	return e.extractCTEBranchColumns(analyzer, cteSel)
+}
+
+// extractCTEBranchColumns extracts column names and lineage from a single CTE branch.
+func (*omniQuerySpanExtractor) extractCTEBranchColumns(analyzer *plpgsqlAnalyzer, sel *ast.SelectStmt) []base.QuerySpanResult {
+	if sel == nil || sel.TargetList == nil {
+		return nil
+	}
+
+	fromTables := analyzer.collectFromTables(sel)
+
+	var results []base.QuerySpanResult
+	for _, item := range sel.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		name := rt.Name
+		if name == "" {
+			name = figureResTargetName(rt)
+		}
+		colSet := make(base.SourceColumnSet)
+		analyzer.extractColumnRefsFromExpr(rt.Val, fromTables, colSet)
+		results = append(results, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: colSet,
+		})
+	}
+	return results
+}
+
+// getCTEColumnAliases returns the column aliases defined on a CTE (e.g., t1(cc1, cc2, cc3)).
+func (e *omniQuerySpanExtractor) getCTEColumnAliases(cteName string) []string {
+	if e.fallbackCTEAliases == nil {
+		return nil
+	}
+	return e.fallbackCTEAliases[strings.ToLower(cteName)]
+}
+
+// selectReferencesTable checks if a SELECT statement references a table name
+// in its FROM clause. Used to detect recursive CTEs.
+func selectReferencesTable(sel *ast.SelectStmt, tableName string) bool {
+	if sel == nil || sel.FromClause == nil {
 		return false
 	}
-	// Check set operations recursively.
-	if sel.Larg != nil && selectNeedsFallback(sel.Larg) {
-		return true
+	lower := strings.ToLower(tableName)
+	for _, item := range sel.FromClause.Items {
+		if nodeReferencesTable(item, lower) {
+			return true
+		}
 	}
-	if sel.Rarg != nil && selectNeedsFallback(sel.Rarg) {
-		return true
+	return false
+}
+
+func nodeReferencesTable(node ast.Node, tableName string) bool {
+	if node == nil {
+		return false
 	}
-	// Check target list for unsupported expressions.
-	if sel.TargetList != nil {
-		for _, item := range sel.TargetList.Items {
-			if rt, ok := item.(*ast.ResTarget); ok && rt.Val != nil {
-				if astNodeNeedsFallback(rt.Val) {
-					return true
+	switch v := node.(type) {
+	case *ast.RangeVar:
+		return strings.ToLower(v.Relname) == tableName
+	case *ast.JoinExpr:
+		return nodeReferencesTable(v.Larg, tableName) || nodeReferencesTable(v.Rarg, tableName)
+	default:
+		return false
+	}
+}
+
+// mergeRecursiveCTELineage tracks which CTE columns each expression in the
+// recursive term depends on, then resolves those to source columns from the
+// non-recursive term results.
+func (*omniQuerySpanExtractor) mergeRecursiveCTELineage(results []base.QuerySpanResult, recursiveSel *ast.SelectStmt, _ string, cteColNames []string) {
+	if recursiveSel == nil || recursiveSel.TargetList == nil {
+		return
+	}
+
+	// Build a map of CTE column name → index (for resolving references).
+	cteColIndex := make(map[string]int)
+	for i, name := range cteColNames {
+		cteColIndex[strings.ToLower(name)] = i
+	}
+
+	// For each expression in the recursive term, find which CTE columns it references.
+	for i, item := range recursiveSel.TargetList.Items {
+		if i >= len(results) {
+			break
+		}
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+
+		// Collect all column references from this expression.
+		refs := collectColumnRefNames(rt.Val)
+
+		// For each referenced column, if it's a CTE column, merge that column's
+		// source set into this result's source set.
+		for _, ref := range refs {
+			if idx, ok := cteColIndex[strings.ToLower(ref)]; ok && idx < len(results) {
+				for k, v := range results[idx].SourceColumns {
+					results[i].SourceColumns[k] = v
 				}
 			}
 		}
 	}
-	// Check FROM clause for function tables.
-	if sel.FromClause != nil {
-		for _, item := range sel.FromClause.Items {
-			if _, ok := item.(*ast.RangeFunction); ok {
-				return true
+}
+
+// collectColumnRefNames extracts all unqualified column reference names from an expression.
+func collectColumnRefNames(node ast.Node) []string {
+	if node == nil {
+		return nil
+	}
+	var names []string
+	switch v := node.(type) {
+	case *ast.ColumnRef:
+		if v.Fields != nil && len(v.Fields.Items) == 1 {
+			if s, ok := v.Fields.Items[0].(*ast.String); ok {
+				names = append(names, s.Str)
 			}
 		}
-	}
-	return false
-}
-
-// astNodeNeedsFallback checks if an AST node contains constructs that require
-// fallback to ANTLR (e.g., JSON constructors, function calls that may be UDFs).
-func astNodeNeedsFallback(n ast.Node) bool {
-	if n == nil {
-		return false
-	}
-	switch v := n.(type) {
-	case *ast.JsonObjectConstructor, *ast.JsonArrayConstructor, *ast.JsonArrayQueryConstructor,
-		*ast.JsonFuncExpr:
-		return true
 	case *ast.FuncCall:
-		// Function calls may be UDFs needing body analysis.
-		return true
-	case *ast.A_Indirection:
-		// Array subscripts and field selections — omni may reduce to ConstExpr.
-		return true
-	case *ast.SubLink:
-		if sel, ok := v.Subselect.(*ast.SelectStmt); ok {
-			return selectNeedsFallback(sel)
+		if v.Args != nil {
+			for _, arg := range v.Args.Items {
+				names = append(names, collectColumnRefNames(arg)...)
+			}
 		}
+	case *ast.A_Expr:
+		names = append(names, collectColumnRefNames(v.Lexpr)...)
+		names = append(names, collectColumnRefNames(v.Rexpr)...)
+	case *ast.TypeCast:
+		names = append(names, collectColumnRefNames(v.Arg)...)
 	default:
-		// Other node types don't need fallback.
 	}
-	return false
+	return names
 }
 
-// queryNeedsFallback checks if the analyzed query contains patterns that
-// omni may not handle correctly and should fall back to ANTLR.
-// This includes: function table sources, function calls in expressions
-// (which may be UDFs needing body analysis), and nil expressions
-// (indicating omni didn't fully resolve something).
-func queryNeedsFallback(q *catalog.Query) bool {
-	for _, rte := range q.RangeTable {
-		if rte.Kind == catalog.RTEFunction {
-			return true
-		}
+// collectCTEAliases extracts CTE column aliases from the WITH clause.
+func collectCTEAliases(selStmt *ast.SelectStmt) map[string][]string {
+	if selStmt == nil || selStmt.WithClause == nil {
+		return nil
 	}
-	for _, te := range q.TargetList {
-		if te.ResJunk {
+
+	aliasMap := make(map[string][]string)
+	for _, item := range selStmt.WithClause.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
 			continue
 		}
-		if exprNeedsFallback(te.Expr) {
-			return true
+		if cte.Aliascolnames == nil || len(cte.Aliascolnames.Items) == 0 {
+			continue
 		}
-	}
-	return false
-}
-
-func exprNeedsFallback(expr catalog.AnalyzedExpr) bool {
-	if expr == nil {
-		// nil expression means omni didn't resolve it.
-		return true
-	}
-	switch v := expr.(type) {
-	case *catalog.FuncCallExpr:
-		// Any function call may be a UDF needing body analysis.
-		return true
-	case *catalog.AggExpr:
-		// Aggregate calls are handled by omni, but some JSON/custom aggregates
-		// may produce incorrect results — skip for now, will revisit.
-		return false
-	case *catalog.OpExpr:
-		return exprNeedsFallback(v.Left) || exprNeedsFallback(v.Right)
-	case *catalog.CaseExprQ:
-		if exprNeedsFallback(v.Arg) || exprNeedsFallback(v.Default) {
-			return true
-		}
-		for _, w := range v.When {
-			if exprNeedsFallback(w.Condition) || exprNeedsFallback(w.Result) {
-				return true
+		var aliases []string
+		for _, nameItem := range cte.Aliascolnames.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				aliases = append(aliases, s.Str)
 			}
 		}
-	case *catalog.CoalesceExprQ:
-		for _, arg := range v.Args {
-			if exprNeedsFallback(arg) {
-				return true
-			}
+		if len(aliases) > 0 {
+			aliasMap[strings.ToLower(cte.Ctename)] = aliases
 		}
-	case *catalog.SubLinkExpr:
-		if v.SubQuery != nil {
-			return queryNeedsFallback(v.SubQuery)
-		}
-	case *catalog.RelabelExpr:
-		return exprNeedsFallback(v.Arg)
-	case *catalog.CoerceViaIOExpr:
-		return exprNeedsFallback(v.Arg)
-	default:
-		// Other expression types don't need fallback.
 	}
-	return false
+	return aliasMap
 }
 
-// fallbackToANTLR uses the legacy ANTLR-based extractor when omni analysis fails.
-func (e *omniQuerySpanExtractor) fallbackToANTLR(ctx context.Context, stmt string) (*base.QuerySpan, error) {
-	legacy := newQuerySpanExtractor(e.defaultDatabase, e.searchPath, e.gCtx)
-	return legacy.getQuerySpan(ctx, stmt)
+// extractColumnsFromRangeFunction extracts columns from a function in FROM clause.
+// It first tries to look up user-defined functions in the catalog for lineage tracing.
+// analyzer and fromTables are optional and used for resolving function argument column refs.
+func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
+	// Try to resolve user-defined function for lineage tracing.
+	funcName := extractFuncNameFromRange(rf)
+	if funcName != "" && e.cat != nil {
+		// First try catalog lookup.
+		if proc := e.lookupUserProcByName(funcName); proc != nil {
+			outNames := getOutputParamNames(proc)
+			if len(outNames) > 0 {
+				bodySets := e.analyzeFunctionBody(proc)
+				var results []base.QuerySpanResult
+				for i, name := range outNames {
+					colSet := make(base.SourceColumnSet)
+					if i < len(bodySets) {
+						for k, v := range bodySets[i] {
+							colSet[k] = v
+						}
+					}
+					results = append(results, base.QuerySpanResult{
+						Name:          name,
+						SourceColumns: colSet,
+					})
+				}
+				return results
+			}
+		}
+		// Catalog lookup failed — try metadata (for RETURNS TABLE functions).
+		dummyAccesses := make(base.SourceColumnSet)
+		if metaResults := e.tryMetadataFuncLookup(funcName, dummyAccesses); metaResults != nil {
+			return metaResults
+		}
+	}
+
+	if rf.Alias != nil && rf.Alias.Colnames != nil && len(rf.Alias.Colnames.Items) > 0 {
+		// Even with alias column names, resolve function arg column refs for lineage.
+		results := extractColnamesFromAlias(rf.Alias)
+		e.enrichFuncResultsWithArgLineage(rf, analyzer, fromTables, results)
+		return results
+	}
+	results := extractFuncColumnNames(rf, rf.Alias)
+	e.enrichFuncResultsWithArgLineage(rf, analyzer, fromTables, results)
+	return results
+}
+
+// enrichFuncResultsWithArgLineage resolves column references from function arguments
+// and adds them as source columns to all function result columns.
+// For built-in functions like jsonb_each(a), the output depends on the input column a.
+func (*omniQuerySpanExtractor) enrichFuncResultsWithArgLineage(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource, results []base.QuerySpanResult) {
+	if analyzer == nil || fromTables == nil || rf.Functions == nil || len(results) == 0 {
+		return
+	}
+
+	// Collect source columns from all function arguments.
+	argSources := make(base.SourceColumnSet)
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Args == nil {
+			continue
+		}
+		for _, arg := range fc.Args.Items {
+			analyzer.extractColumnRefsFromExpr(arg, fromTables, argSources)
+		}
+	}
+
+	// Apply argument source columns to all result columns.
+	for i := range results {
+		for k, v := range argSources {
+			if results[i].SourceColumns == nil {
+				results[i].SourceColumns = make(base.SourceColumnSet)
+			}
+			results[i].SourceColumns[k] = v
+		}
+	}
+}
+
+// extractColnamesFromAlias extracts column names from an alias's column name list.
+func extractColnamesFromAlias(alias *ast.Alias) []base.QuerySpanResult {
+	if alias == nil || alias.Colnames == nil {
+		return nil
+	}
+	var results []base.QuerySpanResult
+	for _, item := range alias.Colnames.Items {
+		if s, ok := item.(*ast.String); ok {
+			results = append(results, base.QuerySpanResult{
+				Name:          s.Str,
+				SourceColumns: base.SourceColumnSet{},
+			})
+		}
+	}
+	return results
+}
+
+// extractFuncColumnNames extracts column names from a RangeFunction.
+// For functions like unnest(ARRAY, ARRAY), each argument produces a column
+// named after the function.
+func extractFuncColumnNames(rf *ast.RangeFunction, _ *ast.Alias) []base.QuerySpanResult {
+	if rf.Functions == nil {
+		return nil
+	}
+
+	var results []base.QuerySpanResult
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Funcname == nil {
+			continue
+		}
+		// Get function name.
+		funcName := ""
+		for _, nameItem := range fc.Funcname.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				funcName = s.Str
+			}
+		}
+		if funcName == "" {
+			continue
+		}
+		// Determine number of columns: for set-returning functions like unnest,
+		// each argument produces a column.
+		nCols := 1
+		if fc.Args != nil && len(fc.Args.Items) > 1 {
+			nCols = len(fc.Args.Items)
+		}
+		for range nCols {
+			results = append(results, base.QuerySpanResult{
+				Name:          funcName,
+				SourceColumns: base.SourceColumnSet{},
+			})
+		}
+	}
+	return results
+}
+
+// tryUserFuncTableSource handles the case where AnalyzeSelectStmt fails because
+// the FROM clause contains a user-defined RETURNS TABLE function. The omni catalog
+// cannot resolve these as table sources, so we look up the function manually,
+// analyze its body for lineage, and construct the result.
+// Returns nil if this case doesn't apply.
+func (e *omniQuerySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	if selStmt == nil || selStmt.FromClause == nil {
+		return nil
+	}
+
+	// Look for a single RangeFunction in the FROM clause.
+	for _, item := range selStmt.FromClause.Items {
+		rf, ok := item.(*ast.RangeFunction)
+		if !ok || rf.Functions == nil {
+			continue
+		}
+
+		// Extract function name from the RangeFunction.
+		funcName := extractFuncNameFromRange(rf)
+		if funcName == "" {
+			continue
+		}
+
+		// Look up the function in the catalog.
+		proc := e.lookupUserProcByName(funcName)
+		if proc != nil {
+			// Found in catalog — use it for lineage analysis.
+			outNames := getOutputParamNames(proc)
+			if len(outNames) == 0 {
+				continue
+			}
+			bodySets := e.analyzeFunctionBody(proc)
+			return e.buildFuncResults(outNames, bodySets, accessesMap)
+		}
+
+		// Catalog lookup failed — try metadata. This handles cases where
+		// the metadata function name differs from the name in the DDL definition.
+		if results := e.tryMetadataFuncLookup(funcName, accessesMap); results != nil {
+			return results
+		}
+	}
+
+	return nil
+}
+
+// extractFuncNameFromRange extracts the function name from a RangeFunction node.
+func extractFuncNameFromRange(rf *ast.RangeFunction) string {
+	if rf.Functions == nil {
+		return ""
+	}
+	for _, funcItem := range rf.Functions.Items {
+		funcList, ok := funcItem.(*ast.List)
+		if !ok || len(funcList.Items) < 1 {
+			continue
+		}
+		fc, ok := funcList.Items[0].(*ast.FuncCall)
+		if !ok || fc.Funcname == nil {
+			continue
+		}
+		// Use the last name part — for "schema.func", return "func".
+		name := ""
+		for _, nameItem := range fc.Funcname.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				name = s.Str
+			}
+		}
+		return name
+	}
+	return ""
+}
+
+// lookupUserProcByName finds a user-defined function by name in the catalog,
+// searching through schemas in the search path.
+func (e *omniQuerySpanExtractor) lookupUserProcByName(name string) *catalog.UserProc {
+	lowerName := strings.ToLower(name)
+	for _, schemaName := range e.searchPath {
+		for _, row := range e.cat.QueryPgProc(schemaName) {
+			if strings.ToLower(row.ProName) == lowerName {
+				return e.cat.GetUserProcByOID(row.OID)
+			}
+		}
+	}
+	return nil
+}
+
+// getOutputParamNames returns the names of output parameters (TABLE, OUT, or INOUT mode)
+// for a user-defined function. Returns nil if the function has no output params.
+func getOutputParamNames(proc *catalog.UserProc) []string {
+	var names []string
+	for i, mode := range proc.ArgModes {
+		if mode == 't' || mode == 'o' || mode == 'b' {
+			if i < len(proc.ArgNames) {
+				names = append(names, proc.ArgNames[i])
+			}
+		}
+	}
+	return names
+}
+
+// buildFuncResults constructs QuerySpanResults from output parameter names and
+// function body lineage analysis, and populates table-level access in accessesMap.
+func (*omniQuerySpanExtractor) buildFuncResults(outNames []string, bodySets []base.SourceColumnSet, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	for _, colSet := range bodySets {
+		for k, v := range colSet {
+			accessesMap[base.ColumnResource{
+				Database: k.Database,
+				Schema:   k.Schema,
+				Table:    k.Table,
+			}] = v
+		}
+	}
+
+	var results []base.QuerySpanResult
+	for i, name := range outNames {
+		sourceColumns := make(base.SourceColumnSet)
+		if i < len(bodySets) {
+			for k, v := range bodySets[i] {
+				sourceColumns[k] = v
+			}
+		}
+		results = append(results, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: sourceColumns,
+		})
+	}
+	return results
+}
+
+// tryMetadataFuncLookup searches for a function by name in the database metadata
+// (not the catalog). This handles cases where the catalog can't resolve the
+// function — either because the metadata function name differs from the DDL name,
+// or because RETURNS TABLE functions can't be loaded into the catalog.
+func (e *omniQuerySpanExtractor) tryMetadataFuncLookup(funcName string, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
+	if err != nil || meta == nil {
+		return nil
+	}
+
+	_, funcs := meta.SearchFunctions(e.searchPath, funcName)
+	if len(funcs) == 0 {
+		return nil
+	}
+
+	// Use the first matching function's definition.
+	funcDef := funcs[0].Definition
+	if funcDef == "" {
+		return nil
+	}
+
+	// Parse the function definition to extract output param names and body.
+	// We can't rely on the catalog for RETURNS TABLE functions because the
+	// catalog may reject them due to type validation.
+	outNames, body, lang := parseFuncDefForLineage(funcDef)
+	if len(outNames) == 0 || body == "" {
+		return nil
+	}
+
+	// Construct a synthetic UserProc for body analysis.
+	syntheticProc := &catalog.UserProc{
+		Name:     funcName,
+		Language: lang,
+		Body:     body,
+	}
+	// Set ArgModes and ArgNames for output params.
+	for _, name := range outNames {
+		syntheticProc.ArgModes = append(syntheticProc.ArgModes, 't')
+		syntheticProc.ArgNames = append(syntheticProc.ArgNames, name)
+	}
+	// Also extract input params for variable substitution.
+	inputNames := parseInputParamNames(funcDef)
+	for _, name := range inputNames {
+		syntheticProc.ArgModes = append([]byte{'i'}, syntheticProc.ArgModes...)
+		syntheticProc.ArgNames = append([]string{name}, syntheticProc.ArgNames...)
+	}
+
+	// Use a temporary OID for caching.
+	syntheticProc.OID = uint32(0xFFFF0000 + len(e.funcBodyCache))
+
+	bodySets := e.analyzeFunctionBody(syntheticProc)
+	return e.buildFuncResults(outNames, bodySets, accessesMap)
+}
+
+// parseFuncDefForLineage extracts output parameter names, function body, and
+// language from a CREATE FUNCTION definition string.
+func parseFuncDefForLineage(definition string) (outNames []string, body string, lang string) {
+	upper := strings.ToUpper(definition)
+
+	// Extract language.
+	if langIdx := strings.Index(upper, "LANGUAGE"); langIdx >= 0 {
+		rest := strings.TrimSpace(definition[langIdx+8:])
+		parts := strings.Fields(rest)
+		if len(parts) > 0 {
+			lang = strings.ToLower(strings.TrimRight(parts[0], ";"))
+		}
+	}
+
+	// Extract body.
+	body = extractFuncBodyFromDef(definition)
+
+	// Extract output param names from RETURNS TABLE(name type, ...).
+	tableIdx := strings.Index(upper, "RETURNS TABLE")
+	if tableIdx < 0 {
+		tableIdx = strings.Index(upper, "RETURNS\n    TABLE")
+	}
+	if tableIdx >= 0 {
+		rest := definition[tableIdx:]
+		parenStart := strings.Index(rest, "(")
+		if parenStart >= 0 {
+			depth := 0
+			parenEnd := -1
+			for i := parenStart; i < len(rest); i++ {
+				switch rest[i] {
+				case '(':
+					depth++
+				case ')':
+					depth--
+					if depth == 0 {
+						parenEnd = i
+					}
+				default:
+				}
+				if parenEnd >= 0 {
+					break
+				}
+			}
+			if parenEnd > parenStart {
+				paramList := rest[parenStart+1 : parenEnd]
+				for _, param := range strings.Split(paramList, ",") {
+					parts := strings.Fields(strings.TrimSpace(param))
+					if len(parts) >= 2 {
+						outNames = append(outNames, parts[0])
+					}
+				}
+			}
+		}
+	}
+
+	return outNames, body, lang
+}
+
+// parseInputParamNames extracts input parameter names from a CREATE FUNCTION
+// definition. It parses the parameter list before RETURNS.
+func parseInputParamNames(definition string) []string {
+	upper := strings.ToUpper(definition)
+
+	// Find the parameter list: between FUNCTION name( and ) RETURNS.
+	funcIdx := strings.Index(upper, "FUNCTION")
+	if funcIdx < 0 {
+		return nil
+	}
+
+	rest := definition[funcIdx:]
+	parenStart := strings.Index(rest, "(")
+	if parenStart < 0 {
+		return nil
+	}
+
+	// Find the closing paren that ends the input params.
+	returnsIdx := strings.Index(upper[funcIdx+parenStart:], "RETURNS")
+	if returnsIdx < 0 {
+		return nil
+	}
+
+	paramSection := rest[parenStart+1 : parenStart+returnsIdx]
+	// Find the last ) before RETURNS.
+	lastParen := strings.LastIndex(paramSection, ")")
+	if lastParen >= 0 {
+		paramSection = paramSection[:lastParen]
+	}
+
+	modeKeywords := map[string]bool{
+		"IN": true, "OUT": true, "INOUT": true, "VARIADIC": true,
+	}
+	var names []string
+	for _, param := range strings.Split(paramSection, ",") {
+		parts := strings.Fields(strings.TrimSpace(param))
+		if len(parts) < 2 {
+			continue
+		}
+		// If the first word is a mode keyword (IN, OUT, INOUT, VARIADIC),
+		// the parameter name is the second word. Otherwise the first word is the name.
+		nameIdx := 0
+		if modeKeywords[strings.ToUpper(parts[0])] {
+			nameIdx = 1
+		}
+		if nameIdx < len(parts) {
+			// Skip OUT/INOUT params — we only want input params for variable scope.
+			upperFirst := strings.ToUpper(parts[0])
+			if upperFirst == "OUT" {
+				continue
+			}
+			names = append(names, parts[nameIdx])
+		}
+	}
+	return names
 }

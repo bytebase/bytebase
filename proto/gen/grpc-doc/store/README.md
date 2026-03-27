@@ -3528,6 +3528,7 @@ Activity type enumeration.
 | ISSUE_SENT_BACK | 12 | ISSUE_SENT_BACK represents an issue being sent back by an approver. |
 | PIPELINE_FAILED | 13 | PIPELINE_FAILED represents a pipeline failure event. |
 | PIPELINE_COMPLETED | 14 | PIPELINE_COMPLETED represents a pipeline completion event. |
+| ISSUE_APPROVED | 15 | ISSUE_APPROVED represents an issue being fully approved. |
 
 
  

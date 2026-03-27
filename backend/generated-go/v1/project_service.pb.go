@@ -41,6 +41,8 @@ const (
 	Activity_PIPELINE_FAILED Activity_Type = 13
 	// PIPELINE_COMPLETED represents a pipeline completion event.
 	Activity_PIPELINE_COMPLETED Activity_Type = 14
+	// ISSUE_APPROVED represents an issue being fully approved.
+	Activity_ISSUE_APPROVED Activity_Type = 15
 )
 
 // Enum value maps for Activity_Type.
@@ -52,6 +54,7 @@ var (
 		12: "ISSUE_SENT_BACK",
 		13: "PIPELINE_FAILED",
 		14: "PIPELINE_COMPLETED",
+		15: "ISSUE_APPROVED",
 	}
 	Activity_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":         0,
@@ -60,6 +63,7 @@ var (
 		"ISSUE_SENT_BACK":          12,
 		"PIPELINE_FAILED":          13,
 		"PIPELINE_COMPLETED":       14,
+		"ISSUE_APPROVED":           15,
 	}
 )
 
@@ -1400,6 +1404,7 @@ type Webhook struct {
 	// - ISSUE_CREATED
 	// - ISSUE_APPROVAL_REQUESTED
 	// - ISSUE_SENT_BACK
+	// - ISSUE_APPROVED
 	// - PIPELINE_FAILED
 	// - PIPELINE_COMPLETED
 	NotificationTypes []Activity_Type `protobuf:"varint,5,rep,packed,name=notification_types,json=notificationTypes,proto3,enum=bytebase.v1.Activity_Type" json:"notification_types,omitempty"`
@@ -1670,8 +1675,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
-	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\x9c\x01\n" +
-	"\bActivity\"\x8f\x01\n" +
+	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb0\x01\n" +
+	"\bActivity\"\xa3\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rISSUE_CREATED\x10\n" +
@@ -1679,7 +1684,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x18ISSUE_APPROVAL_REQUESTED\x10\v\x12\x13\n" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
-	"\x12PIPELINE_COMPLETED\x10\x0e2\x82\x12\n" +
+	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
+	"\x0eISSUE_APPROVED\x10\x0f2\x82\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +

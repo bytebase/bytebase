@@ -432,7 +432,7 @@ type YamlQuerySpan struct {
 	Results          []YamlQuerySpanResult
 	SourceColumns    []ColumnResource
 	PredicateColumns []ColumnResource
-	PredicatePaths   []string
+	PredicatePaths   []string `yaml:"predicatepaths,omitempty"`
 }
 
 type YamlQuerySpanResult struct {

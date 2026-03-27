@@ -468,12 +468,7 @@
   querySpan:
     type: 1
     results: []
-    sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: ""
-          column: ""
+    sourcecolumns: []
     predicatecolumns: []
 - description: SHOW statement
   statement: SHOW ALL;
