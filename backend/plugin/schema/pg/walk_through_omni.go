@@ -1,14 +1,17 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/bytebase/omni/pg/catalog"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -465,4 +468,56 @@ func fkMatchToString(match byte) string {
 	default:
 		return "SIMPLE"
 	}
+}
+
+func extractViewDependencies(schemaMetadata *storepb.DatabaseSchemaMetadata) {
+	for _, s := range schemaMetadata.Schemas {
+		for _, view := range s.Views {
+			view.DependencyColumns = getViewDependencies(view.Definition, s.Name, schemaMetadata)
+		}
+		for _, mv := range s.MaterializedViews {
+			mv.DependencyColumns = getViewDependencies(mv.Definition, s.Name, schemaMetadata)
+		}
+	}
+}
+
+func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+	queryStatement := strings.TrimSpace(viewDef)
+	span, err := pgparser.GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, nil, nil, storepb.Engine_POSTGRES, false)
+				return databaseName, dbMetadata, nil
+			},
+			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
+				return []string{}, nil
+			},
+		},
+		base.Statement{Text: queryStatement},
+		"",
+		schemaName,
+		false,
+	)
+	if err != nil {
+		return []*storepb.DependencyColumn{}
+	}
+
+	dependencyMap := make(map[string]*storepb.DependencyColumn)
+	for sourceColumn := range span.SourceColumns {
+		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
+		if _, exists := dependencyMap[key]; !exists {
+			dependencyMap[key] = &storepb.DependencyColumn{
+				Schema: sourceColumn.Schema,
+				Table:  sourceColumn.Table,
+				Column: "*",
+			}
+		}
+	}
+
+	var dependencies []*storepb.DependencyColumn
+	for _, dep := range dependencyMap {
+		dependencies = append(dependencies, dep)
+	}
+	return dependencies
 }
