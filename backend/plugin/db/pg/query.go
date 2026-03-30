@@ -4,15 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	parser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -201,161 +199,102 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 		return "", errors.New("empty statement")
 	}
 
-	parseResults, err := pgparser.ParsePostgreSQL(statement)
+	stmts, err := pgparser.ParsePg(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
-	if len(parseResults) != 1 {
-		return "", errors.Errorf("expected exactly one statement, got %d", len(parseResults))
+	if len(stmts) != 1 {
+		return "", errors.Errorf("expected exactly one statement, got %d", len(stmts))
 	}
 
-	parseResult := parseResults[0]
-
-	listener := &postgresqlRewriter{
-		limitCount:     limitCount,
-		outerMostQuery: true,
-		rewriter:       antlr.NewTokenStreamRewriter(parseResult.Tokens),
+	sel, ok := stmts[0].AST.(*ast.SelectStmt)
+	if !ok {
+		// Non-SELECT statement, return as-is.
+		return statement, nil
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
-	if listener.err != nil {
-		return "", errors.Wrapf(listener.err, "statement: %s", statement)
-	}
-
-	return listener.rewriter.GetTextDefault(), nil
+	return rewriteSelectLimit(statement, sel, limitCount)
 }
 
-type postgresqlRewriter struct {
-	*parser.BasePostgreSQLParserListener
+// rewriteSelectLimit adds or adjusts the LIMIT clause of a SELECT statement
+// using byte-offset positions from the omni AST to surgically edit the original SQL text.
+func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string, error) {
+	if sel.LimitCount != nil {
+		// Already has LIMIT — replace the value if ours is lower.
+		existingLimit := extractIntFromNode(sel.LimitCount)
+		if existingLimit > 0 && existingLimit <= limitCount {
+			return sql, nil // existing limit is already lower or equal, keep it
+		}
+		loc := nodeLocOf(sel.LimitCount)
+		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
+			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
+		}
+		// Loc unavailable, fall through to append.
+	}
 
-	rewriter       *antlr.TokenStreamRewriter
-	err            error
-	outerMostQuery bool
-	limitCount     int
+	// No LIMIT clause — find the right insertion point.
+	// PostgreSQL grammar order: ... ORDER BY ... LIMIT ... FOR UPDATE ...
+	// LIMIT goes BEFORE FOR UPDATE but AFTER everything else.
+	insertPos := findLimitInsertPosition(sql, sel)
+	return sql[:insertPos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[insertPos:], nil
 }
 
-// EnterSelectstmt is called when entering a select statement
-func (r *postgresqlRewriter) EnterSelectstmt(ctx *parser.SelectstmtContext) {
-	if !r.outerMostQuery {
-		return
-	}
-	r.outerMostQuery = false
-
-	// Recursively find the select_no_parens and handle it
-	if selectNoParens := r.findSelectNoParens(ctx); selectNoParens != nil {
-		r.handleSelectNoParens(selectNoParens)
-	}
-}
-
-// findSelectNoParens recursively finds the select_no_parens from a selectstmt
-func (r *postgresqlRewriter) findSelectNoParens(ctx *parser.SelectstmtContext) parser.ISelect_no_parensContext {
-	// Direct select_no_parens
-	if selectNoParens := ctx.Select_no_parens(); selectNoParens != nil {
-		return selectNoParens
-	}
-
-	// Through select_with_parens
-	if selectWithParens := ctx.Select_with_parens(); selectWithParens != nil {
-		return r.findSelectNoParensFromWithParens(selectWithParens)
-	}
-
-	return nil
-}
-
-// findSelectNoParensFromWithParens recursively finds select_no_parens from select_with_parens
-func (r *postgresqlRewriter) findSelectNoParensFromWithParens(ctx parser.ISelect_with_parensContext) parser.ISelect_no_parensContext {
-	// Check for direct select_no_parens
-	if selectNoParens := ctx.Select_no_parens(); selectNoParens != nil {
-		return selectNoParens
-	}
-
-	// Check for nested select_with_parens
-	if innerSelectWithParens := ctx.Select_with_parens(); innerSelectWithParens != nil {
-		return r.findSelectNoParensFromWithParens(innerSelectWithParens)
-	}
-
-	return nil
-}
-
-// EnterStmt is called when entering any statement
-func (r *postgresqlRewriter) EnterStmt(ctx *parser.StmtContext) {
-	// Only process SELECT statements
-	if ctx.Selectstmt() == nil {
-		// Not a SELECT statement, skip processing
-		r.outerMostQuery = false
-	}
-}
-
-// handleSelectNoParens processes select statements without parentheses
-func (r *postgresqlRewriter) handleSelectNoParens(ctx parser.ISelect_no_parensContext) {
-	// Check if there's already a limit clause
-	var hasLimit bool
-	var limitClause parser.ILimit_clauseContext
-
-	f := ctx.GetText()
-	slog.Debug("Processing select_no_parens", slog.String("text", f))
-
-	// Check the for_locking_clause with opt_select_limit branch
-	if ctx.For_locking_clause() != nil && ctx.Opt_select_limit() != nil {
-		if ctx.Opt_select_limit().Select_limit() != nil {
-			if ctx.Opt_select_limit().Select_limit().Limit_clause() != nil {
-				hasLimit = true
-				limitClause = ctx.Opt_select_limit().Select_limit().Limit_clause()
+// findLimitInsertPosition returns the byte offset where " LIMIT N" should be inserted.
+func findLimitInsertPosition(sql string, sel *ast.SelectStmt) int {
+	// Insert before FOR UPDATE/SHARE if present.
+	if sel.LockingClause != nil {
+		span := ast.ListSpan(sel.LockingClause)
+		if span.Start > 0 {
+			// Back up over whitespace between the previous clause and FOR.
+			pos := span.Start
+			for pos > 0 && (sql[pos-1] == ' ' || sql[pos-1] == '\t' || sql[pos-1] == '\n' || sql[pos-1] == '\r') {
+				pos--
 			}
-		}
-	}
-	// Check the select_limit with opt_for_locking_clause branch
-	if ctx.Select_limit() != nil {
-		if ctx.Select_limit().Limit_clause() != nil {
-			hasLimit = true
-			limitClause = ctx.Select_limit().Limit_clause()
+			return pos
 		}
 	}
 
-	if hasLimit && limitClause != nil {
-		// Extract and compare the existing limit value
-		if limitClause.Select_limit_value() != nil {
-			limitValueText := limitClause.Select_limit_value().GetText()
-			if limitValueText != "ALL" {
-				existingLimit, err := strconv.Atoi(limitValueText)
-				if err == nil {
-					if existingLimit == 0 || r.limitCount < existingLimit {
-						// Replace the existing limit value
-						limitValueCtx := limitClause.Select_limit_value()
-						if limitValueCtx.A_expr() != nil {
-							r.rewriter.ReplaceTokenDefault(
-								limitValueCtx.GetStart(),
-								limitValueCtx.GetStop(),
-								fmt.Sprintf("%d", r.limitCount),
-							)
-						}
-					}
-					// else: existing limit is already lower, keep it
-				}
-			}
+	// Otherwise insert at the end of the statement (strip trailing whitespace/semicolons/parens).
+	end := sel.Loc.End
+	if end <= 0 || end > len(sql) {
+		end = len(sql)
+	}
+	// Trim trailing closing parens that wrap the SELECT (e.g. "(SELECT ...)")
+	// and semicolons, since LIMIT must go inside the SELECT.
+	pos := end
+	for pos > 0 {
+		ch := sql[pos-1]
+		if ch == ')' || ch == ';' || ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+			pos--
+			continue
 		}
-		return
+		break
 	}
+	return pos
+}
 
-	// No limit clause exists, add one
-	// Find the appropriate position to insert LIMIT
-	var insertPosition antlr.Token
+// extractIntFromNode extracts an integer value from a LIMIT/OFFSET node.
+func extractIntFromNode(node ast.Node) int {
+	switch n := node.(type) {
+	case *ast.Integer:
+		return int(n.Ival)
+	case *ast.A_Const:
+		if iv, ok := n.Val.(*ast.Integer); ok {
+			return int(iv.Ival)
+		}
+		return 0
+	default:
+		return 0
+	}
+}
 
-	// Insert after FOR UPDATE/SHARE clause if present
-	if ctx.For_locking_clause() != nil {
-		insertPosition = ctx.For_locking_clause().GetStop()
-	}
-	// Insert after ORDER BY clause if present
-	if ctx.Opt_sort_clause() != nil && ctx.Opt_sort_clause().Sort_clause() != nil {
-		insertPosition = ctx.Opt_sort_clause().Sort_clause().GetStop()
-	}
-	// Otherwise insert after the select_clause
-	if insertPosition == nil && ctx.Select_clause() != nil {
-		insertPosition = ctx.Select_clause().GetStop()
-	}
-
-	if insertPosition != nil {
-		r.rewriter.InsertAfterToken("default", insertPosition, fmt.Sprintf(" LIMIT %d", r.limitCount))
+// nodeLocOf returns the Loc of a node, handling common wrapper types.
+func nodeLocOf(node ast.Node) ast.Loc {
+	switch n := node.(type) {
+	case *ast.A_Const:
+		return n.Loc
+	default:
+		return ast.Loc{Start: -1, End: -1}
 	}
 }
