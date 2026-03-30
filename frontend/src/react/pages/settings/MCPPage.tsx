@@ -15,21 +15,25 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
+import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/router";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { useActuatorV1Store } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
-export interface MCPPageProps {
-  externalUrl: string;
-  needConfigureExternalUrl: boolean;
-  canConfigureExternalUrl: boolean;
-  onConfigureExternalUrl: () => void;
-}
-
-export function MCPPage({
-  externalUrl,
-  needConfigureExternalUrl,
-  canConfigureExternalUrl,
-  onConfigureExternalUrl,
-}: MCPPageProps) {
+export function MCPPage() {
   const { t } = useTranslation();
+  const actuatorStore = useActuatorV1Store();
+
+  const externalUrl = useVueState(
+    () => actuatorStore.serverInfo?.externalUrl ?? ""
+  );
+  const needConfigureExternalUrl = useVueState(
+    () => actuatorStore.needConfigureExternalUrl
+  );
+  const canConfigureExternalUrl = hasWorkspacePermissionV2(
+    "bb.settings.setWorkspaceProfile"
+  );
 
   const mcpEndpointUrl = useMemo(() => {
     if (needConfigureExternalUrl || !externalUrl) {
@@ -108,7 +112,9 @@ export function MCPPage({
                 variant="outline"
                 size="sm"
                 className="ml-3"
-                onClick={onConfigureExternalUrl}
+                onClick={() =>
+                  router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
+                }
               >
                 {t("common.configure-now")}
               </Button>

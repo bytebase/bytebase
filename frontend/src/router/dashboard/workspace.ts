@@ -374,7 +374,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.im-integration"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/react/ReactBridge.vue"),
+        component: () => import("@/react/ReactPageMount.vue"),
         props: () => ({ page: "IMPage" }),
       },
       {
@@ -384,7 +384,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.mcp"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/react/ReactBridge.vue"),
+        component: () => import("@/react/ReactPageMount.vue"),
         props: () => ({ page: "MCPPage" }),
       },
     ],

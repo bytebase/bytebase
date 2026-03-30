@@ -34,22 +34,6 @@ async function loadCoreDeps() {
   return cachedDeps;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore -- React createElement types conflict with Vue JSX in vue-tsc; checked by tsconfig.react.json
-function buildTree(
-  deps: ReactDeps,
-  Component: ReactComponent,
-  // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page
-  props: any // eslint-disable-line @typescript-eslint/no-explicit-any
-) {
-  const { createElement, StrictMode, I18nextProvider, i18n } = deps;
-  return createElement(
-    StrictMode,
-    null,
-    createElement(I18nextProvider, { i18n }, createElement(Component, props))
-  );
-}
-
 async function loadPage(name: string): Promise<ReactComponent> {
   const hit = cachedPages.get(name);
   if (hit) return hit;
@@ -65,15 +49,39 @@ async function loadPage(name: string): Promise<ReactComponent> {
 }
 
 /**
- * Mount a React page into the given container element.
+ * Mount a self-contained React page into the given container element.
  * @param page — file name without extension, must match the exported function name
  *               (e.g. "MCPPage", "SubscriptionPage")
+ */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore -- React createElement types conflict with Vue JSX in vue-tsc
+function buildTree(
+  deps: ReactDeps,
+  Component: ReactComponent,
+  // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page
+  props?: any // eslint-disable-line @typescript-eslint/no-explicit-any
+) {
+  return deps.createElement(
+    deps.StrictMode,
+    null,
+    deps.createElement(
+      deps.I18nextProvider,
+      { i18n: deps.i18n },
+      deps.createElement(Component, props)
+    )
+  );
+}
+
+/**
+ * Mount a React page into the given container element.
+ * @param page — file name without extension, must match the exported function name
+ * @param props — optional props for pages that need Vue callbacks (e.g. SubscriptionPage)
  */
 export async function mountReactPage(
   container: HTMLElement,
   page: string,
   // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page
-  props: any // eslint-disable-line @typescript-eslint/no-explicit-any
+  props?: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   const [deps, Component] = await Promise.all([loadCoreDeps(), loadPage(page)]);
   const root = deps.createRoot(container);
@@ -89,7 +97,7 @@ export async function updateReactPage(
   root: any, // eslint-disable-line @typescript-eslint/no-explicit-any
   page: string,
   // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page
-  props: any // eslint-disable-line @typescript-eslint/no-explicit-any
+  props?: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   const [deps, Component] = await Promise.all([loadCoreDeps(), loadPage(page)]);
   root.render(buildTree(deps, Component, props));

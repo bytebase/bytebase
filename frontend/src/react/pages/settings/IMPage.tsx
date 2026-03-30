@@ -1,3 +1,5 @@
+import { clone, create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus, Trash2 } from "lucide-react";
 import { type ChangeEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +11,52 @@ import teamsIcon from "@/assets/im/teams.svg";
 import wecomIcon from "@/assets/im/wecom.png";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
+import { pushNotification, useSettingV1Store } from "@/store";
+import { WebhookType } from "@/types/proto-es/v1/common_pb";
+import {
+  AppIMSetting_DingTalkSchema,
+  AppIMSetting_FeishuSchema,
+  type AppIMSetting_IMSetting,
+  AppIMSetting_IMSettingSchema,
+  AppIMSetting_LarkSchema,
+  AppIMSetting_SlackSchema,
+  AppIMSetting_TeamsSchema,
+  AppIMSetting_WecomSchema,
+  AppIMSettingSchema,
+  Setting_SettingName,
+  SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
+
+// --- Constants ---
+
+const IM_TYPES = [
+  WebhookType.SLACK,
+  WebhookType.FEISHU,
+  WebhookType.LARK,
+  WebhookType.WECOM,
+  WebhookType.DINGTALK,
+  WebhookType.TEAMS,
+] as const;
+
+const IM_TYPE_KEY: Record<number, string> = {
+  [WebhookType.SLACK]: "SLACK",
+  [WebhookType.FEISHU]: "FEISHU",
+  [WebhookType.LARK]: "LARK",
+  [WebhookType.WECOM]: "WECOM",
+  [WebhookType.DINGTALK]: "DINGTALK",
+  [WebhookType.TEAMS]: "TEAMS",
+};
+
+const IM_LABELS: Record<number, string> = {
+  [WebhookType.SLACK]: "Slack",
+  [WebhookType.FEISHU]: "Feishu",
+  [WebhookType.LARK]: "Lark",
+  [WebhookType.WECOM]: "WeCom",
+  [WebhookType.DINGTALK]: "DingTalk",
+  [WebhookType.TEAMS]: "Teams",
+};
 
 const IM_ICON_MAP: Record<string, string> = {
   SLACK: slackIcon,
@@ -19,105 +67,330 @@ const IM_ICON_MAP: Record<string, string> = {
   TEAMS: teamsIcon,
 };
 
-export interface IMFieldDef {
-  key: string;
-  label: string;
+const IM_FIELDS: Record<number, { key: string; label: string }[]> = {
+  [WebhookType.SLACK]: [{ key: "token", label: "Token" }],
+  [WebhookType.FEISHU]: [
+    { key: "appId", label: "App ID" },
+    { key: "appSecret", label: "App Secret" },
+  ],
+  [WebhookType.LARK]: [
+    { key: "appId", label: "App ID" },
+    { key: "appSecret", label: "App Secret" },
+  ],
+  [WebhookType.WECOM]: [
+    { key: "corpId", label: "Corp ID" },
+    { key: "agentId", label: "Agent ID" },
+    { key: "secret", label: "Secret" },
+  ],
+  [WebhookType.DINGTALK]: [
+    { key: "clientId", label: "Client ID" },
+    { key: "clientSecret", label: "Client Secret" },
+    { key: "robotCode", label: "Robot Code" },
+  ],
+  [WebhookType.TEAMS]: [
+    { key: "tenantId", label: "Tenant ID" },
+    { key: "clientId", label: "Client ID" },
+    { key: "clientSecret", label: "Client Secret" },
+  ],
+};
+
+const UPDATE_MASKS: Record<number, string> = {
+  [WebhookType.SLACK]: "value.app_im.slack",
+  [WebhookType.FEISHU]: "value.app_im.feishu",
+  [WebhookType.LARK]: "value.app_im.lark",
+  [WebhookType.WECOM]: "value.app_im.wecom",
+  [WebhookType.DINGTALK]: "value.app_im.dingtalk",
+  [WebhookType.TEAMS]: "value.app_im_setting_value.teams",
+};
+
+// --- Protobuf helpers ---
+
+function webhookTypeFromKey(key: string): WebhookType {
+  for (const [num, k] of Object.entries(IM_TYPE_KEY)) {
+    if (k === key) return Number(num) as WebhookType;
+  }
+  return WebhookType.WEBHOOK_TYPE_UNSPECIFIED;
 }
 
-export interface IMSettingItem {
+function createIMSetting(
+  wt: WebhookType,
+  init?: Record<string, string>
+): AppIMSetting_IMSetting {
+  switch (wt) {
+    case WebhookType.SLACK:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "slack",
+          value: create(AppIMSetting_SlackSchema, init),
+        },
+      });
+    case WebhookType.FEISHU:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "feishu",
+          value: create(AppIMSetting_FeishuSchema, init),
+        },
+      });
+    case WebhookType.LARK:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "lark",
+          value: create(AppIMSetting_LarkSchema, init),
+        },
+      });
+    case WebhookType.WECOM:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "wecom",
+          value: create(AppIMSetting_WecomSchema, init),
+        },
+      });
+    case WebhookType.DINGTALK:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "dingtalk",
+          value: create(AppIMSetting_DingTalkSchema, init),
+        },
+      });
+    case WebhookType.TEAMS:
+      return create(AppIMSetting_IMSettingSchema, {
+        type: wt,
+        payload: {
+          case: "teams",
+          value: create(AppIMSetting_TeamsSchema, init),
+        },
+      });
+    default:
+      return create(AppIMSetting_IMSettingSchema, { type: wt });
+  }
+}
+
+function maskValues(payload: Record<string, unknown>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (k === "$typeName" || k === "$unknown") continue;
+    result[k] = typeof v === "string" && v !== "" ? "*********" : "";
+  }
+  return result;
+}
+
+function getStoredIMSetting(
+  settingStore: ReturnType<typeof useSettingV1Store>
+) {
+  const setting = settingStore.getSettingByName(Setting_SettingName.APP_IM);
+  if (setting?.value?.value?.case !== "appIm") {
+    return create(AppIMSettingSchema, { settings: [] });
+  }
+  return setting.value.value.value;
+}
+
+// --- Derived view model ---
+
+interface IMSettingView {
   type: string;
   typeLabel: string;
   isConfigured: boolean;
-  fields: IMFieldDef[];
+  fields: { key: string; label: string }[];
   values: Record<string, string>;
 }
 
-export interface IMPageProps {
-  settings: IMSettingItem[];
-  availableTypes: { type: string; label: string }[];
-  allowEdit: boolean;
-  pendingSaveType: string | null;
-  onAdd: (type: string) => void;
-  onSave: (
-    index: number,
-    type: string,
-    values: Record<string, string>
-  ) => Promise<void>;
-  onDelete: (index: number, type: string) => Promise<void>;
-  onChangeType: (index: number, newType: string) => void;
+function buildSettingsView(
+  localSettings: AppIMSetting_IMSetting[],
+  configuredTypes: Set<number>
+): IMSettingView[] {
+  return localSettings.map((item) => {
+    const typeKey = IM_TYPE_KEY[item.type] ?? "";
+    const fields = IM_FIELDS[item.type] ?? [];
+    const payloadObj = (item.payload?.value ?? {}) as Record<string, unknown>;
+    return {
+      type: typeKey,
+      typeLabel: IM_LABELS[item.type] ?? typeKey,
+      isConfigured: configuredTypes.has(item.type),
+      fields,
+      values: configuredTypes.has(item.type)
+        ? maskValues(payloadObj)
+        : Object.fromEntries(
+            fields.map((f) => [f.key, String(payloadObj[f.key] ?? "")])
+          ),
+    };
+  });
 }
 
-export function IMPage({
-  settings,
-  availableTypes,
-  allowEdit,
-  pendingSaveType,
-  onAdd,
-  onSave,
-  onDelete,
-  onChangeType,
-}: IMPageProps) {
+// --- Component ---
+
+export function IMPage() {
   const { t } = useTranslation();
+  const settingStore = useSettingV1Store();
+  const allowEdit = hasWorkspacePermissionV2("bb.settings.set");
 
-  // Local form state — tracks edits independently from props
-  const [localValues, setLocalValues] = useState<Record<string, string>[]>([]);
+  // Subscribe to store changes
+  const storedSetting = useVueState(() => getStoredIMSetting(settingStore));
 
-  // Sync local state when settings change from outside (initial load, after save/delete)
-  useEffect(() => {
-    setLocalValues(settings.map((s) => ({ ...s.values })));
-  }, [settings]);
-
-  const updateField = useCallback(
-    (index: number, key: string, value: string) => {
-      setLocalValues((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], [key]: value };
-        return next;
-      });
-    },
+  // Local state
+  const [localSettings, setLocalSettings] = useState<AppIMSetting_IMSetting[]>(
     []
   );
+  const [localValues, setLocalValues] = useState<Record<string, string>[]>([]);
+  const [pendingSaveType, setPendingSaveType] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  const isDirty = useCallback(
-    (index: number) => {
-      const local = localValues[index];
-      const original = settings[index]?.values;
-      if (!local || !original) return false;
-      return Object.keys(original).some((k) => local[k] !== original[k]);
-    },
-    [localValues, settings]
-  );
+  // Fetch on mount
+  useEffect(() => {
+    settingStore
+      .getOrFetchSettingByName(Setting_SettingName.APP_IM)
+      .then(() => setInitialized(true));
+  }, [settingStore]);
 
-  const handleDiscard = useCallback(
-    (index: number) => {
+  // Sync local state from store
+  const syncFromStore = useCallback(() => {
+    const stored = getStoredIMSetting(settingStore);
+    const cloned = stored.settings.map((s) =>
+      clone(AppIMSetting_IMSettingSchema, s)
+    );
+    setLocalSettings(cloned);
+  }, [settingStore]);
+
+  useEffect(() => {
+    if (initialized) syncFromStore();
+  }, [initialized, storedSetting, syncFromStore]);
+
+  // Derive view model
+  const configuredTypes = new Set(storedSetting.settings.map((s) => s.type));
+  const settingsView = buildSettingsView(localSettings, configuredTypes);
+
+  // Sync form values when settings view changes
+  useEffect(() => {
+    setLocalValues(settingsView.map((s) => ({ ...s.values })));
+  }, [settingsView.length, initialized]);
+
+  const existingTypes = new Set(localSettings.map((s) => s.type));
+  const availableTypes = IM_TYPES.filter(
+    (wt) => !configuredTypes.has(wt) && !existingTypes.has(wt)
+  ).map((wt) => ({ type: IM_TYPE_KEY[wt], label: IM_LABELS[wt] }));
+
+  // --- Handlers ---
+
+  const handleAdd = (typeKey: string) => {
+    const wt = webhookTypeFromKey(typeKey);
+    setLocalSettings((prev) => [...prev, createIMSetting(wt)]);
+  };
+
+  const handleChangeType = (index: number, newTypeKey: string) => {
+    const wt = webhookTypeFromKey(newTypeKey);
+    setLocalSettings((prev) => {
+      const next = [...prev];
+      next[index] = createIMSetting(wt);
+      return next;
+    });
+  };
+
+  const updateField = (index: number, key: string, value: string) => {
+    setLocalValues((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [key]: value };
+      return next;
+    });
+  };
+
+  const isDirty = (index: number) => {
+    const local = localValues[index];
+    const original = settingsView[index]?.values;
+    if (!local || !original) return false;
+    return Object.keys(original).some((k) => local[k] !== original[k]);
+  };
+
+  const handleDiscard = (index: number) => {
+    const original = settingsView[index];
+    if (!original) return;
+    // If not configured (new item), remove it
+    if (!original.isConfigured) {
+      setLocalSettings((prev) => prev.filter((_, i) => i !== index));
+    } else {
       setLocalValues((prev) => {
         const next = [...prev];
-        const original = settings[index];
-        if (original) {
-          next[index] = { ...original.values };
-        }
+        next[index] = { ...original.values };
         return next;
       });
-    },
-    [settings]
-  );
+    }
+  };
 
-  const handleDelete = useCallback(
-    async (index: number, type: string) => {
-      if (!window.confirm(t("bbkit.confirm-button.sure-to-delete"))) return;
-      await onDelete(index, type);
-    },
-    [onDelete, t]
-  );
+  const handleSave = async (index: number, typeKey: string) => {
+    const wt = webhookTypeFromKey(typeKey);
+    const values = localValues[index] ?? {};
+    setPendingSaveType(typeKey);
+    try {
+      const reconstructed = createIMSetting(wt, values);
+      const current = clone(
+        AppIMSettingSchema,
+        getStoredIMSetting(settingStore)
+      );
+      const existingIdx = current.settings.findIndex((s) => s.type === wt);
+      if (existingIdx >= 0) {
+        current.settings[existingIdx] = reconstructed;
+      } else {
+        current.settings.push(reconstructed);
+      }
+      await settingStore.upsertSetting({
+        name: Setting_SettingName.APP_IM,
+        value: create(SettingValueSchema, {
+          value: { case: "appIm", value: current },
+        }),
+        updateMask: create(FieldMaskSchema, { paths: [UPDATE_MASKS[wt]] }),
+      });
+      syncFromStore();
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      setPendingSaveType(null);
+    }
+  };
 
-  if (settings.length === 0) {
+  const handleDelete = async (index: number, typeKey: string) => {
+    if (!window.confirm(t("bbkit.confirm-button.sure-to-delete"))) return;
+    const wt = webhookTypeFromKey(typeKey);
+    const stored = getStoredIMSetting(settingStore);
+    const wasConfigured = stored.settings.some((s) => s.type === wt);
+    if (wasConfigured) {
+      await settingStore.upsertSetting({
+        name: Setting_SettingName.APP_IM,
+        value: create(SettingValueSchema, {
+          value: {
+            case: "appIm",
+            value: create(AppIMSettingSchema, {
+              settings: stored.settings.filter((s) => s.type !== wt),
+            }),
+          },
+        }),
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
+    }
+    syncFromStore();
+  };
+
+  // --- Render ---
+
+  if (!initialized) return null;
+
+  if (settingsView.length === 0) {
     return (
       <div className="w-full px-4 flex flex-col gap-y-4 py-4">
         <Description />
         <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-4 text-control-light">
           <span>{t("common.no-data")}</span>
           {availableTypes.length > 0 && allowEdit && (
-            <Button onClick={() => onAdd(availableTypes[0].type)}>
+            <Button onClick={() => handleAdd(availableTypes[0].type)}>
               <Plus className="h-4 w-4 mr-1" />
               {t("settings.im.add-im-integration")}
             </Button>
@@ -131,16 +404,15 @@ export function IMPage({
     <div className="w-full px-4 flex flex-col gap-y-4 py-4">
       <Description />
 
-      {settings.map((item, i) => (
+      {settingsView.map((item, i) => (
         <div key={item.type} className="border rounded-sm p-4">
-          {/* Header: IM type */}
           {item.isConfigured ? (
             <IMTypeLabel type={item.type} label={item.typeLabel} />
           ) : (
             <select
               value={item.type}
               className="flex h-9 w-full max-w-xs rounded-md border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
-              onChange={(e) => onChangeType(i, e.target.value)}
+              onChange={(e) => handleChangeType(i, e.target.value)}
             >
               <option value={item.type}>{item.typeLabel}</option>
               {availableTypes
@@ -153,7 +425,6 @@ export function IMPage({
             </select>
           )}
 
-          {/* Fields */}
           <div className="mt-4 flex flex-col gap-y-4">
             {item.fields.map((field) => (
               <div key={field.key}>
@@ -171,7 +442,6 @@ export function IMPage({
             ))}
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-between mt-4 gap-x-2">
             <div>
               {item.isConfigured && allowEdit && (
@@ -196,9 +466,7 @@ export function IMPage({
                 </Button>
                 <Button
                   disabled={!!pendingSaveType || !allowEdit}
-                  onClick={() =>
-                    onSave(i, item.type, localValues[i] ?? item.values)
-                  }
+                  onClick={() => handleSave(i, item.type)}
                 >
                   {t("common.save")}
                 </Button>
@@ -212,7 +480,7 @@ export function IMPage({
         <div className="flex justify-end">
           <Button
             variant="outline"
-            onClick={() => onAdd(availableTypes[0].type)}
+            onClick={() => handleAdd(availableTypes[0].type)}
           >
             <Plus className="h-4 w-4 mr-1" />
             {t("settings.im.add-another-im")}
