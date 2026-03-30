@@ -40,17 +40,21 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { PencilIcon, XIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
+import { computed, reactive, watchEffect } from "vue";
 import { MiniActionButton } from "@/components/v2";
-import { useSubscriptionV1Store } from "@/store";
+import { useSettingV1Store, useSubscriptionV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  SemanticTypeSetting_SemanticTypeSchema,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { getInstanceResource } from "@/utils";
+import { getInstanceResource, hasWorkspacePermissionV2 } from "@/utils";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
-import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
+import SemanticTypesDrawer from "./SemanticTypesDrawer.vue";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -72,9 +76,36 @@ const state = reactive<LocalState>({
   showSemanticTypesDrawer: false,
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const { semanticType, semanticTypeList } = useSemanticType(
-  computed(() => props.semanticTypeId)
-);
+const settingV1Store = useSettingV1Store();
+
+watchEffect(async () => {
+  await settingV1Store.getOrFetchSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES,
+    true
+  );
+});
+
+const semanticTypeList = computed(() => {
+  const setting = settingV1Store.getSettingByName(
+    Setting_SettingName.SEMANTIC_TYPES
+  );
+  if (setting?.value?.value?.case === "semanticType") {
+    return setting.value.value.value.types ?? [];
+  }
+  return [];
+});
+
+const semanticType = computed(() => {
+  const id = props.semanticTypeId;
+  if (!id) return;
+  if (!hasWorkspacePermissionV2("bb.settings.get")) {
+    return create(SemanticTypeSetting_SemanticTypeSchema, {
+      id,
+      title: id,
+    });
+  }
+  return semanticTypeList.value.find((data) => data.id === id);
+});
 
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature(PlanFeature.FEATURE_DATA_MASKING);

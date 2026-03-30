@@ -271,8 +271,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sensitive-data.semantic-types.self"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/views/SettingWorkspaceSemanticTypes.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "SemanticTypesPage" }),
       },
       {
         path: "data-classification",

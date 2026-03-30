@@ -41,12 +41,19 @@ export default defineConfig({
         if (id !== "\0virtual:react-locales") return undefined;
         const localesDir = resolve(__dirname, "src/locales");
         const locales = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
-        const data: Record<string, { main: string; sub: string }> = {};
+        const data: Record<
+          string,
+          { main: string; sub: string; dynamic: string }
+        > = {};
         for (const locale of locales) {
           data[locale] = {
             main: readFileSync(`${localesDir}/${locale}.json`, "utf-8"),
             sub: readFileSync(
               `${localesDir}/subscription/${locale}.json`,
+              "utf-8"
+            ),
+            dynamic: readFileSync(
+              `${localesDir}/dynamic/${locale}.json`,
               "utf-8"
             ),
           };

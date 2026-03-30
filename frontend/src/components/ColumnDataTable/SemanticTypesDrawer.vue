@@ -1,19 +1,11 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent
-      :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
-      class="max-w-[100vw]"
-    >
-      <div class="w-2xl flex flex-col gap-y-4">
-        <p class="textinfolabel">
-          {{
-            $t("settings.sensitive-data.semantic-types.template.description")
-          }}
-        </p>
+    <DrawerContent :title="$t('settings.sensitive-data.semantic-types.self')">
+      <div class="flex flex-col gap-y-8 w-200 h-full">
         <SemanticTypesTable
-          :readonly="true"
           :row-clickable="true"
-          :semantic-item-list="semanticTemplateList"
+          :size="'small'"
+          :semantic-item-list="semanticItemList"
           @select="onApply($event)"
         />
       </div>
@@ -30,37 +22,36 @@
   </Drawer>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { getSemanticTemplateList } from "@/types";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
 import type { SemanticItem } from "./SemanticTypesTable.vue";
 import SemanticTypesTable from "./SemanticTypesTable.vue";
 
-defineProps<{
+const props = defineProps<{
   show: boolean;
+  semanticTypeList: SemanticTypeSetting_SemanticType[];
 }>();
 
 const emit = defineEmits<{
   (event: "dismiss"): void;
-  (event: "apply", item: SemanticTypeSetting_SemanticType): void;
+  (event: "apply", id: string): void;
 }>();
 
-const semanticTemplateList = computed((): SemanticItem[] =>
-  getSemanticTemplateList().map((item) => ({
-    dirty: false,
-    item,
-    mode: "NORMAL",
-  }))
-);
+const semanticItemList = computed((): SemanticItem[] => {
+  return props.semanticTypeList.map((semanticType) => {
+    return {
+      dirty: false,
+      item: semanticType,
+      mode: "NORMAL",
+    };
+  });
+});
 
-const onApply = (id: string) => {
-  const data = semanticTemplateList.value.find((data) => data.item.id === id);
-  if (data) {
-    emit("apply", data.item);
-  }
+const onApply = (semanticTypeId: string) => {
+  emit("apply", semanticTypeId);
   emit("dismiss");
 };
 </script>
