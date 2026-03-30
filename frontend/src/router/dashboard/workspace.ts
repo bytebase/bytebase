@@ -261,8 +261,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.global-masking"),
           requiredPermissionList: () => ["bb.policies.getMaskingRulePolicy"],
         },
-        component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GlobalMaskingPage" }),
       },
       {
         path: "semantic-types",
