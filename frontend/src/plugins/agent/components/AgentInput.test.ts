@@ -415,6 +415,171 @@ describe("AgentInput", () => {
     });
   });
 
+  test("filters stored assistant runtime errors from outbound history without mutating the transcript", async () => {
+    const store = useAgentStore();
+    const chatId = store.currentChatId!;
+
+    store.addMessage({
+      chatId,
+      role: "user",
+      content: "inspect this page",
+    });
+    store.addMessage({
+      chatId,
+      role: "assistant",
+      content: "Error: upstream timeout",
+      metadata: {
+        error: "upstream timeout",
+        route: "/projects/demo",
+      },
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("try again");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    const [messages] = mockRunAgentLoop.mock.calls.at(-1) ?? [];
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "system", content: "system-prompt" }),
+        expect.objectContaining({ role: "user", content: "inspect this page" }),
+        expect.objectContaining({ role: "user", content: "try again" }),
+      ])
+    );
+    expect(messages).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "assistant",
+          content: "Error: upstream timeout",
+        }),
+      ])
+    );
+    expect(
+      store.getMessages(chatId).some((message) => {
+        return (
+          message.role === "assistant" &&
+          message.content === "Error: upstream timeout" &&
+          message.metadata?.error === "upstream timeout"
+        );
+      })
+    ).toBe(true);
+  });
+
+  test("keeps assistant messages that start with Error when they are not tagged as runtime failures", async () => {
+    const store = useAgentStore();
+    const chatId = store.currentChatId!;
+
+    store.addMessage({
+      chatId,
+      role: "assistant",
+      content: "Error: validation failed for the previous request.",
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("what should I fix?");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    const [messages] = mockRunAgentLoop.mock.calls.at(-1) ?? [];
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "assistant",
+          content: "Error: validation failed for the previous request.",
+        }),
+        expect.objectContaining({
+          role: "user",
+          content: "what should I fix?",
+        }),
+      ])
+    );
+  });
+
+  test("keeps tool errors and normal history in outbound history", async () => {
+    const store = useAgentStore();
+    const chatId = store.currentChatId!;
+
+    store.addMessage({
+      chatId,
+      role: "user",
+      content: "open settings",
+    });
+    store.addMessage({
+      chatId,
+      role: "assistant",
+      content: "Trying the settings button.",
+    });
+    store.addMessage({
+      chatId,
+      role: "tool",
+      toolCallId: "tool-click",
+      content: "Error: element not found",
+      metadata: {
+        runId: "run-1",
+      },
+    });
+
+    mockRunAgentLoop.mockResolvedValue({
+      kind: "completed",
+      text: "Done",
+      success: true,
+    });
+
+    const wrapper = mount(AgentInput, {
+      global: {
+        plugins: [pinia, i18n],
+      },
+    });
+
+    await wrapper.find("textarea").setValue("retry with the menu");
+    await findButtonByText(wrapper, "Send")!.trigger("click");
+    await flushPromises();
+
+    const [messages] = mockRunAgentLoop.mock.calls.at(-1) ?? [];
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "system", content: "system-prompt" }),
+        expect.objectContaining({ role: "user", content: "open settings" }),
+        expect.objectContaining({
+          role: "assistant",
+          content: "Trying the settings button.",
+        }),
+        expect.objectContaining({
+          role: "tool",
+          toolCallId: "tool-click",
+          content: "Error: element not found",
+        }),
+        expect.objectContaining({
+          role: "user",
+          content: "retry with the menu",
+        }),
+      ])
+    );
+  });
+
   test("shows retry CTA and reruns interrupted turns from the last stable input", async () => {
     const store = useAgentStore();
     const chatId = store.currentChatId!;
