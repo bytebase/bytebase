@@ -51,6 +51,8 @@ export const i18nReady = i18n.use(initReactI18next).init({
   fallbackLng: "en-US",
   interpolation: {
     escapeValue: false,
+    prefix: "{",
+    suffix: "}",
   },
   initImmediate: false,
 });
