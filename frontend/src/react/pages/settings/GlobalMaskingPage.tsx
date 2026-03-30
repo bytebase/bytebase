@@ -7,7 +7,14 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -136,18 +143,22 @@ function MaskingRuleConfig({
     return [];
   });
 
+  const resetIdRef = useRef(0);
   const resetToRule = useCallback(
     async (rule: MaskingRulePolicy_MaskingRule) => {
+      const id = ++resetIdRef.current;
       let simpleExpr: SimpleExpr = emptySimpleExpr();
       if (rule.condition?.expression) {
         const parsedExprs = await batchConvertCELStringToParsedExpr([
           rule.condition.expression,
         ]);
+        if (id !== resetIdRef.current) return;
         const celExpr = parsedExprs[0];
         if (celExpr) {
           simpleExpr = resolveCELExpr(celExpr);
         }
       }
+      if (id !== resetIdRef.current) return;
       setExpr(wrapAsGroup(simpleExpr));
       setTitle(rule.condition?.title ?? "");
       setSemanticType(rule.semanticType || undefined);
@@ -157,13 +168,7 @@ function MaskingRuleConfig({
   );
 
   useEffect(() => {
-    let cancelled = false;
-    resetToRule(maskingRule).then(() => {
-      if (cancelled) return;
-    });
-    return () => {
-      cancelled = true;
-    };
+    resetToRule(maskingRule);
   }, [maskingRule, resetToRule]);
 
   const errorMessages = useMemo(() => {
