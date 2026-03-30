@@ -230,7 +230,9 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
 			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
 		}
-		// Loc unavailable, fall through to append.
+		// LimitCount is a non-constant expression (e.g. LIMIT $1, LIMIT (1+2)).
+		// Cannot safely rewrite in-place; let the caller fall back to CTE wrapper.
+		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
 	}
 
 	// No LIMIT clause — find the right insertion point.
