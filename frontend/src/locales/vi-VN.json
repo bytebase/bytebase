@@ -1846,6 +1846,10 @@
           "title": "Vấn đề bị trả lại",
           "label": "Khi người phê duyệt trả lại vấn đề"
         },
+        "issue-approved": {
+          "title": "Vấn đề đã được phê duyệt",
+          "label": "Khi tất cả các bước phê duyệt hoàn tất"
+        },
         "pipeline-failed": {
           "title": "Pipeline thất bại",
           "label": "Khi các tác vụ pipeline thất bại"

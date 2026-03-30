@@ -620,8 +620,9 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	approval.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 
-	// If the issue is a grant request and approved, complete it
+	// If the issue is approved, notify the creator and complete access request if applicable.
 	if approved {
+		approval.NotifyIssueApproved(ctx, s.store, s.webhookManager, issue, project, user)
 		issue, err = completeAccessRequestIssue(ctx, s.store, user.Email, issue)
 		if err != nil {
 			slog.Debug("failed to complete grant request issue", log.BBError(err))

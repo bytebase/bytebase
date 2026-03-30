@@ -118,6 +118,12 @@ export const projectWebhookV1ActivityItemList =
         supportDirectMessage: true,
       },
       {
+        title: t("project.webhook.activity-item.issue-approved.title"),
+        label: t("project.webhook.activity-item.issue-approved.label"),
+        activity: Activity_Type.ISSUE_APPROVED,
+        supportDirectMessage: true,
+      },
+      {
         title: t("project.webhook.activity-item.pipeline-failed.title"),
         label: t("project.webhook.activity-item.pipeline-failed.label"),
         activity: Activity_Type.PIPELINE_FAILED,
