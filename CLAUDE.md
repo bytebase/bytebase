@@ -149,10 +149,10 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - React pages are self-contained: import Pinia stores, `router`, utility functions directly
 - React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked separately via `tsconfig.react.json` (excluded from vue-tsc)
 
-**Mount system** (during migration):
+**Mount system** (temporary — removed after full migration):
 - React source lives in `./frontend/src/react/`
-- `ReactPageMount.vue` — minimal Vue wrapper that mounts/unmounts the React root and syncs locale. Use for pages with no Vue-specific deps
-- For pages needing Vue components (modals, drawers), create a thin page-specific mount (e.g., `SubscriptionPageMount.vue`) that only handles those Vue deps
+- `ReactPageMount.vue` — generic Vue wrapper that mounts/unmounts the React root and syncs locale. Used by most pages
+- Pages that still depend on Vue components (modals, drawers not yet migrated) get a thin page-specific mount (e.g., `SubscriptionPageMount.vue`) — these are removed once those Vue deps are rebuilt in React
 - `mount.ts` lazy-loads pages via `import.meta.glob` — exported function name must match the file name
 - To add a new React page: (1) create `.tsx` in `pages/`, (2) point route to `ReactPageMount.vue` with `props: () => ({ page: "PageName" })`
 
