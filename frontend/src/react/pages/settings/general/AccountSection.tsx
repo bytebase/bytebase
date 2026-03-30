@@ -662,9 +662,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
                   if (!Number.isNaN(val)) {
+                    const max =
+                      tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23;
                     setTokenState((s) => ({
                       ...s,
-                      accessTokenDuration: val,
+                      accessTokenDuration: Math.max(1, Math.min(val, max)),
                     }));
                   }
                 }}
@@ -729,9 +731,16 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 onChange={(e) => {
                   const val = parseInt(e.target.value, 10);
                   if (!Number.isNaN(val)) {
+                    const max =
+                      tokenState.refreshTokenTimeFormat === "HOURS"
+                        ? 23
+                        : undefined;
                     setTokenState((s) => ({
                       ...s,
-                      refreshTokenDuration: val,
+                      refreshTokenDuration: Math.max(
+                        1,
+                        max ? Math.min(val, max) : val
+                      ),
                     }));
                   }
                 }}
@@ -798,7 +807,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   if (!Number.isNaN(val)) {
                     setTokenState((s) => ({
                       ...s,
-                      inactiveTimeout: val,
+                      inactiveTimeout: Math.max(-1, val),
                     }));
                   }
                 }}

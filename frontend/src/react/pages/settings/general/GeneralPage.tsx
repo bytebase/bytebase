@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { t as vueT } from "@/plugins/i18n";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/router";
 import { pushNotification, useActuatorV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AccountSection } from "./AccountSection";
@@ -130,15 +132,29 @@ export function GeneralPage() {
     setDirtyKey((k) => k + 1);
   }, [t]);
 
-  // Route change guard
+  // Route change guard — both browser close and in-app navigation
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (allRefs.some((ref) => ref.current?.isDirty())) {
         e.preventDefault();
       }
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const removeGuard = router.beforeEach((_to, _from, next) => {
+      if (allRefs.some((ref) => ref.current?.isDirty())) {
+        if (!window.confirm(vueT("common.leave-without-saving"))) {
+          next(false);
+          return;
+        }
+      }
+      next();
+    });
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      removeGuard();
+    };
   }, []);
 
   // Hash scroll on mount
