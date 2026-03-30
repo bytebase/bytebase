@@ -144,12 +144,17 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Custom utilities use `@utility`, design tokens use `@theme`
 - Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
 
-**Vue-to-React bridge** (during migration):
-- React source lives in `./frontend/src/react/`
-- A single `ReactBridge.vue` mounts all React pages — handles lifecycle, locale sync, and reactive store-to-props mapping
+**Accessing Vue state from React**:
+- `useVueState(getter)` — React hook that subscribes to Vue reactive state (Pinia stores, refs, computed) via `useSyncExternalStore`. React components access stores directly — no bridge layer needed
+- React pages are self-contained: import Pinia stores, `router`, utility functions directly
 - React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked separately via `tsconfig.react.json` (excluded from vue-tsc)
-- `mount.ts` provides generic `mountReactPage`/`updateReactPage` using `import.meta.glob` to lazy-load pages
-- To add a new React page: (1) create `.tsx` in `pages/`, (2) register in `mount.ts`, (3) add props builder + watch deps in `ReactBridge.vue`, (4) point route to `ReactBridge.vue` with `props: () => ({ page: "PageName" })`
+
+**Mount system** (during migration):
+- React source lives in `./frontend/src/react/`
+- `ReactPageMount.vue` — minimal Vue wrapper that mounts/unmounts the React root and syncs locale. Use for pages with no Vue-specific deps
+- For pages needing Vue components (modals, drawers), create a thin page-specific mount (e.g., `SubscriptionPageMount.vue`) that only handles those Vue deps
+- `mount.ts` lazy-loads pages via `import.meta.glob` — exported function name must match the file name
+- To add a new React page: (1) create `.tsx` in `pages/`, (2) point route to `ReactPageMount.vue` with `props: () => ({ page: "PageName" })`
 
 ### Naming
 
