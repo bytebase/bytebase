@@ -127,6 +127,30 @@ psql -U bbdev bbdev
   - **No Empty Objects**: Do not add empty JSON objects (e.g., `"key": {}`) to locale files. Remove any empty objects you encounter
 - **Button Spacing**: Use `gap-x-2` for ALL button groups (modals, drawers, toolbars, inline actions). Never use `space-x` for buttons. See `./frontend/.claude/BUTTON_SPACING_STANDARDIZATION.md` for full guidelines
 
+### React (New Code)
+
+The frontend is migrating from Vue to React. **All new UI code should be written in React.**
+
+**Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
+
+**Component patterns**:
+- Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
+- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/react/components/ui/`
+- Use `useTranslation()` from `react-i18next` for i18n
+- Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens shared with the Vue layer
+
+**Tailwind CSS v4**:
+- CSS-first config in `./frontend/src/assets/css/tailwind.css` — no JS config file
+- Custom utilities use `@utility`, design tokens use `@theme`
+- Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
+
+**Vue-to-React bridge** (during migration):
+- React source lives in `./frontend/src/react/`
+- A single `ReactBridge.vue` mounts all React pages — handles lifecycle, locale sync, and reactive store-to-props mapping
+- React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked separately via `tsconfig.react.json` (excluded from vue-tsc)
+- `mount.ts` provides generic `mountReactPage`/`updateReactPage` using `import.meta.glob` to lazy-load pages
+- To add a new React page: (1) create `.tsx` in `pages/`, (2) register in `mount.ts`, (3) add props builder + watch deps in `ReactBridge.vue`, (4) point route to `ReactBridge.vue` with `props: () => ({ page: "PageName" })`
+
 ### Naming
 
 - Use American English

@@ -1,22 +1,27 @@
 <template>
   <div ref="container" />
-  <WeChatQRModal
-    v-if="showQRCodeModal"
-    :title="$t('subscription.request-with-qr')"
-    @close="showQRCodeModal = false"
-  />
-  <InstanceAssignment
-    :show="showInstanceAssignmentDrawer"
-    @dismiss="showInstanceAssignmentDrawer = false"
-  />
+  <!-- Subscription page Vue modals -->
+  <template v-if="page === 'SubscriptionPage'">
+    <WeChatQRModal
+      v-if="showQRCodeModal"
+      :title="$t('subscription.request-with-qr')"
+      @close="showQRCodeModal = false"
+    />
+    <InstanceAssignment
+      :show="showInstanceAssignmentDrawer"
+      @dismiss="showInstanceAssignmentDrawer = false"
+    />
+  </template>
 </template>
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   getWorkspaceId,
   pushNotification,
@@ -27,20 +32,25 @@ import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const props = defineProps<{
-  allowEdit: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    page: string;
+    allowEdit?: boolean;
+  }>(),
+  { allowEdit: false }
+);
 
 const { t, locale } = useI18n();
-const subscriptionStore = useSubscriptionV1Store();
+const router = useRouter();
 const actuatorStore = useActuatorV1Store();
+const subscriptionStore = useSubscriptionV1Store();
+const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
 const container = ref<HTMLElement>();
 // biome-ignore lint/suspicious/noExplicitAny: React Root type from dynamic import
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
-
+// --- Subscription-specific Vue state ---
 const showQRCodeModal = ref(false);
 const showInstanceAssignmentDrawer = ref(false);
 
@@ -52,92 +62,135 @@ const handleRequireEnterprise = () => {
   }
 };
 
-function getPlanType(): "FREE" | "TEAM" | "ENTERPRISE" {
-  switch (subscriptionStore.currentPlan) {
-    case PlanType.TEAM:
-      return "TEAM";
-    case PlanType.ENTERPRISE:
-      return "ENTERPRISE";
-    default:
-      return "FREE";
-  }
-}
+// --- Props builders per page ---
 
-function getCurrentPlanLabel(): string {
-  switch (subscriptionStore.currentPlan) {
-    case PlanType.TEAM:
-      return t("subscription.plan.team.title");
-    case PlanType.ENTERPRISE:
-      return t("subscription.plan.enterprise.title");
-    default:
-      return t("subscription.plan.free.title");
+function buildSubscriptionProps() {
+  let planType: "FREE" | "TEAM" | "ENTERPRISE" = "FREE";
+  let currentPlan = t("subscription.plan.free.title");
+  if (subscriptionStore.currentPlan === PlanType.TEAM) {
+    planType = "TEAM";
+    currentPlan = t("subscription.plan.team.title");
+  } else if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
+    planType = "ENTERPRISE";
+    currentPlan = t("subscription.plan.enterprise.title");
   }
-}
-
-function buildData() {
   return {
-    currentPlan: getCurrentPlanLabel(),
-    planType: getPlanType(),
-    isFreePlan: subscriptionStore.isFreePlan,
-    isTrialing: isTrialing.value,
-    isExpired: isExpired.value,
-    isSelfHostLicense: subscriptionStore.isSelfHostLicense,
-    showTrial: subscriptionStore.showTrial,
-    trialingDays: subscriptionStore.trialingDays,
-    expireAt: expireAt.value,
-    instanceCountLimit: subscriptionStore.instanceCountLimit,
-    instanceLicenseCount: subscriptionStore.instanceLicenseCount,
-    userCountLimit: subscriptionStore.userCountLimit,
-    activeUserCount: actuatorStore.activeUserCount,
-    activatedInstanceCount: actuatorStore.activatedInstanceCount,
-    workspaceId: getWorkspaceId(actuatorStore.workspaceResourceName),
-  };
-}
-
-async function handleUploadLicense(license: string): Promise<boolean> {
-  try {
-    await subscriptionStore.patchSubscription(license);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("subscription.update.success.title"),
-      description: t("subscription.update.success.description"),
-    });
-    return true;
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("subscription.update.failure.title"),
-      description: t("subscription.update.failure.description"),
-    });
-    return false;
-  }
-}
-
-async function renderReact() {
-  if (!container.value) return;
-  const [{ mountSubscriptionPage, updateSubscriptionPage }, i18nModule] =
-    await Promise.all([import("./mount"), import("./i18n")]);
-  // Sync Vue locale to React i18next
-  if (i18nModule.default.language !== locale.value) {
-    await i18nModule.default.changeLanguage(locale.value);
-  }
-  const opts = {
-    data: buildData(),
+    data: {
+      currentPlan,
+      planType,
+      isFreePlan: subscriptionStore.isFreePlan,
+      isTrialing: isTrialing.value,
+      isExpired: isExpired.value,
+      isSelfHostLicense: subscriptionStore.isSelfHostLicense,
+      showTrial: subscriptionStore.showTrial,
+      trialingDays: subscriptionStore.trialingDays,
+      expireAt: expireAt.value,
+      instanceCountLimit: subscriptionStore.instanceCountLimit,
+      instanceLicenseCount: subscriptionStore.instanceLicenseCount,
+      userCountLimit: subscriptionStore.userCountLimit,
+      activeUserCount: actuatorStore.activeUserCount,
+      activatedInstanceCount: actuatorStore.activatedInstanceCount,
+      workspaceId: getWorkspaceId(actuatorStore.workspaceResourceName),
+    },
     allowEdit: props.allowEdit,
     allowManageInstanceLicenses:
       props.allowEdit && hasWorkspacePermissionV2("bb.instances.list"),
-    onUploadLicense: handleUploadLicense,
+    onUploadLicense: async (license: string): Promise<boolean> => {
+      try {
+        await subscriptionStore.patchSubscription(license);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("subscription.update.success.title"),
+          description: t("subscription.update.success.description"),
+        });
+        return true;
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("subscription.update.failure.title"),
+          description: t("subscription.update.failure.description"),
+        });
+        return false;
+      }
+    },
     onRequireEnterprise: handleRequireEnterprise,
     onManageInstanceLicenses: () => {
       showInstanceAssignmentDrawer.value = true;
     },
   };
+}
+
+function buildMCPProps() {
+  return {
+    externalUrl: actuatorStore.serverInfo?.externalUrl ?? "",
+    needConfigureExternalUrl: actuatorStore.needConfigureExternalUrl,
+    canConfigureExternalUrl: hasWorkspacePermissionV2(
+      "bb.settings.setWorkspaceProfile"
+    ),
+    onConfigureExternalUrl: () => {
+      router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL });
+    },
+  };
+}
+
+const propsBuilders: Record<string, () => Record<string, unknown>> = {
+  SubscriptionPage: buildSubscriptionProps,
+  MCPPage: buildMCPProps,
+};
+
+function buildPageProps() {
+  const builder = propsBuilders[props.page];
+  if (!builder) throw new Error(`Unknown React page: ${props.page}`);
+  return builder();
+}
+
+// --- Reactive dependencies to watch per page ---
+
+const watchDeps = computed(() => {
+  if (props.page === "SubscriptionPage") {
+    return [
+      subscriptionStore.currentPlan,
+      subscriptionStore.isFreePlan,
+      isTrialing.value,
+      isExpired.value,
+      expireAt.value,
+      subscriptionStore.instanceCountLimit,
+      subscriptionStore.instanceLicenseCount,
+      subscriptionStore.userCountLimit,
+      actuatorStore.activeUserCount,
+      actuatorStore.activatedInstanceCount,
+      props.allowEdit,
+      locale.value,
+    ];
+  }
+  if (props.page === "MCPPage") {
+    return [
+      actuatorStore.serverInfo?.externalUrl,
+      actuatorStore.needConfigureExternalUrl,
+      locale.value,
+    ];
+  }
+  return [locale.value];
+});
+
+// --- Mount / update / unmount ---
+
+async function renderReact() {
+  if (!container.value) return;
+  const [{ mountReactPage, updateReactPage }, i18nModule] = await Promise.all([
+    import("./mount"),
+    import("./i18n"),
+  ]);
+  if (i18nModule.default.language !== locale.value) {
+    await i18nModule.default.changeLanguage(locale.value);
+  }
+  const pageProps = buildPageProps();
   if (!root) {
-    root = await mountSubscriptionPage(container.value, opts);
+    root = await mountReactPage(container.value, props.page, pageProps);
   } else {
-    await updateSubscriptionPage(root, opts);
+    await updateReactPage(root, props.page, pageProps);
   }
 }
 
@@ -145,26 +198,9 @@ onMounted(() => {
   renderReact();
 });
 
-// Re-render when reactive data changes
-watch(
-  () => [
-    subscriptionStore.currentPlan,
-    subscriptionStore.isFreePlan,
-    isTrialing.value,
-    isExpired.value,
-    expireAt.value,
-    subscriptionStore.instanceCountLimit,
-    subscriptionStore.instanceLicenseCount,
-    subscriptionStore.userCountLimit,
-    actuatorStore.activeUserCount,
-    actuatorStore.activatedInstanceCount,
-    props.allowEdit,
-    locale.value,
-  ],
-  () => {
-    renderReact();
-  }
-);
+watch(watchDeps, () => {
+  renderReact();
+});
 
 onUnmounted(() => {
   root?.unmount();
