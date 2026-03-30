@@ -31,8 +31,7 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 	// Parse each file and build individual symbol tables
 	fileCheckers := make([]*fileSymbolTable, 0, len(files))
 	for filePath, statement := range files {
-		// Validate syntax using ANTLR parser first (stricter than omni for some edge cases)
-		if _, err := pgparser.ParsePostgreSQL(statement); err != nil {
+		if err := validateParenBalance(statement); err != nil {
 			return map[string][]*storepb.Advice{
 				filePath: {{
 					Status:  storepb.Advice_ERROR,
@@ -42,7 +41,6 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 				}},
 			}, nil
 		}
-
 		stmts, err := pgparser.ParsePg(statement)
 		if err != nil {
 			return map[string][]*storepb.Advice{
