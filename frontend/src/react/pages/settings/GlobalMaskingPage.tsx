@@ -23,6 +23,7 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
+import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -52,10 +53,7 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
   batchConvertCELStringToParsedExpr,
@@ -356,73 +354,6 @@ function MaskingRuleConfig({
 }
 
 // ============================================================
-// FeatureAttentionBanner
-// ============================================================
-
-function FeatureAttentionBanner({
-  hasFeature,
-  existInstanceWithoutLicense,
-}: {
-  hasFeature: boolean;
-  existInstanceWithoutLicense: boolean;
-}) {
-  const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-
-  const showBanner = !hasFeature || existInstanceWithoutLicense;
-  if (!showBanner) return null;
-
-  const isWarning = !hasFeature;
-  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
-  const featureDesc = t(
-    "dynamic.subscription.features.FEATURE_DATA_MASKING.desc"
-  );
-
-  let description: string;
-  if (!hasFeature) {
-    const startTrial = subscriptionStore.isTrialing
-      ? ""
-      : t("subscription.trial-for-days", {
-          days: subscriptionStore.trialingDays,
-        });
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
-      PlanFeature.FEATURE_DATA_MASKING
-    );
-    if (
-      requiredPlan === PlanType.FREE &&
-      subscriptionStore.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
-    ) {
-      description = `${featureDesc}\n${startTrial}`;
-    } else {
-      const trialText = t("subscription.required-plan-with-trial", {
-        requiredPlan: t(
-          `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
-        ),
-        startTrial,
-      });
-      description = `${featureDesc}\n${trialText}`;
-    }
-  } else {
-    const attention = t(
-      "subscription.instance-assignment.missing-license-attention"
-    );
-    description = `${featureDesc}\n${attention}`;
-  }
-
-  return (
-    <div
-      className={`rounded-md border px-4 py-3 text-sm whitespace-pre-line ${
-        isWarning
-          ? "border-yellow-300 bg-yellow-50 text-yellow-800"
-          : "border-blue-200 bg-blue-50 text-blue-800"
-      }`}
-    >
-      {description}
-    </div>
-  );
-}
-
-// ============================================================
 // GlobalMaskingPage (main)
 // ============================================================
 
@@ -435,11 +366,6 @@ export function GlobalMaskingPage() {
 
   const hasSensitiveDataFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
-  );
-  const existInstanceWithoutLicense = useVueState(
-    () =>
-      actuatorStore.totalInstanceCount > actuatorStore.activatedInstanceCount &&
-      subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
   const hasPermission = hasWorkspacePermissionV2(
@@ -630,10 +556,7 @@ export function GlobalMaskingPage() {
 
   return (
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
-      <FeatureAttentionBanner
-        hasFeature={hasSensitiveDataFeature}
-        existInstanceWithoutLicense={existInstanceWithoutLicense}
-      />
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
       {hasSensitiveDataFeature && (
         <div className="rounded-md border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm">
           {t("custom-approval.rule.first-match-wins")}
