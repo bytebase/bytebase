@@ -6,8 +6,13 @@ import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
-import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
-import { getSemanticTemplateList } from "@/types";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useSettingV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
+import { getSemanticTemplateList, instanceLimitFeature } from "@/types";
 import type {
   Algorithm,
   SemanticTypeSetting_SemanticType,
@@ -24,7 +29,10 @@ import {
   Setting_SettingName,
   SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -95,9 +103,17 @@ export function SemanticTypesPage() {
   const { t } = useTranslation();
   const settingStore = useSettingV1Store();
 
+  const subscriptionStore = useSubscriptionV1Store();
+  const actuatorStore = useActuatorV1Store();
+
   const hasPermission = hasWorkspacePermissionV2("bb.policies.update");
-  const hasSensitiveDataFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
+  const hasSensitiveDataFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+  );
+  const existInstanceWithoutLicense = useVueState(
+    () =>
+      actuatorStore.totalInstanceCount > actuatorStore.activatedInstanceCount &&
+      instanceLimitFeature.has(PlanFeature.FEATURE_DATA_MASKING)
   );
   const isReadonly = !hasPermission || !hasSensitiveDataFeature;
 
@@ -354,12 +370,10 @@ export function SemanticTypesPage() {
 
   return (
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
-      {!hasSensitiveDataFeature && (
-        <div className="rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          {/* eslint-disable-next-line @intlify/vue-i18n/no-missing-keys */}
-          {t("dynamic.subscription.features.FEATURE_DATA_MASKING.desc")}
-        </div>
-      )}
+      <FeatureAttentionBanner
+        hasFeature={hasSensitiveDataFeature}
+        existInstanceWithoutLicense={existInstanceWithoutLicense}
+      />
       <div className="flex justify-end">
         <div className="flex items-center gap-x-2">
           <Button
@@ -452,6 +466,71 @@ export function SemanticTypesPage() {
           onDismiss={() => setAlgorithmDrawer(null)}
         />
       )}
+    </div>
+  );
+}
+
+// --- FeatureAttentionBanner ---
+
+function FeatureAttentionBanner({
+  hasFeature,
+  existInstanceWithoutLicense,
+}: {
+  hasFeature: boolean;
+  existInstanceWithoutLicense: boolean;
+}) {
+  const { t } = useTranslation();
+  const subscriptionStore = useSubscriptionV1Store();
+
+  const showBanner = !hasFeature || existInstanceWithoutLicense;
+  if (!showBanner) return null;
+
+  const isWarning = !hasFeature;
+  // eslint-disable-next-line @intlify/vue-i18n/no-missing-keys
+  const featureDesc = t(
+    "dynamic.subscription.features.FEATURE_DATA_MASKING.desc"
+  );
+
+  let description: string;
+  if (!hasFeature) {
+    const startTrial = subscriptionStore.isTrialing
+      ? ""
+      : t("subscription.trial-for-days", {
+          days: subscriptionStore.trialingDays,
+        });
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
+      PlanFeature.FEATURE_DATA_MASKING
+    );
+    if (
+      requiredPlan === PlanType.FREE &&
+      subscriptionStore.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
+    ) {
+      description = `${featureDesc}\n${startTrial}`;
+    } else {
+      const trialText = t("subscription.required-plan-with-trial", {
+        requiredPlan: t(
+          `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
+        ),
+        startTrial,
+      });
+      description = `${featureDesc}\n${trialText}`;
+    }
+  } else {
+    const attention = t(
+      "subscription.instance-assignment.missing-license-attention"
+    );
+    description = `${featureDesc}\n${attention}`;
+  }
+
+  return (
+    <div
+      className={`rounded-md border px-4 py-3 text-sm whitespace-pre-line ${
+        isWarning
+          ? "border-yellow-300 bg-yellow-50 text-yellow-800"
+          : "border-blue-200 bg-blue-50 text-blue-800"
+      }`}
+    >
+      {description}
     </div>
   );
 }
