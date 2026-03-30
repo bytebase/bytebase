@@ -2,11 +2,10 @@ package pg
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
+	omnipg "github.com/bytebase/omni/pg"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -32,9 +31,18 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 	// Parse each file and build individual symbol tables
 	fileCheckers := make([]*fileSymbolTable, 0, len(files))
 	for filePath, statement := range files {
-		parseResults, err := pgparser.ParsePostgreSQL(statement)
+		if err := validateParenBalance(statement); err != nil {
+			return map[string][]*storepb.Advice{
+				filePath: {{
+					Status:  storepb.Advice_ERROR,
+					Code:    code.StatementSyntaxError.Int32(),
+					Title:   "SQL syntax error",
+					Content: fmt.Sprintf("Failed to parse SQL in file '%s': %v", filePath, err),
+				}},
+			}, nil
+		}
+		stmts, err := pgparser.ParsePg(statement)
 		if err != nil {
-			// Return parse error for this file
 			return map[string][]*storepb.Advice{
 				filePath: {{
 					Status:  storepb.Advice_ERROR,
@@ -45,14 +53,11 @@ func CheckSDLIntegrity(files map[string]string) (map[string][]*storepb.Advice, e
 			}, nil
 		}
 
-		checker := &sdlIntegrityChecker{
-			BasePostgreSQLParserListener: &parser.BasePostgreSQLParserListener{},
-			symbolTable:                  newSymbolTable(),
-		}
+		st, advices := buildFileSymbolTable(stmts, statement)
 
-		// Build symbol table for this file - process all statements
-		for _, parseResult := range parseResults {
-			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+		checker := &sdlIntegrityChecker{
+			symbolTable: st,
+			adviceList:  advices,
 		}
 
 		fileCheckers = append(fileCheckers, &fileSymbolTable{
@@ -365,7 +370,7 @@ func (c *sdlIntegrityChecker) validateForeignKeysWithMergedTable(merged *mergedS
 						"Foreign key constraint '%s' on table '%s.%s' references table '%s.%s' which does not exist in any SDL file.\n\n"+
 							"Foreign key columns: %s\n\n"+
 							"Make sure the referenced table is defined in one of the SDL files.",
-						c.getConstraintName(constraint),
+						getConstraintName(constraint),
 						table.schemaName, table.tableName,
 						constraint.fkReferencedSchema, constraint.fkReferencedTable,
 						formatColumnList(constraint.fkColumns),
@@ -400,18 +405,17 @@ func (c *sdlIntegrityChecker) validateForeignKeysWithMergedTable(merged *mergedS
 								"  Source column: %s.%s.%s\n"+
 								"  Referenced column: %s.%s.%s (DOES NOT EXIST)\n\n"+
 								"Available columns in '%s.%s': %s",
-							c.getConstraintName(constraint),
+							getConstraintName(constraint),
 							table.schemaName, table.tableName,
 							refCol,
 							constraint.fkReferencedSchema, constraint.fkReferencedTable,
 							table.schemaName, table.tableName, fkCol,
 							constraint.fkReferencedSchema, constraint.fkReferencedTable, refCol,
 							constraint.fkReferencedSchema, constraint.fkReferencedTable,
-							c.getColumnList(refTable),
+							getColumnList(refTable),
 						),
 						StartPosition: &storepb.Position{Line: int32(constraint.line)},
 					})
-					continue
 				}
 			}
 		}
@@ -421,12 +425,11 @@ func (c *sdlIntegrityChecker) validateForeignKeysWithMergedTable(merged *mergedS
 // validateViewDependenciesWithMergedTable validates view dependencies using merged symbol table
 func (c *sdlIntegrityChecker) validateViewDependenciesWithMergedTable(merged *mergedSymbolTable) {
 	for _, view := range c.symbolTable.views {
-		if view.selectStmt == nil {
+		if view.selectQuery == nil {
 			continue
 		}
 
-		// Extract dependencies using the same approach as generate_migration
-		dependencies := c.getViewDependenciesFromAST(view.selectStmt, view.schemaName)
+		dependencies := getViewDependencies(view.selectQuery, view.schemaName)
 
 		for _, dep := range dependencies {
 			// Skip system schemas
@@ -476,9 +479,8 @@ func formatColumnList(columns []string) string {
 	return result
 }
 
-// sdlIntegrityChecker performs multi-pass integrity checking
+// sdlIntegrityChecker holds the symbol table and advices for integrity checking
 type sdlIntegrityChecker struct {
-	*parser.BasePostgreSQLParserListener
 	symbolTable *symbolTable
 	adviceList  []*storepb.Advice
 }
@@ -536,11 +538,10 @@ type indexDef struct {
 }
 
 type viewDef struct {
-	schemaName string
-	viewName   string
-	// Store the SELECT statement context for dependency analysis
-	selectStmt parser.ISelectstmtContext
-	line       int
+	schemaName  string
+	viewName    string
+	selectQuery ast.Node // the SELECT query AST node
+	line        int
 }
 
 type constraintDef struct {
@@ -554,8 +555,6 @@ type constraintDef struct {
 	fkReferencedTable   string
 	fkColumns           []string
 	fkReferencedColumns []string
-	// For CHECK constraints
-	checkExpr parser.IA_exprContext
 }
 
 func newSymbolTable() *symbolTable {
@@ -597,13 +596,13 @@ func (st *symbolTable) addIndex(schema, index, table string, line int) {
 	}
 }
 
-func (st *symbolTable) addView(schema, view string, selectStmt parser.ISelectstmtContext, line int) {
+func (st *symbolTable) addView(schema, view string, selectQuery ast.Node, line int) {
 	key := qualifiedName(schema, view)
 	st.views[key] = &viewDef{
-		schemaName: schema,
-		viewName:   view,
-		selectStmt: selectStmt,
-		line:       line,
+		schemaName:  schema,
+		viewName:    view,
+		selectQuery: selectQuery,
+		line:        line,
 	}
 }
 
@@ -642,29 +641,49 @@ func qualifiedName(schema, name string) string {
 	return schema + "." + name
 }
 
-// Pass 1: Collect definitions
+// buildFileSymbolTable iterates omni statements and builds the symbol table.
+func buildFileSymbolTable(stmts []omnipg.Statement, fileText string) (*symbolTable, []*storepb.Advice) {
+	st := newSymbolTable()
+	var advices []*storepb.Advice
+	for _, stmt := range stmts {
+		switch n := stmt.AST.(type) {
+		case *ast.CreateStmt:
+			processCreateStmt(n, fileText, st, &advices)
+		case *ast.IndexStmt:
+			processIndexStmt(n, fileText, st, &advices)
+		case *ast.ViewStmt:
+			processViewStmt(n, fileText, st)
+		default:
+		}
+	}
+	return st, advices
+}
 
-func (c *sdlIntegrityChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+// locToLine converts a byte offset to a 1-based line number.
+func locToLine(fileText string, loc ast.Loc) int {
+	if loc.Start < 0 || fileText == "" {
+		return 1
+	}
+	pos := pgparser.ByteOffsetToRunePosition(fileText, loc.Start)
+	return int(pos.Line)
+}
+
+func processCreateStmt(n *ast.CreateStmt, fileText string, st *symbolTable, advices *[]*storepb.Advice) {
+	if n.Relation == nil {
 		return
 	}
 
-	var tableName, schemaName string
-	allQualifiedNames := ctx.AllQualified_name()
-	if len(allQualifiedNames) > 0 {
-		schemaName = extractSchemaName(allQualifiedNames[0])
-		tableName = extractTableName(allQualifiedNames[0])
-	}
-
+	tableName := n.Relation.Relname
+	schemaName := n.Relation.Schemaname
 	if schemaName == "" {
 		schemaName = "public"
 	}
 
-	line := ctx.GetStart().GetLine()
+	line := locToLine(fileText, n.Loc)
 
 	// Check for duplicate table name
-	if existing := c.symbolTable.getTable(schemaName, tableName); existing != nil {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
+	if existing := st.getTable(schemaName, tableName); existing != nil {
+		*advices = append(*advices, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
 			Code:   code.SDLDuplicateTableName.Int32(),
 			Title:  "Duplicate table name",
@@ -682,153 +701,144 @@ func (c *sdlIntegrityChecker) EnterCreatestmt(ctx *parser.CreatestmtContext) {
 		return
 	}
 
-	// Add table to symbol table
-	table := c.symbolTable.addTable(schemaName, tableName, line)
+	table := st.addTable(schemaName, tableName, line)
 
-	// Collect column definitions and constraints
-	if ctx.Opttableelementlist() != nil && ctx.Opttableelementlist().Tableelementlist() != nil {
-		allElements := ctx.Opttableelementlist().Tableelementlist().AllTableelement()
-
-		position := 0
-		for _, elem := range allElements {
-			// Collect column definitions
-			if elem.ColumnDef() != nil {
-				colDef := elem.ColumnDef()
-				colName := colDef.Colid().GetText()
-
-				// Check for duplicate column name
-				if _, exists := table.columns[colName]; exists {
-					c.adviceList = append(c.adviceList, &storepb.Advice{
-						Status: storepb.Advice_ERROR,
-						Code:   code.SDLDuplicateColumnName.Int32(),
-						Title:  "Duplicate column name",
-						Content: fmt.Sprintf(
-							"Column '%s' is defined multiple times in table '%s.%s'.\n\n"+
-								"Each column can only be defined once per table.",
-							colName, schemaName, tableName,
-						),
-						StartPosition: &storepb.Position{
-							Line: int32(colDef.GetStart().GetLine()),
-						},
-					})
-					continue
-				}
-
-				// Extract column data type
-				dataType := c.extractDataType(colDef.Typename())
-
-				// Check for NOT NULL constraint
-				notNull := false
-				if colDef.Colquallist() != nil {
-					for _, qual := range colDef.Colquallist().AllColconstraint() {
-						if qual.Colconstraintelem() != nil {
-							elem := qual.Colconstraintelem()
-							if elem.NOT() != nil && elem.NULL_P() != nil {
-								notNull = true
-							}
-						}
-					}
-				}
-
-				table.columns[colName] = &columnDef{
-					name:     colName,
-					dataType: dataType,
-					notNull:  notNull,
-					position: position,
-					line:     colDef.GetStart().GetLine(),
-				}
-				position++
+	// Process columns from TableElts
+	position := 0
+	if n.TableElts != nil {
+		for _, item := range n.TableElts.Items {
+			switch elem := item.(type) {
+			case *ast.ColumnDef:
+				processColumnDef(elem, fileText, schemaName, tableName, table, &position, advices)
+			case *ast.Constraint:
+				processTableConstraint(elem, fileText, table, st, advices)
+			default:
 			}
+		}
+	}
 
-			// Collect table constraints
-			if elem.Tableconstraint() != nil {
-				c.collectTableConstraint(elem.Tableconstraint(), table)
+	// Process Constraints list
+	if n.Constraints != nil {
+		for _, item := range n.Constraints.Items {
+			if c, ok := item.(*ast.Constraint); ok {
+				processTableConstraint(c, fileText, table, st, advices)
 			}
 		}
 	}
 }
 
-func (c *sdlIntegrityChecker) collectTableConstraint(ctx parser.ITableconstraintContext, table *tableDef) {
-	constraint := &constraintDef{
-		schemaName: table.schemaName,
-		tableName:  table.tableName,
-		line:       ctx.GetStart().GetLine(),
-	}
+func processColumnDef(col *ast.ColumnDef, fileText, schemaName, tableName string, table *tableDef, position *int, advices *[]*storepb.Advice) {
+	colName := col.Colname
 
-	// Get constraint name if present
-	if ctx.CONSTRAINT() != nil {
-		if ctx.Name() != nil && ctx.Name().Colid() != nil {
-			constraint.name = ctx.Name().Colid().GetText()
-		}
-	}
+	colLine := locToLine(fileText, col.Loc)
 
-	if ctx.Constraintelem() == nil {
+	// Check for duplicate column name
+	if _, exists := table.columns[colName]; exists {
+		*advices = append(*advices, &storepb.Advice{
+			Status: storepb.Advice_ERROR,
+			Code:   code.SDLDuplicateColumnName.Int32(),
+			Title:  "Duplicate column name",
+			Content: fmt.Sprintf(
+				"Column '%s' is defined multiple times in table '%s.%s'.\n\n"+
+					"Each column can only be defined once per table.",
+				colName, schemaName, tableName,
+			),
+			StartPosition: &storepb.Position{
+				Line: int32(colLine),
+			},
+		})
 		return
 	}
 
-	elem := ctx.Constraintelem()
+	dt := extractOmniDataType(col.TypeName)
 
-	// Determine constraint type and extract details
-	if elem.PRIMARY() != nil && elem.KEY() != nil {
+	// Check for NOT NULL: either via IsNotNull flag or via column constraints
+	notNull := col.IsNotNull
+	if !notNull && col.Constraints != nil {
+		for _, cItem := range col.Constraints.Items {
+			if c, ok := cItem.(*ast.Constraint); ok && c.Contype == ast.CONSTR_NOTNULL {
+				notNull = true
+				break
+			}
+		}
+	}
+
+	table.columns[colName] = &columnDef{
+		name:     colName,
+		dataType: dt,
+		notNull:  notNull,
+		position: *position,
+		line:     colLine,
+	}
+	*position++
+}
+
+func processTableConstraint(c *ast.Constraint, fileText string, table *tableDef, st *symbolTable, advices *[]*storepb.Advice) {
+	constraint := &constraintDef{
+		schemaName: table.schemaName,
+		tableName:  table.tableName,
+		line:       locToLine(fileText, c.Loc),
+		name:       c.Conname,
+	}
+
+	switch c.Contype {
+	case ast.CONSTR_PRIMARY:
 		constraint.constraintType = "PRIMARY KEY"
 		table.primaryKeys = append(table.primaryKeys, constraint)
-	} else if elem.UNIQUE() != nil {
+	case ast.CONSTR_UNIQUE:
 		constraint.constraintType = "UNIQUE"
-	} else if elem.CHECK() != nil {
+	case ast.CONSTR_CHECK:
 		constraint.constraintType = "CHECK"
-		// Extract CHECK expression
-		if elem.A_expr() != nil {
-			constraint.checkExpr = elem.A_expr()
-		}
-	} else if elem.FOREIGN() != nil && elem.KEY() != nil {
+	case ast.CONSTR_FOREIGN:
 		constraint.constraintType = "FOREIGN KEY"
 		// Extract FK columns
-		if elem.Columnlist() != nil {
-			for _, col := range elem.Columnlist().AllColumnElem() {
-				if col.Colid() != nil {
-					constraint.fkColumns = append(constraint.fkColumns, col.Colid().GetText())
+		if c.FkAttrs != nil {
+			for _, item := range c.FkAttrs.Items {
+				if s, ok := item.(*ast.String); ok {
+					constraint.fkColumns = append(constraint.fkColumns, s.Str)
 				}
 			}
 		}
-		// Extract referenced table and columns
-		if elem.Qualified_name() != nil {
-			constraint.fkReferencedSchema = extractSchemaName(elem.Qualified_name())
-			constraint.fkReferencedTable = extractTableName(elem.Qualified_name())
+		// Extract referenced table
+		if c.Pktable != nil {
+			constraint.fkReferencedTable = c.Pktable.Relname
+			constraint.fkReferencedSchema = c.Pktable.Schemaname
 			if constraint.fkReferencedSchema == "" {
 				constraint.fkReferencedSchema = "public"
 			}
 		}
-		if elem.Opt_column_list() != nil && elem.Opt_column_list().Columnlist() != nil {
-			for _, col := range elem.Opt_column_list().Columnlist().AllColumnElem() {
-				if col.Colid() != nil {
-					constraint.fkReferencedColumns = append(constraint.fkReferencedColumns, col.Colid().GetText())
+		// Extract referenced columns
+		if c.PkAttrs != nil {
+			for _, item := range c.PkAttrs.Items {
+				if s, ok := item.(*ast.String); ok {
+					constraint.fkReferencedColumns = append(constraint.fkReferencedColumns, s.Str)
 				}
 			}
 		}
+	default:
+		return
 	}
 
 	// Check for duplicate constraint name
-	// PRIMARY KEY and UNIQUE: must be unique within schema
-	// CHECK and FOREIGN KEY: must be unique within table
 	if constraint.name != "" {
-		if !c.symbolTable.addConstraintName(table.schemaName, table.tableName, constraint.name, constraint) {
+		if !st.addConstraintName(table.schemaName, table.tableName, constraint.name, constraint) {
 			isPKOrUK := constraint.constraintType == "PRIMARY KEY" || constraint.constraintType == "UNIQUE"
 			var existing *constraintDef
 			var scope string
 			var scopeDetail string
 
 			if isPKOrUK {
-				existing = c.symbolTable.schemaConstraintNames[table.schemaName][constraint.name]
+				existing = st.schemaConstraintNames[table.schemaName][constraint.name]
 				scope = "schema"
 				scopeDetail = "PostgreSQL requires PRIMARY KEY and UNIQUE constraint names to be unique within a schema."
 			} else {
 				tableKey := qualifiedName(table.schemaName, table.tableName)
-				existing = c.symbolTable.tableConstraintNames[tableKey][constraint.name]
+				existing = st.tableConstraintNames[tableKey][constraint.name]
 				scope = "table"
 				scopeDetail = "PostgreSQL requires CHECK and FOREIGN KEY constraint names to be unique within a table."
 			}
 
-			c.adviceList = append(c.adviceList, &storepb.Advice{
+			*advices = append(*advices, &storepb.Advice{
 				Status: storepb.Advice_ERROR,
 				Code:   code.SDLDuplicateConstraintName.Int32(),
 				Title:  "Duplicate constraint name",
@@ -853,76 +863,14 @@ func (c *sdlIntegrityChecker) collectTableConstraint(ctx parser.ITableconstraint
 	table.constraints = append(table.constraints, constraint)
 }
 
-func (*sdlIntegrityChecker) extractDataType(typeCtx parser.ITypenameContext) *dataType {
-	if typeCtx == nil {
-		return &dataType{baseType: "UNKNOWN"}
-	}
+func processIndexStmt(n *ast.IndexStmt, fileText string, st *symbolTable, advices *[]*storepb.Advice) {
+	indexName := n.Idxname
 
-	dt := &dataType{}
-
-	// Use GetText() to extract the full type string
-	typeText := strings.ToUpper(typeCtx.GetText())
-
-	// Parse the type to separate base type from modifiers
-	// e.g., "VARCHAR(100)" -> baseType="VARCHAR", length=100
-	// e.g., "NUMERIC(10,2)" -> baseType="NUMERIC", precision=10, scale=2
-
-	// Find opening parenthesis
-	parenIdx := strings.Index(typeText, "(")
-	if parenIdx == -1 {
-		// No modifiers, just the base type
-		dt.baseType = typeText
-	} else {
-		// Extract base type
-		dt.baseType = typeText[:parenIdx]
-
-		// Extract modifiers (numbers inside parentheses)
-		modifiers := typeText[parenIdx+1:]
-		if closeIdx := strings.Index(modifiers, ")"); closeIdx != -1 {
-			modifiers = modifiers[:closeIdx]
-		}
-
-		// Split by comma for precision/scale
-		parts := strings.Split(modifiers, ",")
-		if len(parts) >= 1 {
-			if length, err := strconv.Atoi(strings.TrimSpace(parts[0])); err == nil {
-				dt.length = length
-				dt.precision = length // For NUMERIC types, this is precision
-			}
-		}
-		if len(parts) >= 2 {
-			if scale, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil {
-				dt.scale = scale
-			}
-		}
-	}
-
-	// Check for array notation [] and strip it from base type
-	if strings.HasSuffix(typeText, "[]") {
-		dt.baseType = strings.TrimSuffix(dt.baseType, "[]")
-	}
-
-	return dt
-}
-
-func (c *sdlIntegrityChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get index name
-	var indexName string
-	if ctx.Name() != nil && ctx.Name().Colid() != nil {
-		indexName = ctx.Name().Colid().GetText()
-	}
-
-	// Get table name and schema
 	var schemaName, tableName string
-	if ctx.Relation_expr() != nil && ctx.Relation_expr().Qualified_name() != nil {
-		schemaName = extractSchemaName(ctx.Relation_expr().Qualified_name())
-		tableName = extractTableName(ctx.Relation_expr().Qualified_name())
+	if n.Relation != nil {
+		schemaName = n.Relation.Schemaname
+		tableName = n.Relation.Relname
 	}
-
 	if schemaName == "" {
 		schemaName = "public"
 	}
@@ -931,12 +879,12 @@ func (c *sdlIntegrityChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		return // Unnamed index check is handled by sdl_check.go
 	}
 
-	line := ctx.GetStart().GetLine()
+	line := locToLine(fileText, n.Loc)
 
 	// Check for duplicate index name
 	key := qualifiedName(schemaName, indexName)
-	if existing, exists := c.symbolTable.indexes[key]; exists {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
+	if existing, exists := st.indexes[key]; exists {
+		*advices = append(*advices, &storepb.Advice{
 			Status: storepb.Advice_ERROR,
 			Code:   code.SDLDuplicateIndexName.Int32(),
 			Title:  "Duplicate index name",
@@ -954,33 +902,115 @@ func (c *sdlIntegrityChecker) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 		return
 	}
 
-	c.symbolTable.addIndex(schemaName, indexName, tableName, line)
+	st.addIndex(schemaName, indexName, tableName, line)
 }
 
-func (c *sdlIntegrityChecker) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
+func processViewStmt(n *ast.ViewStmt, fileText string, st *symbolTable) {
+	if n.View == nil {
 		return
 	}
 
-	var viewName, schemaName string
-	if ctx.Qualified_name() != nil {
-		schemaName = extractSchemaName(ctx.Qualified_name())
-		viewName = extractTableName(ctx.Qualified_name())
-	}
-
+	viewName := n.View.Relname
+	schemaName := n.View.Schemaname
 	if schemaName == "" {
 		schemaName = "public"
 	}
 
-	line := ctx.GetStart().GetLine()
+	line := locToLine(fileText, n.Loc)
 
-	// Get the SELECT statement
-	var selectStmt parser.ISelectstmtContext
-	if ctx.Selectstmt() != nil {
-		selectStmt = ctx.Selectstmt()
+	st.addView(schemaName, viewName, n.Query, line)
+}
+
+// extractOmniDataType extracts data type information from an omni TypeName.
+func extractOmniDataType(tn *ast.TypeName) *dataType {
+	if tn == nil {
+		return &dataType{baseType: "UNKNOWN"}
 	}
 
-	c.symbolTable.addView(schemaName, viewName, selectStmt, line)
+	dt := &dataType{}
+
+	// Build the type name from Names list
+	typeName := omniTypeNameStr(tn)
+	dt.baseType = strings.ToUpper(typeName)
+
+	// Extract length/precision from Typmods
+	if tn.Typmods != nil {
+		for i, item := range tn.Typmods.Items {
+			val := extractIntValue(item)
+			if val < 0 {
+				continue
+			}
+			if i == 0 {
+				dt.length = val
+				dt.precision = val
+			}
+			if i == 1 {
+				dt.scale = val
+			}
+		}
+	}
+
+	// Check for array type
+	if tn.ArrayBounds != nil && len(tn.ArrayBounds.Items) > 0 {
+		dt.baseType = strings.TrimSuffix(dt.baseType, "[]")
+	}
+
+	return dt
+}
+
+// extractIntValue extracts an integer value from an AST node.
+func extractIntValue(item ast.Node) int {
+	switch v := item.(type) {
+	case *ast.Integer:
+		return int(v.Ival)
+	case *ast.A_Const:
+		if iv, ok := v.Val.(*ast.Integer); ok {
+			return int(iv.Ival)
+		}
+	default:
+	}
+	return -1
+}
+
+// omniTypeNameStr builds a type name string from a TypeName node.
+func omniTypeNameStr(tn *ast.TypeName) string {
+	if tn == nil || tn.Names == nil {
+		return "UNKNOWN"
+	}
+
+	var parts []string
+	for _, item := range tn.Names.Items {
+		if s, ok := item.(*ast.String); ok {
+			parts = append(parts, s.Str)
+		}
+	}
+
+	if len(parts) == 0 {
+		return "UNKNOWN"
+	}
+
+	// The Names list typically contains [catalog, typename] e.g. ["pg_catalog", "int4"]
+	// We want just the last part (the actual type name).
+	typeName := parts[len(parts)-1]
+
+	// Map common internal type names to SQL type names
+	typeMap := map[string]string{
+		"int2":    "SMALLINT",
+		"int4":    "INTEGER",
+		"int8":    "BIGINT",
+		"float4":  "REAL",
+		"float8":  "DOUBLE PRECISION",
+		"bool":    "BOOLEAN",
+		"varchar": "VARCHAR",
+		"bpchar":  "CHARACTER",
+		"numeric": "NUMERIC",
+	}
+
+	if mapped, ok := typeMap[typeName]; ok {
+		return mapped
+	}
+
+	return typeName
 }
 
 // Pass 2: Validate references
@@ -1023,116 +1053,69 @@ type tableReference struct {
 	tableName  string
 }
 
-// getViewDependenciesFromAST extracts view dependencies using ExtractAccessTables
-// This is the same approach used in generate_migration.go for consistent behavior
-func (c *sdlIntegrityChecker) getViewDependenciesFromAST(selectStmt parser.ISelectstmtContext, schemaName string) []tableReference {
-	if selectStmt == nil {
-		return []tableReference{}
+// getViewDependencies extracts view dependencies by walking the AST for RangeVar references.
+func getViewDependencies(query ast.Node, defaultSchema string) []tableReference {
+	if query == nil {
+		return nil
 	}
 
-	// Extract CTE names from WITH clause first
-	cteNames := c.extractCTENames(selectStmt)
+	cteNames := extractCTENames(query)
+	var refs []tableReference
+	seen := make(map[string]bool)
 
-	// Get the SELECT statement text from the AST
-	var selectStatement string
-	if tokenStream := selectStmt.GetParser().GetTokenStream(); tokenStream != nil {
-		start := selectStmt.GetStart()
-		stop := selectStmt.GetStop()
-		if start != nil && stop != nil {
-			selectStatement = tokenStream.GetTextFromTokens(start, stop)
+	ast.Inspect(query, func(n ast.Node) bool {
+		rv, ok := n.(*ast.RangeVar)
+		if !ok {
+			return true
 		}
-	}
-
-	if selectStatement == "" {
-		return []tableReference{}
-	}
-
-	// Use ExtractAccessTables to get all table/view references
-	accessTables, err := pgparser.ExtractAccessTables(selectStatement, pgparser.ExtractAccessTablesOption{
-		DefaultDatabase:        "",
-		DefaultSchema:          schemaName,
-		SkipMetadataValidation: true,
-	})
-	if err != nil {
-		return []tableReference{}
-	}
-
-	// Convert to tableReference and deduplicate, filtering out CTEs
-	refMap := make(map[string]tableReference)
-	for _, resource := range accessTables {
+		if rv.Relname == "" {
+			return true
+		}
 		// Skip CTE references
-		if cteNames[resource.Table] {
-			continue
+		if cteNames[rv.Relname] {
+			return true
 		}
 
-		resourceSchema := resource.Schema
-		if resourceSchema == "" {
-			resourceSchema = schemaName
+		schema := rv.Schemaname
+		if schema == "" {
+			schema = defaultSchema
 		}
-
-		key := qualifiedName(resourceSchema, resource.Table)
-		if _, exists := refMap[key]; !exists {
-			refMap[key] = tableReference{
-				schemaName: resourceSchema,
-				tableName:  resource.Table,
-			}
+		key := schema + "." + rv.Relname
+		if !seen[key] {
+			seen[key] = true
+			refs = append(refs, tableReference{schemaName: schema, tableName: rv.Relname})
 		}
-	}
-
-	refs := make([]tableReference, 0, len(refMap))
-	for _, ref := range refMap {
-		refs = append(refs, ref)
-	}
+		return true
+	})
 
 	return refs
 }
 
-// extractCTENames extracts all CTE names from a SELECT statement's WITH clause
-func (*sdlIntegrityChecker) extractCTENames(selectStmt parser.ISelectstmtContext) map[string]bool {
+// extractCTENames extracts all CTE names from a query's WITH clause.
+func extractCTENames(query ast.Node) map[string]bool {
 	cteNames := make(map[string]bool)
-
-	if selectStmt == nil {
+	sel, ok := query.(*ast.SelectStmt)
+	if !ok || sel == nil || sel.WithClause == nil || sel.WithClause.Ctes == nil {
 		return cteNames
 	}
-
-	// Get the select_no_parens from selectstmt
-	selectNoParens := selectStmt.Select_no_parens()
-	if selectNoParens == nil {
-		return cteNames
-	}
-
-	// Get the WITH clause
-	withClause := selectNoParens.With_clause()
-	if withClause == nil {
-		return cteNames
-	}
-
-	// Extract CTE names from cte_list
-	cteList := withClause.Cte_list()
-	if cteList == nil {
-		return cteNames
-	}
-
-	for _, cte := range cteList.AllCommon_table_expr() {
-		if cte.Name() != nil {
-			cteName := pgparser.NormalizePostgreSQLName(cte.Name())
-			cteNames[cteName] = true
+	for _, item := range sel.WithClause.Ctes.Items {
+		if cte, ok := item.(*ast.CommonTableExpr); ok {
+			cteNames[cte.Ctename] = true
 		}
 	}
-
 	return cteNames
 }
 
 // Helper functions
 
-func (*sdlIntegrityChecker) getConstraintName(constraint *constraintDef) string {
+func getConstraintName(constraint *constraintDef) string {
 	if constraint.name != "" {
 		return constraint.name
 	}
 	return "<unnamed>"
 }
 
-func (*sdlIntegrityChecker) getColumnList(table *tableDef) string {
+func getColumnList(table *tableDef) string {
 	cols := make([]string, 0, len(table.columns))
 	for colName := range table.columns {
 		cols = append(cols, colName)

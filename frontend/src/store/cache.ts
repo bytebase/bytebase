@@ -63,6 +63,7 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
           setEntity(keys, entity);
         }
       })
+      .catch(() => undefined)
       .finally(() => {
         invalidateRequest(keys);
       });
@@ -128,7 +129,7 @@ const getRequestCacheMap = <K extends KeyType[], T>(namespace: string) => {
   if (existed) {
     return existed;
   }
-  const created = shallowReactive(new Map<string, RequestCacheEntry<K, T>>());
+  const created = new Map<string, RequestCacheEntry<K, T>>();
   REQUEST_CACHE.set(namespace, created);
   return created;
 };

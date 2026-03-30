@@ -1,27 +1,18 @@
 package pg
 
 import (
+	"strings"
 	"testing"
 
-	"github.com/antlr4-go/antlr/v4"
-	pgparser "github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-type sessionPreExecutionCollector struct {
-	*pgparser.BasePostgreSQLParserListener
-	tokens        *antlr.CommonTokenStream
-	preExecutions []string
-}
-
-func (l *sessionPreExecutionCollector) EnterVariablesetstmt(ctx *pgparser.VariablesetstmtContext) {
-	l.preExecutions = appendSessionPreExecutionStatements(l.preExecutions, l.tokens, ctx)
-}
-
-func TestAppendSessionPreExecutionStatements(t *testing.T) {
+func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 	tests := []struct {
 		name string
 		sql  string
@@ -59,13 +50,15 @@ func TestAppendSessionPreExecutionStatements(t *testing.T) {
 				if stmt.AST == nil {
 					continue
 				}
-
-				antlrAST, ok := base.GetANTLRAST(stmt.AST)
-				require.True(t, ok)
-
-				collector := &sessionPreExecutionCollector{tokens: antlrAST.Tokens}
-				antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)
-				preExecutions = append(preExecutions, collector.preExecutions...)
+				node, ok := pgparser.GetOmniNode(stmt.AST)
+				if !ok {
+					continue
+				}
+				if vs, ok := node.(*ast.VariableSetStmt); ok {
+					if omniIsRoleOrSearchPathSet(vs) {
+						preExecutions = append(preExecutions, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
+					}
+				}
 			}
 
 			require.Equal(t, tc.want, preExecutions)

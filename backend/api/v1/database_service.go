@@ -84,7 +84,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q", req.Msg.Parent))
 		}
-		projectIDFilter = &projectID
+		projectIDFilter = new(projectID)
 	}
 	// For instances/{instance} or "-" (wildcard), no project filter is applied.
 	databases := make([]*v1pb.Database, 0, len(req.Msg.Names))
@@ -346,8 +346,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				}
 				patch.EnvironmentID = &environmentID
 			} else {
-				unsetEnvironment := ""
-				patch.EnvironmentID = &unsetEnvironment
+				patch.EnvironmentID = new("")
 			}
 		case "drifted":
 			// Create a new base schema.
@@ -509,8 +508,7 @@ func getDatabaseMetadataFilter(filter string) (*metadataFilter, error) {
 				}
 				switch variable {
 				case "schema":
-					lowerValue := strings.ToLower(strValue)
-					metaFilter.schema = &lowerValue
+					metaFilter.schema = new(strings.ToLower(strValue))
 				case "table":
 					metaFilter.table = &tableMetadataFilter{
 						name: strings.ToLower(strValue),
@@ -1006,12 +1004,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 
 	var environment, effectiveEnvironment *string
 	if database.EnvironmentID != nil && *database.EnvironmentID != "" {
-		env := common.FormatEnvironment(*database.EnvironmentID)
-		environment = &env
+		environment = new(common.FormatEnvironment(*database.EnvironmentID))
 	}
 	if database.EffectiveEnvironmentID != nil && *database.EffectiveEnvironmentID != "" {
-		effEnv := common.FormatEnvironment(*database.EffectiveEnvironmentID)
-		effectiveEnvironment = &effEnv
+		effectiveEnvironment = new(common.FormatEnvironment(*database.EffectiveEnvironmentID))
 	}
 	instanceResource := convertToV1InstanceResource(instance)
 	return &v1pb.Database{

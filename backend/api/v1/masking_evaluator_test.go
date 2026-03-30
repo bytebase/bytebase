@@ -38,10 +38,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					"1-1-1": {
 						Id:    "1-1-1",
 						Title: "personal",
-						Level: func() *int32 {
-							a := int32(2)
-							return &a
-						}(),
+						Level: new(int32(2)),
 					},
 				},
 			},

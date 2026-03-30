@@ -820,7 +820,12 @@
           "self": "Thông báo"
         },
         "announcement-alert-level": {
-          "description": "Cấp độ"
+          "description": "Cấp độ",
+          "field": {
+            "info": "Bình thường",
+            "warning": "Cảnh báo",
+            "critical": "Quan trọng"
+          }
         },
         "announcement-text": {
           "self": "Tiêu đề",
@@ -2529,7 +2534,6 @@
     "archive-chat-confirmation": "Lưu trữ chat này?",
     "delete-chat-confirmation": "Xóa chat này?",
     "chat-list-label": "Các chat",
-    "chat-switch-locked": "Hãy hoàn tất chat đang chạy trước khi chuyển sang chat khác.",
     "chat-default-title": "Chat mới",
     "chat-archived-label": "Đã lưu trữ",
     "chat-status-idle": "Rảnh",

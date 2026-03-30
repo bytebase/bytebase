@@ -150,8 +150,7 @@ func (s *ServiceAccountService) ListServiceAccounts(ctx context.Context, request
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
 		// workspace-level list: parent = "workspaces/{id}"
 		// use empty string to filter workspace-level SAs
-		emptyProjectID := ""
-		projectID = &emptyProjectID
+		projectID = new("")
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent format %q, expected projects/{project} or workspaces/{id}", parent))
 	}
@@ -246,8 +245,7 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash service key"))
 			}
-			passwordHashStr := string(passwordHash)
-			patch.ServiceKeyHash = &passwordHashStr
+			patch.ServiceKeyHash = new(string(passwordHash))
 		default:
 			// Ignore unknown fields
 		}

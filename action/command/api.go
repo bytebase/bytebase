@@ -120,7 +120,7 @@ func createClient(url, accessToken, serviceAccount, serviceAccountSecret string,
 	unifiedInt := newUnifiedInterceptor(opts.RetryConfig, tokenRefresher)
 	interceptors := connect.WithInterceptors(unifiedInt)
 
-	c := Client{
+	return &Client{
 		httpClient:           httpClient,
 		url:                  url,
 		serviceAccount:       serviceAccount,
@@ -130,9 +130,7 @@ func createClient(url, accessToken, serviceAccount, serviceAccountSecret string,
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
 		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
 		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
-	}
-
-	return &c, nil
+	}, nil
 }
 
 func getTokenRefresher(httpClient connect.HTTPClient, email, password, url string) func(ctx context.Context) (string, error) {
@@ -234,10 +232,9 @@ func (c *Client) ListTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) 
 }
 
 func (c *Client) ListAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
-	request := &v1pb.ListTaskRunsRequest{
+	return c.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
 		Parent: rolloutName + "/stages/-/tasks/-",
-	}
-	return c.ListTaskRuns(ctx, request)
+	})
 }
 
 func (c *Client) BatchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {

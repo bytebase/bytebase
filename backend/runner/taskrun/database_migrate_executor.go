@@ -7,8 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/postgresql"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -129,11 +128,10 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 // ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
 func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, _ *store.InstanceMessage) error {
 	// Check if this database has any existing changelogs
-	limit := 1
 	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: &database.DatabaseName,
-		Limit:        &limit,
+		Limit:        new(1),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to check for existing changelogs")
@@ -275,11 +273,9 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		}
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -426,11 +422,9 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -582,11 +576,9 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -713,11 +705,9 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		update.SyncHistory = &syncHistory
 	}
 	if migrationErr == nil {
-		status := store.ChangelogStatusDone
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusDone)
 	} else {
-		status := store.ChangelogStatusFailed
-		update.Status = &status
+		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
 		slog.Error("failed to update changelog", log.BBError(err))
@@ -960,114 +950,26 @@ func getPrependStatements(engine storepb.Engine, statement string) (string, erro
 		return "", nil
 	}
 
-	parseResults, err := pg.ParsePostgreSQL(statement)
+	stmts, err := pg.ParsePg(statement)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
 
-	visitor := &prependStatementsVisitor{
-		statement: statement,
-	}
-
-	// Walk through all statements to find the first SET role/search_path statement
-	// The visitor will stop after finding the first one due to its internal check
-	for _, result := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(visitor, result.Tree)
-		// If we found a result, stop walking remaining statements
-		if visitor.result != "" {
-			break
+	for _, stmt := range stmts {
+		varSet, ok := stmt.AST.(*ast.VariableSetStmt)
+		if !ok {
+			continue
+		}
+		if strings.EqualFold(varSet.Name, "role") || strings.EqualFold(varSet.Name, "search_path") {
+			text := strings.TrimSpace(stmt.Text)
+			if !strings.HasSuffix(text, ";") {
+				text += ";"
+			}
+			return text, nil
 		}
 	}
 
-	return visitor.result, nil
-}
-
-// prependStatementsVisitor extracts SET role and search_path statements
-type prependStatementsVisitor struct {
-	*postgresql.BasePostgreSQLParserListener
-	statement string
-	result    string
-}
-
-func (v *prependStatementsVisitor) EnterVariablesetstmt(ctx *postgresql.VariablesetstmtContext) {
-	// If we already found a result, don't process more statements
-	if v.result != "" {
-		return
-	}
-
-	setRest := ctx.Set_rest()
-	if setRest == nil {
-		return
-	}
-	setRestMore := setRest.Set_rest_more()
-	if setRestMore == nil {
-		return
-	}
-	genericSet := setRestMore.Generic_set()
-	if genericSet == nil {
-		return
-	}
-	varName := genericSet.Var_name()
-	if varName == nil {
-		return
-	}
-	if len(varName.AllColid()) != 1 {
-		return
-	}
-
-	name := pg.NormalizePostgreSQLColid(varName.Colid(0))
-	if name == "role" || name == "search_path" {
-		// Extract the text for this SET statement
-		v.result = v.extractStatementText(ctx)
-	}
-}
-
-// extractStatementText extracts the original text for a SET statement context
-// This matches pg_query_go behavior: trim leading/trailing whitespace, preserve internal whitespace
-func (v *prependStatementsVisitor) extractStatementText(ctx *postgresql.VariablesetstmtContext) string {
-	// Extract text from the original statement
-	start := ctx.GetStart().GetStart()
-	stop := ctx.GetStop().GetStop()
-
-	// Handle potential edge cases with token positions
-	if start < 0 || stop < 0 || start >= len(v.statement) {
-		return ""
-	}
-
-	// Find the semicolon that ends this statement by looking ahead from the stop token
-	endPos := stop + 1
-	stmtLen := len(v.statement)
-	for endPos < stmtLen {
-		char := v.statement[endPos]
-		if char == ';' {
-			// Include the semicolon and any whitespace before it
-			stop = endPos
-			break
-		}
-		if char != ' ' && char != '\t' && char != '\n' && char != '\r' {
-			// Hit non-whitespace, non-semicolon character, stop looking
-			break
-		}
-		endPos++
-	}
-
-	// Ensure stop doesn't exceed statement length
-	if stop >= stmtLen {
-		stop = stmtLen - 1
-	}
-
-	// Extract the raw text
-	text := v.statement[start : stop+1]
-
-	// Match pg_query_go behavior: trim leading and trailing whitespace but preserve internal whitespace
-	text = strings.TrimSpace(text)
-
-	// Add semicolon if not present (to match pg_query_go behavior)
-	if !strings.HasSuffix(text, ";") {
-		text += ";"
-	}
-
-	return text
+	return "", nil
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {

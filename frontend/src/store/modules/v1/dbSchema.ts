@@ -171,9 +171,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       .getDatabaseMetadata(request, {
         contextValues: createContextValues().set(silentContextKey, silent),
       })
-      .then((res) => {
-        return setCache({ metadata: res, filter, limit });
-      });
+      .then((res) => setCache({ metadata: res, filter, limit }));
     return setRequestCache({ name: database, filter, limit, promise });
   };
 
@@ -412,6 +410,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     Array.from(cacheByName.requestCacheMap.values()).forEach((cache) => {
       if (cache.keys[0] === metadataResourceName) {
         cacheByName.invalidateRequest(cache.keys);
+      }
+    });
+    Array.from(cacheByName.entityCacheMap.values()).forEach((cache) => {
+      if (cache.keys[0] === metadataResourceName) {
+        cacheByName.invalidateEntity(cache.keys);
       }
     });
   };

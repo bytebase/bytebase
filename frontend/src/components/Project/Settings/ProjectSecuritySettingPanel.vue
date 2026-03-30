@@ -10,11 +10,45 @@
           :resource="project.name"
         />
 
-        <MaximumSQLResultSizeSetting
-          ref="maximumSQLResultSizeSettingRef"
-          :resource="project.name"
-          :policy="policyPayload"
-        />
+        <!-- Maximum SQL Result Rows (project-level) -->
+        <div>
+          <p class="font-medium flex flex-row justify-start items-center">
+            <span class="mr-2">
+              {{ $t("settings.general.workspace.maximum-sql-result.rows.self") }}
+            </span>
+            <FeatureBadge :feature="PlanFeature.FEATURE_QUERY_POLICY" />
+          </p>
+          <p class="text-sm text-gray-400 mt-1">
+            {{
+              $t("settings.general.workspace.maximum-sql-result.rows.description")
+            }}
+            <span class="font-semibold! textinfolabel">
+              {{ $t("settings.general.workspace.no-limit") }}
+            </span>
+          </p>
+          <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+            <PermissionGuardWrapper
+              v-slot="slotProps"
+              :project="project"
+              :permissions="[
+                'bb.policies.update'
+              ]"
+            >
+              <NInputNumber
+                :value="maximumResultRows"
+                :disabled="!hasQueryPolicyFeature || slotProps.disabled"
+                class="w-60"
+                :min="0"
+                :precision="0"
+                @update:value="handleMaxRowsInput"
+              >
+                <template #suffix>{{
+                  $t("settings.general.workspace.maximum-sql-result.rows.rows")
+                }}</template>
+              </NInputNumber>
+            </PermissionGuardWrapper>
+          </div>
+        </div>
       </div>
     </ComponentPermissionGuard>
 
@@ -97,21 +131,29 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
+import { NInputNumber } from "naive-ui";
 import { computed, ref, watch } from "vue";
-import MaximumSQLResultSizeSetting from "@/components/GeneralSetting/MaximumSQLResultSizeSetting.vue";
+import { FeatureBadge } from "@/components/FeatureGuard";
 import ComponentPermissionGuard from "@/components/Permission/ComponentPermissionGuard.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
 import { Switch } from "@/components/v2";
 import {
+  featureToRef,
   usePolicyByParentAndType,
   usePolicyV1Store,
   useProjectV1Store,
 } from "@/store";
-import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  PolicyResourceType,
+  PolicyType,
+  QueryDataPolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import ApprovalFlowIndicator from "./ApprovalFlowIndicator.vue";
 
 const props = defineProps<{
@@ -120,6 +162,7 @@ const props = defineProps<{
 
 const projectStore = useProjectV1Store();
 const policyV1Store = usePolicyV1Store();
+const hasQueryPolicyFeature = featureToRef(PlanFeature.FEATURE_QUERY_POLICY);
 
 const allowRequestRole = ref<boolean>(props.project.allowRequestRole);
 const allowJustInTimeAccess = ref<boolean>(props.project.allowJustInTimeAccess);
@@ -127,8 +170,6 @@ const loading = ref<boolean>(false);
 
 const sqlReviewForResourceRef =
   ref<InstanceType<typeof SQLReviewForResource>>();
-const maximumSQLResultSizeSettingRef =
-  ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
 
 const { ready } = usePolicyByParentAndType(
   computed(() => ({
@@ -137,23 +178,39 @@ const { ready } = usePolicyByParentAndType(
   }))
 );
 
-watch(
-  () => ready.value,
-  (ready) => {
-    if (ready) {
-      maximumSQLResultSizeSettingRef.value?.revert();
-    }
-  }
-);
-
 const policyPayload = computed(() => {
   return policyV1Store.getQueryDataPolicyByParent(props.project.name);
 });
 
+// Maximum result rows (project-level)
+const getInitialMaxRows = () => {
+  const rows = Number(policyPayload.value.maximumResultRows);
+  return rows < 0 ? 0 : rows;
+};
+const maximumResultRows = ref<number>(getInitialMaxRows());
+
+watch(
+  () => ready.value,
+  (ready) => {
+    if (ready) {
+      maximumResultRows.value = getInitialMaxRows();
+    }
+  }
+);
+
+const handleMaxRowsInput = (value: number | null) => {
+  if (value === null || value === undefined) return;
+  maximumResultRows.value = value;
+};
+
+const maxRowsDirty = computed(
+  () => maximumResultRows.value !== getInitialMaxRows()
+);
+
 const isDirty = computed(
   () =>
     sqlReviewForResourceRef.value?.isDirty ||
-    maximumSQLResultSizeSettingRef.value?.isDirty ||
+    maxRowsDirty.value ||
     allowRequestRole.value !== props.project.allowRequestRole ||
     allowJustInTimeAccess.value !== props.project.allowJustInTimeAccess
 );
@@ -189,19 +246,36 @@ const doUpdateProject = async () => {
   }
 };
 
+const updateMaxRows = async () => {
+  await policyV1Store.upsertPolicy({
+    parentPath: props.project.name,
+    policy: {
+      type: PolicyType.DATA_QUERY,
+      resourceType: PolicyResourceType.PROJECT,
+      policy: {
+        case: "queryDataPolicy",
+        value: create(QueryDataPolicySchema, {
+          ...policyPayload.value,
+          maximumResultRows: maximumResultRows.value,
+        }),
+      },
+    },
+  });
+};
+
 const onUpdate = async () => {
   if (sqlReviewForResourceRef.value?.isDirty) {
     await sqlReviewForResourceRef.value.update();
   }
-  if (maximumSQLResultSizeSettingRef.value?.isDirty) {
-    await maximumSQLResultSizeSettingRef.value.update();
+  if (maxRowsDirty.value) {
+    await updateMaxRows();
   }
   await doUpdateProject();
 };
 
 const resetState = () => {
   sqlReviewForResourceRef.value?.revert();
-  maximumSQLResultSizeSettingRef.value?.revert();
+  maximumResultRows.value = getInitialMaxRows();
   allowRequestRole.value = props.project.allowRequestRole;
   allowJustInTimeAccess.value = props.project.allowJustInTimeAccess;
 };

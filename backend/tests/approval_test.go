@@ -35,7 +35,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -169,7 +169,7 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -314,7 +314,7 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -515,7 +515,7 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Test Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/test"),
+			Environment: new("environments/test"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -654,7 +654,7 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,
@@ -805,7 +805,7 @@ func TestSelfApprovalBlocked(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Title:       "Prod Instance",
 			Engine:      v1pb.Engine_SQLITE,
-			Environment: stringPtr("environments/prod"),
+			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type: v1pb.DataSourceType_ADMIN,

@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
+import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import type { AgentAskUserOption, Message } from "../logic/types";
@@ -230,10 +231,7 @@ const getCurrentPageSnapshot = () => ({
 });
 
 const buildChatHistory = (chatId: string, systemPrompt: string): Message[] => {
-  return [
-    { role: "system", content: systemPrompt },
-    ...agentStore.getMessages(chatId),
-  ];
+  return buildOutboundHistory(systemPrompt, agentStore.getMessages(chatId));
 };
 
 const handleOutcome = (

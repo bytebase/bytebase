@@ -947,6 +947,79 @@ func escapeSingleQuote(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
 }
 
+// signatureTypesOnly strips parameter names from a function/procedure signature,
+// keeping only types. PostgreSQL's COMMENT ON FUNCTION/PROCEDURE requires
+// type-only signatures: "func(integer, text)" not "func(id integer, name text)".
+//
+// It works by wrapping the signature in a CREATE FUNCTION statement, parsing it
+// with omni to discover parameter names, then removing those names from the
+// original signature text to preserve the original type spelling.
+func signatureTypesOnly(signature string) string {
+	openParen := strings.Index(signature, "(")
+	if openParen < 0 {
+		return signature
+	}
+	closeParen := strings.LastIndex(signature, ")")
+	if closeParen <= openParen {
+		return signature
+	}
+	funcName := signature[:openParen]
+	paramStr := signature[openParen+1 : closeParen]
+	if strings.TrimSpace(paramStr) == "" {
+		return signature
+	}
+
+	// Parse the signature as a CREATE FUNCTION to extract param names from AST.
+	sql := fmt.Sprintf("CREATE FUNCTION %s RETURNS void LANGUAGE sql AS 'SELECT 1'", signature)
+	stmts, err := omnipg.Parse(sql)
+	if err != nil {
+		return signature
+	}
+	fn, ok := stmts[0].AST.(*ast.CreateFunctionStmt)
+	if !ok || fn.Parameters == nil {
+		return signature
+	}
+
+	// Collect parameter names from AST.
+	var paramNames []string
+	for _, item := range fn.Parameters.Items {
+		if fp, ok := item.(*ast.FunctionParameter); ok && fp.Name != "" {
+			paramNames = append(paramNames, fp.Name)
+		}
+	}
+
+	// Strip parameter names from the original text, preserving original type spelling.
+	rawParams := strings.Split(paramStr, ",")
+	var typesOnly []string
+	nameIdx := 0
+	for _, raw := range rawParams {
+		param := strings.TrimSpace(raw)
+		words := strings.Fields(param)
+		if len(words) == 0 {
+			continue
+		}
+		// Skip mode keywords (IN, OUT, INOUT, VARIADIC).
+		startIdx := 0
+		for startIdx < len(words) {
+			w := strings.ToLower(words[startIdx])
+			if w == "in" || w == "out" || w == "inout" || w == "variadic" {
+				startIdx++
+			} else {
+				break
+			}
+		}
+		// Check if first non-mode word matches a known param name from AST.
+		if startIdx < len(words) && nameIdx < len(paramNames) && words[startIdx] == paramNames[nameIdx] {
+			typesOnly = append(typesOnly, strings.Join(words[startIdx+1:], " "))
+			nameIdx++
+		} else {
+			typesOnly = append(typesOnly, strings.Join(words[startIdx:], " "))
+		}
+	}
+
+	return funcName + "(" + strings.Join(typesOnly, ", ") + ")"
+}
+
 func writeEnumComment(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON TYPE "`); err != nil {
 		return err
@@ -2282,7 +2355,7 @@ func writeFunctionComment(out io.Writer, schema string, function *storepb.Functi
 		return err
 	}
 
-	if _, err := io.WriteString(out, function.Signature); err != nil {
+	if _, err := io.WriteString(out, signatureTypesOnly(function.Signature)); err != nil {
 		return err
 	}
 
@@ -4106,7 +4179,7 @@ func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb
 	if _, err := io.WriteString(out, `".`); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, function.Signature); err != nil {
+	if _, err := io.WriteString(out, signatureTypesOnly(function.Signature)); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, ` IS '`); err != nil {

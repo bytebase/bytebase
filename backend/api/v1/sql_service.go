@@ -923,7 +923,6 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}
 
 	pendingEncrypts := []*encryptContent{}
-	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
 	for _, task := range tasks {
 		// Skip tasks that are marked as skipped (they don't have archives)
@@ -935,7 +934,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 			Workspace: common.GetWorkspaceIDFromContext(ctx),
 			ProjectID: projectID,
 			TaskUID:   &task.ID,
-			Status:    &targetTaskRunStatus,
+			Status:    &[]storepb.TaskRun_Status{storepb.TaskRun_DONE},
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run: %v", err))
@@ -1241,8 +1240,7 @@ func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryTy
 		},
 	}
 	if queryErr != nil {
-		queryErrString := queryErr.Error()
-		qh.Payload.Error = &queryErrString
+		qh.Payload.Error = new(queryErr.Error())
 	}
 
 	// Use a fresh context with timeout for creating query history

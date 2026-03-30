@@ -193,7 +193,7 @@ loop:
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Type:         common.NewP(storepb.SchemaChangeType_VERSIONED),
+			Type:         new(storepb.SchemaChangeType_VERSIONED),
 			Versions:     &releaseFileVersions,
 			ShowDeleted:  false,
 		})
@@ -371,8 +371,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 		revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Type:         common.NewP(storepb.SchemaChangeType_DECLARATIVE),
-			Limit:        common.NewP(1),
+			Type:         new(storepb.SchemaChangeType_DECLARATIVE),
+			Limit:        new(1),
 			ShowDeleted:  false,
 		})
 		if err != nil {

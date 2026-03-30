@@ -133,8 +133,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			name:      "SELECT with parentheses and existing LIMIT lower than requested",
 			statement: "(SELECT * FROM users LIMIT 5)",
 			limit:     10,
-			// TODO(zp): FIX ME
-			want: "(SELECT * FROM users LIMIT 5) LIMIT 10",
+			want:      "(SELECT * FROM users LIMIT 5)",
 		},
 	}
 
@@ -182,6 +181,36 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 			name:      "Empty statement",
 			statement: "",
 			limit:     10,
+			wantErr:   true,
+		},
+		{
+			name:      "FOR UPDATE gets proper whitespace",
+			statement: "SELECT * FROM users WHERE id = 1 FOR UPDATE",
+			limit:     10,
+			want:      "SELECT * FROM users WHERE id = 1 LIMIT 10 FOR UPDATE",
+		},
+		{
+			name:      "FOR SHARE gets proper whitespace",
+			statement: "SELECT * FROM users FOR SHARE",
+			limit:     5,
+			want:      "SELECT * FROM users LIMIT 5 FOR SHARE",
+		},
+		{
+			name:      "SELECT ending with function call",
+			statement: "SELECT now()",
+			limit:     10,
+			want:      "SELECT now() LIMIT 10",
+		},
+		{
+			name:      "SELECT with subquery in WHERE",
+			statement: "SELECT * FROM users WHERE id IN (SELECT id FROM admins)",
+			limit:     10,
+			want:      "SELECT * FROM users WHERE id IN (SELECT id FROM admins) LIMIT 10",
+		},
+		{
+			name:      "Non-constant LIMIT expression falls back to error",
+			statement: "SELECT * FROM t LIMIT (1+2)",
+			limit:     5,
 			wantErr:   true,
 		},
 	}

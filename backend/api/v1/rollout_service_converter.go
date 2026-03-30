@@ -312,11 +312,6 @@ func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *st
 
 	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName))
 	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
-	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
-		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
-			Sheet: sheet,
-		},
-	}
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
@@ -325,7 +320,11 @@ func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *st
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
 		Target:        targetDatabaseName,
-		Payload:       &v1pbTaskPayload,
+		Payload: &v1pb.Task_DatabaseDataExport_{
+			DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
+				Sheet: sheet,
+			},
+		},
 	}
 	if task.UpdatedAt != nil {
 		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
@@ -386,15 +385,14 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 	for _, l := range logs {
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_SCHEMA_DUMP,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
 				SchemaDump: &v1pb.TaskRunLogEntry_SchemaDump{
 					StartTime: timestamppb.New(l.T),
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_SCHEMA_DUMP_END:
 			if len(entries) == 0 {
@@ -408,7 +406,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.SchemaDump.Error = l.Payload.SchemaDumpEnd.Error
 
 		case storepb.TaskRunLog_COMMAND_EXECUTE:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_COMMAND_EXECUTE,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
@@ -417,8 +415,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					Range:     convertToRange(l.Payload.CommandExecute.Range),
 					Statement: l.Payload.CommandExecute.Statement,
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_COMMAND_RESPONSE:
 			if len(entries) == 0 {
@@ -436,15 +433,14 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			}
 
 		case storepb.TaskRunLog_DATABASE_SYNC_START:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_DATABASE_SYNC,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
 				DatabaseSync: &v1pb.TaskRunLogEntry_DatabaseSync{
 					StartTime: timestamppb.New(l.T),
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_DATABASE_SYNC_END:
 			if len(entries) == 0 {
@@ -458,7 +454,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.DatabaseSync.Error = l.Payload.DatabaseSyncEnd.Error
 
 		case storepb.TaskRunLog_TRANSACTION_CONTROL:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_TRANSACTION_CONTROL,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
@@ -466,19 +462,17 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					Type:  convertTaskRunLogTransactionControlType(l.Payload.TransactionControl.Type),
 					Error: l.Payload.TransactionControl.Error,
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_START:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_PRIOR_BACKUP,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
 				PriorBackup: &v1pb.TaskRunLogEntry_PriorBackup{
 					StartTime: timestamppb.New(l.T),
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_END:
 			if len(entries) == 0 {
@@ -493,15 +487,14 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.PriorBackup.PriorBackupDetail = convertToTaskRunLogPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_START:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_COMPUTE_DIFF,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
 				ComputeDiff: &v1pb.TaskRunLogEntry_ComputeDiff{
 					StartTime: timestamppb.New(l.T),
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_END:
 			if len(entries) == 0 {
@@ -515,7 +508,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			prev.ComputeDiff.Error = l.Payload.ComputeDiffEnd.Error
 
 		case storepb.TaskRunLog_RETRY_INFO:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_RETRY_INFO,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
@@ -524,11 +517,10 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					MaximumRetries: l.Payload.RetryInfo.MaximumRetries,
 					Error:          l.Payload.RetryInfo.Error,
 				},
-			}
-			entries = append(entries, e)
+			})
 
 		case storepb.TaskRunLog_RELEASE_FILE_EXECUTE:
-			e := &v1pb.TaskRunLogEntry{
+			entries = append(entries, &v1pb.TaskRunLogEntry{
 				Type:      v1pb.TaskRunLogEntry_RELEASE_FILE_EXECUTE,
 				LogTime:   timestamppb.New(l.T),
 				ReplicaId: l.Payload.ReplicaId,
@@ -536,8 +528,7 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					Version:  l.Payload.ReleaseFileExecute.Version,
 					FilePath: l.Payload.ReleaseFileExecute.FilePath,
 				},
-			}
-			entries = append(entries, e)
+			})
 		default:
 		}
 	}

@@ -158,8 +158,7 @@ func buildChatToolCallMetadata(rawOpenAIToolCall json.RawMessage, geminiThoughtS
 	if err != nil {
 		return nil, err
 	}
-	metadataString := string(metadataBytes)
-	return &metadataString, nil
+	return new(string(metadataBytes)), nil
 }
 
 func openAIToolCallFromMetadata(raw string) json.RawMessage {

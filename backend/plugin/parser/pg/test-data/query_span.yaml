@@ -3143,4 +3143,9 @@
           schema: public
           table: t1
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: finished_at

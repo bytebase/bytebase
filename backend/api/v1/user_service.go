@@ -426,8 +426,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 		}
-		passwordHashStr := string(passwordHash)
-		patch.PasswordHash = &passwordHashStr
+		patch.PasswordHash = new(string(passwordHash))
 
 		// Revoke all refresh tokens for this user (including current session)
 		// User must re-login after password change for security

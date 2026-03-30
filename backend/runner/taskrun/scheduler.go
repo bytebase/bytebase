@@ -203,8 +203,7 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 		return
 	}
 
-	newStatus := storepb.Issue_DONE
-	if _, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}); err != nil {
+	if _, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: new(storepb.Issue_DONE)}); err != nil {
 		slog.Error("failed to auto-resolve issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), log.BBError(err))
 		return
 	}

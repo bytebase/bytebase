@@ -162,7 +162,6 @@ const currentChatTokenUsageLabel = computed(() =>
     count: tokenFormatter.format(agentStore.currentChat?.totalTokensUsed ?? 0),
   })
 );
-const isChatSwitchLocked = computed(() => agentStore.hasRunningChat);
 const isChatCreationDisabled = computed(() => agentStore.hasRunningChat);
 
 function syncSize(width: number, height: number) {
@@ -619,13 +618,6 @@ onBeforeUnmount(() => {
                 <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   {{ $t("agent.chat-list-label") }}
                 </h2>
-                <p
-                  v-if="isChatSwitchLocked"
-                  class="mt-1 text-xs text-amber-600"
-                  data-agent-chat-lock-message
-                >
-                  {{ $t("agent.chat-switch-locked") }}
-                </p>
               </div>
               <button
                 class="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
