@@ -281,9 +281,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.data-classification"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () =>
-          import("@/views/SettingWorkspaceDataClassification.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "DataClassificationPage" }),
       },
       {
         path: "audit-log",
