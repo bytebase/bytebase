@@ -13,7 +13,7 @@ import (
 
 // Tests for getWebhookContextFromEvent that don't require a database connection.
 // The Manager is constructed with a nil store and a profile with ExternalURL set.
-// Test cases where store calls (GetAccountByEmail, GetWorkspaceProfileSetting)
+// Test cases where store calls (GetPrincipalByEmail, GetWorkspaceProfileSetting)
 // are NOT reached.
 
 func newTestManager() *Manager {
@@ -32,7 +32,7 @@ func TestGetWebhookContext_UnsupportedEventType(t *testing.T) {
 
 	e := &Event{
 		Type:    storepb.Activity_TYPE_UNSPECIFIED,
-		Project: &Project{ResourceID: "proj-1", Workspace: "ws-1"},
+		Project: &Project{ResourceID: "proj-1"},
 	}
 	_, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
 	a.Error(err)
@@ -48,7 +48,7 @@ func TestGetWebhookContext_IssueApproved_NilEventData(t *testing.T) {
 	// but with no issue/actor/link. No store calls are made when issue is nil.
 	e := &Event{
 		Type:          storepb.Activity_ISSUE_APPROVED,
-		Project:       &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project:       &Project{ResourceID: "proj-1", Title: "Test Project"},
 		IssueApproved: nil,
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
@@ -70,7 +70,7 @@ func TestGetWebhookContext_IssueCreated_NilEventData(t *testing.T) {
 
 	e := &Event{
 		Type:         storepb.Activity_ISSUE_CREATED,
-		Project:      &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project:      &Project{ResourceID: "proj-1", Title: "Test Project"},
 		IssueCreated: nil,
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
@@ -89,7 +89,7 @@ func TestGetWebhookContext_IssueSentBack_NilEventData(t *testing.T) {
 
 	e := &Event{
 		Type:     storepb.Activity_ISSUE_SENT_BACK,
-		Project:  &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project:  &Project{ResourceID: "proj-1", Title: "Test Project"},
 		SentBack: nil,
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
@@ -107,7 +107,7 @@ func TestGetWebhookContext_PipelineFailed_NilEventData(t *testing.T) {
 
 	e := &Event{
 		Type:          storepb.Activity_PIPELINE_FAILED,
-		Project:       &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project:       &Project{ResourceID: "proj-1", Title: "Test Project"},
 		RolloutFailed: nil,
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
@@ -125,7 +125,7 @@ func TestGetWebhookContext_PipelineCompleted_NilEventData(t *testing.T) {
 
 	e := &Event{
 		Type:             storepb.Activity_PIPELINE_COMPLETED,
-		Project:          &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project:          &Project{ResourceID: "proj-1", Title: "Test Project"},
 		RolloutCompleted: nil,
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
@@ -141,10 +141,10 @@ func TestGetWebhookContext_RolloutFailed_WithData(t *testing.T) {
 	m := newTestManager()
 	ctx := context.Background()
 
-	// PIPELINE_FAILED with rollout data — no store call needed (rollout path skips GetAccountByEmail)
+	// PIPELINE_FAILED with rollout data — no store call needed (rollout path skips GetPrincipalByEmail)
 	e := &Event{
 		Type:    storepb.Activity_PIPELINE_FAILED,
-		Project: &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project: &Project{ResourceID: "proj-1", Title: "Test Project"},
 		RolloutFailed: &EventRolloutFailed{
 			Rollout:     &Rollout{UID: 10, Title: "Deploy v2"},
 			Environment: "environments/prod",
@@ -169,7 +169,7 @@ func TestGetWebhookContext_RolloutCompleted_WithData(t *testing.T) {
 
 	e := &Event{
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
-		Project: &Project{ResourceID: "proj-1", Workspace: "ws-1", Title: "Test Project"},
+		Project: &Project{ResourceID: "proj-1", Title: "Test Project"},
 		RolloutCompleted: &EventRolloutCompleted{
 			Rollout:     &Rollout{UID: 20, Title: "Deploy v3"},
 			Environment: "environments/staging",
@@ -191,7 +191,7 @@ func TestGetWebhookContext_ProjectAlwaysSet(t *testing.T) {
 
 	e := &Event{
 		Type:    storepb.Activity_ISSUE_APPROVED,
-		Project: &Project{ResourceID: "my-project", Workspace: "ws-1", Title: "My Project"},
+		Project: &Project{ResourceID: "my-project", Title: "My Project"},
 	}
 	webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
 	a.NoError(err)
@@ -222,7 +222,7 @@ func TestGetWebhookContext_AllEventLevels(t *testing.T) {
 			a := require.New(t)
 			e := &Event{
 				Type:    tt.eventType,
-				Project: &Project{ResourceID: "proj-1", Workspace: "ws-1"},
+				Project: &Project{ResourceID: "proj-1"},
 			}
 			webhookCtx, err := m.getWebhookContextFromEvent(ctx, e, e.Type)
 			a.NoError(err)
@@ -242,7 +242,7 @@ func TestGetWebhookContext_ExternalURLInLink(t *testing.T) {
 
 	e := &Event{
 		Type:    storepb.Activity_PIPELINE_FAILED,
-		Project: &Project{ResourceID: "test-proj", Workspace: "ws-1"},
+		Project: &Project{ResourceID: "test-proj"},
 		RolloutFailed: &EventRolloutFailed{
 			Rollout: &Rollout{UID: 5, Title: "test"},
 		},

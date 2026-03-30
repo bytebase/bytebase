@@ -27,7 +27,7 @@ func TestNewIssue(t *testing.T) {
 			Payload:      &storepb.Issue{},
 		}
 		got := NewIssue(msg)
-		a.Equal(int64(42), got.UID)
+		a.Equal(42, got.UID)
 		a.Equal("Add index to users table", got.Title)
 		a.Equal("We need a B-tree index", got.Description)
 		a.Equal("OPEN", got.Status)
@@ -51,12 +51,10 @@ func TestNewProject(t *testing.T) {
 	a := require.New(t)
 	msg := &store.ProjectMessage{
 		ResourceID: "my-project",
-		Workspace:  "ws-001",
 		Title:      "My Project",
 	}
 	got := NewProject(msg)
 	a.Equal("my-project", got.ResourceID)
-	a.Equal("ws-001", got.Workspace)
 	a.Equal("My Project", got.Title)
 }
 
@@ -89,7 +87,7 @@ func TestEventIssueApproved_Structure(t *testing.T) {
 	a.Equal("bob@example.com", event.Approver.Email)
 	a.Equal("Alice", event.Creator.Name)
 	a.Equal("alice@example.com", event.Creator.Email)
-	a.Equal(int64(101), event.Issue.UID)
+	a.Equal(101, event.Issue.UID)
 	a.Equal("Grant read access", event.Issue.Title)
 }
 

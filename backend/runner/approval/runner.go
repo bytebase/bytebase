@@ -992,12 +992,12 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 // NotifyIssueApproved sends the ISSUE_APPROVED webhook event when all approval steps complete.
 // It notifies the issue creator that their issue has been fully approved.
 func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, issue *store.IssueMessage, project *store.ProjectMessage, approver *store.UserMessage) {
-	creatorAccount, err := stores.GetAccountByEmail(ctx, issue.CreatorEmail)
+	creatorUser, err := stores.GetPrincipalByEmail(ctx, issue.CreatorEmail)
 	if err != nil {
 		slog.Warn("failed to get issue creator", log.BBError(err))
 		return
 	}
-	if creatorAccount == nil {
+	if creatorUser == nil {
 		slog.Warn("issue creator account not found", slog.String("email", issue.CreatorEmail))
 		return
 	}
@@ -1007,7 +1007,7 @@ func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManage
 		Project: webhook.NewProject(project),
 		IssueApproved: &webhook.EventIssueApproved{
 			Approver: &webhook.User{Name: approver.Name, Email: approver.Email},
-			Creator:  &webhook.User{Name: creatorAccount.Name, Email: creatorAccount.Email},
+			Creator:  &webhook.User{Name: creatorUser.Name, Email: creatorUser.Email},
 			Issue:    webhook.NewIssue(issue),
 		},
 	})
