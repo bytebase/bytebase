@@ -439,7 +439,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	if req.Msg.Purge {
 		// Following AIP-165, purge only works on already soft-deleted instances
 		if !instance.Deleted {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("instance %q must be soft-deleted before it can be purged", req.Msg.Name))
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("instance %q must be archived before it can be deleted", req.Msg.Name))
 		}
 
 		// Permanently delete the instance and all related resources
