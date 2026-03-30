@@ -37,6 +37,8 @@
     "@markdoc/markdoc": "0.5.5",
     "@vueuse/core": "14.2.1",
     "bootstrap": "5.3.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
     "dayjs": "1.11.19",
