@@ -45,8 +45,6 @@ const i18n = createI18n({
         close: "Close",
         resize: "Resize",
         "chat-list-label": "Chats",
-        "chat-switch-locked":
-          "Finish the running chat before switching to another one.",
         "new-chat": "New chat",
         "rename-chat-placeholder": "Enter a chat name",
         "archive-chat": "Archive",
@@ -176,9 +174,6 @@ describe("AgentWindow", () => {
       .findAll("button")
       .find((button) => button.text() === "New chat");
 
-    expect(wrapper.find("[data-agent-chat-lock-message]").text()).toContain(
-      "Finish the running chat before switching to another one."
-    );
     expect(currentRow?.attributes("disabled")).toBeUndefined();
     expect(otherRow?.attributes("disabled")).toBe("");
     expect(newChatButton?.attributes("disabled")).toBe("");

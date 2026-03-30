@@ -2498,7 +2498,6 @@
     "archive-chat-confirmation": "このチャットをアーカイブしますか？",
     "delete-chat-confirmation": "このチャットを削除しますか？",
     "chat-list-label": "チャット",
-    "chat-switch-locked": "別のチャットに切り替える前に、実行中のチャットを完了してください。",
     "chat-default-title": "新しいチャット",
     "chat-archived-label": "アーカイブ済み",
     "chat-status-idle": "待機中",
