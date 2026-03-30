@@ -9,6 +9,7 @@
     "types": ["react", "react-dom", "vite/client"],
     "strict": true,
     "noEmit": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"]
     }

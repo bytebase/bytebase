@@ -127,6 +127,35 @@ psql -U bbdev bbdev
   - **No Empty Objects**: Do not add empty JSON objects (e.g., `"key": {}`) to locale files. Remove any empty objects you encounter
 - **Button Spacing**: Use `gap-x-2` for ALL button groups (modals, drawers, toolbars, inline actions). Never use `space-x` for buttons. See `./frontend/.claude/BUTTON_SPACING_STANDARDIZATION.md` for full guidelines
 
+### React (New Code)
+
+The frontend is migrating from Vue to React. **All new UI code should be written in React.**
+
+**Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
+
+**Component patterns**:
+- Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
+- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/react/components/ui/`
+- Use `useTranslation()` from `react-i18next` for i18n
+- Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens shared with the Vue layer
+
+**Tailwind CSS v4**:
+- CSS-first config in `./frontend/src/assets/css/tailwind.css` — no JS config file
+- Custom utilities use `@utility`, design tokens use `@theme`
+- Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
+
+**Accessing Vue state from React**:
+- `useVueState(getter)` — React hook that subscribes to Vue reactive state (Pinia stores, refs, computed) via `useSyncExternalStore`. React components access stores directly — no bridge layer needed
+- React pages are self-contained: import Pinia stores, `router`, utility functions directly
+- React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked separately via `tsconfig.react.json` (excluded from vue-tsc)
+
+**Mount system** (temporary — removed after full migration):
+- React source lives in `./frontend/src/react/`
+- `ReactPageMount.vue` — generic Vue wrapper that mounts/unmounts the React root and syncs locale. Used by most pages
+- Pages that still depend on Vue components (modals, drawers not yet migrated) get a thin page-specific mount (e.g., `SubscriptionPageMount.vue`) — these are removed once those Vue deps are rebuilt in React
+- `mount.ts` lazy-loads pages via `import.meta.glob` — exported function name must match the file name
+- To add a new React page: (1) create `.tsx` in `pages/`, (2) point route to `ReactPageMount.vue` with `props: () => ({ page: "PageName" })`
+
 ### Naming
 
 - Use American English

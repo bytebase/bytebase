@@ -5,50 +5,104 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
-import type { SubscriptionData } from "@/react/types";
+import { useVueState } from "@/react/hooks/useVueState";
+import {
+  getWorkspaceId,
+  pushNotification,
+  useActuatorV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface SubscriptionPageProps {
-  data: SubscriptionData;
-  allowEdit: boolean;
-  allowManageInstanceLicenses: boolean;
-  onUploadLicense: (license: string) => Promise<boolean>;
   onRequireEnterprise: () => void;
   onManageInstanceLicenses: () => void;
 }
 
 export function SubscriptionPage({
-  data,
-  allowEdit,
-  allowManageInstanceLicenses,
-  onUploadLicense,
   onRequireEnterprise,
   onManageInstanceLicenses,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
+  const subscriptionStore = useSubscriptionV1Store();
+  const actuatorStore = useActuatorV1Store();
+
+  const allowEdit = hasWorkspacePermissionV2("bb.settings.set");
+  const allowManageInstanceLicenses =
+    allowEdit && hasWorkspacePermissionV2("bb.instances.list");
+
+  // Subscribe to Vue reactive state
+  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
+  const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
+  const isTrialing = useVueState(() => subscriptionStore.isTrialing);
+  const isExpired = useVueState(() => subscriptionStore.isExpired);
+  const isSelfHostLicense = useVueState(
+    () => subscriptionStore.isSelfHostLicense
+  );
+  const showTrial = useVueState(() => subscriptionStore.showTrial);
+  const trialingDays = useVueState(() => subscriptionStore.trialingDays);
+  const expireAt = useVueState(() => subscriptionStore.expireAt);
+  const instanceCountLimit = useVueState(
+    () => subscriptionStore.instanceCountLimit
+  );
+  const instanceLicenseCount = useVueState(
+    () => subscriptionStore.instanceLicenseCount
+  );
+  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
+  const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
+  const activatedInstanceCount = useVueState(
+    () => actuatorStore.activatedInstanceCount
+  );
+  const workspaceId = useVueState(() =>
+    getWorkspaceId(actuatorStore.workspaceResourceName)
+  );
+
   const [license, setLicense] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const disabled = loading || !license;
 
+  let planType: "FREE" | "TEAM" | "ENTERPRISE" = "FREE";
+  let planLabel = t("subscription.plan.free.title");
+  if (currentPlan === PlanType.TEAM) {
+    planType = "TEAM";
+    planLabel = t("subscription.plan.team.title");
+  } else if (currentPlan === PlanType.ENTERPRISE) {
+    planType = "ENTERPRISE";
+    planLabel = t("subscription.plan.enterprise.title");
+  }
+
   const userLimit =
-    data.userCountLimit === Number.MAX_VALUE
+    userCountLimit === Number.MAX_VALUE
       ? t("common.unlimited")
-      : `${data.userCountLimit}`;
+      : `${userCountLimit}`;
 
   const totalLicenseCount =
-    data.instanceLicenseCount === Number.MAX_VALUE
+    instanceLicenseCount === Number.MAX_VALUE
       ? t("common.unlimited")
-      : `${data.instanceLicenseCount}`;
+      : `${instanceLicenseCount}`;
 
   const handleUpload = async () => {
     if (disabled) return;
     setLoading(true);
     try {
-      const success = await onUploadLicense(license);
-      if (success) {
-        setLicense("");
-      }
+      await subscriptionStore.patchSubscription(license);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("subscription.update.success.title"),
+        description: t("subscription.update.success.description"),
+      });
+      setLicense("");
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("subscription.update.failure.title"),
+        description: t("subscription.update.failure.description"),
+      });
     } finally {
       setLoading(false);
     }
@@ -56,7 +110,7 @@ export function SubscriptionPage({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(data.workspaceId);
+      await navigator.clipboard.writeText(workspaceId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -72,40 +126,38 @@ export function SubscriptionPage({
         <div className="flex flex-col text-left">
           <div className="flex items-center text-main">
             {t("subscription.current")}
-            {data.isExpired && (
+            {isExpired && (
               <Badge variant="destructive" className="ml-2 h-6">
                 {t("subscription.expired")}
               </Badge>
             )}
-            {!data.isExpired && data.isTrialing && (
+            {!isExpired && isTrialing && (
               <Badge variant="secondary" className="ml-2 h-6">
                 {t("subscription.trialing")}
               </Badge>
             )}
           </div>
           <div className="text-accent mt-1 text-3xl lg:text-4xl">
-            {data.currentPlan}
+            {planLabel}
           </div>
         </div>
 
         {/* Expires at */}
-        {!data.isFreePlan && (
+        {!isFreePlan && (
           <div className="flex flex-col text-left">
             <div className="text-main">{t("subscription.expires-at")}</div>
-            <dd className="mt-1 text-3xl lg:text-4xl">
-              {data.expireAt || "N/A"}
-            </dd>
+            <dd className="mt-1 text-3xl lg:text-4xl">{expireAt || "N/A"}</dd>
           </div>
         )}
 
         {/* Free trial */}
-        {data.showTrial && allowEdit && (
+        {showTrial && allowEdit && (
           <div className="flex flex-col text-left">
             <div className="text-main">{t("subscription.try-for-free")}</div>
             <div className="mt-1">
               <Button className="text-lg" onClick={onRequireEnterprise}>
                 {t("subscription.enterprise-free-trial", {
-                  days: data.trialingDays,
+                  days: trialingDays,
                 })}
               </Button>
             </div>
@@ -113,7 +165,7 @@ export function SubscriptionPage({
         )}
 
         {/* Inquire enterprise */}
-        {data.isTrialing && data.planType === "ENTERPRISE" && (
+        {isTrialing && planType === "ENTERPRISE" && (
           <div className="flex flex-col text-left">
             <div className="text-main">
               {t("subscription.inquire-enterprise-plan")}
@@ -129,9 +181,9 @@ export function SubscriptionPage({
         {/* Instance license stats */}
         {allowManageInstanceLicenses && (
           <InstanceLicenseStats
-            planType={data.planType}
-            instanceCountLimit={data.instanceCountLimit}
-            activatedCount={data.activatedInstanceCount}
+            planType={planType}
+            instanceCountLimit={instanceCountLimit}
+            activatedCount={activatedInstanceCount}
             totalLicenseCount={totalLicenseCount}
             onManageInstanceLicenses={onManageInstanceLicenses}
           />
@@ -143,7 +195,7 @@ export function SubscriptionPage({
             {t("subscription.instance-assignment.used-and-total-user")}
           </div>
           <div className="mt-1 text-4xl flex items-center gap-2">
-            {data.activeUserCount}
+            {activeUserCount}
             <span className="font-mono text-control-light">/</span>
             {userLimit}
           </div>
@@ -166,7 +218,7 @@ export function SubscriptionPage({
         <div className="mb-4 flex items-center gap-x-2">
           <Input
             readOnly
-            value={data.workspaceId}
+            value={workspaceId}
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <Button
@@ -184,7 +236,7 @@ export function SubscriptionPage({
       </div>
 
       {/* Upload license */}
-      {data.isSelfHostLicense && (
+      {isSelfHostLicense && (
         <div className="w-full mt-4 flex flex-col">
           <label className="flex items-center gap-x-2">
             <span className="text-main">
@@ -201,7 +253,7 @@ export function SubscriptionPage({
             >
               {t("common.learn-more")} &gt;
             </a>
-            {data.showTrial && allowEdit && (
+            {showTrial && allowEdit && (
               <Button
                 variant="link"
                 size="sm"
