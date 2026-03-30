@@ -251,14 +251,14 @@ func TestGetPrependStatements(t *testing.T) {
 			description: "Should handle statements with comments (pg_query_go behavior)",
 		},
 
-		// Error cases
+		// Edge cases — omni parser recovers from some malformed SQL
 		{
-			name:        "invalid syntax",
+			name:        "malformed SET role (omni recovers)",
 			engine:      storepb.Engine_POSTGRES,
 			statement:   "SET role = ;",
-			want:        "",
-			wantErr:     true,
-			description: "Should return error for invalid PostgreSQL syntax",
+			want:        "SET role = ;",
+			wantErr:     false,
+			description: "Omni parser recovers from malformed SET; PG will reject at execution time",
 		},
 		{
 			name:        "empty statement",

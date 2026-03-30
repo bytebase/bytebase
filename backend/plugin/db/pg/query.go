@@ -241,37 +241,23 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 }
 
 // findLimitInsertPosition returns the byte offset where " LIMIT N" should be inserted.
-func findLimitInsertPosition(sql string, sel *ast.SelectStmt) int {
-	// Insert before FOR UPDATE/SHARE if present.
+// It uses AST Loc positions exclusively — no string scanning for parentheses or keywords.
+func findLimitInsertPosition(_ string, sel *ast.SelectStmt) int {
+	// LIMIT must appear before FOR UPDATE/SHARE.
+	// Use the LockingClause's Loc.Start to insert just before it.
 	if sel.LockingClause != nil {
 		span := ast.ListSpan(sel.LockingClause)
 		if span.Start > 0 {
-			// Back up over whitespace between the previous clause and FOR.
-			pos := span.Start
-			for pos > 0 && (sql[pos-1] == ' ' || sql[pos-1] == '\t' || sql[pos-1] == '\n' || sql[pos-1] == '\r') {
-				pos--
-			}
-			return pos
+			return span.Start
 		}
 	}
 
-	// Otherwise insert at the end of the statement (strip trailing whitespace/semicolons/parens).
+	// Otherwise insert at SelectStmt.Loc.End (after everything, including outer parens).
 	end := sel.Loc.End
-	if end <= 0 || end > len(sql) {
-		end = len(sql)
+	if end <= 0 {
+		return 0
 	}
-	// Trim trailing closing parens that wrap the SELECT (e.g. "(SELECT ...)")
-	// and semicolons, since LIMIT must go inside the SELECT.
-	pos := end
-	for pos > 0 {
-		ch := sql[pos-1]
-		if ch == ')' || ch == ';' || ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
-			pos--
-			continue
-		}
-		break
-	}
-	return pos
+	return end
 }
 
 // extractIntFromNode extracts an integer value from a LIMIT/OFFSET node.
