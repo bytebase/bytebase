@@ -2498,7 +2498,6 @@
     "archive-chat-confirmation": "¿Archivar este chat?",
     "delete-chat-confirmation": "¿Eliminar este chat?",
     "chat-list-label": "Chats",
-    "chat-switch-locked": "Finaliza el chat en ejecución antes de cambiar a otro.",
     "chat-default-title": "Nuevo chat",
     "chat-archived-label": "Archivado",
     "chat-status-idle": "Inactivo",

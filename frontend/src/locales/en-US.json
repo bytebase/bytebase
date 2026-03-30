@@ -2989,7 +2989,6 @@
     "archive-chat-confirmation": "Archive this chat?",
     "delete-chat-confirmation": "Delete this chat?",
     "chat-list-label": "Chats",
-    "chat-switch-locked": "Finish the running chat before switching to another one.",
     "chat-default-title": "New chat",
     "chat-archived-label": "Archived",
     "chat-status-idle": "Idle",
