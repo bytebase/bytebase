@@ -551,31 +551,14 @@ func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.Materia
 		mapA[view.Name] = view
 	}
 
-	// Get PostgreSQL view comparer for sophisticated comparison
-	pgComparer := &PostgreSQLViewComparer{}
-
 	for _, viewB := range viewsB {
 		viewA, exists := mapA[viewB.Name]
 		require.True(t, exists, "materialized view %s should exist in metadata A", viewB.Name)
 
-		// Compare view definitions using PostgreSQL view comparer
-		definitionsEqual := pgComparer.compareViewsSemanticaly(viewA.Definition, viewB.Definition)
-
-		// Ensure definitions are equal using PostgreSQL ANTLR parser comparison
-		if !definitionsEqual {
-			// Log normalized definitions for debugging
-			t.Logf("Materialized view %s definition mismatch:", viewB.Name)
-			t.Logf("  A normalized: %q", pgComparer.normalizeExpression(viewA.Definition))
-			t.Logf("  B normalized: %q", pgComparer.normalizeExpression(viewB.Definition))
-			t.Logf("  A original: %q", viewA.Definition)
-			t.Logf("  B original: %q", viewB.Definition)
-
-			// Fallback to simple comparison for debugging
-			defA := normalizeSQLDef(viewA.Definition)
-			defB := normalizeSQLDef(viewB.Definition)
-			t.Logf("  A simple normalized: %q", defA)
-			t.Logf("  B simple normalized: %q", defB)
-		}
+		// Compare view definitions using normalized string comparison
+		defA := normalizeSQLDef(viewA.Definition)
+		defB := normalizeSQLDef(viewB.Definition)
+		definitionsEqual := defA == defB
 
 		// Assert that materialized view definitions must be equal after sophisticated PostgreSQL parsing
 		require.True(t, definitionsEqual,
@@ -839,20 +822,13 @@ func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
 		mapA[view.Name] = view
 	}
 
-	// Get PostgreSQL view comparer for sophisticated comparison
-	pgComparer := &PostgreSQLViewComparer{}
-
 	for _, viewB := range viewsB {
 		viewA, exists := mapA[viewB.Name]
 		require.True(t, exists, "view %s should exist in metadata A", viewB.Name)
 
-		// Compare view definitions using PostgreSQL view comparer
-		definitionsEqual := pgComparer.compareViewsSemanticaly(viewA.Definition, viewB.Definition)
-
-		// Assert that view definitions must be equal after sophisticated PostgreSQL parsing
-		require.True(t, definitionsEqual,
-			"view %s: definitions must be equal using PostgreSQL view comparer (A: %q, B: %q)",
-			viewB.Name, viewA.Definition, viewB.Definition)
+		// Compare view definitions using normalized string comparison
+		require.Equal(t, normalizeSQLDef(viewA.Definition), normalizeSQLDef(viewB.Definition),
+			"view %s: definitions should match", viewB.Name)
 
 		// Compare comment
 		require.Equal(t, viewA.Comment, viewB.Comment, "view %s: comment should match", viewB.Name)
