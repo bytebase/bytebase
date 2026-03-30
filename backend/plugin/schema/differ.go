@@ -4,9 +4,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/postgresql"
-
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -80,10 +77,6 @@ type TableDiff struct {
 	OldTable   *storepb.TableMetadata
 	NewTable   *storepb.TableMetadata
 
-	// AST nodes for DDL analysis and generation
-	OldASTNode *parser.CreatestmtContext // Previous user CREATE TABLE AST node
-	NewASTNode *parser.CreatestmtContext // Current user CREATE TABLE AST node
-
 	// Column changes
 	ColumnChanges []*ColumnDiff
 
@@ -117,19 +110,13 @@ type ColumnDiff struct {
 	Action    MetadataDiffAction
 	OldColumn *storepb.ColumnMetadata
 	NewColumn *storepb.ColumnMetadata
-
-	// AST nodes for DDL analysis and generation
-	OldASTNode parser.IColumnDefContext // Previous column definition AST node
-	NewASTNode parser.IColumnDefContext // Current column definition AST node
 }
 
 // IndexDiff represents changes to an index.
 type IndexDiff struct {
-	Action     MetadataDiffAction
-	OldIndex   *storepb.IndexMetadata
-	NewIndex   *storepb.IndexMetadata
-	OldASTNode any // AST node for old index constraint
-	NewASTNode any // AST node for new index constraint
+	Action   MetadataDiffAction
+	OldIndex *storepb.IndexMetadata
+	NewIndex *storepb.IndexMetadata
 }
 
 // ForeignKeyDiff represents changes to a foreign key.
@@ -137,8 +124,6 @@ type ForeignKeyDiff struct {
 	Action        MetadataDiffAction
 	OldForeignKey *storepb.ForeignKeyMetadata
 	NewForeignKey *storepb.ForeignKeyMetadata
-	OldASTNode    any // AST node for old foreign key constraint
-	NewASTNode    any // AST node for new foreign key constraint
 }
 
 // CheckConstraintDiff represents changes to a check constraint.
@@ -146,8 +131,6 @@ type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
 	OldCheckConstraint *storepb.CheckConstraintMetadata
 	NewCheckConstraint *storepb.CheckConstraintMetadata
-	OldASTNode         any // AST node for old check constraint
-	NewASTNode         any // AST node for new check constraint
 }
 
 // ExcludeConstraintDiff represents changes to an EXCLUDE constraint (PostgreSQL specific).
@@ -155,8 +138,6 @@ type ExcludeConstraintDiff struct {
 	Action               MetadataDiffAction
 	OldExcludeConstraint *storepb.ExcludeConstraintMetadata
 	NewExcludeConstraint *storepb.ExcludeConstraintMetadata
-	OldASTNode           any // AST node for old EXCLUDE constraint
-	NewASTNode           any // AST node for new EXCLUDE constraint
 }
 
 // PrimaryKeyDiff represents changes to a primary key constraint.
@@ -164,8 +145,6 @@ type PrimaryKeyDiff struct {
 	Action        MetadataDiffAction
 	OldPrimaryKey *storepb.IndexMetadata
 	NewPrimaryKey *storepb.IndexMetadata
-	OldASTNode    any // AST node for old primary key constraint
-	NewASTNode    any // AST node for new primary key constraint
 }
 
 // UniqueConstraintDiff represents changes to a unique constraint.
@@ -173,8 +152,6 @@ type UniqueConstraintDiff struct {
 	Action              MetadataDiffAction
 	OldUniqueConstraint *storepb.IndexMetadata
 	NewUniqueConstraint *storepb.IndexMetadata
-	OldASTNode          any // AST node for old unique constraint
-	NewASTNode          any // AST node for new unique constraint
 }
 
 // TriggerDiff represents changes to a trigger.
@@ -185,8 +162,6 @@ type TriggerDiff struct {
 	TriggerName string // Trigger name
 	OldTrigger  *storepb.TriggerMetadata
 	NewTrigger  *storepb.TriggerMetadata
-	OldASTNode  any // AST node for old trigger (*parser.CreatetrigstmtContext)
-	NewASTNode  any // AST node for new trigger (*parser.CreatetrigstmtContext)
 }
 
 // PartitionDiff represents changes to table partitions.
@@ -203,8 +178,6 @@ type ViewDiff struct {
 	ViewName   string
 	OldView    *storepb.ViewMetadata
 	NewView    *storepb.ViewMetadata
-	OldASTNode any // AST node for old view
-	NewASTNode any // AST node for new view
 }
 
 // MaterializedViewDiff represents changes to a materialized view.
@@ -214,8 +187,6 @@ type MaterializedViewDiff struct {
 	MaterializedViewName string
 	OldMaterializedView  *storepb.MaterializedViewMetadata
 	NewMaterializedView  *storepb.MaterializedViewMetadata
-	OldASTNode           any          // AST node for old materialized view
-	NewASTNode           any          // AST node for new materialized view
 	IndexChanges         []*IndexDiff // Index changes on materialized view
 }
 
@@ -226,8 +197,6 @@ type FunctionDiff struct {
 	FunctionName string
 	OldFunction  *storepb.FunctionMetadata
 	NewFunction  *storepb.FunctionMetadata
-	OldASTNode   any // AST node for old function
-	NewASTNode   any // AST node for new function
 
 	// Detailed change information for advanced engines
 	SignatureChanged    bool
@@ -244,8 +213,6 @@ type ProcedureDiff struct {
 	ProcedureName string
 	OldProcedure  *storepb.ProcedureMetadata
 	NewProcedure  *storepb.ProcedureMetadata
-	OldASTNode    any // AST node for old procedure
-	NewASTNode    any // AST node for new procedure
 }
 
 // SequenceDiff represents changes to a sequence.
@@ -255,8 +222,6 @@ type SequenceDiff struct {
 	SequenceName string
 	OldSequence  *storepb.SequenceMetadata
 	NewSequence  *storepb.SequenceMetadata
-	OldASTNode   any // AST node for old sequence
-	NewASTNode   any // AST node for new sequence
 }
 
 // EnumTypeDiff represents changes to an enum type.
@@ -266,8 +231,6 @@ type EnumTypeDiff struct {
 	EnumTypeName string
 	OldEnumType  *storepb.EnumTypeMetadata
 	NewEnumType  *storepb.EnumTypeMetadata
-	OldASTNode   any // For SDL/AST-only mode
-	NewASTNode   any // For SDL/AST-only mode
 }
 
 // ExtensionDiff represents changes to an extension.
@@ -276,8 +239,6 @@ type ExtensionDiff struct {
 	ExtensionName string
 	OldExtension  *storepb.ExtensionMetadata
 	NewExtension  *storepb.ExtensionMetadata
-	OldASTNode    any // For SDL/AST-only mode
-	NewASTNode    any // For SDL/AST-only mode
 }
 
 // EventTriggerDiff represents changes to an event trigger.
@@ -286,8 +247,6 @@ type EventTriggerDiff struct {
 	EventTriggerName string
 	OldEventTrigger  *storepb.EventTriggerMetadata
 	NewEventTrigger  *storepb.EventTriggerMetadata
-	OldASTNode       any // For SDL/AST-only mode
-	NewASTNode       any // For SDL/AST-only mode
 }
 
 // EventDiff represents changes to an event.
@@ -328,8 +287,6 @@ type CommentDiff struct {
 	IndexName  string // only used for table-level INDEX comments
 	OldComment string
 	NewComment string
-	OldASTNode antlr.ParserRuleContext
-	NewASTNode antlr.ParserRuleContext
 }
 
 // GetDatabaseSchemaDiff compares two model.DatabaseMetadata instances and returns the differences.
@@ -425,8 +382,6 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 				SchemaName: schemaName,
 				ViewName:   viewName,
 				NewView:    view,
-				OldASTNode: nil,
-				NewASTNode: nil,
 			})
 		}
 	}
@@ -1555,8 +1510,6 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 					SchemaName: schemaName,
 					ViewName:   viewName,
 					OldView:    oldView,
-					OldASTNode: nil,
-					NewASTNode: nil,
 				})
 			}
 		}
@@ -1576,8 +1529,6 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 				SchemaName: schemaName,
 				ViewName:   viewName,
 				NewView:    newView,
-				OldASTNode: nil,
-				NewASTNode: nil,
 			})
 		} else if !oldView.SkipDump {
 			// Use engine-specific comparison
@@ -1591,8 +1542,6 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						ViewName:   viewName,
 						OldView:    oldView,
 						NewView:    newView,
-						OldASTNode: nil,
-						NewASTNode: nil,
 					})
 				}
 			} else if len(changes) > 0 {
@@ -1612,8 +1561,6 @@ func compareViews(engine storepb.Engine, diff *MetadataDiff, schemaName string, 
 						ViewName:   viewName,
 						OldView:    oldView,
 						NewView:    newView,
-						OldASTNode: nil,
-						NewASTNode: nil,
 					})
 				}
 				// TODO: Handle non-recreating changes like comment updates
