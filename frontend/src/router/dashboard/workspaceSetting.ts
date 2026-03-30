@@ -46,8 +46,8 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
             "bb.policies.get",
           ],
         },
-        component: () => import("@/views/SettingWorkspaceGeneral.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GeneralPage" }),
       },
       {
         path: "subscription",

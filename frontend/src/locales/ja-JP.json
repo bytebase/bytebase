@@ -820,7 +820,12 @@
           "self": "お知らせ"
         },
         "announcement-alert-level": {
-          "description": "レベル"
+          "description": "レベル",
+          "field": {
+            "info": "情報",
+            "warning": "警告",
+            "critical": "重要"
+          }
         },
         "announcement-text": {
           "self": "タイトル",

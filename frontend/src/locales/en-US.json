@@ -820,7 +820,12 @@
           "self": "Announcement"
         },
         "announcement-alert-level": {
-          "description": "Level"
+          "description": "Level",
+          "field": {
+            "info": "Normal",
+            "warning": "Warning",
+            "critical": "Critical"
+          }
         },
         "announcement-text": {
           "self": "Title",

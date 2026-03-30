@@ -820,7 +820,12 @@
           "self": "公告"
         },
         "announcement-alert-level": {
-          "description": "等级"
+          "description": "等级",
+          "field": {
+            "info": "普通",
+            "warning": "警告",
+            "critical": "重要"
+          }
         },
         "announcement-text": {
           "self": "标题",

@@ -820,7 +820,12 @@
           "self": "Thông báo"
         },
         "announcement-alert-level": {
-          "description": "Cấp độ"
+          "description": "Cấp độ",
+          "field": {
+            "info": "Bình thường",
+            "warning": "Cảnh báo",
+            "critical": "Quan trọng"
+          }
         },
         "announcement-text": {
           "self": "Tiêu đề",
