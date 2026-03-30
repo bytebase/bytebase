@@ -1132,7 +1132,12 @@ function SemanticTypeRow({
   return (
     <tr className="border-b border-control-border last:border-b-0 even:bg-gray-50/50">
       <td className="px-3 py-2 text-center">
-        {row.item.icon ? (
+        {isEditing && !isItemReadonly ? (
+          <IconPicker
+            value={row.item.icon ?? ""}
+            onChange={(icon) => onInput(index, (item) => ({ ...item, icon }))}
+          />
+        ) : row.item.icon ? (
           <div className="flex items-center justify-center">
             <img
               src={row.item.icon}
@@ -1279,6 +1284,114 @@ function SemanticTypeRow({
         </td>
       )}
     </tr>
+  );
+}
+
+// --- DeleteConfirmButton ---
+
+// --- IconPicker ---
+
+const SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MiB
+
+interface IconPickerProps {
+  value: string;
+  onChange: (base64: string) => void;
+}
+
+function IconPicker({ value, onChange }: IconPickerProps) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dismiss = useCallback(() => setOpen(false), []);
+  useClickOutside(popoverRef, dismiss);
+
+  const handleOpen = () => {
+    setTempValue(value);
+    setOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) return;
+    const reader = new FileReader();
+    reader.onload = () => setTempValue(reader.result as string);
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  return (
+    <div className="relative flex items-center justify-center" ref={popoverRef}>
+      {value ? (
+        <div className="flex items-center gap-1">
+          <img src={value} className="w-6 h-6 object-contain" alt="" />
+          <button
+            className="p-0.5 rounded hover:bg-gray-200 text-gray-500"
+            onClick={handleOpen}
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        <button
+          className="p-1 rounded hover:bg-gray-200 text-gray-500"
+          onClick={handleOpen}
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+      )}
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 bg-white border border-control-border rounded-md shadow-lg p-3">
+          <div
+            className="w-48 h-48 flex justify-center items-center border border-dashed border-gray-300 rounded-md relative cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {tempValue ? (
+              <div
+                className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-md"
+                style={{ backgroundImage: `url(${tempValue})` }}
+              />
+            ) : (
+              <span className="text-sm text-gray-400">
+                {t("common.upload")}
+              </span>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept={SUPPORTED_IMAGE_EXTENSIONS.join(",")}
+              onChange={handleFileSelect}
+            />
+          </div>
+          <div className="flex justify-end gap-x-2 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTempValue("")}
+            >
+              {t("common.clear")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                onChange(tempValue);
+                setOpen(false);
+              }}
+            >
+              {t("common.confirm")}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
