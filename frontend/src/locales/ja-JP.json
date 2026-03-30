@@ -2387,6 +2387,37 @@
         "title": "エンタープライズ"
       },
       "try": "無料でお試しください。"
+    },
+    "purchase": {
+      "subscribe": "今すぐ購読",
+      "cancel": "サブスクリプションをキャンセル",
+      "cancel-confirm": "サブスクリプションをキャンセルしてもよろしいですか？",
+      "canceled": "サブスクリプションがキャンセルされました",
+      "update": "サブスクリプションを更新",
+      "cancel-pending": "サブスクリプションはキャンセル済みで、{date} に終了します。",
+      "discount": {
+        "percentage-off": "初月 {value}% オフ",
+        "month-off": "{value} ヶ月無料",
+        "price-off": "${value} オフ"
+      },
+      "seats": "ユーザー数",
+      "per-user-per-month": "/ ユーザー / 月",
+      "custom": "カスタム",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "go-to-workspace": "ワークスペースへ移動",
+      "see-comparison": "機能の詳細比較を見る",
+      "accept-terms-prefix": "以下に同意します：",
+      "terms-of-service": "利用規約",
+      "and": "および",
+      "privacy-policy": "プライバシーポリシー",
+      "pending-title": "購入を完了しています...",
+      "pending-description": "お支払いの確認中です。通常は数秒で完了します。",
+      "payment-info": "支払い情報",
+      "total-price": "合計金額",
+      "billing-period": "請求期間",
+      "manage-invoices": "請求書を管理"
     }
   },
   "sheet": {

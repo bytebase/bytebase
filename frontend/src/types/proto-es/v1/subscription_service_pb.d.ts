@@ -24,28 +24,20 @@ export declare type GetSubscriptionRequest = Message<"bytebase.v1.GetSubscriptio
 export declare const GetSubscriptionRequestSchema: GenMessage<GetSubscriptionRequest>;
 
 /**
- * @generated from message bytebase.v1.UpdateSubscriptionRequest
+ * @generated from message bytebase.v1.UploadLicenseRequest
  */
-export declare type UpdateSubscriptionRequest = Message<"bytebase.v1.UpdateSubscriptionRequest"> & {
+export declare type UploadLicenseRequest = Message<"bytebase.v1.UploadLicenseRequest"> & {
   /**
    * @generated from field: string license = 1;
    */
   license: string;
-
-  /**
-   * If set to true, and the subscription is not found, a new subscription will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 2;
-   */
-  allowMissing: boolean;
 };
 
 /**
- * Describes the message bytebase.v1.UpdateSubscriptionRequest.
- * Use `create(UpdateSubscriptionRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.UploadLicenseRequest.
+ * Use `create(UploadLicenseRequestSchema)` to create a new message.
  */
-export declare const UpdateSubscriptionRequestSchema: GenMessage<UpdateSubscriptionRequest>;
+export declare const UploadLicenseRequestSchema: GenMessage<UploadLicenseRequest>;
 
 /**
  * @generated from message bytebase.v1.CreatePurchaseRequest
@@ -74,22 +66,64 @@ export declare type CreatePurchaseRequest = Message<"bytebase.v1.CreatePurchaseR
 export declare const CreatePurchaseRequestSchema: GenMessage<CreatePurchaseRequest>;
 
 /**
- * @generated from message bytebase.v1.CreatePurchaseResponse
+ * @generated from message bytebase.v1.PurchaseResponse
  */
-export declare type CreatePurchaseResponse = Message<"bytebase.v1.CreatePurchaseResponse"> & {
+export declare type PurchaseResponse = Message<"bytebase.v1.PurchaseResponse"> & {
   /**
-   * Stripe Checkout URL for the user to complete payment.
+   * If set, redirect to this Stripe Checkout URL.
+   * If empty, the update was applied directly using the existing payment method.
    *
    * @generated from field: string payment_url = 1;
    */
   paymentUrl: string;
+
+  /**
+   * Stripe Checkout Session ID. Used to verify the session after redirect.
+   *
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
 };
 
 /**
- * Describes the message bytebase.v1.CreatePurchaseResponse.
- * Use `create(CreatePurchaseResponseSchema)` to create a new message.
+ * Describes the message bytebase.v1.PurchaseResponse.
+ * Use `create(PurchaseResponseSchema)` to create a new message.
  */
-export declare const CreatePurchaseResponseSchema: GenMessage<CreatePurchaseResponse>;
+export declare const PurchaseResponseSchema: GenMessage<PurchaseResponse>;
+
+/**
+ * @generated from message bytebase.v1.VerifyCheckoutSessionRequest
+ */
+export declare type VerifyCheckoutSessionRequest = Message<"bytebase.v1.VerifyCheckoutSessionRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
+
+/**
+ * Describes the message bytebase.v1.VerifyCheckoutSessionRequest.
+ * Use `create(VerifyCheckoutSessionRequestSchema)` to create a new message.
+ */
+export declare const VerifyCheckoutSessionRequestSchema: GenMessage<VerifyCheckoutSessionRequest>;
+
+/**
+ * @generated from message bytebase.v1.VerifyCheckoutSessionResponse
+ */
+export declare type VerifyCheckoutSessionResponse = Message<"bytebase.v1.VerifyCheckoutSessionResponse"> & {
+  /**
+   * Stripe Checkout Session status: "complete", "expired", or "open".
+   *
+   * @generated from field: string status = 1;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message bytebase.v1.VerifyCheckoutSessionResponse.
+ * Use `create(VerifyCheckoutSessionResponseSchema)` to create a new message.
+ */
+export declare const VerifyCheckoutSessionResponseSchema: GenMessage<VerifyCheckoutSessionResponse>;
 
 /**
  * @generated from message bytebase.v1.UpdatePurchaseRequest
@@ -123,25 +157,6 @@ export declare type UpdatePurchaseRequest = Message<"bytebase.v1.UpdatePurchaseR
 export declare const UpdatePurchaseRequestSchema: GenMessage<UpdatePurchaseRequest>;
 
 /**
- * @generated from message bytebase.v1.UpdatePurchaseResponse
- */
-export declare type UpdatePurchaseResponse = Message<"bytebase.v1.UpdatePurchaseResponse"> & {
-  /**
-   * If set, redirect to this Stripe Checkout URL.
-   * If empty, the update was applied directly using the existing payment method.
-   *
-   * @generated from field: string payment_url = 1;
-   */
-  paymentUrl: string;
-};
-
-/**
- * Describes the message bytebase.v1.UpdatePurchaseResponse.
- * Use `create(UpdatePurchaseResponseSchema)` to create a new message.
- */
-export declare const UpdatePurchaseResponseSchema: GenMessage<UpdatePurchaseResponse>;
-
-/**
  * @generated from message bytebase.v1.CancelPurchaseRequest
  */
 export declare type CancelPurchaseRequest = Message<"bytebase.v1.CancelPurchaseRequest"> & {
@@ -152,18 +167,6 @@ export declare type CancelPurchaseRequest = Message<"bytebase.v1.CancelPurchaseR
  * Use `create(CancelPurchaseRequestSchema)` to create a new message.
  */
 export declare const CancelPurchaseRequestSchema: GenMessage<CancelPurchaseRequest>;
-
-/**
- * @generated from message bytebase.v1.CancelPurchaseResponse
- */
-export declare type CancelPurchaseResponse = Message<"bytebase.v1.CancelPurchaseResponse"> & {
-};
-
-/**
- * Describes the message bytebase.v1.CancelPurchaseResponse.
- * Use `create(CancelPurchaseResponseSchema)` to create a new message.
- */
-export declare const CancelPurchaseResponseSchema: GenMessage<CancelPurchaseResponse>;
 
 /**
  * @generated from message bytebase.v1.GetPaymentInfoRequest
@@ -207,6 +210,13 @@ export declare type PaymentInfo = Message<"bytebase.v1.PaymentInfo"> & {
    * @generated from field: string invoice_url = 5;
    */
   invoiceUrl: string;
+
+  /**
+   * Whether the subscription is scheduled to cancel at the end of the current billing period.
+   *
+   * @generated from field: bool cancel_at_period_end = 6;
+   */
+  cancelAtPeriodEnd: boolean;
 };
 
 /**
@@ -332,14 +342,14 @@ export declare const PurchaseBillingMethodSchema: GenMessage<PurchaseBillingMeth
  */
 export declare type PurchaseDiscount = Message<"bytebase.v1.PurchaseDiscount"> & {
   /**
-   * @generated from field: string description = 1;
+   * @generated from field: bytebase.v1.PurchaseDiscount.Type type = 1;
    */
-  description: string;
+  type: PurchaseDiscount_Type;
 
   /**
-   * @generated from field: string promotion_code = 2;
+   * @generated from field: int32 value = 2;
    */
-  promotionCode: string;
+  value: number;
 };
 
 /**
@@ -347,6 +357,36 @@ export declare type PurchaseDiscount = Message<"bytebase.v1.PurchaseDiscount"> &
  * Use `create(PurchaseDiscountSchema)` to create a new message.
  */
 export declare const PurchaseDiscountSchema: GenMessage<PurchaseDiscount>;
+
+/**
+ * @generated from enum bytebase.v1.PurchaseDiscount.Type
+ */
+export enum PurchaseDiscount_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PERCENTAGE_OFF = 1;
+   */
+  PERCENTAGE_OFF = 1,
+
+  /**
+   * @generated from enum value: FIXED_MONTH_OFF = 2;
+   */
+  FIXED_MONTH_OFF = 2,
+
+  /**
+   * @generated from enum value: FIXED_PRICE_OFF = 3;
+   */
+  FIXED_PRICE_OFF = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.PurchaseDiscount.Type.
+ */
+export declare const PurchaseDiscount_TypeSchema: GenEnum<PurchaseDiscount_Type>;
 
 /**
  * @generated from message bytebase.v1.ListPurchasePlansRequest
@@ -938,7 +978,6 @@ export declare const SubscriptionService: GenService<{
    * GetSubscription returns the current subscription.
    * If there is no license, we will return a free plan subscription without expiration time.
    * If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-   * Permissions required: None
    *
    * @generated from rpc bytebase.v1.SubscriptionService.GetSubscription
    */
@@ -948,14 +987,13 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
-   * Updates the enterprise license subscription (self-hosted only).
-   * Permissions required: bb.settings.set
+   * Uploads an enterprise license (self-hosted only).
    *
-   * @generated from rpc bytebase.v1.SubscriptionService.UpdateSubscription
+   * @generated from rpc bytebase.v1.SubscriptionService.UploadLicense
    */
-  updateSubscription: {
+  uploadLicense: {
     methodKind: "unary";
-    input: typeof UpdateSubscriptionRequestSchema;
+    input: typeof UploadLicenseRequestSchema;
     output: typeof SubscriptionSchema;
   },
   /**
@@ -967,7 +1005,7 @@ export declare const SubscriptionService: GenService<{
   createPurchase: {
     methodKind: "unary";
     input: typeof CreatePurchaseRequestSchema;
-    output: typeof CreatePurchaseResponseSchema;
+    output: typeof PurchaseResponseSchema;
   },
   /**
    * UpdatePurchase updates an existing subscription (SaaS only).
@@ -978,7 +1016,7 @@ export declare const SubscriptionService: GenService<{
   updatePurchase: {
     methodKind: "unary";
     input: typeof UpdatePurchaseRequestSchema;
-    output: typeof UpdatePurchaseResponseSchema;
+    output: typeof PurchaseResponseSchema;
   },
   /**
    * CancelPurchase cancels an active subscription (SaaS only).
@@ -988,7 +1026,7 @@ export declare const SubscriptionService: GenService<{
   cancelPurchase: {
     methodKind: "unary";
     input: typeof CancelPurchaseRequestSchema;
-    output: typeof CancelPurchaseResponseSchema;
+    output: typeof PurchaseResponseSchema;
   },
   /**
    * GetPaymentInfo returns payment details for the current subscription (SaaS only).
@@ -999,6 +1037,16 @@ export declare const SubscriptionService: GenService<{
     methodKind: "unary";
     input: typeof GetPaymentInfoRequestSchema;
     output: typeof PaymentInfoSchema;
+  },
+  /**
+   * VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.VerifyCheckoutSession
+   */
+  verifyCheckoutSession: {
+    methodKind: "unary";
+    input: typeof VerifyCheckoutSessionRequestSchema;
+    output: typeof VerifyCheckoutSessionResponseSchema;
   },
   /**
    * ListPurchasePlans returns available plans for self-service purchase.

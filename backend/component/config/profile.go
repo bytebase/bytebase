@@ -22,8 +22,10 @@ type Profile struct {
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
 	// Stripe configuration for SaaS subscription purchase. Only used when SaaS is true.
-	StripeAPIKey        string
+	StripeAPISecret     string
 	StripeWebhookSecret string
+	// LicensePrivateKey is the PEM-encoded RSA private key for signing license JWTs (SaaS only).
+	LicensePrivateKey string
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// Demo mode.

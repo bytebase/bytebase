@@ -14103,7 +14103,6 @@ paths:
         GetSubscription returns the current subscription.
          If there is no license, we will return a free plan subscription without expiration time.
          If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-         Permissions required: None
       operationId: SubscriptionService_GetSubscription
       responses:
         "200":
@@ -14112,32 +14111,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Subscription'
-    patch:
+  /v1/subscription/checkoutSession/{session_id}:
+    get:
       tags:
         - SubscriptionService
-      summary: UpdateSubscription
-      description: |-
-        Updates the enterprise license subscription (self-hosted only).
-         Permissions required: bb.settings.set
-      operationId: SubscriptionService_UpdateSubscription
+      summary: VerifyCheckoutSession
+      description: VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+      operationId: SubscriptionService_VerifyCheckoutSession
       parameters:
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the subscription is not found, a new subscription will be created.
-             In this situation, `update_mask` is ignored.
+        - name: session_id
+          in: path
+          required: true
           schema:
-            type: boolean
-            title: allow_missing
-            description: |-
-              If set to true, and the subscription is not found, a new subscription will be created.
-               In this situation, `update_mask` is ignored.
+            type: string
+            title: session_id
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.VerifyCheckoutSessionResponse'
+  /v1/subscription/license:
+    put:
+      tags:
+        - SubscriptionService
+      summary: UploadLicense
+      description: Uploads an enterprise license (self-hosted only).
+      operationId: SubscriptionService_UploadLicense
       requestBody:
         content:
           application/json:
             schema:
-              type: string
-              title: license
+              $ref: '#/components/schemas/bytebase.v1.UploadLicenseRequest'
+        required: true
       responses:
         "200":
           description: Success
@@ -14192,7 +14199,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.CancelPurchaseResponse'
+                $ref: '#/components/schemas/bytebase.v1.PurchaseResponse'
   /v1/subscription:purchase:
     post:
       tags:
@@ -14214,7 +14221,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.CreatePurchaseResponse'
+                $ref: '#/components/schemas/bytebase.v1.PurchaseResponse'
   /v1/subscription:updatePurchase:
     post:
       tags:
@@ -14236,7 +14243,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.UpdatePurchaseResponse'
+                $ref: '#/components/schemas/bytebase.v1.PurchaseResponse'
   /v1/users:
     get:
       tags:
@@ -17899,10 +17906,6 @@ components:
       type: object
       title: CancelPurchaseRequest
       additionalProperties: false
-    bytebase.v1.CancelPurchaseResponse:
-      type: object
-      title: CancelPurchaseResponse
-      additionalProperties: false
     bytebase.v1.Changelog:
       type: object
       properties:
@@ -18439,15 +18442,6 @@ components:
           title: seats
           format: int32
       title: CreatePurchaseRequest
-      additionalProperties: false
-    bytebase.v1.CreatePurchaseResponse:
-      type: object
-      properties:
-        paymentUrl:
-          type: string
-          title: payment_url
-          description: Stripe Checkout URL for the user to complete payment.
-      title: CreatePurchaseResponse
       additionalProperties: false
     bytebase.v1.CreateReleaseRequest:
       type: object
@@ -23519,6 +23513,10 @@ components:
           type: string
           title: invoice_url
           description: Stripe Billing Portal URL for invoice management.
+        cancelAtPeriodEnd:
+          type: boolean
+          title: cancel_at_period_end
+          description: Whether the subscription is scheduled to cancel at the end of the current billing period.
       title: PaymentInfo
       additionalProperties: false
     bytebase.v1.PermissionDeniedDetail:
@@ -24346,14 +24344,23 @@ components:
     bytebase.v1.PurchaseDiscount:
       type: object
       properties:
-        description:
-          type: string
-          title: description
-        promotionCode:
-          type: string
-          title: promotion_code
+        type:
+          title: type
+          $ref: '#/components/schemas/bytebase.v1.PurchaseDiscount.Type'
+        value:
+          type: integer
+          title: value
+          format: int32
       title: PurchaseDiscount
       additionalProperties: false
+    bytebase.v1.PurchaseDiscount.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - PERCENTAGE_OFF
+        - FIXED_MONTH_OFF
+        - FIXED_PRICE_OFF
     bytebase.v1.PurchasePlan:
       type: object
       properties:
@@ -24407,6 +24414,21 @@ components:
       enum:
         - TYPE_UNSPECIFIED
         - USER
+    bytebase.v1.PurchaseResponse:
+      type: object
+      properties:
+        paymentUrl:
+          type: string
+          title: payment_url
+          description: |-
+            If set, redirect to this Stripe Checkout URL.
+             If empty, the update was applied directly using the existing payment method.
+        sessionId:
+          type: string
+          title: session_id
+          description: Stripe Checkout Session ID. Used to verify the session after redirect.
+      title: PurchaseResponse
+      additionalProperties: false
     bytebase.v1.QueryDataPolicy:
       type: object
       properties:
@@ -28490,17 +28512,6 @@ components:
           title: etag
       title: UpdatePurchaseRequest
       additionalProperties: false
-    bytebase.v1.UpdatePurchaseResponse:
-      type: object
-      properties:
-        paymentUrl:
-          type: string
-          title: payment_url
-          description: |-
-            If set, redirect to this Stripe Checkout URL.
-             If empty, the update was applied directly using the existing payment method.
-      title: UpdatePurchaseResponse
-      additionalProperties: false
     bytebase.v1.UpdateReleaseRequest:
       type: object
       properties:
@@ -28607,20 +28618,6 @@ components:
         - setting
       additionalProperties: false
       description: The request message for updating or creating a setting.
-    bytebase.v1.UpdateSubscriptionRequest:
-      type: object
-      properties:
-        license:
-          type: string
-          title: license
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the subscription is not found, a new subscription will be created.
-             In this situation, `update_mask` is ignored.
-      title: UpdateSubscriptionRequest
-      additionalProperties: false
     bytebase.v1.UpdateUserRequest:
       type: object
       properties:
@@ -28774,6 +28771,14 @@ components:
       required:
         - workspace
       additionalProperties: false
+    bytebase.v1.UploadLicenseRequest:
+      type: object
+      properties:
+        license:
+          type: string
+          title: license
+      title: UploadLicenseRequest
+      additionalProperties: false
     bytebase.v1.User:
       type: object
       properties:
@@ -28880,6 +28885,23 @@ components:
         - BITBUCKET
         - AZURE_DEVOPS
       description: Version control system type.
+    bytebase.v1.VerifyCheckoutSessionRequest:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          title: session_id
+      title: VerifyCheckoutSessionRequest
+      additionalProperties: false
+    bytebase.v1.VerifyCheckoutSessionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          title: status
+          description: 'Stripe Checkout Session status: "complete", "expired", or "open".'
+      title: VerifyCheckoutSessionResponse
+      additionalProperties: false
     bytebase.v1.ViewMetadata:
       type: object
       properties:

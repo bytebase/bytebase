@@ -320,6 +320,51 @@
         "title": "Soporte dedicado con SLA",
         "desc": "Soporte prioritario con tiempos de respuesta garantizados."
       }
+    },
+    "purchase": {
+      "free-description": "Diseñado para desarrolladores individuales, proyectos paralelos y experimentos.",
+      "pro-description": "Creado para equipos que construyen aplicaciones listas para producción.",
+      "enterprise-description": "Escala tu negocio de forma segura y cumpliendo normativas.",
+      "features": {
+        "free": {
+          "limits": "Hasta 20 usuarios y 10 instancias",
+          "dcm": "Gestión completa de cambios de base de datos",
+          "git": "Control de versiones y migración de esquema basado en Git",
+          "sql-review": "Revisión SQL con más de 200 reglas",
+          "backup": "Copias de seguridad automáticas y reversión con un clic",
+          "sql-editor": "Editor SQL web con asistencia de IA",
+          "schema": "Diagramas de esquema y exportación de datos",
+          "iam": "Funciones básicas de IAM y seguridad",
+          "support": "Soporte comunitario"
+        },
+        "pro": {
+          "limits": "Usuarios ilimitados a $20/usuario/mes, 10 instancias",
+          "everything": "Todo en Gratis, más:",
+          "batch-query": "Capacidades de consulta por lotes",
+          "read-only": "Conexiones de solo lectura de instancias",
+          "query-policy": "Políticas de consulta para gobernanza",
+          "sso": "SSO de Google y GitHub",
+          "groups": "Gestión de grupos de usuarios",
+          "db-groups": "Grupos de bases de datos",
+          "audit-log": "Registro de auditoría limitado",
+          "support": "Soporte por correo electrónico"
+        },
+        "enterprise": {
+          "limits": "Límites personalizados según necesidades",
+          "everything": "Todo en Pro, más:",
+          "custom-limits": "Límites personalizados de usuarios e instancias",
+          "approval": "Evaluación de riesgos y flujos de aprobación",
+          "audit-log": "Registro de auditoría completo",
+          "sso": "SSO empresarial (OAuth2, OIDC, LDAP personalizados)",
+          "2fa": "2FA y políticas de autenticación avanzadas",
+          "masking": "Enmascaramiento y clasificación de datos",
+          "roles": "Roles personalizados y flujos de solicitud de roles",
+          "scim": "Aprovisionamiento de usuarios SCIM y sincronización de directorio",
+          "secret": "Integración con gestor de secretos externo",
+          "branding": "Marca personalizada y marca de agua",
+          "support": "Soporte dedicado con SLA"
+        }
+      }
     }
   },
   "resource": {

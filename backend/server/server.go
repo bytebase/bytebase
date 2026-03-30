@@ -155,7 +155,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.store = stores
 	sheetManager := sheet.NewManager()
 
-	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores, profile.SaaS)
+	s.licenseService, err = enterprise.NewLicenseService(profile.Mode, stores, profile.SaaS, profile.LicensePrivateKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create license service")
 	}

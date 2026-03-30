@@ -2387,6 +2387,37 @@
         "title": "企业版"
       },
       "try": "免费试用。"
+    },
+    "purchase": {
+      "subscribe": "立即订阅",
+      "cancel": "取消订阅",
+      "cancel-confirm": "确定要取消订阅吗？",
+      "canceled": "订阅已取消",
+      "update": "更新订阅",
+      "cancel-pending": "您的订阅已取消，将于 {date} 到期。",
+      "discount": {
+        "percentage-off": "首月 {value}% 优惠",
+        "month-off": "{value} 个月免费",
+        "price-off": "减 ${value}"
+      },
+      "seats": "用户数",
+      "per-user-per-month": "/ 用户 / 月",
+      "custom": "自定义",
+      "free-description": "适用于个人开发者、副业项目和实验。",
+      "pro-description": "适用于构建生产级应用的团队。",
+      "enterprise-description": "安全合规地扩展您的业务。",
+      "go-to-workspace": "进入工作空间",
+      "see-comparison": "查看详细功能对比",
+      "accept-terms-prefix": "我接受",
+      "terms-of-service": "服务条款",
+      "and": "和",
+      "privacy-policy": "隐私政策",
+      "pending-title": "正在完成购买...",
+      "pending-description": "请稍候，我们正在确认您的付款。通常只需几秒钟。",
+      "payment-info": "支付信息",
+      "total-price": "总价",
+      "billing-period": "账单周期",
+      "manage-invoices": "管理发票"
     }
   },
   "sheet": {

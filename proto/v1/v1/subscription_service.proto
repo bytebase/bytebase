@@ -15,28 +15,24 @@ service SubscriptionService {
   // GetSubscription returns the current subscription.
   // If there is no license, we will return a free plan subscription without expiration time.
   // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-  // Permissions required: None
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
-    option (bytebase.v1.allow_without_credential) = true;
   }
 
-  // Updates the enterprise license subscription (self-hosted only).
-  // Permissions required: bb.settings.set
-  rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
+  // Uploads an enterprise license (self-hosted only).
+  rpc UploadLicense(UploadLicenseRequest) returns (Subscription) {
     option (google.api.http) = {
-      patch: "/v1/subscription"
-      body: "license"
+      put: "/v1/subscription/license"
+      body: "*"
     };
-    option (google.api.method_signature) = "patch";
-    option (bytebase.v1.permission) = "bb.settings.set";
+    option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
   }
 
   // CreatePurchase creates a new subscription purchase (SaaS only).
   // Returns a Stripe Checkout URL for the user to complete payment.
-  rpc CreatePurchase(CreatePurchaseRequest) returns (CreatePurchaseResponse) {
+  rpc CreatePurchase(CreatePurchaseRequest) returns (PurchaseResponse) {
     option (google.api.http) = {
       post: "/v1/subscription:purchase"
       body: "*"
@@ -47,7 +43,7 @@ service SubscriptionService {
 
   // UpdatePurchase updates an existing subscription (SaaS only).
   // May return a Stripe Checkout URL if payment method change is needed.
-  rpc UpdatePurchase(UpdatePurchaseRequest) returns (UpdatePurchaseResponse) {
+  rpc UpdatePurchase(UpdatePurchaseRequest) returns (PurchaseResponse) {
     option (google.api.http) = {
       post: "/v1/subscription:updatePurchase"
       body: "*"
@@ -57,7 +53,7 @@ service SubscriptionService {
   }
 
   // CancelPurchase cancels an active subscription (SaaS only).
-  rpc CancelPurchase(CancelPurchaseRequest) returns (CancelPurchaseResponse) {
+  rpc CancelPurchase(CancelPurchaseRequest) returns (PurchaseResponse) {
     option (google.api.http) = {
       post: "/v1/subscription:cancelPurchase"
       body: "*"
@@ -73,21 +69,23 @@ service SubscriptionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+  rpc VerifyCheckoutSession(VerifyCheckoutSessionRequest) returns (VerifyCheckoutSessionResponse) {
+    option (google.api.http) = {get: "/v1/subscription/checkoutSession/{session_id}"};
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // ListPurchasePlans returns available plans for self-service purchase.
   rpc ListPurchasePlans(ListPurchasePlansRequest) returns (ListPurchasePlansResponse) {
     option (google.api.http) = {get: "/v1/subscription/plans"};
-    option (bytebase.v1.allow_without_credential) = true;
   }
 }
 
 message GetSubscriptionRequest {}
 
-message UpdateSubscriptionRequest {
+message UploadLicenseRequest {
   string license = 1;
-
-  // If set to true, and the subscription is not found, a new subscription will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 2;
 }
 
 // Purchase messages
@@ -98,9 +96,21 @@ message CreatePurchaseRequest {
   int32 seats = 3;
 }
 
-message CreatePurchaseResponse {
-  // Stripe Checkout URL for the user to complete payment.
+message PurchaseResponse {
+  // If set, redirect to this Stripe Checkout URL.
+  // If empty, the update was applied directly using the existing payment method.
   string payment_url = 1;
+  // Stripe Checkout Session ID. Used to verify the session after redirect.
+  string session_id = 2;
+}
+
+message VerifyCheckoutSessionRequest {
+  string session_id = 1;
+}
+
+message VerifyCheckoutSessionResponse {
+  // Stripe Checkout Session status: "complete", "expired", or "open".
+  string status = 1;
 }
 
 message UpdatePurchaseRequest {
@@ -110,15 +120,7 @@ message UpdatePurchaseRequest {
   string etag = 4;
 }
 
-message UpdatePurchaseResponse {
-  // If set, redirect to this Stripe Checkout URL.
-  // If empty, the update was applied directly using the existing payment method.
-  string payment_url = 1;
-}
-
 message CancelPurchaseRequest {}
-
-message CancelPurchaseResponse {}
 
 message GetPaymentInfoRequest {}
 
@@ -129,6 +131,8 @@ message PaymentInfo {
   string period_end = 4;
   // Stripe Billing Portal URL for invoice management.
   string invoice_url = 5;
+  // Whether the subscription is scheduled to cancel at the end of the current billing period.
+  bool cancel_at_period_end = 6;
 }
 
 enum BillingInterval {
@@ -164,8 +168,14 @@ message PurchaseBillingMethod {
 }
 
 message PurchaseDiscount {
-  string description = 1;
-  string promotion_code = 2;
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    PERCENTAGE_OFF = 1;
+    FIXED_MONTH_OFF = 2;
+    FIXED_PRICE_OFF = 3;
+  }
+  Type type = 1;
+  int32 value = 2;
 }
 
 message ListPurchasePlansRequest {}

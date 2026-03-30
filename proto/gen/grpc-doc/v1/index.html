@@ -2729,15 +2729,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.CancelPurchaseResponse"><span class="badge">M</span>CancelPurchaseResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.CreatePurchaseRequest"><span class="badge">M</span>CreatePurchaseRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.CreatePurchaseResponse"><span class="badge">M</span>CreatePurchaseResponse</a>
                 </li>
               
                 <li>
@@ -2785,6 +2777,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PurchaseResponse"><span class="badge">M</span>PurchaseResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Subscription"><span class="badge">M</span>Subscription</a>
                 </li>
               
@@ -2793,11 +2789,15 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdatePurchaseResponse"><span class="badge">M</span>UpdatePurchaseResponse</a>
+                  <a href="#bytebase.v1.UploadLicenseRequest"><span class="badge">M</span>UploadLicenseRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateSubscriptionRequest"><span class="badge">M</span>UpdateSubscriptionRequest</a>
+                  <a href="#bytebase.v1.VerifyCheckoutSessionRequest"><span class="badge">M</span>VerifyCheckoutSessionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.VerifyCheckoutSessionResponse"><span class="badge">M</span>VerifyCheckoutSessionResponse</a>
                 </li>
               
               
@@ -2811,6 +2811,10 @@
               
                 <li>
                   <a href="#bytebase.v1.PlanType"><span class="badge">E</span>PlanType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PurchaseDiscount.Type"><span class="badge">E</span>PurchaseDiscount.Type</a>
                 </li>
               
                 <li>
@@ -30515,13 +30519,6 @@ Permissions required: bb.sheets.get</p></td>
 
         
       
-        <h3 id="bytebase.v1.CancelPurchaseResponse">CancelPurchaseResponse</h3>
-        <p></p>
-
-        
-
-        
-      
         <h3 id="bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</h3>
         <p></p>
 
@@ -30551,30 +30548,6 @@ Permissions required: bb.sheets.get</p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.CreatePurchaseResponse">CreatePurchaseResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>payment_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Stripe Checkout URL for the user to complete payment. </p></td>
                 </tr>
               
             </tbody>
@@ -30672,6 +30645,13 @@ Permissions required: bb.sheets.get</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Stripe Billing Portal URL for invoice management. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cancel_at_period_end</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the subscription is scheduled to cancel at the end of the current billing period. </p></td>
                 </tr>
               
             </tbody>
@@ -30799,15 +30779,15 @@ Permissions required: bb.sheets.get</p></td>
             <tbody>
               
                 <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PurchaseDiscount.Type">PurchaseDiscount.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>promotion_code</td>
-                  <td><a href="#string">string</a></td>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -30907,6 +30887,38 @@ Permissions required: bb.sheets.get</p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>-1 means unlimited. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PurchaseResponse">PurchaseResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>payment_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>If set, redirect to this Stripe Checkout URL.
+If empty, the update was applied directly using the existing payment method. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>session_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Stripe Checkout Session ID. Used to verify the session after redirect. </p></td>
                 </tr>
               
             </tbody>
@@ -31034,32 +31046,7 @@ Permissions required: bb.sheets.get</p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdatePurchaseResponse">UpdatePurchaseResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>payment_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>If set, redirect to this Stripe Checkout URL.
-If empty, the update was applied directly using the existing payment method. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</h3>
+        <h3 id="bytebase.v1.UploadLicenseRequest">UploadLicenseRequest</h3>
         <p></p>
 
         
@@ -31076,12 +31063,52 @@ If empty, the update was applied directly using the existing payment method. </p
                   <td><p> </p></td>
                 </tr>
               
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.VerifyCheckoutSessionRequest">VerifyCheckoutSessionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
                 <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
+                  <td>session_id</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>If set to true, and the subscription is not found, a new subscription will be created.
-In this situation, `update_mask` is ignored. </p></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.VerifyCheckoutSessionResponse">VerifyCheckoutSessionResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Stripe Checkout Session status: &#34;complete&#34;, &#34;expired&#34;, or &#34;open&#34;. </p></td>
                 </tr>
               
             </tbody>
@@ -31600,6 +31627,41 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.PurchaseDiscount.Type">PurchaseDiscount.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PERCENTAGE_OFF</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FIXED_MONTH_OFF</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FIXED_PRICE_OFF</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.PurchasePlanAdditional.Type">PurchasePlanAdditional.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -31641,22 +31703,20 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
                 <td><p>GetSubscription returns the current subscription.
 If there is no license, we will return a free plan subscription without expiration time.
-If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-Permissions required: None</p></td>
+If there is expired license, we will return a free plan subscription with the expiration time of the expired license.</p></td>
               </tr>
             
               <tr>
-                <td>UpdateSubscription</td>
-                <td><a href="#bytebase.v1.UpdateSubscriptionRequest">UpdateSubscriptionRequest</a></td>
+                <td>UploadLicense</td>
+                <td><a href="#bytebase.v1.UploadLicenseRequest">UploadLicenseRequest</a></td>
                 <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
-                <td><p>Updates the enterprise license subscription (self-hosted only).
-Permissions required: bb.settings.set</p></td>
+                <td><p>Uploads an enterprise license (self-hosted only).</p></td>
               </tr>
             
               <tr>
                 <td>CreatePurchase</td>
                 <td><a href="#bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</a></td>
-                <td><a href="#bytebase.v1.CreatePurchaseResponse">CreatePurchaseResponse</a></td>
+                <td><a href="#bytebase.v1.PurchaseResponse">PurchaseResponse</a></td>
                 <td><p>CreatePurchase creates a new subscription purchase (SaaS only).
 Returns a Stripe Checkout URL for the user to complete payment.</p></td>
               </tr>
@@ -31664,7 +31724,7 @@ Returns a Stripe Checkout URL for the user to complete payment.</p></td>
               <tr>
                 <td>UpdatePurchase</td>
                 <td><a href="#bytebase.v1.UpdatePurchaseRequest">UpdatePurchaseRequest</a></td>
-                <td><a href="#bytebase.v1.UpdatePurchaseResponse">UpdatePurchaseResponse</a></td>
+                <td><a href="#bytebase.v1.PurchaseResponse">PurchaseResponse</a></td>
                 <td><p>UpdatePurchase updates an existing subscription (SaaS only).
 May return a Stripe Checkout URL if payment method change is needed.</p></td>
               </tr>
@@ -31672,7 +31732,7 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
               <tr>
                 <td>CancelPurchase</td>
                 <td><a href="#bytebase.v1.CancelPurchaseRequest">CancelPurchaseRequest</a></td>
-                <td><a href="#bytebase.v1.CancelPurchaseResponse">CancelPurchaseResponse</a></td>
+                <td><a href="#bytebase.v1.PurchaseResponse">PurchaseResponse</a></td>
                 <td><p>CancelPurchase cancels an active subscription (SaaS only).</p></td>
               </tr>
             
@@ -31681,6 +31741,13 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
                 <td><a href="#bytebase.v1.GetPaymentInfoRequest">GetPaymentInfoRequest</a></td>
                 <td><a href="#bytebase.v1.PaymentInfo">PaymentInfo</a></td>
                 <td><p>GetPaymentInfo returns payment details for the current subscription (SaaS only).</p></td>
+              </tr>
+            
+              <tr>
+                <td>VerifyCheckoutSession</td>
+                <td><a href="#bytebase.v1.VerifyCheckoutSessionRequest">VerifyCheckoutSessionRequest</a></td>
+                <td><a href="#bytebase.v1.VerifyCheckoutSessionResponse">VerifyCheckoutSessionResponse</a></td>
+                <td><p>VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).</p></td>
               </tr>
             
               <tr>
@@ -31721,10 +31788,10 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
               
               
               <tr>
-                <td>UpdateSubscription</td>
-                <td>PATCH</td>
-                <td>/v1/subscription</td>
-                <td>license</td>
+                <td>UploadLicense</td>
+                <td>PUT</td>
+                <td>/v1/subscription/license</td>
+                <td>*</td>
               </tr>
               
             
@@ -31764,6 +31831,16 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
                 <td>GetPaymentInfo</td>
                 <td>GET</td>
                 <td>/v1/subscription/paymentInfo</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>VerifyCheckoutSession</td>
+                <td>GET</td>
+                <td>/v1/subscription/checkoutSession/{session_id}</td>
                 <td></td>
               </tr>
               

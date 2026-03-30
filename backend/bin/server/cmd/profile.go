@@ -24,8 +24,9 @@ func getBaseProfile(dataDir string) *config.Profile {
 		GitCommit:           gitcommit,
 		PgURL:               os.Getenv("PG_URL"),
 		ReplicaID:           uuid.NewString(),
-		StripeAPIKey:        os.Getenv("STRIPE_API_KEY"),
+		StripeAPISecret:     os.Getenv("STRIPE_API_SECRET"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		LicensePrivateKey:   os.Getenv("LICENSE_PRIVATE_KEY"),
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())

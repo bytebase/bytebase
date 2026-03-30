@@ -38,8 +38,14 @@ type CheckoutParams struct {
 	PromotionCode string // optional promotion code string
 }
 
-// CreateCheckoutSession creates a Stripe Checkout Session and returns the checkout URL.
-func CreateCheckoutSession(params *CheckoutParams) (string, error) {
+// CheckoutResult contains the result of creating a checkout session.
+type CheckoutResult struct {
+	URL       string
+	SessionID string
+}
+
+// CreateCheckoutSession creates a Stripe Checkout Session and returns the URL and session ID.
+func CreateCheckoutSession(params *CheckoutParams) (*CheckoutResult, error) {
 	priceInCents := params.PriceModel.GetPrice()
 	metadata := GetMetadata(params.Workspace, params.PriceModel)
 
@@ -88,9 +94,19 @@ func CreateCheckoutSession(params *CheckoutParams) (string, error) {
 
 	s, err := checkoutsession.New(checkoutParams)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create checkout session")
+		return nil, errors.Wrap(err, "failed to create checkout session")
 	}
-	return s.URL, nil
+	return &CheckoutResult{URL: s.URL, SessionID: s.ID}, nil
+}
+
+// GetCheckoutSessionStatus returns the status of a Stripe Checkout Session.
+// Returns "complete", "expired", or "open".
+func GetCheckoutSessionStatus(sessionID string) (string, error) {
+	s, err := checkoutsession.Get(sessionID, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get checkout session %s", sessionID)
+	}
+	return string(s.Status), nil
 }
 
 // CancelSubscription cancels a Stripe subscription.
@@ -192,14 +208,6 @@ func GetSubscription(stripeSubID string, expand []string) (*stripego.Subscriptio
 		return nil, errors.Wrapf(err, "failed to get stripe subscription %s", stripeSubID)
 	}
 	return sub, nil
-}
-
-// UpdateSubscriptionMetadata updates the metadata on a Stripe subscription.
-func UpdateSubscriptionMetadata(stripeSubID string, metadata map[string]string) error {
-	_, err := stripesubscription.Update(stripeSubID, &stripego.SubscriptionParams{
-		Metadata: metadata,
-	})
-	return errors.Wrapf(err, "failed to update stripe subscription metadata %s", stripeSubID)
 }
 
 // GetMetadata builds the metadata map for a Stripe subscription.

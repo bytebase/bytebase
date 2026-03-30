@@ -30,7 +30,7 @@
         <dd class="mt-1 text-3xl lg:text-4xl">{{ expireAt || "N/A" }}</dd>
       </div>
       <div
-        v-if="subscriptionStore.showTrial && allowEdit"
+        v-if="subscriptionStore.showTrial && allowManageSubscription"
         class="flex flex-col text-left"
       >
         <div class="text-main">
@@ -75,36 +75,42 @@
       </div>
     </div>
     <NDivider />
-    <div>
-      <label class="flex items-center gap-x-2">
-        <span class="text-main">
-          {{ $t("settings.general.workspace.id") }}
-        </span>
-      </label>
-      <div class="mb-3 text-sm text-gray-400">
-        {{ $t("settings.general.workspace.id-description") }}
+    <template v-if="!isSaaSMode">
+      <div>
+        <label class="flex items-center gap-x-2">
+          <span class="text-main">
+            {{ $t("settings.general.workspace.id") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.id-description") }}
+        </div>
+        <div class="mb-4 flex items-center gap-x-2">
+          <NInput
+            ref="workspaceIdField"
+            class="w-full"
+            readonly
+            :value="workspaceId"
+            @click="selectWorkspaceId"
+          />
+          <CopyButton
+            quaternary
+            :text="false"
+            :size="'small'"
+            :content="workspaceId"
+          />
+        </div>
       </div>
-      <div class="mb-4 flex items-center gap-x-2">
-        <NInput
-          ref="workspaceIdField"
-          class="w-full"
-          readonly
-          :value="workspaceId"
-          @click="selectWorkspaceId"
-        />
-        <CopyButton
-          quaternary
-          :text="false"
-          :size="'small'"
-          :content="workspaceId"
-        />
-      </div>
-    </div>
-    <!-- TODO(ed): disable upload license when we support the purchase in the SaaS -->
+      <NDivider />
+    </template>
+    <!-- SaaS: Purchase UI -->
+    <SettingWorkspacePurchase
+      v-if="isSaaSMode"
+      :allow-manage="allowManageSubscription"
+    />
+    <!-- Self-hosted: License upload -->
     <div
-      v-if="
-        subscriptionStore.isSelfHostLicense
-      "
+      v-else-if="subscriptionStore.isSelfHostLicense"
       class="w-full mt-4 flex flex-col"
     >
       <label class="flex items-center gap-x-2">
@@ -118,7 +124,7 @@
         <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
         <div class="ml-1 inline-block">
           <RequireEnterpriseButton
-            v-if="subscriptionStore.showTrial && allowEdit"
+            v-if="subscriptionStore.showTrial && allowManageSubscription"
             text
             type="primary"
             size="small"
@@ -131,14 +137,14 @@
       <NInput
         v-model:value="state.license"
         type="textarea"
-        :disabled="!allowEdit"
+        :disabled="!allowManageSubscription"
         :placeholder="$t('common.sensitive-placeholder')"
       />
       <div class="ml-auto mt-3">
         <NButton
           type="primary"
           class="capitalize"
-          :disabled="disabled || !allowEdit"
+          :disabled="disabled || !allowManageSubscription"
           @click="uploadLicense"
         >
           {{ $t("subscription.upload-license") }}
@@ -165,15 +171,12 @@ import {
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import SettingWorkspacePurchase from "@/views/SettingWorkspacePurchase.vue";
 
 interface LocalState {
   loading: boolean;
   license: string;
 }
-
-const props = defineProps<{
-  allowEdit: boolean;
-}>();
 
 const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
@@ -183,6 +186,12 @@ const state = reactive<LocalState>({
   loading: false,
   license: "",
 });
+
+const isSaaSMode = computed(() => actuatorStore.isSaaSMode);
+
+const allowManageSubscription = computed(() =>
+  hasWorkspacePermissionV2("bb.subscription.manage")
+);
 
 const disabled = computed((): boolean => {
   return state.loading || !state.license;
@@ -212,7 +221,7 @@ const uploadLicense = async () => {
   state.loading = true;
 
   try {
-    await subscriptionStore.patchSubscription(state.license);
+    await subscriptionStore.uploadLicense(state.license);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -235,7 +244,10 @@ const uploadLicense = async () => {
 const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
 const allowManageInstanceLicenses = computed(() => {
-  return props.allowEdit && hasWorkspacePermissionV2("bb.instances.list");
+  return (
+    allowManageSubscription.value &&
+    hasWorkspacePermissionV2("bb.instances.list")
+  );
 });
 
 const currentPlan = computed((): string => {

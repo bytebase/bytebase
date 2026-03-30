@@ -36,9 +36,9 @@ const (
 	// SubscriptionServiceGetSubscriptionProcedure is the fully-qualified name of the
 	// SubscriptionService's GetSubscription RPC.
 	SubscriptionServiceGetSubscriptionProcedure = "/bytebase.v1.SubscriptionService/GetSubscription"
-	// SubscriptionServiceUpdateSubscriptionProcedure is the fully-qualified name of the
-	// SubscriptionService's UpdateSubscription RPC.
-	SubscriptionServiceUpdateSubscriptionProcedure = "/bytebase.v1.SubscriptionService/UpdateSubscription"
+	// SubscriptionServiceUploadLicenseProcedure is the fully-qualified name of the
+	// SubscriptionService's UploadLicense RPC.
+	SubscriptionServiceUploadLicenseProcedure = "/bytebase.v1.SubscriptionService/UploadLicense"
 	// SubscriptionServiceCreatePurchaseProcedure is the fully-qualified name of the
 	// SubscriptionService's CreatePurchase RPC.
 	SubscriptionServiceCreatePurchaseProcedure = "/bytebase.v1.SubscriptionService/CreatePurchase"
@@ -51,6 +51,9 @@ const (
 	// SubscriptionServiceGetPaymentInfoProcedure is the fully-qualified name of the
 	// SubscriptionService's GetPaymentInfo RPC.
 	SubscriptionServiceGetPaymentInfoProcedure = "/bytebase.v1.SubscriptionService/GetPaymentInfo"
+	// SubscriptionServiceVerifyCheckoutSessionProcedure is the fully-qualified name of the
+	// SubscriptionService's VerifyCheckoutSession RPC.
+	SubscriptionServiceVerifyCheckoutSessionProcedure = "/bytebase.v1.SubscriptionService/VerifyCheckoutSession"
 	// SubscriptionServiceListPurchasePlansProcedure is the fully-qualified name of the
 	// SubscriptionService's ListPurchasePlans RPC.
 	SubscriptionServiceListPurchasePlansProcedure = "/bytebase.v1.SubscriptionService/ListPurchasePlans"
@@ -61,21 +64,21 @@ type SubscriptionServiceClient interface {
 	// GetSubscription returns the current subscription.
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
-	// Updates the enterprise license subscription (self-hosted only).
-	// Permissions required: bb.settings.set
-	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Uploads an enterprise license (self-hosted only).
+	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
-	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.CreatePurchaseResponse], error)
+	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// UpdatePurchase updates an existing subscription (SaaS only).
 	// May return a Stripe Checkout URL if payment method change is needed.
-	UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.UpdatePurchaseResponse], error)
+	UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// CancelPurchase cancels an active subscription (SaaS only).
-	CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.CancelPurchaseResponse], error)
+	CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// GetPaymentInfo returns payment details for the current subscription (SaaS only).
 	GetPaymentInfo(context.Context, *connect.Request[v1.GetPaymentInfoRequest]) (*connect.Response[v1.PaymentInfo], error)
+	// VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+	VerifyCheckoutSession(context.Context, *connect.Request[v1.VerifyCheckoutSessionRequest]) (*connect.Response[v1.VerifyCheckoutSessionResponse], error)
 	// ListPurchasePlans returns available plans for self-service purchase.
 	ListPurchasePlans(context.Context, *connect.Request[v1.ListPurchasePlansRequest]) (*connect.Response[v1.ListPurchasePlansResponse], error)
 }
@@ -97,25 +100,25 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
 			connect.WithClientOptions(opts...),
 		),
-		updateSubscription: connect.NewClient[v1.UpdateSubscriptionRequest, v1.Subscription](
+		uploadLicense: connect.NewClient[v1.UploadLicenseRequest, v1.Subscription](
 			httpClient,
-			baseURL+SubscriptionServiceUpdateSubscriptionProcedure,
-			connect.WithSchema(subscriptionServiceMethods.ByName("UpdateSubscription")),
+			baseURL+SubscriptionServiceUploadLicenseProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("UploadLicense")),
 			connect.WithClientOptions(opts...),
 		),
-		createPurchase: connect.NewClient[v1.CreatePurchaseRequest, v1.CreatePurchaseResponse](
+		createPurchase: connect.NewClient[v1.CreatePurchaseRequest, v1.PurchaseResponse](
 			httpClient,
 			baseURL+SubscriptionServiceCreatePurchaseProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("CreatePurchase")),
 			connect.WithClientOptions(opts...),
 		),
-		updatePurchase: connect.NewClient[v1.UpdatePurchaseRequest, v1.UpdatePurchaseResponse](
+		updatePurchase: connect.NewClient[v1.UpdatePurchaseRequest, v1.PurchaseResponse](
 			httpClient,
 			baseURL+SubscriptionServiceUpdatePurchaseProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("UpdatePurchase")),
 			connect.WithClientOptions(opts...),
 		),
-		cancelPurchase: connect.NewClient[v1.CancelPurchaseRequest, v1.CancelPurchaseResponse](
+		cancelPurchase: connect.NewClient[v1.CancelPurchaseRequest, v1.PurchaseResponse](
 			httpClient,
 			baseURL+SubscriptionServiceCancelPurchaseProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("CancelPurchase")),
@@ -125,6 +128,12 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			httpClient,
 			baseURL+SubscriptionServiceGetPaymentInfoProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("GetPaymentInfo")),
+			connect.WithClientOptions(opts...),
+		),
+		verifyCheckoutSession: connect.NewClient[v1.VerifyCheckoutSessionRequest, v1.VerifyCheckoutSessionResponse](
+			httpClient,
+			baseURL+SubscriptionServiceVerifyCheckoutSessionProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("VerifyCheckoutSession")),
 			connect.WithClientOptions(opts...),
 		),
 		listPurchasePlans: connect.NewClient[v1.ListPurchasePlansRequest, v1.ListPurchasePlansResponse](
@@ -138,13 +147,14 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
-	getSubscription    *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
-	updateSubscription *connect.Client[v1.UpdateSubscriptionRequest, v1.Subscription]
-	createPurchase     *connect.Client[v1.CreatePurchaseRequest, v1.CreatePurchaseResponse]
-	updatePurchase     *connect.Client[v1.UpdatePurchaseRequest, v1.UpdatePurchaseResponse]
-	cancelPurchase     *connect.Client[v1.CancelPurchaseRequest, v1.CancelPurchaseResponse]
-	getPaymentInfo     *connect.Client[v1.GetPaymentInfoRequest, v1.PaymentInfo]
-	listPurchasePlans  *connect.Client[v1.ListPurchasePlansRequest, v1.ListPurchasePlansResponse]
+	getSubscription       *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
+	uploadLicense         *connect.Client[v1.UploadLicenseRequest, v1.Subscription]
+	createPurchase        *connect.Client[v1.CreatePurchaseRequest, v1.PurchaseResponse]
+	updatePurchase        *connect.Client[v1.UpdatePurchaseRequest, v1.PurchaseResponse]
+	cancelPurchase        *connect.Client[v1.CancelPurchaseRequest, v1.PurchaseResponse]
+	getPaymentInfo        *connect.Client[v1.GetPaymentInfoRequest, v1.PaymentInfo]
+	verifyCheckoutSession *connect.Client[v1.VerifyCheckoutSessionRequest, v1.VerifyCheckoutSessionResponse]
+	listPurchasePlans     *connect.Client[v1.ListPurchasePlansRequest, v1.ListPurchasePlansResponse]
 }
 
 // GetSubscription calls bytebase.v1.SubscriptionService.GetSubscription.
@@ -152,29 +162,34 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *co
 	return c.getSubscription.CallUnary(ctx, req)
 }
 
-// UpdateSubscription calls bytebase.v1.SubscriptionService.UpdateSubscription.
-func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, req *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
-	return c.updateSubscription.CallUnary(ctx, req)
+// UploadLicense calls bytebase.v1.SubscriptionService.UploadLicense.
+func (c *subscriptionServiceClient) UploadLicense(ctx context.Context, req *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error) {
+	return c.uploadLicense.CallUnary(ctx, req)
 }
 
 // CreatePurchase calls bytebase.v1.SubscriptionService.CreatePurchase.
-func (c *subscriptionServiceClient) CreatePurchase(ctx context.Context, req *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.CreatePurchaseResponse], error) {
+func (c *subscriptionServiceClient) CreatePurchase(ctx context.Context, req *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return c.createPurchase.CallUnary(ctx, req)
 }
 
 // UpdatePurchase calls bytebase.v1.SubscriptionService.UpdatePurchase.
-func (c *subscriptionServiceClient) UpdatePurchase(ctx context.Context, req *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.UpdatePurchaseResponse], error) {
+func (c *subscriptionServiceClient) UpdatePurchase(ctx context.Context, req *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return c.updatePurchase.CallUnary(ctx, req)
 }
 
 // CancelPurchase calls bytebase.v1.SubscriptionService.CancelPurchase.
-func (c *subscriptionServiceClient) CancelPurchase(ctx context.Context, req *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.CancelPurchaseResponse], error) {
+func (c *subscriptionServiceClient) CancelPurchase(ctx context.Context, req *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return c.cancelPurchase.CallUnary(ctx, req)
 }
 
 // GetPaymentInfo calls bytebase.v1.SubscriptionService.GetPaymentInfo.
 func (c *subscriptionServiceClient) GetPaymentInfo(ctx context.Context, req *connect.Request[v1.GetPaymentInfoRequest]) (*connect.Response[v1.PaymentInfo], error) {
 	return c.getPaymentInfo.CallUnary(ctx, req)
+}
+
+// VerifyCheckoutSession calls bytebase.v1.SubscriptionService.VerifyCheckoutSession.
+func (c *subscriptionServiceClient) VerifyCheckoutSession(ctx context.Context, req *connect.Request[v1.VerifyCheckoutSessionRequest]) (*connect.Response[v1.VerifyCheckoutSessionResponse], error) {
+	return c.verifyCheckoutSession.CallUnary(ctx, req)
 }
 
 // ListPurchasePlans calls bytebase.v1.SubscriptionService.ListPurchasePlans.
@@ -187,21 +202,21 @@ type SubscriptionServiceHandler interface {
 	// GetSubscription returns the current subscription.
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
-	// Permissions required: None
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
-	// Updates the enterprise license subscription (self-hosted only).
-	// Permissions required: bb.settings.set
-	UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
+	// Uploads an enterprise license (self-hosted only).
+	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
-	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.CreatePurchaseResponse], error)
+	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// UpdatePurchase updates an existing subscription (SaaS only).
 	// May return a Stripe Checkout URL if payment method change is needed.
-	UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.UpdatePurchaseResponse], error)
+	UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// CancelPurchase cancels an active subscription (SaaS only).
-	CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.CancelPurchaseResponse], error)
+	CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
 	// GetPaymentInfo returns payment details for the current subscription (SaaS only).
 	GetPaymentInfo(context.Context, *connect.Request[v1.GetPaymentInfoRequest]) (*connect.Response[v1.PaymentInfo], error)
+	// VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+	VerifyCheckoutSession(context.Context, *connect.Request[v1.VerifyCheckoutSessionRequest]) (*connect.Response[v1.VerifyCheckoutSessionResponse], error)
 	// ListPurchasePlans returns available plans for self-service purchase.
 	ListPurchasePlans(context.Context, *connect.Request[v1.ListPurchasePlansRequest]) (*connect.Response[v1.ListPurchasePlansResponse], error)
 }
@@ -219,10 +234,10 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
 		connect.WithHandlerOptions(opts...),
 	)
-	subscriptionServiceUpdateSubscriptionHandler := connect.NewUnaryHandler(
-		SubscriptionServiceUpdateSubscriptionProcedure,
-		svc.UpdateSubscription,
-		connect.WithSchema(subscriptionServiceMethods.ByName("UpdateSubscription")),
+	subscriptionServiceUploadLicenseHandler := connect.NewUnaryHandler(
+		SubscriptionServiceUploadLicenseProcedure,
+		svc.UploadLicense,
+		connect.WithSchema(subscriptionServiceMethods.ByName("UploadLicense")),
 		connect.WithHandlerOptions(opts...),
 	)
 	subscriptionServiceCreatePurchaseHandler := connect.NewUnaryHandler(
@@ -249,6 +264,12 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		connect.WithSchema(subscriptionServiceMethods.ByName("GetPaymentInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
+	subscriptionServiceVerifyCheckoutSessionHandler := connect.NewUnaryHandler(
+		SubscriptionServiceVerifyCheckoutSessionProcedure,
+		svc.VerifyCheckoutSession,
+		connect.WithSchema(subscriptionServiceMethods.ByName("VerifyCheckoutSession")),
+		connect.WithHandlerOptions(opts...),
+	)
 	subscriptionServiceListPurchasePlansHandler := connect.NewUnaryHandler(
 		SubscriptionServiceListPurchasePlansProcedure,
 		svc.ListPurchasePlans,
@@ -259,8 +280,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		switch r.URL.Path {
 		case SubscriptionServiceGetSubscriptionProcedure:
 			subscriptionServiceGetSubscriptionHandler.ServeHTTP(w, r)
-		case SubscriptionServiceUpdateSubscriptionProcedure:
-			subscriptionServiceUpdateSubscriptionHandler.ServeHTTP(w, r)
+		case SubscriptionServiceUploadLicenseProcedure:
+			subscriptionServiceUploadLicenseHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCreatePurchaseProcedure:
 			subscriptionServiceCreatePurchaseHandler.ServeHTTP(w, r)
 		case SubscriptionServiceUpdatePurchaseProcedure:
@@ -269,6 +290,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceCancelPurchaseHandler.ServeHTTP(w, r)
 		case SubscriptionServiceGetPaymentInfoProcedure:
 			subscriptionServiceGetPaymentInfoHandler.ServeHTTP(w, r)
+		case SubscriptionServiceVerifyCheckoutSessionProcedure:
+			subscriptionServiceVerifyCheckoutSessionHandler.ServeHTTP(w, r)
 		case SubscriptionServiceListPurchasePlansProcedure:
 			subscriptionServiceListPurchasePlansHandler.ServeHTTP(w, r)
 		default:
@@ -284,24 +307,28 @@ func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) UpdateSubscription(context.Context, *connect.Request[v1.UpdateSubscriptionRequest]) (*connect.Response[v1.Subscription], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UpdateSubscription is not implemented"))
+func (UnimplementedSubscriptionServiceHandler) UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UploadLicense is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.CreatePurchaseResponse], error) {
+func (UnimplementedSubscriptionServiceHandler) CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.CreatePurchase is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.UpdatePurchaseResponse], error) {
+func (UnimplementedSubscriptionServiceHandler) UpdatePurchase(context.Context, *connect.Request[v1.UpdatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UpdatePurchase is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.CancelPurchaseResponse], error) {
+func (UnimplementedSubscriptionServiceHandler) CancelPurchase(context.Context, *connect.Request[v1.CancelPurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.CancelPurchase is not implemented"))
 }
 
 func (UnimplementedSubscriptionServiceHandler) GetPaymentInfo(context.Context, *connect.Request[v1.GetPaymentInfoRequest]) (*connect.Response[v1.PaymentInfo], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetPaymentInfo is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) VerifyCheckoutSession(context.Context, *connect.Request[v1.VerifyCheckoutSessionRequest]) (*connect.Response[v1.VerifyCheckoutSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.VerifyCheckoutSession is not implemented"))
 }
 
 func (UnimplementedSubscriptionServiceHandler) ListPurchasePlans(context.Context, *connect.Request[v1.ListPurchasePlansRequest]) (*connect.Response[v1.ListPurchasePlansResponse], error) {

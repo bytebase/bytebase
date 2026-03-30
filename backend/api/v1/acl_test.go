@@ -63,7 +63,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello"},
 		},
 		{
-			request: &v1pb.UpdateSubscriptionRequest{
+			request: &v1pb.UploadLicenseRequest{
 				License: "123",
 			},
 			method: "/bytebase.v1.SubscriptionService/UpdateSubscription",

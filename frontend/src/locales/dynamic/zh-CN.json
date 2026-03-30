@@ -320,6 +320,51 @@
         "title": "专属支持与 SLA",
         "desc": "具有保证响应时间的优先支持。"
       }
+    },
+    "purchase": {
+      "free-description": "适用于个人开发者、副业项目和实验。",
+      "pro-description": "适用于构建生产级应用的团队。",
+      "enterprise-description": "安全合规地扩展您的业务。",
+      "features": {
+        "free": {
+          "limits": "最多 20 个用户和 10 个实例",
+          "dcm": "完整的数据库变更管理",
+          "git": "基于 Git 的版本控制和 Schema 迁移",
+          "sql-review": "200+ 条 SQL 审查规则",
+          "backup": "自动备份和一键回滚",
+          "sql-editor": "基于 Web 的 SQL 编辑器（含 AI 辅助）",
+          "schema": "Schema 图表和数据导出",
+          "iam": "基本 IAM 和安全功能",
+          "support": "社区支持"
+        },
+        "pro": {
+          "limits": "无限用户，$20/用户/月，10 个实例",
+          "everything": "包含免费版所有功能，另外：",
+          "batch-query": "批量查询功能",
+          "read-only": "实例只读连接",
+          "query-policy": "查询治理策略",
+          "sso": "Google 和 GitHub SSO",
+          "groups": "用户组管理",
+          "db-groups": "数据库分组",
+          "audit-log": "有限审计日志",
+          "support": "邮件支持"
+        },
+        "enterprise": {
+          "limits": "按需自定义限制",
+          "everything": "包含专业版所有功能，另外：",
+          "custom-limits": "自定义用户和实例限制",
+          "approval": "风险评估和审批工作流",
+          "audit-log": "完整审计日志",
+          "sso": "企业级 SSO（自定义 OAuth2、OIDC、LDAP）",
+          "2fa": "双因素认证和高级认证策略",
+          "masking": "数据脱敏和分类",
+          "roles": "自定义角色和角色申请工作流",
+          "scim": "SCIM 用户配置和目录同步",
+          "secret": "外部密钥管理器集成",
+          "branding": "自定义品牌和水印",
+          "support": "专属 SLA 支持"
+        }
+      }
     }
   },
   "resource": {

@@ -83,9 +83,9 @@ func configureEchoRouters(
 	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
 
-	// Stripe (SaaS only).
-	if profile.SaaS && profile.StripeAPIKey != "" {
-		stripeplugin.Init(profile.StripeAPIKey)
+	// Stripe (SaaS only, requires both API key and webhook secret).
+	if profile.SaaS && profile.StripeAPISecret != "" && profile.StripeWebhookSecret != "" {
+		stripeplugin.Init(profile.StripeAPISecret)
 		stripeGroup := hookGroup.Group("/stripe")
 		stripeWebhookHandler.RegisterRoutes(stripeGroup)
 	}

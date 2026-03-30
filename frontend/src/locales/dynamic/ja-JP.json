@@ -320,6 +320,51 @@
         "title": "SLA付き専用サポート",
         "desc": "保証された応答時間での優先サポート。"
       }
+    },
+    "purchase": {
+      "free-description": "個人開発者、サイドプロジェクト、実験向け。",
+      "pro-description": "本番対応アプリケーションを構築するチーム向け。",
+      "enterprise-description": "コンプライアンスを維持しながら安全にビジネスを拡大。",
+      "features": {
+        "free": {
+          "limits": "最大20ユーザー、10インスタンス",
+          "dcm": "完全なデータベース変更管理",
+          "git": "Gitベースのバージョン管理とスキーマ移行",
+          "sql-review": "200以上のルールによるSQLレビュー",
+          "backup": "自動バックアップとワンクリックロールバック",
+          "sql-editor": "AI支援付きWebベースSQLエディタ",
+          "schema": "スキーマ図とデータエクスポート",
+          "iam": "基本的なIAMとセキュリティ機能",
+          "support": "コミュニティサポート"
+        },
+        "pro": {
+          "limits": "無制限ユーザー（$20/ユーザー/月）、10インスタンス",
+          "everything": "無料版のすべてに加えて：",
+          "batch-query": "バッチクエリ機能",
+          "read-only": "インスタンス読み取り専用接続",
+          "query-policy": "ガバナンスのためのクエリポリシー",
+          "sso": "Google & GitHub SSO",
+          "groups": "ユーザーグループ管理",
+          "db-groups": "データベースグループ",
+          "audit-log": "限定的な監査ログ",
+          "support": "メールサポート"
+        },
+        "enterprise": {
+          "limits": "ニーズに基づくカスタム制限",
+          "everything": "プロ版のすべてに加えて：",
+          "custom-limits": "カスタムユーザーとインスタンス制限",
+          "approval": "リスク評価と承認ワークフロー",
+          "audit-log": "完全な監査ログ",
+          "sso": "エンタープライズSSO（カスタムOAuth2、OIDC、LDAP）",
+          "2fa": "二要素認証と高度な認証ポリシー",
+          "masking": "データマスキングと分類",
+          "roles": "カスタムロールとロール申請ワークフロー",
+          "scim": "SCIMユーザープロビジョニングとディレクトリ同期",
+          "secret": "外部シークレットマネージャー統合",
+          "branding": "カスタムブランディングとウォーターマーク",
+          "support": "SLA付き専用サポート"
+        }
+      }
     }
   },
   "resource": {

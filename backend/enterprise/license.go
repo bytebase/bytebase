@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -79,6 +79,8 @@ func init() {
 type Config struct {
 	// PublicKey is the parsed RSA public key.
 	PublicKey *rsa.PublicKey
+	// PrivateKey is the parsed RSA private key (only set in SaaS mode for license signing).
+	PrivateKey *rsa.PrivateKey
 	// Version is the JWT key version.
 	Version string
 	// Issuer is the license issuer, it should always be "bytebase".
@@ -139,9 +141,9 @@ type LicenseService struct {
 	replicaCache atomic.Pointer[replicaCacheState]
 }
 
-// claims creates a struct that will be encoded to a JWT.
+// Claims creates a struct that will be encoded to a JWT.
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
-type claims struct {
+type Claims struct {
 	ActiveInstances int    `json:"instanceCount"`
 	Instances       int    `json:"instance"`
 	Seats           int    `json:"seat"`
@@ -154,10 +156,25 @@ type claims struct {
 }
 
 // NewLicenseService will create a new enterprise license service.
-func NewLicenseService(mode common.ReleaseMode, store *store.Store, saas bool) (*LicenseService, error) {
+// privateKeyPEM is optional — only needed in SaaS mode for signing license JWTs.
+func NewLicenseService(mode common.ReleaseMode, store *store.Store, saas bool, privateKeyPEM string) (*LicenseService, error) {
 	config, err := NewConfig(mode)
 	if err != nil {
 		return nil, err
+	}
+
+	if privateKeyPEM != "" {
+		// Support base64-encoded PEM (for env vars that can't contain newlines).
+		decoded, err := base64.StdEncoding.DecodeString(privateKeyPEM)
+		if err == nil {
+			privateKeyPEM = string(decoded)
+		}
+		// If base64 decode fails, assume it's already raw PEM.
+		privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKeyPEM))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse license private key")
+		}
+		config.PrivateKey = privKey
 	}
 
 	service := &LicenseService{
@@ -199,13 +216,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context, workspaceID strin
 			return sub, nil
 		}
 
-		var subscription *v1pb.Subscription
-		// TODO(ed): find if be able to unify this
-		if s.saas {
-			subscription = s.loadSubscriptionFromPurchase(ctx, workspaceID)
-		} else {
-			subscription = s.loadSubscriptionFromDB(ctx, workspaceID)
-		}
+		subscription := s.loadSubscriptionFromDB(ctx, workspaceID)
 
 		// Only cache non-free subscriptions. Free plan may be a transient failure
 		// (e.g. DB not ready during startup), and caching it would mask the real
@@ -257,53 +268,6 @@ func (s *LicenseService) loadSubscriptionFromDB(ctx context.Context, workspaceID
 	}
 
 	return subscription
-}
-
-// loadSubscriptionFromPurchase loads subscription from the subscription table (SaaS mode).
-func (s *LicenseService) loadSubscriptionFromPurchase(ctx context.Context, workspaceID string) *v1pb.Subscription {
-	sub, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
-	if err != nil {
-		slog.Debug("failed to get subscription from purchase table", log.BBError(err))
-		return defaultFreeSubscription
-	}
-	if sub == nil || sub.Payload == nil {
-		return defaultFreeSubscription
-	}
-
-	payload := sub.Payload
-	if payload.Status != storepb.SubscriptionPayload_ACTIVE {
-		return defaultFreeSubscription
-	}
-
-	subscription := &v1pb.Subscription{
-		Plan:            convertStorePlanToV1(payload.Plan),
-		Seats:           payload.Seat,
-		Instances:       payload.InstanceCount,
-		ActiveInstances: payload.InstanceCount,
-	}
-	if payload.ExpiresAt != nil {
-		subscription.ExpiresTime = payload.ExpiresAt
-	}
-
-	if isExpired(subscription) {
-		return &v1pb.Subscription{
-			Plan:        v1pb.PlanType_FREE,
-			ExpiresTime: subscription.ExpiresTime,
-		}
-	}
-
-	return subscription
-}
-
-func convertStorePlanToV1(plan storepb.SubscriptionPayload_Plan) v1pb.PlanType {
-	switch plan {
-	case storepb.SubscriptionPayload_TEAM:
-		return v1pb.PlanType_TEAM
-	case storepb.SubscriptionPayload_ENTERPRISE:
-		return v1pb.PlanType_ENTERPRISE
-	default:
-		return v1pb.PlanType_FREE
-	}
 }
 
 func isExpired(sub *v1pb.Subscription) bool {
@@ -416,6 +380,43 @@ func (s *LicenseService) StoreLicense(ctx context.Context, workspaceID string, l
 	return nil
 }
 
+// LicenseParams contains the business fields for license generation.
+type LicenseParams struct {
+	Plan        string
+	Seats       int
+	Instances   int
+	WorkspaceID string
+	ExpiresAt   time.Time // zero value means no expiration
+}
+
+// CreateLicense signs a new license JWT from business params.
+// Only available when private key is configured (SaaS mode).
+// Handles JWT plumbing (issuer, audience, kid) internally.
+func (s *LicenseService) CreateLicense(params *LicenseParams) (string, error) {
+	if s.config.PrivateKey == nil {
+		return "", errors.New("license signing not available: private key not configured")
+	}
+
+	c := &Claims{
+		Plan:            params.Plan,
+		Seats:           params.Seats,
+		ActiveInstances: params.Instances,
+		Instances:       params.Instances,
+		WorkspaceID:     params.WorkspaceID,
+	}
+	c.Issuer = s.config.Issuer
+	c.Audience = jwt.ClaimStrings{s.config.Audience}
+	c.IssuedAt = jwt.NewNumericDate(time.Now())
+	c.Subject = params.WorkspaceID
+	if !params.ExpiresAt.IsZero() {
+		c.ExpiresAt = jwt.NewNumericDate(params.ExpiresAt)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, c)
+	token.Header["kid"] = s.config.Version
+	return token.SignedString(s.config.PrivateKey)
+}
+
 // InvalidateCache removes the cached subscription for a workspace,
 // forcing the next LoadSubscription call to reload from the database.
 func (s *LicenseService) InvalidateCache(workspaceID string) {
@@ -502,7 +503,7 @@ func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 }
 
 func (s *LicenseService) parseLicense(license, workspaceID string) (*v1pb.Subscription, error) {
-	claim := &claims{}
+	claim := &Claims{}
 	token, err := jwt.ParseWithClaims(license, claim, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])

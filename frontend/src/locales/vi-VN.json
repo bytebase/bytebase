@@ -2387,6 +2387,37 @@
         "title": "Doanh nghiệp"
       },
       "try": "Dùng thử miễn phí."
+    },
+    "purchase": {
+      "subscribe": "Đăng ký ngay",
+      "cancel": "Hủy đăng ký",
+      "cancel-confirm": "Bạn có chắc chắn muốn hủy đăng ký không?",
+      "canceled": "Đã hủy đăng ký",
+      "update": "Cập nhật đăng ký",
+      "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {date}.",
+      "discount": {
+        "percentage-off": "tháng đầu giảm {value}%",
+        "month-off": "{value} tháng miễn phí",
+        "price-off": "giảm ${value}"
+      },
+      "seats": "Người dùng",
+      "per-user-per-month": "/ người dùng / tháng",
+      "custom": "Tùy chỉnh",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "go-to-workspace": "Đi tới không gian làm việc",
+      "see-comparison": "Xem so sánh tính năng chi tiết",
+      "accept-terms-prefix": "Tôi chấp nhận",
+      "terms-of-service": "Điều khoản dịch vụ",
+      "and": "và",
+      "privacy-policy": "Chính sách bảo mật",
+      "pending-title": "Đang hoàn tất giao dịch...",
+      "pending-description": "Vui lòng đợi trong khi chúng tôi xác nhận thanh toán. Thường chỉ mất vài giây.",
+      "payment-info": "Thông tin thanh toán",
+      "total-price": "Tổng giá",
+      "billing-period": "Kỳ thanh toán",
+      "manage-invoices": "Quản lý hóa đơn"
     }
   },
   "sheet": {

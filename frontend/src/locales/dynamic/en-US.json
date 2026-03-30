@@ -320,6 +320,51 @@
         "title": "Dedicated support with SLA",
         "desc": "Priority support with guaranteed response times."
       }
+    },
+    "purchase": {
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "features": {
+        "free": {
+          "limits": "Up to 20 users and 10 instances",
+          "dcm": "Complete database change management",
+          "git": "Git-based version control & schema migration",
+          "sql-review": "SQL review with 200+ rules",
+          "backup": "Automatic backups & one-click rollback",
+          "sql-editor": "Web-based SQL editor with AI assistance",
+          "schema": "Schema diagrams & data export",
+          "iam": "Basic IAM and security features",
+          "support": "Community support"
+        },
+        "pro": {
+          "limits": "Unlimited users at $20/user/month, 10 instances",
+          "everything": "Everything in Free, plus:",
+          "batch-query": "Batch query capabilities",
+          "read-only": "Instance read-only connections",
+          "query-policy": "Query policies for governance",
+          "sso": "Google & GitHub SSO",
+          "groups": "User groups management",
+          "db-groups": "Database groups",
+          "audit-log": "Limited audit logging",
+          "support": "Email support"
+        },
+        "enterprise": {
+          "limits": "Custom limits based on needs",
+          "everything": "Everything in Pro, plus:",
+          "custom-limits": "Custom user & instance limits",
+          "approval": "Risk assessment & approval workflows",
+          "audit-log": "Full audit logging",
+          "sso": "Enterprise SSO (Custom OAuth2, OIDC, LDAP)",
+          "2fa": "2FA & advanced authentication policies",
+          "masking": "Data masking & classification",
+          "roles": "Custom roles & role request workflows",
+          "scim": "SCIM user provisioning & directory sync",
+          "secret": "External secret manager integration",
+          "branding": "Custom branding & watermarking",
+          "support": "Dedicated support with SLA"
+        }
+      }
     }
   },
   "resource": {
