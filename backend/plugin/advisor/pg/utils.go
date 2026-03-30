@@ -58,23 +58,6 @@ func isRoleOrSearchPathSetStatement(ctx *parser.VariablesetstmtContext) bool {
 	return strings.EqualFold(name, "role") || strings.EqualFold(name, "search_path")
 }
 
-// isTopLevel checks if the context is at the top level of the parse tree.
-// Top level contexts are: RootContext, StmtblockContext, StmtmultiContext, or StmtContext.
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-
-	switch ctx := ctx.(type) {
-	case *parser.RootContext, *parser.StmtblockContext:
-		return true
-	case *parser.StmtmultiContext, *parser.StmtContext:
-		return isTopLevel(ctx.GetParent())
-	default:
-		return false
-	}
-}
-
 // getTextFromTokens extracts the original text for a rule context from the token stream.
 // Uses GetTextFromRuleContext to include hidden channel tokens (whitespace, comments).
 // Returns clean text without leading/trailing whitespace.
@@ -84,26 +67,6 @@ func getTextFromTokens(tokens *antlr.CommonTokenStream, ctx antlr.ParserRuleCont
 	}
 	text := tokens.GetTextFromRuleContext(ctx)
 	return strings.TrimSpace(text)
-}
-
-// extractTableName extracts the table name (last component) from a qualified name.
-// Handles both "schema.table" and "table" formats.
-func extractTableName(ctx parser.IQualified_nameContext) string {
-	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[len(parts)-1]
-}
-
-// extractSchemaName extracts the schema name (first component) from a qualified name.
-// Returns empty string if only table name is provided (implying default schema).
-func extractSchemaName(ctx parser.IQualified_nameContext) string {
-	parts := pg.NormalizePostgreSQLQualifiedName(ctx)
-	if len(parts) <= 1 {
-		return ""
-	}
-	return parts[0]
 }
 
 // nolint:unused
