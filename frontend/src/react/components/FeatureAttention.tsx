@@ -1,14 +1,14 @@
 import { CircleAlert, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useLanguage } from "@/composables/useLanguage";
 import { Button } from "@/react/components/ui/button";
+import { router } from "@/router";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import {
   PlanFeature,
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { useVueState } from "../hooks/useVueState";
 
 export function FeatureAttention({
@@ -19,7 +19,6 @@ export function FeatureAttention({
   description?: string;
 }) {
   const { t } = useTranslation();
-  const { locale } = useLanguage();
   const subscriptionStore = useSubscriptionV1Store();
   const actuatorStore = useActuatorV1Store();
 
@@ -87,15 +86,15 @@ export function FeatureAttention({
 
   const onAction = () => {
     if (!hasFeature) {
-      if (locale.value === "zh-CN") {
-        // WeChat QR modal — skip for now, open inquiry link
-        window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-      } else {
-        window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-      }
+      // Vue version shows WeChat QR modal for zh-CN, but that's a Vue
+      // component. Open the inquiry link for all locales as a fallback.
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
       return;
     }
-    // For instance license assignment, would open drawer — not yet migrated
+    // Vue version opens InstanceAssignment drawer here, which is a Vue
+    // component not yet migrated. Navigate to the subscription page instead,
+    // matching the Vue fallback behavior.
+    router.push(autoSubscriptionRoute());
   };
 
   const Icon = isWarning ? CircleAlert : Info;
