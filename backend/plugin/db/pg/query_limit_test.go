@@ -133,8 +133,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			name:      "SELECT with parentheses and existing LIMIT lower than requested",
 			statement: "(SELECT * FROM users LIMIT 5)",
 			limit:     10,
-			// TODO(zp): FIX ME
-			want: "(SELECT * FROM users LIMIT 5) LIMIT 10",
+			want:      "(SELECT * FROM users LIMIT 5)",
 		},
 	}
 

@@ -1314,7 +1314,7 @@ CREATE TABLE "test"."table1" (
 			}
 
 			// Validate that the generated SQL can be parsed without errors using ANTLR parser
-			_, err = pgparser.ParsePostgreSQL(result)
+			_, err = pgparser.ParsePg(result)
 			require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 		})
 	}
@@ -1370,7 +1370,7 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 	assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePostgreSQL(result)
+	_, err = pgparser.ParsePg(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1479,7 +1479,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 	assert.Contains(t, result, `COMMENT ON INDEX "test_schema"."idx_users_email" IS 'Index on email column';`)
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePostgreSQL(result)
+	_, err = pgparser.ParsePg(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1518,7 +1518,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
 	assert.Contains(t, result, `COMMENT ON COLUMN "public"."test_table"."id" IS 'Column with ''quoted'' text';`)
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePostgreSQL(result)
+	_, err = pgparser.ParsePg(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1645,7 +1645,7 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 
 	// Validate that each file's SQL can be parsed
 	for fileName, content := range fileMap {
-		_, err := pgparser.ParsePostgreSQL(content)
+		_, err := pgparser.ParsePg(content)
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
@@ -1945,7 +1945,7 @@ ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
 		"Column should use serial type because it references test_table_id_seq which is owned by it")
 
 	// Validate that the generated SQL can be parsed
-	_, err = pgparser.ParsePostgreSQL(result)
+	_, err = pgparser.ParsePg(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1998,15 +1998,15 @@ $$`,
 		"Function comment should use COMMENT ON FUNCTION")
 
 	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
-	assert.Contains(t, result, `COMMENT ON PROCEDURE "public".update_user_name(user_id integer, new_name character varying) IS 'Procedure to update user name';`,
-		"Procedure comment should use COMMENT ON PROCEDURE")
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public".update_user_name(integer, character varying) IS 'Procedure to update user name';`,
+		"Procedure comment should use COMMENT ON PROCEDURE with types-only signature")
 
 	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
 	assert.NotContains(t, result, `COMMENT ON FUNCTION "public".update_user_name`,
 		"Procedure comment should NOT use COMMENT ON FUNCTION")
 
 	// Validate that the generated SQL can be parsed
-	_, err = pgparser.ParsePostgreSQL(result)
+	_, err = pgparser.ParsePg(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -2103,7 +2103,7 @@ $$`,
 
 	// Validate that each file's SQL can be parsed
 	for fileName, content := range fileMap {
-		_, err := pgparser.ParsePostgreSQL(content)
+		_, err := pgparser.ParsePg(content)
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }

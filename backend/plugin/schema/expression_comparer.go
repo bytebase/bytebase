@@ -4,19 +4,11 @@ import (
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgast "github.com/bytebase/bytebase/backend/plugin/schema/pg/ast"
 )
 
 // CompareExpressionsSemantically compares two expressions semantically based on the engine type.
-func CompareExpressionsSemantically(engine storepb.Engine, expr1, expr2 string) bool {
-	switch engine {
-	case storepb.Engine_POSTGRES:
-		return pgast.CompareExpressionsSemantically(expr1, expr2)
-	default:
-		// For unsupported engines, fall back to generic string-based comparison
-		// This is safer than using engine-specific logic for unknown engines
-		return compareExpressionsGeneric(expr1, expr2)
-	}
+func CompareExpressionsSemantically(_ storepb.Engine, expr1, expr2 string) bool {
+	return compareExpressionsGeneric(expr1, expr2)
 }
 
 // compareExpressionsGeneric provides a generic string-based comparison for unsupported engines

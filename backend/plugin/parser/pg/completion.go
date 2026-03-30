@@ -11,7 +11,6 @@ import (
 	omnipg "github.com/bytebase/omni/pg"
 	"github.com/bytebase/omni/pg/ast"
 	pgparser "github.com/bytebase/omni/pg/parser"
-	pgantlr "github.com/bytebase/parser/postgresql"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -270,7 +269,7 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) insertFunctions() {
-	for _, name := range pgantlr.GetBuiltinFunctions() {
+	for _, name := range getBuiltinFunctions() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeFunction,
 			Text: name + "()",
