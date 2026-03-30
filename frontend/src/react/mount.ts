@@ -11,6 +11,16 @@ export interface MountOptions {
   onManageInstanceLicenses: () => void;
 }
 
+// Use import.meta.glob so vue-tsc does not follow the import into React .tsx files.
+// Vite resolves the glob at build time and creates a lazy chunk for the matched module.
+const pageLoaders = import.meta.glob("./pages/settings/SubscriptionPage.tsx");
+const loadSubscriptionPage = pageLoaders[
+  "./pages/settings/SubscriptionPage.tsx"
+] as () => Promise<{
+  // biome-ignore lint/suspicious/noExplicitAny: Component type checked by tsconfig.react.json
+  SubscriptionPage: (props: any) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}>;
+
 async function loadDeps() {
   const [
     { createElement, StrictMode },
@@ -23,7 +33,7 @@ async function loadDeps() {
     import("react-dom/client"),
     import("react-i18next"),
     import("@/react/i18n"),
-    import("@/react/pages/settings/SubscriptionPage"),
+    loadSubscriptionPage(),
   ]);
   // Ensure i18n is fully initialized before rendering
   await i18nModule.i18nReady;

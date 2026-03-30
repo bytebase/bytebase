@@ -43,7 +43,7 @@ function buildResources() {
   return resources;
 }
 
-const i18n = i18next.createInstance();
+const i18n: import("i18next").i18n = i18next.createInstance();
 
 export const i18nReady = i18n.use(initReactI18next).init({
   resources: buildResources(),
