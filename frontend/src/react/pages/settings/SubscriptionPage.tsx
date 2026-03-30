@@ -1,5 +1,5 @@
 import { Copy, Pencil } from "lucide-react";
-import { useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -214,7 +214,7 @@ export function SubscriptionPage({
           </div>
           <Textarea
             value={license}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
               setLicense(e.target.value)
             }
             disabled={!allowEdit}
