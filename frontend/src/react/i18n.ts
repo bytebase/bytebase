@@ -32,12 +32,13 @@ function buildResources() {
   const resources: Record<string, { translation: Record<string, unknown> }> =
     {};
   for (const [locale, data] of Object.entries(
-    rawLocales as Record<string, { main: string; sub: string }>
+    rawLocales as Record<string, { main: string; sub: string; dynamic: string }>
   )) {
     const main = JSON.parse(data.main);
     const sub = JSON.parse(data.sub);
+    const dynamic = JSON.parse(data.dynamic);
     resources[locale] = {
-      translation: merge({}, main, { subscription: sub }),
+      translation: merge({}, main, { subscription: sub }, { dynamic }),
     };
   }
   return resources;
