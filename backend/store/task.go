@@ -279,7 +279,7 @@ func (*Store) listTasksImpl(ctx context.Context, txn *sql.Tx, find *TaskFind) ([
 				task_run.updated_at,
 				task_run.run_at
 			FROM task_run
-			WHERE task_run.task_id = task.id
+			WHERE task_run.project = task.project AND task_run.task_id = task.id
 			ORDER BY task_run.id DESC
 			LIMIT 1
 		) AS latest_task_run ON TRUE
