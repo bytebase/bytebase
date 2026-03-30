@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { watch } from "vue";
 
 /**
@@ -12,11 +12,30 @@ import { watch } from "vue";
  * const externalUrl = useVueState(() => useActuatorV1Store().serverInfo?.externalUrl ?? "");
  */
 export function useVueState<T>(getter: () => T): T {
-  // useSyncExternalStore requires a subscribe function and a getSnapshot function.
-  // Vue's watch() provides the subscription; the getter IS the snapshot.
-  const subscribe = (onStoreChange: () => void) => {
-    const stop = watch(getter, onStoreChange, { flush: "sync" });
-    return stop;
-  };
-  return useSyncExternalStore(subscribe, getter, getter);
+  // Cache the latest snapshot so getSnapshot returns a stable reference
+  // between renders when the value hasn't changed.
+  const snapshotRef = useRef<T>(getter());
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      const stop = watch(
+        getter,
+        (newVal) => {
+          snapshotRef.current = newVal;
+          onStoreChange();
+        },
+        { flush: "sync" }
+      );
+      // Initialize with current value
+      snapshotRef.current = getter();
+      return stop;
+    },
+    // getter is typically an inline arrow — we intentionally omit it from deps
+    // to keep subscribe stable. The watch() inside tracks Vue deps automatically.
+    []
+  );
+
+  const getSnapshot = useCallback(() => snapshotRef.current, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
