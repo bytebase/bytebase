@@ -374,8 +374,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.im-integration"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/views/SettingWorkspaceIM.vue"),
-        props: true,
+        component: () => import("@/react/ReactBridge.vue"),
+        props: () => ({ page: "IMPage" }),
       },
       {
         path: "mcp",
