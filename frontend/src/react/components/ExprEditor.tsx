@@ -835,6 +835,7 @@ function ValueInput({
         (expr.args as unknown[])[1] = "";
       }
     }
+    onUpdate();
   }, [factor, operator]);
 
   const getStringValue = () => {
