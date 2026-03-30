@@ -44,6 +44,7 @@ export interface IMPageProps {
     values: Record<string, string>
   ) => Promise<void>;
   onDelete: (index: number, type: string) => Promise<void>;
+  onChangeType: (index: number, newType: string) => void;
 }
 
 export function IMPage({
@@ -54,6 +55,7 @@ export function IMPage({
   onAdd,
   onSave,
   onDelete,
+  onChangeType,
 }: IMPageProps) {
   const { t } = useTranslation();
 
@@ -137,15 +139,17 @@ export function IMPage({
           ) : (
             <select
               value={item.type}
-              className="flex h-9 w-full max-w-xs rounded-md border border-control-border bg-transparent px-3 py-1 text-sm"
-              disabled
+              className="flex h-9 w-full max-w-xs rounded-md border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
+              onChange={(e) => onChangeType(i, e.target.value)}
             >
-              {availableTypes.map((opt) => (
-                <option key={opt.type} value={opt.type}>
-                  {opt.label}
-                </option>
-              ))}
               <option value={item.type}>{item.typeLabel}</option>
+              {availableTypes
+                .filter((opt) => opt.type !== item.type)
+                .map((opt) => (
+                  <option key={opt.type} value={opt.type}>
+                    {opt.label}
+                  </option>
+                ))}
             </select>
           )}
 

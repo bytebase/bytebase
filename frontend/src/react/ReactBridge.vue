@@ -210,15 +210,6 @@ const IM_FIELDS: Record<number, { key: string; label: string }[]> = {
   ],
 };
 
-const IM_ONEOF_CASE: Record<number, string> = {
-  [WebhookType.SLACK]: "slack",
-  [WebhookType.FEISHU]: "feishu",
-  [WebhookType.LARK]: "lark",
-  [WebhookType.WECOM]: "wecom",
-  [WebhookType.DINGTALK]: "dingtalk",
-  [WebhookType.TEAMS]: "teams",
-};
-
 function createIMSetting(
   wt: WebhookType,
   init?: Record<string, string>
@@ -420,6 +411,12 @@ function buildIMProps() {
         });
       }
       syncIMLocalState();
+    },
+    onChangeType: (index: number, newTypeKey: string) => {
+      const wt = webhookTypeFromKey(newTypeKey);
+      const next = [...imLocalSettings.value];
+      next[index] = createIMSetting(wt);
+      imLocalSettings.value = next;
     },
   };
 }
