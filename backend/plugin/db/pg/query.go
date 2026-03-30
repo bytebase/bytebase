@@ -238,28 +238,33 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 	// No LIMIT clause — find the right insertion point.
 	// PostgreSQL grammar order: ... ORDER BY ... LIMIT ... FOR UPDATE ...
 	// LIMIT goes BEFORE FOR UPDATE but AFTER everything else.
-	insertPos := findLimitInsertPosition(sql, sel)
+	insertPos, beforeLocking := findLimitInsertPosition(sel)
+	if beforeLocking {
+		// Inserting at the start of FOR UPDATE/SHARE. The original whitespace
+		// before FOR becomes the separator before LIMIT; we add a trailing
+		// space to separate the limit value from FOR.
+		return sql[:insertPos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[insertPos:], nil
+	}
 	return sql[:insertPos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[insertPos:], nil
 }
 
-// findLimitInsertPosition returns the byte offset where " LIMIT N" should be inserted.
-// It uses AST Loc positions exclusively — no string scanning for parentheses or keywords.
-func findLimitInsertPosition(_ string, sel *ast.SelectStmt) int {
+// findLimitInsertPosition returns the byte offset where " LIMIT N" should be inserted,
+// and whether the insertion is before a locking clause (FOR UPDATE/SHARE).
+func findLimitInsertPosition(sel *ast.SelectStmt) (int, bool) {
 	// LIMIT must appear before FOR UPDATE/SHARE.
-	// Use the LockingClause's Loc.Start to insert just before it.
 	if sel.LockingClause != nil {
 		span := ast.ListSpan(sel.LockingClause)
 		if span.Start > 0 {
-			return span.Start
+			return span.Start, true
 		}
 	}
 
 	// Otherwise insert at SelectStmt.Loc.End (after everything, including outer parens).
 	end := sel.Loc.End
 	if end <= 0 {
-		return 0
+		return 0, false
 	}
-	return end
+	return end, false
 }
 
 // extractIntFromNode extracts an integer value from a LIMIT/OFFSET node.
