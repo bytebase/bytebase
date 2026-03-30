@@ -1,20 +1,11 @@
 import type { AgentMessage, Message } from "./types";
 
-const ERROR_PREFIX = "Error: ";
-
 const isHistoricalAssistantError = (message: AgentMessage): boolean => {
-  if (message.role !== "assistant") {
-    return false;
-  }
-
-  if (
+  return (
+    message.role === "assistant" &&
     typeof message.metadata?.error === "string" &&
-    message.metadata.error.trim()
-  ) {
-    return true;
-  }
-
-  return Boolean(message.content?.startsWith(ERROR_PREFIX));
+    Boolean(message.metadata.error.trim())
+  );
 };
 
 const cloneMessage = ({
