@@ -59,10 +59,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: () => t("common.projects"),
     },
     components: {
-      content: () => import("@/views/ProjectDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "ProjectsPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "instances",
