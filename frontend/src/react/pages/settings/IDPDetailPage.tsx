@@ -8,6 +8,7 @@ import { identityProviderServiceClientConnect } from "@/connect";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
@@ -1128,11 +1129,10 @@ export function IDPDetailPage() {
   const { t } = useTranslation();
   const identityProviderStore = useIdentityProviderStore();
 
-  // Extract idpId from the URL path (e.g., /idps/:idpId)
-  const idpId = useMemo(() => {
-    const match = window.location.pathname.match(/\/idps\/([^/]+)/);
-    return match?.[1];
-  }, []);
+  // Reactively read idpId from Vue Router's current route params
+  const idpId = useVueState(
+    () => router.currentRoute.value.params.idpId as string | undefined
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
