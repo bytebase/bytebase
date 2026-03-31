@@ -1,10 +1,5 @@
 <template>
   <div ref="container" />
-  <WeChatQRModal
-    v-if="showQRCodeModal"
-    :title="$t('subscription.request-with-qr')"
-    @close="showQRCodeModal = false"
-  />
   <InstanceAssignment
     :show="showInstanceAssignmentDrawer"
     @dismiss="showInstanceAssignmentDrawer = false"
@@ -15,7 +10,6 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
-import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 
 const { locale } = useI18n();
@@ -23,16 +17,11 @@ const container = ref<HTMLElement>();
 // biome-ignore lint/suspicious/noExplicitAny: React Root type from dynamic import
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const showQRCodeModal = ref(false);
 const showInstanceAssignmentDrawer = ref(false);
 
 const props = {
   onRequireEnterprise: () => {
-    if (locale.value === "zh-CN") {
-      showQRCodeModal.value = true;
-    } else {
-      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-    }
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
   },
   onManageInstanceLicenses: () => {
     showInstanceAssignmentDrawer.value = true;

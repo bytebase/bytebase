@@ -9,11 +9,6 @@
     @click="onClick"
   />
 
-  <WeChatQRModal
-    v-if="state.showQRCodeModal"
-    :title="$t('subscription.request-with-qr')"
-    @close="state.showQRCodeModal = false"
-  />
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
@@ -25,7 +20,6 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
-import { useLanguage } from "@/composables/useLanguage";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
@@ -38,11 +32,9 @@ import {
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
-import WeChatQRModal from "../WeChatQRModal.vue";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
-  showQRCodeModal: boolean;
 }
 
 const props = withDefaults(
@@ -61,13 +53,11 @@ const props = withDefaults(
 
 const router = useRouter();
 const { t } = useI18n();
-const { locale } = useLanguage();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
-  showQRCodeModal: false,
 });
 
 const hasPermission = computed(() =>
@@ -171,11 +161,7 @@ const descriptionText = computed(() => {
 
 const onClick = () => {
   if (!hasFeature.value) {
-    if (locale.value === "zh-CN") {
-      state.showQRCodeModal = true;
-    } else {
-      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-    }
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
     return;
   }
   if (instanceMissingLicense.value || existInstanceWithoutLicense.value) {
