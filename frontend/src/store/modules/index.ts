@@ -1,6 +1,5 @@
 export * from "./accessGrant";
 export * from "./v1/auth";
-export * from "./help";
 export * from "./notification";
 export * from "./router";
 export * from "./sqlEditor";

@@ -6,7 +6,6 @@ export * from "./const";
 export * from "./dataSource";
 export * from "./dbGroup";
 export * from "./error";
-export * from "./help";
 export * from "./iam";
 export * from "./id";
 export * from "./member";
