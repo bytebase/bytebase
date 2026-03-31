@@ -152,21 +152,27 @@ func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, eve
 		return errors.Wrapf(err, "failed to get subscription for workspace %s", workspace)
 	}
 
-	// Ignore stale events from an old Stripe subscription.
+	// Ignore stale destructive events from an old Stripe subscription.
 	// During plan changes, the old subscription is canceled and a new one is created.
 	// Webhooks may arrive out of order — if the new subscription's invoice.paid
 	// arrived first, the stored StripeSubscriptionId already points to the new one.
-	// A late-arriving cancel event from the old subscription must not overwrite it.
+	// A late-arriving cancel/pause event from the old subscription must not overwrite it.
+	// However, we must allow created/updated/resumed events for the NEW subscription
+	// (which has a different ID) to go through.
 	if existing != nil && existing.Payload != nil &&
 		existing.Payload.StripeSubscriptionId != "" &&
 		existing.Payload.StripeSubscriptionId != sub.ID {
-		slog.Info("ignoring stale webhook for old stripe subscription",
-			slog.String("workspace", workspace),
-			slog.String("event_subscription_id", sub.ID),
-			slog.String("current_subscription_id", existing.Payload.StripeSubscriptionId),
-			slog.String("event_type", string(event.Type)),
-		)
-		return nil
+		// Only block events that would downgrade the subscription status.
+		if event.Type == "customer.subscription.deleted" ||
+			event.Type == "customer.subscription.paused" {
+			slog.Info("ignoring stale destructive webhook for old stripe subscription",
+				slog.String("workspace", workspace),
+				slog.String("event_subscription_id", sub.ID),
+				slog.String("current_subscription_id", existing.Payload.StripeSubscriptionId),
+				slog.String("event_type", string(event.Type)),
+			)
+			return nil
+		}
 	}
 
 	var payload *storepb.SubscriptionPayload
@@ -209,6 +215,7 @@ func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, eve
 			slog.String("workspace", workspace),
 			slog.String("stripe_subscription_id", sub.ID),
 		)
+		return errors.Wrapf(err, "failed to update license for workspace %s", workspace)
 	}
 	return nil
 }
@@ -328,6 +335,7 @@ func (h *WebhookHandler) handleInvoicePaid(ctx context.Context, event *stripego.
 			slog.String("stripe_subscription_id", stripeSubID),
 			slog.String("invoice_id", inv.ID),
 		)
+		return errors.Wrapf(err, "failed to update license for workspace %s", workspace)
 	}
 	return nil
 }

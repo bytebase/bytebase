@@ -93,7 +93,7 @@ func (s *SubscriptionService) CreatePurchase(ctx context.Context, req *connect.R
 		case storepb.SubscriptionPayload_ACTIVE:
 			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("workspace already has an active subscription"))
 		case storepb.SubscriptionPayload_PAUSED:
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("subscription is paused due to a payment issue, please resolve it before purchasing"))
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("subscription is paused due to a payment issue, please resolve it via the billing portal in Payment Info"))
 		}
 	}
 
@@ -140,17 +140,12 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 	// Fetch old subscription to get customer ID and payment method before cancellation.
 	oldStripeSub, err := stripeplugin.GetSubscription(oldPayload.StripeSubscriptionId, []string{"default_payment_method", "customer"})
 	if err != nil {
-		slog.Error("failed to get old stripe subscription, falling back to checkout",
-			log.BBError(err),
-			slog.String("workspace", workspaceID),
-		)
-		// No active subscription — just create a new checkout session.
-		return s.createCheckout(workspaceID, req.Msg.Plan, req.Msg.Interval, req.Msg.Seats)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get stripe subscription, please try again"))
 	}
 
 	customerID := oldStripeSub.Customer.ID
 	if customerID == "" {
-		return s.createCheckout(workspaceID, req.Msg.Plan, req.Msg.Interval, req.Msg.Seats)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("missing customer ID from stripe subscription"))
 	}
 
 	var paymentMethodID string
