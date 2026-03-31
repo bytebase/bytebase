@@ -109,10 +109,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		validAudience := false
 		switch v := aud.(type) {
 		case string:
-			validAudience = v == auth.OAuth2AccessTokenAudience || v == auth.AccessTokenAudience
+			validAudience = v == auth.OAuth2AccessTokenAudience || strings.HasPrefix(v, "bb.user.access.")
 		case []any:
 			for _, a := range v {
-				if str, ok := a.(string); ok && (str == auth.OAuth2AccessTokenAudience || str == auth.AccessTokenAudience) {
+				if str, ok := a.(string); ok && (str == auth.OAuth2AccessTokenAudience || strings.HasPrefix(str, "bb.user.access.")) {
 					validAudience = true
 					break
 				}
