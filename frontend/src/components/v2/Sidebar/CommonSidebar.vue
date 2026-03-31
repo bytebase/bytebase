@@ -119,6 +119,8 @@ const state = reactive<LocalState>({
 // Track groups auto-expanded by route so we can collapse them on navigation
 // without collapsing groups the user manually opened.
 const autoExpanded = new Set<string>();
+// Track groups the user has manually toggled — never override these.
+const manualToggled = new Set<string>();
 
 const parentRouteClass = computed(() => {
   return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
@@ -162,18 +164,21 @@ const expandForActiveRoute = () => {
   autoExpanded.clear();
   for (let i = 0; i < filteredSidebarList.value.length; i++) {
     const item = filteredSidebarList.value[i];
+    const key = `${i}`;
     if (item.children.length === 0) continue;
+    // Never override groups the user has manually toggled.
+    if (manualToggled.has(key)) continue;
     if (item.expand) {
-      state.expandedSidebar.add(`${i}`);
+      state.expandedSidebar.add(key);
       continue;
     }
     const hasActiveChild = item.children.some(
       (child) =>
         child.name === currentName || currentName.startsWith(`${child.name}.`)
     );
-    if (hasActiveChild) {
-      state.expandedSidebar.add(`${i}`);
-      autoExpanded.add(`${i}`);
+    if (hasActiveChild && !state.expandedSidebar.has(key)) {
+      state.expandedSidebar.add(key);
+      autoExpanded.add(key);
     }
   }
 };
@@ -182,6 +187,7 @@ watch(
   () => filteredSidebarList.value,
   () => {
     state.expandedSidebar.clear();
+    manualToggled.clear();
     expandForActiveRoute();
   },
   { immediate: true }
@@ -198,8 +204,8 @@ const onClick = (sidebar: SidebarItem, key: string, e: MouseEvent) => {
   if (sidebar.path) {
     return emit("select", sidebar, e);
   }
-  // Manual toggle — remove from auto-expanded tracking so route
-  // changes won't fight with the user's intent.
+  // Mark as manually toggled so route changes won't fight user intent.
+  manualToggled.add(key);
   autoExpanded.delete(key);
   if (state.expandedSidebar.has(key)) {
     state.expandedSidebar.delete(key);
