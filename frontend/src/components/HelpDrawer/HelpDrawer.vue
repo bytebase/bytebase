@@ -22,40 +22,6 @@
           >
             {{ $t("help-drawer.dont-show-again") }}
           </NButton>
-          <div
-            v-if="locale === 'zh-CN'"
-            class="w-full flex flex-col items-center pt-2"
-          >
-            <p class="text-sm mb-2">微信扫码加入官方社群</p>
-            <div class="flex flex-row justify-center">
-              <div
-                class="w-20 flex flex-col items-center justify-start text-xs"
-              >
-                <img
-                  src="@/assets/wechat-official-qrcode.webp"
-                  alt="微信公众号"
-                />
-                <span>公众号</span>
-              </div>
-              <div
-                class="w-20 flex flex-col items-center justify-start text-xs ml-4"
-              >
-                <img
-                  src="@/assets/bb-helper-wechat-qrcode.webp"
-                  alt="BB_小助手"
-                />
-                <span>BB 小助手</span>
-              </div>
-            </div>
-          </div>
-          <div v-else class="w-1/2 pt-2">
-            <a href="https://discord.gg/huyw7gRsyA" target="_blank">
-              <img
-                src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
-                alt="Discord Invite"
-              />
-            </a>
-          </div>
         </div>
       </template>
     </DrawerContent>

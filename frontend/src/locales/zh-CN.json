@@ -2329,7 +2329,6 @@
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "request-n-days-trial": "申请 {days} 天试用 (无需信用卡)",
-    "request-with-qr": "扫描二维码申请试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费。",

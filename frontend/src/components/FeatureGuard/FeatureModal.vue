@@ -85,11 +85,6 @@
       </div>
     </div>
   </BBModal>
-  <WeChatQRModal
-    v-if="state.showQRCodeModal"
-    :title="$t('subscription.request-with-qr')"
-    @close="state.showQRCodeModal = false"
-  />
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
@@ -103,7 +98,6 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
-import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
@@ -116,11 +110,9 @@ import {
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
-import WeChatQRModal from "../WeChatQRModal.vue";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
-  showQRCodeModal: boolean;
 }
 
 const props = withDefaults(
@@ -137,13 +129,11 @@ const props = withDefaults(
 
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,
-  showQRCodeModal: false,
 });
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
 const router = useRouter();
-const { locale } = useLanguage();
 
 const subscriptionStore = useSubscriptionV1Store();
 const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
@@ -180,11 +170,7 @@ const featureKey = computed(() => {
 });
 
 const trialSubscription = () => {
-  if (locale.value === "zh-CN") {
-    state.showQRCodeModal = true;
-  } else {
-    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-  }
+  window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
 };
 </script>
 

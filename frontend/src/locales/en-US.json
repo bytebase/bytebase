@@ -2329,7 +2329,6 @@
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",
     "request-n-days-trial": "Request {days} days trial (no credit card required)",
-    "request-with-qr": "Scan QR code",
     "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock it.",
     "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
     "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
