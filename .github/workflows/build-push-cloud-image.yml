@@ -51,3 +51,12 @@ jobs:
             VERSION=cloud
             GIT_COMMIT=${{ env.GIT_COMMIT }}
             RELEASE=release
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_LOCATION }}
+
+      - name: Restart deployment
+        run: kubectl rollout restart deployment/bytebase-cloud --namespace cloud
