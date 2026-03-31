@@ -1,23 +1,15 @@
-import { head } from "lodash-es";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import {
-  type SQLEditorConnection,
-  UNKNOWN_ID,
-  UNKNOWN_PROJECT_NAME,
-} from "@/types";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   emptySQLEditorConnection,
   extractDatabaseResourceName,
-  getInstanceResource,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
@@ -91,28 +83,6 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   return false;
 };
 
-export const setDefaultDataSourceForConn = (
-  conn: SQLEditorConnection,
-  database: Database
-) => {
-  if (conn.dataSourceId) {
-    return;
-  }
-
-  // Default connect to the first read-only data source if available.
-  // Skip checking env/project policy for now.
-  const instanceResource = getInstanceResource(database);
-  const defaultDataSource =
-    head(
-      instanceResource.dataSources.filter(
-        (d) => d.type === DataSourceType.READ_ONLY
-      )
-    ) || head(instanceResource.dataSources);
-  if (defaultDataSource) {
-    conn.dataSourceId = defaultDataSource.id;
-  }
-};
-
 export const extractWorksheetConnection = async (worksheet: {
   database: string;
 }) => {
@@ -125,7 +95,6 @@ export const extractWorksheetConnection = async (worksheet: {
       const { instance } = extractDatabaseResourceName(database.name);
       connection.instance = instance;
       connection.database = database.name;
-      setDefaultDataSourceForConn(connection, database);
     } catch {
       // Skip.
     }

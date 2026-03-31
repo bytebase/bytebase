@@ -2035,7 +2035,8 @@
     "admin": "Admin",
     "read-only": "Solo lectura",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "Seleccionar fuente de datos de consulta"
+    "select-query-data-source": "Seleccionar fuente de datos de consulta",
+    "automatic-query-data-source": "Automática"
   },
   "setting": {
     "label": {
@@ -2060,7 +2061,6 @@
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "invalid-database": "Base de datos no válida {database}",
     "request-aborted": "El usuario abortó la solicitud",
-    "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
     "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",

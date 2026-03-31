@@ -1,5 +1,5 @@
 import { useClipboard } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import {
   CodeIcon,
   CopyIcon,
@@ -42,8 +42,6 @@ import {
   type Database,
   GetSchemaStringRequest_ObjectType,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import {
   defaultSQLEditorTab,
   extractDatabaseResourceName,
@@ -614,7 +612,6 @@ const runQuery = async (
     database: database.name,
     schema,
     table: tableOrViewName,
-    dataSourceId: getDefaultQueryableDataSourceOfDatabase(database).id,
   };
   await nextTick();
   execute({
@@ -624,15 +621,6 @@ const runQuery = async (
     engine: getInstanceResource(database).engine,
     selection: tab.editorState.selection,
   });
-};
-
-const getDefaultQueryableDataSourceOfDatabase = (database: Database) => {
-  const dataSources = getInstanceResource(database).dataSources;
-  const readonlyDataSources = dataSources.filter(
-    (ds) => ds.type === DataSourceType.READ_ONLY
-  );
-  // First try to use readonly data source if available.
-  return (head(readonlyDataSources) || head(dataSources)) as DataSource;
 };
 
 const formatCode = async (code: string, engine: Engine) => {
