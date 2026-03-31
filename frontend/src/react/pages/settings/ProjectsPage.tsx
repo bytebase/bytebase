@@ -41,6 +41,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   extractProjectResourceName,
   getDefaultPagination,
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
 
@@ -84,16 +85,16 @@ function tVue(
 // Escape key stack for overlays
 // ============================================================
 
-// Track the topmost overlay's escape handler. Each overlay registers once
-// on mount and unregisters on unmount. The ref ensures the latest callback
-// is always invoked without re-registering the listener.
+// Track the topmost overlay's escape handler. Only active (enabled) overlays
+// participate. The ref ensures the latest callback is always invoked.
 const escapeStack: React.RefObject<(() => void) | null>[] = [];
 
-function useEscapeKey(onEscape: () => void) {
+function useEscapeKey(onEscape: () => void, enabled = true) {
   const callbackRef = useRef(onEscape);
   callbackRef.current = onEscape;
 
   useEffect(() => {
+    if (!enabled) return;
     escapeStack.push(callbackRef);
     const handler = (e: KeyboardEvent) => {
       if (
@@ -109,14 +110,14 @@ function useEscapeKey(onEscape: () => void) {
       const idx = escapeStack.indexOf(callbackRef);
       if (idx >= 0) escapeStack.splice(idx, 1);
     };
-  }, []);
+  }, [enabled]);
 }
 
 // ============================================================
 // Pagination helpers
 // ============================================================
 
-const PAGE_SIZE_OPTIONS = [10, 50, 100, 200, 500];
+const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
 
 function getPageSizeOptions(): number[] {
   const defaultSize = getDefaultPagination();
@@ -187,7 +188,7 @@ function ConfirmDialog({
 }) {
   const { t } = useTranslation();
   const onClose = useCallback(() => onCancel(), [onCancel]);
-  useEscapeKey(onClose);
+  useEscapeKey(onClose, open);
 
   if (!open) return null;
 
@@ -258,7 +259,7 @@ function CreateProjectDrawer({
     setIsCreating(false);
   }, [onClose]);
 
-  useEscapeKey(closeDrawer);
+  useEscapeKey(closeDrawer, open);
 
   const allowCreate = useMemo(() => {
     if (!title.trim()) return false;
@@ -638,8 +639,8 @@ function ProjectActionDropdown({
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const canDelete = hasWorkspacePermissionV2("bb.projects.delete");
-  const canUndelete = hasWorkspacePermissionV2("bb.projects.undelete");
+  const canDelete = hasProjectPermissionV2(project, "bb.projects.delete");
+  const canUndelete = hasProjectPermissionV2(project, "bb.projects.undelete");
 
   useEffect(() => {
     if (!open) return;
