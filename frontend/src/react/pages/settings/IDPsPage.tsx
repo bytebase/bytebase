@@ -1975,7 +1975,6 @@ export function IDPsPage() {
 
   const [ready, setReady] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
-  const [showFeatureModal, setShowFeatureModal] = useState(false);
 
   const hasSSOFeature = useVueState(() =>
     subscriptionStore.hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
@@ -1993,10 +1992,7 @@ export function IDPsPage() {
   }, []);
 
   const handleCreateSSO = () => {
-    if (!hasSSOFeature) {
-      setShowFeatureModal(true);
-      return;
-    }
+    if (!hasSSOFeature) return;
     setShowCreateDrawer(true);
   };
 
@@ -2021,9 +2017,7 @@ export function IDPsPage() {
 
   return (
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
-      {showFeatureModal && (
-        <FeatureAttention feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO} />
-      )}
+      <FeatureAttention feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO} />
 
       <div className="textinfolabel">
         {t("settings.sso.description")}{" "}

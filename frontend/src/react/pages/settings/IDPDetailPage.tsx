@@ -1228,10 +1228,7 @@ export function IDPDetailPage() {
     return getIdentityProviderResourceId(localIdp.name);
   }, [localIdp]);
 
-  const allowEdit = useMemo(
-    () => hasWorkspacePermissionV2("bb.identityProviders.update"),
-    []
-  );
+  const allowEdit = hasWorkspacePermissionV2("bb.identityProviders.update");
 
   const buildUpdatedIdentityProvider =
     useCallback((): IdentityProvider | null => {
