@@ -98,10 +98,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       requiredPermissionList: () => ["bb.settings.getEnvironment"],
     },
     components: {
-      content: () => import("@/views/EnvironmentDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "EnvironmentsPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "users/:principalEmail",
