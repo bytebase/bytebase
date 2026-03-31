@@ -492,13 +492,15 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                 action={
                   allowManage ? (
                     card.type === PlanType.FREE ? (
-                      isCurrentPlan(PlanType.FREE) ? <Button
-                        variant="outline"
-                        className="w-full"
-                        disabled={isCurrentPlan(PlanType.FREE)}
-                      >
-                        {t("subscription.current")}
-                      </Button> : undefined
+                      isCurrentPlan(PlanType.FREE) ? (
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          disabled={isCurrentPlan(PlanType.FREE)}
+                        >
+                          {t("subscription.current")}
+                        </Button>
+                      ) : undefined
                     ) : card.selfServicePurchase ? (
                       <>
                         <label className="mt-3 flex items-start gap-x-2 text-sm text-control-placeholder cursor-pointer">
