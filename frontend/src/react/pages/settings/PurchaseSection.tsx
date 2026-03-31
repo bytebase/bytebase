@@ -111,11 +111,15 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     subscriptionStore.fetchPurchasePlans();
   }, []);
 
-  // Handle session_id polling on mount.
+  // Handle session_id polling on mount (covers both new purchase and plan update fallback).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get("session_id");
-    if (!sessionId || !isFreePlan || !allowManage) return;
+    if (!sessionId || !allowManage) return;
+
+    // Snapshot current state before polling to detect changes.
+    const prevPlan = subscriptionStore.currentPlan;
+    const prevSeats = subscriptionStore.subscription?.seats ?? 0;
 
     let cancelled = false;
     (async () => {
@@ -126,8 +130,16 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
         setPendingPayment(true);
         for (let i = 0; i < 30; i++) {
           if (cancelled) break;
-          await subscriptionStore.fetchSubscription();
-          if (!subscriptionStore.isFreePlan) break;
+          const sub = await subscriptionStore.fetchSubscription(false);
+          if (sub) {
+            // New purchase: plan changed from FREE.
+            // Plan update: seats or plan changed from previous values.
+            const changed = sub.plan !== prevPlan || sub.seats !== prevSeats;
+            if (sub.plan !== PlanType.FREE && changed) {
+              subscriptionStore.setSubscription(sub);
+              break;
+            }
+          }
           await new Promise((r) => setTimeout(r, 2000));
         }
         setPendingPayment(false);
