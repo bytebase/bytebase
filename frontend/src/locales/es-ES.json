@@ -1985,12 +1985,6 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente.",
         "success": "Proyecto {count} eliminado correctamente | Proyectos {count} eliminados correctamente",
         "error": "No se pudieron eliminar los proyectos"
-      },
-      "projects-to-archive": "Proyectos para archivar",
-      "projects-to-delete": "Proyectos para eliminar",
-      "resource-warning": {
-        "title": "Proyectos con recursos",
-        "description": "Los siguientes proyectos contienen bases de datos o problemas abiertos:"
       }
     }
   },

@@ -1985,12 +1985,6 @@
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed.",
         "success": "Successfully deleted {count} project | Successfully deleted {count} projects",
         "error": "Failed to delete projects"
-      },
-      "projects-to-archive": "Projects to archive",
-      "projects-to-delete": "Projects to delete",
-      "resource-warning": {
-        "title": "Projects with Resources",
-        "description": "The following projects contain databases or open issues:"
       }
     }
   },
