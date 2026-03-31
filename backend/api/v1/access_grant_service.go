@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,15 +26,17 @@ import (
 type AccessGrantService struct {
 	v1connect.UnimplementedAccessGrantServiceHandler
 	store          *store.Store
+	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
 	webhookManager *webhook.Manager
 	bus            *bus.Bus
 }
 
 // NewAccessGrantService returns a new access grant service instance.
-func NewAccessGrantService(store *store.Store, licenseService *enterprise.LicenseService, webhookManager *webhook.Manager, bus *bus.Bus) *AccessGrantService {
+func NewAccessGrantService(store *store.Store, iamManager *iam.Manager, licenseService *enterprise.LicenseService, webhookManager *webhook.Manager, bus *bus.Bus) *AccessGrantService {
 	return &AccessGrantService{
 		store:          store,
+		iamManager:     iamManager,
 		licenseService: licenseService,
 		webhookManager: webhookManager,
 		bus:            bus,
