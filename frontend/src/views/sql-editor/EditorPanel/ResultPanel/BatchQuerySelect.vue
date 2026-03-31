@@ -289,7 +289,9 @@ const handleExportBtnClick = async ({
       const content = await sqlStore.exportData(
         create(ExportRequestSchema, {
           name: databaseName,
-          dataSourceId: context.params.connection.dataSourceId ?? "",
+          ...(context.params.connection.dataSourceId
+            ? { dataSourceId: context.params.connection.dataSourceId }
+            : {}),
           format: options.format,
           statement: context.params.statement,
           limit: options.limit,

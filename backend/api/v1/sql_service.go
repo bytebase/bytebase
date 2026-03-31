@@ -250,7 +250,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
-	resolvedDataSourceID, err := resolveQueryDataSourceID(instance, request.DataSourceId)
+	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -867,7 +867,12 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
+	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
+	if err != nil {
+		return nil, err
+	}
+
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, resolvedDataSourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1769,7 +1774,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-func resolveQueryDataSourceID(instance *store.InstanceMessage, dataSourceID string) (string, error) {
+func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (string, error) {
 	if dataSourceID != "" {
 		return dataSourceID, nil
 	}

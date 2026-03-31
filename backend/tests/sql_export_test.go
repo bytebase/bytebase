@@ -229,13 +229,6 @@ func TestSQLExport(t *testing.T) {
 		err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 		a.NoError(err)
 
-		_, err = ctl.sqlServiceClient.Export(ctx, connect.NewRequest(&v1pb.ExportRequest{
-			Name:      database.Name,
-			Format:    v1pb.ExportFormat_JSON,
-			Statement: "SELECT 1;",
-		}))
-		a.ErrorContains(err, "data source id is required")
-
 		for _, exportTest := range tt.exportTests {
 			request := &v1pb.ExportRequest{
 				Name:         database.Name,

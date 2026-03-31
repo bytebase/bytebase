@@ -1477,9 +1477,10 @@ type ExportRequest struct {
 	// The zip password provide by users.
 	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	// The id of data source.
-	// It is used for querying admin data source even if the instance has
-	// read-only data sources. Or it can be used to query a specific read-only
-	// data source.
+	// If omitted, Export resolves the data source server-side by using the
+	// single read-only data source when exactly one exists, or the admin data
+	// source otherwise. It can also be set explicitly to export from the admin
+	// data source or a specific read-only data source.
 	DataSourceId string `protobuf:"bytes,7,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
