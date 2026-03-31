@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"connectrpc.com/connect"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -62,7 +64,12 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// Fetch the grant first — needed for both auth paths and the response.
+	// Check IAM permission first (doesn't need the grant).
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.AccessGrantsGet, user, workspaceID, projectID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+	}
+
 	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 		Workspace: workspaceID,
 		ID:        &accessGrantID,
@@ -72,12 +79,11 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get access grant"))
 	}
 	if grant == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
-	}
-
-	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.AccessGrantsGet, user, workspaceID, projectID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+		if hasPermission {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
+		}
+		// Don't reveal grant existence to unauthorized users.
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission to view access grant %q", req.Name))
 	}
 
 	if !hasPermission {
@@ -102,7 +108,11 @@ func (s *AccessGrantService) isApproverForGrant(ctx context.Context, workspaceID
 		ProjectIDs: []string{projectID},
 		UID:        &issueUID,
 	})
-	if err != nil || issue == nil {
+	if err != nil {
+		slog.Error("failed to get issue for approver check", slog.Int64("issueUID", issueUID), log.BBError(err))
+		return false
+	}
+	if issue == nil {
 		return false
 	}
 
@@ -113,10 +123,12 @@ func (s *AccessGrantService) isApproverForGrant(ctx context.Context, workspaceID
 
 	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, workspaceID, projectID)
 	if err != nil {
+		slog.Error("failed to get project IAM policy for approver check", slog.String("project", projectID), log.BBError(err))
 		return false
 	}
 	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
+		slog.Error("failed to get workspace IAM policy for approver check", log.BBError(err))
 		return false
 	}
 	userRoles := utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, user, projectPolicy.Policy, workspacePolicy.Policy)

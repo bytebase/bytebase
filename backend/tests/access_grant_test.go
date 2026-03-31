@@ -110,8 +110,32 @@ func TestAccessGrantApproverVisibility(t *testing.T) {
 	a.NoError(err)
 	grantName := grantResp.Msg.Name
 
-	// Wait for the linked issue's approval finding to complete.
-	time.Sleep(5 * time.Second)
+	// Find the linked issue and poll until approval finding completes.
+	issuesResp, err := ctl.issueServiceClient.SearchIssues(ctx, connect.NewRequest(&v1pb.SearchIssuesRequest{
+		Parent: project.Name,
+		Filter: `type = "ACCESS_GRANT"`,
+	}))
+	a.NoError(err)
+	a.NotEmpty(issuesResp.Msg.Issues, "issue should have been created by CreateAccessGrant")
+	issueName := issuesResp.Msg.Issues[0].Name
+
+	var issue *v1pb.Issue
+	for i := 0; i < 10; i++ {
+		if i > 0 {
+			time.Sleep(2 * time.Second)
+		}
+		issueGetResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+			Name: issueName,
+		}))
+		a.NoError(err)
+		issue = issueGetResp.Msg
+		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+			break
+		}
+	}
+	a.NotNil(issue)
+	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "approval finding should have completed")
+	a.Equal(v1pb.Issue_PENDING, issue.ApprovalStatus, "issue should be pending approval")
 
 	// (a) projectOwner (admin) can view the grant.
 	getResp, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{
