@@ -46,6 +46,8 @@ func NewAccessGrantService(store *store.Store, iamManager *iam.Manager, licenseS
 }
 
 // GetAccessGrant gets an access grant by name.
+// Uses CUSTOM auth: allows access if user has bb.accessGrants.get permission,
+// OR if the user is an approver on the linked issue.
 func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connect.Request[v1pb.GetAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
 	req := request.Msg
 	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
@@ -60,17 +62,7 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.AccessGrantsGet, user, workspaceID, projectID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
-	}
-
-	if !hasPermission {
-		if !s.isApproverForAccessGrant(ctx, workspaceID, projectID, accessGrantID, user) {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission to view access grant %q", req.Name))
-		}
-	}
-
+	// Fetch the grant first — needed for both auth paths and the response.
 	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 		Workspace: workspaceID,
 		ID:        &accessGrantID,
@@ -83,18 +75,24 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("access grant %q not found", req.Name))
 	}
 
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.AccessGrantsGet, user, workspaceID, projectID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+	}
+
+	if !hasPermission {
+		if !s.isApproverForGrant(ctx, workspaceID, projectID, grant, user) {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission to view access grant %q", req.Name))
+		}
+	}
+
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
 }
 
-// isApproverForAccessGrant checks if the user is an approver (in any step)
+// isApproverForGrant checks if the user is an approver (in any step)
 // for the issue linked to the given access grant.
-func (s *AccessGrantService) isApproverForAccessGrant(ctx context.Context, workspaceID, projectID, accessGrantID string, user *store.UserMessage) bool {
-	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-		Workspace: workspaceID,
-		ID:        &accessGrantID,
-		ProjectID: &projectID,
-	})
-	if err != nil || grant == nil || grant.Payload == nil || grant.Payload.IssueId == 0 {
+func (s *AccessGrantService) isApproverForGrant(ctx context.Context, workspaceID, projectID string, grant *store.AccessGrantMessage, user *store.UserMessage) bool {
+	if grant.Payload == nil || grant.Payload.IssueId == 0 {
 		return false
 	}
 
