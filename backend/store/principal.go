@@ -24,7 +24,8 @@ type FindUserMessage struct {
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
-	// Workspace is required when ProjectID is set, for the project member CTE query.
+	// Workspace scopes user listing to workspace IAM policy members.
+	// When ProjectID is also set, includes project-level members too.
 	Workspace string
 }
 
@@ -197,8 +198,9 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	from := qb.Q().Space("principal")
 	where := qb.Q().Space("TRUE")
 
-	// Build CTE for project filtering if needed
+	// Scope users by workspace or project membership.
 	if v := find.ProjectID; v != nil {
+		// Project filter: include users who are members of the project or workspace.
 		with.Space(`WITH all_members AS (
 			SELECT
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
@@ -210,6 +212,18 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
 		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
+	} else if find.Workspace != "" {
+		// Workspace IAM filter (no project): include only users who are members of the workspace IAM policy.
+		// Used in SaaS mode to prevent cross-workspace user listing.
+		with.Space(`WITH workspace_members AS (
+			SELECT ARRAY_AGG(DISTINCT member) AS members
+			FROM (
+				SELECT jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member
+				FROM policy
+				WHERE resource_type = ? AND type = ? AND policy.workspace = ?
+			) sub
+		)`, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
+		from.Space(`INNER JOIN workspace_members ON (CONCAT('users/', principal.email) = ANY(workspace_members.members) OR ? = ANY(workspace_members.members))`, common.AllUsers)
 	}
 
 	if filterQ := find.FilterQ; filterQ != nil {
