@@ -123,7 +123,7 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 		if !ok {
 			continue
 		}
-		tables, err := mysqlparser.ExtractTables(databaseName, ast, i)
+		tables, err := mysqlparser.ExtractTables(databaseName, ast, i, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract tables")
 		}

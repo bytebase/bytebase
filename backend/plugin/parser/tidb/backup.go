@@ -53,7 +53,7 @@ type statementInfo struct {
 	endPosition   *store.Position
 }
 
-func prepareTransformation(databaseName, statement string, dbMetadata ...*model.DatabaseMetadata) ([]statementInfo, error) {
+func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
 	list, err := mysql.SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
@@ -73,7 +73,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata ...*model.
 			// After splitting the SQL, we should have only one statement in the list.
 			// The FOR loop is just for safety.
 			// So we can use the i as the offset.
-			tables, err := extractTables(databaseName, sql, i, dbMetadata...)
+			tables, err := extractTables(databaseName, sql, i, dbMetadata)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
@@ -432,13 +432,11 @@ type TableReference struct {
 	Alias    string
 }
 
-func extractTables(databaseName string, ast *base.ANTLRAST, offset int, dbMetadata ...*model.DatabaseMetadata) ([]statementInfo, error) {
+func extractTables(databaseName string, ast *base.ANTLRAST, offset int, dbMetadata *model.DatabaseMetadata) ([]statementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
+		dbMetadata:   dbMetadata,
 		offset:       offset,
-	}
-	if len(dbMetadata) > 0 {
-		listener.dbMetadata = dbMetadata[0]
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, ast.Tree)
