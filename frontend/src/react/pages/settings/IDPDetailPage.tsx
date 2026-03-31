@@ -1196,6 +1196,9 @@ export function IDPDetailPage() {
 
     let cancelled = false;
     setIsLoading(true);
+    setOriginalIdp(null);
+    setLocalIdp(null);
+    initializedRef.current = false;
 
     identityProviderStore
       .getOrFetchIdentityProviderByName(idpName)
@@ -1205,6 +1208,11 @@ export function IDPDetailPage() {
           setOriginalIdp(idp);
           initializeFromIdp(idp);
         }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOriginalIdp(null);
+        setLocalIdp(null);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
