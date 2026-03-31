@@ -31,7 +31,6 @@
     "settings": "Settings",
     "project": "Project",
     "projects": "Projects",
-    "help": "Help",
     "database": "Database",
     "databases": "Databases",
     "description": "Description",
@@ -2992,9 +2991,6 @@
       "permissions": "This application will be able to:",
       "permission-access": "Access your Bytebase account with your permissions"
     }
-  },
-  "help-drawer": {
-    "dont-show-again": "Don't show these tips again"
   },
   "agent": {
     "assistant-title": "Bytebase Assistant",

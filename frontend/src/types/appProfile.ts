@@ -5,7 +5,6 @@ export type AppFeatures = {
   "bb.feature.database-change-mode":
     | DatabaseChangeMode.PIPELINE
     | DatabaseChangeMode.EDITOR;
-  "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
   "bb.feature.hide-trial": boolean;
 };
@@ -17,7 +16,6 @@ export type AppProfile = {
 export const defaultAppProfile = (): AppProfile => ({
   features: {
     "bb.feature.database-change-mode": DatabaseChangeMode.PIPELINE,
-    "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-trial": false,
   },
