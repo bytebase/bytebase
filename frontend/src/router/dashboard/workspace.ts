@@ -241,8 +241,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
         meta: {
           title: () => t("custom-approval.risk.self"),
         },
-        component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "RiskCenterPage" }),
       },
       {
         path: "custom-approval",
