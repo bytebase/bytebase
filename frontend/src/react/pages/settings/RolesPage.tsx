@@ -43,13 +43,26 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
 
+// Escape key stack: only the topmost overlay handles Escape.
+const escapeStack: (() => void)[] = [];
+
 function useEscapeKey(onEscape: () => void) {
   useEffect(() => {
+    escapeStack.push(onEscape);
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onEscape();
+      if (
+        e.key === "Escape" &&
+        escapeStack[escapeStack.length - 1] === onEscape
+      ) {
+        onEscape();
+      }
     };
     document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      const idx = escapeStack.lastIndexOf(onEscape);
+      if (idx >= 0) escapeStack.splice(idx, 1);
+    };
   }, [onEscape]);
 }
 
@@ -840,7 +853,7 @@ export function RolesPage() {
                       </Badge>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-control-light truncate max-w-0">
+                  <td className="px-4 py-2 text-control-light truncate">
                     {displayRoleDescription(role.name)}
                   </td>
                   <td className="px-4 py-2">
