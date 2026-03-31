@@ -20,7 +20,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	var (
-		record        = true
+		record        = false
 		testDataPaths = []string{
 			"test-data/query-span/standard.yaml",
 		}
@@ -28,8 +28,6 @@ func TestGetQuerySpan(t *testing.T) {
 
 	a := require.New(t)
 	for _, testDataPath := range testDataPaths {
-		testDataPath := testDataPath
-
 		yamlFile, err := os.Open(testDataPath)
 		a.NoError(err)
 
