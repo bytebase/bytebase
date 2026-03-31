@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -116,6 +117,16 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 	if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.Identifier).(string); ok {
 		userInfo.Identifier = v
 	}
+
+	// GitHub-specific: when the identifier field (typically "email") is missing because the
+	// user's email is private, fetch it from the /user/emails endpoint.
+	if userInfo.Identifier == "" && p.config.FieldMapping.Identifier == "email" && strings.Contains(p.config.UserInfoUrl, "github.com") {
+		if email, err := p.fetchGitHubPrimaryEmail(token); err == nil && email != "" {
+			userInfo.Identifier = email
+			claims["email"] = email
+		}
+	}
+
 	if p.config.FieldMapping.DisplayName != "" {
 		if v, ok := idp.GetValueWithKey(claims, p.config.FieldMapping.DisplayName).(string); ok {
 			userInfo.DisplayName = v
@@ -133,4 +144,41 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		}
 	}
 	return userInfo, claims, nil
+}
+
+// fetchGitHubPrimaryEmail fetches the primary verified email from GitHub's /user/emails endpoint.
+func (p *IdentityProvider) fetchGitHubPrimaryEmail(token string) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/user/emails", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var emails []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+	if err := json.Unmarshal(body, &emails); err != nil {
+		return "", err
+	}
+
+	for _, e := range emails {
+		if e.Primary && e.Verified {
+			return e.Email, nil
+		}
+	}
+	return "", nil
 }

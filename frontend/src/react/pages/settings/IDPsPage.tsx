@@ -1161,7 +1161,7 @@ function getTemplateList(hasEnterpriseSSOFeature: boolean): OAuth2Template[] {
         authUrl: "https://github.com/login/oauth/authorize",
         tokenUrl: "https://github.com/login/oauth/access_token",
         userInfoUrl: "https://api.github.com/user",
-        scopes: ["user"],
+        scopes: ["user", "user:email"],
         skipTlsVerify: false,
         authStyle: OAuth2AuthStyle.IN_PARAMS,
         fieldMapping: create(FieldMappingSchema, {
