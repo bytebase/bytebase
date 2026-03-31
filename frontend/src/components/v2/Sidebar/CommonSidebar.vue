@@ -86,6 +86,7 @@
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { NScrollbar } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { useRoute } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import type { SidebarItem } from "./type";
 
@@ -114,6 +115,10 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   expandedSidebar: new Set(),
 });
+
+// Track groups auto-expanded by route so we can collapse them on navigation
+// without collapsing groups the user manually opened.
+const autoExpanded = new Set<string>();
 
 const parentRouteClass = computed(() => {
   return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
@@ -146,26 +151,56 @@ const filteredSidebarList = computed(() => {
     });
 });
 
+const currentRoute = useRoute();
+
+const expandForActiveRoute = () => {
+  const currentName = currentRoute.name?.toString() ?? "";
+  // Remove previous auto-expansions (preserve manual ones)
+  for (const key of autoExpanded) {
+    state.expandedSidebar.delete(key);
+  }
+  autoExpanded.clear();
+  for (let i = 0; i < filteredSidebarList.value.length; i++) {
+    const item = filteredSidebarList.value[i];
+    if (item.children.length === 0) continue;
+    if (item.expand) {
+      state.expandedSidebar.add(`${i}`);
+      continue;
+    }
+    const hasActiveChild = item.children.some(
+      (child) =>
+        child.name === currentName || currentName.startsWith(`${child.name}.`)
+    );
+    if (hasActiveChild) {
+      state.expandedSidebar.add(`${i}`);
+      autoExpanded.add(`${i}`);
+    }
+  }
+};
+
 watch(
   () => filteredSidebarList.value,
   () => {
     state.expandedSidebar.clear();
-    for (let i = 0; i < filteredSidebarList.value.length; i++) {
-      if (
-        filteredSidebarList.value[i].children.length > 0 &&
-        filteredSidebarList.value[i].expand
-      ) {
-        state.expandedSidebar.add(`${i}`);
-      }
-    }
+    expandForActiveRoute();
   },
   { immediate: true }
+);
+
+watch(
+  () => currentRoute.name,
+  () => {
+    expandForActiveRoute();
+  }
 );
 
 const onClick = (sidebar: SidebarItem, key: string, e: MouseEvent) => {
   if (sidebar.path) {
     return emit("select", sidebar, e);
   }
+  // Manual toggle — remove from auto-expanded tracking so route
+  // changes won't fight with the user's intent.
+  autoExpanded.delete(key);
   if (state.expandedSidebar.has(key)) {
     state.expandedSidebar.delete(key);
   } else {
