@@ -410,7 +410,7 @@ function ConfigDrawer({
                 <input
                   type="checkbox"
                   checked
-                  disabled={config.length <= 1}
+                  disabled={selected.length <= 1}
                   onChange={() => uncheck(item.id)}
                 />
                 <item.icon className="w-5 h-5 text-gray-500" />
@@ -522,16 +522,32 @@ export function LandingPage({
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {quickLinkList.map((link) => (
-              <div
-                key={link.id}
-                className="flex justify-center items-center gap-x-2 cursor-pointer border rounded-sm px-4 py-5 bg-white hover:bg-gray-100"
-                onClick={() => handleClick(link)}
-              >
-                <link.icon className="w-5 h-5 text-gray-500" />
-                {link.title}
-              </div>
-            ))}
+            {quickLinkList.map((link) => {
+              const tileClass =
+                "flex justify-center items-center gap-x-2 cursor-pointer border rounded-sm px-4 py-5 bg-white hover:bg-gray-100 no-underline text-main";
+              if (link.route) {
+                const href = router.resolve({
+                  name: link.route,
+                }).href;
+                return (
+                  <a key={link.id} href={href} className={tileClass}>
+                    <link.icon className="w-5 h-5 text-gray-500" />
+                    {link.title}
+                  </a>
+                );
+              }
+              return (
+                <button
+                  key={link.id}
+                  type="button"
+                  className={tileClass}
+                  onClick={() => handleClick(link)}
+                >
+                  <link.icon className="w-5 h-5 text-gray-500" />
+                  {link.title}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex flex-col gap-y-2">
