@@ -186,6 +186,9 @@
     "revoke": "撤销",
     "cannot-undo-this-action": "这个操作无法撤销",
     "select": "选择",
+    "select-all": "全选",
+    "total-n-items": "共 {n} 项",
+    "n-items-selected": "已选 {n} 项",
     "optional": "可选",
     "reason": "理由",
     "date": {

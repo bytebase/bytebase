@@ -186,6 +186,9 @@
     "revoke": "Revocar",
     "cannot-undo-this-action": "No se puede deshacer esta acción",
     "select": "Seleccionar",
+    "select-all": "Seleccionar todo",
+    "total-n-items": "Total {n} elementos",
+    "n-items-selected": "{n} elementos seleccionados",
     "optional": "Opcional",
     "reason": "Razón",
     "date": {

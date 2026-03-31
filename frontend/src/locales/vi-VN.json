@@ -186,6 +186,9 @@
     "revoke": "Thu hồi",
     "cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
     "select": "Chọn",
+    "select-all": "Chọn tất cả",
+    "total-n-items": "Tổng {n} mục",
+    "n-items-selected": "Đã chọn {n} mục",
     "optional": "Tùy chọn",
     "reason": "Lý do",
     "date": {
