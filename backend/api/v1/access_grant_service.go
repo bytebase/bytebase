@@ -95,8 +95,10 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
 }
 
-// isApproverForGrant checks if the user is an approver (in any step)
-// for the issue linked to the given access grant.
+// isApproverForGrant checks if the user holds any role required by the
+// approval flow of the issue linked to the given access grant. This is a
+// role-based check (not a resolved-approver check), consistent with how
+// ApproveIssue/isUserReviewer determines approval eligibility.
 func (s *AccessGrantService) isApproverForGrant(ctx context.Context, workspaceID, projectID string, grant *store.AccessGrantMessage, user *store.UserMessage) bool {
 	if grant.Payload == nil || grant.Payload.IssueId == 0 {
 		return false
