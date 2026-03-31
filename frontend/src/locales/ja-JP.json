@@ -186,6 +186,9 @@
     "revoke": "キャンセル",
     "cannot-undo-this-action": "この操作は元に戻せません",
     "select": "選ぶ",
+    "select-all": "すべて選択",
+    "total-n-items": "合計 {n} 件",
+    "n-items-selected": "{n} 件選択済み",
     "optional": "オプション",
     "reason": "理由",
     "date": {

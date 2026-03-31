@@ -186,6 +186,9 @@
     "revoke": "Revoke",
     "cannot-undo-this-action": "You cannot undo this action",
     "select": "Select",
+    "select-all": "Select all",
+    "total-n-items": "Total {n} items",
+    "n-items-selected": "{n} items selected",
     "optional": "Optional",
     "reason": "Reason",
     "date": {
