@@ -360,10 +360,12 @@ function ConfigDrawer({
 
   const handleDragEnd = () => {
     if (dragItem.current === null || dragOver.current === null) return;
-    const next = [...config];
-    const [removed] = next.splice(dragItem.current, 1);
-    next.splice(dragOver.current, 0, removed);
-    setConfig(next);
+    // Reorder using the filtered selected IDs, not raw config indices,
+    // so stale/hidden IDs in config don't cause index mismatches.
+    const selectedIds = selected.map((s) => s.id);
+    const [removed] = selectedIds.splice(dragItem.current, 1);
+    selectedIds.splice(dragOver.current, 0, removed);
+    setConfig(selectedIds);
     dragItem.current = null;
     dragOver.current = null;
   };
@@ -441,7 +443,11 @@ function ConfigDrawer({
 // LandingPage
 // ---------------------------------------------------------------------------
 
-export function LandingPage() {
+export function LandingPage({
+  onOpenProjectSwitch,
+}: {
+  onOpenProjectSwitch?: () => void;
+} = {}) {
   const { t } = useTranslation();
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
 
@@ -466,20 +472,27 @@ export function LandingPage() {
     [config, fullList]
   );
 
-  const handleClick = useCallback((link: QuickLinkDef) => {
-    if (link.route) {
-      router.push({ name: link.route });
-      return;
-    }
-    switch (link.id) {
-      case "visit-projects":
-        router.push({ name: PROJECT_V1_ROUTE_DASHBOARD });
-        break;
-      case "visit-issues":
-        router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
-        break;
-    }
-  }, []);
+  const handleClick = useCallback(
+    (link: QuickLinkDef) => {
+      if (link.route) {
+        router.push({ name: link.route });
+        return;
+      }
+      switch (link.id) {
+        case "visit-projects":
+          if (onOpenProjectSwitch) {
+            onOpenProjectSwitch();
+          } else {
+            router.push({ name: PROJECT_V1_ROUTE_DASHBOARD });
+          }
+          break;
+        case "visit-issues":
+          router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
+          break;
+      }
+    },
+    [onOpenProjectSwitch]
+  );
 
   return (
     <>
