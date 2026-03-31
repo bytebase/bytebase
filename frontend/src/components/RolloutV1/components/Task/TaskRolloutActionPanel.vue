@@ -2,7 +2,7 @@
   <CommonDrawer
     :show="show"
     :title="title"
-    :loading="loading"
+    :loading="loading || permissionLoading"
     @show="resetState"
     @close="$emit('close')"
   >
@@ -165,7 +165,7 @@
         <NTooltip :disabled="validationErrors.length === 0" placement="top">
           <template #trigger>
             <NButton
-              :disabled="validationErrors.length > 0"
+              :disabled="permissionLoading || validationErrors.length > 0"
               type="primary"
               @click="handleConfirm"
             >
@@ -231,7 +231,10 @@ import CommonDrawer from "../Rollout/CommonDrawer.vue";
 import ErrorList from "../Rollout/ErrorList.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import TaskStatus from "./TaskStatus.vue";
-import { canRolloutTasks } from "./taskPermissions";
+import {
+  canRolloutTasks,
+  preloadRolloutPermissionContext,
+} from "./taskPermissions";
 
 // 1 hour default delay for scheduled tasks
 const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
@@ -256,6 +259,7 @@ const environmentStore = useEnvironmentV1Store();
 
 // State
 const loading = ref(false);
+const permissionLoading = ref(false);
 const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const skipPriorBackup = ref(false);
@@ -386,10 +390,14 @@ const validationErrors = computed(() => {
 // Cache permission check - only update when panel opens
 watch(
   () => props.show,
-  (show) => {
+  async (show) => {
     if (show) {
       const tasks = props.target.tasks ?? props.target.stage?.tasks ?? [];
+      permissionLoading.value = true;
+      canRolloutPermission.value = false;
+      await preloadRolloutPermissionContext(tasks);
       canRolloutPermission.value = canRolloutTasks(tasks, issue.value);
+      permissionLoading.value = false;
     }
   },
   { immediate: true }

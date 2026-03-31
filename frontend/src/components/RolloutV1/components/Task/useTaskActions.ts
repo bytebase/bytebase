@@ -6,7 +6,10 @@ import {
 } from "@/components/RolloutV1/constants/task";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskAction } from "../../types";
-import { canRolloutTasks } from "./taskPermissions";
+import {
+  canRolloutTasks,
+  preloadRolloutPermissionContext,
+} from "./taskPermissions";
 
 export interface TaskActionTarget {
   type: "tasks";
@@ -40,7 +43,9 @@ export const useTaskActions = (
   const canPerformActions = ref(false);
   watch(
     () => task().name,
-    () => {
+    async () => {
+      canPerformActions.value = false;
+      await preloadRolloutPermissionContext([task()]);
       canPerformActions.value = canRolloutTasks([task()]);
     },
     { immediate: true }
