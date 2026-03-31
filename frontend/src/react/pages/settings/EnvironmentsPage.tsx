@@ -183,7 +183,11 @@ function RolloutPolicyConfig({
 }) {
   const { t } = useTranslation();
   const roleStore = useRoleStore();
+  const subscriptionStore = useSubscriptionV1Store();
   const roleList = useVueState(() => [...roleStore.roleList]);
+  const hasCustomRoleFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  );
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
 
   const rolloutPolicy: RolloutPolicy =
@@ -255,11 +259,16 @@ function RolloutPolicyConfig({
       groups.push({ label: t("role.project-roles.self"), roles: projRoles });
     }
 
-    const customRoles = roleList
-      .filter((r) => !PRESET_ROLES.includes(r.name) && !selected.has(r.name))
-      .map((r) => ({ name: r.name, title: displayRoleTitle(r.name) }));
-    if (customRoles.length > 0) {
-      groups.push({ label: t("role.custom-roles.self"), roles: customRoles });
+    if (hasCustomRoleFeature) {
+      const customRoles = roleList
+        .filter((r) => !PRESET_ROLES.includes(r.name) && !selected.has(r.name))
+        .map((r) => ({ name: r.name, title: displayRoleTitle(r.name) }));
+      if (customRoles.length > 0) {
+        groups.push({
+          label: t("role.custom-roles.self"),
+          roles: customRoles,
+        });
+      }
     }
 
     return groups;
@@ -1309,6 +1318,31 @@ export function EnvironmentsPage() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [environmentList, t]);
+
+  // Guard browser refresh/close
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (detailDirtyRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  // Guard Vue router navigation (sidebar links, etc.)
+  useEffect(() => {
+    const removeGuard = router.beforeEach((_to, _from, next) => {
+      if (detailDirtyRef.current) {
+        if (!window.confirm(t("common.leave-without-saving"))) {
+          next(false);
+          return;
+        }
+      }
+      next();
+    });
+    return removeGuard;
+  }, [t]);
 
   const selectTab = (id: string) => {
     if (id === selectedId) return;
