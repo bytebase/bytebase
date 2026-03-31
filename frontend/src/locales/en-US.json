@@ -2035,7 +2035,8 @@
     "admin": "Admin",
     "read-only": "RO",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "Select query data source"
+    "select-query-data-source": "Select query data source",
+    "automatic-query-data-source": "Automatic"
   },
   "setting": {
     "label": {
@@ -2060,7 +2061,6 @@
     "can-not-execute-query": "Cannot execute query when loading data.",
     "invalid-database": "Invalid database {database}",
     "request-aborted": "User aborted the request",
-    "no-data-source": "No queriable data source. Please check the data source query policy on environment or project.",
     "no-queriable-database": "No queriable database",
     "rows": "row | rows",
     "vertical-display": "Vertical display",

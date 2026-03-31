@@ -165,6 +165,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
+		return nil, err
+	}
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
@@ -206,10 +209,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
-		return nil, err
-	}
-
 	instanceMessage.Workspace = workspaceID
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
@@ -239,17 +238,14 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 }
 
 func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
-	dsIDMap := map[string]bool{}
 	for _, ds := range dataSources {
 		if err := s.checkDataSource(ctx, instance, ds); err != nil {
 			return err
 		}
-		if dsIDMap[ds.GetId()] {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`duplicate data source id "%s"`, ds.GetId()))
-		}
-		dsIDMap[ds.GetId()] = true
 	}
-
+	if err := store.ValidateDataSources(dataSources); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	return nil
 }
 
@@ -635,6 +631,11 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
+	metadata := proto.CloneOf(instance.Metadata)
+	metadata.DataSources = append(metadata.DataSources, dataSource)
+	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
+		return nil, err
+	}
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
@@ -668,8 +669,6 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
-	metadata := proto.CloneOf(instance.Metadata)
-	metadata.DataSources = append(metadata.DataSources, dataSource)
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
@@ -847,7 +846,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	clearDataSourceAuthentication(dataSource)
 
-	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
+	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
 

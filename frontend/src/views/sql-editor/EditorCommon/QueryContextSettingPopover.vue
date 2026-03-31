@@ -28,6 +28,9 @@
             :value="selectedDataSourceId"
             @update:value="onDataSourceSelected"
           >
+            <NRadio class="w-full" value="">
+              {{ $t("data-source.automatic-query-data-source") }}
+            </NRadio>
             <NTooltip
               v-for="ds in dataSources"
               :key="ds.id"
@@ -101,7 +104,7 @@ import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
 import { NButton, NPopover, NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import MaxRowCountSelect from "@/components/RoleGrantPanel/MaxRowCountSelect.vue";
 import {
@@ -109,7 +112,6 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { isValidDatabaseName } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -117,11 +119,7 @@ import {
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  getInstanceResource,
-  getValidDataSourceByPolicy,
-  readableDataSourceType,
-} from "@/utils";
+import { getInstanceResource, readableDataSourceType } from "@/utils";
 
 defineProps<{
   disabled?: boolean;
@@ -148,7 +146,7 @@ const showRedisConfig = computed(() => {
 });
 
 const selectedDataSourceId = computed(() => {
-  return connection.value.dataSourceId;
+  return connection.value.dataSourceId ?? "";
 });
 
 const selectedDataSource = computed(() => {
@@ -183,25 +181,14 @@ const dataSourceUnaccessibleReason = (
 };
 
 const onDataSourceSelected = (dataSourceId?: string) => {
+  const nextConnection = { ...connection.value };
+  if (dataSourceId) {
+    nextConnection.dataSourceId = dataSourceId;
+  } else {
+    delete nextConnection.dataSourceId;
+  }
   tabStore.updateCurrentTab({
-    connection: {
-      ...connection.value,
-      dataSourceId: dataSourceId,
-    },
+    connection: nextConnection,
   });
 };
-
-watch(
-  [() => selectedDataSourceId.value, () => database.value],
-  async ([current, database]) => {
-    if (!isValidDatabaseName(database.name)) return;
-    if (!current) {
-      const fixed = await getValidDataSourceByPolicy(database);
-      onDataSourceSelected(fixed);
-    }
-  },
-  {
-    immediate: true,
-  }
-);
 </script>

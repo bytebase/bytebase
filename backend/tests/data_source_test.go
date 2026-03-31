@@ -116,7 +116,36 @@ func TestDataSource(t *testing.T) {
 			SslKey:   "",
 		},
 	}))
-	a.NoError(err)
+	a.ErrorContains(err, "require at most one read-only data source")
+
+	_, err = ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "invalid",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{
+				{Type: v1pb.DataSourceType_ADMIN, Id: "admin", Host: instanceDir},
+				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-1", Host: instanceDir},
+				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-2", Host: instanceDir},
+			},
+		},
+	}))
+	a.ErrorContains(err, "require at most one read-only data source")
+
+	_, err = ctl.instanceServiceClient.UpdateInstance(ctx, connect.NewRequest(&v1pb.UpdateInstanceRequest{
+		Instance: &v1pb.Instance{
+			Name: instance.Name,
+			DataSources: []*v1pb.DataSource{
+				{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir},
+				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly", Username: "ro_ds", Host: "127.0.0.1", Port: "8000"},
+				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-2", Host: instanceDir},
+			},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"data_sources"}},
+	}))
+	a.ErrorContains(err, "require at most one read-only data source")
 
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, connect.NewRequest(&v1pb.RemoveDataSourceRequest{
 		Name:       instance.Name,

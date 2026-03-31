@@ -330,7 +330,9 @@ const handleExportBtnClick = async ({
     const content = await useSQLStore().exportData(
       create(ExportRequestSchema, {
         name: props.database.name,
-        dataSourceId: props.executeParams.connection.dataSourceId ?? "",
+        ...(props.executeParams.connection.dataSourceId
+          ? { dataSourceId: props.executeParams.connection.dataSourceId }
+          : {}),
         format: options.format,
         statement,
         limit,

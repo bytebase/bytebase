@@ -17,8 +17,6 @@ import {
 import type {
   BBNotificationStyle,
   QueryContextStatus,
-  QueryDataSourceType,
-  SQLEditorConnection,
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
   SQLResultSetV1,
@@ -35,7 +33,6 @@ import {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  extractDatabaseResourceName,
   getDatabaseProject,
   getInstanceResource,
   getValidDataSourceByPolicy,
@@ -91,19 +88,6 @@ const useExecuteSQL = () => {
       tab.databaseQueryContexts = new Map();
     }
     return true;
-  };
-
-  const getDataSourceId = (
-    database: Database,
-    connection: SQLEditorConnection,
-    mode?: QueryDataSourceType
-  ) => {
-    const { instance } = extractDatabaseResourceName(database.name);
-    if (instance === connection.instance && !!connection.dataSourceId) {
-      return connection.dataSourceId;
-    }
-
-    return getValidDataSourceByPolicy(database, mode) ?? "";
   };
 
   const changeContextStatus = (
@@ -220,17 +204,21 @@ const useExecuteSQL = () => {
       }
 
       const database = dbStore.getDatabaseByName(databaseName);
-      const dataSourceId = await getDataSourceId(
-        database,
-        params.connection,
-        isBatch ? tab.batchQueryContext.dataSourceType : undefined
-      );
+      const resolvedDataSourceId =
+        isBatch && tab.batchQueryContext.dataSourceType
+          ? ((await getValidDataSourceByPolicy(
+              database,
+              tab.batchQueryContext.dataSourceType
+            )) ?? "")
+          : params.connection.dataSourceId;
       const context: SQLEditorDatabaseQueryContext = {
         id: uuidv4(),
         params: Object.assign(cloneDeep(params), {
           connection: {
             ...params.connection,
-            dataSourceId,
+            ...(resolvedDataSourceId
+              ? { dataSourceId: resolvedDataSourceId }
+              : {}),
           },
         }),
         status: "PENDING",
@@ -271,13 +259,6 @@ const useExecuteSQL = () => {
     const sqlStore = useSQLStore();
 
     const dataSourceId = context.params.connection.dataSourceId;
-    if (!dataSourceId) {
-      return finish({
-        error: t("sql-editor.no-data-source"),
-        results: [],
-        status: Code.NotFound,
-      });
-    }
 
     if (abortController.signal.aborted) {
       // Once any one of the batch queries is aborted, don't go further
@@ -296,7 +277,7 @@ const useExecuteSQL = () => {
     const resultSet = await sqlStore.query(
       create(QueryRequestSchema, {
         name: database.name,
-        dataSourceId: dataSourceId,
+        ...(dataSourceId ? { dataSourceId } : {}),
         statement: context.params.statement,
         limit: context.params.limit ?? sqlEditorStore.resultRowsLimit,
         explain: context.params.explain,

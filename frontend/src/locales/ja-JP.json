@@ -2035,7 +2035,8 @@
     "admin": "管理者",
     "read-only": "読み取り専用",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "クエリデータソースの選択"
+    "select-query-data-source": "クエリデータソースの選択",
+    "automatic-query-data-source": "自動"
   },
   "setting": {
     "label": {
@@ -2060,7 +2061,6 @@
     "can-not-execute-query": "データのロード中にクエリを実行できません",
     "invalid-database": "無効なデータベース {database}",
     "request-aborted": "ユーザーがリクエストを中止しました",
-    "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "rows": "記録",
     "vertical-display": "縦型表示",

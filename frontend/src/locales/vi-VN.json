@@ -2035,7 +2035,8 @@
     "admin": "Quản trị",
     "read-only": "Chỉ đọc",
     "direct-connection": "Kết nối trực tiếp",
-    "select-query-data-source": "Chọn nguồn dữ liệu truy vấn"
+    "select-query-data-source": "Chọn nguồn dữ liệu truy vấn",
+    "automatic-query-data-source": "Tự động"
   },
   "setting": {
     "label": {
@@ -2060,7 +2061,6 @@
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
     "request-aborted": "Người dùng đã hủy yêu cầu",
-    "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
