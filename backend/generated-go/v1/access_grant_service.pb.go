@@ -823,7 +823,7 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xf0\b\n" +
 	"\x12AccessGrantService\x12\x9e\x01\n" +
-	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"N\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xb2\x01\n" +
+	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"N\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xb2\x01\n" +
 	"\x10ListAccessGrants\x12$.bytebase.v1.ListAccessGrantsRequest\x1a%.bytebase.v1.ListAccessGrantsResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.accessGrants.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/accessGrants\x12\xc8\x01\n" +
 	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"r\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xbd\x01\n" +
 	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"c\xdaA\x04name\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xb5\x01\n" +
