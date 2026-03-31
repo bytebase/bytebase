@@ -9,7 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -120,7 +120,7 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 
 	// GitHub-specific: when the identifier field (typically "email") is missing because the
 	// user's email is private, fetch it from the /user/emails endpoint.
-	if userInfo.Identifier == "" && p.config.FieldMapping.Identifier == "email" && strings.Contains(p.config.UserInfoUrl, "github.com") {
+	if userInfo.Identifier == "" && p.config.FieldMapping.Identifier == "email" && isGitHubUserInfoURL(p.config.UserInfoUrl) {
 		if email, err := p.fetchGitHubPrimaryEmail(token); err == nil && email != "" {
 			userInfo.Identifier = email
 			claims["email"] = email
@@ -144,6 +144,15 @@ func (p *IdentityProvider) UserInfo(token string) (*storepb.IdentityProviderUser
 		}
 	}
 	return userInfo, claims, nil
+}
+
+// isGitHubUserInfoURL checks if the URL points to the GitHub API.
+func isGitHubUserInfoURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	return u.Host == "api.github.com"
 }
 
 // fetchGitHubPrimaryEmail fetches the primary verified email from GitHub's /user/emails endpoint.
