@@ -221,6 +221,126 @@
       endposition:
         line: 1
         column: 71
+- input: UPDATE test t1 INNER JOIN test2 t2 ON t1.a = t2.a SET c = 1 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 76
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
+        INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: test2
+      targettablename: _rollback_0_test2
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 76
+- input: UPDATE test t1 INNER JOIN test2 t2 ON t1.a = t2.a SET t1.c = 1 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 79
+- input: UPDATE test t1 INNER JOIN test2 t2 ON t1.a = t2.a SET t1.c = 1, t2.c = 2 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 89
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
+        INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: test2
+      targettablename: _rollback_0_test2
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 89
+- input: UPDATE t1 INNER JOIN t3 ON t1.a = t3.a SET c = 1 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t1` LIKE `db`.`t1`;
+        INSERT INTO `backupDB`.`_rollback_0_t1` SELECT `t1`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: t1
+      targettablename: _rollback_0_t1
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 65
+- input: UPDATE t1 INNER JOIN t3 ON t1.a = t3.a SET d = 1 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t3` LIKE `db`.`t3`;
+        INSERT INTO `backupDB`.`_rollback_0_t3` SELECT `t3`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: t3
+      targettablename: _rollback_0_t3
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 65
+- input: UPDATE t1 INNER JOIN t3 ON t1.a = t3.a SET c = 1, t3.d = 2 WHERE t1.a = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t1` LIKE `db`.`t1`;
+        INSERT INTO `backupDB`.`_rollback_0_t1` SELECT `t1`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: t1
+      targettablename: _rollback_0_t1
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 75
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t3` LIKE `db`.`t3`;
+        INSERT INTO `backupDB`.`_rollback_0_t3` SELECT `t3`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+      sourceschema: ""
+      sourcetablename: t3
+      targettablename: _rollback_0_t3
+      startposition:
+        line: 1
+        column: 1
+      endposition:
+        line: 1
+        column: 75
 - input: |-
     UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
     UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
