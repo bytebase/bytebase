@@ -13,7 +13,7 @@ func (x *GetSubscriptionRequest) Equal(y *GetSubscriptionRequest) bool {
 	return true
 }
 
-func (x *UpdateSubscriptionRequest) Equal(y *UpdateSubscriptionRequest) bool {
+func (x *UploadLicenseRequest) Equal(y *UploadLicenseRequest) bool {
 	if x == y {
 		return true
 	}
@@ -21,9 +21,6 @@ func (x *UpdateSubscriptionRequest) Equal(y *UpdateSubscriptionRequest) bool {
 		return x == nil && y == nil
 	}
 	if x.License != y.License {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
 		return false
 	}
 	return true
@@ -48,7 +45,7 @@ func (x *CreatePurchaseRequest) Equal(y *CreatePurchaseRequest) bool {
 	return true
 }
 
-func (x *CreatePurchaseResponse) Equal(y *CreatePurchaseResponse) bool {
+func (x *PurchaseResponse) Equal(y *PurchaseResponse) bool {
 	if x == y {
 		return true
 	}
@@ -56,6 +53,35 @@ func (x *CreatePurchaseResponse) Equal(y *CreatePurchaseResponse) bool {
 		return x == nil && y == nil
 	}
 	if x.PaymentUrl != y.PaymentUrl {
+		return false
+	}
+	if x.SessionId != y.SessionId {
+		return false
+	}
+	return true
+}
+
+func (x *VerifyCheckoutSessionRequest) Equal(y *VerifyCheckoutSessionRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.SessionId != y.SessionId {
+		return false
+	}
+	return true
+}
+
+func (x *VerifyCheckoutSessionResponse) Equal(y *VerifyCheckoutSessionResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Status != y.Status {
 		return false
 	}
 	return true
@@ -83,30 +109,7 @@ func (x *UpdatePurchaseRequest) Equal(y *UpdatePurchaseRequest) bool {
 	return true
 }
 
-func (x *UpdatePurchaseResponse) Equal(y *UpdatePurchaseResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.PaymentUrl != y.PaymentUrl {
-		return false
-	}
-	return true
-}
-
 func (x *CancelPurchaseRequest) Equal(y *CancelPurchaseRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}
-
-func (x *CancelPurchaseResponse) Equal(y *CancelPurchaseResponse) bool {
 	if x == y {
 		return true
 	}
@@ -146,6 +149,9 @@ func (x *PaymentInfo) Equal(y *PaymentInfo) bool {
 		return false
 	}
 	if x.InvoiceUrl != y.InvoiceUrl {
+		return false
+	}
+	if x.CancelAtPeriodEnd != y.CancelAtPeriodEnd {
 		return false
 	}
 	return true
@@ -231,10 +237,10 @@ func (x *PurchaseDiscount) Equal(y *PurchaseDiscount) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Description != y.Description {
+	if x.Type != y.Type {
 		return false
 	}
-	if x.PromotionCode != y.PromotionCode {
+	if x.Value != y.Value {
 		return false
 	}
 	return true
@@ -297,6 +303,9 @@ func (x *Subscription) Equal(y *Subscription) bool {
 		return false
 	}
 	if x.Ha != y.Ha {
+		return false
+	}
+	if x.Etag != y.Etag {
 		return false
 	}
 	return true

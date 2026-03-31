@@ -26,27 +26,24 @@ type SubscriptionPayload_Status int32
 
 const (
 	SubscriptionPayload_STATUS_UNSPECIFIED SubscriptionPayload_Status = 0
-	SubscriptionPayload_PENDING            SubscriptionPayload_Status = 1
-	SubscriptionPayload_ACTIVE             SubscriptionPayload_Status = 2
-	SubscriptionPayload_PAUSED             SubscriptionPayload_Status = 3
-	SubscriptionPayload_CANCELED           SubscriptionPayload_Status = 4
+	SubscriptionPayload_ACTIVE             SubscriptionPayload_Status = 1
+	SubscriptionPayload_PAUSED             SubscriptionPayload_Status = 2
+	SubscriptionPayload_CANCELED           SubscriptionPayload_Status = 3
 )
 
 // Enum value maps for SubscriptionPayload_Status.
 var (
 	SubscriptionPayload_Status_name = map[int32]string{
 		0: "STATUS_UNSPECIFIED",
-		1: "PENDING",
-		2: "ACTIVE",
-		3: "PAUSED",
-		4: "CANCELED",
+		1: "ACTIVE",
+		2: "PAUSED",
+		3: "CANCELED",
 	}
 	SubscriptionPayload_Status_value = map[string]int32{
 		"STATUS_UNSPECIFIED": 0,
-		"PENDING":            1,
-		"ACTIVE":             2,
-		"PAUSED":             3,
-		"CANCELED":           4,
+		"ACTIVE":             1,
+		"PAUSED":             2,
+		"CANCELED":           3,
 	}
 )
 
@@ -292,7 +289,7 @@ var File_store_subscription_proto protoreflect.FileDescriptor
 
 const file_store_subscription_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/subscription.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd4\x05\n" +
+	"\x18store/subscription.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc7\x05\n" +
 	"\x13SubscriptionPayload\x12B\n" +
 	"\x06status\x18\x01 \x01(\x0e2*.bytebase.store.SubscriptionPayload.StatusR\x06status\x129\n" +
 	"\n" +
@@ -304,15 +301,14 @@ const file_store_subscription_proto_rawDesc = "" +
 	"\x04seat\x18\x06 \x01(\x05R\x04seat\x12%\n" +
 	"\x0einstance_count\x18\a \x01(\x05R\rinstanceCount\x124\n" +
 	"\x16stripe_subscription_id\x18\b \x01(\tR\x14stripeSubscriptionId\x12,\n" +
-	"\x12stripe_customer_id\x18\t \x01(\tR\x10stripeCustomerId\"S\n" +
+	"\x12stripe_customer_id\x18\t \x01(\tR\x10stripeCustomerId\"F\n" +
 	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aPENDING\x10\x01\x12\n" +
+	"\x12STATUS_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
-	"\x06ACTIVE\x10\x02\x12\n" +
+	"\x06ACTIVE\x10\x01\x12\n" +
 	"\n" +
-	"\x06PAUSED\x10\x03\x12\f\n" +
-	"\bCANCELED\x10\x04\"6\n" +
+	"\x06PAUSED\x10\x02\x12\f\n" +
+	"\bCANCELED\x10\x03\"6\n" +
 	"\x04Plan\x12\x14\n" +
 	"\x10PLAN_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04TEAM\x10\x01\x12\x0e\n" +

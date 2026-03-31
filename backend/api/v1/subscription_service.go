@@ -9,7 +9,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -46,13 +45,20 @@ func NewSubscriptionService(
 
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
-	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx, workspaceID)
+	// Attach etag from subscription table for optimistic concurrency.
+	if subscription.Plan != v1pb.PlanType_FREE {
+		if existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID); err == nil && existing != nil {
+			subscription.Etag = existing.Etag
+		}
+	}
 	return connect.NewResponse(subscription), nil
 }
 
-// UpdateSubscription updates the subscription license (self-hosted only).
-func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *connect.Request[v1pb.UpdateSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
-	if s.profile.SaaS {
+// UploadLicense uploads an enterprise license (self-hosted only).
+func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Request[v1pb.UploadLicenseRequest]) (*connect.Response[v1pb.Subscription], error) {
+	if s.profile.SaaS && s.profile.Mode == common.ReleaseModeProd {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("use purchase APIs in SaaS mode"))
 	}
 
@@ -67,74 +73,35 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, req *conne
 	return connect.NewResponse(subscription), nil
 }
 
-// CreatePurchase creates a new subscription purchase (SaaS only).
-func (s *SubscriptionService) CreatePurchase(ctx context.Context, req *connect.Request[v1pb.CreatePurchaseRequest]) (*connect.Response[v1pb.CreatePurchaseResponse], error) {
+// CreatePurchase creates a Stripe Checkout session (SaaS only).
+// Stateless — no subscription record is created. The subscription is only
+// created when the Stripe webhook confirms payment.
+func (s *SubscriptionService) CreatePurchase(ctx context.Context, req *connect.Request[v1pb.CreatePurchaseRequest]) (*connect.Response[v1pb.PurchaseResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// Check no existing active subscription.
+	// Block if workspace already has an active or paused subscription.
 	existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get subscription"))
 	}
-	if existing != nil && existing.Payload != nil && existing.Payload.Status == storepb.SubscriptionPayload_ACTIVE {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("workspace already has an active subscription"))
-	}
-
-	plan, interval, seats := convertV1PlanToStore(req.Msg.Plan), convertV1IntervalToStore(req.Msg.Interval), req.Msg.Seats
-	priceModel, err := pricing.NewPriceModel(plan, interval, seats)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	planLimit := pricing.GetPlanLimit(plan)
-
-	// Create or update subscription record with PENDING status.
-	payload := &storepb.SubscriptionPayload{
-		Status:        storepb.SubscriptionPayload_PENDING,
-		Plan:          plan,
-		Interval:      interval,
-		Seat:          seats,
-		InstanceCount: planLimit.InstanceCount,
-		StartedAt:     timestamppb.Now(),
-		ExpiresAt:     timestamppb.Now(),
-	}
-
-	if existing != nil {
-		if _, err := s.store.UpdateSubscription(ctx, workspaceID, payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update subscription"))
-		}
-	} else {
-		if _, err := s.store.CreateSubscription(ctx, &store.SubscriptionMessage{
-			Workspace: workspaceID,
-			Payload:   payload,
-		}); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create subscription"))
+	if existing != nil && existing.Payload != nil {
+		switch existing.Payload.Status {
+		case storepb.SubscriptionPayload_ACTIVE:
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("workspace already has an active subscription"))
+		case storepb.SubscriptionPayload_PAUSED:
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("subscription is paused due to a payment issue, please resolve it via the billing portal in Payment Info"))
 		}
 	}
 
-	// Generate Stripe Checkout URL.
-	redirectURL := fmt.Sprintf("%s/setting/subscription", s.profile.ExternalURL)
-	paymentURL, err := stripeplugin.CreateCheckoutSession(&stripeplugin.CheckoutParams{
-		Workspace:  workspaceID,
-		PriceModel: priceModel,
-		SuccessURL: fmt.Sprintf("%s?from=STRIPE", redirectURL),
-		CancelURL:  redirectURL,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create checkout session"))
-	}
-
-	return connect.NewResponse(&v1pb.CreatePurchaseResponse{
-		PaymentUrl: paymentURL,
-	}), nil
+	return s.createCheckout(workspaceID, req.Msg.Plan, req.Msg.Interval, req.Msg.Seats)
 }
 
 // UpdatePurchase updates an existing subscription (SaaS only).
-func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.Request[v1pb.UpdatePurchaseRequest]) (*connect.Response[v1pb.UpdatePurchaseResponse], error) {
+func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.Request[v1pb.UpdatePurchaseRequest]) (*connect.Response[v1pb.PurchaseResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
 	}
@@ -145,10 +112,14 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get subscription"))
 	}
-	if existing == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("no subscription found"))
+
+	// No subscription or canceled — create a new checkout session.
+	if existing == nil || existing.Payload == nil || existing.Payload.Status == storepb.SubscriptionPayload_CANCELED {
+		return s.createCheckout(workspaceID, req.Msg.Plan, req.Msg.Interval, req.Msg.Seats)
 	}
-	if req.Msg.Etag != "" && req.Msg.Etag != existing.Etag {
+
+	// ACTIVE or PAUSED — cancel old Stripe subscription and create new one.
+	if req.Msg.Etag != existing.Etag {
 		return nil, connect.NewError(connect.CodeAborted, errors.New("subscription is out of date, please refresh and try again"))
 	}
 
@@ -158,72 +129,34 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	planLimit := pricing.GetPlanLimit(plan)
-
-	// If subscription is not active (PENDING/CANCELED), reset to PENDING and generate new checkout URL.
-	if existing.Payload == nil || existing.Payload.Status != storepb.SubscriptionPayload_ACTIVE {
-		payload := &storepb.SubscriptionPayload{
-			Status:        storepb.SubscriptionPayload_PENDING,
-			Plan:          plan,
-			Interval:      interval,
-			Seat:          seats,
-			InstanceCount: planLimit.InstanceCount,
-			StartedAt:     timestamppb.Now(),
-			ExpiresAt:     timestamppb.Now(),
-		}
-		if _, err := s.store.UpdateSubscription(ctx, workspaceID, payload); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update subscription"))
-		}
-
-		redirectURL := fmt.Sprintf("%s/setting/subscription", s.profile.ExternalURL)
-		paymentURL, err := stripeplugin.CreateCheckoutSession(&stripeplugin.CheckoutParams{
-			Workspace:  workspaceID,
-			PriceModel: priceModel,
-			SuccessURL: fmt.Sprintf("%s?from=STRIPE", redirectURL),
-			CancelURL:  redirectURL,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create checkout session"))
-		}
-		return connect.NewResponse(&v1pb.UpdatePurchaseResponse{PaymentUrl: paymentURL}), nil
-	}
-
-	// Active subscription — cancel old Stripe subscription and create new one.
+	// Cancel old Stripe subscription and create new one.
+	// No need to clear metadata — the cancel webhook will set status=CANCELED,
+	// and the invoice.paid webhook from the new subscription will upsert back to ACTIVE.
 	oldPayload := existing.Payload
 	if oldPayload.StripeSubscriptionId == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("no Stripe subscription to update"))
 	}
 
-	// Clear metadata on old subscription so webhook ignores the cancel event.
-	metadata := stripeplugin.GetMetadata(workspaceID, priceModel)
-	metadata["workspace"] = ""
-	if err := stripeplugin.UpdateSubscriptionMetadata(oldPayload.StripeSubscriptionId, metadata); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to clear old subscription metadata"))
-	}
-
-	// Cancel old subscription with forced refund.
-	if _, err := stripeplugin.CancelSubscription(oldPayload.StripeSubscriptionId, workspaceID, true); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel old subscription"))
-	}
-
-	// Try to create new Stripe subscription directly using existing payment method.
+	// Fetch old subscription to get customer ID and payment method before cancellation.
 	oldStripeSub, err := stripeplugin.GetSubscription(oldPayload.StripeSubscriptionId, []string{"default_payment_method", "customer"})
 	if err != nil {
-		slog.Error("failed to get old stripe subscription, falling back to checkout",
-			log.BBError(err),
-			slog.String("workspace", workspaceID),
-		)
-		return s.fallbackToCheckout(ctx, workspaceID, priceModel, plan, interval, seats, planLimit.InstanceCount)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get stripe subscription, please try again"))
 	}
 
 	customerID := oldStripeSub.Customer.ID
 	if customerID == "" {
-		return s.fallbackToCheckout(ctx, workspaceID, priceModel, plan, interval, seats, planLimit.InstanceCount)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("missing customer ID from stripe subscription"))
 	}
 
 	var paymentMethodID string
 	if oldStripeSub.DefaultPaymentMethod != nil {
 		paymentMethodID = oldStripeSub.DefaultPaymentMethod.ID
+	}
+
+	// Cancel old subscription. The webhook may briefly set status=CANCELED,
+	// but the invoice.paid from the new subscription will upsert back to ACTIVE.
+	if _, err := stripeplugin.CancelSubscription(oldPayload.StripeSubscriptionId, workspaceID, true); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel old subscription"))
 	}
 
 	newSub, err := stripeplugin.CreateSubscriptionDirect(&stripeplugin.DirectSubscriptionParams{
@@ -237,7 +170,7 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 			log.BBError(err),
 			slog.String("workspace", workspaceID),
 		)
-		return s.fallbackToCheckout(ctx, workspaceID, priceModel, plan, interval, seats, planLimit.InstanceCount)
+		return s.createCheckout(workspaceID, req.Msg.Plan, req.Msg.Interval, req.Msg.Seats)
 	}
 
 	slog.Info("created new stripe subscription for plan change",
@@ -246,46 +179,36 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 		slog.String("new_stripe_sub", newSub.ID),
 	)
 
-	return connect.NewResponse(&v1pb.UpdatePurchaseResponse{}), nil
+	return connect.NewResponse(&v1pb.PurchaseResponse{}), nil
 }
 
-func (s *SubscriptionService) fallbackToCheckout(
-	ctx context.Context,
-	workspaceID string,
-	priceModel *pricing.PriceModel,
-	plan storepb.SubscriptionPayload_Plan,
-	interval storepb.SubscriptionPayload_BillingInterval,
-	seats int32,
-	instanceCount int32,
-) (*connect.Response[v1pb.UpdatePurchaseResponse], error) {
-	payload := &storepb.SubscriptionPayload{
-		Status:        storepb.SubscriptionPayload_PENDING,
-		Plan:          plan,
-		Interval:      interval,
-		Seat:          seats,
-		InstanceCount: instanceCount,
-		StartedAt:     timestamppb.Now(),
-		ExpiresAt:     timestamppb.Now(),
-	}
-	if _, err := s.store.UpdateSubscription(ctx, workspaceID, payload); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update subscription"))
+// createCheckoutURL validates inputs and creates a Stripe Checkout session URL.
+func (s *SubscriptionService) createCheckout(workspaceID string, v1Plan v1pb.PlanType, v1Interval v1pb.BillingInterval, seats int32) (*connect.Response[v1pb.PurchaseResponse], error) {
+	plan, interval := convertV1PlanToStore(v1Plan), convertV1IntervalToStore(v1Interval)
+	priceModel, err := pricing.NewPriceModel(plan, interval, seats)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	redirectURL := fmt.Sprintf("%s/setting/subscription", s.profile.ExternalURL)
-	paymentURL, err := stripeplugin.CreateCheckoutSession(&stripeplugin.CheckoutParams{
-		Workspace:  workspaceID,
-		PriceModel: priceModel,
-		SuccessURL: fmt.Sprintf("%s?from=STRIPE", redirectURL),
-		CancelURL:  redirectURL,
+	result, err := stripeplugin.CreateCheckoutSession(&stripeplugin.CheckoutParams{
+		Workspace:     workspaceID,
+		PriceModel:    priceModel,
+		SuccessURL:    redirectURL + "?session_id={CHECKOUT_SESSION_ID}",
+		CancelURL:     redirectURL,
+		PromotionCode: priceModel.GetPromotionCode(),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create checkout session"))
 	}
-	return connect.NewResponse(&v1pb.UpdatePurchaseResponse{PaymentUrl: paymentURL}), nil
+	return connect.NewResponse(&v1pb.PurchaseResponse{
+		PaymentUrl: result.URL,
+		SessionId:  result.SessionID,
+	}), nil
 }
 
 // CancelPurchase cancels an active subscription (SaaS only).
-func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.CancelPurchaseResponse], error) {
+func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.PurchaseResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
 	}
@@ -312,18 +235,9 @@ func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel subscription"))
 	}
 
-	// Update status. For prorated (monthly), set CANCELED + expire immediately.
-	// For annual, the webhook will update the status when Stripe cancels at period end.
-	if prorate {
-		payload.Status = storepb.SubscriptionPayload_CANCELED
-		payload.ExpiresAt = timestamppb.New(time.Now().Add(-time.Second))
-		if _, err := s.store.UpdateSubscription(ctx, workspaceID, payload); err != nil {
-			slog.Error("failed to update subscription after cancellation", log.BBError(err))
-		}
-		s.licenseService.InvalidateCache(workspaceID)
-	}
+	// Stripe webhook (customer.subscription.deleted) will update the subscription status and clear the license
 
-	return connect.NewResponse(&v1pb.CancelPurchaseResponse{}), nil
+	return connect.NewResponse(&v1pb.PurchaseResponse{}), nil
 }
 
 // GetPaymentInfo returns payment details (SaaS only).
@@ -355,13 +269,13 @@ func (s *SubscriptionService) GetPaymentInfo(ctx context.Context, _ *connect.Req
 
 	period := inv.Lines.Data[0].Period
 	info := &v1pb.PaymentInfo{
-		TotalPrice:  strconv.FormatInt(inv.Total, 10),
-		Currency:    string(sub.Currency),
-		PeriodStart: time.Unix(period.Start, 0).Format("2006-01-02"),
-		PeriodEnd:   time.Unix(period.End, 0).Format("2006-01-02"),
+		TotalPrice:        strconv.FormatInt(inv.Total, 10),
+		Currency:          string(sub.Currency),
+		PeriodStart:       time.Unix(period.Start, 0).Format("2006-01-02"),
+		PeriodEnd:         time.Unix(period.End, 0).Format("2006-01-02"),
+		CancelAtPeriodEnd: sub.CancelAtPeriodEnd,
 	}
 
-	// Create billing portal session for invoice management.
 	if payload.StripeCustomerId != "" {
 		returnURL := fmt.Sprintf("%s/setting/subscription", s.profile.ExternalURL)
 		portalURL, err := stripeplugin.CreateBillingPortalSession(payload.StripeCustomerId, returnURL)
@@ -375,33 +289,100 @@ func (s *SubscriptionService) GetPaymentInfo(ctx context.Context, _ *connect.Req
 	return connect.NewResponse(info), nil
 }
 
+// VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
+func (s *SubscriptionService) VerifyCheckoutSession(ctx context.Context, req *connect.Request[v1pb.VerifyCheckoutSessionRequest]) (*connect.Response[v1pb.VerifyCheckoutSessionResponse], error) {
+	if !s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
+	}
+
+	if req.Msg.SessionId == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("session_id is required"))
+	}
+
+	info, err := stripeplugin.GetCheckoutSessionInfo(req.Msg.SessionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify checkout session"))
+	}
+
+	// Verify the checkout session belongs to the caller's workspace.
+	if info.Workspace != "" && info.Workspace != common.GetWorkspaceIDFromContext(ctx) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("checkout session does not belong to this workspace"))
+	}
+
+	return connect.NewResponse(&v1pb.VerifyCheckoutSessionResponse{
+		Status: info.Status,
+	}), nil
+}
+
 // ListPurchasePlans returns available plans for self-service purchase.
-func (*SubscriptionService) ListPurchasePlans(_ context.Context, _ *connect.Request[v1pb.ListPurchasePlansRequest]) (*connect.Response[v1pb.ListPurchasePlansResponse], error) {
-	plans := []*v1pb.PurchasePlan{
-		{
-			Type:                v1pb.PlanType_TEAM,
-			SelfServicePurchase: true,
-			Additionals: []*v1pb.PurchasePlanAdditional{
+func (s *SubscriptionService) ListPurchasePlans(_ context.Context, _ *connect.Request[v1pb.ListPurchasePlansRequest]) (*connect.Response[v1pb.ListPurchasePlansResponse], error) {
+	// Non-SaaS: no purchase plans available.
+	if !s.profile.SaaS {
+		return connect.NewResponse(&v1pb.ListPurchasePlansResponse{}), nil
+	}
+
+	allPlans := []storepb.SubscriptionPayload_Plan{
+		storepb.SubscriptionPayload_TEAM,
+		storepb.SubscriptionPayload_ENTERPRISE,
+	}
+
+	var plans []*v1pb.PurchasePlan
+	for _, p := range allPlans {
+		limit := pricing.GetPlanLimit(p)
+		if limit == nil {
+			continue
+		}
+
+		plan := &v1pb.PurchasePlan{
+			Type:                convertStorePlanToV1(p),
+			SelfServicePurchase: limit.SelfServicePurchase,
+		}
+		if limit.SelfServicePurchase {
+			plan.Additionals = []*v1pb.PurchasePlanAdditional{
 				{
 					Type:         v1pb.PurchasePlanAdditional_USER,
-					UnitPrice:    2000, // $20/user/month
-					FreeCount:    0,
+					UnitPrice:    int32(limit.PricePerSeatPerMonth),
+					FreeCount:    limit.FreeSeatCount,
 					MinimumCount: 1,
-					MaximumCount: -1, // unlimited
+					MaximumCount: limit.MaximumSeatCount,
 				},
-			},
-			BillingMethods: []*v1pb.PurchaseBillingMethod{
-				{Interval: v1pb.BillingInterval_MONTH},
-				{Interval: v1pb.BillingInterval_YEAR},
-			},
-		},
-		{
-			Type:                v1pb.PlanType_ENTERPRISE,
-			SelfServicePurchase: false,
-		},
+			}
+		}
+
+		for _, bm := range limit.BillingMethods {
+			method := &v1pb.PurchaseBillingMethod{
+				Interval: convertStoreIntervalToV1(bm.Interval),
+				Discount: bm.Discount,
+			}
+			plan.BillingMethods = append(plan.BillingMethods, method)
+		}
+
+		plans = append(plans, plan)
 	}
 
 	return connect.NewResponse(&v1pb.ListPurchasePlansResponse{Plans: plans}), nil
+}
+
+func convertStorePlanToV1(plan storepb.SubscriptionPayload_Plan) v1pb.PlanType {
+	switch plan {
+	case storepb.SubscriptionPayload_TEAM:
+		return v1pb.PlanType_TEAM
+	case storepb.SubscriptionPayload_ENTERPRISE:
+		return v1pb.PlanType_ENTERPRISE
+	default:
+		return v1pb.PlanType_FREE
+	}
+}
+
+func convertStoreIntervalToV1(interval storepb.SubscriptionPayload_BillingInterval) v1pb.BillingInterval {
+	switch interval {
+	case storepb.SubscriptionPayload_MONTH:
+		return v1pb.BillingInterval_MONTH
+	case storepb.SubscriptionPayload_YEAR:
+		return v1pb.BillingInterval_YEAR
+	default:
+		return v1pb.BillingInterval_BILLING_INTERVAL_UNSPECIFIED
+	}
 }
 
 func convertV1PlanToStore(plan v1pb.PlanType) storepb.SubscriptionPayload_Plan {

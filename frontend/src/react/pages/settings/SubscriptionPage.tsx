@@ -14,6 +14,7 @@ import {
 } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { PurchaseSection } from "./PurchaseSection";
 
 interface SubscriptionPageProps {
   onRequireEnterprise: () => void;
@@ -28,15 +29,16 @@ export function SubscriptionPage({
   const subscriptionStore = useSubscriptionV1Store();
   const actuatorStore = useActuatorV1Store();
 
-  const allowEdit = hasWorkspacePermissionV2("bb.settings.set");
+  const allowManage = hasWorkspacePermissionV2("bb.subscription.manage");
   const allowManageInstanceLicenses =
-    allowEdit && hasWorkspacePermissionV2("bb.instances.list");
+    allowManage && hasWorkspacePermissionV2("bb.instances.list");
 
   // Subscribe to Vue reactive state
   const currentPlan = useVueState(() => subscriptionStore.currentPlan);
   const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
   const isTrialing = useVueState(() => subscriptionStore.isTrialing);
   const isExpired = useVueState(() => subscriptionStore.isExpired);
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const isSelfHostLicense = useVueState(
     () => subscriptionStore.isSelfHostLicense
   );
@@ -88,7 +90,7 @@ export function SubscriptionPage({
     if (disabled) return;
     setLoading(true);
     try {
-      await subscriptionStore.patchSubscription(license);
+      await subscriptionStore.uploadLicense(license);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -151,7 +153,7 @@ export function SubscriptionPage({
         )}
 
         {/* Free trial */}
-        {showTrial && allowEdit && (
+        {showTrial && allowManage && (
           <div className="flex flex-col text-left">
             <div className="text-main">{t("subscription.try-for-free")}</div>
             <div className="mt-1">
@@ -205,38 +207,50 @@ export function SubscriptionPage({
       {/* Divider */}
       <hr className="my-6 border-t border-block-border" />
 
-      {/* Workspace ID */}
-      <div>
-        <label className="flex items-center gap-x-2">
-          <span className="text-main">
-            {t("settings.general.workspace.id")}
-          </span>
-        </label>
-        <div className="mb-3 text-sm text-control-placeholder">
-          {t("settings.general.workspace.id-description")}
-        </div>
-        <div className="mb-4 flex items-center gap-x-2">
-          <Input
-            readOnly
-            value={workspaceId}
-            onClick={(e) => (e.target as HTMLInputElement).select()}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopy}
-            title={t("common.copy")}
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          {copied && (
-            <span className="text-sm text-success">{t("common.copied")}</span>
-          )}
-        </div>
-      </div>
+      {/* Workspace ID (self-hosted only) */}
+      {!isSaaSMode && (
+        <>
+          <div>
+            <label className="flex items-center gap-x-2">
+              <span className="text-main">
+                {t("settings.general.workspace.id")}
+              </span>
+            </label>
+            <div className="mb-3 text-sm text-control-placeholder">
+              {t("settings.general.workspace.id-description")}
+            </div>
+            <div className="mb-4 flex items-center gap-x-2">
+              <Input
+                readOnly
+                value={workspaceId}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCopy}
+                title={t("common.copy")}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              {copied && (
+                <span className="text-sm text-success">
+                  {t("common.copied")}
+                </span>
+              )}
+            </div>
+          </div>
+          <hr className="my-6 border-t border-block-border" />
+        </>
+      )}
 
-      {/* Upload license */}
-      {isSelfHostLicense && (
+      {/* SaaS: Purchase UI */}
+      {isSaaSMode && (
+        <PurchaseSection onRequireEnterprise={onRequireEnterprise} />
+      )}
+
+      {/* Self-hosted: Upload license */}
+      {!isSaaSMode && isSelfHostLicense && (
         <div className="w-full mt-4 flex flex-col">
           <label className="flex items-center gap-x-2">
             <span className="text-main">
@@ -253,7 +267,7 @@ export function SubscriptionPage({
             >
               {t("common.learn-more")} &gt;
             </a>
-            {showTrial && allowEdit && (
+            {showTrial && allowManage && (
               <Button
                 variant="link"
                 size="sm"
@@ -269,12 +283,12 @@ export function SubscriptionPage({
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
               setLicense(e.target.value)
             }
-            disabled={!allowEdit}
+            disabled={!allowManage}
             placeholder={t("common.sensitive-placeholder")}
           />
           <div className="ml-auto mt-3">
             <Button
-              disabled={disabled || !allowEdit}
+              disabled={disabled || !allowManage}
               onClick={handleUpload}
               className="capitalize"
             >

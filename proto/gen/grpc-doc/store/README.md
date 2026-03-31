@@ -4773,10 +4773,9 @@ Serialized as JSONB in the subscription table&#39;s payload column.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| ACTIVE | 2 |  |
-| PAUSED | 3 |  |
-| CANCELED | 4 |  |
+| ACTIVE | 1 |  |
+| PAUSED | 2 |  |
+| CANCELED | 3 |  |
 
 
  

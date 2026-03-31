@@ -49,6 +49,7 @@ func (h *WebhookHandler) handleCallback(c *echo.Context) error {
 	ctx := c.Request().Context()
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
+		slog.Error("failed to read stripe webhook request body", log.BBError(err))
 		return c.String(http.StatusBadRequest, "failed to read request body")
 	}
 
@@ -90,6 +91,11 @@ func (h *WebhookHandler) processEvent(ctx context.Context, event *stripego.Event
 func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, event *stripego.Event) error {
 	var sub stripego.Subscription
 	if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+		slog.Error("failed to unmarshal stripe subscription from webhook",
+			log.BBError(err),
+			slog.String("event_type", string(event.Type)),
+			slog.String("event_id", event.ID),
+		)
 		return errors.Wrap(err, "failed to unmarshal subscription")
 	}
 
@@ -102,17 +108,29 @@ func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, eve
 		slog.Error("missing workspace in stripe subscription metadata",
 			slog.String("stripe_subscription_id", sub.ID),
 			slog.String("event_type", string(event.Type)),
+			slog.String("event_id", event.ID),
 		)
 		return nil
 	}
 
 	status, err := mapStripeStatus(sub.Status)
 	if err != nil {
+		slog.Error("unsupported stripe subscription status",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", sub.ID),
+			slog.String("stripe_status", string(sub.Status)),
+		)
 		return err
 	}
 
 	stripeCustomer, err := getStripeCustomer(sub.Customer)
 	if err != nil {
+		slog.Error("failed to get stripe customer",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", sub.ID),
+		)
 		return err
 	}
 
@@ -126,14 +144,53 @@ func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, eve
 
 	existing, err := h.store.GetSubscriptionByWorkspace(ctx, workspace)
 	if err != nil {
+		slog.Error("failed to get subscription for workspace",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", sub.ID),
+		)
 		return errors.Wrapf(err, "failed to get subscription for workspace %s", workspace)
 	}
-	if existing == nil {
-		slog.Error("no subscription found for workspace", slog.String("workspace", workspace))
-		return nil
+
+	// Ignore stale destructive events from an old Stripe subscription.
+	// During plan changes, the old subscription is canceled and a new one is created.
+	// Webhooks may arrive out of order — if the new subscription's invoice.paid
+	// arrived first, the stored StripeSubscriptionId already points to the new one.
+	// A late-arriving cancel/pause event from the old subscription must not overwrite it.
+	// However, we must allow created/updated/resumed events for the NEW subscription
+	// (which has a different ID) to go through.
+	if existing != nil && existing.Payload != nil &&
+		existing.Payload.StripeSubscriptionId != "" &&
+		existing.Payload.StripeSubscriptionId != sub.ID {
+		// Only block events that would downgrade the subscription status.
+		if event.Type == "customer.subscription.deleted" ||
+			event.Type == "customer.subscription.paused" {
+			slog.Info("ignoring stale destructive webhook for old stripe subscription",
+				slog.String("workspace", workspace),
+				slog.String("event_subscription_id", sub.ID),
+				slog.String("current_subscription_id", existing.Payload.StripeSubscriptionId),
+				slog.String("event_type", string(event.Type)),
+			)
+			return nil
+		}
 	}
 
-	payload := existing.Payload
+	var payload *storepb.SubscriptionPayload
+	if existing != nil && existing.Payload != nil {
+		payload = existing.Payload
+	} else {
+		// First webhook for this workspace — build payload from Stripe metadata.
+		payload, err = buildPayloadFromMetadata(sub.Metadata)
+		if err != nil {
+			slog.Error("failed to build payload from stripe metadata",
+				log.BBError(err),
+				slog.String("workspace", workspace),
+				slog.String("stripe_subscription_id", sub.ID),
+			)
+			return errors.Wrapf(err, "failed to build payload from metadata for workspace %s", workspace)
+		}
+	}
+
 	payload.Status = status
 	payload.StripeSubscriptionId = sub.ID
 	payload.StripeCustomerId = stripeCustomer.ID
@@ -143,21 +200,41 @@ func (h *WebhookHandler) handleSubscriptionStatusChange(ctx context.Context, eve
 		payload.ExpiresAt = timestamppb.New(expiresAt)
 	}
 
-	if _, err := h.store.UpdateSubscription(ctx, workspace, payload); err != nil {
-		return errors.Wrapf(err, "failed to update subscription for workspace %s", workspace)
+	if _, err := h.store.UpsertSubscription(ctx, workspace, payload); err != nil {
+		slog.Error("failed to upsert subscription",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", sub.ID),
+		)
+		return errors.Wrapf(err, "failed to upsert subscription for workspace %s", workspace)
 	}
 
-	h.licenseService.InvalidateCache(workspace)
+	if err := h.updateLicense(ctx, workspace, payload); err != nil {
+		slog.Error("failed to update license after subscription change",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", sub.ID),
+		)
+		return errors.Wrapf(err, "failed to update license for workspace %s", workspace)
+	}
 	return nil
 }
 
 func (h *WebhookHandler) handleInvoicePaid(ctx context.Context, event *stripego.Event) error {
 	var inv stripego.Invoice
 	if err := json.Unmarshal(event.Data.Raw, &inv); err != nil {
+		slog.Error("failed to unmarshal stripe invoice from webhook",
+			log.BBError(err),
+			slog.String("event_id", event.ID),
+		)
 		return errors.Wrap(err, "failed to unmarshal invoice")
 	}
 
 	if len(inv.Lines.Data) == 0 {
+		slog.Error("stripe invoice has no line items",
+			slog.String("invoice_id", inv.ID),
+			slog.String("event_id", event.ID),
+		)
 		return errors.Errorf("invoice %s has no line items", inv.ID)
 	}
 
@@ -168,37 +245,56 @@ func (h *WebhookHandler) handleInvoicePaid(ctx context.Context, event *stripego.
 
 	workspace := metadata["workspace"]
 	if workspace == "" {
-		slog.Error("missing workspace in invoice metadata", slog.String("invoice_id", inv.ID))
+		slog.Error("missing workspace in invoice metadata",
+			slog.String("invoice_id", inv.ID),
+			slog.String("event_id", event.ID),
+		)
 		return nil
 	}
 
 	stripeCustomer, err := getStripeCustomer(inv.Customer)
 	if err != nil {
+		slog.Error("failed to get stripe customer from invoice",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("invoice_id", inv.ID),
+		)
 		return err
 	}
 
-	// Parse metadata fields.
-	plan, err := parsePlan(metadata["plan"])
+	payload, err := buildPayloadFromMetadata(metadata)
 	if err != nil {
-		return err
-	}
-	interval, err := parseInterval(metadata["interval"])
-	if err != nil {
-		return err
-	}
-	instanceCount, err := strconv.Atoi(metadata["instance_count"])
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse instance_count %q", metadata["instance_count"])
-	}
-	userCount, err := strconv.Atoi(metadata["user_count"])
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse user_count %q", metadata["user_count"])
+		slog.Error("failed to build payload from invoice metadata",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("invoice_id", inv.ID),
+		)
+		return errors.Wrapf(err, "failed to build payload from invoice metadata for workspace %s", workspace)
 	}
 
 	// Get Stripe subscription ID from invoice parent.
 	var stripeSubID string
 	if inv.Parent != nil && inv.Parent.SubscriptionDetails != nil && inv.Parent.SubscriptionDetails.Subscription != nil {
 		stripeSubID = inv.Parent.SubscriptionDetails.Subscription.ID
+	}
+
+	// Ignore stale invoice.paid events from an old Stripe subscription.
+	if stripeSubID != "" {
+		existing, err := h.store.GetSubscriptionByWorkspace(ctx, workspace)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get subscription for workspace %s", workspace)
+		}
+		if existing != nil && existing.Payload != nil &&
+			existing.Payload.StripeSubscriptionId != "" &&
+			existing.Payload.StripeSubscriptionId != stripeSubID {
+			slog.Info("ignoring stale invoice.paid for old stripe subscription",
+				slog.String("workspace", workspace),
+				slog.String("event_subscription_id", stripeSubID),
+				slog.String("current_subscription_id", existing.Payload.StripeSubscriptionId),
+				slog.String("invoice_id", inv.ID),
+			)
+			return nil
+		}
 	}
 
 	lineData := inv.Lines.Data[0]
@@ -208,39 +304,95 @@ func (h *WebhookHandler) handleInvoicePaid(ctx context.Context, event *stripego.
 	slog.Info("stripe invoice paid",
 		slog.String("workspace", workspace),
 		slog.String("stripe_subscription_id", stripeSubID),
-		slog.String("plan", plan.String()),
-		slog.Int("seats", userCount),
-		slog.Int("instances", instanceCount),
+		slog.String("invoice_id", inv.ID),
+		slog.String("plan", payload.Plan.String()),
+		slog.Int("seats", int(payload.Seat)),
+		slog.Int("instances", int(payload.InstanceCount)),
 		slog.Time("started_at", startedAt),
 		slog.Time("expires_at", expiresAt),
 	)
 
-	existing, err := h.store.GetSubscriptionByWorkspace(ctx, workspace)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get subscription for workspace %s", workspace)
-	}
-	if existing == nil {
-		return errors.Errorf("no subscription found for workspace %s", workspace)
+	payload.Status = storepb.SubscriptionPayload_ACTIVE
+	payload.StartedAt = timestamppb.New(startedAt)
+	payload.ExpiresAt = timestamppb.New(expiresAt)
+	payload.StripeSubscriptionId = stripeSubID
+	payload.StripeCustomerId = stripeCustomer.ID
+
+	if _, err := h.store.UpsertSubscription(ctx, workspace, payload); err != nil {
+		slog.Error("failed to upsert subscription from invoice",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", stripeSubID),
+			slog.String("invoice_id", inv.ID),
+		)
+		return errors.Wrapf(err, "failed to upsert subscription for workspace %s", workspace)
 	}
 
-	payload := &storepb.SubscriptionPayload{
-		Status:               storepb.SubscriptionPayload_ACTIVE,
-		StartedAt:            timestamppb.New(startedAt),
-		ExpiresAt:            timestamppb.New(expiresAt),
-		Plan:                 plan,
-		Interval:             interval,
-		Seat:                 int32(userCount),
-		InstanceCount:        int32(instanceCount),
-		StripeSubscriptionId: stripeSubID,
-		StripeCustomerId:     stripeCustomer.ID,
+	if err := h.updateLicense(ctx, workspace, payload); err != nil {
+		slog.Error("failed to update license after invoice paid",
+			log.BBError(err),
+			slog.String("workspace", workspace),
+			slog.String("stripe_subscription_id", stripeSubID),
+			slog.String("invoice_id", inv.ID),
+		)
+		return errors.Wrapf(err, "failed to update license for workspace %s", workspace)
 	}
-
-	if _, err := h.store.UpdateSubscription(ctx, workspace, payload); err != nil {
-		return errors.Wrapf(err, "failed to update subscription for workspace %s", workspace)
-	}
-
-	h.licenseService.InvalidateCache(workspace)
 	return nil
+}
+
+// updateLicense generates a license JWT from the subscription payload and stores it.
+// For non-ACTIVE subscriptions, stores an empty license (reverts to FREE plan).
+func (h *WebhookHandler) updateLicense(ctx context.Context, workspace string, payload *storepb.SubscriptionPayload) error {
+	var license string
+
+	if payload.Status == storepb.SubscriptionPayload_ACTIVE {
+		var expiresAt time.Time
+		if payload.ExpiresAt != nil {
+			expiresAt = payload.ExpiresAt.AsTime()
+		}
+
+		var err error
+		license, err = h.licenseService.CreateLicense(&enterprise.LicenseParams{
+			Plan:        payload.Plan.String(),
+			Seats:       int(payload.Seat),
+			Instances:   int(payload.InstanceCount),
+			WorkspaceID: workspace,
+			ExpiresAt:   expiresAt,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to create license JWT")
+		}
+	}
+
+	return h.licenseService.StoreLicense(ctx, workspace, license)
+}
+
+// buildPayloadFromMetadata constructs a SubscriptionPayload from Stripe metadata.
+// Returns error if any required field is missing or invalid.
+func buildPayloadFromMetadata(metadata map[string]string) (*storepb.SubscriptionPayload, error) {
+	plan, err := parsePlan(metadata["plan"])
+	if err != nil {
+		return nil, errors.Wrap(err, "metadata missing valid plan")
+	}
+	interval, err := parseInterval(metadata["interval"])
+	if err != nil {
+		return nil, errors.Wrap(err, "metadata missing valid interval")
+	}
+	instanceCount, err := strconv.Atoi(metadata["instance_count"])
+	if err != nil {
+		return nil, errors.Wrapf(err, "metadata missing valid instance_count %q", metadata["instance_count"])
+	}
+	userCount, err := strconv.Atoi(metadata["user_count"])
+	if err != nil {
+		return nil, errors.Wrapf(err, "metadata missing valid user_count %q", metadata["user_count"])
+	}
+
+	return &storepb.SubscriptionPayload{
+		Plan:          plan,
+		Interval:      interval,
+		InstanceCount: int32(instanceCount),
+		Seat:          int32(userCount),
+	}, nil
 }
 
 func mapStripeStatus(status stripego.SubscriptionStatus) (storepb.SubscriptionPayload_Status, error) {

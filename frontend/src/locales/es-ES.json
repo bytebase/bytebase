@@ -2394,6 +2394,36 @@
         "title": "Empresa"
       },
       "try": "Pruébalo gratis."
+    },
+    "purchase": {
+      "subscribe": "Suscribirse ahora",
+      "cancel": "Cancelar suscripción",
+      "cancel-confirm": "¿Está seguro de que desea cancelar su suscripción?",
+      "canceled": "Suscripción cancelada",
+      "update": "Actualizar suscripción",
+      "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {date}.",
+      "discount": {
+        "percentage-off": "primer mes {value}% de descuento",
+        "month-off": "{value} mes gratis",
+        "price-off": "${value} de descuento"
+      },
+      "seats": "Usuarios",
+      "per-user-per-month": "/ usuario / mes",
+      "custom": "Personalizado",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "see-comparison": "Ver comparación detallada de funciones",
+      "accept-terms-prefix": "Acepto los",
+      "terms-of-service": "Términos de servicio",
+      "and": "y",
+      "privacy-policy": "Política de privacidad",
+      "pending-title": "Completando su compra...",
+      "pending-description": "Por favor espere mientras confirmamos su pago. Esto suele tardar unos segundos.",
+      "payment-info": "Información de pago",
+      "total-price": "Precio total",
+      "billing-period": "Período de facturación",
+      "manage-invoices": "Gestionar facturas"
     }
   },
   "sheet": {

@@ -92,7 +92,7 @@ const toggleLocale = (lang: string) => {
 };
 
 const switchPlan = (license: string) => {
-  subscriptionStore.patchSubscription(license);
+  subscriptionStore.uploadLicense(license);
   showDropdown.value = false;
 };
 

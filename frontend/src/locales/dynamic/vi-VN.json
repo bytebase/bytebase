@@ -320,6 +320,51 @@
         "title": "Hỗ trợ chuyên dụng với SLA",
         "desc": "Hỗ trợ ưu tiên với thời gian phản hồi được đảm bảo."
       }
+    },
+    "purchase": {
+      "free-description": "Dành cho lập trình viên cá nhân, dự án phụ và thử nghiệm.",
+      "pro-description": "Xây dựng cho các nhóm tạo ứng dụng sẵn sàng cho sản xuất.",
+      "enterprise-description": "Mở rộng doanh nghiệp một cách an toàn và tuân thủ.",
+      "features": {
+        "free": {
+          "limits": "Tối đa 20 người dùng và 10 phiên bản",
+          "dcm": "Quản lý thay đổi cơ sở dữ liệu hoàn chỉnh",
+          "git": "Kiểm soát phiên bản và di chuyển schema dựa trên Git",
+          "sql-review": "Đánh giá SQL với hơn 200 quy tắc",
+          "backup": "Sao lưu tự động và hoàn tác một cú nhấp",
+          "sql-editor": "Trình soạn SQL trên web với hỗ trợ AI",
+          "schema": "Sơ đồ schema và xuất dữ liệu",
+          "iam": "Các tính năng IAM và bảo mật cơ bản",
+          "support": "Hỗ trợ cộng đồng"
+        },
+        "pro": {
+          "limits": "Người dùng không giới hạn với $20/người dùng/tháng, 10 phiên bản",
+          "everything": "Tất cả trong Miễn phí, cộng thêm:",
+          "batch-query": "Khả năng truy vấn hàng loạt",
+          "read-only": "Kết nối chỉ đọc phiên bản",
+          "query-policy": "Chính sách truy vấn cho quản trị",
+          "sso": "Google & GitHub SSO",
+          "groups": "Quản lý nhóm người dùng",
+          "db-groups": "Nhóm cơ sở dữ liệu",
+          "audit-log": "Nhật ký kiểm toán hạn chế",
+          "support": "Hỗ trợ qua email"
+        },
+        "enterprise": {
+          "limits": "Giới hạn tùy chỉnh theo nhu cầu",
+          "everything": "Tất cả trong Pro, cộng thêm:",
+          "custom-limits": "Giới hạn người dùng và phiên bản tùy chỉnh",
+          "approval": "Đánh giá rủi ro và quy trình phê duyệt",
+          "audit-log": "Nhật ký kiểm toán đầy đủ",
+          "sso": "SSO doanh nghiệp (OAuth2, OIDC, LDAP tùy chỉnh)",
+          "2fa": "Xác thực hai yếu tố và chính sách xác thực nâng cao",
+          "masking": "Che dấu và phân loại dữ liệu",
+          "roles": "Vai trò tùy chỉnh và quy trình yêu cầu vai trò",
+          "scim": "Cung cấp người dùng SCIM và đồng bộ thư mục",
+          "secret": "Tích hợp trình quản lý bí mật bên ngoài",
+          "branding": "Thương hiệu tùy chỉnh và hình mờ",
+          "support": "Hỗ trợ chuyên dụng với SLA"
+        }
+      }
     }
   },
   "resource": {

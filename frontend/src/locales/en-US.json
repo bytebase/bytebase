@@ -2394,6 +2394,36 @@
         "title": "Enterprise"
       },
       "try": "Try it free"
+    },
+    "purchase": {
+      "subscribe": "Subscribe now",
+      "cancel": "Cancel Subscription",
+      "cancel-confirm": "Are you sure you want to cancel your subscription?",
+      "canceled": "Subscription canceled",
+      "update": "Update Subscription",
+      "cancel-pending": "Your subscription has been canceled and will end on {date}.",
+      "discount": {
+        "percentage-off": "first month {value}% off",
+        "month-off": "{value} month free",
+        "price-off": "${value} off"
+      },
+      "seats": "Users",
+      "per-user-per-month": "/ user monthly",
+      "custom": "Custom",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "see-comparison": "See detailed feature comparison",
+      "accept-terms-prefix": "I accept the",
+      "terms-of-service": "Terms of Service",
+      "and": "and",
+      "privacy-policy": "Privacy policy",
+      "pending-title": "Completing your purchase...",
+      "pending-description": "Please wait while we confirm your payment. This usually takes a few seconds.",
+      "payment-info": "Payment Info",
+      "total-price": "Total Price",
+      "billing-period": "Billing Period",
+      "manage-invoices": "Manage Invoices"
     }
   },
   "sheet": {

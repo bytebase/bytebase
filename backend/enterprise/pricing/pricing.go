@@ -62,6 +62,16 @@ func (m *PriceModel) GetStripeInterval() string {
 	return "month"
 }
 
+// GetPromotionCode returns the promotion code for the current interval, or empty string.
+func (m *PriceModel) GetPromotionCode() string {
+	for _, bm := range m.Plan.BillingMethods {
+		if bm.Interval == m.Interval {
+			return bm.PromotionCode
+		}
+	}
+	return ""
+}
+
 // GetPlanText returns a display name for the plan.
 func (m *PriceModel) GetPlanText() string {
 	switch m.Plan.Plan {
