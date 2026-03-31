@@ -1,80 +1,83 @@
 package cosmosdb
 
 import (
-	"strings"
+	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/cosmosdb"
+	omnicosmosdb "github.com/bytebase/omni/cosmosdb"
+	"github.com/bytebase/omni/cosmosdb/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
-// ParseCosmosDBQuery parses the given CosmosDB SQL statement by using antlr4. Returns a list of AST and token stream if no error.
-// Note: CosmosDB only supports single SELECT statements, so this will typically return a list with one element.
-func ParseCosmosDBQuery(statement string) ([]*base.ANTLRAST, error) {
-	stmts, err := SplitSQL(statement)
+// OmniAST wraps an omni CosmosDB AST node and implements the base.AST interface.
+type OmniAST struct {
+	Node          ast.Node
+	Text          string
+	StartPosition *storepb.Position
+}
+
+// ASTStartPosition implements base.AST.
+func (a *OmniAST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
+}
+
+// GetOmniNode extracts the omni AST node from a base.AST interface.
+func GetOmniNode(a base.AST) (ast.Node, bool) {
+	if a == nil {
+		return nil, false
+	}
+	omniAST, ok := a.(*OmniAST)
+	if !ok {
+		return nil, false
+	}
+	return omniAST.Node, true
+}
+
+// ParseCosmosDB parses the given CosmosDB SQL statement using omni's parser.
+func ParseCosmosDB(statement string) ([]*OmniAST, error) {
+	stmts, err := omnicosmosdb.Parse(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*base.ANTLRAST
+	var result []*OmniAST
 	for _, stmt := range stmts {
-		if stmt.Empty {
+		if stmt.Empty() {
 			continue
 		}
-
-		parseResult, err := parseSingleCosmosDBQuery(stmt.Text, stmt.BaseLine())
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, parseResult)
+		result = append(result, &OmniAST{
+			Node:          stmt.AST,
+			Text:          stmt.Text,
+			StartPosition: byteOffsetToRunePosition(statement, stmt.ByteStart),
+		})
 	}
-
 	return result, nil
 }
 
-func parseSingleCosmosDBQuery(statement string, baseLine int) (*base.ANTLRAST, error) {
-	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon)
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewCosmosDBLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewCosmosDBParser(stream)
-
-	// Remove default error listener and add our own error listener.
-	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	p.RemoveErrorListeners()
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = true
-
-	tree := p.Root()
-
-	if lexerErrorListener.Err != nil {
-		return nil, lexerErrorListener.Err
+// byteOffsetToRunePosition converts a byte offset to a 1-based line:column position
+// where column is measured in Unicode code points.
+func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
+	if byteOffset > len(sql) {
+		byteOffset = len(sql)
 	}
 
-	if parserErrorListener.Err != nil {
-		return nil, parserErrorListener.Err
+	line := int32(1)
+	runeCol := int32(0)
+	i := 0
+	for i < byteOffset {
+		r, size := utf8.DecodeRuneInString(sql[i:])
+		if r == '\n' {
+			line++
+			runeCol = 0
+		} else {
+			runeCol++
+		}
+		i += size
 	}
 
-	result := &base.ANTLRAST{
-		StartPosition: startPosition,
-		Tree:          tree,
-		Tokens:        stream,
+	return &storepb.Position{
+		Line:   line,
+		Column: runeCol + 1,
 	}
-
-	return result, nil
 }

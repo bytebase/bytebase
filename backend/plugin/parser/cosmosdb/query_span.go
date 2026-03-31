@@ -2,11 +2,13 @@ package cosmosdb
 
 import (
 	"context"
+	"log/slog"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/cosmosdb"
+	"github.com/bytebase/omni/cosmosdb/analysis"
+	"github.com/bytebase/omni/cosmosdb/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -20,7 +22,7 @@ func GetQuerySpan(_ context.Context, _ base.GetQuerySpanContext, stmt base.State
 }
 
 func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
-	parseResults, err := ParseCosmosDBQuery(statement)
+	parseResults, err := ParseCosmosDB(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -36,153 +38,100 @@ func getQuerySpanImpl(statement string) (*base.QuerySpan, error) {
 		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
 	}
 
-	ast := parseResults[0].Tree
-	querySpanResultListener := &querySpanResultListener{}
-	antlr.ParseTreeWalkerDefault.Walk(querySpanResultListener, ast)
-	if querySpanResultListener.err != nil {
-		return nil, querySpanResultListener.err
+	selectStmt, ok := parseResults[0].Node.(*ast.SelectStmt)
+	if !ok {
+		return nil, errors.Errorf("expected SelectStmt, got %T", parseResults[0].Node)
 	}
 
-	querySpanPredicatePathsListener := &querySpanPredicatePathsListener{}
-	antlr.ParseTreeWalkerDefault.Walk(querySpanPredicatePathsListener, ast)
-	if querySpanPredicatePathsListener.err != nil {
-		return nil, querySpanPredicatePathsListener.err
+	qa := analysis.Analyze(selectStmt)
+
+	// Convert projections.
+	sourceFieldPaths := make(map[string][]*base.PathAST)
+	if !qa.SelectStar {
+		for _, proj := range qa.Projections {
+			for _, fp := range proj.SourcePaths {
+				if len(fp) == 0 {
+					continue
+				}
+				sourceFieldPaths[proj.Name] = append(sourceFieldPaths[proj.Name], fieldPathToPathAST(fp))
+			}
+		}
 	}
+
+	result := base.QuerySpanResult{
+		SourceFieldPaths: sourceFieldPaths,
+		SelectAsterisk:   qa.SelectStar,
+	}
+
+	// Convert predicates.
+	var predicatePaths map[string]*base.PathAST
+	if len(qa.Predicates) > 0 {
+		predicatePaths = make(map[string]*base.PathAST)
+		for _, fp := range qa.Predicates {
+			if len(fp) == 0 {
+				continue
+			}
+			pathAST := fieldPathToPathAST(fp)
+			str, err := pathAST.String()
+			if err != nil {
+				slog.Warn("failed to convert path ast to string", log.BBError(err))
+				continue
+			}
+			predicatePaths[str] = pathAST
+		}
+	}
+
 	return &base.QuerySpan{
-		Results:        querySpanResultListener.result,
-		PredicatePaths: querySpanPredicatePathsListener.predicatePaths,
+		Results:        []base.QuerySpanResult{result},
+		PredicatePaths: predicatePaths,
 	}, nil
 }
 
-type querySpanResultListener struct {
-	*parser.BaseCosmosDBParserListener
+// fieldPathToPathAST converts an omni analysis.FieldPath to a base.PathAST.
+//
+// The omni analysis represents array access as a separate Selector with
+// Name=indexText and ArrayIndex>=0, following the preceding property selector.
+// The base.PathAST representation merges these: an ArraySelector carries the
+// property name AND the index. So we fold consecutive (ItemSelector, ArraySelector)
+// pairs into a single base.ArraySelector.
+func fieldPathToPathAST(fp analysis.FieldPath) *base.PathAST {
+	if len(fp) == 0 {
+		return nil
+	}
 
-	result []base.QuerySpanResult
+	// Merge omni selectors into base nodes, folding array indices into the
+	// preceding item selector.
+	nodes := mergeSelectors(fp)
+	if len(nodes) == 0 {
+		return nil
+	}
 
-	err error
+	pathAST := base.NewPathAST(nodes[0])
+	current := pathAST.Root
+	for i := 1; i < len(nodes); i++ {
+		current.SetNext(nodes[i])
+		current = nodes[i]
+	}
+	return pathAST
 }
 
-func (l *querySpanResultListener) EnterSelect(ctx *parser.SelectContext) {
-	if ctx.Select_clause().Select_specification().MULTIPLY_OPERATOR() != nil || ctx.From_clause() == nil {
-		l.result = []base.QuerySpanResult{
-			{
-				Name:             "",
-				SourceFieldPaths: make(map[string][]*base.PathAST),
-				SelectAsterisk:   true,
-			},
+// mergeSelectors converts omni selectors to base.SelectorNode values,
+// merging an array selector into the preceding item selector when possible.
+func mergeSelectors(fp analysis.FieldPath) []base.SelectorNode {
+	var nodes []base.SelectorNode
+	for i := 0; i < len(fp); i++ {
+		s := fp[i]
+		if s.IsArray() && len(nodes) > 0 {
+			// Merge with the preceding item selector: replace it with an ArraySelector
+			// that keeps the property name but adds the array index.
+			prev := nodes[len(nodes)-1]
+			nodes[len(nodes)-1] = base.NewArraySelector(prev.GetIdentifier(), s.ArrayIndex)
+		} else if s.IsArray() {
+			// Array selector with no preceding item -- keep as-is (shouldn't normally happen).
+			nodes = append(nodes, base.NewArraySelector(s.Name, s.ArrayIndex))
+		} else {
+			nodes = append(nodes, base.NewItemSelector(s.Name))
 		}
-		return
 	}
-
-	containerName, fromAlias := extractFromNames(ctx.From_clause())
-	sourceFieldPaths := make(map[string][]*base.PathAST)
-	for _, property := range ctx.Select_clause().Select_specification().Object_property_list().AllObject_property() {
-		paths, name := extractPathsFromObjectProperty(property, containerName, fromAlias)
-		// For VALUE expressions without an alias (e.g., SELECT VALUE CONCAT(c.name, c.email) FROM c),
-		// the name is empty but we still store paths so scalar masking can detect sensitive fields.
-		for _, path := range paths {
-			if len(path) == 0 {
-				continue
-			}
-			sourceFieldPaths[name] = append(sourceFieldPaths[name], buildPathAST(path))
-		}
-	}
-	l.result = []base.QuerySpanResult{
-		{
-			Name:             "",
-			SourceFieldPaths: sourceFieldPaths,
-			SelectAsterisk:   false,
-		},
-	}
-}
-
-// extractPathsFromObjectProperty extracts all source field paths and the output name
-// from a SELECT object_property.
-func extractPathsFromObjectProperty(ctx parser.IObject_propertyContext, containerName, fromAlias string) ([][]base.SelectorNode, string) {
-	if ctx == nil {
-		return nil, ""
-	}
-	paths := extractAllFieldPaths(ctx.Scalar_expression(), containerName, fromAlias)
-	var propertyName string
-	if ctx.Property_alias() != nil {
-		propertyName = ctx.Property_alias().Identifier().GetText()
-	}
-	if propertyName == "" && len(paths) == 1 && len(paths[0]) > 0 {
-		propertyName = paths[0][len(paths[0])-1].GetIdentifier()
-	}
-	return paths, propertyName
-}
-
-// extractAllFieldPaths recursively collects ALL field paths referenced in a scalar expression.
-func extractAllFieldPaths(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
-	if ctx == nil {
-		return nil
-	}
-
-	// Input alias (leaf).
-	if ctx.Input_alias() != nil {
-		return resolveInputAlias(ctx, containerName, fromAlias)
-	}
-	// Property access: a.b
-	if ctx.DOT_SYMBOL() != nil {
-		return extractFieldPathsDot(ctx, containerName, fromAlias)
-	}
-	// Bracket access: a["b"] or a[0]
-	if ctx.LS_BRACKET_SYMBOL() != nil && ctx.IN_SYMBOL() == nil {
-		return extractFieldPathsBracket(ctx, containerName, fromAlias)
-	}
-	// Unary / NOT
-	if ctx.Unary_operator() != nil || (ctx.NOT_SYMBOL() != nil && len(ctx.AllScalar_expression()) == 1) {
-		return extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
-	}
-	// Function calls
-	if ctx.Scalar_function_expression() != nil {
-		return extractFieldPathsFromFunction(ctx.Scalar_function_expression(), containerName, fromAlias)
-	}
-	// Binary/multi-child expressions: collect from all children.
-	if allExprs := ctx.AllScalar_expression(); len(allExprs) >= 2 {
-		return collectFieldPathsFromAll(allExprs, containerName, fromAlias)
-	}
-	return nil
-}
-
-func extractFieldPathsDot(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
-	paths := extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
-	propName := ctx.Property_name().Identifier().GetText()
-	for i := range paths {
-		paths[i] = append(paths[i], base.NewItemSelector(propName))
-	}
-	return paths
-}
-
-func extractFieldPathsBracket(ctx parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
-	paths := extractAllFieldPaths(ctx.Scalar_expression(0), containerName, fromAlias)
-	for i := range paths {
-		appendBracketSelector(ctx, paths, i)
-	}
-	return paths
-}
-
-func extractFieldPathsFromFunction(ctx parser.IScalar_function_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
-	if ctx == nil {
-		return nil
-	}
-	var exprs []parser.IScalar_expressionContext
-	switch {
-	case ctx.Udf_scalar_function_expression() != nil:
-		exprs = ctx.Udf_scalar_function_expression().AllScalar_expression()
-	case ctx.Builtin_function_expression() != nil:
-		exprs = ctx.Builtin_function_expression().AllScalar_expression()
-	default:
-		return nil
-	}
-	return collectFieldPathsFromAll(exprs, containerName, fromAlias)
-}
-
-func collectFieldPathsFromAll(exprs []parser.IScalar_expressionContext, containerName, fromAlias string) [][]base.SelectorNode {
-	var all [][]base.SelectorNode
-	for _, expr := range exprs {
-		all = append(all, extractAllFieldPaths(expr, containerName, fromAlias)...)
-	}
-	return all
+	return nodes
 }
