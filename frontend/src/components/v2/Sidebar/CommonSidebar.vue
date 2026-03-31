@@ -156,7 +156,6 @@ const filteredSidebarList = computed(() => {
 const currentRoute = useRoute();
 
 const expandForActiveRoute = () => {
-  const currentName = currentRoute.name?.toString() ?? "";
   // Remove previous auto-expansions (preserve manual ones)
   for (const key of autoExpanded) {
     state.expandedSidebar.delete(key);
@@ -172,9 +171,10 @@ const expandForActiveRoute = () => {
       state.expandedSidebar.add(key);
       continue;
     }
+    // Use getItemClass to detect active children — it handles all
+    // route aliases (e.g. user-profile → users).
     const hasActiveChild = item.children.some(
-      (child) =>
-        child.name === currentName || currentName.startsWith(`${child.name}.`)
+      (child) => props.getItemClass(child).length > 0
     );
     if (hasActiveChild && !state.expandedSidebar.has(key)) {
       state.expandedSidebar.add(key);
