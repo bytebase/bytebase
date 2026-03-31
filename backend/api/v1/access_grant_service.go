@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // AccessGrantService implements the access grant service.
@@ -51,8 +53,26 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	hasPermission, err := s.iamManager.CheckPermission(ctx, permission.AccessGrantsGet, user, workspaceID, projectID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
+	}
+
+	if !hasPermission {
+		if !s.isApproverForAccessGrant(ctx, workspaceID, projectID, accessGrantID, user) {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission to view access grant %q", req.Name))
+		}
+	}
+
 	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
+		Workspace: workspaceID,
 		ID:        &accessGrantID,
 		ProjectID: &projectID,
 	})
@@ -64,6 +84,52 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+// isApproverForAccessGrant checks if the user is an approver (in any step)
+// for the issue linked to the given access grant.
+func (s *AccessGrantService) isApproverForAccessGrant(ctx context.Context, workspaceID, projectID, accessGrantID string, user *store.UserMessage) bool {
+	grant, err := s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
+		Workspace: workspaceID,
+		ID:        &accessGrantID,
+		ProjectID: &projectID,
+	})
+	if err != nil || grant == nil || grant.Payload == nil || grant.Payload.IssueId == 0 {
+		return false
+	}
+
+	issueUID := grant.Payload.IssueId
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  workspaceID,
+		ProjectIDs: []string{projectID},
+		UID:        &issueUID,
+	})
+	if err != nil || issue == nil {
+		return false
+	}
+
+	approval := issue.Payload.GetApproval()
+	if approval == nil || approval.ApprovalTemplate == nil || approval.ApprovalTemplate.Flow == nil {
+		return false
+	}
+
+	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, workspaceID, projectID)
+	if err != nil {
+		return false
+	}
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return false
+	}
+	userRoles := utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, user, projectPolicy.Policy, workspacePolicy.Policy)
+
+	for _, role := range approval.ApprovalTemplate.Flow.Roles {
+		if userRoles[role] {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ListAccessGrants lists access grants in a project.
