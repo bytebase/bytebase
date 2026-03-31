@@ -38,7 +38,7 @@ export function SubscriptionPage({
   const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
   const isTrialing = useVueState(() => subscriptionStore.isTrialing);
   const isExpired = useVueState(() => subscriptionStore.isExpired);
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const isSelfHostLicense = useVueState(
     () => subscriptionStore.isSelfHostLicense
   );

@@ -15,7 +15,7 @@ import {
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface PurchaseSectionProps {
-  onRequireEnterprise: () => void;
+  readonly onRequireEnterprise: () => void;
 }
 
 // Data model matching the Vue PlanCardData interface.
