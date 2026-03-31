@@ -3022,6 +3022,12 @@
     "tool-answer": "回答：",
     "tool-value": "值：",
     "tool-completed": "已完成",
-    "tool-failed": "已完成，但存在问题"
+    "tool-failed": "已完成，但存在问题",
+    "ai-not-configured": {
+      "title": "此工作空间尚未配置 AI 助手",
+      "description": "要继续使用页面助手，请先在工作空间设置中启用 AI 助手。",
+      "configure": "配置 AI",
+      "contact-admin": "请联系你的组织管理员来配置 AI 助手。"
+    }
   }
 }

@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
+import { isAgentAIConfigurationError } from "../logic/aiConfiguration";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -56,11 +57,15 @@ const cancelLabel = computed(
 const isCurrentChatRunning = computed(() =>
   agentStore.isChatRunning(currentChat.value?.id)
 );
+const isAIConfigurationBlocked = computed(
+  () => agentStore.currentChatRequiresAIConfiguration
+);
 const isSendDisabled = computed(() => {
   if (
     isCurrentChatRunning.value ||
     isAwaitingConfirm.value ||
-    isAwaitingChoose.value
+    isAwaitingChoose.value ||
+    isAIConfigurationBlocked.value
   ) {
     return true;
   }
@@ -250,21 +255,25 @@ const handleOutcome = (
     case "aborted":
       agentStore.interruptChatRun(chatId, getCurrentPageSnapshot());
       return;
-    case "error":
-      agentStore.addMessage({
-        chatId,
-        role: "assistant",
-        content: `${errorPrefix}${outcome.error.message}`,
-        metadata: {
-          route: page.path,
-          error: outcome.error.message,
-        },
-      });
+    case "error": {
+      if (!isAgentAIConfigurationError(outcome.error)) {
+        agentStore.addMessage({
+          chatId,
+          role: "assistant",
+          content: `${errorPrefix}${outcome.error.message}`,
+          metadata: {
+            route: page.path,
+            error: outcome.error.message,
+          },
+        });
+      }
       agentStore.finishChatRun(chatId, {
         status: "error",
         lastError: outcome.error.message,
+        requiresAIConfiguration: isAgentAIConfigurationError(outcome.error),
       });
       return;
+    }
   }
 };
 
@@ -637,7 +646,7 @@ watch(
           maxRows: 6,
         }"
         :placeholder="inputPlaceholder"
-        :disabled="isCurrentChatRunning"
+        :disabled="isCurrentChatRunning || isAIConfigurationBlocked"
         prefix="@"
         :options="domRefMentionOptions"
         :filter="() => true"
