@@ -214,13 +214,14 @@ const workspaceRoutes: RouteRecordRaw[] = [
       {
         path: "",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-        component: () => import("@/views/SettingWorkspaceSSO.vue"),
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "IDPsPage" }),
       },
       {
         path: ":idpId",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
-        component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "IDPDetailPage" }),
       },
     ],
   },
