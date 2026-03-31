@@ -1985,12 +1985,6 @@
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。",
         "success": "成功删除 {count} 个项目 | 成功删除 {count} 个项目",
         "error": "无法删除项目"
-      },
-      "projects-to-archive": "要归档的项目",
-      "projects-to-delete": "要删除的项目",
-      "resource-warning": {
-        "title": "项目与资源",
-        "description": "以下项目包含数据库或未解决的工单："
       }
     }
   },
@@ -2035,7 +2029,8 @@
     "admin": "管理员",
     "read-only": "只读",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "选择查询数据源"
+    "select-query-data-source": "选择查询数据源",
+    "automatic-query-data-source": "自动"
   },
   "setting": {
     "label": {
@@ -2060,7 +2055,6 @@
     "can-not-execute-query": "加载数据时无法执行查询",
     "invalid-database": "数据库 {database} 无效",
     "request-aborted": "用户中止了请求",
-    "no-data-source": "没有可查询的数据源。请检查环境或项目的数据源查询策略。",
     "no-queriable-database": "没有可查询的数据库",
     "rows": "条记录",
     "vertical-display": "竖向展示",
@@ -2329,7 +2323,6 @@
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "request-n-days-trial": "申请 {days} 天试用 (无需信用卡)",
-    "request-with-qr": "扫描二维码申请试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
     "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}",
     "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费。",

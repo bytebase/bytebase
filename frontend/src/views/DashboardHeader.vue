@@ -65,12 +65,6 @@
       </ProfileBrandingLogo>
     </div>
   </div>
-
-  <WeChatQRModal
-    v-if="state.showQRCodeModal"
-    :title="$t('common.want-help')"
-    @close="state.showQRCodeModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -85,10 +79,9 @@ import {
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
-import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { useAgentStore } from "@/plugins/agent";
 import {
   WORKSPACE_ROUTE_LANDING,
@@ -116,7 +109,6 @@ import {
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
-import { useLanguage } from "../composables/useLanguage";
 import {
   isValidDatabaseName,
   isValidProjectName,
@@ -132,23 +124,12 @@ defineEmits<{
   "toggle-mobile-sidebar": [];
 }>();
 
-interface LocalState {
-  showQRCodeModal: boolean;
-  showProjectModal: boolean;
-}
-
 const agentStore = useAgentStore();
 const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();
-const { locale } = useLanguage();
 const { record } = useRecentVisit();
 const { width: windowWidth } = useWindowSize();
-
-const state = reactive<LocalState>({
-  showQRCodeModal: false,
-  showProjectModal: false,
-});
 
 const params = computed(() => {
   return {
@@ -217,10 +198,6 @@ const goToMyIssues = () => {
 };
 
 const handleWantHelp = () => {
-  if (locale.value === "zh-CN") {
-    state.showQRCodeModal = true;
-  } else {
-    window.open("https://docs.bytebase.com/faq#how-to-reach-us", "_blank");
-  }
+  window.open("https://docs.bytebase.com/faq#how-to-reach-us", "_blank");
 };
 </script>

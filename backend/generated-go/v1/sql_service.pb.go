@@ -552,9 +552,10 @@ type QueryRequest struct {
 	// The maximum number of rows to return.
 	Limit int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	// The id of data source.
-	// It is used for querying admin data source even if the instance has
-	// read-only data sources. Or it can be used to query a specific read-only
-	// data source.
+	// If omitted, Query resolves the data source server-side by using the single
+	// read-only data source when exactly one exists, or the admin data source
+	// otherwise. It can also be set explicitly to query the admin data source or
+	// a specific read-only data source.
 	DataSourceId string `protobuf:"bytes,4,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// Explain the statement.
 	Explain bool `protobuf:"varint,5,opt,name=explain,proto3" json:"explain,omitempty"`
@@ -1476,9 +1477,10 @@ type ExportRequest struct {
 	// The zip password provide by users.
 	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	// The id of data source.
-	// It is used for querying admin data source even if the instance has
-	// read-only data sources. Or it can be used to query a specific read-only
-	// data source.
+	// If omitted, Export resolves the data source server-side by using the
+	// single read-only data source when exactly one exists, or the admin data
+	// source otherwise. It can also be set explicitly to export from the admin
+	// data source or a specific read-only data source.
 	DataSourceId string `protobuf:"bytes,7,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
@@ -2708,13 +2710,13 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"_container\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd0\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xcb\x02\n" +
 	"\fQueryRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12)\n" +
-	"\x0edata_source_id\x18\x04 \x01(\tB\x03\xe0A\x02R\fdataSourceId\x12\x18\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12$\n" +
+	"\x0edata_source_id\x18\x04 \x01(\tR\fdataSourceId\x12\x18\n" +
 	"\aexplain\x18\x05 \x01(\bR\aexplain\x12\x1b\n" +
 	"\x06schema\x18\x06 \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
 	"\fquery_option\x18\a \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +

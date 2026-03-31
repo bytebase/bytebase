@@ -108,9 +108,10 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
 
   /**
    * The id of data source.
-   * It is used for querying admin data source even if the instance has
-   * read-only data sources. Or it can be used to query a specific read-only
-   * data source.
+   * If omitted, Query resolves the data source server-side by using the single
+   * read-only data source when exactly one exists, or the admin data source
+   * otherwise. It can also be set explicitly to query the admin data source or
+   * a specific read-only data source.
    *
    * @generated from field: string data_source_id = 4;
    */
@@ -1037,9 +1038,10 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
 
   /**
    * The id of data source.
-   * It is used for querying admin data source even if the instance has
-   * read-only data sources. Or it can be used to query a specific read-only
-   * data source.
+   * If omitted, Export resolves the data source server-side by using the
+   * single read-only data source when exactly one exists, or the admin data
+   * source otherwise. It can also be set explicitly to export from the admin
+   * data source or a specific read-only data source.
    *
    * @generated from field: string data_source_id = 7;
    */

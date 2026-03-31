@@ -362,9 +362,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	countSQL := "SELECT count(*) FROM test WHERE 1=1;"
 	dmlSQL := "INSERT INTO test SELECT * FROM " + valueTable
 	originQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
-		Name:         database.Msg.Name,
-		Statement:    countSQL,
-		DataSourceId: "admin",
+		Name:      database.Msg.Name,
+		Statement: countSQL,
 	}))
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Msg.Results))
@@ -374,9 +373,8 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, dmlSQL, false /* wait */)
 
 	finalQueryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
-		Name:         database.Msg.Name,
-		Statement:    countSQL,
-		DataSourceId: "admin",
+		Name:      database.Msg.Name,
+		Statement: countSQL,
 	}))
 	a.NoError(err)
 	a.Equal(1, len(finalQueryResp.Msg.Results))

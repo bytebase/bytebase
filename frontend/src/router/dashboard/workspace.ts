@@ -59,10 +59,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: () => t("common.projects"),
     },
     components: {
-      content: () => import("@/views/ProjectDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "ProjectsPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "instances",
@@ -98,10 +101,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       requiredPermissionList: () => ["bb.settings.getEnvironment"],
     },
     components: {
-      content: () => import("@/views/EnvironmentDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "EnvironmentsPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "users/:principalEmail",

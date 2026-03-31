@@ -5241,9 +5241,10 @@ paths:
                   title: data_source_id
                   description: |-
                     The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
+                     If omitted, Export resolves the data source server-side by using the
+                     single read-only data source when exactly one exists, or the admin data
+                     source otherwise. It can also be set explicitly to export from the admin
+                     data source or a specific read-only data source.
                 schema:
                   type:
                     - string
@@ -5304,9 +5305,10 @@ paths:
                   title: data_source_id
                   description: |-
                     The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
+                     If omitted, Query resolves the data source server-side by using the single
+                     read-only data source when exactly one exists, or the admin data source
+                     otherwise. It can also be set explicitly to query the admin data source or
+                     a specific read-only data source.
                 explain:
                   type: boolean
                   title: explain
@@ -5331,8 +5333,6 @@ paths:
                     Container is the container name to execute the query against, used for
                      CosmosDB only.
               title: QueryRequest
-              required:
-                - dataSourceId
               additionalProperties: false
         required: true
       responses:
@@ -9957,9 +9957,10 @@ paths:
                   title: data_source_id
                   description: |-
                     The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
+                     If omitted, Export resolves the data source server-side by using the
+                     single read-only data source when exactly one exists, or the admin data
+                     source otherwise. It can also be set explicitly to export from the admin
+                     data source or a specific read-only data source.
                 schema:
                   type:
                     - string
@@ -10034,9 +10035,10 @@ paths:
                   title: data_source_id
                   description: |-
                     The id of data source.
-                     It is used for querying admin data source even if the instance has
-                     read-only data sources. Or it can be used to query a specific read-only
-                     data source.
+                     If omitted, Export resolves the data source server-side by using the
+                     single read-only data source when exactly one exists, or the admin data
+                     source otherwise. It can also be set explicitly to export from the admin
+                     data source or a specific read-only data source.
                 schema:
                   type:
                     - string
@@ -20056,9 +20058,10 @@ components:
           title: data_source_id
           description: |-
             The id of data source.
-             It is used for querying admin data source even if the instance has
-             read-only data sources. Or it can be used to query a specific read-only
-             data source.
+             If omitted, Export resolves the data source server-side by using the
+             single read-only data source when exactly one exists, or the admin data
+             source otherwise. It can also be set explicitly to export from the admin
+             data source or a specific read-only data source.
         schema:
           type:
             - string
@@ -24564,9 +24567,10 @@ components:
           title: data_source_id
           description: |-
             The id of data source.
-             It is used for querying admin data source even if the instance has
-             read-only data sources. Or it can be used to query a specific read-only
-             data source.
+             If omitted, Query resolves the data source server-side by using the single
+             read-only data source when exactly one exists, or the admin data source
+             otherwise. It can also be set explicitly to query the admin data source or
+             a specific read-only data source.
         explain:
           type: boolean
           title: explain
@@ -24593,7 +24597,6 @@ components:
       title: QueryRequest
       required:
         - name
-        - dataSourceId
       additionalProperties: false
     bytebase.v1.QueryResponse:
       type: object

@@ -175,7 +175,7 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 
 // CreateInstance creates an instance.
 func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
-	if err := validateDataSources(instanceCreate.Metadata); err != nil {
+	if err := validateInstanceDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
 
@@ -298,22 +298,34 @@ func (s *Store) GetActivatedInstanceCount(ctx context.Context, workspaceID strin
 	return count, nil
 }
 
-func validateDataSources(metadata *storepb.Instance) error {
+func ValidateDataSources(dataSources []*storepb.DataSource) error {
 	dataSourceMap := map[string]bool{}
 	adminCount := 0
-	for _, dataSource := range metadata.GetDataSources() {
+	readOnlyCount := 0
+	for _, dataSource := range dataSources {
 		if dataSourceMap[dataSource.GetId()] {
 			return errors.Errorf("duplicate data source ID %s", dataSource.GetId())
 		}
 		dataSourceMap[dataSource.GetId()] = true
-		if dataSource.GetType() == storepb.DataSourceType_ADMIN {
+		switch dataSource.GetType() {
+		case storepb.DataSourceType_ADMIN:
 			adminCount++
+		case storepb.DataSourceType_READ_ONLY:
+			readOnlyCount++
+		default:
 		}
 	}
 	if adminCount != 1 {
 		return errors.Errorf("require exactly one admin data source")
 	}
+	if readOnlyCount > 1 {
+		return errors.Errorf("require at most one read-only data source")
+	}
 	return nil
+}
+
+func validateInstanceDataSources(metadata *storepb.Instance) error {
+	return ValidateDataSources(metadata.GetDataSources())
 }
 
 // IsObjectCaseSensitive returns true if the engine ignores database and table case sensitive.

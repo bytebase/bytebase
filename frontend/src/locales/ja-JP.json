@@ -1985,12 +1985,6 @@
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。",
         "success": "{count} 件のプロジェクトを正常に削除しました | {count} 件のプロジェクトを正常に削除しました",
         "error": "プロジェクトを削除できませんでした"
-      },
-      "projects-to-archive": "アーカイブするプロジェクト",
-      "projects-to-delete": "削除するプロジェクト",
-      "resource-warning": {
-        "title": "リソースのあるプロジェクト",
-        "description": "次のプロジェクトには、データベースまたは未解決のイシューが含まれています。"
       }
     }
   },
@@ -2035,7 +2029,8 @@
     "admin": "管理者",
     "read-only": "読み取り専用",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "クエリデータソースの選択"
+    "select-query-data-source": "クエリデータソースの選択",
+    "automatic-query-data-source": "自動"
   },
   "setting": {
     "label": {
@@ -2060,7 +2055,6 @@
     "can-not-execute-query": "データのロード中にクエリを実行できません",
     "invalid-database": "無効なデータベース {database}",
     "request-aborted": "ユーザーがリクエストを中止しました",
-    "no-data-source": "クエリ可能なデータソースがありません。環境またはプロジェクトのデータソースクエリポリシーを確認してください。",
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "rows": "記録",
     "vertical-display": "縦型表示",
@@ -2329,7 +2323,6 @@
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "upload-license": "ライセンスのアップロード",
     "request-n-days-trial": "{days} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
-    "request-with-qr": "QRコードを読み取ってトライアルを申し込みます",
     "require-subscription": "この機能は、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。",
     "required-plan-with-trial": "この機能は、{requiredPlan} のサブスクリプションが必要です。{startTrial} ",
     "trial-for-days": "{days} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",

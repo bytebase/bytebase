@@ -86,8 +86,6 @@ export function FeatureAttention({
 
   const onAction = () => {
     if (!hasFeature) {
-      // Vue version shows WeChat QR modal for zh-CN, but that's a Vue
-      // component. Open the inquiry link for all locales as a fallback.
       window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
       return;
     }

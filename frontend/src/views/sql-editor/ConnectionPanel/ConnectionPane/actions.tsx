@@ -28,7 +28,6 @@ import {
   getInstanceResource,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
-  setDefaultDataSourceForConn,
 } from "@/utils";
 import { type SQLEditorContext, useSQLEditorContext } from "../../context";
 
@@ -192,10 +191,6 @@ export const setConnection = (options: {
       : "",
     database: database?.name ?? "",
   };
-  if (database) {
-    setDefaultDataSourceForConn(connection, database);
-  }
-
   const tabStore = useSQLEditorTabStore();
   const batchQueryContext: BatchQueryContext = Object.assign(
     { databases: [] },

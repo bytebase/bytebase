@@ -15,8 +15,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.17.14"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.17/0014##add_subscription_table.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.17.15"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.17/0015##dedupe_read_only_data_sources.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -32,6 +32,60 @@ func TestVersionUnique(t *testing.T) {
 		}
 		versions[file.version.String()] = struct{}{}
 	}
+}
+
+func TestMigration3_17_15_DedupeReadOnlyDataSources(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+
+	setup := `
+		CREATE TABLE instance (
+			resource_id TEXT PRIMARY KEY,
+			metadata JSONB NOT NULL DEFAULT '{}'
+		);
+
+		INSERT INTO instance (resource_id, metadata) VALUES
+			(
+				'instance-with-duplicate-read-only',
+				'{"dataSources":[{"id":"admin","type":"ADMIN","username":"admin"},{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"},{"id":"read-only-2","type":"READ_ONLY","username":"readonly-2"}]}'
+			),
+			(
+				'instance-with-single-read-only',
+				'{"dataSources":[{"id":"admin","type":"ADMIN","username":"admin"},{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"}]}'
+			),
+			(
+				'instance-with-non-array-data-sources',
+				'{"dataSources":{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"}}'
+			),
+			(
+				'instance-without-data-sources',
+				'{"engine":"POSTGRES"}'
+			);
+	`
+	_, err := db.ExecContext(ctx, setup)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.17/0015##dedupe_read_only_data_sources.sql")
+	require.NoError(t, err)
+
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	getMetadata := func(resourceID string) string {
+		t.Helper()
+		var metadata string
+		err := db.QueryRowContext(ctx, `SELECT metadata::text FROM instance WHERE resource_id = $1`, resourceID).Scan(&metadata)
+		require.NoError(t, err)
+		return metadata
+	}
+
+	require.JSONEq(t, `{"dataSources":[{"id":"admin","type":"ADMIN","username":"admin"},{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"}]}`, getMetadata("instance-with-duplicate-read-only"))
+	require.JSONEq(t, `{"dataSources":[{"id":"admin","type":"ADMIN","username":"admin"},{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"}]}`, getMetadata("instance-with-single-read-only"))
+	require.JSONEq(t, `{"dataSources":{"id":"read-only-1","type":"READ_ONLY","username":"readonly-1"}}`, getMetadata("instance-with-non-array-data-sources"))
+	require.JSONEq(t, `{"engine":"POSTGRES"}`, getMetadata("instance-without-data-sources"))
 }
 
 // TestMigration3_7_20_ScalarTaskUpdateTasks verifies that the migration 3.7.20

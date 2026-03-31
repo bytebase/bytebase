@@ -1985,12 +1985,6 @@
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn.",
         "success": "Đã xóa thành công {count} dự án | Đã xóa thành công {count} dự án",
         "error": "Không xóa được dự án"
-      },
-      "projects-to-archive": "Dự án để lưu trữ",
-      "projects-to-delete": "Dự án để xóa",
-      "resource-warning": {
-        "title": "Dự án có nguồn lực",
-        "description": "Các dự án sau đây chứa cơ sở dữ liệu hoặc các vấn đề chưa giải quyết:"
       }
     }
   },
@@ -2035,7 +2029,8 @@
     "admin": "Quản trị",
     "read-only": "Chỉ đọc",
     "direct-connection": "Kết nối trực tiếp",
-    "select-query-data-source": "Chọn nguồn dữ liệu truy vấn"
+    "select-query-data-source": "Chọn nguồn dữ liệu truy vấn",
+    "automatic-query-data-source": "Tự động"
   },
   "setting": {
     "label": {
@@ -2060,7 +2055,6 @@
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
     "request-aborted": "Người dùng đã hủy yêu cầu",
-    "no-data-source": "Không có nguồn dữ liệu có thể truy vấn. Vui lòng kiểm tra chính sách truy vấn nguồn dữ liệu trên môi trường hoặc dự án.",
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
@@ -2329,7 +2323,6 @@
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "upload-license": "Tải lên giấy phép",
     "request-n-days-trial": "Yêu cầu dùng thử {days} ngày (không cần thẻ tín dụng)",
-    "request-with-qr": "Quét mã QR",
     "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa.",
     "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
     "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {days} ngày - không cần thẻ tín dụng.",

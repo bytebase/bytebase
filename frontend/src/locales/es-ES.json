@@ -1985,12 +1985,6 @@
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente.",
         "success": "Proyecto {count} eliminado correctamente | Proyectos {count} eliminados correctamente",
         "error": "No se pudieron eliminar los proyectos"
-      },
-      "projects-to-archive": "Proyectos para archivar",
-      "projects-to-delete": "Proyectos para eliminar",
-      "resource-warning": {
-        "title": "Proyectos con recursos",
-        "description": "Los siguientes proyectos contienen bases de datos o problemas abiertos:"
       }
     }
   },
@@ -2035,7 +2029,8 @@
     "admin": "Admin",
     "read-only": "Solo lectura",
     "direct-connection": "Direct Connection",
-    "select-query-data-source": "Seleccionar fuente de datos de consulta"
+    "select-query-data-source": "Seleccionar fuente de datos de consulta",
+    "automatic-query-data-source": "Automática"
   },
   "setting": {
     "label": {
@@ -2060,7 +2055,6 @@
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "invalid-database": "Base de datos no válida {database}",
     "request-aborted": "El usuario abortó la solicitud",
-    "no-data-source": "No se puede consultar ninguna fuente de datos. Consulte la política de consulta de fuentes de datos del entorno o proyecto.",
     "no-queriable-database": "No hay base de datos consultable",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
@@ -2329,7 +2323,6 @@
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "request-n-days-trial": "Solicite una prueba de {days} días (no se requiere tarjeta de crédito)",
-    "request-with-qr": "Escanear código QR",
     "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquearla.",
     "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
     "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
