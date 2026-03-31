@@ -8,15 +8,14 @@ const environmentV1Routes: RouteRecordRaw[] = [
   {
     path: "environments/:environmentName",
     name: ENVIRONMENT_V1_ROUTE_DETAIL,
-    components: {
-      content: () => import("@/views/EnvironmentDetail.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: { content: true },
     meta: {
       title: () => t("common.environment"),
       requiredPermissionList: () => ["bb.settings.getEnvironment"],
     },
+    redirect: (to) => ({
+      name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
+      hash: `#${to.params.environmentName}`,
+    }),
   },
 ];
 
