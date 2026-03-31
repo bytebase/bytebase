@@ -217,6 +217,9 @@ message Subscription {
 
   // Whether high availability (multiple replicas) is enabled.
   bool ha = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Etag for optimistic concurrency on purchase updates. Only set in SaaS mode.
+  string etag = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // PlanFeature represents the available features in Bytebase

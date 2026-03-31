@@ -11050,6 +11050,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 | trialing | [bool](#bool) |  |  |
 | org_name | [string](#string) |  |  |
 | ha | [bool](#bool) |  | Whether high availability (multiple replicas) is enabled. |
+| etag | [string](#string) |  | Etag for optimistic concurrency on purchase updates. Only set in SaaS mode. |
 
 
 

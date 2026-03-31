@@ -17476,6 +17476,10 @@ components:
           type: boolean
           title: ha
           description: Whether high availability (multiple replicas) is enabled.
+        etag:
+          type: string
+          title: etag
+          description: Etag for optimistic concurrency on purchase updates. Only set in SaaS mode.
       title: Subscription
       additionalProperties: false
     bytebase.v1.SwitchWorkspaceRequest:

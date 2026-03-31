@@ -99,14 +99,28 @@ func CreateCheckoutSession(params *CheckoutParams) (*CheckoutResult, error) {
 	return &CheckoutResult{URL: s.URL, SessionID: s.ID}, nil
 }
 
-// GetCheckoutSessionStatus returns the status of a Stripe Checkout Session.
-// Returns "complete", "expired", or "open".
-func GetCheckoutSessionStatus(sessionID string) (string, error) {
-	s, err := checkoutsession.Get(sessionID, nil)
+// CheckoutSessionInfo contains the status and workspace of a checkout session.
+type CheckoutSessionInfo struct {
+	Status    string
+	Workspace string
+}
+
+// GetCheckoutSessionInfo returns the status and workspace of a Stripe Checkout Session.
+func GetCheckoutSessionInfo(sessionID string) (*CheckoutSessionInfo, error) {
+	params := &stripego.CheckoutSessionParams{}
+	params.AddExpand("subscription")
+	s, err := checkoutsession.Get(sessionID, params)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get checkout session %s", sessionID)
+		return nil, errors.Wrapf(err, "failed to get checkout session %s", sessionID)
 	}
-	return string(s.Status), nil
+	var workspace string
+	if s.Subscription != nil {
+		workspace = s.Subscription.Metadata["workspace"]
+	}
+	return &CheckoutSessionInfo{
+		Status:    string(s.Status),
+		Workspace: workspace,
+	}, nil
 }
 
 // CancelSubscription cancels a Stripe subscription.

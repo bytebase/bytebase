@@ -271,6 +271,25 @@ func (h *WebhookHandler) handleInvoicePaid(ctx context.Context, event *stripego.
 		stripeSubID = inv.Parent.SubscriptionDetails.Subscription.ID
 	}
 
+	// Ignore stale invoice.paid events from an old Stripe subscription.
+	if stripeSubID != "" {
+		existing, err := h.store.GetSubscriptionByWorkspace(ctx, workspace)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get subscription for workspace %s", workspace)
+		}
+		if existing != nil && existing.Payload != nil &&
+			existing.Payload.StripeSubscriptionId != "" &&
+			existing.Payload.StripeSubscriptionId != stripeSubID {
+			slog.Info("ignoring stale invoice.paid for old stripe subscription",
+				slog.String("workspace", workspace),
+				slog.String("event_subscription_id", stripeSubID),
+				slog.String("current_subscription_id", existing.Payload.StripeSubscriptionId),
+				slog.String("invoice_id", inv.ID),
+			)
+			return nil
+		}
+	}
+
 	lineData := inv.Lines.Data[0]
 	startedAt := time.Unix(lineData.Period.Start, 0).UTC()
 	expiresAt := time.Unix(lineData.Period.End, 0).UTC()

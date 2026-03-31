@@ -305,6 +305,9 @@ func (x *Subscription) Equal(y *Subscription) bool {
 	if x.Ha != y.Ha {
 		return false
 	}
+	if x.Etag != y.Etag {
+		return false
+	}
 	return true
 }
 

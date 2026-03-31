@@ -45,7 +45,14 @@ func NewSubscriptionService(
 
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
-	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	subscription := s.licenseService.LoadSubscription(ctx, workspaceID)
+	// Attach etag from subscription table for optimistic concurrency.
+	if subscription.Plan != v1pb.PlanType_FREE {
+		if existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID); err == nil && existing != nil {
+			subscription.Etag = existing.Etag
+		}
+	}
 	return connect.NewResponse(subscription), nil
 }
 
@@ -112,7 +119,7 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 	}
 
 	// ACTIVE or PAUSED — cancel old Stripe subscription and create new one.
-	if req.Msg.Etag != "" && req.Msg.Etag != existing.Etag {
+	if req.Msg.Etag != existing.Etag {
 		return nil, connect.NewError(connect.CodeAborted, errors.New("subscription is out of date, please refresh and try again"))
 	}
 
@@ -288,7 +295,7 @@ func (s *SubscriptionService) GetPaymentInfo(ctx context.Context, _ *connect.Req
 }
 
 // VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
-func (s *SubscriptionService) VerifyCheckoutSession(_ context.Context, req *connect.Request[v1pb.VerifyCheckoutSessionRequest]) (*connect.Response[v1pb.VerifyCheckoutSessionResponse], error) {
+func (s *SubscriptionService) VerifyCheckoutSession(ctx context.Context, req *connect.Request[v1pb.VerifyCheckoutSessionRequest]) (*connect.Response[v1pb.VerifyCheckoutSessionResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
 	}
@@ -297,13 +304,18 @@ func (s *SubscriptionService) VerifyCheckoutSession(_ context.Context, req *conn
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("session_id is required"))
 	}
 
-	status, err := stripeplugin.GetCheckoutSessionStatus(req.Msg.SessionId)
+	info, err := stripeplugin.GetCheckoutSessionInfo(req.Msg.SessionId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify checkout session"))
 	}
 
+	// Verify the checkout session belongs to the caller's workspace.
+	if info.Workspace != "" && info.Workspace != common.GetWorkspaceIDFromContext(ctx) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("checkout session does not belong to this workspace"))
+	}
+
 	return connect.NewResponse(&v1pb.VerifyCheckoutSessionResponse{
-		Status: status,
+		Status: info.Status,
 	}), nil
 }
 
@@ -314,7 +326,6 @@ func (s *SubscriptionService) ListPurchasePlans(_ context.Context, _ *connect.Re
 		return connect.NewResponse(&v1pb.ListPurchasePlansResponse{}), nil
 	}
 
-	// TODO(ed): not correct. ENTERPRISE should NOT has Additionals
 	allPlans := []storepb.SubscriptionPayload_Plan{
 		storepb.SubscriptionPayload_TEAM,
 		storepb.SubscriptionPayload_ENTERPRISE,

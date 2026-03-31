@@ -461,6 +461,13 @@ export declare type Subscription = Message<"bytebase.v1.Subscription"> & {
    * @generated from field: bool ha = 8;
    */
   ha: boolean;
+
+  /**
+   * Etag for optimistic concurrency on purchase updates. Only set in SaaS mode.
+   *
+   * @generated from field: string etag = 9;
+   */
+  etag: string;
 };
 
 /**
