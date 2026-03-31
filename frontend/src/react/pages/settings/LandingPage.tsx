@@ -50,6 +50,7 @@ import {
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
@@ -58,11 +59,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import {
-  extractProjectResourceName,
-  storageKeyQuickAccess,
-  storageKeyRecentVisit,
-} from "@/utils";
+import { extractProjectResourceName, storageKeyQuickAccess } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,24 +67,10 @@ import {
 
 interface QuickLinkDef {
   id: string;
-  titleKey?: string;
   title?: string;
   route?: string;
   icon: FC<{ className?: string }>;
-  hide?: boolean;
 }
-
-// ---------------------------------------------------------------------------
-// Icon wrapper — maps sidebar groups to their parent icon
-// ---------------------------------------------------------------------------
-
-const IconSettings: FC<{ className?: string }> = (p) => <Settings {...p} />;
-const IconUsers: FC<{ className?: string }> = (p) => <Users {...p} />;
-const IconWorkflow: FC<{ className?: string }> = (p) => <Workflow {...p} />;
-const IconShieldCheck: FC<{ className?: string }> = (p) => (
-  <ShieldCheck {...p} />
-);
-const IconLink: FC<{ className?: string }> = (p) => <Link {...p} />;
 
 // ---------------------------------------------------------------------------
 // Build the full quick-link catalogue (mirrors useDashboardSidebar + useQuickLink)
@@ -145,94 +128,94 @@ function useFullQuickLinkList(): QuickLinkDef[] {
         titleKey: isSaaSMode
           ? "settings.sidebar.members-and-groups"
           : "settings.sidebar.users-and-groups",
-        icon: IconUsers,
+        icon: Users,
       },
       {
         id: WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
         titleKey: "settings.members.service-accounts",
-        icon: IconUsers,
+        icon: Users,
         hide: isSaaSMode,
       },
       {
         id: WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
         titleKey: "settings.members.workload-identities",
-        icon: IconUsers,
+        icon: Users,
         hide: isSaaSMode,
       },
       {
         id: WORKSPACE_ROUTE_MEMBERS,
         titleKey: "settings.sidebar.members",
-        icon: IconUsers,
+        icon: Users,
         hide: isSaaSMode,
       },
       {
         id: WORKSPACE_ROUTE_ROLES,
         titleKey: "settings.sidebar.custom-roles",
-        icon: IconUsers,
+        icon: Users,
       },
       {
         id: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
         titleKey: "settings.sidebar.sso",
-        icon: IconUsers,
+        icon: Users,
       },
       {
         id: WORKSPACE_ROUTE_AUDIT_LOG,
         titleKey: "settings.sidebar.audit-log",
-        icon: IconUsers,
+        icon: Users,
       },
       // CI/CD
       {
         id: WORKSPACE_ROUTE_SQL_REVIEW,
         titleKey: "sql-review.title",
-        icon: IconWorkflow,
+        icon: Workflow,
       },
       {
         id: WORKSPACE_ROUTE_RISK_CENTER,
         titleKey: "custom-approval.risk.self",
-        icon: IconWorkflow,
+        icon: Workflow,
       },
       {
         id: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
         titleKey: "custom-approval.self",
-        icon: IconWorkflow,
+        icon: Workflow,
       },
       // Data Access
       {
         id: WORKSPACE_ROUTE_SEMANTIC_TYPES,
         titleKey: "settings.sensitive-data.semantic-types.self",
-        icon: IconShieldCheck,
+        icon: ShieldCheck,
       },
       {
         id: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
         titleKey: "settings.sidebar.data-classification",
-        icon: IconShieldCheck,
+        icon: ShieldCheck,
       },
       {
         id: WORKSPACE_ROUTE_GLOBAL_MASKING,
         titleKey: "settings.sidebar.global-masking",
-        icon: IconShieldCheck,
+        icon: ShieldCheck,
       },
       // Integration
       {
         id: WORKSPACE_ROUTE_IM,
         titleKey: "settings.sidebar.im-integration",
-        icon: IconLink,
+        icon: Link,
       },
       {
         id: WORKSPACE_ROUTE_MCP,
         titleKey: "settings.sidebar.mcp",
-        icon: IconLink,
+        icon: Link,
       },
       // Settings
       {
         id: SETTING_ROUTE_WORKSPACE_GENERAL,
         titleKey: "settings.sidebar.general",
-        icon: IconSettings,
+        icon: Settings,
       },
       {
         id: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         titleKey: "settings.sidebar.subscription",
-        icon: IconSettings,
+        icon: Settings,
       },
     ];
 
@@ -296,45 +279,31 @@ function useQuickAccessConfig(email: string) {
 // Last visited project
 // ---------------------------------------------------------------------------
 
-function useLastVisitedProject(email: string) {
+function useLastVisitedProject() {
+  const lastVisitProjectPath = useVueState(
+    () => useRecentVisit().lastVisitProjectPath.value
+  );
   const [project, setProject] = useState<Project | undefined>();
-  const [projectPath, setProjectPath] = useState("");
 
   useEffect(() => {
-    if (!email) return;
-    const key = storageKeyRecentVisit(email);
-    let raw: string[] = [];
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) raw = JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-    const path = raw.find((v) => v.startsWith(`/${projectNamePrefix}`)) ?? "";
-    setProjectPath(path);
-
-    if (!path) {
+    if (!lastVisitProjectPath) {
       setProject(undefined);
       return;
     }
 
-    const projectName = `${projectNamePrefix}${extractProjectResourceName(path)}`;
+    const projectName = `${projectNamePrefix}${extractProjectResourceName(lastVisitProjectPath)}`;
     const projectStore = useProjectV1Store();
     let cancelled = false;
     projectStore.getOrFetchProjectByName(projectName).then((p) => {
       if (cancelled) return;
-      if (p.name === UNKNOWN_PROJECT_NAME) {
-        setProject(undefined);
-      } else {
-        setProject(p);
-      }
+      setProject(p.name === UNKNOWN_PROJECT_NAME ? undefined : p);
     });
     return () => {
       cancelled = true;
     };
-  }, [email]);
+  }, [lastVisitProjectPath]);
 
-  return { project, projectPath };
+  return { project, projectPath: lastVisitProjectPath };
 }
 
 // ---------------------------------------------------------------------------
@@ -355,6 +324,16 @@ function ConfigDrawer({
   setConfig: (c: string[]) => void;
 }) {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   const dragItem = useRef<number | null>(null);
   const dragOver = useRef<number | null>(null);
 
@@ -477,7 +456,7 @@ export function LandingPage() {
   const fullList = useFullQuickLinkList();
   const { config, setConfig } = useQuickAccessConfig(email);
   const { project: lastProject, projectPath: lastVisitProjectPath } =
-    useLastVisitedProject(email);
+    useLastVisitedProject();
 
   const quickLinkList = useMemo(
     () =>
