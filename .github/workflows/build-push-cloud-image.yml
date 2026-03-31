@@ -1,4 +1,4 @@
-name: Build and Push Cloud Image to GAR
+name: Deploy Bytebase Cloud
 
 on:
   workflow_dispatch:
