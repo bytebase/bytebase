@@ -220,9 +220,8 @@ func TestSQLQueryStopOnError(t *testing.T) {
 
 			// Execute the query using the Query API (not AdminExecute)
 			queryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
-				Name:         database.Name,
-				Statement:    tt.query,
-				DataSourceId: "admin",
+				Name:      database.Name,
+				Statement: tt.query,
 			}))
 
 			if tt.wantError {

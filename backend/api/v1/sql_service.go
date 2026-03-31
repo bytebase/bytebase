@@ -250,7 +250,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
-	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, request.DataSourceId)
+	resolvedDataSourceID, err := resolveQueryDataSourceID(instance, request.DataSourceId)
+	if err != nil {
+		return nil, err
+	}
+
+	dataSource, err := checkAndGetDataSourceQueriable(ctx, s.store, s.licenseService, database, resolvedDataSourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1762,6 +1767,37 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{
 		Diff: migrationSQL,
 	}), nil
+}
+
+func resolveQueryDataSourceID(instance *store.InstanceMessage, dataSourceID string) (string, error) {
+	if dataSourceID != "" {
+		return dataSourceID, nil
+	}
+
+	var adminDataSourceID string
+	var readOnlyDataSourceID string
+	readOnlyCount := 0
+	for _, dataSource := range instance.Metadata.GetDataSources() {
+		switch dataSource.GetType() {
+		case storepb.DataSourceType_ADMIN:
+			adminDataSourceID = dataSource.GetId()
+		case storepb.DataSourceType_READ_ONLY:
+			readOnlyCount++
+			readOnlyDataSourceID = dataSource.GetId()
+		default:
+		}
+	}
+
+	switch {
+	case readOnlyCount == 1:
+		return readOnlyDataSourceID, nil
+	case readOnlyCount > 1:
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("instance has multiple read-only data sources, please specify data_source_id explicitly"))
+	case adminDataSourceID != "":
+		return adminDataSourceID, nil
+	default:
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("instance has no admin data source"))
+	}
 }
 
 func checkAndGetDataSourceQueriable(
