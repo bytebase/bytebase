@@ -10,6 +10,7 @@ const badgeVariants = cva(
         default: "bg-control-bg text-control",
         secondary: "bg-accent/10 text-accent",
         destructive: "bg-error/10 text-error",
+        warning: "bg-warning/10 text-warning",
         success: "bg-success/10 text-success",
       },
     },
