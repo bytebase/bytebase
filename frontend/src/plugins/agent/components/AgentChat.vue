@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { computed, nextTick, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import AstToMarkdown from "@/plugins/ai/components/ChatView/Markdown/AstToVNode.vue";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import type { AgentMessage } from "../logic/types";
 import { useAgentStore } from "../store/agent";
 import ToolCallCard from "./ToolCallCard.vue";
@@ -14,9 +18,16 @@ const parseMarkdown = (content: string) => {
   return markdownProcessor.parse(content ?? "");
 };
 
+const router = useRouter();
 const agentStore = useAgentStore();
 const chatContainer = ref<HTMLElement | null>(null);
 
+const allowConfigure = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.set")
+);
+const showAIConfigurationRecovery = computed(
+  () => agentStore.currentChatRequiresAIConfiguration
+);
 const displayMessages = computed(() =>
   agentStore.messages.filter(
     (message): message is AgentMessage =>
@@ -51,6 +62,17 @@ function getToolResult(
   return undefined;
 }
 
+function goConfigure() {
+  agentStore.clearError(agentStore.currentChatId);
+  router.push({
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+    hash: "#ai-assistant",
+  });
+}
+
+function dismissAIConfigurationRecovery() {
+  agentStore.clearError(agentStore.currentChatId);
+}
 watch(
   [() => agentStore.currentChatId, () => agentStore.messages.length],
   async () => {
@@ -92,7 +114,29 @@ watch(
       <span class="animate-pulse">&#9679;</span> {{ $t("common.loading") }}
     </div>
     <div
-      v-if="agentStore.error"
+      v-if="showAIConfigurationRecovery"
+      class="max-w-[80%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"
+    >
+      <div class="font-medium">
+        {{ $t("agent.ai-not-configured.title") }}
+      </div>
+      <div class="mt-1">
+        {{ $t("agent.ai-not-configured.description") }}
+      </div>
+      <div class="mt-3 flex flex-wrap gap-x-2 gap-y-2">
+        <NButton v-if="allowConfigure" type="primary" size="small" @click="goConfigure">
+          {{ $t("agent.ai-not-configured.configure") }}
+        </NButton>
+        <NButton size="small" @click="dismissAIConfigurationRecovery">
+          {{ $t("common.dismiss") }}
+        </NButton>
+      </div>
+      <div v-if="!allowConfigure" class="mt-1 text-amber-800">
+        {{ $t("agent.ai-not-configured.contact-admin") }}
+      </div>
+    </div>
+    <div
+      v-else-if="agentStore.error"
       class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
     >
       {{ agentStore.error }}

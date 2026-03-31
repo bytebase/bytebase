@@ -50,6 +50,7 @@ export interface AgentChat {
   page?: AgentChatSnapshot;
   archived: boolean;
   lastError?: string | null;
+  requiresAIConfiguration?: boolean;
   interrupted?: boolean;
   runId?: string | null;
 }

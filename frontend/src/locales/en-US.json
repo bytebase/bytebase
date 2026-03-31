@@ -3019,6 +3019,12 @@
     "tool-answer": "Answer:",
     "tool-value": "Value:",
     "tool-completed": "Completed",
-    "tool-failed": "Completed with issues"
+    "tool-failed": "Completed with issues",
+    "ai-not-configured": {
+      "title": "AI Assistant isn’t configured for this workspace",
+      "description": "To continue with the page agent, enable AI Assistant in workspace settings.",
+      "configure": "Configure AI",
+      "contact-admin": "Please contact your org administrator to configure AI Assistant."
+    }
   }
 }
