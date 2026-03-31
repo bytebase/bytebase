@@ -100,7 +100,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
 
-		// Validate audience - must be OAuth2 access token
+		// Validate audience - accept both user access tokens and OAuth2 access tokens
 		aud, ok := claims["aud"]
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing audience")
@@ -109,10 +109,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		validAudience := false
 		switch v := aud.(type) {
 		case string:
-			validAudience = v == auth.OAuth2AccessTokenAudience
+			validAudience = v == auth.OAuth2AccessTokenAudience || v == auth.AccessTokenAudience
 		case []any:
 			for _, a := range v {
-				if str, ok := a.(string); ok && str == auth.OAuth2AccessTokenAudience {
+				if str, ok := a.(string); ok && (str == auth.OAuth2AccessTokenAudience || str == auth.AccessTokenAudience) {
 					validAudience = true
 					break
 				}
