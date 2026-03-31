@@ -385,7 +385,9 @@ function SQLReviewSectionInner(
 
   const canGetReviewConfig = hasWorkspacePermissionV2("bb.reviewConfigs.get");
   const canGetPolicy = hasWorkspacePermissionV2("bb.policies.get");
-  const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
+  const canUpdateReviewConfig = hasWorkspacePermissionV2(
+    "bb.reviewConfigs.update"
+  );
 
   const reviewPolicyList = useVueState(() => [...reviewStore.reviewPolicyList]);
 
@@ -417,8 +419,9 @@ function SQLReviewSectionInner(
     setEnforce(currentPolicy?.enforce ?? false);
   }, [currentPolicy]);
 
-  // Fetch on mount
+  // Fetch the full review policy list and the current resource's policy on mount
   useEffect(() => {
+    reviewStore.fetchReviewPolicyList();
     reviewStore.getOrFetchReviewPolicyByResource(resourcePath, true);
   }, [resourcePath, reviewStore]);
 
@@ -483,7 +486,7 @@ function SQLReviewSectionInner(
           <div className="inline-flex items-center gap-x-2">
             <ToggleSwitch
               checked={enforce}
-              disabled={!canUpdatePolicy}
+              disabled={!canUpdateReviewConfig}
               onChange={setEnforce}
             />
             <div className="flex items-center gap-x-1">
@@ -500,7 +503,7 @@ function SQLReviewSectionInner(
               >
                 {pendingPolicy.name}
               </span>
-              {canUpdatePolicy && (
+              {canUpdateReviewConfig && (
                 <button
                   type="button"
                   className="p-0.5 text-gray-400 hover:text-gray-600"
@@ -518,7 +521,7 @@ function SQLReviewSectionInner(
           <div className="relative" ref={selectPanelRef}>
             <Button
               variant="outline"
-              disabled={!canUpdatePolicy}
+              disabled={!canUpdateReviewConfig}
               onClick={() => setShowSelectPanel(!showSelectPanel)}
             >
               {t("sql-review.configure-policy")}
@@ -562,9 +565,11 @@ const SQLReviewSection = forwardRef(SQLReviewSectionInner);
 function EnvironmentDetail({
   environment,
   onDelete,
+  onDirtyChange: onDetailDirtyChange,
 }: {
   environment: Environment;
   onDelete: (env: Environment) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
@@ -685,6 +690,10 @@ function EnvironmentDetail({
   }, [rolloutPolicy, originalRolloutPolicy]);
 
   const hasChanges = envChanged || policyChanged || sqlReviewDirty;
+
+  useEffect(() => {
+    onDetailDirtyChange(hasChanges);
+  }, [hasChanges, onDetailDirtyChange]);
 
   const revert = () => {
     setEditTitle(environment.title);
@@ -1248,6 +1257,10 @@ export function EnvironmentsPage() {
   const [selectedId, setSelectedId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
+  const [detailDirty, setDetailDirty] = useState(false);
+  const detailDirtyRef = useRef(false);
+  // Keep ref in sync so event handlers always see the latest value
+  detailDirtyRef.current = detailDirty;
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
 
@@ -1283,14 +1296,27 @@ export function EnvironmentsPage() {
     const onHashChange = () => {
       const hash = window.location.hash.slice(1);
       if (hash && environmentList.find((e) => e.id === hash)) {
+        if (detailDirtyRef.current) {
+          if (!window.confirm(t("common.leave-without-saving"))) {
+            return;
+          }
+        }
         setSelectedId(hash);
+        setDetailDirty(false);
       }
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [environmentList]);
+  }, [environmentList, t]);
 
   const selectTab = (id: string) => {
+    if (id === selectedId) return;
+    if (detailDirty) {
+      if (!window.confirm(t("common.leave-without-saving"))) {
+        return;
+      }
+    }
+    setDetailDirty(false);
     setSelectedId(id);
     const currentRoute = router.currentRoute.value;
     router.replace({
@@ -1407,6 +1433,7 @@ export function EnvironmentsPage() {
             key={selectedEnvironment.id}
             environment={selectedEnvironment}
             onDelete={handleDelete}
+            onDirtyChange={setDetailDirty}
           />
         )}
       </div>
