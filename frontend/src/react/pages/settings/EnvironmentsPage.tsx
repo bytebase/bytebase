@@ -388,6 +388,7 @@ function SQLReviewSectionInner(
   const canUpdateReviewConfig = hasWorkspacePermissionV2(
     "bb.reviewConfigs.update"
   );
+  const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
 
   const reviewPolicyList = useVueState(() => [...reviewStore.reviewPolicyList]);
 
@@ -503,7 +504,7 @@ function SQLReviewSectionInner(
               >
                 {pendingPolicy.name}
               </span>
-              {canUpdateReviewConfig && (
+              {canUpdatePolicy && (
                 <button
                   type="button"
                   className="p-0.5 text-gray-400 hover:text-gray-600"
@@ -521,7 +522,7 @@ function SQLReviewSectionInner(
           <div className="relative" ref={selectPanelRef}>
             <Button
               variant="outline"
-              disabled={!canUpdateReviewConfig}
+              disabled={!canUpdatePolicy}
               onClick={() => setShowSelectPanel(!showSelectPanel)}
             >
               {t("sql-review.configure-policy")}
