@@ -117,28 +117,22 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     const sessionId = params.get("session_id");
     if (!sessionId || !allowManage) return;
 
-    // Snapshot current state before polling to detect changes.
-    const prevPlan = subscriptionStore.currentPlan;
-    const prevSeats = subscriptionStore.subscription?.seats ?? 0;
-
     let cancelled = false;
     (async () => {
       try {
         const status = await subscriptionStore.verifyCheckoutSession(sessionId);
         if (status !== "complete" || cancelled) return;
 
+        // Poll without updating the store to avoid UI flash.
+        // On first check, if subscription is already non-FREE (webhook arrived before page load),
+        // we update the store and skip polling immediately.
         setPendingPayment(true);
         for (let i = 0; i < 30; i++) {
           if (cancelled) break;
           const sub = await subscriptionStore.fetchSubscription(false);
-          if (sub) {
-            // New purchase: plan changed from FREE.
-            // Plan update: seats or plan changed from previous values.
-            const changed = sub.plan !== prevPlan || sub.seats !== prevSeats;
-            if (sub.plan !== PlanType.FREE && changed) {
-              subscriptionStore.setSubscription(sub);
-              break;
-            }
+          if (sub && sub.plan !== PlanType.FREE) {
+            subscriptionStore.setSubscription(sub);
+            break;
           }
           await new Promise((r) => setTimeout(r, 2000));
         }

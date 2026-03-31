@@ -14133,7 +14133,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.VerifyCheckoutSessionResponse'
   /v1/subscription/license:
-    put:
+    patch:
       tags:
         - SubscriptionService
       summary: UploadLicense

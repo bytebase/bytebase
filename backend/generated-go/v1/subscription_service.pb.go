@@ -1733,7 +1733,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xd2\t\n" +
 	"\x13SubscriptionService\x12n\n" +
 	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1b\xdaA\x00\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x90\x01\n" +
-	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"A\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*\x1a\x18/v1/subscription/license\x12\x97\x01\n" +
+	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"A\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*2\x18/v1/subscription/license\x12\x97\x01\n" +
 	"\x0eCreatePurchase\x12\".bytebase.v1.CreatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"B\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/subscription:purchase\x12\x9d\x01\n" +
 	"\x0eUpdatePurchase\x12\".bytebase.v1.UpdatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"H\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:updatePurchase\x12\x9d\x01\n" +
 	"\x0eCancelPurchase\x12\".bytebase.v1.CancelPurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"H\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:cancelPurchase\x12\x92\x01\n" +

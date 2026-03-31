@@ -23,7 +23,7 @@ service SubscriptionService {
   // Uploads an enterprise license (self-hosted only).
   rpc UploadLicense(UploadLicenseRequest) returns (Subscription) {
     option (google.api.http) = {
-      put: "/v1/subscription/license"
+      patch: "/v1/subscription/license"
       body: "*"
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
