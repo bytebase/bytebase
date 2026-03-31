@@ -1,9 +1,9 @@
 <template>
-  <div v-if="shouldShow" class="py-3 flex flex-col gap-y-2 overflow-hidden">
+  <div v-if="shouldShow" class="flex flex-col gap-y-2 overflow-hidden">
     <!-- Row 1: Title + Run button -->
     <div class="flex items-center justify-between gap-2">
       <div class="flex flex-row items-center gap-2">
-        <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
+        <h3 class="textlabel uppercase">{{ $t("plan.checks.self") }}</h3>
         <NTooltip v-if="isStatementOversized" style="max-width: 20rem">
           <template #trigger>
             <NTag type="warning" round size="tiny">
@@ -82,6 +82,8 @@ import {
   useCurrentProjectV1,
   useCurrentUserV1,
 } from "@/store";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { RunPlanChecksRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -99,7 +101,7 @@ import { useSpecSheet } from "../StatementSection/useSpecSheet";
 
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
-const { plan, planCheckRuns } = usePlanContext();
+const { plan, issue, planCheckRuns } = usePlanContext();
 const { selectedSpec } = useSelectedSpec();
 const { refreshResources } = useResourcePoller();
 const { statusCountString } = usePlanCheckStatus(plan);
@@ -114,6 +116,8 @@ const shouldShow = computed(() => {
 });
 
 const allowRunChecks = computed(() => {
+  if (plan.value.state === State.DELETED) return false;
+  if (issue.value && issue.value.status !== IssueStatus.OPEN) return false;
   const me = currentUser.value;
   if (extractUserEmail(plan.value.creator) === me.email) {
     return true;

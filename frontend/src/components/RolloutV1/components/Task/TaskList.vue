@@ -33,20 +33,23 @@
       <!-- Show More button -->
       <div
         v-if="hasMoreTasks"
-        class="flex justify-center"
+        class="flex justify-start"
       >
-        <button
-          class="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+        <NButton
+          quaternary
+          type="primary"
+          size="tiny"
           @click="loadMoreTasks"
         >
           {{ $t("common.show-more") }} ({{ remainingTasksCount }} {{ $t("common.remaining") }})
-        </button>
+        </NButton>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import {
   emitPlanStatusChanged,

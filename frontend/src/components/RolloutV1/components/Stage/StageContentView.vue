@@ -41,31 +41,21 @@
             </template>
             {{ $t("rollout.stage.confirm-create") }}
           </NPopconfirm>
-          <!-- Mobile: Timeline drawer trigger (rightmost) -->
-          <StageContentSidebar
-            v-if="!isWideScreen && isStageCreated(selectedStage)"
-            :stage="selectedStage"
-            :task-runs="taskRuns"
-          />
         </div>
       </div>
     </div>
 
-    <!-- Main content area: responsive layout -->
-    <div class="flex flex-row">
-      <!-- Task list content -->
-      <div class="flex-1 min-w-0">
-        <TaskList
-          :stage="selectedStage"
-          :rollout="rollout"
-          :filter-statuses="filterStatuses"
-          :readonly="!isStageCreated(selectedStage)"
-        />
-      </div>
+    <!-- Main content area -->
+    <div class="flex flex-col">
+      <TaskList
+        :stage="selectedStage"
+        :rollout="rollout"
+        :filter-statuses="filterStatuses"
+        :readonly="!isStageCreated(selectedStage)"
+      />
 
-      <!-- Desktop: Timeline sidebar -->
       <StageContentSidebar
-        v-if="isWideScreen && isStageCreated(selectedStage)"
+        v-if="isStageCreated(selectedStage)"
         :stage="selectedStage"
         :task-runs="taskRuns"
       />
@@ -80,7 +70,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useWindowSize } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref } from "vue";
@@ -104,10 +93,6 @@ defineEmits<{
 }>();
 
 const filterStatuses = ref<Task_Status[]>([]);
-
-// Responsive layout: sidebar on wide screen (>= 768px), drawer on narrow
-const { width: windowWidth } = useWindowSize();
-const isWideScreen = computed(() => windowWidth.value >= 768);
 
 const { taskRuns } = usePlanContextWithRollout();
 

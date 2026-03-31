@@ -47,7 +47,6 @@ export const router = createRouter({
     ...dashboardRoutes,
     ...sqlEditorRoutes,
   ],
-  linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
     if (to.hash) {
       try {

@@ -1,9 +1,8 @@
 <template>
-  <RouterLink :to="rolloutRoute">
+  <RouterLink :to="planRoute">
     <NButton icon-placement="right" secondary strong>
-      <TaskStatus :status="rolloutStatus" size="small" />
-      <span class="ml-2 mr-1">{{ $t("common.rollout") }}</span>
-      <span>#{{ planID }}</span>
+      <span class="mr-1">#{{ planID }}</span>
+      <span>{{ $t("common.plan") }}</span>
       <template #icon>
         <ArrowUpRightIcon class="opacity-60" />
       </template>
@@ -16,29 +15,25 @@ import { ArrowUpRightIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
-import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUID,
-  extractProjectResourceName,
-  getRolloutStatus,
-} from "@/utils";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
+import { extractPlanUID, extractProjectResourceName } from "@/utils";
 
-const { plan, rollout } = usePlanContext();
-
-const rolloutStatus = computed(() => {
-  if (!rollout.value) return Task_Status.NOT_STARTED;
-  return getRolloutStatus(rollout.value);
-});
+const { plan } = usePlanContext();
 
 const planID = computed(() => extractPlanUID(plan.value.name));
 
-const rolloutRoute = computed(() => ({
-  name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-  params: {
-    projectId: extractProjectResourceName(plan.value.name),
-    planId: planID.value,
-  },
-}));
+const planRoute = computed(() => {
+  if (plan.value.hasRollout) {
+    return buildPlanDeployRouteFromPlanName(plan.value.name);
+  }
+
+  return {
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(plan.value.name),
+      planId: planID.value,
+    },
+  };
+});
 </script>

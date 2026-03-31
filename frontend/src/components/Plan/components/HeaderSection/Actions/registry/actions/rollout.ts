@@ -1,39 +1,5 @@
 import { t } from "@/plugins/i18n";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { ActionDefinition } from "../types";
-
-export const ROLLOUT_CREATE: ActionDefinition = {
-  id: "ROLLOUT_CREATE",
-  label: () => t("issue.create-rollout"),
-  buttonType: "default",
-  category: (ctx) => (ctx.issueApproved ? "primary" : "secondary"),
-  priority: 55,
-
-  isVisible: (ctx) => {
-    // Deferred rollout plans use ROLLOUT_START to create rollout and run tasks together
-    if (ctx.hasDeferredRollout) return false;
-    if (ctx.isIssueOnly) return false;
-    if (ctx.plan.hasRollout) return false;
-    if (!ctx.issue) return false;
-    // Don't show create rollout when issue is closed
-    if (ctx.issueStatus === IssueStatus.CANCELED) return false;
-
-    // Project setting validations are handled in RolloutCreatePanel
-    return true;
-  },
-
-  isDisabled: (ctx) => !ctx.permissions.createRollout,
-  disabledReason: (ctx) => {
-    if (!ctx.permissions.createRollout) {
-      return t("common.missing-required-permission", {
-        permissions: "bb.rollouts.create",
-      });
-    }
-    return undefined;
-  },
-
-  executeType: "immediate",
-};
 
 export const ROLLOUT_START: ActionDefinition = {
   id: "ROLLOUT_START",
@@ -43,19 +9,12 @@ export const ROLLOUT_START: ActionDefinition = {
   priority: 60,
 
   isVisible: (ctx) => {
-    // Deferred rollout plans: rollout is created on-demand when user clicks action button
-    if (ctx.hasDeferredRollout) {
-      if (!ctx.issue || !ctx.issueApproved) return false;
-      // Show if no rollout yet (will create it) or has startable tasks
-      if (!ctx.rollout) return true;
-      return ctx.hasStartableTasks;
-    }
-    // Regular plans: rollout must already exist
-    if (!ctx.rollout) return false;
-    if (!ctx.issueApproved) return false;
-    if (!ctx.hasDatabaseCreateOrExportTasks) return false;
-    if (!ctx.hasStartableTasks) return false;
-    return true;
+    // Only for deferred rollout plans (export/create DB) — rollout created on-demand
+    // Change database plans: rollout managed in Plan Detail Page's Deploy section
+    if (!ctx.hasDeferredRollout) return false;
+    if (!ctx.issue || !ctx.issueApproved) return false;
+    if (!ctx.rollout) return true;
+    return ctx.hasStartableTasks;
   },
 
   isDisabled: (ctx) => !ctx.permissions.runTasks,
@@ -80,6 +39,8 @@ export const ROLLOUT_CANCEL: ActionDefinition = {
   priority: 80,
 
   isVisible: (ctx) => {
+    // Only for deferred rollout plans — change database rollouts managed on Plan Detail Page
+    if (!ctx.hasDeferredRollout) return false;
     if (!ctx.rollout) return false;
     if (!ctx.issueApproved) return false;
     if (!ctx.hasRunningTasks) return false;
@@ -116,7 +77,6 @@ export const EXPORT_DOWNLOAD: ActionDefinition = {
 };
 
 export const rolloutActions: ActionDefinition[] = [
-  ROLLOUT_CREATE,
   ROLLOUT_START,
   ROLLOUT_CANCEL,
   EXPORT_DOWNLOAD,

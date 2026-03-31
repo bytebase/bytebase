@@ -12,8 +12,52 @@
       </div>
     </div>
 
-    <!-- Timeline entries -->
+    <!-- Inline mode: flat single-line rows -->
+    <template v-if="isInlineMode">
+      <div v-if="isLoading" class="py-4 flex justify-center">
+        <BBSpin />
+      </div>
+      <div
+        v-else-if="stageTaskRuns.length === 0"
+        class="py-2 text-sm text-gray-500"
+      >
+        {{ $t("common.no-data") }}
+      </div>
+      <div v-else class="flex flex-col">
+        <div
+          v-for="taskRun in displayedTaskRuns"
+          :key="taskRun.name"
+          class="flex items-center gap-2 py-1.5 text-sm cursor-pointer hover:bg-gray-50 rounded"
+          @click="handleClickTarget(taskRun)"
+        >
+          <TaskStatus
+            :status="mapTaskRunStatusToTaskStatus(taskRun.status)"
+            size="small"
+            :disabled="true"
+            class="shrink-0"
+          />
+          <span class="text-xs text-gray-400 shrink-0 flex items-center gap-1">
+            <TimestampDisplay
+              :timestamp="taskRun.updateTime"
+              custom-class="!text-xs !text-gray-400"
+            />
+            <template v-if="getTaskRunCreatorDisplay(taskRun)">
+              · {{ getTaskRunCreatorDisplay(taskRun)?.title }}
+            </template>
+            <template v-if="getTaskRunDuration(taskRun)">
+              · {{ getTaskRunDuration(taskRun) }}
+            </template>
+          </span>
+          <span class="truncate text-gray-600">
+            {{ getTaskTargetDisplay(taskRun).fullPath }}
+          </span>
+        </div>
+      </div>
+    </template>
+
+    <!-- Timeline mode (sidebar / drawer) -->
     <div
+      v-else
       class="overflow-y-auto pt-1 pb-3"
       :class="isSidebarMode ? 'px-3 max-h-[calc(100vh-300px)]' : 'px-1'"
     >
@@ -181,7 +225,8 @@ const props = withDefaults(
     taskRuns: TaskRun[];
     // "sidebar" - sticky sidebar on desktop with padding and max-height
     // "drawer" - inside a drawer with minimal padding for drawer's own spacing
-    mode?: "sidebar" | "drawer";
+    // "inline" - flat single-line rows, no timeline chrome
+    mode?: "sidebar" | "drawer" | "inline";
   }>(),
   {
     mode: "sidebar",
@@ -190,6 +235,7 @@ const props = withDefaults(
 
 // Mode-based styling
 const isSidebarMode = computed(() => props.mode === "sidebar");
+const isInlineMode = computed(() => props.mode === "inline");
 
 const { project } = useCurrentProjectV1();
 const userStore = useUserStore();

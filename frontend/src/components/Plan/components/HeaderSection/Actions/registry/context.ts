@@ -205,7 +205,6 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
       hasProjectPermissionV2(project, "bb.plans.update"),
     createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
-    // For data export issues, creators use ROLLOUT_START which checks runTasks instead.
     createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
     runTasks:
       issue?.type === Issue_Type.DATABASE_EXPORT
@@ -281,7 +280,6 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     hasDatabaseCreateOrExportTasks,
     hasStartableTasks,
     hasRunningTasks,
-
     permissions,
     validation,
   };

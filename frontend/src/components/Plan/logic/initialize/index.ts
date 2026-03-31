@@ -28,6 +28,17 @@ export * from "./create";
 
 export * from "./util";
 
+const shouldLoadRolloutForPlan = (plan: Plan) => {
+  return (
+    plan.hasRollout &&
+    plan.specs.some(
+      (spec) =>
+        spec.config.case === "createDatabaseConfig" ||
+        spec.config.case === "exportDataConfig"
+    )
+  );
+};
+
 export function useInitializePlan(
   projectId: MaybeRef<string>,
   planId: MaybeRef<string | undefined>,
@@ -155,7 +166,7 @@ export function useInitializePlan(
       // Fetch the plan using the issue's plan reference
       planResult = await planStore.fetchPlanByName(issueResult.plan);
 
-      if (planResult.hasRollout) {
+      if (shouldLoadRolloutForPlan(planResult)) {
         try {
           const rolloutName = getRolloutFromPlan(planResult.name);
           const rolloutRequest = create(GetRolloutRequestSchema, {
@@ -185,7 +196,7 @@ export function useInitializePlan(
         issueResult = newIssue;
       }
 
-      if (planResult.hasRollout) {
+      if (shouldLoadRolloutForPlan(planResult)) {
         try {
           const rolloutName = getRolloutFromPlan(planResult.name);
           const rolloutRequest = create(GetRolloutRequestSchema, {

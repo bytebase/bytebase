@@ -3,8 +3,8 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-1">
         <span
-          class="text-base"
-          :class="isEmpty(state.statement) ? 'text-red-600' : ''"
+          class="textlabel uppercase"
+          :class="isEmpty(state.statement) ? 'text-red-600!' : ''"
         >
           {{ statementTitle }}
         </span>
@@ -13,7 +13,7 @@
       <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
           <SQLUploadButton
-            size="small"
+            size="tiny"
             :loading="state.isUploadingFile"
             @update:sql="handleUpdateStatement"
           >
@@ -21,7 +21,7 @@
           </SQLUploadButton>
           <NButton
             v-if="shouldShowSchemaEditorButton && targetDatabaseNames.length > 0"
-            size="small"
+            size="tiny"
             @click="handleOpenSchemaEditor"
           >
             <template #icon>
@@ -39,7 +39,7 @@
                 <template #trigger>
                   <NButton
                     v-if="!isSheetOversize"
-                    size="small"
+                    size="tiny"
                     tag="div"
                     :disabled="denyEditStatementReasons.length > 0"
                     @click.prevent="beginEdit"
@@ -49,7 +49,7 @@
                   <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
                   <SQLUploadButton
                     v-else
-                    size="small"
+                    size="tiny"
                     :loading="state.isUploadingFile"
                     @update:sql="handleUpdateStatementAndOverwrite"
                   >
@@ -64,7 +64,7 @@
           </template>
           <template v-else>
             <SQLUploadButton
-              size="small"
+              size="tiny"
               :loading="state.isUploadingFile"
               @update:sql="handleUpdateStatement"
             >
@@ -72,7 +72,7 @@
             </SQLUploadButton>
             <NButton
               v-if="shouldShowSchemaEditorButton"
-              size="small"
+              size="tiny"
               @click="handleOpenSchemaEditor"
             >
               <template #icon>
@@ -82,7 +82,7 @@
             </NButton>
             <NButton
               v-if="editorState.isEditing.value"
-              size="small"
+              size="tiny"
               :disabled="!allowSaveSQL"
               @click.prevent="saveEdit"
             >
@@ -90,7 +90,7 @@
             </NButton>
             <NButton
               v-if="editorState.isEditing.value"
-              size="small"
+              size="tiny"
               quaternary
               @click.prevent="cancelEdit"
             >
@@ -107,7 +107,7 @@
       :description="$t('issue.statement-from-sheet-warning')"
     >
       <template #action>
-        <DownloadSheetButton v-if="sheetName" :sheet="sheetName" size="small" />
+        <DownloadSheetButton v-if="sheetName" :sheet="sheetName" size="tiny" />
       </template>
     </BBAttention>
 
@@ -130,7 +130,7 @@
       />
       <div v-if="!readonly" class="absolute bottom-1 right-4">
         <NButton
-          size="small"
+          size="tiny"
           :quaternary="true"
           @click="state.showEditorModal = true"
         >
@@ -228,7 +228,10 @@ import {
   useInstanceV1EditorLanguage,
 } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
-import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  useForceReadonly,
+  useSelectedSpec,
+} from "../../SpecDetailView/context";
 import { isGhostEnabled } from "../directiveUtils";
 import SchemaEditorDrawer from "../SchemaEditorDrawer.vue";
 import { useSpecSheet } from "../useSpecSheet";
@@ -288,8 +291,10 @@ const { markers } = useSQLAdviceMarkers(
  * - Not in edit mode
  * - Disallowed to edit statement
  */
+const forceReadonly = useForceReadonly();
+
 const isEditorReadonly = computed(() => {
-  if (readonly.value) {
+  if (forceReadonly || readonly.value) {
     return true;
   }
   if (isCreating.value) {
@@ -327,8 +332,8 @@ const denyEditStatementReasons = computed(() => {
 });
 
 const shouldShowEditButton = computed(() => {
-  // Not allowed to edit if readonly.
-  if (readonly.value) {
+  // Not allowed to edit if readonly or forced readonly (Issue page).
+  if (forceReadonly || readonly.value) {
     return false;
   }
   // Need not to show "Edit" while the plan is still pending create.

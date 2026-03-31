@@ -60,8 +60,8 @@ import TaskRunComment from "@/components/RolloutV1/components/TaskRun/TaskRunCom
 import TaskRunDetail from "@/components/RolloutV1/components/TaskRun/TaskRunDetail.vue";
 import TaskRunStatusIcon from "@/components/RolloutV1/components/TaskRun/TaskRunStatusIcon.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
+import { buildTaskDetailRoute } from "@/router/dashboard/projectV1RouteHelpers";
+import { useDatabaseV1Store } from "@/store";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
@@ -69,12 +69,7 @@ import {
   type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-  extractTaskUID,
-  flattenTaskV1List,
-} from "@/utils";
+import { extractTaskUID, flattenTaskV1List } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import { useSelectedSpec } from "./context";
@@ -83,7 +78,6 @@ const DEFAULT_TASK_RUNS_PER_PAGE = 5;
 
 const { t } = useI18n();
 const router = useRouter();
-const { project } = useCurrentProjectV1();
 const { rollout, taskRuns } = usePlanContextWithRollout();
 const { selectedSpec } = useSelectedSpec();
 const databaseStore = useDatabaseV1Store();
@@ -262,29 +256,6 @@ const shouldShowDetailButton = (taskRun: TaskRun) => {
   ].includes(taskRun.status);
 };
 
-// Helper function to get route params for a task run
-const getTaskRouteParams = (taskRun: TaskRun) => {
-  const task = getTaskForTaskRun(taskRun);
-  if (!task) return null;
-
-  // Extract IDs from task name (format: projects/xxx/plans/yyy/rollout/stages/zzz/tasks/aaa)
-
-  const taskParts = task.name.split("/");
-
-  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
-
-  const stageIndex = taskParts.indexOf("stages");
-
-  const taskIndex = taskParts.indexOf("tasks");
-
-  if (stageIndex === -1 || taskIndex === -1) return null;
-
-  const stageId = taskParts[stageIndex + 1];
-  const taskId = taskParts[taskIndex + 1];
-
-  return { planId, stageId, taskId };
-};
-
 // Get database for selected task run
 const selectedDatabase = computed(() => {
   if (!taskRunDetailContext.taskRun) return undefined;
@@ -295,17 +266,9 @@ const selectedDatabase = computed(() => {
 
 // Navigate to task detail page
 const navigateToTaskDetail = (taskRun: TaskRun) => {
-  const params = getTaskRouteParams(taskRun);
-  if (params) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-      params: {
-        projectId: extractProjectResourceName(project.value.name),
-        planId: params.planId,
-        stageId: params.stageId || "_", // Use placeholder for empty stageId
-        taskId: params.taskId,
-      },
-    });
+  const task = getTaskForTaskRun(taskRun);
+  if (task) {
+    router.push(buildTaskDetailRoute(task.name));
   }
 };
 
