@@ -144,7 +144,10 @@ watch(
   () => props.allTasks.map((task) => task.name),
   async () => {
     rolloutPermissionReady.value = false;
-    await preloadRolloutPermissionContext(props.allTasks);
+    await preloadRolloutPermissionContext(
+      props.allTasks,
+      props.stage.environment
+    );
     rolloutPermissionReady.value = true;
   },
   { immediate: true }
@@ -189,7 +192,11 @@ const getSelectAllTooltip = () => {
 
 const canPerformTaskActions = computed(() => {
   if (!rolloutPermissionReady.value) return false;
-  return canRolloutTasks(props.selectedTasks, issue.value);
+  return canRolloutTasks(
+    props.selectedTasks,
+    issue.value,
+    props.stage.environment
+  );
 });
 
 const hasRunnableTasks = computed(() => {

@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref, watch } from "vue";
+import { usePlanContext } from "@/components/Plan/logic";
 import {
   CANCELABLE_TASK_STATUSES,
   RUNNABLE_TASK_STATUSES,
@@ -37,6 +38,7 @@ export const useTaskActions = (
 ): UseTaskActionsReturn => {
   const showActionPanel = ref(false);
   const selectedAction = ref<TaskAction>();
+  const { issue } = usePlanContext();
 
   // Cache permission check - only re-evaluate when task name changes
   // This prevents flickering during poller refetches
@@ -45,8 +47,13 @@ export const useTaskActions = (
     () => task().name,
     async () => {
       canPerformActions.value = false;
-      await preloadRolloutPermissionContext([task()]);
-      canPerformActions.value = canRolloutTasks([task()]);
+      const environment = stage()?.environment;
+      await preloadRolloutPermissionContext([task()], environment);
+      canPerformActions.value = canRolloutTasks(
+        [task()],
+        issue.value,
+        environment
+      );
     },
     { immediate: true }
   );

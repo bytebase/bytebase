@@ -393,10 +393,15 @@ watch(
   async (show) => {
     if (show) {
       const tasks = props.target.tasks ?? props.target.stage?.tasks ?? [];
+      const environment = props.target.stage?.environment;
       permissionLoading.value = true;
       canRolloutPermission.value = false;
-      await preloadRolloutPermissionContext(tasks);
-      canRolloutPermission.value = canRolloutTasks(tasks, issue.value);
+      await preloadRolloutPermissionContext(tasks, environment);
+      canRolloutPermission.value = canRolloutTasks(
+        tasks,
+        issue.value,
+        environment
+      );
       permissionLoading.value = false;
     }
   },

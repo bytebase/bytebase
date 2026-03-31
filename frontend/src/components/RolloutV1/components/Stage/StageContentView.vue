@@ -109,7 +109,10 @@ watch(
       return;
     }
     rolloutPermissionReady.value = false;
-    await preloadRolloutPermissionContext(props.selectedStage.tasks);
+    await preloadRolloutPermissionContext(
+      props.selectedStage.tasks,
+      props.selectedStage.environment
+    );
     rolloutPermissionReady.value = true;
   },
   { immediate: true }
@@ -126,7 +129,12 @@ const canRunStage = computed(() => {
   return (
     props.selectedStage.tasks.some((task) =>
       RUNNABLE_TASK_STATUSES.includes(task.status)
-    ) && canRolloutTasks(props.selectedStage.tasks, issue.value)
+    ) &&
+    canRolloutTasks(
+      props.selectedStage.tasks,
+      issue.value,
+      props.selectedStage.environment
+    )
   );
 });
 
