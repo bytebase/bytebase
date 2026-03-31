@@ -2528,7 +2528,13 @@
     "tool-answer": "Câu trả lời:",
     "tool-value": "Giá trị:",
     "tool-completed": "Hoàn tất",
-    "tool-failed": "Hoàn tất kèm vấn đề"
+    "tool-failed": "Hoàn tất kèm vấn đề",
+    "ai-not-configured": {
+      "title": "Trợ lý AI chưa được cấu hình cho workspace này",
+      "description": "Để tiếp tục với page agent, hãy bật Trợ lý AI trong cài đặt workspace.",
+      "configure": "Cấu hình AI",
+      "contact-admin": "Vui lòng liên hệ quản trị viên của tổ chức để cấu hình Trợ lý AI."
+    }
   },
   "audit-log": {
     "export-finished": "Xuất hoàn tất",

@@ -2528,7 +2528,13 @@
     "tool-answer": "回答:",
     "tool-value": "値:",
     "tool-completed": "完了",
-    "tool-failed": "問題ありで完了"
+    "tool-failed": "問題ありで完了",
+    "ai-not-configured": {
+      "title": "このワークスペースでは AI アシスタントが設定されていません",
+      "description": "ページエージェントを続けるには、ワークスペース設定で AI アシスタントを有効にしてください。",
+      "configure": "AI を設定",
+      "contact-admin": "AI アシスタントを設定するには、組織の管理者に連絡してください。"
+    }
   },
   "audit-log": {
     "export-finished": "エクスポートが完了しました",

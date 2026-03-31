@@ -2528,7 +2528,13 @@
     "tool-answer": "Respuesta:",
     "tool-value": "Valor:",
     "tool-completed": "Completado",
-    "tool-failed": "Completado con problemas"
+    "tool-failed": "Completado con problemas",
+    "ai-not-configured": {
+      "title": "El asistente de IA no está configurado para este espacio de trabajo",
+      "description": "Para continuar con el agente de página, habilita el asistente de IA en la configuración del espacio de trabajo.",
+      "configure": "Configurar IA",
+      "contact-admin": "Ponte en contacto con el administrador de tu organización para configurar el asistente de IA."
+    }
   },
   "audit-log": {
     "export-finished": "Exportación finalizada",
