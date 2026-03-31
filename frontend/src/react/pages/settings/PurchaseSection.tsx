@@ -288,7 +288,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
           card.type,
           interval,
           seats,
-          ""
+          subscription?.etag ?? ""
         );
       } else {
         paymentUrl = await subscriptionStore.createPurchase(
