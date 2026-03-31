@@ -88,11 +88,10 @@ import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay
 import { useAccessGrantStore, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
-import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 import { getAccessGrantExpirationText } from "@/utils/accessGrant";
 import { usePlanContextWithIssue } from "../../../logic";
 
-const { issue, project } = usePlanContextWithIssue();
+const { issue } = usePlanContextWithIssue();
 const dbStore = useDatabaseV1Store();
 const accessGrantStore = useAccessGrantStore();
 
@@ -111,17 +110,7 @@ watchEffect(async () => {
     return;
   }
   try {
-    let grant: AccessGrant | undefined;
-    if (hasProjectPermissionV2(project.value, "bb.accessGrants.get")) {
-      grant = await accessGrantStore.getAccessGrant(name);
-    } else {
-      const parent = `projects/${extractProjectResourceName(issue.value.name)}`;
-      const response = await accessGrantStore.searchMyAccessGrants({
-        parent,
-        filter: { name },
-      });
-      grant = response.accessGrants[0];
-    }
+    const grant = await accessGrantStore.getAccessGrant(name);
     accessGrant.value = grant;
     // Pre-fetch databases for display
     if (accessGrant.value) {
