@@ -137,7 +137,6 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.Msg.ShowDeleted,
-		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 	}
 	filterResult, err := store.GetAccountListFilter(request.Msg.Filter)
 	if err != nil {
@@ -146,18 +145,25 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	find.FilterQ = filterResult.Query
 	find.ProjectID = filterResult.ProjectID
 
-	if v := find.ProjectID; v != nil {
+	// Set workspace scope:
+	// - When ProjectID is set, workspace is required for the project member CTE query.
+	// - In SaaS mode (no ProjectID), scope to workspace IAM members to prevent cross-workspace listing.
+	if find.ProjectID != nil {
+		find.Workspace = common.GetWorkspaceIDFromContext(ctx)
+
 		user, ok := GetUserFromContext(ctx)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 		}
-		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), *v)
+		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, common.GetWorkspaceIDFromContext(ctx), *find.ProjectID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check user permission"))
 		}
 		if !hasPermission {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.ProjectsGet))
 		}
+	} else if s.profile.SaaS {
+		find.Workspace = common.GetWorkspaceIDFromContext(ctx)
 	}
 
 	users, err := s.store.ListUsers(ctx, find)

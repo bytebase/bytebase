@@ -213,7 +213,8 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String(), find.Workspace)
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	} else if find.Workspace != "" {
-		// Workspace filter (no project): include only users who are members of the workspace IAM policy.
+		// Workspace IAM filter (no project): include only users who are members of the workspace IAM policy.
+		// Used in SaaS mode to prevent cross-workspace user listing.
 		with.Space(`WITH workspace_members AS (
 			SELECT ARRAY_AGG(DISTINCT member) AS members
 			FROM (
