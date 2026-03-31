@@ -246,7 +246,7 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 	// Clean up the TLS config after connection
 	d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
 
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true",
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=%s&allowCleartextPasswords=true&multiStatements=true&maxAllowedPacket=0",
 		connCfg.DataSource.Username, authenticationToken, dbEndpoint, connCfg.ConnectionContext.DatabaseName, tlsKey,
 	), nil
 }
@@ -262,7 +262,7 @@ func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (st
 			return d.Dial(ctx, connCfg.DataSource.Host)
 		})
 
-	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true",
+	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
 		connCfg.DataSource.Username, connCfg.ConnectionContext.DatabaseName), nil
 }
 

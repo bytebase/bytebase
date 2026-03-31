@@ -214,13 +214,14 @@ const workspaceRoutes: RouteRecordRaw[] = [
       {
         path: "",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
-        component: () => import("@/views/SettingWorkspaceSSO.vue"),
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "IDPsPage" }),
       },
       {
         path: ":idpId",
         name: WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
-        component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "IDPDetailPage" }),
       },
     ],
   },
@@ -241,8 +242,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
         meta: {
           title: () => t("custom-approval.risk.self"),
         },
-        component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "RiskCenterPage" }),
       },
       {
         path: "custom-approval",
@@ -261,8 +262,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.global-masking"),
           requiredPermissionList: () => ["bb.policies.getMaskingRulePolicy"],
         },
-        component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GlobalMaskingPage" }),
       },
       {
         path: "semantic-types",
@@ -281,9 +282,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.data-classification"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () =>
-          import("@/views/SettingWorkspaceDataClassification.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "DataClassificationPage" }),
       },
       {
         path: "audit-log",
@@ -347,8 +347,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.custom-roles"),
           requiredPermissionList: () => ["bb.roles.list"],
         },
-        component: () => import("@/views/SettingWorkspaceRole.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "RolesPage" }),
       },
     ],
   },

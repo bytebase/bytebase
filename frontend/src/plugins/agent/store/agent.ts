@@ -48,6 +48,7 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
     page: options.page,
     archived: options.archived ?? false,
     lastError: null,
+    requiresAIConfiguration: false,
     interrupted: false,
     runId: null,
   };
@@ -206,6 +207,7 @@ const normalizeChat = (raw: unknown): AgentChat => {
         : chat.lastError === null
           ? null
           : null,
+    requiresAIConfiguration: Boolean(chat.requiresAIConfiguration),
     interrupted: Boolean(chat.interrupted),
     runId: typeof chat.runId === "string" ? chat.runId : null,
   };
@@ -273,6 +275,7 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
       chat.status = DEFAULT_CHAT_STATUS;
       chat.interrupted = true;
       chat.lastError = null;
+      chat.requiresAIConfiguration = false;
     }
 
     const pendingAsk = normalizePendingAsk(rawPendingAskByChatId[chat.id]);
@@ -347,6 +350,9 @@ export const useAgentStore = defineStore("agent", () => {
   );
   const loading = computed(() => currentChat.value?.status === "running");
   const error = computed(() => currentChat.value?.lastError ?? null);
+  const currentChatRequiresAIConfiguration = computed(
+    () => currentChat.value?.requiresAIConfiguration ?? false
+  );
   const runningChatIds = computed(() =>
     chats.value
       .filter((chat) => chat.status === "running")
@@ -427,6 +433,7 @@ export const useAgentStore = defineStore("agent", () => {
     options: {
       interrupted?: boolean;
       lastError?: string | null;
+      requiresAIConfiguration?: boolean;
       page?: AgentChatSnapshot;
     } = {}
   ) => {
@@ -437,6 +444,7 @@ export const useAgentStore = defineStore("agent", () => {
     chat.status = status;
     chat.interrupted = options.interrupted ?? false;
     chat.lastError = options.lastError ?? null;
+    chat.requiresAIConfiguration = options.requiresAIConfiguration ?? false;
     if (options.page) {
       chat.page = options.page;
     }
@@ -558,6 +566,7 @@ export const useAgentStore = defineStore("agent", () => {
       chat.title = getChatTitleFromMessage(message.content);
     }
     chat.lastError = null;
+    chat.requiresAIConfiguration = false;
     chat.interrupted = false;
     chat.updatedTs = createdTs;
     return agentMessage;
@@ -656,6 +665,7 @@ export const useAgentStore = defineStore("agent", () => {
       return;
     }
     chat.lastError = null;
+    chat.requiresAIConfiguration = false;
     chat.interrupted = false;
     chat.runId = null;
     if (chat.status === "error") {
@@ -692,10 +702,12 @@ export const useAgentStore = defineStore("agent", () => {
     options: {
       status?: Extract<AgentChatStatus, "idle" | "error">;
       lastError?: string | null;
+      requiresAIConfiguration?: boolean;
     } = {}
   ) => {
     setChatStatus(chatId, options.status ?? DEFAULT_CHAT_STATUS, {
       lastError: options.lastError ?? null,
+      requiresAIConfiguration: options.requiresAIConfiguration ?? false,
       interrupted: false,
     });
     const chat = getChat(chatId);
@@ -821,6 +833,7 @@ export const useAgentStore = defineStore("agent", () => {
     currentPendingAsk,
     loading,
     error,
+    currentChatRequiresAIConfiguration,
     runningChatIds,
     hasRunningChat,
     abortControllersByChatId,

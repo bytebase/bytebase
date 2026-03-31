@@ -17,7 +17,7 @@ let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 async function render() {
   if (!container.value) return;
-  const [{ mountReactPage }, i18nModule] = await Promise.all([
+  const [{ mountReactPage, updateReactPage }, i18nModule] = await Promise.all([
     import("./mount"),
     import("./i18n"),
   ]);
@@ -26,11 +26,17 @@ async function render() {
   }
   if (!root) {
     root = await mountReactPage(container.value, props.page);
+  } else {
+    await updateReactPage(root, props.page);
   }
 }
 
 onMounted(() => render());
 watch(locale, () => render());
+watch(
+  () => props.page,
+  () => render()
+);
 onUnmounted(() => {
   root?.unmount();
   root = null;

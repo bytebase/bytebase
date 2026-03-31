@@ -86,6 +86,7 @@
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
 import { NScrollbar } from "naive-ui";
 import { computed, reactive, watch } from "vue";
+import { useRoute } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import type { SidebarItem } from "./type";
 
@@ -114,6 +115,12 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   expandedSidebar: new Set(),
 });
+
+// Track groups auto-expanded by route so we can collapse them on navigation
+// without collapsing groups the user manually opened.
+const autoExpanded = new Set<string>();
+// Track groups the user has manually toggled — never override these.
+const manualToggled = new Set<string>();
 
 const parentRouteClass = computed(() => {
   return "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
@@ -146,26 +153,60 @@ const filteredSidebarList = computed(() => {
     });
 });
 
+const currentRoute = useRoute();
+
+const expandForActiveRoute = () => {
+  // Remove previous auto-expansions (preserve manual ones)
+  for (const key of autoExpanded) {
+    state.expandedSidebar.delete(key);
+  }
+  autoExpanded.clear();
+  for (let i = 0; i < filteredSidebarList.value.length; i++) {
+    const item = filteredSidebarList.value[i];
+    const key = `${i}`;
+    if (item.children.length === 0) continue;
+    // Never override groups the user has manually toggled.
+    if (manualToggled.has(key)) continue;
+    if (item.expand) {
+      state.expandedSidebar.add(key);
+      continue;
+    }
+    // Use getItemClass to detect active children — it handles all
+    // route aliases (e.g. user-profile → users).
+    const hasActiveChild = item.children.some(
+      (child) => props.getItemClass(child).length > 0
+    );
+    if (hasActiveChild && !state.expandedSidebar.has(key)) {
+      state.expandedSidebar.add(key);
+      autoExpanded.add(key);
+    }
+  }
+};
+
 watch(
   () => filteredSidebarList.value,
   () => {
     state.expandedSidebar.clear();
-    for (let i = 0; i < filteredSidebarList.value.length; i++) {
-      if (
-        filteredSidebarList.value[i].children.length > 0 &&
-        filteredSidebarList.value[i].expand
-      ) {
-        state.expandedSidebar.add(`${i}`);
-      }
-    }
+    manualToggled.clear();
+    expandForActiveRoute();
   },
   { immediate: true }
+);
+
+watch(
+  () => currentRoute.name,
+  () => {
+    expandForActiveRoute();
+  }
 );
 
 const onClick = (sidebar: SidebarItem, key: string, e: MouseEvent) => {
   if (sidebar.path) {
     return emit("select", sidebar, e);
   }
+  // Mark as manually toggled so route changes won't fight user intent.
+  manualToggled.add(key);
+  autoExpanded.delete(key);
   if (state.expandedSidebar.has(key)) {
     state.expandedSidebar.delete(key);
   } else {
