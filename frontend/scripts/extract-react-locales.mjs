@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { DYNAMIC_PREFIXES } from "../src/react/locales/dynamic-prefixes.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -18,8 +19,6 @@ const REACT_DIR = resolve(ROOT, "src/react");
 const OUT_DIR = resolve(ROOT, "src/react/locales");
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
-import { DYNAMIC_PREFIXES } from "../src/react/locales/dynamic-prefixes.mjs";
-
 // ---------------------------------------------------------------------------
 // 1. Collect translation keys from React source files
 // ---------------------------------------------------------------------------
@@ -27,7 +26,7 @@ function findTsxFiles(dir) {
   const results = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
+    if (entry.isDirectory() && entry.name !== "locales") {
       results.push(...findTsxFiles(fullPath));
     } else if (entry.name.endsWith(".tsx")) {
       results.push(fullPath);
@@ -39,18 +38,14 @@ function findTsxFiles(dir) {
 function collectKeys() {
   const files = findTsxFiles(REACT_DIR);
   const keys = new Set();
-
   // Only match single/double quoted strings — template literals with ${} are dynamic keys
-  const patterns = [/\bt\(\s*["']([^"']+)["']/g];
-
+  const re = /\bt\(\s*["']([^"']+)["']/g;
   for (const file of files) {
     const src = readFileSync(file, "utf-8");
-    for (const re of patterns) {
-      re.lastIndex = 0;
-      let m;
-      while ((m = re.exec(src))) {
-        keys.add(m[1]);
-      }
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(src))) {
+      keys.add(m[1]);
     }
   }
   return keys;
