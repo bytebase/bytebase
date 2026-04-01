@@ -1,10 +1,11 @@
-// Virtual module that reads raw JSON at build time, bypassing vue-i18n AST compilation
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore -- virtual module provided by vite.config.ts react-raw-locales plugin
-import rawLocales from "virtual:react-locales";
 import i18next from "i18next";
-import { merge } from "lodash-es";
 import { initReactI18next } from "react-i18next";
+
+import enUS from "@/react/locales/en-US.json";
+import zhCN from "@/react/locales/zh-CN.json";
+import esES from "@/react/locales/es-ES.json";
+import jaJP from "@/react/locales/ja-JP.json";
+import viVN from "@/react/locales/vi-VN.json";
 
 const STORAGE_KEY_LANGUAGE = "bb.language";
 
@@ -28,26 +29,18 @@ function getLocale(): string {
   return mapping[nav] ?? (nav.includes("-") ? nav : "en-US");
 }
 
-function buildResources() {
-  const resources: Record<string, { translation: Record<string, unknown> }> =
-    {};
-  for (const [locale, data] of Object.entries(
-    rawLocales as Record<string, { main: string; sub: string; dynamic: string }>
-  )) {
-    const main = JSON.parse(data.main);
-    const sub = JSON.parse(data.sub);
-    const dynamic = JSON.parse(data.dynamic);
-    resources[locale] = {
-      translation: merge({}, main, { subscription: sub }, { dynamic }),
-    };
-  }
-  return resources;
-}
+const resources = {
+  "en-US": { translation: enUS },
+  "zh-CN": { translation: zhCN },
+  "es-ES": { translation: esES },
+  "ja-JP": { translation: jaJP },
+  "vi-VN": { translation: viVN },
+};
 
 const i18n: import("i18next").i18n = i18next.createInstance();
 
 export const i18nReady = i18n.use(initReactI18next).init({
-  resources: buildResources(),
+  resources,
   lng: getLocale(),
   fallbackLng: "en-US",
   interpolation: {
