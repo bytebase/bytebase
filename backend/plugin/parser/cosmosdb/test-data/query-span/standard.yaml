@@ -14,7 +14,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT TOP with star
   statement: SELECT TOP 10 * FROM c
   querySpan:
@@ -27,7 +26,6 @@
           selectasterisk: true
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT TOP with field projection
   statement: SELECT TOP 5 c.name, c.email FROM container c
   querySpan:
@@ -44,7 +42,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with ORDER BY
   statement: SELECT c.name, c.population FROM container c ORDER BY c.population DESC
   querySpan:
@@ -61,7 +58,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with OFFSET LIMIT
   statement: SELECT c.name FROM container c ORDER BY c.name OFFSET 0 LIMIT 10
   querySpan:
@@ -76,7 +72,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with function in projection
   statement: SELECT UPPER(c.name) AS upperName, c.email FROM container c
   querySpan:
@@ -93,7 +88,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with aggregation
   statement: SELECT COUNT(1) AS totalRecords FROM c
   querySpan:
@@ -106,7 +100,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with GROUP BY
   statement: SELECT c.country, COUNT(1) AS cnt FROM container c GROUP BY c.country
   querySpan:
@@ -121,7 +114,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT DISTINCT VALUE
   statement: SELECT DISTINCT VALUE c.country FROM container c
   querySpan:
@@ -136,7 +128,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT VALUE
   statement: SELECT VALUE c.name FROM container c
   querySpan:
@@ -151,7 +142,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: SELECT with underscore fields
   statement: SELECT c._ts, c._etag, c.name FROM container c
   querySpan:
@@ -170,7 +160,6 @@
           selectasterisk: false
     sourcecolumns: []
     predicatecolumns: []
-    predicatepaths: []
 - description: WHERE with not-equal operator
   statement: SELECT * FROM container c WHERE c.status != "inactive"
   querySpan:

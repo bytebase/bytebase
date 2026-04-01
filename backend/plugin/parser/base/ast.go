@@ -18,7 +18,7 @@ type AST interface {
 
 // ANTLRAST is the AST implementation for ANTLR-based parsers.
 // Supported engines: PostgreSQL, MySQL, MariaDB, OceanBase, MSSQL, Oracle, Redshift,
-// Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL, CosmosDB.
+// Snowflake, BigQuery, Spanner, Doris, Cassandra, Trino, PartiQL.
 //
 // Parser packages can use this directly or embed it to add engine-specific fields.
 type ANTLRAST struct {

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseCosmosDBQuery(t *testing.T) {
+func TestParseCosmosDB(t *testing.T) {
 	tests := []struct {
 		name          string
 		statement     string
@@ -48,7 +48,7 @@ func TestParseCosmosDBQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := ParseCosmosDBQuery(tt.statement)
+			results, err := ParseCosmosDB(tt.statement)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -56,10 +56,9 @@ func TestParseCosmosDBQuery(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantStatCount, len(results))
 
-			// Verify each result has the required fields
 			for i, result := range results {
-				assert.NotNil(t, result.Tree, "Result %d should have a Tree", i)
-				assert.NotNil(t, result.Tokens, "Result %d should have Tokens", i)
+				assert.NotNil(t, result.Node, "Result %d should have a Node", i)
+				assert.NotEmpty(t, result.Text, "Result %d should have Text", i)
 				assert.NotNil(t, result.StartPosition, "Result %d should have StartPosition", i)
 				assert.Equal(t, int32(1), result.StartPosition.Line, "Result %d should have StartPosition.Line 1", i)
 			}
@@ -67,7 +66,7 @@ func TestParseCosmosDBQuery(t *testing.T) {
 	}
 }
 
-func TestParseCosmosDBQueryErrors(t *testing.T) {
+func TestParseCosmosDBErrors(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -84,7 +83,7 @@ func TestParseCosmosDBQueryErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseCosmosDBQuery(tt.statement)
+			_, err := ParseCosmosDB(tt.statement)
 			require.Error(t, err, "Expected error for invalid CosmosDB SQL")
 		})
 	}
