@@ -56,26 +56,27 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-// NewClientFromWorld creates a Client using the authentication method configured in World.
-func NewClientFromWorld(w *world.World) (*Client, error) {
-	clientOptions := DefaultClientOptions()
+// newClientFromWorld creates a client using the authentication configured in World.
+func newClientFromWorld(w *world.World) (*client, error) {
+	options := defaultClientOptions()
 	if w.Timeout > 0 {
-		clientOptions.Timeout = w.Timeout
+		options.timeout = w.Timeout
 	}
 
+	// Access tokens take precedence when both auth modes are populated.
 	if w.AccessToken != "" {
-		return createClient(w.URL, w.AccessToken, "", "", clientOptions)
+		return newClient(w.URL, w.AccessToken, "", "", options)
 	}
-	return NewClientWithOptions(w.URL, w.ServiceAccount, w.ServiceAccountSecret, clientOptions)
+	return newClient(w.URL, "", w.ServiceAccount, w.ServiceAccountSecret, options)
 }
 
-func CheckVersionCompatibility(w *world.World, client *Client, cliVersion string) {
+func checkVersionCompatibility(w *world.World, client *client, cliVersion string) {
 	if cliVersion == "unknown" {
 		w.Logger.Warn("CLI version unknown, unable to check compatibility")
 		return
 	}
 
-	actuatorInfo, err := client.GetActuatorInfo(context.Background())
+	actuatorInfo, err := client.getActuatorInfo(context.Background())
 	if err != nil {
 		w.Logger.Warn("Unable to get server version for compatibility check", "error", err)
 		return

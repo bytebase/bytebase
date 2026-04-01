@@ -53,14 +53,14 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		}()
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())
-		client, err := NewClientFromWorld(w)
+		client, err := newClientFromWorld(w)
 		if err != nil {
 			return err
 		}
-		defer client.Close()
+		defer client.close()
 
 		// Check version compatibility
-		CheckVersionCompatibility(w, client, args.Version)
+		checkVersionCompatibility(w, client, args.Version)
 
 		releaseFiles, err := getReleaseFiles(w)
 		if err != nil {
@@ -70,7 +70,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if w.Declarative {
 			releaseType = v1pb.Release_DECLARATIVE
 		}
-		checkReleaseResponse, err := client.CheckRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
+		checkReleaseResponse, err := client.checkRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
 			Parent: w.Project,
 			Release: &v1pb.Release{
 				Files: releaseFiles,

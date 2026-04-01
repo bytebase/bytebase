@@ -55,18 +55,18 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		}()
 		w.IsRollout = true
 		ctx := command.Context()
-		client, err := NewClientFromWorld(w)
+		client, err := newClientFromWorld(w)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create client")
 		}
-		defer client.Close()
+		defer client.close()
 
 		// Check version compatibility
-		CheckVersionCompatibility(w, client, args.Version)
+		checkVersionCompatibility(w, client, args.Version)
 
 		var plan *v1pb.Plan
 		if w.Plan != "" {
-			planP, err := client.GetPlan(ctx, w.Plan)
+			planP, err := client.getPlan(ctx, w.Plan)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get plan")
 			}
@@ -82,7 +82,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			if w.Declarative {
 				releaseType = v1pb.Release_DECLARATIVE
 			}
-			createReleaseResponse, err := client.CreateRelease(ctx, w.Project, &v1pb.Release{
+			createReleaseResponse, err := client.createRelease(ctx, w.Project, &v1pb.Release{
 				Files:     releaseFiles,
 				VcsSource: getVCSSource(w),
 				Type:      releaseType,
@@ -97,7 +97,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			// Extract release ID from release name (format: projects/{project}/releases/{release_id})
 			releaseID := strings.TrimPrefix(release, w.Project+"/releases/")
 
-			planCreated, err := client.CreatePlan(ctx, w.Project, &v1pb.Plan{
+			planCreated, err := client.createPlan(ctx, w.Project, &v1pb.Plan{
 				Title: releaseID,
 				Specs: []*v1pb.Plan_Spec{
 					{
@@ -127,9 +127,9 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 	}
 }
 
-func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, planName string) error {
+func runAndWaitForRollout(ctx context.Context, w *world.World, client *client, planName string) error {
 	// create rollout with all stages created
-	rollout, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
+	rollout, err := client.createRollout(ctx, &v1pb.CreateRolloutRequest{
 		Parent: planName,
 		Target: nil, // all stages
 	})
@@ -144,7 +144,7 @@ func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, p
 	return waitForRollout(ctx, w, client, rollout.Name)
 }
 
-func waitForRollout(ctx context.Context, w *world.World, client *Client, rolloutName string) error {
+func waitForRollout(ctx context.Context, w *world.World, client *client, rolloutName string) error {
 	if w.TargetStage == "" {
 		w.Logger.Info("target stage is not specified, exiting...")
 		return nil
@@ -160,7 +160,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, rollout
 		}
 	}()
 
-	rollout, err := client.GetRollout(ctx, rolloutName)
+	rollout, err := client.getRollout(ctx, rolloutName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get rollout")
 	}
@@ -198,7 +198,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, rollout
 				return errors.Wrapf(ctx.Err(), "context cancelled")
 			}
 			// get rollout to refresh status
-			rollout, err := client.GetRollout(ctx, rolloutName)
+			rollout, err := client.getRollout(ctx, rolloutName)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get rollout")
 			}
@@ -256,7 +256,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, rollout
 			// run stage tasks
 			if len(notStartedTasks) > 0 {
 				w.Logger.Info("running stage tasks", "stage", stage.Environment, "taskCount", len(notStartedTasks))
-				if _, err := client.BatchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
+				if _, err := client.batchRunTasks(ctx, &v1pb.BatchRunTasksRequest{
 					Parent: stage.Name,
 					Tasks:  notStartedTasks,
 				}); err != nil {
@@ -270,8 +270,8 @@ func waitForRollout(ctx context.Context, w *world.World, client *Client, rollout
 	return nil
 }
 
-func cancelRollout(ctx context.Context, client *Client, rolloutName string) error {
-	taskRuns, err := client.ListAllTaskRuns(ctx, rolloutName)
+func cancelRollout(ctx context.Context, client *client, rolloutName string) error {
+	taskRuns, err := client.listAllTaskRuns(ctx, rolloutName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list task runs")
 	}
@@ -284,7 +284,7 @@ func cancelRollout(ctx context.Context, client *Client, rolloutName string) erro
 	}
 	var errs error
 	for stage, taskRuns := range taskRunsToCancelByStage {
-		_, err := client.BatchCancelTaskRuns(ctx, &v1pb.BatchCancelTaskRunsRequest{
+		_, err := client.batchCancelTaskRuns(ctx, &v1pb.BatchCancelTaskRunsRequest{
 			Parent:   stage + "/tasks/-",
 			TaskRuns: taskRuns,
 		})
