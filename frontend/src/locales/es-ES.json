@@ -31,7 +31,6 @@
     "settings": "Configuraciones",
     "project": "Proyecto",
     "projects": "Proyectos",
-    "help": "Ayuda",
     "database": "Base de datos",
     "databases": "Bases de datos",
     "description": "Descripción",
@@ -3049,8 +3048,5 @@
       "permissions": "Esta aplicación podrá:",
       "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos"
     }
-  },
-  "help-drawer": {
-    "dont-show-again": "No mostrar estos consejos de nuevo"
   }
 }

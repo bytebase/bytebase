@@ -48,7 +48,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: () => t("common.home"),
     },
     components: {
-      content: () => import("@/views/DashboardLanding.vue"),
+      content: () => import("@/react/LandingPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
   },

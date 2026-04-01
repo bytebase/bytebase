@@ -26,7 +26,6 @@ import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
-  useAppFeature,
   useAuthStore,
   useCurrentUserV1,
   useSubscriptionV1Store,
@@ -52,7 +51,6 @@ const uiStateStore = useUIStateStore();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
-const hideHelp = useAppFeature("bb.feature.hide-help");
 
 const { currentPlan } = storeToRefs(subscriptionStore);
 
@@ -70,12 +68,6 @@ const resetQuickstart = () => {
     "database.visit",
     "member.visit",
     "data.query",
-    "help.issue.detail",
-    "help.project",
-    "help.environment",
-    "help.instance",
-    "help.database",
-    "help.member",
   ];
   keys.forEach((key) => {
     uiStateStore.saveIntroStateByKey({
@@ -260,22 +252,6 @@ const options = computed((): DropdownOption[] => [
         <div class="menu-item" onClick={resetQuickstart}>
           {t("quick-start.self")}
         </div>
-      );
-    },
-  },
-  {
-    key: "help",
-    type: "render",
-    show: !hideHelp.value,
-    render() {
-      return (
-        <a
-          class="menu-item"
-          target="_blank"
-          href="https://docs.bytebase.com/introduction/what-is-bytebase/?source=console"
-        >
-          {t("common.help")}
-        </a>
       );
     },
   },

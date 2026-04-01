@@ -9,17 +9,10 @@
         </ProvideDashboardContext>
       </template>
     </Suspense>
-    <Suspense v-if="!hideHelp">
-      <HelpDrawer />
-    </Suspense>
   </div>
 </template>
 
 <script lang="ts" setup>
 import BannersWrapper from "@/components/BannersWrapper.vue";
-import HelpDrawer from "@/components/HelpDrawer";
 import ProvideDashboardContext from "@/components/ProvideDashboardContext.vue";
-import { useAppFeature } from "@/store";
-
-const hideHelp = useAppFeature("bb.feature.hide-help");
 </script>

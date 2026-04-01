@@ -1,6 +1,5 @@
 export * from "./accessGrant";
 export * from "./v1/auth";
-export * from "./help";
 export * from "./notification";
 export * from "./router";
 export * from "./sqlEditor";
@@ -17,6 +16,5 @@ export * from "./utils";
 export * from "./release";
 export * from "./revision";
 export * from "./rollout";
-export * from "./quickLink";
 
 export * from "./v1";

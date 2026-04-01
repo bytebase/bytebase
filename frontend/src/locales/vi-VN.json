@@ -31,7 +31,6 @@
     "settings": "Cài đặt",
     "project": "Dự án",
     "projects": "Dự án",
-    "help": "Trợ giúp",
     "database": "Cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
     "description": "Mô tả",
@@ -3049,8 +3048,5 @@
       "permissions": "Ứng dụng này sẽ có thể:",
       "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn"
     }
-  },
-  "help-drawer": {
-    "dont-show-again": "Không hiển thị các mẹo này nữa"
   }
 }

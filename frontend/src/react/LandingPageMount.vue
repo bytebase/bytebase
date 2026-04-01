@@ -1,19 +1,28 @@
 <template>
   <div ref="container" class="h-full" />
+  <ProjectSwitchModal
+    :show="showProjectModal"
+    @dismiss="showProjectModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-
-const props = defineProps<{
-  page: string;
-}>();
+import ProjectSwitchModal from "@/components/Project/ProjectSwitch/ProjectSwitchModal.vue";
 
 const { locale } = useI18n();
 const container = ref<HTMLElement>();
 // biome-ignore lint/suspicious/noExplicitAny: React Root type from dynamic import
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+const showProjectModal = ref(false);
+
+const props = {
+  onOpenProjectSwitch: () => {
+    showProjectModal.value = true;
+  },
+};
 
 async function render() {
   if (!container.value) return;
@@ -25,18 +34,14 @@ async function render() {
     await i18nModule.default.changeLanguage(locale.value);
   }
   if (!root) {
-    root = await mountReactPage(container.value, props.page);
+    root = await mountReactPage(container.value, "LandingPage", props);
   } else {
-    await updateReactPage(root, props.page);
+    await updateReactPage(root, "LandingPage", props);
   }
 }
 
 onMounted(() => render());
 watch(locale, () => render());
-watch(
-  () => props.page,
-  () => render()
-);
 onUnmounted(() => {
   root?.unmount();
   root = null;

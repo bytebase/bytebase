@@ -33,7 +33,6 @@ const overrideAppFeatures = () => {
   if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
-      "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
     });
   }
