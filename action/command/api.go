@@ -16,43 +16,32 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// RetryConfig configures retry behavior
-type RetryConfig struct {
-	// MaxAttempts is the maximum number of retry attempts
-	MaxAttempts int
-	// InitialInterval is the initial retry interval
-	InitialInterval time.Duration
-	// MaxInterval is the maximum retry interval
-	MaxInterval time.Duration
+type retryConfig struct {
+	maxAttempts     int
+	initialInterval time.Duration
+	maxInterval     time.Duration
 }
 
-// ClientOptions configures the Client behavior
-type ClientOptions struct {
-	// PageSize controls the number of items per page in list operations
-	PageSize int32
-	// HTTPClient allows providing a custom HTTP client
-	HTTPClient *http.Client
-	// Timeout for RPC calls (applies only if HTTPClient is not provided)
-	Timeout time.Duration
-	// RetryConfig configures retry behavior for transient errors
-	RetryConfig *RetryConfig
+type clientOptions struct {
+	pageSize    int32
+	httpClient  *http.Client
+	timeout     time.Duration
+	retryConfig *retryConfig
 }
 
-// DefaultClientOptions returns the default client options
-func DefaultClientOptions() ClientOptions {
-	return ClientOptions{
-		PageSize: 100,
-		Timeout:  120 * time.Second,
-		RetryConfig: &RetryConfig{
-			MaxAttempts:     3,
-			InitialInterval: 1 * time.Second,
-			MaxInterval:     30 * time.Second,
+func defaultClientOptions() clientOptions {
+	return clientOptions{
+		pageSize: 100,
+		timeout:  120 * time.Second,
+		retryConfig: &retryConfig{
+			maxAttempts:     3,
+			initialInterval: 1 * time.Second,
+			maxInterval:     30 * time.Second,
 		},
 	}
 }
 
-// Client is the API message for Bytebase API Client.
-type Client struct {
+type client struct {
 	// HTTP client for Connect RPC
 	httpClient *http.Client
 
@@ -70,36 +59,26 @@ type Client struct {
 	actuatorClient v1connect.ActuatorServiceClient
 
 	// Client options
-	options ClientOptions
+	options clientOptions
 }
 
-// NewClient returns the new Bytebase API client with default options using service account auth.
-func NewClient(url, serviceAccount, serviceAccountSecret string) (*Client, error) {
-	return NewClientWithOptions(url, serviceAccount, serviceAccountSecret, DefaultClientOptions())
+type clientAuth struct {
+	accessToken          string
+	serviceAccount       string
+	serviceAccountSecret string
 }
 
-// NewClientWithAccessToken returns a new Bytebase API client using a pre-obtained access token.
-func NewClientWithAccessToken(url, accessToken string) (*Client, error) {
-	return createClient(url, accessToken, "", "", DefaultClientOptions())
-}
-
-// NewClientWithOptions returns a new Bytebase API client with custom options using service account auth.
-func NewClientWithOptions(url, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
-	return createClient(url, "", serviceAccount, serviceAccountSecret, opts)
-}
-
-func createClient(url, accessToken, serviceAccount, serviceAccountSecret string, opts ClientOptions) (*Client, error) {
-	if opts.PageSize <= 0 {
-		opts.PageSize = 100
+func newClient(url string, auth clientAuth, opts clientOptions) (*client, error) {
+	if opts.pageSize <= 0 {
+		opts.pageSize = 100
 	}
-	if opts.PageSize > 1000 {
-		opts.PageSize = 1000
+	if opts.pageSize > 1000 {
+		opts.pageSize = 1000
 	}
 
-	// Use provided HTTP client or create a new one
-	httpClient := opts.HTTPClient
+	httpClient := opts.httpClient
 	if httpClient == nil {
-		timeout := opts.Timeout
+		timeout := opts.timeout
 		if timeout == 0 {
 			timeout = 120 * time.Second
 		}
@@ -107,24 +86,24 @@ func createClient(url, accessToken, serviceAccount, serviceAccountSecret string,
 	}
 
 	var tokenRefresher func(ctx context.Context) (string, error)
-	if accessToken != "" {
+	if auth.accessToken != "" {
 		// Use the provided access token directly; no refresh needed.
 		tokenRefresher = func(_ context.Context) (string, error) {
-			return accessToken, nil
+			return auth.accessToken, nil
 		}
 	} else {
-		tokenRefresher = getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
+		tokenRefresher = getTokenRefresher(httpClient, auth.serviceAccount, auth.serviceAccountSecret, url)
 	}
 
 	// Create unified interceptor
-	unifiedInt := newUnifiedInterceptor(opts.RetryConfig, tokenRefresher)
+	unifiedInt := newUnifiedInterceptor(opts.retryConfig, tokenRefresher)
 	interceptors := connect.WithInterceptors(unifiedInt)
 
-	return &Client{
+	return &client{
 		httpClient:           httpClient,
 		url:                  url,
-		serviceAccount:       serviceAccount,
-		serviceAccountSecret: serviceAccountSecret,
+		serviceAccount:       auth.serviceAccount,
+		serviceAccountSecret: auth.serviceAccountSecret,
 		options:              opts,
 		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
@@ -151,7 +130,7 @@ func getTokenRefresher(httpClient connect.HTTPClient, email, password, url strin
 	}
 }
 
-func (c *Client) CheckRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
+func (c *client) checkRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
 	resp, err := c.releaseClient.CheckRelease(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check release")
@@ -159,7 +138,7 @@ func (c *Client) CheckRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) 
 	return resp.Msg, nil
 }
 
-func (c *Client) CreateRelease(ctx context.Context, project string, r *v1pb.Release, releaseIDTemplate, releaseIDTimezone string) (*v1pb.Release, error) {
+func (c *client) createRelease(ctx context.Context, project string, r *v1pb.Release, releaseIDTemplate, releaseIDTimezone string) (*v1pb.Release, error) {
 	req := connect.NewRequest(&v1pb.CreateReleaseRequest{
 		Parent:            project,
 		Release:           r,
@@ -173,7 +152,7 @@ func (c *Client) CreateRelease(ctx context.Context, project string, r *v1pb.Rele
 	return resp.Msg, nil
 }
 
-func (c *Client) GetPlan(ctx context.Context, planName string) (*v1pb.Plan, error) {
+func (c *client) getPlan(ctx context.Context, planName string) (*v1pb.Plan, error) {
 	resp, err := c.planClient.GetPlan(ctx,
 		connect.NewRequest(&v1pb.GetPlanRequest{
 			Name: planName,
@@ -184,7 +163,7 @@ func (c *Client) GetPlan(ctx context.Context, planName string) (*v1pb.Plan, erro
 	return resp.Msg, nil
 }
 
-func (c *Client) CreatePlan(ctx context.Context, project string, r *v1pb.Plan) (*v1pb.Plan, error) {
+func (c *client) createPlan(ctx context.Context, project string, r *v1pb.Plan) (*v1pb.Plan, error) {
 	req := connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: project,
 		Plan:   r,
@@ -196,7 +175,7 @@ func (c *Client) CreatePlan(ctx context.Context, project string, r *v1pb.Plan) (
 	return resp.Msg, nil
 }
 
-func (c *Client) GetRollout(ctx context.Context, rolloutName string) (*v1pb.Rollout, error) {
+func (c *client) getRollout(ctx context.Context, rolloutName string) (*v1pb.Rollout, error) {
 	resp, err := c.rolloutClient.GetRollout(ctx,
 		connect.NewRequest(&v1pb.GetRolloutRequest{
 			Name: rolloutName,
@@ -207,7 +186,7 @@ func (c *Client) GetRollout(ctx context.Context, rolloutName string) (*v1pb.Roll
 	return resp.Msg, nil
 }
 
-func (c *Client) CreateRollout(ctx context.Context, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
+func (c *client) createRollout(ctx context.Context, r *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
 	resp, err := c.rolloutClient.CreateRollout(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create rollout")
@@ -215,7 +194,7 @@ func (c *Client) CreateRollout(ctx context.Context, r *v1pb.CreateRolloutRequest
 	return resp.Msg, nil
 }
 
-func (c *Client) BatchRunTasks(ctx context.Context, r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
+func (c *client) batchRunTasks(ctx context.Context, r *v1pb.BatchRunTasksRequest) (*v1pb.BatchRunTasksResponse, error) {
 	resp, err := c.rolloutClient.BatchRunTasks(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch run tasks")
@@ -223,7 +202,7 @@ func (c *Client) BatchRunTasks(ctx context.Context, r *v1pb.BatchRunTasksRequest
 	return resp.Msg, nil
 }
 
-func (c *Client) ListTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
+func (c *client) listTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
 	resp, err := c.rolloutClient.ListTaskRuns(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list task runs")
@@ -231,13 +210,13 @@ func (c *Client) ListTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) 
 	return resp.Msg, nil
 }
 
-func (c *Client) ListAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
-	return c.ListTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
+func (c *client) listAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
+	return c.listTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
 		Parent: rolloutName + "/stages/-/tasks/-",
 	})
 }
 
-func (c *Client) BatchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
+func (c *client) batchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
 	resp, err := c.rolloutClient.BatchCancelTaskRuns(ctx, connect.NewRequest(r))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to batch cancel task runs")
@@ -245,7 +224,7 @@ func (c *Client) BatchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTas
 	return resp.Msg, nil
 }
 
-func (c *Client) GetActuatorInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
+func (c *client) getActuatorInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
 	resp, err := c.actuatorClient.GetActuatorInfo(ctx,
 		connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	if err != nil {
@@ -254,8 +233,7 @@ func (c *Client) GetActuatorInfo(ctx context.Context) (*v1pb.ActuatorInfo, error
 	return resp.Msg, nil
 }
 
-// Close cleans up resources used by the Client
-func (c *Client) Close() error {
+func (c *client) close() error {
 	if c.httpClient != nil {
 		c.httpClient.CloseIdleConnections()
 	}
@@ -313,16 +291,16 @@ type unifiedInterceptor struct {
 	refreshGroup    singleflight.Group
 }
 
-func newUnifiedInterceptor(config *RetryConfig, tokenRefresher func(ctx context.Context) (string, error)) *unifiedInterceptor {
+func newUnifiedInterceptor(config *retryConfig, tokenRefresher func(ctx context.Context) (string, error)) *unifiedInterceptor {
 	ui := &unifiedInterceptor{
 		tokenMgr:       newTokenManager(),
 		tokenRefresher: tokenRefresher,
 	}
 
-	if config != nil && config.MaxAttempts > 1 {
-		ui.maxAttempts = config.MaxAttempts
-		ui.initialInterval = config.InitialInterval
-		ui.maxInterval = config.MaxInterval
+	if config != nil && config.maxAttempts > 1 {
+		ui.maxAttempts = config.maxAttempts
+		ui.initialInterval = config.initialInterval
+		ui.maxInterval = config.maxInterval
 	} else {
 		// Default retry config for auth errors
 		ui.maxAttempts = 2
