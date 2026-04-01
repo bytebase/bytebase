@@ -461,7 +461,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                       <span className="text-main">
                         {t("subscription.purchase.seats")}
                       </span>
-                      <div className="ml-auto flex items-center h-7 rounded-lg bg-gray-200 text-gray-600">
+                      <div className="ml-auto flex items-center h-7 rounded-md bg-gray-200 text-gray-600">
                         <button
                           type="button"
                           className="px-2 h-full rounded-l hover:bg-gray-300 disabled:opacity-50 cursor-pointer"
@@ -600,7 +600,7 @@ function PlanCard({
 }) {
   return (
     <div
-      className={`h-full flex flex-col rounded-lg p-5 border-2 ${highlighted ? "shadow-lg border-accent" : "border-block-border"}`}
+      className={`h-full flex flex-col rounded-md p-5 border-2 ${highlighted ? "shadow-lg border-accent" : "border-block-border"}`}
     >
       <h3 className="text-3xl font-semibold text-main">{title}</h3>
       <p className="text-control-placeholder mt-1 text-sm">{description}</p>

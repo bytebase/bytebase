@@ -82,7 +82,7 @@ function TestConnectionResultDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-lg shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
+      <div className="bg-white rounded-md shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-x-2">
             <div className="w-6 h-6 text-green-500">&#10003;</div>
@@ -99,7 +99,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-md p-4">
             <div className="flex flex-col gap-y-1">
               {Object.entries(response.userInfo).map(([key, value]) => (
                 <div
@@ -126,7 +126,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.claims-description")}
           </p>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-md p-4">
             {Object.keys(response.claims).length === 0 ? (
               <div className="text-sm text-control-light italic">
                 {t("identity-provider.no-claims")}
@@ -345,7 +345,7 @@ function DeleteConfirmDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-lg shadow-lg w-96 p-6">
+      <div className="bg-white rounded-md shadow-lg w-96 p-6">
         <h3 className="text-lg font-medium mb-2">{t("settings.sso.delete")}</h3>
         <p className="text-sm text-gray-600 mb-6">
           {t("identity-provider.delete-warning")}

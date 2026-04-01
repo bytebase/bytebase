@@ -9,7 +9,7 @@ import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-md border px-4 py-3 text-sm flex gap-x-3",
+  "relative w-full rounded-xs border px-4 py-3 text-sm flex gap-x-3",
   {
     variants: {
       variant: {

@@ -203,7 +203,7 @@ function ConfirmDialog({
       <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
       <div
         className={cn(
-          "relative bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 border-t-4",
+          "relative bg-white rounded-md shadow-lg max-w-lg w-full mx-4 border-t-4",
           borderColor
         )}
       >
@@ -694,7 +694,7 @@ function ProjectActionDropdown({
         <EllipsisVertical className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-control-border rounded-md shadow-lg z-10 min-w-[120px]">
+        <div className="absolute right-0 top-full mt-1 bg-white border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
           {isActive && canDelete && (
             <button
               className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
@@ -1217,7 +1217,7 @@ export function ProjectsPage() {
               {t("common.rows-per-page")}
             </span>
             <select
-              className="border border-control-border rounded-md text-sm pl-2 pr-6 py-1 min-w-[5rem]"
+              className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1 min-w-[5rem]"
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
             >
@@ -1268,7 +1268,7 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-lg bg-gray-100 py-0.5 px-2 text-sm">
+        <span key={key} className="rounded-md bg-gray-100 py-0.5 px-2 text-sm">
           {key}:{value}
         </span>
       ))}

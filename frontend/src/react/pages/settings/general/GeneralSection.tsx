@@ -228,7 +228,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               className="fixed inset-0 bg-black/40"
               onClick={() => setShowModal(false)}
             />
-            <div className="relative bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
+            <div className="relative bg-white rounded-md shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
               <h2 className="text-lg font-semibold">
                 {t("settings.general.workspace.config-updated")}
               </h2>

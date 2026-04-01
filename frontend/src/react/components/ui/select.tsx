@@ -17,7 +17,7 @@ function SelectTrigger({
     <BaseSelect.Trigger
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-between gap-1 h-8 px-2 text-sm rounded-md border border-control-border bg-white text-control whitespace-nowrap",
+        "inline-flex items-center justify-between gap-1 h-8 px-2 text-sm rounded-xs border border-control-border bg-white text-control whitespace-nowrap",
         "hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent",
         "disabled:pointer-events-none disabled:opacity-50",
         className
@@ -48,7 +48,7 @@ function SelectContent({
         <BaseSelect.Popup
           ref={ref}
           className={cn(
-            "z-50 min-w-[var(--anchor-width)] max-h-60 overflow-auto rounded-md border border-control-border bg-white py-1 shadow-md",
+            "z-50 min-w-(--anchor-width) max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md",
             className
           )}
           {...props}
@@ -73,7 +73,7 @@ function SelectItem({
       className={cn(
         "relative flex items-center gap-2 px-2 py-1.5 pl-7 text-sm cursor-pointer select-none",
         "hover:bg-control-bg focus:bg-control-bg outline-hidden",
-        "data-[highlighted]:bg-control-bg",
+        "data-highlighted:bg-control-bg",
         className
       )}
       {...props}

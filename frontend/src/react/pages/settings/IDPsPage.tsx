@@ -143,7 +143,7 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
   };
 
   return (
-    <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+    <div className="p-4 rounded-md border border-gray-200 bg-gray-50">
       <div className="flex items-start gap-x-3">
         <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
@@ -161,7 +161,7 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
               <input
                 value={redirectUrl}
                 readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm font-mono text-gray-700"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-sm bg-white text-sm font-mono text-gray-700"
               />
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {t("common.copy")}
@@ -195,7 +195,7 @@ function TestConnectionResultDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-lg shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
+      <div className="bg-white rounded-md shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-x-2">
             <div className="w-6 h-6 text-green-500">&#10003;</div>
@@ -212,7 +212,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-md p-4">
             <div className="flex flex-col gap-y-1">
               {Object.entries(response.userInfo).map(([key, value]) => (
                 <div
@@ -239,7 +239,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.claims-description")}
           </p>
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-md p-4">
             {Object.keys(response.claims).length === 0 ? (
               <div className="text-sm text-control-light italic">
                 {t("identity-provider.no-claims")}
@@ -1691,7 +1691,7 @@ function CreateWizardDrawer({
             </div>
 
             {/* Step content */}
-            <div className="bg-white rounded-lg border border-gray-200 px-6 pt-6 pb-10">
+            <div className="bg-white rounded-md border border-gray-200 px-6 pt-6 pb-10">
               {/* Step 1: Select provider type */}
               {currentStep === 1 && (
                 <div className="flex flex-col gap-y-6">
@@ -1712,7 +1712,7 @@ function CreateWizardDrawer({
                       return (
                         <label
                           key={item.type}
-                          className={`block border rounded-lg mb-4 p-4 transition-colors cursor-pointer ${
+                          className={`block border rounded-md mb-4 p-4 transition-colors cursor-pointer ${
                             selectedType === item.type
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
@@ -1769,7 +1769,7 @@ function CreateWizardDrawer({
                       return (
                         <label
                           key={tmpl.title}
-                          className={`block border rounded-lg p-4 transition-colors cursor-pointer ${
+                          className={`block border rounded-md p-4 transition-colors cursor-pointer ${
                             selectedTemplate?.title === tmpl.title
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
@@ -2039,7 +2039,7 @@ export function IDPsPage() {
       </div>
 
       {ready ? (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-control-bg">

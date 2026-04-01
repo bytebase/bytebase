@@ -21,24 +21,24 @@ jobs:
       - name: Extract build args
         run: |
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
-      
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -51,11 +51,6 @@ jobs:
             VERSION=demo
             GIT_COMMIT=${{ env.GIT_COMMIT }}
             RELEASE=dev
-      
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v3
