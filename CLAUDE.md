@@ -20,6 +20,7 @@ This file provides guidance to AI coding assistants when working with code in th
 3. **Auto-fix** — Use `golangci-lint run --fix --allow-parallel-runners` to fix issues automatically
 4. **Test** — Run relevant tests before committing
 5. **Build** — `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
+6. **Tidy** — After upgrading Go dependencies, run `go mod tidy` to clean up `go.mod` and `go.sum`
 
 ### Frontend Code Changes
 
