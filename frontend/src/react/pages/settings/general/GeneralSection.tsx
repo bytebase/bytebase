@@ -206,7 +206,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               </a>
             </div>
             {externalUrlFromFlag && !isSaaSMode && (
-              <div className="mb-3 p-3 bg-blue-50 text-blue-700 text-sm rounded">
+              <div className="mb-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xs">
                 {t("settings.general.workspace.external-url.cannot-edit-flag")}
               </div>
             )}

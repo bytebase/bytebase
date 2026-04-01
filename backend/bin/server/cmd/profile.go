@@ -27,6 +27,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		StripeAPISecret:     os.Getenv("STRIPE_API_SECRET"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 		LicensePrivateKey:   os.Getenv("LICENSE_PRIVATE_KEY"),
+		GeminiAPIKey:        os.Getenv("GEMINI_API_KEY"),
 	}
 
 	config.LastActiveTS.Store(time.Now().Unix())

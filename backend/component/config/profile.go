@@ -26,6 +26,8 @@ type Profile struct {
 	StripeWebhookSecret string
 	// LicensePrivateKey is the PEM-encoded RSA private key for signing license JWTs (SaaS only).
 	LicensePrivateKey string
+	// GeminiAPIKey is the API key for Gemini AI. Only used when SaaS is true.
+	GeminiAPIKey string
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.
 	DataDir string
 	// Demo mode.

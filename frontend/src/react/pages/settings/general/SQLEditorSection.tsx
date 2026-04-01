@@ -297,7 +297,7 @@ export const SQLEditorSection = forwardRef<
                   min={1}
                   disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
                   onChange={(e) => handleNumberInput("maximumResultSize", e)}
-                  className="w-full rounded border border-control-border px-3 py-1.5 pr-12 text-sm disabled:opacity-50"
+                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-12 text-sm disabled:opacity-50"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                   MB
@@ -331,7 +331,7 @@ export const SQLEditorSection = forwardRef<
                 min={0}
                 disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
                 onChange={(e) => handleNumberInput("maximumResultRows", e)}
-                className="w-full rounded border border-control-border px-3 py-1.5 pr-16 text-sm disabled:opacity-50"
+                className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-16 text-sm disabled:opacity-50"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                 {t("settings.general.workspace.maximum-sql-result.rows.rows")}
@@ -364,7 +364,7 @@ export const SQLEditorSection = forwardRef<
                 min={0}
                 disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
                 onChange={(e) => handleNumberInput("maxQueryTimeInSeconds", e)}
-                className="w-full rounded border border-control-border px-3 py-1.5 pr-20 text-sm disabled:opacity-50"
+                className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-20 text-sm disabled:opacity-50"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                 {t("settings.general.workspace.query-data-policy.seconds")}

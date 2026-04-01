@@ -209,7 +209,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                 {t("settings.general.workspace.logo-aspect")}
               </p>
               <div
-                className={`flex justify-center border-2 border-gray-300 border-dashed rounded-sm relative h-48 transition-all ${
+                className={`flex justify-center border-2 border-gray-300 border-dashed rounded-xs relative h-48 transition-all ${
                   dropActive ? "bg-gray-300 opacity-100" : ""
                 } ${uploadDisabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
                 onClick={() => {

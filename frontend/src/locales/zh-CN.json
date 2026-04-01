@@ -796,6 +796,7 @@
           "self": "AI 助手",
           "enable-ai-assistant": "启用 AI 助手",
           "description": "使用 AI 来辅助数据库开发任务。",
+          "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
           "provider": {
             "self": "AI 提供方",
             "open_ai": "Open AI",

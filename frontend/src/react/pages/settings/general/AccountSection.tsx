@@ -403,7 +403,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               <div className="flex items-center">
                 <input
                   type="number"
-                  className="w-24 mr-2 rounded border border-control-border px-2 py-1 text-sm"
+                  className="w-24 mr-2 rounded-xs border border-control-border px-2 py-1 text-sm"
                   value={passwordState.minLength || DEFAULT_MIN_LENGTH}
                   min={DEFAULT_MIN_LENGTH}
                   disabled={disabled || !hasPasswordFeature}
@@ -531,7 +531,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   {passwordState.passwordRotation ? (
                     <input
                       type="number"
-                      className="w-24 mx-2 rounded border border-control-border px-2 py-1 text-sm"
+                      className="w-24 mx-2 rounded-xs border border-control-border px-2 py-1 text-sm"
                       value={passwordRotationDays}
                       min={1}
                       disabled={disabled || !hasPasswordFeature}
@@ -654,7 +654,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
               <input
                 type="number"
-                className="w-24 rounded border border-control-border px-2 py-1 text-sm"
+                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
                 value={tokenState.accessTokenDuration}
                 min={1}
                 max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
@@ -721,7 +721,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
               <input
                 type="number"
-                className="w-24 rounded border border-control-border px-2 py-1 text-sm"
+                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
                 value={tokenState.refreshTokenDuration}
                 min={1}
                 max={
@@ -798,7 +798,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
               <input
                 type="number"
-                className="w-24 rounded border border-control-border px-2 py-1 text-sm"
+                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
                 value={tokenState.inactiveTimeout}
                 min={-1}
                 disabled={disabled || !hasSecureTokenFeature}
