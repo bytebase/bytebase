@@ -75,10 +75,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       requiredPermissionList: () => ["bb.instances.list"],
     },
     components: {
-      content: () => import("@/views/InstanceDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "InstancesPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "databases",

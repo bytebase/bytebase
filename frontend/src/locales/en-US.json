@@ -2331,9 +2331,7 @@
     "usage": {
       "instance-count": {
         "title": "Instance count limit",
-        "remaining": "Your total instance quota is {total}, with only {count} instances remaining.",
-        "runoutof": "You have run out of your {total} instance quota.",
-        "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+        "runoutof": "You have run out of your {total} instance quota."
       },
       "user-count": {
         "title": "User count limit",

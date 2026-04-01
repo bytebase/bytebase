@@ -261,8 +261,13 @@ export function AdvancedSearch({
         selectScope(matched.id);
         return;
       }
-      if (!menuView) {
-        setMenuView("scope");
+
+      // Only show scope menu when input is empty (user is browsing filters).
+      // When typing non-empty text, treat it as a plain query — don't push scope suggestions.
+      if (!text.trim()) {
+        if (!menuView) setMenuView("scope");
+      } else {
+        setMenuView(undefined);
       }
 
       emitQuery(text);
