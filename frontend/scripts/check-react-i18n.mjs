@@ -10,7 +10,15 @@
 import { readFileSync, readdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { DYNAMIC_PREFIXES } from "../src/react/locales/dynamic-prefixes.mjs";
+
+// Keys constructed at runtime via template literals — exempt from unused check.
+const DYNAMIC_PREFIXES = [
+  "dynamic.subscription.features.",
+  "dynamic.subscription.purchase.features.",
+  "dynamic.settings.sensitive-data.semantic-types.template.",
+  "subscription.plan.",
+  "settings.sensitive-data.algorithms.",
+];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
