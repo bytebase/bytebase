@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	// bytebase-action flags
 	cmd.PersistentFlags().StringVar(&w.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
 	cmd.PersistentFlags().StringVar(&w.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
+	cmd.PersistentFlags().DurationVar(&w.Timeout, "timeout", 120*time.Second, "HTTP timeout for API requests (e.g. 120s, 5m)")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccount, "service-account", "", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccountSecret, "service-account-secret", "", "Bytebase Service account secret")
 	cmd.PersistentFlags().StringVar(&w.AccessToken, "access-token", "", "Bytebase access token (alternative to service account auth, e.g. from workload identity exchange)")
@@ -56,10 +58,15 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 
 // NewClientFromWorld creates a Client using the authentication method configured in World.
 func NewClientFromWorld(w *world.World) (*Client, error) {
-	if w.AccessToken != "" {
-		return NewClientWithAccessToken(w.URL, w.AccessToken)
+	clientOptions := DefaultClientOptions()
+	if w.Timeout > 0 {
+		clientOptions.Timeout = w.Timeout
 	}
-	return NewClient(w.URL, w.ServiceAccount, w.ServiceAccountSecret)
+
+	if w.AccessToken != "" {
+		return createClient(w.URL, w.AccessToken, "", "", clientOptions)
+	}
+	return NewClientWithOptions(w.URL, w.ServiceAccount, w.ServiceAccountSecret, clientOptions)
 }
 
 func CheckVersionCompatibility(w *world.World, client *Client, cliVersion string) {
