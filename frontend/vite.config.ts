@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 // @ts-ignore -- esbuild is a transitive dependency via vite
 import { transform as esbuildTransform } from "esbuild";
@@ -31,36 +30,6 @@ export default defineConfig({
       targets: ["> 0.08%, not dead"],
       additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
     }),
-    {
-      name: "react-raw-locales",
-      resolveId(id) {
-        if (id === "virtual:react-locales") return "\0virtual:react-locales";
-        return undefined;
-      },
-      load(id) {
-        if (id !== "\0virtual:react-locales") return undefined;
-        const localesDir = resolve(__dirname, "src/locales");
-        const locales = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
-        const data: Record<
-          string,
-          { main: string; sub: string; dynamic: string }
-        > = {};
-        for (const locale of locales) {
-          data[locale] = {
-            main: readFileSync(`${localesDir}/${locale}.json`, "utf-8"),
-            sub: readFileSync(
-              `${localesDir}/subscription/${locale}.json`,
-              "utf-8"
-            ),
-            dynamic: readFileSync(
-              `${localesDir}/dynamic/${locale}.json`,
-              "utf-8"
-            ),
-          };
-        }
-        return `export default ${JSON.stringify(data)};`;
-      },
-    },
     {
       name: "react-tsx-transform",
       enforce: "pre",
