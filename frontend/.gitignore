@@ -1,6 +1,5 @@
 .DS_Store
 .eslintcache
-react-i18n-namespace-mapping.json
 node_modules
 /dist
 components.d.ts

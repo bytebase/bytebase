@@ -48,12 +48,8 @@ function collectKeys() {
   const files = findTsxFiles(REACT_DIR);
   const keys = new Set();
 
-  // Matches: t("key"), t('key'), tVue(t, "key"), vueT("key")
-  const patterns = [
-    /\bt\(\s*["'`]([^"'`]+)["'`]/g,
-    /\btVue\(\s*\w+,\s*["'`]([^"'`]+)["'`]/g,
-    /\bvueT\(\s*["'`]([^"'`]+)["'`]/g,
-  ];
+  // Only match single/double quoted strings — template literals with ${} are dynamic keys
+  const patterns = [/\bt\(\s*["']([^"']+)["']/g];
 
   for (const file of files) {
     const src = readFileSync(file, "utf-8");
