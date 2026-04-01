@@ -50,30 +50,30 @@
 - description: 'position semantic: leading newlines'
   input: "\n\nSELECT 1"
   result:
-    - text: "\n\nSELECT 1"
-      baseline: 0
+    - text: "SELECT 1"
+      baseline: 2
       start:
-        line: 1
+        line: 3
         column: 1
       end:
         line: 3
         column: 9
       range:
-        start: 0
+        start: 2
         end: 10
       empty: false
 - description: 'position semantic: leading spaces and newlines'
   input: "\n  \n  SELECT 1"
   result:
-    - text: "\n  \n  SELECT 1"
-      baseline: 0
+    - text: "SELECT 1"
+      baseline: 2
       start:
-        line: 1
-        column: 1
+        line: 3
+        column: 3
       end:
         line: 3
         column: 11
       range:
-        start: 0
+        start: 6
         end: 14
       empty: false

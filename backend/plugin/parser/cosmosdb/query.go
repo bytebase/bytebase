@@ -10,7 +10,7 @@ func init() {
 }
 
 func validateQuery(statement string) (bool, bool, error) {
-	_, err := ParseCosmosDBQuery(statement)
+	_, err := ParseCosmosDB(statement)
 	if err != nil {
 		return false, false, err
 	}
