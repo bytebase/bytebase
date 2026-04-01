@@ -18,15 +18,7 @@ const REACT_DIR = resolve(ROOT, "src/react");
 const OUT_DIR = resolve(ROOT, "src/react/locales");
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
-// Dynamic key prefixes — these subtrees are used via template literals
-// in React code, so we copy the entire prefix tree.
-const DYNAMIC_PREFIXES = [
-  "dynamic.subscription.features.",
-  "dynamic.subscription.purchase.features.",
-  "dynamic.settings.sensitive-data.semantic-types.template.",
-  "subscription.plan.",
-  "settings.sensitive-data.algorithms.",
-];
+import { DYNAMIC_PREFIXES } from "../src/react/locales/dynamic-prefixes.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Collect translation keys from React source files
@@ -131,6 +123,16 @@ function unflatten(flat) {
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// 6. Convert Vue-style interpolation to i18next standard
+// ---------------------------------------------------------------------------
+function convertInterpolation(value) {
+  // Convert {var} to {{var}}, but skip already-doubled {{var}}
+  return value
+    .replace(/\{\{(\w+)\}\}/g, "___DOUBLE_$1___")
+    .replace(/\{(\w+)\}/g, "{{$1}}")
+    .replace(/___DOUBLE_(\w+)___/g, "{{$1}}");
+}
 
 // ---------------------------------------------------------------------------
 // 7. Main
@@ -180,12 +182,12 @@ function processValueConsistent(key, value, flat, output) {
     const parts = value.split(" | ");
     const singular = resolveLinked(parts[0].trim(), flat);
     const plural = resolveLinked(parts[parts.length - 1].trim(), flat);
-    output[`${key}_one`] = singular.replace(/\{n\}/g, "{count}");
-    output[`${key}_other`] = plural.replace(/\{n\}/g, "{count}");
+    output[`${key}_one`] = singular.replace(/\{n\}/g, "{{count}}");
+    output[`${key}_other`] = plural.replace(/\{n\}/g, "{{count}}");
   } else if (pluralizedKeys.has(key)) {
     // en-US pluralizes this key but this locale doesn't — emit both _one/_other
     // with the same resolved value to keep key sets consistent
-    const resolved = resolveLinked(value, flat).replace(/\{n\}/g, "{count}");
+    const resolved = resolveLinked(value, flat).replace(/\{n\}/g, "{{count}}");
     output[`${key}_one`] = resolved;
     output[`${key}_other`] = resolved;
   } else {
@@ -208,6 +210,13 @@ for (const locale of LOCALES) {
   for (const [fkey, fval] of Object.entries(flat)) {
     if (DYNAMIC_PREFIXES.some((p) => fkey.startsWith(p))) {
       processValueConsistent(fkey, String(fval), flat, output);
+    }
+  }
+
+  // Convert Vue-style {var} to i18next standard {{var}} in all values
+  for (const [k, v] of Object.entries(output)) {
+    if (typeof v === "string") {
+      output[k] = convertInterpolation(v);
     }
   }
 

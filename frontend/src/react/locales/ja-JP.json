@@ -38,7 +38,7 @@
     "unassigned": "割り当てられていない",
     "archive": "アーカイブ",
     "restore": "復元する",
-    "delete-resource": "Delete {type}",
+    "delete-resource": "Delete {{type}}",
     "labels": "ラベル",
     "state": "ステート",
     "address": "接続先",
@@ -48,13 +48,13 @@
     "restored": "Restored",
     "archived": "アーカイブ済み",
     "select-all": "すべて選択",
-    "total-n-items": "合計 {n} 件",
+    "total-n-items": "合計 {{n}} 件",
     "search": "検索",
-    "n-items-selected": "{n} 件選択済み",
+    "n-items-selected": "{{n}} 件選択済み",
     "permissions": "権限",
     "added": "作成した",
     "description": "説明",
-    "missing-required-permission": "必要な権限がありません {permissions}",
+    "missing-required-permission": "必要な権限がありません {{permissions}}",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
     "add-permissions": "権限を追加",
     "system": "システム",
@@ -62,8 +62,8 @@
     "upload": "アップロード",
     "unlimited": "無制限",
     "file-selector": {
-      "type-limit": "タイプ {extension} のファイルのみがサポートされます",
-      "size-limit": "ファイルサイズは {size} MiB 未満である必要があります"
+      "type-limit": "タイプ {{extension}} のファイルのみがサポートされます",
+      "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります"
     },
     "ok": "わかりました"
   },
@@ -80,7 +80,7 @@
           "description": "以下はすべて真実です…"
         }
       },
-      "add-condition-in-group-placeholder": "{plus} をクリックして条件を追加します",
+      "add-condition-in-group-placeholder": "{{plus}} をクリックして条件を追加します",
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
       "add": "条件を追加する",
       "add-raw-expression": "生の式を追加",
@@ -88,8 +88,8 @@
     }
   },
   "subscription": {
-    "trial-for-days": "{days} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
-    "required-plan-with-trial": "この機能は、{requiredPlan} のサブスクリプションが必要です。{startTrial} ",
+    "trial-for-days": "{{days}} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
+    "required-plan-with-trial": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。{{startTrial}} ",
     "instance-assignment": {
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "assign-license": "ライセンスの割り当て",
@@ -97,11 +97,11 @@
       "used-and-total-user": "アクティブ/合計ユーザー制限",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス"
     },
-    "request-n-days-trial": "{days} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
+    "request-n-days-trial": "{{days}} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
     "usage": {
       "instance-count": {
         "title": "インスタンスの制限",
-        "runoutof": "すべての {total} インスタンス クレジットが使用されました。"
+        "runoutof": "すべての {{total}} インスタンス クレジットが使用されました。"
       }
     },
     "plan": {
@@ -128,9 +128,9 @@
       "pro-description": "Built for teams creating production-ready applications.",
       "enterprise-description": "Scale your business securely while staying compliant.",
       "discount": {
-        "percentage-off": "初月 {value}% オフ",
-        "month-off": "{value} ヶ月無料",
-        "price-off": "${value} オフ"
+        "percentage-off": "初月 {{value}}% オフ",
+        "month-off": "{{value}} ヶ月無料",
+        "price-off": "${{value}} オフ"
       },
       "update": "サブスクリプションを更新",
       "subscribe": "今すぐ購読",
@@ -142,7 +142,7 @@
       "total-price": "合計金額",
       "manage-invoices": "請求書を管理",
       "billing-period": "請求期間",
-      "cancel-pending": "サブスクリプションはキャンセル済みで、{date} に終了します。",
+      "cancel-pending": "サブスクリプションはキャンセル済みで、{{date}} に終了します。",
       "cancel": "サブスクリプションをキャンセル",
       "per-user-per-month": "/ ユーザー / 月",
       "custom": "カスタム",
@@ -169,24 +169,24 @@
     "trialing": "トライアル中",
     "expires-at": "有効期限",
     "try-for-free": "無料トライアル",
-    "enterprise-free-trial": "Enterprise の {days} 日間の無料トライアル",
+    "enterprise-free-trial": "Enterprise の {{days}} 日間の無料トライアル",
     "inquire-enterprise-plan": "Enterprise版のお問い合わせ",
     "upload-license": "ライセンスのアップロード",
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
     "plan-compare": "異なるプラン間の機能を比較する",
     "max-instance-count": "最大インスタンス数",
-    "require-subscription": "この機能は、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。"
+    "require-subscription": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。"
   },
   "resource-id": {
     "validation": {
-      "empty": "{resource} ID は空にできません",
-      "overflow": "{resource} ID は 64 文字未満である必要があります。",
-      "pattern": "{resource} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
-      "duplicated": "{resource} ID はすでに存在します。別のIDを使用してください。"
+      "empty": "{{resource}} ID は空にできません",
+      "overflow": "{{resource}} ID は 64 文字未満である必要があります。",
+      "pattern": "{{resource}} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
+      "duplicated": "{{resource}} ID はすでに存在します。別のIDを使用してください。"
     },
-    "self": "{resource} ID",
+    "self": "{{resource}} ID",
     "cannot-be-changed-later": "作成後に変更することはできません。",
-    "description": "{resource} ID は一意の識別子です。作成後に変更することはできません。"
+    "description": "{{resource}} ID は一意の識別子です。作成後に変更することはできません。"
   },
   "schema-template": {
     "classification": {
@@ -225,7 +225,7 @@
         },
         "select": "セマンティックタイプの選択",
         "template": {
-          "duplicate-warning": "セマンティック タイプ \"{title}\" は既に存在します",
+          "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します",
           "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。"
         },
         "use-predefined-type": "事前定義されたタイプを使用する",
@@ -412,7 +412,7 @@
           },
           "api-key": {
             "self": "APIキー",
-            "description": "読み取り専用の API キーを入力してください。{viewDoc}",
+            "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
             "find-my-key": "鍵を探す",
             "placeholder": "API キーは通常 sk-***** で始まります"
           },
@@ -432,13 +432,13 @@
         },
         "password-restriction": {
           "self": "パスワード制限",
-          "min-length": "パスワードの最小文字数は {min} 文字以上である必要があります",
+          "min-length": "パスワードの最小文字数は {{min}} 文字以上である必要があります",
           "require-number": "パスワードには少なくとも1つの数字が含まれている必要があります",
           "require-letter": "パスワードには大文字、小文字に関係なく少なくとも1文字が含まれている必要があります",
           "require-uppercase-letter": "パスワードには少なくとも1つの大文字が含まれている必要があります",
           "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります",
           "require-reset-password-for-first-login": "初回ログイン後にユーザーにパスワードのリセットを要求する",
-          "password-rotation": "ユーザーに{day}日ごとにパスワードのリセットを要求する"
+          "password-rotation": "ユーザーに{{day}}日ごとにパスワードのリセットを要求する"
         },
         "require-2fa": {
           "enable": "すべてのユーザーに 2 要素認証の設定を要求する",
@@ -497,7 +497,7 @@
         "logo-aspect": "推奨されるロゴの幅:高さの比率 (例: 100 x 40 ピクセル)",
         "select-logo": "選ぶ",
         "drag-logo": "またはファイルをドラッグ アンド ドロップします",
-        "logo-upload-tip": "{extension} タイプのファイルをサポートします。{size} MiB より大きくすることはできません",
+        "logo-upload-tip": "{{extension}} タイプのファイルをサポートします。{{size}} MiB より大きくすることはできません",
         "branding": "ブランド",
         "account": "アカウント",
         "security": "セキュリティ",
@@ -509,7 +509,7 @@
           "participate": "改善プログラムに参加",
           "description": "匿名の使用データを共有してBytebaseの改善に協力する"
         },
-        "failed-to-update-setting": "設定「{title}」の更新に失敗しました",
+        "failed-to-update-setting": "設定「{{title}}」の更新に失敗しました",
         "config-updated": "設定が更新されました。",
         "config-partly-updated": "設定が部分的に更新されました。",
         "default-landing-page": {
@@ -535,7 +535,7 @@
           "size": {
             "self": "最大SQL結果サイズ",
             "description": "出力される SQL クエリ結果のサイズを制限します。",
-            "default": "デフォルトの制限 {limit} MB"
+            "default": "デフォルトの制限 {{limit}} MB"
           },
           "rows": {
             "self": "最大SQL結果行数",
@@ -612,7 +612,7 @@
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
       "name": "リリース戦略",
       "tip": "新しいポリシーは古いイシューにも適用されます",
-      "info": "タスクは、「{permission}」許可または次のロールでユーザーが実行できます。"
+      "info": "タスクは、「{{permission}}」許可または次のロールでユーザーが実行できます。"
     },
     "environment-tier": {
       "name": "環境レベル",
@@ -625,7 +625,7 @@
     "configure-policy": "SQL レビューポリシーを設定する"
   },
   "environment": {
-    "successfully-updated-environment": "環境「{name}」は正常に更新されました",
+    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました",
     "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "create": "環境を作成する",
@@ -674,9 +674,9 @@
     "not-found": "ページが見つかりません"
   },
   "instance": {
-    "successfully-archived-instance": "インスタンス '{0}' を正常にアーカイブしました。",
-    "successfully-restored-instance": "インスタンス '{0}' を正常に復元しました。",
-    "archive-instance-instance-name": "インスタンス '{0}' をアーカイブしますか?",
+    "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
+    "successfully-restored-instance": "インスタンス '{{0}}' を正常に復元しました。",
+    "archive-instance-instance-name": "インスタンス '{{0}}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
     "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
     "syncing": "同期中 ...",
@@ -686,8 +686,8 @@
       "sync-all": "すべてのデータベースを同期する",
       "sync-new": "新しいデータベースのみを同期する"
     },
-    "selected-n-instances_one": "{count} 個のインスタンスが選択されました",
-    "selected-n-instances_other": "{count} 個のインスタンスが選択されました",
+    "selected-n-instances_one": "{{count}} 個のインスタンスが選択されました",
+    "selected-n-instances_other": "{{count}} 個のインスタンスが選択されました",
     "advanced-search": {
       "scope": {
         "host": {
@@ -718,11 +718,11 @@
       "self": "クイックリンク"
     },
     "last-visit": "最終訪問",
-    "changelog-for-version": "{version} の変更履歴"
+    "changelog-for-version": "{{version}} の変更履歴"
   },
   "remind": {
     "release": {
-      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です"
+      "new-version-available-with-tag": "新しいバージョン {{tag}} が利用可能です"
     }
   },
   "banner": {
@@ -730,29 +730,29 @@
   },
   "project": {
     "create-modal": {
-      "success-prompt": "{name} が正常に作成されました。",
+      "success-prompt": "{{name}} が正常に作成されました。",
       "project-name": "プロジェクト名前"
     },
     "batch": {
       "archive": {
-        "success_one": "{count} 件のプロジェクトを正常にアーカイブしました",
-        "success_other": "{count} 件のプロジェクトを正常にアーカイブしました",
+        "success_one": "{{count}} 件のプロジェクトを正常にアーカイブしました",
+        "success_other": "{{count}} 件のプロジェクトを正常にアーカイブしました",
         "error": "プロジェクトをアーカイブできませんでした",
-        "title_one": "{count} 件のプロジェクトをアーカイブしますか?",
-        "title_other": "{count} 件のプロジェクトをアーカイブしますか?",
+        "title_one": "{{count}} 件のプロジェクトをアーカイブしますか?",
+        "title_other": "{{count}} 件のプロジェクトをアーカイブしますか?",
         "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。"
       },
       "delete": {
-        "success_one": "{count} 件のプロジェクトを正常に削除しました",
-        "success_other": "{count} 件のプロジェクトを正常に削除しました",
+        "success_one": "{{count}} 件のプロジェクトを正常に削除しました",
+        "success_other": "{{count}} 件のプロジェクトを正常に削除しました",
         "error": "プロジェクトを削除できませんでした",
-        "title_one": "{count} 件のプロジェクトを削除しますか?",
-        "title_other": "{count} 件のプロジェクトを削除しますか?",
+        "title_one": "{{count}} 件のプロジェクトを削除しますか?",
+        "title_other": "{{count}} 件のプロジェクトを削除しますか?",
         "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       },
-      "selected_one": "{count} 件のプロジェクトが選択されました",
-      "selected_other": "{count} 件のプロジェクトが選択されました"
+      "selected_one": "{{count}} 件のプロジェクトが選択されました",
+      "selected_other": "{{count}} 件のプロジェクトが選択されました"
     },
     "filter-projects": "プロジェクトをフィルタリング",
     "table": {
@@ -760,9 +760,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "「{name}」は次のリソースによって使用されます:",
+    "delete-warning-with-resources": "「{{name}}」は次のリソースによって使用されます:",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。",
-    "delete-warning": "「{name}」は削除されます。この操作は元に戻せません。"
+    "delete-warning": "「{{name}}」は削除されます。この操作は元に戻せません。"
   },
   "sql-editor": {
     "self": "SQLエディタ"

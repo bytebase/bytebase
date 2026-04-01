@@ -38,7 +38,7 @@
     "unassigned": "No asignado",
     "archive": "Archivo",
     "restore": "Restaurar",
-    "delete-resource": "Delete {type}",
+    "delete-resource": "Delete {{type}}",
     "labels": "Etiquetas",
     "state": "Estado",
     "address": "Dirección",
@@ -48,13 +48,13 @@
     "restored": "Restored",
     "archived": "Archivada",
     "select-all": "Seleccionar todo",
-    "total-n-items": "Total {n} elementos",
+    "total-n-items": "Total {{n}} elementos",
     "search": "Buscar",
-    "n-items-selected": "{n} elementos seleccionados",
+    "n-items-selected": "{{n}} elementos seleccionados",
     "permissions": "Permisos",
     "added": "Agregado",
     "description": "Descripción",
-    "missing-required-permission": "Faltan permisos requeridos {permissions}",
+    "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
     "add-permissions": "Agregar permisos",
     "system": "Sistema",
@@ -62,8 +62,8 @@
     "upload": "Subir",
     "unlimited": "Ilimitado",
     "file-selector": {
-      "type-limit": "Solo se admiten archivos {extension}",
-      "size-limit": "El tamaño del archivo debe ser menor que {size} MiB"
+      "type-limit": "Solo se admiten archivos {{extension}}",
+      "size-limit": "El tamaño del archivo debe ser menor que {{size}} MiB"
     },
     "ok": "OK"
   },
@@ -80,7 +80,7 @@
           "description": "Todos los siguientes son verdaderos..."
         }
       },
-      "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
+      "add-condition-in-group-placeholder": "Agregar {{plus}} para agregar condición",
       "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición",
       "add": "Agregar condición",
       "add-raw-expression": "Agregar expresión cruda",
@@ -88,8 +88,8 @@
     }
   },
   "subscription": {
-    "trial-for-days": "Puedes iniciar una prueba gratuita por {days} días - no se requiere tarjeta de crédito.",
-    "required-plan-with-trial": "Esta función requiere {requiredPlan}. {startTrial}",
+    "trial-for-days": "Puedes iniciar una prueba gratuita por {{days}} días - no se requiere tarjeta de crédito.",
+    "required-plan-with-trial": "Esta función requiere {{requiredPlan}}. {{startTrial}}",
     "instance-assignment": {
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "assign-license": "Asignar licencia",
@@ -97,11 +97,11 @@
       "used-and-total-user": "Límite de usuarios activos/totales",
       "used-and-total-license": "Licencia asignada / total"
     },
-    "request-n-days-trial": "Solicite una prueba de {days} días (no se requiere tarjeta de crédito)",
+    "request-n-days-trial": "Solicite una prueba de {{days}} días (no se requiere tarjeta de crédito)",
     "usage": {
       "instance-count": {
         "title": "Límite de cantidad de instancias",
-        "runoutof": "Te has quedado sin tu cuota de instancias {total}."
+        "runoutof": "Te has quedado sin tu cuota de instancias {{total}}."
       }
     },
     "plan": {
@@ -128,9 +128,9 @@
       "pro-description": "Built for teams creating production-ready applications.",
       "enterprise-description": "Scale your business securely while staying compliant.",
       "discount": {
-        "percentage-off": "primer mes {value}% de descuento",
-        "month-off": "{value} mes gratis",
-        "price-off": "${value} de descuento"
+        "percentage-off": "primer mes {{value}}% de descuento",
+        "month-off": "{{value}} mes gratis",
+        "price-off": "${{value}} de descuento"
       },
       "update": "Actualizar suscripción",
       "subscribe": "Suscribirse ahora",
@@ -142,7 +142,7 @@
       "total-price": "Precio total",
       "manage-invoices": "Gestionar facturas",
       "billing-period": "Período de facturación",
-      "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {date}.",
+      "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {{date}}.",
       "cancel": "Cancelar suscripción",
       "per-user-per-month": "/ usuario / mes",
       "custom": "Personalizado",
@@ -169,24 +169,24 @@
     "trialing": "probando",
     "expires-at": "Expira el",
     "try-for-free": "Prueba gratis",
-    "enterprise-free-trial": "{days}-días de prueba gratuita para la empresa",
+    "enterprise-free-trial": "{{days}}-días de prueba gratuita para la empresa",
     "inquire-enterprise-plan": "Consulta el Plan de Empresas",
     "upload-license": "Subir licencia",
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "plan-compare": "Compara características entre los diferentes planes",
     "max-instance-count": "Recuento máximo de instancias",
-    "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquearla."
+    "require-subscription": "Esta función requiere una suscripción a {{requiredPlan}}. Compre una licencia de Bytebase para desbloquearla."
   },
   "resource-id": {
     "validation": {
-      "empty": "El ID {resource} no puede estar vacío",
-      "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres.",
-      "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
-      "duplicated": "El ID de {resource} ya existe. Por favor, elige otro."
+      "empty": "El ID {{resource}} no puede estar vacío",
+      "overflow": "El ID de {{resource}} es demasiado largo. Debe tener menos de 64 caracteres.",
+      "pattern": "La identificación {{recurso}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
+      "duplicated": "El ID de {{resource}} ya existe. Por favor, elige otro."
     },
-    "self": "ID de {resource}",
+    "self": "ID de {{resource}}",
     "cannot-be-changed-later": "No se puede cambiar posteriormente.",
-    "description": "El ID de {resource} es un identificador único. No se puede cambiar una vez creado."
+    "description": "El ID de {{resource}} es un identificador único. No se puede cambiar una vez creado."
   },
   "schema-template": {
     "classification": {
@@ -225,7 +225,7 @@
         },
         "select": "Seleccionar tipo semántico",
         "template": {
-          "duplicate-warning": "El tipo semántico \"{title}\" ya existe",
+          "duplicate-warning": "El tipo semántico \"{{title}}\" ya existe",
           "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar."
         },
         "use-predefined-type": "Utiliza el Tipo Predefinido",
@@ -412,7 +412,7 @@
           },
           "api-key": {
             "self": "Clave de API",
-            "description": "Proporcionar clave API, solo lectura. {viewDoc}",
+            "description": "Proporcionar clave API, solo lectura. {{viewDoc}}",
             "find-my-key": "Encuentra mi llave",
             "placeholder": "Una clave de API generalmente comienza con sk-*****"
           },
@@ -432,13 +432,13 @@
         },
         "password-restriction": {
           "self": "Restricción de contraseña",
-          "min-length": "La longitud mínima de la contraseña no debe ser inferior a {min} caracteres",
+          "min-length": "La longitud mínima de la contraseña no debe ser inferior a {{min}} caracteres",
           "require-number": "Requiere que la contraseña contenga al menos un número",
           "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
           "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
           "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial",
           "require-reset-password-for-first-login": "Requerir que los usuarios restablezcan su contraseña después del primer inicio de sesión",
-          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {day} días"
+          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {{day}} días"
         },
         "require-2fa": {
           "enable": "Requerir autenticación de dos factores para todos los usuarios",
@@ -497,7 +497,7 @@
         "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
         "select-logo": "Subir un archivo",
         "drag-logo": "o arrastrar aquí",
-        "logo-upload-tip": "{extension} hasta {size} MiB",
+        "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
         "branding": "Marca",
         "account": "Cuenta",
         "security": "Seguridad",
@@ -509,7 +509,7 @@
           "participate": "Participar en el programa de mejora",
           "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
         },
-        "failed-to-update-setting": "No se pudo actualizar la configuración \"{title}\"",
+        "failed-to-update-setting": "No se pudo actualizar la configuración \"{{title}}\"",
         "config-updated": "La configuración se ha actualizado.",
         "config-partly-updated": "Configuración parcialmente actualizada.",
         "default-landing-page": {
@@ -535,7 +535,7 @@
           "size": {
             "self": "Tamaño máximo del resultado de SQL",
             "description": "Limite el tamaño del resultado de la consulta SQL de salida.",
-            "default": "Límite predeterminado {limit} MB"
+            "default": "Límite predeterminado {{limit}} MB"
           },
           "rows": {
             "self": "Máximo de filas de resultados de SQL",
@@ -612,7 +612,7 @@
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "name": "Política de Implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
-      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles."
+      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{{permission}}' o los siguientes roles."
     },
     "environment-tier": {
       "name": "Nivel de Entorno",
@@ -625,7 +625,7 @@
     "configure-policy": "Configurar política"
   },
   "environment": {
-    "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
+    "successfully-updated-environment": "entorno '{{name}}' actualizado exitosamente.",
     "delete": "Eliminar este entorno",
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "create": "Crear entorno",
@@ -674,9 +674,9 @@
     "not-found": "No encontrado"
   },
   "instance": {
-    "successfully-archived-instance": "Se archivó exitosamente la instancia '{0}'.",
-    "successfully-restored-instance": "Se restauró exitosamente la instancia '{0}'.",
-    "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
+    "successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
+    "successfully-restored-instance": "Se restauró exitosamente la instancia '{{0}}'.",
+    "archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
     "syncing": "Sincronizando...",
@@ -686,8 +686,8 @@
       "sync-all": "Sincronizar todas las bases de datos",
       "sync-new": "Sincronizar únicamente bases de datos nuevas"
     },
-    "selected-n-instances_one": "{count} instancia seleccionada",
-    "selected-n-instances_other": "{count} instancias seleccionadas",
+    "selected-n-instances_one": "{{count}} instancia seleccionada",
+    "selected-n-instances_other": "{{count}} instancias seleccionadas",
     "advanced-search": {
       "scope": {
         "host": {
@@ -718,11 +718,11 @@
       "self": "Enlace rápido"
     },
     "last-visit": "Última visita",
-    "changelog-for-version": "Registro de cambios para {version}"
+    "changelog-for-version": "Registro de cambios para {{version}}"
   },
   "remind": {
     "release": {
-      "new-version-available-with-tag": "La nueva versión {tag} está disponible"
+      "new-version-available-with-tag": "La nueva versión {{tag}} está disponible"
     }
   },
   "banner": {
@@ -730,29 +730,29 @@
   },
   "project": {
     "create-modal": {
-      "success-prompt": "Proyecto {name} creado exitosamente.",
+      "success-prompt": "Proyecto {{name}} creado exitosamente.",
       "project-name": "Proyecto Nombre"
     },
     "batch": {
       "archive": {
-        "success_one": "Proyecto {count} archivado correctamente",
-        "success_other": "Proyectos {count} archivados correctamente",
+        "success_one": "Proyecto {{count}} archivado correctamente",
+        "success_other": "Proyectos {{count}} archivados correctamente",
         "error": "No se pudieron archivar los proyectos",
-        "title_one": "¿Archivar {count} Proyecto?",
-        "title_other": "¿Archivar {count} Proyectos?",
+        "title_one": "¿Archivar {{count}} Proyecto?",
+        "title_other": "¿Archivar {{count}} Proyectos?",
         "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas."
       },
       "delete": {
-        "success_one": "Proyecto {count} eliminado correctamente",
-        "success_other": "Proyectos {count} eliminados correctamente",
+        "success_one": "Proyecto {{count}} eliminado correctamente",
+        "success_other": "Proyectos {{count}} eliminados correctamente",
         "error": "No se pudieron eliminar los proyectos",
-        "title_one": "¿Eliminar {count} Proyecto?",
-        "title_other": "¿Eliminar {count} Proyectos?",
+        "title_one": "¿Eliminar {{count}} Proyecto?",
+        "title_other": "¿Eliminar {{count}} Proyectos?",
         "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       },
-      "selected_one": "{count} proyecto seleccionado",
-      "selected_other": "{count} proyectos seleccionados"
+      "selected_one": "{{count}} proyecto seleccionado",
+      "selected_other": "{{count}} proyectos seleccionados"
     },
     "filter-projects": "Filtrar proyectos",
     "table": {
@@ -760,9 +760,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "El \"{name}\" lo utilizan los siguientes recursos:",
+    "delete-warning-with-resources": "El \"{{name}}\" lo utilizan los siguientes recursos:",
     "delete-warning-retry": "Elimínelo de estos recursos y vuelva a intentarlo.",
-    "delete-warning": "Se eliminará el elemento \"{name}\". Esta acción no se puede deshacer."
+    "delete-warning": "Se eliminará el elemento \"{{name}}\". Esta acción no se puede deshacer."
   },
   "sql-editor": {
     "self": "Editor de SQL"

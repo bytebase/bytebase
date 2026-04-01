@@ -38,7 +38,7 @@
     "unassigned": "Unassigned",
     "archive": "Archive",
     "restore": "Restore",
-    "delete-resource": "Delete {type}",
+    "delete-resource": "Delete {{type}}",
     "labels": "Labels",
     "state": "State",
     "address": "Address",
@@ -48,13 +48,13 @@
     "restored": "Restored",
     "archived": "Archived",
     "select-all": "Select all",
-    "total-n-items": "Total {n} items",
+    "total-n-items": "Total {{n}} items",
     "search": "Search",
-    "n-items-selected": "{n} items selected",
+    "n-items-selected": "{{n}} items selected",
     "permissions": "Permissions",
     "added": "Added",
     "description": "Description",
-    "missing-required-permission": "Missing required permissions {permissions}",
+    "missing-required-permission": "Missing required permissions {{permissions}}",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
     "add-permissions": "Add permissions",
     "system": "System",
@@ -62,8 +62,8 @@
     "upload": "Upload",
     "unlimited": "Unlimited",
     "file-selector": {
-      "type-limit": "Only support {extension} file",
-      "size-limit": "File size should less than {size} MiB"
+      "type-limit": "Only support {{extension}} file",
+      "size-limit": "File size should less than {{size}} MiB"
     },
     "ok": "OK"
   },
@@ -80,7 +80,7 @@
           "description": "All of the following are true..."
         }
       },
-      "add-condition-in-group-placeholder": "Add {plus} to add condition",
+      "add-condition-in-group-placeholder": "Add {{plus}} to add condition",
       "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition",
       "add": "Add condition",
       "add-raw-expression": "Add raw expression",
@@ -88,8 +88,8 @@
     }
   },
   "subscription": {
-    "trial-for-days": "You can start a free trial for {days} days - no credit card required.",
-    "required-plan-with-trial": "This feature requires {requiredPlan}. {startTrial}",
+    "trial-for-days": "You can start a free trial for {{days}} days - no credit card required.",
+    "required-plan-with-trial": "This feature requires {{requiredPlan}}. {{startTrial}}",
     "instance-assignment": {
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "assign-license": "Assign License",
@@ -97,11 +97,11 @@
       "used-and-total-user": "Active / Total User Limit",
       "used-and-total-license": "Assigned / Total Instance License"
     },
-    "request-n-days-trial": "Request {days} days trial (no credit card required)",
+    "request-n-days-trial": "Request {{days}} days trial (no credit card required)",
     "usage": {
       "instance-count": {
         "title": "Instance count limit",
-        "runoutof": "You have run out of your {total} instance quota."
+        "runoutof": "You have run out of your {{total}} instance quota."
       }
     },
     "plan": {
@@ -128,9 +128,9 @@
       "pro-description": "Built for teams creating production-ready applications.",
       "enterprise-description": "Scale your business securely while staying compliant.",
       "discount": {
-        "percentage-off": "first month {value}% off",
-        "month-off": "{value} month free",
-        "price-off": "${value} off"
+        "percentage-off": "first month {{value}}% off",
+        "month-off": "{{value}} month free",
+        "price-off": "${{value}} off"
       },
       "update": "Update Subscription",
       "subscribe": "Subscribe now",
@@ -142,7 +142,7 @@
       "total-price": "Total Price",
       "manage-invoices": "Manage Invoices",
       "billing-period": "Billing Period",
-      "cancel-pending": "Your subscription has been canceled and will end on {date}.",
+      "cancel-pending": "Your subscription has been canceled and will end on {{date}}.",
       "cancel": "Cancel Subscription",
       "per-user-per-month": "/ user monthly",
       "custom": "Custom",
@@ -169,24 +169,24 @@
     "trialing": "trialing",
     "expires-at": "Expires at",
     "try-for-free": "Free trial",
-    "enterprise-free-trial": "{days}-day free Enterprise trial",
+    "enterprise-free-trial": "{{days}}-day free Enterprise trial",
     "inquire-enterprise-plan": "Inquire Enterprise Plan",
     "upload-license": "Upload license",
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "plan-compare": "Compare features between different plans",
     "max-instance-count": "Max instance count",
-    "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock it."
+    "require-subscription": "This feature requires {{requiredPlan}} subscription, please purchase Bytebase license to unlock it."
   },
   "resource-id": {
     "validation": {
-      "empty": "The {resource} ID cannot be empty",
-      "overflow": "The {resource} ID is too long. It should have less than 64 characters.",
-      "pattern": "The {resource} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
-      "duplicated": "The {resource} ID already exists. Please choose another one."
+      "empty": "The {{resource}} ID cannot be empty",
+      "overflow": "The {{resource}} ID is too long. It should have less than 64 characters.",
+      "pattern": "The {{resource}} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
+      "duplicated": "The {{resource}} ID already exists. Please choose another one."
     },
-    "self": "{resource} ID",
+    "self": "{{resource}} ID",
     "cannot-be-changed-later": "It cannot be changed later.",
-    "description": "The {resource} ID is a unique identifier. You cannot change it after created."
+    "description": "The {{resource}} ID is a unique identifier. You cannot change it after created."
   },
   "schema-template": {
     "classification": {
@@ -225,7 +225,7 @@
         },
         "select": "Select semantic type",
         "template": {
-          "duplicate-warning": "Semantic type \"{title}\" already exists",
+          "duplicate-warning": "Semantic type \"{{title}}\" already exists",
           "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed."
         },
         "use-predefined-type": "Use Predefined Type",
@@ -412,7 +412,7 @@
           },
           "api-key": {
             "self": "API Key",
-            "description": "Supply API Key, read-only. {viewDoc}",
+            "description": "Supply API Key, read-only. {{viewDoc}}",
             "find-my-key": "Find my key",
             "placeholder": "An API Key usually starts with sk-*****"
           },
@@ -432,13 +432,13 @@
         },
         "password-restriction": {
           "self": "Password Restriction",
-          "min-length": "Minimum length for password should no less than {min} characters",
+          "min-length": "Minimum length for password should no less than {{min}} characters",
           "require-number": "The password must contain at least one number",
           "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
           "require-uppercase-letter": "The password must contain at least one upper case letter",
           "require-special-character": "The password must contain at least one special character",
           "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
-          "password-rotation": "Require users reset their password every {day} days"
+          "password-rotation": "Require users reset their password every {{day}} days"
         },
         "require-2fa": {
           "enable": "Require two-factor authentication for all users",
@@ -497,7 +497,7 @@
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
-        "logo-upload-tip": "{extension} up to {size} MiB",
+        "logo-upload-tip": "{{extension}} up to {{size}} MiB",
         "branding": "Branding",
         "account": "Account",
         "security": "Security",
@@ -509,7 +509,7 @@
           "participate": "Participate in improvement program",
           "description": "Help improve Bytebase by sharing anonymous usage data"
         },
-        "failed-to-update-setting": "Failed to update setting \"{title}\"",
+        "failed-to-update-setting": "Failed to update setting \"{{title}}\"",
         "config-updated": "Configuration is updated.",
         "config-partly-updated": "Configuration partly updated.",
         "default-landing-page": {
@@ -535,7 +535,7 @@
           "size": {
             "self": "Maximum SQL result size",
             "description": "Limit the output SQL query result size.",
-            "default": "Default limit {limit} MB"
+            "default": "Default limit {{limit}} MB"
           },
           "rows": {
             "self": "Maximum SQL result rows",
@@ -612,7 +612,7 @@
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "name": "Rollout Policy",
       "tip": "The policy is applied to issues retroactively.",
-      "info": "Tasks can be executed by users with '{permission}' permission or the following roles."
+      "info": "Tasks can be executed by users with '{{permission}}' permission or the following roles."
     },
     "environment-tier": {
       "name": "Environment Tier",
@@ -625,7 +625,7 @@
     "configure-policy": "Configure policy"
   },
   "environment": {
-    "successfully-updated-environment": "Successfully updated environment '{name}'.",
+    "successfully-updated-environment": "Successfully updated environment '{{name}}'.",
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "create": "Create Environment",
@@ -674,9 +674,9 @@
     "not-found": "Not Found"
   },
   "instance": {
-    "successfully-archived-instance": "Successfully archived the instance '{0}'.",
-    "successfully-restored-instance": "Successfully restored the instance '{0}'.",
-    "archive-instance-instance-name": "Archive instance '{0}'?",
+    "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
+    "successfully-restored-instance": "Successfully restored the instance '{{0}}'.",
+    "archive-instance-instance-name": "Archive instance '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "force-archive-description": "Force to archive. All databases will be unassigned.",
     "syncing": "Syncing ...",
@@ -686,8 +686,8 @@
       "sync-all": "Sync all databases",
       "sync-new": "Only sync new databases"
     },
-    "selected-n-instances_one": "{count} instance selected",
-    "selected-n-instances_other": "{count} instances selected",
+    "selected-n-instances_one": "{{count}} instance selected",
+    "selected-n-instances_other": "{{count}} instances selected",
     "advanced-search": {
       "scope": {
         "host": {
@@ -718,11 +718,11 @@
       "self": "Quick Link"
     },
     "last-visit": "Last visit",
-    "changelog-for-version": "Changelog for {version}"
+    "changelog-for-version": "Changelog for {{version}}"
   },
   "remind": {
     "release": {
-      "new-version-available-with-tag": "New version {tag} is available"
+      "new-version-available-with-tag": "New version {{tag}} is available"
     }
   },
   "banner": {
@@ -730,29 +730,29 @@
   },
   "project": {
     "create-modal": {
-      "success-prompt": "Successfully created project {name}.",
+      "success-prompt": "Successfully created project {{name}}.",
       "project-name": "Project Name"
     },
     "batch": {
       "archive": {
-        "success_one": "Successfully archived {count} project",
-        "success_other": "Successfully archived {count} projects",
+        "success_one": "Successfully archived {{count}} project",
+        "success_other": "Successfully archived {{count}} projects",
         "error": "Failed to archive projects",
-        "title_one": "Archive {count} Project?",
-        "title_other": "Archive {count} Projects?",
+        "title_one": "Archive {{count}} Project?",
+        "title_other": "Archive {{count}} Projects?",
         "description": "This will archive the selected projects. You can restore them later if needed."
       },
       "delete": {
-        "success_one": "Successfully deleted {count} project",
-        "success_other": "Successfully deleted {count} projects",
+        "success_one": "Successfully deleted {{count}} project",
+        "success_other": "Successfully deleted {{count}} projects",
         "error": "Failed to delete projects",
-        "title_one": "Delete {count} Project?",
-        "title_other": "Delete {count} Projects?",
+        "title_one": "Delete {{count}} Project?",
+        "title_other": "Delete {{count}} Projects?",
         "description": "This will permanently delete the selected projects and move all databases to the default project.",
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       },
-      "selected_one": "{count} project selected",
-      "selected_other": "{count} projects selected"
+      "selected_one": "{{count}} project selected",
+      "selected_other": "{{count}} projects selected"
     },
     "filter-projects": "Filter projects",
     "table": {
@@ -760,9 +760,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "The \"{name}\" is used by following resources:",
+    "delete-warning-with-resources": "The \"{{name}}\" is used by following resources:",
     "delete-warning-retry": "Please remove it from these resources then retry again.",
-    "delete-warning": "The \"{name}\" will be deleted. This action cannot be undone."
+    "delete-warning": "The \"{{name}}\" will be deleted. This action cannot be undone."
   },
   "sql-editor": {
     "self": "SQL Editor"

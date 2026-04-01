@@ -38,7 +38,7 @@
     "unassigned": "Chưa gán",
     "archive": "Lưu trữ",
     "restore": "Khôi phục",
-    "delete-resource": "Delete {type}",
+    "delete-resource": "Delete {{type}}",
     "labels": "Nhãn",
     "state": "Trạng thái",
     "address": "Địa chỉ",
@@ -48,13 +48,13 @@
     "restored": "Restored",
     "archived": "Đã lưu trữ",
     "select-all": "Chọn tất cả",
-    "total-n-items": "Tổng {n} mục",
+    "total-n-items": "Tổng {{n}} mục",
     "search": "Tìm kiếm",
-    "n-items-selected": "Đã chọn {n} mục",
+    "n-items-selected": "Đã chọn {{n}} mục",
     "permissions": "Quyền",
     "added": "Đã thêm",
     "description": "Mô tả",
-    "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
+    "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
     "add-permissions": "Thêm quyền",
     "system": "Hệ thống",
@@ -62,8 +62,8 @@
     "upload": "Tải lên",
     "unlimited": "Không giới hạn",
     "file-selector": {
-      "type-limit": "Chỉ hỗ trợ tệp {extension}",
-      "size-limit": "Kích thước tệp phải nhỏ hơn {size} MiB"
+      "type-limit": "Chỉ hỗ trợ tệp {{extension}}",
+      "size-limit": "Kích thước tệp phải nhỏ hơn {{size}} MiB"
     },
     "ok": "OK"
   },
@@ -80,7 +80,7 @@
           "description": "Tất cả những điều sau đây là đúng..."
         }
       },
-      "add-condition-in-group-placeholder": "Thêm {plus} để thêm điều kiện",
+      "add-condition-in-group-placeholder": "Thêm {{plus}} để thêm điều kiện",
       "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện",
       "add": "Thêm điều kiện",
       "add-raw-expression": "Thêm biểu thức thô",
@@ -88,8 +88,8 @@
     }
   },
   "subscription": {
-    "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {days} ngày - không cần thẻ tín dụng.",
-    "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
+    "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {{days}} ngày - không cần thẻ tín dụng.",
+    "required-plan-with-trial": "Tính năng này yêu cầu {{requiredPlan}}. {{startTrial}}",
     "instance-assignment": {
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "assign-license": "Gán giấy phép",
@@ -97,11 +97,11 @@
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số"
     },
-    "request-n-days-trial": "Yêu cầu dùng thử {days} ngày (không cần thẻ tín dụng)",
+    "request-n-days-trial": "Yêu cầu dùng thử {{days}} ngày (không cần thẻ tín dụng)",
     "usage": {
       "instance-count": {
         "title": "Giới hạn số lượng phiên bản",
-        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình."
+        "runoutof": "Bạn đã hết hạn ngạch {{total}} phiên bản của mình."
       }
     },
     "plan": {
@@ -128,9 +128,9 @@
       "pro-description": "Built for teams creating production-ready applications.",
       "enterprise-description": "Scale your business securely while staying compliant.",
       "discount": {
-        "percentage-off": "tháng đầu giảm {value}%",
-        "month-off": "{value} tháng miễn phí",
-        "price-off": "giảm ${value}"
+        "percentage-off": "tháng đầu giảm {{value}}%",
+        "month-off": "{{value}} tháng miễn phí",
+        "price-off": "giảm ${{value}}"
       },
       "update": "Cập nhật đăng ký",
       "subscribe": "Đăng ký ngay",
@@ -142,7 +142,7 @@
       "total-price": "Tổng giá",
       "manage-invoices": "Quản lý hóa đơn",
       "billing-period": "Kỳ thanh toán",
-      "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {date}.",
+      "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {{date}}.",
       "cancel": "Hủy đăng ký",
       "per-user-per-month": "/ người dùng / tháng",
       "custom": "Tùy chỉnh",
@@ -169,24 +169,24 @@
     "trialing": "đang dùng thử",
     "expires-at": "Hết hạn vào",
     "try-for-free": "Dùng thử miễn phí",
-    "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {days} ngày",
+    "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {{days}} ngày",
     "inquire-enterprise-plan": "Yêu cầu gói Doanh nghiệp",
     "upload-license": "Tải lên giấy phép",
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
     "plan-compare": "So sánh tính năng giữa các gói khác nhau",
     "max-instance-count": "Số lượng phiên bản tối đa",
-    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa."
+    "require-subscription": "Tính năng này yêu cầu đăng ký {{requiredPlan}}, vui lòng mua giấy phép Bytebase để mở khóa."
   },
   "resource-id": {
     "validation": {
-      "empty": "ID {resource} không được để trống",
-      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
-      "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
-      "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác."
+      "empty": "ID {{resource}} không được để trống",
+      "overflow": "ID {{resource}} quá dài. Nó phải có ít hơn 64 ký tự.",
+      "pattern": "ID {{resource}} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
+      "duplicated": "ID {{resource}} đã tồn tại. Vui lòng chọn một ID khác."
     },
-    "self": "ID {resource}",
+    "self": "ID {{resource}}",
     "cannot-be-changed-later": "Nó không thể được thay đổi sau này.",
-    "description": "ID {resource} là một mã định danh duy nhất. Bạn không thể thay đổi nó sau khi tạo."
+    "description": "ID {{resource}} là một mã định danh duy nhất. Bạn không thể thay đổi nó sau khi tạo."
   },
   "schema-template": {
     "classification": {
@@ -225,7 +225,7 @@
         },
         "select": "Chọn loại ngữ nghĩa",
         "template": {
-          "duplicate-warning": "Loại ngữ nghĩa \"{title}\" đã tồn tại",
+          "duplicate-warning": "Loại ngữ nghĩa \"{{title}}\" đã tồn tại",
           "description": "Bạn có thể áp dụng các loại ngữ nghĩa tích hợp từ mẫu. Mẫu tích hợp không thể thay đổi."
         },
         "use-predefined-type": "Sử dụng Loại định nghĩa trước",
@@ -412,7 +412,7 @@
           },
           "api-key": {
             "self": "Khóa API",
-            "description": "Cung cấp Khóa API, chỉ đọc. {viewDoc}",
+            "description": "Cung cấp Khóa API, chỉ đọc. {{viewDoc}}",
             "find-my-key": "Tìm khóa của tôi",
             "placeholder": "Khóa API thường bắt đầu bằng sk-*****"
           },
@@ -432,13 +432,13 @@
         },
         "password-restriction": {
           "self": "Hạn chế mật khẩu",
-          "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {min} ký tự",
+          "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {{min}} ký tự",
           "require-number": "Mật khẩu phải chứa ít nhất một số",
           "require-letter": "Mật khẩu phải chứa ít nhất một chữ cái, bất kể chữ hoa hay chữ thường",
           "require-uppercase-letter": "Mật khẩu phải chứa ít nhất một chữ cái viết hoa",
           "require-special-character": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt",
           "require-reset-password-for-first-login": "Yêu cầu người dùng đặt lại mật khẩu của họ sau lần đăng nhập đầu tiên",
-          "password-rotation": "Yêu cầu người dùng đặt lại mật khẩu của họ sau mỗi {day} ngày"
+          "password-rotation": "Yêu cầu người dùng đặt lại mật khẩu của họ sau mỗi {{day}} ngày"
         },
         "require-2fa": {
           "enable": "Yêu cầu xác thực hai yếu tố cho tất cả người dùng",
@@ -497,7 +497,7 @@
         "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
         "select-logo": "Tải lên một tệp",
         "drag-logo": "hoặc kéo vào đây",
-        "logo-upload-tip": "{extension} tối đa {size} MiB",
+        "logo-upload-tip": "{{extension}} tối đa {{size}} MiB",
         "branding": "Thương hiệu",
         "account": "Tài khoản",
         "security": "Bảo mật",
@@ -509,7 +509,7 @@
           "participate": "Tham gia chương trình cải thiện",
           "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
         },
-        "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
+        "failed-to-update-setting": "Không cập nhật được cài đặt \"{{title}}\"",
         "config-updated": "Cấu hình được cập nhật.",
         "config-partly-updated": "Cấu hình đã được cập nhật một phần.",
         "default-landing-page": {
@@ -535,7 +535,7 @@
           "size": {
             "self": "Kích thước kết quả SQL tối đa",
             "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra.",
-            "default": "Giới hạn mặc định {limit} MB"
+            "default": "Giới hạn mặc định {{limit}} MB"
           },
           "rows": {
             "self": "Số lượng hàng kết quả SQL tối đa",
@@ -625,7 +625,7 @@
     "configure-policy": "Định cấu hình chính sách"
   },
   "environment": {
-    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'.",
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "create": "Tạo môi trường",
@@ -674,9 +674,9 @@
     "not-found": "Không tìm thấy"
   },
   "instance": {
-    "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{0}'.",
-    "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
-    "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
+    "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
+    "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{{0}}'.",
+    "archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
     "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
     "syncing": "Đang đồng bộ hóa ...",
@@ -686,8 +686,8 @@
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu",
       "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
     },
-    "selected-n-instances_one": "{count} phiên bản đã chọn",
-    "selected-n-instances_other": "{count} phiên bản đã chọn",
+    "selected-n-instances_one": "{{count}} phiên bản đã chọn",
+    "selected-n-instances_other": "{{count}} phiên bản đã chọn",
     "advanced-search": {
       "scope": {
         "host": {
@@ -718,11 +718,11 @@
       "self": "Liên kết nhanh"
     },
     "last-visit": "Lần truy cập cuối",
-    "changelog-for-version": "Nhật ký thay đổi cho phiên bản {version}"
+    "changelog-for-version": "Nhật ký thay đổi cho phiên bản {{version}}"
   },
   "remind": {
     "release": {
-      "new-version-available-with-tag": "Phiên bản mới {tag} có sẵn"
+      "new-version-available-with-tag": "Phiên bản mới {{tag}} có sẵn"
     }
   },
   "banner": {
@@ -730,29 +730,29 @@
   },
   "project": {
     "create-modal": {
-      "success-prompt": "Đã tạo thành công dự án {name}.",
+      "success-prompt": "Đã tạo thành công dự án {{name}}.",
       "project-name": "Dự án Tên"
     },
     "batch": {
       "archive": {
-        "success_one": "Đã lưu trữ thành công {count} dự án",
-        "success_other": "Đã lưu trữ thành công {count} dự án",
+        "success_one": "Đã lưu trữ thành công {{count}} dự án",
+        "success_other": "Đã lưu trữ thành công {{count}} dự án",
         "error": "Không lưu trữ được dự án",
-        "title_one": "Lưu trữ {count} Dự án?",
-        "title_other": "Lưu trữ {count} Dự án?",
+        "title_one": "Lưu trữ {{count}} Dự án?",
+        "title_other": "Lưu trữ {{count}} Dự án?",
         "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần."
       },
       "delete": {
-        "success_one": "Đã xóa thành công {count} dự án",
-        "success_other": "Đã xóa thành công {count} dự án",
+        "success_one": "Đã xóa thành công {{count}} dự án",
+        "success_other": "Đã xóa thành công {{count}} dự án",
         "error": "Không xóa được dự án",
-        "title_one": "Xóa {count} Dự án?",
-        "title_other": "Xóa {count} Dự án?",
+        "title_one": "Xóa {{count}} Dự án?",
+        "title_other": "Xóa {{count}} Dự án?",
         "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       },
-      "selected_one": "{count} dự án đã chọn",
-      "selected_other": "{count} dự án đã chọn"
+      "selected_one": "{{count}} dự án đã chọn",
+      "selected_other": "{{count}} dự án đã chọn"
     },
     "filter-projects": "Lọc dự án",
     "table": {
@@ -760,9 +760,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
+    "delete-warning-with-resources": "\"{{name}}\" được sử dụng bởi các tài nguyên sau:",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại.",
-    "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác."
+    "delete-warning": "\"{{name}}\" sẽ bị xóa. Hành động này không thể hoàn tác."
   },
   "sql-editor": {
     "self": "Trình soạn thảo SQL"

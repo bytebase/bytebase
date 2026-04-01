@@ -38,7 +38,7 @@
     "unassigned": "未分配",
     "archive": "归档",
     "restore": "恢复",
-    "delete-resource": "删除{type}",
+    "delete-resource": "删除{{type}}",
     "labels": "标签",
     "state": "状态",
     "address": "地址",
@@ -48,13 +48,13 @@
     "restored": "已恢复",
     "archived": "已归档",
     "select-all": "全选",
-    "total-n-items": "共 {n} 项",
+    "total-n-items": "共 {{n}} 项",
     "search": "搜索",
-    "n-items-selected": "已选 {n} 项",
+    "n-items-selected": "已选 {{n}} 项",
     "permissions": "权限",
     "added": "已创建",
     "description": "描述",
-    "missing-required-permission": "缺少必需的权限 {permissions}",
+    "missing-required-permission": "缺少必需的权限 {{permissions}}",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
     "add-permissions": "添加权限",
     "system": "系统",
@@ -62,8 +62,8 @@
     "upload": "上传",
     "unlimited": "无限制",
     "file-selector": {
-      "type-limit": "仅支持 {extension} 类型的文件",
-      "size-limit": "文件大小需小于 {size} MiB"
+      "type-limit": "仅支持 {{extension}} 类型的文件",
+      "size-limit": "文件大小需小于 {{size}} MiB"
     },
     "ok": "OK"
   },
@@ -80,7 +80,7 @@
           "description": "以下全部为真…"
         }
       },
-      "add-condition-in-group-placeholder": "点击{plus}添加条件",
+      "add-condition-in-group-placeholder": "点击{{plus}}添加条件",
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件",
       "add": "添加条件",
       "add-raw-expression": "添加 Raw 表达式",
@@ -88,8 +88,8 @@
     }
   },
   "subscription": {
-    "trial-for-days": "您可以开启 {days} 天的免费试用 - 无需任何信用卡或预付费。",
-    "required-plan-with-trial": "这个功能需要{requiredPlan}订阅，{startTrial}",
+    "trial-for-days": "您可以开启 {{days}} 天的免费试用 - 无需任何信用卡或预付费。",
+    "required-plan-with-trial": "这个功能需要{{requiredPlan}}订阅，{{startTrial}}",
     "instance-assignment": {
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "assign-license": "分配证书",
@@ -97,11 +97,11 @@
       "used-and-total-user": "活跃/总用户限制",
       "used-and-total-license": "已分配 / 总实例证书"
     },
-    "request-n-days-trial": "申请 {days} 天试用 (无需信用卡)",
+    "request-n-days-trial": "申请 {{days}} 天试用 (无需信用卡)",
     "usage": {
       "instance-count": {
         "title": "实例数量限制",
-        "runoutof": "已用尽全部 {total} 个实例额度。"
+        "runoutof": "已用尽全部 {{total}} 个实例额度。"
       }
     },
     "plan": {
@@ -128,9 +128,9 @@
       "pro-description": "适用于构建生产级应用的团队。",
       "enterprise-description": "安全合规地扩展您的业务。",
       "discount": {
-        "percentage-off": "首月 {value}% 优惠",
-        "month-off": "{value} 个月免费",
-        "price-off": "减 ${value}"
+        "percentage-off": "首月 {{value}}% 优惠",
+        "month-off": "{{value}} 个月免费",
+        "price-off": "减 ${{value}}"
       },
       "update": "更新订阅",
       "subscribe": "立即订阅",
@@ -142,7 +142,7 @@
       "total-price": "总价",
       "manage-invoices": "管理发票",
       "billing-period": "账单周期",
-      "cancel-pending": "您的订阅已取消，将于 {date} 到期。",
+      "cancel-pending": "您的订阅已取消，将于 {{date}} 到期。",
       "cancel": "取消订阅",
       "per-user-per-month": "/ 用户 / 月",
       "custom": "自定义",
@@ -169,24 +169,24 @@
     "trialing": "试用期",
     "expires-at": "过期时间",
     "try-for-free": "免费试用",
-    "enterprise-free-trial": "企业版 {days} 天免费试用",
+    "enterprise-free-trial": "企业版 {{days}} 天免费试用",
     "inquire-enterprise-plan": "企业版询价",
     "upload-license": "上传证书",
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "plan-compare": "比较不同版本的功能，寻找适合您的方案",
     "max-instance-count": "最多实例数",
-    "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。"
+    "require-subscription": "这个功能需要{{requiredPlan}}订阅，请购买 Bytebase 证书来解锁该功能。"
   },
   "resource-id": {
     "validation": {
-      "empty": "{resource} ID 不能为空",
-      "overflow": "{resource} ID 应该少于 64 个字符。",
-      "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
-      "duplicated": "{resource} ID 已存在。请使用其他 ID。"
+      "empty": "{{resource}} ID 不能为空",
+      "overflow": "{{resource}} ID 应该少于 64 个字符。",
+      "pattern": "{{resource}} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
+      "duplicated": "{{resource}} ID 已存在。请使用其他 ID。"
     },
-    "self": "{resource} ID",
+    "self": "{{resource}} ID",
     "cannot-be-changed-later": "创建之后无法修改。",
-    "description": "{resource} ID 是一个唯一的标识符。创建之后无法修改。"
+    "description": "{{resource}} ID 是一个唯一的标识符。创建之后无法修改。"
   },
   "schema-template": {
     "classification": {
@@ -225,7 +225,7 @@
         },
         "select": "选择语义类型",
         "template": {
-          "duplicate-warning": "语义类型“{title}”已存在",
+          "duplicate-warning": "语义类型“{{title}}”已存在",
           "description": "您可以从模板中应用内置语义类型。内置模板无法更改。"
         },
         "use-predefined-type": "使用预定义类型",
@@ -412,7 +412,7 @@
           },
           "api-key": {
             "self": "API Key",
-            "description": "提供 API 密钥，只读。{viewDoc}",
+            "description": "提供 API 密钥，只读。{{viewDoc}}",
             "find-my-key": "找到我的 Key",
             "placeholder": "API Key 通常以 sk-***** 开头"
           },
@@ -432,13 +432,13 @@
         },
         "password-restriction": {
           "self": "密码限制",
-          "min-length": "密码最小长度不得少于 {min} 个字符",
+          "min-length": "密码最小长度不得少于 {{min}} 个字符",
           "require-number": "密码必须至少包含一个数字",
           "require-letter": "密码必须至少包含一个字母（不区分大小写）",
           "require-uppercase-letter": "密码必须至少包含一个大写字母",
           "require-special-character": "密码必须至少包含一个特殊字符",
           "require-reset-password-for-first-login": "要求用户在首次登录后重置密码",
-          "password-rotation": "要求用户每 {day} 天重置一次密码"
+          "password-rotation": "要求用户每 {{day}} 天重置一次密码"
         },
         "require-2fa": {
           "enable": "要求所有用户配置双重认证",
@@ -497,7 +497,7 @@
         "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
-        "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
+        "logo-upload-tip": "支持 {{extension}} 类型文件，不能大于 {{size}} MiB",
         "branding": "品牌",
         "account": "帐户",
         "security": "安全",
@@ -509,7 +509,7 @@
           "participate": "参与改进计划",
           "description": "通过分享匿名使用数据帮助改进 Bytebase"
         },
-        "failed-to-update-setting": "无法更新设置“{title}”",
+        "failed-to-update-setting": "无法更新设置“{{title}}”",
         "config-updated": "配置已更新。",
         "config-partly-updated": "配置部分更新。",
         "default-landing-page": {
@@ -535,7 +535,7 @@
           "size": {
             "self": "最大 SQL 结果大小",
             "description": "限制输出 SQL 查询结果的大小。",
-            "default": "默认限制 {limit} MB"
+            "default": "默认限制 {{limit}} MB"
           },
           "rows": {
             "self": "SQL结果行数上限",
@@ -612,7 +612,7 @@
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
-      "info": "拥有 “{permission}” 权限或以下角色的用户可以发布。"
+      "info": "拥有 “{{permission}}” 权限或以下角色的用户可以发布。"
     },
     "environment-tier": {
       "name": "环境级别",
@@ -625,7 +625,7 @@
     "configure-policy": "配置审核策略"
   },
   "environment": {
-    "successfully-updated-environment": "环境'{name}'更新成功",
+    "successfully-updated-environment": "环境'{{name}}'更新成功",
     "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "create": "创建环境",
@@ -674,9 +674,9 @@
     "not-found": "页面未找到"
   },
   "instance": {
-    "successfully-archived-instance": "成功归档实例'{0}'。",
-    "successfully-restored-instance": "已成功恢复实例“{0}”。",
-    "archive-instance-instance-name": "归档实例'{0}'?",
+    "successfully-archived-instance": "成功归档实例'{{0}}'。",
+    "successfully-restored-instance": "已成功恢复实例“{{0}}”。",
+    "archive-instance-instance-name": "归档实例'{{0}}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "force-archive-description": "强制归档。所有数据库均将被取消分配。",
     "syncing": "同步中 ...",
@@ -686,8 +686,8 @@
       "sync-all": "同步所有数据库",
       "sync-new": "仅同步新数据库"
     },
-    "selected-n-instances_one": "已选择 {count} 个实例",
-    "selected-n-instances_other": "已选择 {count} 个实例",
+    "selected-n-instances_one": "已选择 {{count}} 个实例",
+    "selected-n-instances_other": "已选择 {{count}} 个实例",
     "advanced-search": {
       "scope": {
         "host": {
@@ -718,11 +718,11 @@
       "self": "快捷访问"
     },
     "last-visit": "上次访问",
-    "changelog-for-version": "{version} 的更新日志"
+    "changelog-for-version": "{{version}} 的更新日志"
   },
   "remind": {
     "release": {
-      "new-version-available-with-tag": "新版本 {tag} 已推出"
+      "new-version-available-with-tag": "新版本 {{tag}} 已推出"
     }
   },
   "banner": {
@@ -730,29 +730,29 @@
   },
   "project": {
     "create-modal": {
-      "success-prompt": "成功创建 {name}.",
+      "success-prompt": "成功创建 {{name}}.",
       "project-name": "项目名称"
     },
     "batch": {
       "archive": {
-        "success_one": "成功归档 {count} 个项目",
-        "success_other": "成功归档 {count} 个项目",
+        "success_one": "成功归档 {{count}} 个项目",
+        "success_other": "成功归档 {{count}} 个项目",
         "error": "无法归档项目",
-        "title_one": "归档 {count} 个项目？| 归档 {count} 个项目？",
-        "title_other": "归档 {count} 个项目？| 归档 {count} 个项目？",
+        "title_one": "归档 {{count}} 个项目？| 归档 {{count}} 个项目？",
+        "title_other": "归档 {{count}} 个项目？| 归档 {{count}} 个项目？",
         "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。"
       },
       "delete": {
-        "success_one": "成功删除 {count} 个项目",
-        "success_other": "成功删除 {count} 个项目",
+        "success_one": "成功删除 {{count}} 个项目",
+        "success_other": "成功删除 {{count}} 个项目",
         "error": "无法删除项目",
-        "title_one": "删除 {count} 个项目？| 删除 {count} 个项目？",
-        "title_other": "删除 {count} 个项目？| 删除 {count} 个项目？",
+        "title_one": "删除 {{count}} 个项目？| 删除 {{count}} 个项目？",
+        "title_other": "删除 {{count}} 个项目？| 删除 {{count}} 个项目？",
         "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
       },
-      "selected_one": "已选择 {count} 个项目",
-      "selected_other": "已选择 {count} 个项目"
+      "selected_one": "已选择 {{count}} 个项目",
+      "selected_other": "已选择 {{count}} 个项目"
     },
     "filter-projects": "过滤项目",
     "table": {
@@ -760,9 +760,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "以下资源使用了“{name}”：",
+    "delete-warning-with-resources": "以下资源使用了“{{name}}”：",
     "delete-warning-retry": "请将其从这些资源中删除，然后重试。",
-    "delete-warning": "“{name}”将被删除。此操作无法撤消。"
+    "delete-warning": "“{{name}}”将被删除。此操作无法撤消。"
   },
   "sql-editor": {
     "self": "SQL 编辑器"
