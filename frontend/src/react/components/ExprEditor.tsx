@@ -1,4 +1,5 @@
 import { Plus, X } from "lucide-react";
+import type { ReactNode } from "react";
 import {
   createContext,
   useCallback,
@@ -34,6 +35,7 @@ import {
   isTimestampFactor,
   LogicalOperatorList,
 } from "@/plugins/cel";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Input } from "@/react/components/ui/input";
 import {
   Select,
@@ -42,6 +44,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
 
 // Re-export OptionConfig so consumers can import from one place.
 export type { OptionConfig } from "@/components/ExprEditor/context";
@@ -539,12 +543,14 @@ function TagInput({
 function MultiCheckSelect({
   value,
   options,
+  renderValue,
   disabled,
   placeholder,
   onChange,
 }: {
   value: string[];
   options: { label: string; value: string }[];
+  renderValue?: (value: string, fallbackLabel?: string) => ReactNode;
   disabled?: boolean;
   placeholder?: string;
   onChange: (value: string[]) => void;
@@ -599,7 +605,9 @@ function MultiCheckSelect({
             key={v}
             className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded"
           >
-            {getLabelForValue(v)}
+            {renderValue
+              ? renderValue(v, getLabelForValue(v))
+              : getLabelForValue(v)}
             {!disabled && (
               <span
                 role="button"
@@ -645,7 +653,7 @@ function MultiCheckSelect({
                 checked={value.includes(o.value)}
                 onChange={() => toggleValue(o.value)}
               />
-              {o.label}
+              {renderValue ? renderValue(o.value, o.label) : o.label}
             </label>
           ))}
         </div>
@@ -792,6 +800,18 @@ function ValueInput({
     [optionConfigMap, factor]
   );
 
+  const isEnvironment = factor === CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID;
+  const renderOptionValue = (value: string, fallbackLabel?: string) => {
+    if (isEnvironment) {
+      return (
+        <EnvironmentLabel
+          environmentName={`${environmentNamePrefix}${value}`}
+        />
+      );
+    }
+    return fallbackLabel ?? value;
+  };
+
   const hasOption = optionConfig.options.length > 0 || !!optionConfig.search;
 
   type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";
@@ -918,14 +938,14 @@ function ValueInput({
             {(value: string | null) => {
               if (!value) return null;
               const found = optionConfig.options.find((o) => o.value === value);
-              return found?.label ?? value;
+              return renderOptionValue(value, found?.label);
             }}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {optionConfig.options.map((o) => (
             <SelectItem key={o.value as string} value={o.value as string}>
-              {o.label}
+              {renderOptionValue(o.value as string, o.label)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -949,6 +969,7 @@ function ValueInput({
       <MultiCheckSelect
         value={getArrayValue()}
         options={optionConfig.options as { label: string; value: string }[]}
+        renderValue={isEnvironment ? renderOptionValue : undefined}
         disabled={readonly}
         placeholder={t("cel.condition.select-value")}
         onChange={setArrayValue}

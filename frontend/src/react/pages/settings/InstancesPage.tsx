@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCw,
   SquareStack,
+  X,
 } from "lucide-react";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,13 +21,13 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_CREATE } from "@/router/dashboard/instance";
 import {
-  featureToRef,
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
@@ -39,22 +40,17 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { InstanceFilter } from "@/store/modules/v1/instance";
 import {
   isValidInstanceName,
-  NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   getDefaultPagination,
   hasWorkspacePermissionV2,
-  hexToRgb,
   hostPortOfDataSource,
   hostPortOfInstanceV1,
   supportedEngineV1List,
@@ -206,71 +202,6 @@ function ConfirmDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-// ============================================================
-// EnvironmentName
-// ============================================================
-
-function EnvironmentName({ environmentName }: { environmentName: string }) {
-  const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      environmentName || NULL_ENVIRONMENT_NAME
-    )
-  );
-
-  const isUnset =
-    environment.name === UNKNOWN_ENVIRONMENT_NAME ||
-    environment.name === NULL_ENVIRONMENT_NAME;
-
-  const hasEnvTierFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
-  );
-  const isProtected =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
-
-  const bgColorRgb = environment.color ? hexToRgb(environment.color) : null;
-
-  return (
-    <span
-      className="inline-flex items-center gap-x-1"
-      style={
-        bgColorRgb && !isUnset
-          ? {
-              backgroundColor: `rgba(${bgColorRgb.join(", ")}, 0.1)`,
-              color: `rgb(${bgColorRgb.join(", ")})`,
-              padding: "0 6px",
-              borderRadius: "4px",
-            }
-          : undefined
-      }
-    >
-      <span className="truncate">
-        {isUnset ? (
-          <span className="text-control-light italic">
-            {t("common.unassigned")}
-          </span>
-        ) : (
-          environment.title
-        )}
-      </span>
-      {isProtected && !isUnset && (
-        <svg
-          className="w-4 h-4 shrink-0 text-current"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.351-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z"
-            clipRule="evenodd"
-          />
-        </svg>
-      )}
-    </span>
   );
 }
 
@@ -503,9 +434,13 @@ function EditEnvironmentDrawer({
     () => environmentStore.environmentList ?? []
   );
   const [selected, setSelected] = useState("");
+  const [updating, setUpdating] = useState(false);
   useEscapeKey(open, onClose);
   useEffect(() => {
-    if (open) setSelected("");
+    if (open) {
+      setSelected("");
+      setUpdating(false);
+    }
   }, [open]);
 
   if (!open) return null;
@@ -519,16 +454,16 @@ function EditEnvironmentDrawer({
             {t("database.edit-environment")}
           </h2>
           <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
-            &times;
+            <X className="w-4 h-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="flex flex-col gap-y-2">
+          <div className="flex flex-col gap-y-1">
             {environments.map((env) => (
               <label
                 key={env.name}
                 className={cn(
-                  "flex items-center gap-x-3 px-3 py-2 rounded cursor-pointer border",
+                  "flex items-center gap-x-3 px-3 py-2.5 rounded-lg cursor-pointer border transition-colors",
                   selected === env.name
                     ? "border-accent bg-accent/5"
                     : "border-transparent hover:bg-gray-50"
@@ -541,15 +476,7 @@ function EditEnvironmentDrawer({
                   onChange={() => setSelected(env.name)}
                   className="accent-accent"
                 />
-                <div className="flex items-center gap-x-2">
-                  {env.color && (
-                    <span
-                      className="inline-block w-3 h-3 rounded-full"
-                      style={{ backgroundColor: env.color }}
-                    />
-                  )}
-                  <span>{env.title}</span>
-                </div>
+                <EnvironmentLabel environment={env} />
               </label>
             ))}
           </div>
@@ -559,10 +486,15 @@ function EditEnvironmentDrawer({
             {t("common.cancel")}
           </Button>
           <Button
-            disabled={!selected}
+            disabled={!selected || updating}
             onClick={async () => {
-              await onUpdate(selected);
-              onClose();
+              setUpdating(true);
+              try {
+                await onUpdate(selected);
+                onClose();
+              } finally {
+                setUpdating(false);
+              }
             }}
           >
             {t("common.confirm")}
@@ -1274,7 +1206,7 @@ export function InstancesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-2">
-                      <EnvironmentName
+                      <EnvironmentLabel
                         environmentName={instance.environment ?? ""}
                       />
                     </td>
