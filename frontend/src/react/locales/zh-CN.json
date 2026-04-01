@@ -738,16 +738,16 @@
         "success_one": "成功归档 {{count}} 个项目",
         "success_other": "成功归档 {{count}} 个项目",
         "error": "无法归档项目",
-        "title_one": "归档 {{count}} 个项目？| 归档 {{count}} 个项目？",
-        "title_other": "归档 {{count}} 个项目？| 归档 {{count}} 个项目？",
+        "title_one": "归档 {{count}} 个项目？",
+        "title_other": "归档 {{count}} 个项目？",
         "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。"
       },
       "delete": {
         "success_one": "成功删除 {{count}} 个项目",
         "success_other": "成功删除 {{count}} 个项目",
         "error": "无法删除项目",
-        "title_one": "删除 {{count}} 个项目？| 删除 {{count}} 个项目？",
-        "title_other": "删除 {{count}} 个项目？| 删除 {{count}} 个项目？",
+        "title_one": "删除 {{count}} 个项目？",
+        "title_other": "删除 {{count}} 个项目？",
         "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
       },
