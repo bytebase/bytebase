@@ -2,10 +2,10 @@ import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import enUS from "@/react/locales/en-US.json";
-import zhCN from "@/react/locales/zh-CN.json";
 import esES from "@/react/locales/es-ES.json";
 import jaJP from "@/react/locales/ja-JP.json";
 import viVN from "@/react/locales/vi-VN.json";
+import zhCN from "@/react/locales/zh-CN.json";
 
 const STORAGE_KEY_LANGUAGE = "bb.language";
 
