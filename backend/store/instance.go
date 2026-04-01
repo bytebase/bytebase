@@ -893,7 +893,9 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				case "resource_id":
 					return qb.Q().Space("LOWER(instance.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
 				case "host", "port":
-					return qb.Q().Space(fmt.Sprintf("ds ->> '%s' LIKE ?", variable), "%"+strValue+"%"), nil
+					return qb.Q().Space(
+						fmt.Sprintf(`EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> '%s' LIKE ?)`, variable),
+						"%"+strValue+"%"), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
