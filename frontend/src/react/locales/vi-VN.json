@@ -1,0 +1,1118 @@
+{
+  "common": {
+    "filter-by-name": "Lọc theo tên",
+    "loading": "Đang tải",
+    "no-data": "Không có dữ liệu",
+    "all": "Tất cả",
+    "edit": "Chỉnh sửa",
+    "updated": "Đã cập nhật",
+    "learn-more": "Tìm hiểu thêm",
+    "revert": "Hoàn tác",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "confirm": "Xác nhận",
+    "clear": "Xóa",
+    "add": "Thêm",
+    "warning": "Cảnh báo",
+    "environment-name": "Tên môi trường",
+    "environment": "Môi trường",
+    "confirm-and-update": "Xác nhận và Cập nhật",
+    "cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
+    "delete": "Xóa",
+    "create": "Tạo",
+    "leave-without-saving": "Thoát mà không lưu?",
+    "deleted": "Đã xóa",
+    "reorder": "Sắp xếp lại",
+    "close": "Đóng",
+    "general": "Chung",
+    "type": "Loại",
+    "discard-changes": "Hủy thay đổi",
+    "update": "Cập nhật",
+    "copied": "Đã sao chép",
+    "copy": "Sao chép",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "id": "ID",
+    "name": "Tên",
+    "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
+    "unassigned": "Chưa gán",
+    "archive": "Lưu trữ",
+    "restore": "Khôi phục",
+    "labels": "Nhãn",
+    "state": "Trạng thái",
+    "address": "Địa chỉ",
+    "rows-per-page": "Số dòng mỗi trang",
+    "load-more": "Tải thêm",
+    "delete-resource": "Delete {type}",
+    "configure-now": "Cấu hình ngay",
+    "restored": "Restored",
+    "archived": "Đã lưu trữ",
+    "select-all": "Chọn tất cả",
+    "total-n-items": "Tổng {n} mục",
+    "search": "Tìm kiếm",
+    "n-items-selected": "Đã chọn {n} mục",
+    "permissions": "Quyền",
+    "added": "Đã thêm",
+    "description": "Mô tả",
+    "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
+    "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "add-permissions": "Thêm quyền",
+    "system": "Hệ thống",
+    "created": "Đã tạo",
+    "upload": "Tải lên",
+    "unlimited": "Không giới hạn",
+    "file-selector": {
+      "type-limit": "Chỉ hỗ trợ tệp {extension}",
+      "size-limit": "Kích thước tệp phải nhỏ hơn {size} MiB"
+    },
+    "ok": "OK"
+  },
+  "cel": {
+    "condition": {
+      "input-value": "Nhập giá trị",
+      "select-value": "Chọn giá trị",
+      "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
+      "group": {
+        "or": {
+          "description": "Bất kỳ điều nào sau đây là đúng..."
+        },
+        "and": {
+          "description": "Tất cả những điều sau đây là đúng..."
+        }
+      },
+      "add-condition-in-group-placeholder": "Thêm {plus} để thêm điều kiện",
+      "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện",
+      "add": "Thêm điều kiện",
+      "add-raw-expression": "Thêm biểu thức thô",
+      "add-group": "Thêm nhóm điều kiện"
+    }
+  },
+  "subscription": {
+    "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {days} ngày - không cần thẻ tín dụng.",
+    "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
+    "instance-assignment": {
+      "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
+      "assign-license": "Gán giấy phép",
+      "license": "Giấy phép",
+      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
+      "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số"
+    },
+    "request-n-days-trial": "Yêu cầu dùng thử {days} ngày (không cần thẻ tín dụng)",
+    "usage": {
+      "instance-count": {
+        "title": "Giới hạn số lượng phiên bản",
+        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình."
+      }
+    },
+    "plan": {
+      "free": {
+        "title": "Cộng đồng",
+        "label": "",
+        "desc": "Các yếu tố cần thiết cho nhóm để quản lý vòng đời phát triển cơ sở dữ liệu."
+      },
+      "team": {
+        "title": "Pro",
+        "label": "",
+        "desc": "Nhiều chính sách hơn để chuẩn hóa và tạo điều kiện cộng tác giữa các nhóm."
+      },
+      "enterprise": {
+        "title": "Doanh nghiệp",
+        "label": "",
+        "desc": "Các tính năng bảo mật, tuân thủ và quyền bổ sung. Hỗ trợ chuyên dụng với SLA."
+      },
+      "try": "Bắt đầu dùng thử miễn phí",
+      "title": "Cộng đồng"
+    },
+    "purchase": {
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "discount": {
+        "percentage-off": "tháng đầu giảm {value}%",
+        "month-off": "{value} tháng miễn phí",
+        "price-off": "giảm ${value}"
+      },
+      "update": "Cập nhật đăng ký",
+      "subscribe": "Đăng ký ngay",
+      "cancel-confirm": "Bạn có chắc chắn muốn hủy đăng ký không?",
+      "canceled": "Đã hủy đăng ký",
+      "pending-title": "Đang hoàn tất giao dịch...",
+      "pending-description": "Vui lòng đợi trong khi chúng tôi xác nhận thanh toán. Thường chỉ mất vài giây.",
+      "payment-info": "Thông tin thanh toán",
+      "total-price": "Tổng giá",
+      "manage-invoices": "Quản lý hóa đơn",
+      "billing-period": "Kỳ thanh toán",
+      "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {date}.",
+      "cancel": "Hủy đăng ký",
+      "per-user-per-month": "/ người dùng / tháng",
+      "custom": "Tùy chỉnh",
+      "seats": "Người dùng",
+      "accept-terms-prefix": "Tôi chấp nhận",
+      "terms-of-service": "Điều khoản dịch vụ",
+      "and": "và",
+      "privacy-policy": "Chính sách bảo mật",
+      "see-comparison": "Xem so sánh tính năng chi tiết"
+    },
+    "current": "Gói hiện tại",
+    "contact-us": "Liên hệ chúng tôi",
+    "update": {
+      "success": {
+        "title": "Đã cập nhật thành công giấy phép",
+        "description": "Các tính năng cao cấp trong gói đăng ký đã được mở khóa."
+      },
+      "failure": {
+        "title": "Không cập nhật được giấy phép",
+        "description": "Vui lòng kiểm tra xem giấy phép của bạn có hợp lệ không."
+      }
+    },
+    "expired": "đã hết hạn",
+    "trialing": "đang dùng thử",
+    "expires-at": "Hết hạn vào",
+    "try-for-free": "Dùng thử miễn phí",
+    "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {days} ngày",
+    "inquire-enterprise-plan": "Yêu cầu gói Doanh nghiệp",
+    "upload-license": "Tải lên giấy phép",
+    "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
+    "plan-compare": "So sánh tính năng giữa các gói khác nhau",
+    "max-instance-count": "Số lượng phiên bản tối đa",
+    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa."
+  },
+  "resource-id": {
+    "validation": {
+      "empty": "ID {resource} không được để trống",
+      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
+      "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số.",
+      "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác."
+    },
+    "self": "ID {resource}",
+    "cannot-be-changed-later": "Nó không thể được thay đổi sau này.",
+    "description": "ID {resource} là một mã định danh duy nhất. Bạn không thể thay đổi nó sau khi tạo."
+  },
+  "schema-template": {
+    "classification": {
+      "search": "Tìm kiếm phân loại"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "classification": {
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field",
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children)."
+      },
+      "global-rules": {
+        "error": {
+          "missing-semantic-type": "Kiểu ngữ nghĩa là bắt buộc",
+          "invalid-condition": "Điều kiện không hợp lệ"
+        },
+        "condition-order": "Thứ tự điều kiện",
+        "delete-rule-tip": "Xóa quy tắc này?",
+        "re-order": "Sắp xếp lại",
+        "description": "Sử dụng quy tắc toàn cục để áp dụng che giấu hàng loạt, ví dụ: tất cả các cột có tên là \"email\" sẽ được che bằng loại ngữ nghĩa cụ thể và áp dụng thuật toán che."
+      },
+      "semantic-types": {
+        "table": {
+          "semantic-type": "Loại ngữ nghĩa",
+          "icon": "Biểu tượng",
+          "description": "Mô tả",
+          "masking-algorithm": "Thuật toán che",
+          "delete": "Xóa loại ngữ nghĩa này?"
+        },
+        "select": "Chọn loại ngữ nghĩa",
+        "template": {
+          "duplicate-warning": "Loại ngữ nghĩa \"{title}\" đã tồn tại",
+          "description": "Bạn có thể áp dụng các loại ngữ nghĩa tích hợp từ mẫu. Mẫu tích hợp không thể thay đổi."
+        },
+        "use-predefined-type": "Sử dụng Loại định nghĩa trước",
+        "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
+        "add-from-template": "Thêm từ mẫu"
+      },
+      "algorithms": {
+        "full-mask": {
+          "self": "Che toàn bộ",
+          "substitution": "Thay thế",
+          "substitution-label": "Thay thế là chuỗi được sử dụng để thay thế giá trị ban đầu, độ dài tối đa của chuỗi là 16 byte."
+        },
+        "range-mask": {
+          "self": "Che phạm vi",
+          "label": "Che phạm vi sẽ thay thế giá trị ban đầu từ chỉ số bắt đầu đến chỉ số kết thúc (không bao gồm kết thúc) bằng chuỗi thay thế. Chỉ số bắt đầu từ 0.",
+          "slice-start": "Bắt đầu lát cắt",
+          "slice-end": "Kết thúc lát cắt",
+          "substitution": "Thay thế"
+        },
+        "md5-mask": {
+          "self": "Che MD5",
+          "salt": "Muối",
+          "salt-label": "Muối được sử dụng để tạo một hàm băm từ giá trị ban đầu."
+        },
+        "inner-outer-mask": {
+          "self": "Che trong / ngoài",
+          "type": "Loại che",
+          "inner-label": "Che trong che phần bên trong của một chuỗi. Tiền tố và hậu tố đại diện cho các phần không bị che của dữ liệu.",
+          "outer-label": "Che ngoài che các đầu bên trái và bên phải của một chuỗi. Tiền tố và hậu tố đại diện cho các phần bị che của dữ liệu.",
+          "inner-mask": "Che trong",
+          "outer-mask": "Che ngoài",
+          "prefix-length": "Độ dài tiền tố",
+          "suffix-length": "Độ dài hậu tố"
+        },
+        "error": {
+          "slice-required": "Yêu cầu lát cắt",
+          "slice-invalid-number": "Lát cắt bắt đầu hoặc kết thúc không phải là một số hợp lệ",
+          "slice-overlap": "Phạm vi lát cắt không được chồng chéo",
+          "substitution-required": "Yêu cầu thay thế",
+          "substitution-length": "Thay thế phải nhỏ hơn 16 byte",
+          "salt-required": "Yêu cầu muối"
+        },
+        "edit": "Chỉnh sửa thuật toán",
+        "add": "Thêm thuật toán",
+        "table": {
+          "masking-type": "Loại che"
+        }
+      }
+    },
+    "sso": {
+      "delete": "xóa SSO này đi",
+      "form": {
+        "auth-url": "URL ủy quyền",
+        "auth-url-placeholder": "ví dụ. https://github.com/login/oauth/authorize",
+        "auth-url-description": "Liên kết đến trang đăng nhập OAuth",
+        "token-url": "URL mã thông báo",
+        "token-url-placeholder": "ví dụ. https://github.com/login/oauth/access_token",
+        "token-url-description": "Địa chỉ API để lấy accessToken",
+        "user-info-url": "URL thông tin người dùng",
+        "user-info-url-placeholder": "ví dụ. https://api.github.com/user",
+        "user-info-url-description": "Địa chỉ API để lấy thông tin người dùng bằng accessToken",
+        "scopes": "Phạm vi",
+        "scopes-placeholder": "ví dụ: user, email, profile",
+        "scopes-description": "Danh sách các phạm vi được phân tách bằng dấu cách sẽ được thực hiện khi truy cập URL Xác thực",
+        "authentication-style": "Kiểu xác thực",
+        "in-parameters": "Trong các tham số",
+        "in-parameters-description": "Gửi thông tin xác thực trong nội dung POST (khuyến nghị)",
+        "in-header": "Trong Tiêu đề",
+        "in-header-description": "Gửi thông tin xác thực bằng HTTP Basic Authorization",
+        "security-options": "Tùy chọn bảo mật",
+        "skip-tls-verification": "Bỏ qua Xác minh chứng chỉ TLS",
+        "skip-tls-warning": "Chỉ bật tính năng này cho mục đích phát triển hoặc thử nghiệm",
+        "issuer-url-placeholder": "ví dụ: https://acme.okta.com",
+        "issuer-url-description": "URL của đơn vị phát hành OIDC (cấu hình được biết đến rộng rãi sẽ được tự động phát hiện)",
+        "scopes-placeholder-oidc": "ví dụ: openid, user, email, profile",
+        "openid-scopes-description": "Danh sách các phạm vi OIDC được phân tách bằng dấu cách (cần có openid)",
+        "host-placeholder": "ví dụ ldap.example.com",
+        "bind-dn": "Liên kết DN",
+        "bind-dn-placeholder": "ví dụ. uid=system,ou=Users,dc=example,dc=com",
+        "bind-dn-description": "DN của người dùng để ràng buộc như đối với các yêu cầu tìm kiếm",
+        "bind-password": "Liên kết mật khẩu",
+        "base-dn": "DN cơ sở",
+        "base-dn-placeholder": "ví dụ. ou=users,dc=example,dc=com",
+        "base-dn-description": "DN cơ sở để tìm kiếm người dùng",
+        "user-filter": "Bộ lọc người dùng",
+        "user-filter-placeholder": "ví dụ (uid=%s)",
+        "user-filter-description": "Bộ lọc để tìm kiếm người dùng (%s sẽ được thay thế bằng tên người dùng)",
+        "security-protocol": "Giao thức bảo mật",
+        "starttls": "Bắt đầu TLS",
+        "starttls-description": "Nâng cấp kết nối lên TLS (khuyến nghị)",
+        "ldaps": "LDAPS",
+        "ldaps-description": "Sử dụng TLS ngay từ đầu (cổng 636)",
+        "none": "Không có",
+        "none-description": "Không mã hóa (không khuyến khích sử dụng cho mục đích sản xuất)",
+        "identifier-placeholder": "ví dụ: đăng nhập, email",
+        "identifier": "Email của người dùng Bytebase",
+        "identifier-tips": "Nó phải là một chuỗi duy nhất. Và nếu nó không ở định dạng email, nó sẽ được nối với tên miền.",
+        "display-name-placeholder": "ví dụ tên, displayName",
+        "display-name": "Tên hiển thị của người dùng Bytebase",
+        "phone-placeholder": "ví dụ điện thoại, di động",
+        "phone": "Số điện thoại của người dùng Bytebase",
+        "groups-placeholder": "ví dụ nhóm",
+        "groups": "Nhóm người dùng Bytebase",
+        "groups-description": "Được sử dụng để kiểm soát truy cập theo nhóm (chỉ dành cho nhà cung cấp OIDC)",
+        "provider-type-readonly-hint": "Loại nhà cung cấp không thể thay đổi sau khi tạo",
+        "name": "Tên",
+        "name-description": "Tên hiển thị sẽ được hiển thị cho người dùng",
+        "domain": "Tên miền",
+        "domain-description": "Tên miền của nhà cung cấp danh tính",
+        "domain-optional-hint": "Tùy chọn: Sử dụng để nối với mã định danh nếu nó không ở định dạng email",
+        "configuration": "Cấu hình",
+        "configuration-description": "Cấu hình cài đặt kết nối cho nhà cung cấp danh tính của bạn",
+        "user-information-mapping": "Ánh xạ thông tin người dùng",
+        "user-information-mapping-description": "Ánh xạ tên trường từ API thông tin người dùng sang người dùng Bytebase.",
+        "identity-provider-needed-information": "Tạo ứng dụng SSO của bạn với các thông tin sau.",
+        "redirect-url-description": "Nó sẽ được sử dụng để điền vào trường thích hợp trong biểu mẫu ứng dụng của nhà cung cấp danh tính.",
+        "redirect-url": "URL chuyển hướng ủy quyền",
+        "type": "Loại",
+        "use-template": "Sử dụng mẫu",
+        "oauth2-description": "Kết nối với các nhà cung cấp OAuth 2.0 như Google, GitHub, GitLab",
+        "oidc-description": "Kết nối với các nhà cung cấp OpenID Connect như Microsoft Entra ID (Azure AD), Okta, Auth0",
+        "ldap-description": "Kết nối với các nhà cung cấp LDAP như Microsoft Active Directory, OpenLDAP",
+        "google-template-description": "Đăng nhập bằng tài khoản Google",
+        "github-template-description": "Đăng nhập bằng tài khoản GitHub",
+        "gitlab-template-description": "Đăng nhập bằng tài khoản GitLab",
+        "microsoft-entra-template-description": "Đăng nhập bằng ID Microsoft Entra",
+        "custom-template-description": "Cấu hình nhà cung cấp OAuth 2.0 tùy chỉnh",
+        "type-description": "Chọn loại nhà cung cấp danh tính bạn muốn cấu hình",
+        "template-description": "Chọn một mẫu được cấu hình sẵn hoặc thiết lập một nhà cung cấp OAuth 2.0 tùy chỉnh",
+        "general-setting-description": "Cung cấp thông tin cơ bản về nhà cung cấp danh tính của bạn."
+      },
+      "description": "Đăng nhập một lần (SSO) là một phương thức xác thực cho phép người dùng xác thực với nhiều ứng dụng và trang web bằng một thông tin đăng nhập duy nhất.",
+      "create": "Tạo SSO"
+    },
+    "im": {
+      "add-im-integration": "Thêm tích hợp IM",
+      "add-another-im": "Thêm tin nhắn tức thời khác"
+    },
+    "im-integration": {
+      "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
+    },
+    "mcp": {
+      "first-prompt": {
+        "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
+        "title": "Prompt đầu tiên của bạn",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:"
+      },
+      "title": "Tích hợp MCP",
+      "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
+      "auth": {
+        "title": "Yêu cầu xác thực",
+        "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp."
+      },
+      "general-config": {
+        "title": "Cách 1: Cấu hình JSON"
+      },
+      "setup": {
+        "add-to-config": "Thêm JSON này vào tệp cấu hình MCP client của bạn."
+      },
+      "quick-start": {
+        "title": "Cách 2: Lệnh CLI",
+        "description": "Hoặc sử dụng một trong các lệnh CLI sau."
+      }
+    },
+    "general": {
+      "workspace": {
+        "external-url": {
+          "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://.",
+          "self": "URL bên ngoài",
+          "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url"
+        },
+        "id": "ID không gian làm việc",
+        "id-description": "ID không gian làm việc duy nhất, chỉ đọc.",
+        "ai-assistant": {
+          "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
+          "enable-ai-assistant": "Bật Trợ lý AI",
+          "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
+          "provider": {
+            "self": "Nhà cung cấp AI",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
+          },
+          "api-key": {
+            "self": "Khóa API",
+            "description": "Cung cấp Khóa API, chỉ đọc. {viewDoc}",
+            "find-my-key": "Tìm khóa của tôi",
+            "placeholder": "Khóa API thường bắt đầu bằng sk-*****"
+          },
+          "endpoint": {
+            "self": "Điểm cuối API",
+            "description": "Cung cấp triển khai riêng của Điểm cuối API."
+          },
+          "model": {
+            "self": "Tên mô hình",
+            "description": "Cung cấp triển khai riêng của tên mô hình."
+          },
+          "self": "Trợ lý AI"
+        },
+        "disallow-signup": {
+          "enable": "Không cho phép đăng ký tự phục vụ",
+          "description": "Người dùng không thể tự đăng ký và chỉ có thể được mời bởi quản trị viên không gian làm việc."
+        },
+        "password-restriction": {
+          "self": "Hạn chế mật khẩu",
+          "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {min} ký tự",
+          "require-number": "Mật khẩu phải chứa ít nhất một số",
+          "require-letter": "Mật khẩu phải chứa ít nhất một chữ cái, bất kể chữ hoa hay chữ thường",
+          "require-uppercase-letter": "Mật khẩu phải chứa ít nhất một chữ cái viết hoa",
+          "require-special-character": "Mật khẩu phải chứa ít nhất một ký tự đặc biệt",
+          "require-reset-password-for-first-login": "Yêu cầu người dùng đặt lại mật khẩu của họ sau lần đăng nhập đầu tiên",
+          "password-rotation": "Yêu cầu người dùng đặt lại mật khẩu của họ sau mỗi {day} ngày"
+        },
+        "require-2fa": {
+          "enable": "Yêu cầu xác thực hai yếu tố cho tất cả người dùng",
+          "description": "Những người dùng chưa bật xác thực hai yếu tố cho tài khoản cá nhân của họ sẽ bị buộc phải định cấu hình."
+        },
+        "disallow-password-signin": {
+          "enable": "Không cho phép đăng nhập bằng email & mật khẩu",
+          "require-sso-setup": "Phải tạo SSO hoạt động trước, nếu không người dùng sẽ không thể đăng nhập.",
+          "description": "Người dùng không thể đăng nhập bằng email & mật khẩu, chỉ cho phép SSO."
+        },
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
+        },
+        "inactive-session-timeout": {
+          "self": "Thời gian chờ phiên không hoạt động",
+          "description": "Thời gian hết hạn phiên nếu không phát hiện hoạt động từ người dùng. Người dùng sẽ bị buộc phải đăng xuất khi đạt đến giới hạn.",
+          "hours": "Giờ"
+        },
+        "no-limit": "Không giới hạn khi giá trị <= 0",
+        "announcement-alert-level": {
+          "description": "Cấp độ",
+          "field": {
+            "info": "Bình thường",
+            "warning": "Cảnh báo",
+            "critical": "Quan trọng"
+          }
+        },
+        "announcement-text": {
+          "self": "Tiêu đề",
+          "description": "Để ẩn thông báo, hãy để trống.",
+          "placeholder": "Nhập tiêu đề thông báo"
+        },
+        "extra-link": {
+          "self": "Liên kết",
+          "placeholder": "Nhập liên kết thông báo"
+        },
+        "log": "Nhật ký",
+        "audit-log-stdout": {
+          "enable": "Bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
+          "description": "Xuất nhật ký kiểm toán JSON có cấu trúc vào đầu ra chuẩn để thu thập bởi các bộ tổng hợp nhật ký (Splunk, ELK, Datadog, Loki). Yêu cầu giấy phép TEAM hoặc ENTERPRISE."
+        },
+        "enable-debug": {
+          "enable": "Bật nhật ký cấp độ gỡ lỗi cho dịch vụ backend"
+        },
+        "title": "Tên không gian làm việc",
+        "logo": "Logo",
+        "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
+        "select-logo": "Tải lên một tệp",
+        "drag-logo": "hoặc kéo vào đây",
+        "logo-upload-tip": "{extension} tối đa {size} MiB",
+        "branding": "Thương hiệu",
+        "account": "Tài khoản",
+        "security": "Bảo mật",
+        "announcement": {
+          "self": "Thông báo"
+        },
+        "product-improvement": {
+          "self": "Cải thiện Sản phẩm",
+          "participate": "Tham gia chương trình cải thiện",
+          "description": "Giúp cải thiện Bytebase bằng cách chia sẻ dữ liệu sử dụng ẩn danh"
+        },
+        "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
+        "config-updated": "Cấu hình được cập nhật.",
+        "config-partly-updated": "Cấu hình đã được cập nhật một phần.",
+        "default-landing-page": {
+          "self": "Trang đích mặc định",
+          "workspace": {
+            "self": "Không gian làm việc",
+            "description": "Sử dụng issue để yêu cầu, xem xét, triển khai và thay đổi phiên bản cơ sở dữ liệu, phù hợp với các nhóm có kiểm soát truy cập và quy trình làm việc CI & CD."
+          },
+          "sql-editor": {
+            "self": "Trình soạn thảo SQL",
+            "description": "Sử dụng SQL Editor để thực hiện trực tiếp các thay đổi cơ sở dữ liệu, phù hợp cho mục đích sử dụng của một người hoặc môi trường không yêu cầu giám sát."
+          },
+          "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
+          "go-to-sql-editor": "Đi tới Trình soạn thảo SQL"
+        },
+        "data-export": "Bật xuất dữ liệu",
+        "data-copy": "Bật sao chép dữ liệu",
+        "allow-admin-data-source": {
+          "self": "Cho phép truy vấn nguồn dữ liệu quản trị",
+          "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị."
+        },
+        "maximum-sql-result": {
+          "size": {
+            "self": "Kích thước kết quả SQL tối đa",
+            "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra.",
+            "default": "Giới hạn mặc định {limit} MB"
+          },
+          "rows": {
+            "self": "Số lượng hàng kết quả SQL tối đa",
+            "description": "Giới hạn số hàng đầu ra trong kết quả truy vấn SQL.",
+            "rows": "Hàng"
+          }
+        },
+        "query-data-policy": {
+          "timeout": {
+            "self": "Thời gian truy vấn tối đa",
+            "description": "Thời gian tối đa cho phép để thực hiện một truy vấn."
+          },
+          "seconds": "Giây"
+        },
+        "watermark": {
+          "enable": "Bật hình mờ",
+          "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email."
+        },
+        "maximum-role-expiration": {
+          "self": "Thời gian hết hạn vai trò tối đa",
+          "description": "Thời hạn vai trò tối đa là thời hạn tối đa mà một vai trò có thể được cấp cho người dùng, sẽ áp dụng cho tất cả các vai trò trong dự án ngoại trừ chủ sở hữu dự án.",
+          "days": "Ngày",
+          "never-expires": "Không bao giờ hết hạn"
+        },
+        "domain-restriction": {
+          "self": "Tên miền không gian làm việc",
+          "description": "Chỉ định tên miền có thể được sử dụng làm miền email cho các thành viên không gian làm việc.",
+          "domain-input-placeholder": "Vui lòng nhập tên miền, ví dụ: example.com",
+          "members-restriction": {
+            "self": "Hạn chế thành viên",
+            "description": "Hạn chế đăng nhập đối với người dùng có địa chỉ email từ các miền được chỉ định."
+          }
+        }
+      }
+    }
+  },
+  "database": {
+    "classification": {
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
+    },
+    "edit-environment": "Chỉnh sửa Môi trường",
+    "engine": "Engine"
+  },
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "Bạn có chắc chắn muốn xóa?"
+    }
+  },
+  "role": {
+    "workspace-roles": {
+      "self": "Vai trò không gian làm việc"
+    },
+    "project-roles": {
+      "self": "Vai trò dự án"
+    },
+    "custom-roles": {
+      "self": "Vai trò tùy chỉnh"
+    },
+    "import-from-role": "Nhập từ vai trò",
+    "select-role": "Chọn vai trò",
+    "self": "Vai trò",
+    "setting": {
+      "add": "Thêm vai trò",
+      "edit": "Chỉnh sửa vai trò",
+      "title-placeholder": "Nhập tiêu đề vai trò",
+      "description-placeholder": "Nhập mô tả vai trò",
+      "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và được sử dụng trong phê duyệt tùy chỉnh."
+    },
+    "title": "Tiêu đề"
+  },
+  "policy": {
+    "rollout": {
+      "auto": "Triển khai tự động",
+      "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
+      "name": "Chính sách triển khai",
+      "tip": "Chính sách được áp dụng cho các vấn đề hồi tố.",
+      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau."
+    },
+    "environment-tier": {
+      "name": "Cấp môi trường",
+      "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
+      "mark-env-as-production": "Đánh dấu là môi trường sản xuất"
+    }
+  },
+  "sql-review": {
+    "title": "Đánh giá SQL",
+    "configure-policy": "Định cấu hình chính sách"
+  },
+  "environment": {
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
+    "delete": "Xóa môi trường này",
+    "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
+    "create": "Tạo môi trường",
+    "reorder": "Sắp xếp lại môi trường"
+  },
+  "custom-approval": {
+    "rule": {
+      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
+    },
+    "risk": {
+      "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
+      "how-it-works": "Cách hoạt động",
+      "how-it-works-description": "Khi bạn tạo một thay đổi cơ sở dữ liệu, Bytebase tự động phân tích các câu lệnh SQL và phân loại mức độ rủi ro (Thấp, Trung bình hoặc Cao) dựa trên các quy tắc được xác định trước.",
+      "risk-levels": "Các Mức độ Rủi ro",
+      "risk-level-high": "Các thao tác rủi ro cao bao gồm các thay đổi phá hủy như DROP TABLE, TRUNCATE hoặc sửa đổi dữ liệu quy mô lớn.",
+      "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
+      "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
+      "integration": "Tích hợp với Quy trình Phê duyệt",
+      "integration-description": "Các mức độ rủi ro tích hợp với hệ thống Phê duyệt Tùy chỉnh. Bạn có thể cấu hình các quy trình phê duyệt yêu cầu các cấp độ xem xét khác nhau dựa trên mức độ rủi ro được đánh giá của một thay đổi."
+    },
+    "risk-rule": {
+      "risk": {
+        "risk-level": {
+          "high": "Cao",
+          "moderate": "Trung bình",
+          "low": "Thấp"
+        }
+      }
+    }
+  },
+  "identity-provider": {
+    "test-connection-success": "Kiểm tra kết nối thành công",
+    "userinfo-description": "Thông tin người dùng đã khớp.",
+    "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
+    "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
+    "test-connection": "Kiểm tra kết nối",
+    "delete-warning": "Bạn có chắc chắn muốn xóa nhà cung cấp danh tính này không? Người dùng đã đăng ký qua SSO này sẽ không thể đăng nhập bằng SSO này nữa. Nếu đăng nhập bằng mật khẩu bị vô hiệu hóa trong cài đặt không gian làm việc của bạn, những người dùng này có thể bị khóa hoàn toàn.",
+    "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
+    "identity-provider-permission-denied": "Quyền bị từ chối",
+    "identity-provider-deleted": "Nhà cung cấp danh tính đã xóa thành công",
+    "identity-provider-delete-failed": "Không xóa được nhà cung cấp danh tính",
+    "identity-provider-created": "Nhà cung cấp danh tính đã được tạo thành công",
+    "identity-provider-create-failed": "Không tạo được nhà cung cấp danh tính"
+  },
+  "error-page": {
+    "not-found": "Không tìm thấy"
+  },
+  "instance": {
+    "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{0}'.",
+    "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{0}'.",
+    "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
+    "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
+    "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
+    "syncing": "Đang đồng bộ hóa ...",
+    "sync": {
+      "self": "Đồng bộ phiên bản",
+      "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút",
+      "sync-all": "Đồng bộ tất cả cơ sở dữ liệu",
+      "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
+    },
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "title": "Host",
+          "description": "Lọc theo máy chủ lưu trữ. Vui lòng nhập giá trị rồi nhấn Enter."
+        },
+        "port": {
+          "title": "Port",
+          "description": "Lọc theo cổng phiên bản. Vui lòng nhập giá trị rồi nhấn Enter."
+        }
+      }
+    },
+    "filter-instance-name": "Lọc tên phiên bản",
+    "selected-n-instances_one": "{count} phiên bản đã chọn",
+    "selected-n-instances_other": "{count} phiên bản đã chọn"
+  },
+  "db": {
+    "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ"
+  },
+  "quick-action": {
+    "add-instance": "Thêm Phiên bản",
+    "create-project": "Tạo Dự án",
+    "new-project": "Mới Dự án"
+  },
+  "landing": {
+    "quick-link": {
+      "visit-prjects": "Truy cập Dự án",
+      "visit-issues": "Truy cập Vấn đề",
+      "manage": "Quản lý liên kết nhanh",
+      "self": "Liên kết nhanh"
+    },
+    "last-visit": "Lần truy cập cuối",
+    "changelog-for-version": "Nhật ký thay đổi cho phiên bản {version}"
+  },
+  "remind": {
+    "release": {
+      "new-version-available-with-tag": "Phiên bản mới {tag} có sẵn"
+    }
+  },
+  "banner": {
+    "external-url": "Bytebase chưa được cấu hình --external-url"
+  },
+  "project": {
+    "create-modal": {
+      "success-prompt": "Đã tạo thành công dự án {name}.",
+      "project-name": "Dự án Tên"
+    },
+    "batch": {
+      "archive": {
+        "error": "Không lưu trữ được dự án",
+        "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
+        "success_one": "Đã lưu trữ thành công {count} dự án",
+        "success_other": "Đã lưu trữ thành công {count} dự án",
+        "title_one": "Lưu trữ {count} Dự án?",
+        "title_other": "Lưu trữ {count} Dự án?"
+      },
+      "delete": {
+        "error": "Không xóa được dự án",
+        "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
+        "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn.",
+        "success_one": "Đã xóa thành công {count} dự án",
+        "success_other": "Đã xóa thành công {count} dự án",
+        "title_one": "Xóa {count} Dự án?",
+        "title_other": "Xóa {count} Dự án?"
+      },
+      "selected_one": "{count} dự án đã chọn",
+      "selected_other": "{count} dự án đã chọn"
+    },
+    "filter-projects": "Lọc dự án",
+    "table": {
+      "name": "Tên"
+    }
+  },
+  "resource": {
+    "delete-warning-with-resources": "\"{name}\" được sử dụng bởi các tài nguyên sau:",
+    "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại.",
+    "delete-warning": "\"{name}\" sẽ bị xóa. Hành động này không thể hoàn tác."
+  },
+  "sql-editor": {
+    "self": "Trình soạn thảo SQL"
+  },
+  "dynamic": {
+    "settings": {
+      "sensitive-data": {
+        "semantic-types": {
+          "template": {
+            "bb-default": {
+              "title": "Mặc định",
+              "description": "Loại mặc định với che giấu toàn bộ",
+              "algorithm": {
+                "title": "Che giấu toàn bộ",
+                "description": "Tất cả các giá trị sẽ được che giấu thành \"******\""
+              }
+            },
+            "bb-default-partial": {
+              "title": "Mặc định một phần",
+              "description": "Loại mặc định một phần với che giấu một phần",
+              "algorithm": {
+                "title": "Che giấu phạm vi",
+                "description": "Chỉ giữ lại dữ liệu thô ở giữa và che phần đầu và phần cuối bằng \"**\".\nVí dụ: \"address\" sẽ được che giấu thành \"**dre**\"."
+              }
+            }
+          }
+        }
+      }
+    },
+    "subscription": {
+      "features": {
+        "FEATURE_DATABASE_CHANGE": {
+          "title": "Thay đổi cơ sở dữ liệu",
+          "desc": "Chức năng quản lý thay đổi cơ sở dữ liệu cốt lõi."
+        },
+        "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+          "title": "Kiểm soát phiên bản schema dựa trên Git",
+          "desc": "Xem xét các thay đổi SQL trong pull request VCS với kiểm tra tự động."
+        },
+        "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+          "title": "Di chuyển schema khai báo",
+          "desc": "Xác định trạng thái schema mong muốn và để Bytebase xử lý việc di chuyển."
+        },
+        "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+          "title": "So sánh và đồng bộ schema",
+          "desc": "So sánh schema giữa các cơ sở dữ liệu và đồng bộ hóa sự khác biệt."
+        },
+        "FEATURE_ONLINE_SCHEMA_CHANGE": {
+          "title": "Thay đổi schema trực tuyến",
+          "desc": "Thực hiện thay đổi schema trên các bảng lớn với khóa tối thiểu."
+        },
+        "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+          "title": "Đánh giá SQL",
+          "desc": "Thực thi các phương pháp hay nhất cho SQL với hơn 100 quy tắc lint và kiểm tra tính nhất quán của schema."
+        },
+        "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+          "title": "Sao lưu tự động",
+          "desc": "Tự động sao lưu dữ liệu trước khi thực hiện thay đổi."
+        },
+        "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+          "title": "Khôi phục dữ liệu một cú nhấp chuột",
+          "desc": "Nhanh chóng khôi phục các thay đổi dữ liệu chỉ với một cú nhấp chuột."
+        },
+        "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+          "title": "Thay đổi hàng loạt nhiều cơ sở dữ liệu",
+          "desc": "Áp dụng cùng một thay đổi cho nhiều cơ sở dữ liệu trên các tenant hoặc phân vùng khác nhau."
+        },
+        "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+          "title": "Triển khai môi trường tuần tự",
+          "desc": "Triển khai thay đổi tuần tự qua các môi trường khác nhau."
+        },
+        "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+          "title": "Thời gian triển khai theo lịch",
+          "desc": "Lên lịch thay đổi cơ sở dữ liệu để chạy vào thời gian cụ thể."
+        },
+        "FEATURE_DATABASE_CHANGELOG": {
+          "title": "Nhật ký thay đổi cơ sở dữ liệu",
+          "desc": "Theo dõi tất cả các thay đổi schema và dữ liệu của cơ sở dữ liệu."
+        },
+        "FEATURE_ROLLOUT_POLICY": {
+          "title": "Chính sách triển khai",
+          "desc": "Kiểm soát việc tác vụ thay đổi schema có yêu cầu triển khai thủ công hay không."
+        },
+        "FEATURE_WEB_BASED_SQL_EDITOR": {
+          "title": "Trình soạn thảo SQL trên web",
+          "desc": "Thực thi các truy vấn SQL trực tiếp từ giao diện web."
+        },
+        "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+          "title": "Chế độ quản trị SQL editor",
+          "desc": "Truy cập các chức năng quản trị trong trình soạn thảo SQL."
+        },
+        "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+          "title": "Ngôn ngữ tự nhiên sang SQL",
+          "desc": "Chuyển đổi truy vấn ngôn ngữ tự nhiên sang SQL bằng AI."
+        },
+        "FEATURE_AI_QUERY_EXPLANATION": {
+          "title": "Giải thích truy vấn AI",
+          "desc": "Nhận giải thích bằng AI cho các truy vấn SQL phức tạp."
+        },
+        "FEATURE_AI_QUERY_SUGGESTIONS": {
+          "title": "Gợi ý truy vấn AI",
+          "desc": "Nhận gợi ý truy vấn và khuyến nghị chỉ mục được hỗ trợ bởi AI."
+        },
+        "FEATURE_AUTO_COMPLETE": {
+          "title": "Tự động hoàn thành",
+          "desc": "Tự động hoàn thành SQL thông minh trong trình soạn thảo."
+        },
+        "FEATURE_SCHEMA_DIAGRAM": {
+          "title": "Sơ đồ schema",
+          "desc": "Trực quan hóa schema cơ sở dữ liệu với sơ đồ tương tác."
+        },
+        "FEATURE_SCHEMA_EDITOR": {
+          "title": "Trình chỉnh sửa schema",
+          "desc": "Chỉnh sửa schema trực quan với giao diện kéo và thả."
+        },
+        "FEATURE_DATA_EXPORT": {
+          "title": "Xuất dữ liệu",
+          "desc": "Xuất kết quả truy vấn ở nhiều định dạng khác nhau."
+        },
+        "FEATURE_DATA_OFFLINE_EXPORT": {
+          "title": "Xuất dữ liệu ngoại tuyến",
+          "desc": "Xuất dữ liệu để sử dụng và phân tích ngoại tuyến."
+        },
+        "FEATURE_QUERY_HISTORY": {
+          "title": "Lịch sử truy vấn",
+          "desc": "Truy cập lịch sử thực thi truy vấn đầy đủ với khả năng tìm kiếm."
+        },
+        "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+          "title": "Lưu và chia sẻ tập lệnh SQL",
+          "desc": "Lưu và chia sẻ tập lệnh SQL với các thành viên trong nhóm."
+        },
+        "FEATURE_BATCH_QUERY": {
+          "title": "Truy vấn hàng loạt",
+          "desc": "Thực thi truy vấn trên nhiều cơ sở dữ liệu cùng lúc."
+        },
+        "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+          "title": "Kết nối chỉ đọc",
+          "desc": "Kết nối đến bản sao chỉ đọc cho các hoạt động chỉ đọc."
+        },
+        "FEATURE_QUERY_POLICY": {
+          "title": "Chính sách truy vấn",
+          "desc": "Cấu hình các hạn chế và quyền truy vấn nâng cao."
+        },
+        "FEATURE_RESTRICT_COPYING_DATA": {
+          "title": "Hạn chế sao chép dữ liệu",
+          "desc": "Kiểm soát quyền truy cập của người dùng để sao chép dữ liệu từ kết quả truy vấn."
+        },
+        "FEATURE_IAM": {
+          "title": "Quản lý danh tính và truy cập",
+          "desc": "Hệ thống kiểm soát truy cập dựa trên vai trò chi tiết."
+        },
+        "FEATURE_INSTANCE_SSL_CONNECTION": {
+          "title": "Kết nối SSL",
+          "desc": "Kết nối cơ sở dữ liệu an toàn với mã hóa SSL/TLS."
+        },
+        "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+          "title": "Kết nối qua SSH tunnel",
+          "desc": "Kết nối đến các instance thông qua SSH tunnel để tăng cường bảo mật."
+        },
+        "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+          "title": "Xác thực IAM",
+          "desc": "Sử dụng IAM của nhà cung cấp đám mây để xác thực cơ sở dữ liệu."
+        },
+        "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+          "title": "Thời gian đồng bộ instance tùy chỉnh",
+          "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
+        },
+        "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+          "title": "Giới hạn kết nối instance tùy chỉnh",
+          "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
+        },
+        "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+          "title": "Google và GitHub SSO",
+          "desc": "Đăng nhập bằng tài khoản Google hoặc GitHub."
+        },
+        "FEATURE_USER_GROUPS": {
+          "title": "Nhóm người dùng",
+          "desc": "Tổ chức người dùng thành các nhóm để quản lý dễ dàng hơn."
+        },
+        "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+          "title": "Tắt đăng ký tự phục vụ",
+          "desc": "Yêu cầu mời của quản trị viên cho đăng ký người dùng mới."
+        },
+        "FEATURE_RISK_ASSESSMENT": {
+          "title": "Đánh giá rủi ro",
+          "desc": "Đánh giá và phân loại mức độ rủi ro của các thay đổi cơ sở dữ liệu."
+        },
+        "FEATURE_APPROVAL_WORKFLOW": {
+          "title": "Quy trình phê duyệt",
+          "desc": "Cấu hình mức độ rủi ro và quy trình phê duyệt cho các tác vụ khác nhau."
+        },
+        "FEATURE_AUDIT_LOG": {
+          "title": "Nhật ký kiểm toán",
+          "desc": "Theo dõi tất cả các hoạt động được thực hiện bởi người dùng trong workspace."
+        },
+        "FEATURE_ENTERPRISE_SSO": {
+          "title": "Enterprise SSO",
+          "desc": "Đăng nhập một lần với các nhà cung cấp SAML, OIDC và OAuth."
+        },
+        "FEATURE_TWO_FA": {
+          "title": "Xác thực hai yếu tố",
+          "desc": "Thêm lớp bảo mật bổ sung với xác minh ứng dụng xác thực."
+        },
+        "FEATURE_PASSWORD_RESTRICTIONS": {
+          "title": "Hạn chế mật khẩu",
+          "desc": "Thực thi các yêu cầu về độ phức tạp và bảo mật mật khẩu."
+        },
+        "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+          "title": "Tắt đăng nhập bằng mật khẩu",
+          "desc": "Chỉ yêu cầu xác thực SSO để đăng nhập người dùng."
+        },
+        "FEATURE_CUSTOM_ROLES": {
+          "title": "Vai trò tùy chỉnh",
+          "desc": "Xác định vai trò tùy chỉnh với quyền cụ thể cho tổ chức của bạn."
+        },
+        "FEATURE_REQUEST_ROLE_WORKFLOW": {
+          "title": "Quy trình yêu cầu vai trò",
+          "desc": "Người dùng có thể yêu cầu vai trò dự án với quy trình phê duyệt."
+        },
+        "FEATURE_DATA_MASKING": {
+          "title": "Che giấu dữ liệu",
+          "desc": "Đánh dấu các cột bảng là dữ liệu nhạy cảm và che giấu kết quả truy vấn."
+        },
+        "FEATURE_DATA_CLASSIFICATION": {
+          "title": "Phân loại dữ liệu",
+          "desc": "Phân loại và gắn nhãn dữ liệu dựa trên mức độ nhạy cảm."
+        },
+        "FEATURE_SCIM": {
+          "title": "SCIM",
+          "desc": "Hỗ trợ System for Cross-domain Identity Management."
+        },
+        "FEATURE_DIRECTORY_SYNC": {
+          "title": "Đồng bộ thư mục",
+          "desc": "Đồng bộ người dùng và nhóm từ Entra ID vào Bytebase."
+        },
+        "FEATURE_TOKEN_DURATION_CONTROL": {
+          "title": "Kiểm soát thời lượng token",
+          "desc": "Cấu hình thời lượng token truy cập và token làm mới."
+        },
+        "FEATURE_EXTERNAL_SECRET_MANAGER": {
+          "title": "Trình quản lý bí mật bên ngoài",
+          "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+        },
+        "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+          "title": "Hạn chế tên miền email",
+          "desc": "Hạn chế đăng nhập cho người dùng từ các tên miền email được chỉ định."
+        },
+        "FEATURE_PROJECT_MANAGEMENT": {
+          "title": "Quản lý dự án",
+          "desc": "Quản lý và tổ chức dự án với các khả năng nâng cao."
+        },
+        "FEATURE_ENVIRONMENT_MANAGEMENT": {
+          "title": "Quản lý môi trường",
+          "desc": "Quản lý và cấu hình các môi trường triển khai khác nhau."
+        },
+        "FEATURE_IM_NOTIFICATIONS": {
+          "title": "Thông báo IM",
+          "desc": "Gửi thông báo đến các nền tảng IM như Slack và Teams."
+        },
+        "FEATURE_TERRAFORM_PROVIDER": {
+          "title": "Terraform provider",
+          "desc": "Quản lý tài nguyên Bytebase bằng Terraform."
+        },
+        "FEATURE_DATABASE_GROUPS": {
+          "title": "Nhóm cơ sở dữ liệu",
+          "desc": "Nhóm cơ sở dữ liệu để thực hiện hoạt động hàng loạt và quản lý."
+        },
+        "FEATURE_ENVIRONMENT_TIERS": {
+          "title": "Cấp môi trường",
+          "desc": "Xác định các cấp môi trường như sản xuất và phát triển."
+        },
+        "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+          "title": "Thông báo bảng điều khiển",
+          "desc": "Hiển thị thông báo tùy chỉnh trên bảng điều khiển."
+        },
+        "FEATURE_API_INTEGRATION_GUIDANCE": {
+          "title": "Hướng dẫn tích hợp API",
+          "desc": "Tài liệu và hướng dẫn cho tích hợp API."
+        },
+        "FEATURE_CUSTOM_LOGO": {
+          "title": "Logo tùy chỉnh",
+          "desc": "Tùy chỉnh logo cho tổ chức của bạn."
+        },
+        "FEATURE_WATERMARK": {
+          "title": "Hình mờ",
+          "desc": "Hiển thị hình mờ với thông tin người dùng trên các trang."
+        },
+        "FEATURE_ROADMAP_PRIORITIZATION": {
+          "title": "Ưu tiên lộ trình",
+          "desc": "Ảnh hưởng đến ưu tiên phát triển tính năng."
+        },
+        "FEATURE_CUSTOM_MSA": {
+          "title": "MSA tùy chỉnh",
+          "desc": "Điều khoản Thỏa thuận dịch vụ chính tùy chỉnh."
+        },
+        "FEATURE_COMMUNITY_SUPPORT": {
+          "title": "Hỗ trợ cộng đồng",
+          "desc": "Nhận trợ giúp từ cộng đồng Bytebase."
+        },
+        "FEATURE_EMAIL_SUPPORT": {
+          "title": "Hỗ trợ qua email",
+          "desc": "Hỗ trợ email trực tiếp từ đội ngũ Bytebase."
+        },
+        "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
+          "title": "Hỗ trợ chuyên dụng với SLA",
+          "desc": "Hỗ trợ ưu tiên với thời gian phản hồi được đảm bảo."
+        }
+      },
+      "purchase": {
+        "features": {
+          "free": {
+            "limits": "Tối đa 20 người dùng và 10 phiên bản",
+            "dcm": "Quản lý thay đổi cơ sở dữ liệu hoàn chỉnh",
+            "git": "Kiểm soát phiên bản và di chuyển schema dựa trên Git",
+            "sql-review": "Đánh giá SQL với hơn 200 quy tắc",
+            "backup": "Sao lưu tự động và hoàn tác một cú nhấp",
+            "sql-editor": "Trình soạn SQL trên web với hỗ trợ AI",
+            "schema": "Sơ đồ schema và xuất dữ liệu",
+            "iam": "Các tính năng IAM và bảo mật cơ bản",
+            "support": "Hỗ trợ cộng đồng"
+          },
+          "pro": {
+            "limits": "Người dùng không giới hạn với $20/người dùng/tháng, 10 phiên bản",
+            "everything": "Tất cả trong Miễn phí, cộng thêm:",
+            "batch-query": "Khả năng truy vấn hàng loạt",
+            "read-only": "Kết nối chỉ đọc phiên bản",
+            "query-policy": "Chính sách truy vấn cho quản trị",
+            "sso": "Google & GitHub SSO",
+            "groups": "Quản lý nhóm người dùng",
+            "db-groups": "Nhóm cơ sở dữ liệu",
+            "audit-log": "Nhật ký kiểm toán hạn chế",
+            "support": "Hỗ trợ qua email"
+          },
+          "enterprise": {
+            "limits": "Giới hạn tùy chỉnh theo nhu cầu",
+            "everything": "Tất cả trong Pro, cộng thêm:",
+            "custom-limits": "Giới hạn người dùng và phiên bản tùy chỉnh",
+            "approval": "Đánh giá rủi ro và quy trình phê duyệt",
+            "audit-log": "Nhật ký kiểm toán đầy đủ",
+            "sso": "SSO doanh nghiệp (OAuth2, OIDC, LDAP tùy chỉnh)",
+            "2fa": "Xác thực hai yếu tố và chính sách xác thực nâng cao",
+            "masking": "Che dấu và phân loại dữ liệu",
+            "roles": "Vai trò tùy chỉnh và quy trình yêu cầu vai trò",
+            "scim": "Cung cấp người dùng SCIM và đồng bộ thư mục",
+            "secret": "Tích hợp trình quản lý bí mật bên ngoài",
+            "branding": "Thương hiệu tùy chỉnh và hình mờ",
+            "support": "Hỗ trợ chuyên dụng với SLA"
+          }
+        }
+      }
+    }
+  }
+}
