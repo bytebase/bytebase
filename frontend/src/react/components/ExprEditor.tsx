@@ -617,7 +617,7 @@ function MultiCheckSelect({
         ))}
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-md shadow-md py-1">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-md py-1">
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
             <input
               type="checkbox"

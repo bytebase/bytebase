@@ -382,7 +382,7 @@ export function SemanticTypesPage() {
         {t("settings.sensitive-data.semantic-types.label")}
       </p>
 
-      <div className="border border-control-border rounded-md">
+      <div className="border border-control-border rounded-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-control-border">
@@ -1025,7 +1025,7 @@ function SemanticTemplateDrawer({
           <p className="text-sm text-control-placeholder mb-4">
             {t("settings.sensitive-data.semantic-types.template.description")}
           </p>
-          <div className="border border-control-border rounded-md overflow-hidden">
+          <div className="border border-control-border rounded-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-control-border">
@@ -1347,9 +1347,9 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         </button>
       )}
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 bg-white border border-control-border rounded-md shadow-lg p-3">
+        <div className="absolute left-0 top-full z-20 mt-1 bg-white border border-control-border rounded-sm shadow-lg p-3">
           <div
-            className="w-48 h-48 flex justify-center items-center border border-dashed border-gray-300 rounded-md relative cursor-pointer"
+            className="w-48 h-48 flex justify-center items-center border border-dashed border-gray-300 rounded-sm relative cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
             {tempValue ? (
@@ -1426,7 +1426,7 @@ function DeleteConfirmButton({
         <Trash2 className="w-4 h-4" />
       </button>
       {show && (
-        <div className="absolute right-0 top-full z-10 mt-1 bg-white border border-control-border rounded-md shadow-lg p-3 whitespace-nowrap">
+        <div className="absolute right-0 top-full z-10 mt-1 bg-white border border-control-border rounded-sm shadow-lg p-3 whitespace-nowrap">
           <p className="text-sm mb-2">{message}</p>
           <div className="flex justify-end gap-x-2">
             <Button

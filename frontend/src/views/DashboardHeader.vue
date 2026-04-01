@@ -15,7 +15,7 @@
     </button>
     <ProjectSwitchPopover />
 
-    <div class="flex-1 flex justify-end items-center gap-x-2 sm:gap-x-3">
+    <div class="flex-1 flex justify-end items-center gap-x-2">
       <NButton size="small" @click="agentStore.toggle()">
         <template #icon>
           <BotIcon class="w-4 h-4" />

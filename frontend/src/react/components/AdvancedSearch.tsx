@@ -400,7 +400,7 @@ export function AdvancedSearch({
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex items-center border border-gray-300 rounded-md focus-within:border-gray-400 bg-white transition-colors"
+        className="flex items-center border border-gray-300 rounded-xs bg-white transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
         {/* Prefix: filter icon + tags */}
@@ -414,7 +414,7 @@ export function AdvancedSearch({
             <span
               key={`${originalIndex}-${scope.id}`}
               className={cn(
-                "inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs whitespace-nowrap shrink-0",
+                "inline-flex items-center gap-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs whitespace-nowrap shrink-0",
                 focusedTagIndex === originalIndex && "ring-1 ring-accent"
               )}
               onClick={(e) => {
@@ -443,7 +443,7 @@ export function AdvancedSearch({
         {/* Input */}
         <input
           ref={inputRef}
-          className="flex-1 min-w-[120px] h-9 bg-transparent px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none"
+          className="flex-1 min-w-[120px] h-9 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
           value={inputText}
           placeholder={visibleTags.length > 0 ? "" : placeholder}
           onClick={handleInputClick}

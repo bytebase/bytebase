@@ -257,7 +257,7 @@ export const AIAugmentationSection = forwardRef<
                   </span>
                 </label>
                 <select
-                  className="w-48 border border-control-border rounded-md px-3 py-1.5 text-sm bg-white disabled:opacity-50"
+                  className="w-48 border border-control-border rounded-sm px-3 py-1.5 text-sm bg-white disabled:opacity-50"
                   value={state.provider}
                   disabled={!canEdit}
                   onChange={(e) =>

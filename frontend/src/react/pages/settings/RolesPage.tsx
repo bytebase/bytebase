@@ -226,7 +226,7 @@ function ImportPermissionModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-lg shadow-lg w-[28rem] p-6">
+      <div className="bg-white rounded-md shadow-lg w-[28rem] p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium">{t("role.import-from-role")}</h3>
           <Button variant="ghost" size="icon" onClick={onCancel}>
@@ -316,7 +316,7 @@ function DeleteConfirmModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-lg shadow-lg w-[28rem] p-6">
+      <div className="bg-white rounded-md shadow-lg w-[28rem] p-6">
         <h3 className="text-lg font-medium mb-4">
           {t("common.delete")} - {displayRoleTitle(roleName)}
         </h3>
@@ -826,17 +826,17 @@ export function RolesPage() {
 
       {/* Roles Table */}
       {ready ? (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-control-bg">
-                <th className="px-4 py-2 text-left font-medium w-64">
+                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
                   {t("role.title")}
                 </th>
-                <th className="px-4 py-2 text-left font-medium">
+                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
                   {t("common.description")}
                 </th>
-                <th className="px-4 py-2 text-right font-medium w-40" />
+                <th className="px-4 py-2 text-right font-medium whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
@@ -845,7 +845,7 @@ export function RolesPage() {
                   key={role.name}
                   className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
                 >
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2 whitespace-nowrap">
                     <span>{displayRoleTitle(role.name)}</span>
                     {!isCustomRole(role.name) && (
                       <Badge variant="secondary" className="ml-2 text-xs">
@@ -853,7 +853,7 @@ export function RolesPage() {
                       </Badge>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-control-light truncate">
+                  <td className="px-4 py-2 text-control-light">
                     {displayRoleDescription(role.name)}
                   </td>
                   <td className="px-4 py-2">

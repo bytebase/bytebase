@@ -9,7 +9,7 @@ function Input({ className, ref, ...props }: InputProps) {
     <BaseInput
       ref={ref}
       className={cn(
-        "flex h-9 w-full rounded-md border border-control-border bg-transparent px-3 py-1 text-sm text-main transition-colors",
+        "flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm text-main transition-colors",
         "placeholder:text-control-placeholder",
         "focus:outline-hidden focus:ring-2 focus:ring-accent focus:border-accent",
         "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50",

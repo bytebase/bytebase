@@ -923,7 +923,7 @@ function EnvironmentDetail({
             onClick={() => setShowDeleteConfirm(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white rounded-md shadow-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-medium mb-2">
                 {t("environment.delete")} '{editTitle}'?
               </h3>
@@ -1423,7 +1423,7 @@ export function EnvironmentsPage() {
     <div className="py-4 w-full h-full flex flex-col gap-4">
       {/* Tabs header */}
       <div className="flex items-center border-b border-control-border">
-        <div className="flex-1 flex overflow-x-auto">
+        <div className="flex-1 flex overflow-x-auto overflow-y-hidden">
           {environmentList.map((env, index) => (
             <button
               key={env.id}
