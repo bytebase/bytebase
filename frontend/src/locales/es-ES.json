@@ -2331,9 +2331,7 @@
     "usage": {
       "instance-count": {
         "title": "Límite de cantidad de instancias",
-        "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
-        "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
-        "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
+        "runoutof": "Te has quedado sin tu cuota de instancias {total}."
       },
       "user-count": {
         "title": "Límite de conteo de usuarios",

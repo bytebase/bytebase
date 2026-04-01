@@ -2331,9 +2331,7 @@
     "usage": {
       "instance-count": {
         "title": "インスタンスの制限",
-        "remaining": "現在の合計インスタンス割り当ては {total} で、使用可能な共有は {count} 個のみです。",
-        "runoutof": "すべての {total} インスタンス クレジットが使用されました。",
-        "upgrade": "@:{'subscription.upgrade'} を使用して、より多くのインスタンス割り当てを取得します。"
+        "runoutof": "すべての {total} インスタンス クレジットが使用されました。"
       },
       "user-count": {
         "title": "ユーザー制限",
