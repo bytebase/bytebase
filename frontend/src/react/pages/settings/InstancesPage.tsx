@@ -674,6 +674,8 @@ function BatchOperationsBar({
   showAssignLicense?: boolean;
 }) {
   const { t } = useTranslation();
+  const canSync = hasWorkspacePermissionV2("bb.instances.sync");
+  const canUpdate = hasWorkspacePermissionV2("bb.instances.update");
 
   if (selectedInstances.length === 0) return null;
 
@@ -685,13 +687,18 @@ function BatchOperationsBar({
         })}
       </span>
       <div className="flex items-center gap-x-2">
-        <SyncDropdown disabled={syncing} onSync={onSync} />
-        <Button variant="ghost" size="sm" onClick={onEditEnvironment}>
+        <SyncDropdown disabled={!canSync || syncing} onSync={onSync} />
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!canUpdate}
+          onClick={onEditEnvironment}
+        >
           <SquareStack className="h-4 w-4 mr-1" />
           {t("database.edit-environment")}
         </Button>
         {showAssignLicense && (
-          <Button variant="ghost" size="sm" disabled>
+          <Button variant="ghost" size="sm" disabled={!canUpdate}>
             <GraduationCap className="h-4 w-4 mr-1" />
             {t("subscription.instance-assignment.assign-license")}
           </Button>
