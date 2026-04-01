@@ -61,37 +61,6 @@ import {
 } from "@/utils";
 
 // ============================================================
-// i18n helpers for vue-i18n compat
-// ============================================================
-
-function resolveLinkedMessages(
-  value: string,
-  t: (key: string) => string
-): string {
-  return value.replace(/@:(?:\{'([^']+)'\}|(\S+))/g, (_match, quoted, plain) =>
-    t(quoted ?? plain)
-  );
-}
-
-function tVue(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  key: string,
-  options?: Record<string, unknown>
-): string {
-  const raw = t(key, { ...options, interpolation: { escapeValue: false } });
-  if (raw.includes(" | ")) {
-    const parts = raw.split(" | ");
-    const count = typeof options?.count === "number" ? options.count : 1;
-    const chosen = count === 1 ? parts[0] : parts[parts.length - 1];
-    const interpolated = chosen.replace(/\{(\w+)\}/g, (_m, k) =>
-      String(options?.[k] ?? `{${k}}`)
-    );
-    return resolveLinkedMessages(interpolated, t);
-  }
-  return resolveLinkedMessages(raw, t);
-}
-
-// ============================================================
 // Pagination helpers
 // ============================================================
 
@@ -479,7 +448,7 @@ function InstanceActionDropdown({
       <ConfirmDialog
         open={showDeleteConfirm}
         variant="error"
-        title={tVue(t, "common.delete-resource", {
+        title={t("common.delete-resource", {
           type: instance.title,
         })}
         description={t("common.cannot-undo-this-action")}
@@ -682,8 +651,8 @@ function BatchOperationsBar({
   return (
     <div className="relative z-10 text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-visible">
       <span className="whitespace-nowrap">
-        {tVue(t, "instance.selected-n-instances", {
-          n: selectedInstances.length,
+        {t("instance.selected-n-instances", {
+          count: selectedInstances.length,
         })}
       </span>
       <div className="flex items-center gap-x-2">
@@ -1166,7 +1135,7 @@ export function InstancesPage() {
             {t("subscription.usage.instance-count.title")}
           </p>
           <p className="text-sm text-warning/80 mt-1">
-            {tVue(t, "subscription.usage.instance-count.runoutof", {
+            {t("subscription.usage.instance-count.runoutof", {
               total: instanceCountLimit,
             })}
           </p>
@@ -1184,7 +1153,7 @@ export function InstancesPage() {
         {canCreate && (
           <Button onClick={navigateToCreate}>
             <Plus className="h-4 w-4 mr-1" />
-            {tVue(t, "quick-action.add-instance")}
+            {t("quick-action.add-instance")}
           </Button>
         )}
       </div>

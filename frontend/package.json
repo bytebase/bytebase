@@ -9,7 +9,7 @@
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare:artifacts && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare:artifacts && vite build --mode release-aws",
     "precheck": "pnpm run prepare:artifacts",
-    "check": "eslint --cache src && biome ci .",
+    "check": "eslint --cache src && biome ci . && node scripts/check-react-i18n.mjs",
     "fix": "eslint --cache --fix src && biome check --write .",
     "bundle-visualize": "export NODE_OPTIONS=--max_old_space_size=80000 && vite-bundle-visualizer -c vite.config.ts",
     "pretype-check": "pnpm run prepare:artifacts",

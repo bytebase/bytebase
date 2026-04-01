@@ -1,0 +1,770 @@
+{
+  "common": {
+    "filter-by-name": "按名称过滤",
+    "loading": "加载中",
+    "no-data": "无数据",
+    "all": "全部",
+    "edit": "编辑",
+    "updated": "已更新",
+    "learn-more": "了解更多",
+    "revert": "恢复",
+    "cancel": "取消",
+    "save": "保存",
+    "confirm": "确认",
+    "clear": "清除",
+    "add": "添加",
+    "warning": "警告",
+    "environment-name": "环境名",
+    "environment": "环境",
+    "confirm-and-update": "确认并更新",
+    "cannot-undo-this-action": "这个操作无法撤销",
+    "delete": "删除",
+    "create": "创建",
+    "leave-without-saving": "不保存变动？",
+    "deleted": "已删除",
+    "reorder": "排序",
+    "close": "关闭",
+    "general": "通用",
+    "type": "类型",
+    "discard-changes": "取消修改",
+    "update": "更新",
+    "copied": "已拷贝",
+    "copy": "拷贝",
+    "back": "返回",
+    "next": "下一步",
+    "id": "ID",
+    "name": "名称",
+    "sensitive-placeholder": "敏感数据 - 仅写入",
+    "unassigned": "未分配",
+    "archive": "归档",
+    "restore": "恢复",
+    "delete-resource": "删除{{type}}",
+    "labels": "标签",
+    "state": "状态",
+    "address": "地址",
+    "rows-per-page": "每页行数",
+    "load-more": "加载更多",
+    "configure-now": "现在配置",
+    "restored": "已恢复",
+    "archived": "已归档",
+    "select-all": "全选",
+    "total-n-items": "共 {{n}} 项",
+    "search": "搜索",
+    "n-items-selected": "已选 {{n}} 项",
+    "permissions": "权限",
+    "added": "已创建",
+    "description": "描述",
+    "missing-required-permission": "缺少必需的权限 {{permissions}}",
+    "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
+    "add-permissions": "添加权限",
+    "system": "系统",
+    "created": "已创建",
+    "upload": "上传",
+    "unlimited": "无限制",
+    "file-selector": {
+      "type-limit": "仅支持 {{extension}} 类型的文件",
+      "size-limit": "文件大小需小于 {{size}} MiB"
+    },
+    "ok": "OK"
+  },
+  "cel": {
+    "condition": {
+      "input-value": "输入值",
+      "select-value": "选择值",
+      "input-value-press-enter": "输入值，按回车确认",
+      "group": {
+        "or": {
+          "description": "以下任一为真…"
+        },
+        "and": {
+          "description": "以下全部为真…"
+        }
+      },
+      "add-condition-in-group-placeholder": "点击{{plus}}添加条件",
+      "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件",
+      "add": "添加条件",
+      "add-raw-expression": "添加 Raw 表达式",
+      "add-group": "添加条件组"
+    }
+  },
+  "subscription": {
+    "trial-for-days": "您可以开启 {{days}} 天的免费试用 - 无需任何信用卡或预付费。",
+    "required-plan-with-trial": "这个功能需要{{requiredPlan}}订阅，{{startTrial}}",
+    "instance-assignment": {
+      "missing-license-attention": "请给实例分配证书以解锁该功能。",
+      "assign-license": "分配证书",
+      "license": "证书",
+      "used-and-total-user": "活跃/总用户限制",
+      "used-and-total-license": "已分配 / 总实例证书"
+    },
+    "request-n-days-trial": "申请 {{days}} 天试用 (无需信用卡)",
+    "usage": {
+      "instance-count": {
+        "title": "实例数量限制",
+        "runoutof": "已用尽全部 {{total}} 个实例额度。"
+      }
+    },
+    "plan": {
+      "free": {
+        "title": "社区版",
+        "label": "",
+        "desc": "团队中心化管理数据库生命周期的核心能力。"
+      },
+      "team": {
+        "title": "专业版",
+        "label": "",
+        "desc": "更多协同和管控能力，进阶的数据库生命周期管理。"
+      },
+      "enterprise": {
+        "title": "企业版",
+        "label": "",
+        "desc": "额外的安全，合规，权限功能，SLA 支持。"
+      },
+      "try": "免费试用",
+      "title": "版本"
+    },
+    "purchase": {
+      "free-description": "适用于个人开发者、副业项目和实验。",
+      "pro-description": "适用于构建生产级应用的团队。",
+      "enterprise-description": "安全合规地扩展您的业务。",
+      "discount": {
+        "percentage-off": "首月 {{value}}% 优惠",
+        "month-off": "{{value}} 个月免费",
+        "price-off": "减 ${{value}}"
+      },
+      "update": "更新订阅",
+      "subscribe": "立即订阅",
+      "cancel-confirm": "确定要取消订阅吗？",
+      "canceled": "订阅已取消",
+      "pending-title": "正在完成购买...",
+      "pending-description": "请稍候，我们正在确认您的付款。通常只需几秒钟。",
+      "payment-info": "支付信息",
+      "total-price": "总价",
+      "manage-invoices": "管理发票",
+      "billing-period": "账单周期",
+      "cancel-pending": "您的订阅已取消，将于 {{date}} 到期。",
+      "cancel": "取消订阅",
+      "per-user-per-month": "/ 用户 / 月",
+      "custom": "自定义",
+      "seats": "用户数",
+      "accept-terms-prefix": "我接受",
+      "terms-of-service": "服务条款",
+      "and": "和",
+      "privacy-policy": "隐私政策",
+      "see-comparison": "查看详细功能对比"
+    },
+    "current": "当前版本",
+    "contact-us": "联系我们",
+    "update": {
+      "success": {
+        "title": "证书更新成功",
+        "description": "订阅版高级功能已解锁"
+      },
+      "failure": {
+        "title": "证书更新失败",
+        "description": "请检查证书是否有效"
+      }
+    },
+    "expired": "已过期",
+    "trialing": "试用期",
+    "expires-at": "过期时间",
+    "try-for-free": "免费试用",
+    "enterprise-free-trial": "企业版 {{days}} 天免费试用",
+    "inquire-enterprise-plan": "企业版询价",
+    "upload-license": "上传证书",
+    "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
+    "plan-compare": "比较不同版本的功能，寻找适合您的方案",
+    "max-instance-count": "最多实例数",
+    "require-subscription": "这个功能需要{{requiredPlan}}订阅，请购买 Bytebase 证书来解锁该功能。"
+  },
+  "resource-id": {
+    "validation": {
+      "empty": "{{resource}} ID 不能为空",
+      "overflow": "{{resource}} ID 应该少于 64 个字符。",
+      "pattern": "{{resource}} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
+      "duplicated": "{{resource}} ID 已存在。请使用其他 ID。"
+    },
+    "self": "{{resource}} ID",
+    "cannot-be-changed-later": "创建之后无法修改。",
+    "description": "{{resource}} ID 是一个唯一的标识符。创建之后无法修改。"
+  },
+  "schema-template": {
+    "classification": {
+      "search": "搜索分类"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "classification": {
+        "invalid-json": "JSON 格式无效",
+        "missing-classification": "缺少 \"classification\" 字段",
+        "empty-classification": "\"classification\" 字段为空",
+        "missing-levels": "缺少 \"levels\" 字段",
+        "guide-intro": "在下方编辑分类分级的 JSON 配置。未配置时将显示示例模板。",
+        "guide-levels": "\"levels\" 定义敏感级别，级别编号从 1 开始连续递增（例如 1 = 公开、2 = 内部、3 = 机密）。",
+        "guide-classification": "\"classification\" 以 ID 为键映射各分类。叶子分类必须引用级别编号，父分类省略级别。",
+        "guide-hierarchy": "ID 使用短横线分隔的层级结构（例如 \"1\" 为父分类，\"1-1\" 和 \"1-2\" 为其子分类）。"
+      },
+      "global-rules": {
+        "error": {
+          "missing-semantic-type": "需要指定语义类型",
+          "invalid-condition": "规则的条件无效"
+        },
+        "condition-order": "条件序列",
+        "delete-rule-tip": "删除这条规则？",
+        "re-order": "排序",
+        "description": "使用全局规则批量脱敏，例如所有名为「电子邮件」的列将被脱敏成特定语义类型，并应用对应的脱敏算法。"
+      },
+      "semantic-types": {
+        "table": {
+          "semantic-type": "语义类型",
+          "icon": "图标",
+          "description": "描述",
+          "masking-algorithm": "脱敏算法",
+          "delete": "删除这个语义类型？"
+        },
+        "select": "选择语义类型",
+        "template": {
+          "duplicate-warning": "语义类型“{{title}}”已存在",
+          "description": "您可以从模板中应用内置语义类型。内置模板无法更改。"
+        },
+        "use-predefined-type": "使用预定义类型",
+        "label": "具有相同语义类型的列会使用相同的脱敏算法。",
+        "add-from-template": "从模板添加"
+      },
+      "algorithms": {
+        "full-mask": {
+          "self": "全遮掩",
+          "substitution": "遮掩字符串",
+          "substitution-label": "遮掩字符串是用来替换原始值的字符串，最大长度不能超过 16 个字符。"
+        },
+        "range-mask": {
+          "self": "范围遮掩",
+          "label": "范围遮掩使用遮掩字符串来替换从起始索引到结束索引（不包含结束索引）的原始值，索引从 0 开始。",
+          "slice-start": "起始位置",
+          "slice-end": "结束位置",
+          "substitution": "遮掩字符串"
+        },
+        "md5-mask": {
+          "self": "MD5 哈希",
+          "salt": "盐值 (Salt)",
+          "salt-label": "盐值 (Salt) 用于通过原始值生成哈希值。"
+        },
+        "inner-outer-mask": {
+          "self": "内/外遮掩",
+          "type": "遮掩类型",
+          "inner-label": "内遮掩遮蔽字符串的内部部分。前缀和后缀代表数据的未遮蔽部分。",
+          "outer-label": "外遮掩遮蔽字符串的左右两端。前缀和后缀代表数据的遮蔽部分。",
+          "inner-mask": "内遮掩",
+          "outer-mask": "外遮掩",
+          "prefix-length": "前缀长度",
+          "suffix-length": "后缀长度"
+        },
+        "error": {
+          "slice-required": "遮掩范围不能为空",
+          "slice-invalid-number": "遮掩范围起始值和结束值必须是数字",
+          "slice-overlap": "遮掩范围不能有重叠",
+          "substitution-required": "请填写遮掩字符串",
+          "substitution-length": "遮掩字符串长度不能超过 16 个字符",
+          "salt-required": "请填写盐值"
+        },
+        "edit": "编辑算法",
+        "add": "添加算法",
+        "table": {
+          "masking-type": "算法类型"
+        }
+      }
+    },
+    "sso": {
+      "delete": "删除该 SSO",
+      "form": {
+        "auth-url": "授权网址",
+        "auth-url-placeholder": "例如 https://github.com/login/oauth/authorize",
+        "auth-url-description": "登录页面的链接",
+        "token-url": "令牌 URL",
+        "token-url-placeholder": "例如 https://github.com/login/oauth/access_token",
+        "token-url-description": "用于获取 accessToken 的 API 地址",
+        "user-info-url": "用户信息 URL",
+        "user-info-url-placeholder": "例如 https://api.github.com/user",
+        "user-info-url-description": "用于通过 accessToken 获取用户信息的 API 地址",
+        "scopes": "作用域",
+        "scopes-placeholder": "例如，user、email、profile",
+        "scopes-description": "访问 Auth URL 时携带的范围参数，使用空格分隔多个值",
+        "authentication-style": "身份验证方式",
+        "in-parameters": "在参数中",
+        "in-parameters-description": "在 POST body 中发送凭证（推荐）",
+        "in-header": "在头信息中",
+        "in-header-description": "使用 HTTP header 中发送凭证",
+        "security-options": "安全选项",
+        "skip-tls-verification": "跳过 TLS 证书验证",
+        "skip-tls-warning": "仅为开发或测试目的启用此功能",
+        "issuer-url-placeholder": "例如 https://acme.okta.com",
+        "issuer-url-description": "OIDC Issuer URL",
+        "scopes-placeholder-oidc": "例如，openid、user、email、profile",
+        "openid-scopes-description": "以空格分隔的 OIDC 范围列表（需要 openid）",
+        "host-placeholder": "例如 ldap.example.com",
+        "bind-dn": "绑定 DN",
+        "bind-dn-placeholder": "例如，uid=system、ou=user、dc=example、dc=com",
+        "bind-dn-description": "搜索请求时绑定的用户 DN",
+        "bind-password": "绑定密码",
+        "base-dn": "基本 DN",
+        "base-dn-placeholder": "例如，ou=user、dc=example、dc=com",
+        "base-dn-description": "搜索用户的基本 DN",
+        "user-filter": "用户过滤器",
+        "user-filter-placeholder": "例如 (uid=%s)",
+        "user-filter-description": "搜索用户的过滤器（%s 将被替换为用户名）",
+        "security-protocol": "安全协议",
+        "starttls": "启动 TLS",
+        "starttls-description": "将连接升级到 TLS（推荐）",
+        "ldaps": "LDAPS",
+        "ldaps-description": "从一开始就使用 TLS（端口 636）",
+        "none": "没有任何",
+        "none-description": "无加密（不建议用于生产）",
+        "identifier-placeholder": "例如，username、email",
+        "identifier": "Bytebase 用户的邮箱",
+        "identifier-tips": "邮箱应该具有唯一性。如果实际值不是邮箱格式，将会和 domain 进行拼接。",
+        "display-name-placeholder": "例如，title、nickname",
+        "display-name": "Bytebase 用户的昵称",
+        "phone-placeholder": "例如，phone、mobile",
+        "phone": "Bytebase 用户的手机号",
+        "groups-placeholder": "例如，groups",
+        "groups": "Bytebase 用户的群组",
+        "groups-description": "用于基于组的访问控制（仅限 OIDC 提供商）",
+        "provider-type-readonly-hint": "提供商类型创建后无法更改",
+        "name": "名称",
+        "name-description": "显示给登录用户的名称",
+        "domain": "域名",
+        "domain-description": "OAuth 提供商的域名",
+        "domain-optional-hint": "（可选）如果 SSO 所提供的用户唯一标识符不是电子邮件格式，则会用域名进行拼接。",
+        "configuration": "配置",
+        "configuration-description": "配置身份提供商的连接设置",
+        "user-information-mapping": "用户信息映射",
+        "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。",
+        "identity-provider-needed-information": "用以下信息创建您的 SSO 应用程序。",
+        "redirect-url-description": "将会用于填写到身份提供商申请表单中的相应字段。",
+        "redirect-url": "回调地址",
+        "type": "类型",
+        "use-template": "使用模版",
+        "oauth2-description": "适用于 OAuth 2.0 提供商，例如 Google、GitHub、GitLab 以及自部署等。",
+        "oidc-description": "适用于 OpenID Connect 提供商，例如 Microsoft Entra ID (Azure AD)、Okta、Auth0",
+        "ldap-description": "适用于 LDAP 提供商，例如 Microsoft Active Directory、OpenLDAP",
+        "google-template-description": "使用 Google 帐户登录",
+        "github-template-description": "使用 GitHub 帐户登录",
+        "gitlab-template-description": "使用 GitLab 帐户登录",
+        "microsoft-entra-template-description": "使用 Microsoft Entra ID 登录",
+        "custom-template-description": "配置自定义 OAuth 2.0 提供商",
+        "type-description": "选择要配置的身份提供商类型",
+        "template-description": "选择预配置的模板或自定义 OAuth 2.0 提供商。",
+        "general-setting-description": "提供有关您的身份提供商的基本信息。"
+      },
+      "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
+      "create": "创建 SSO"
+    },
+    "im": {
+      "add-im-integration": "添加即时通讯集成",
+      "add-another-im": "添加另一个即时通讯工具"
+    },
+    "im-integration": {
+      "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
+    },
+    "mcp": {
+      "first-prompt": {
+        "example": "列出我的 Bytebase 实例中的所有项目",
+        "title": "您的第一个提示",
+        "description": "连接后，尝试向 AI 助手提问："
+      },
+      "title": "MCP 集成",
+      "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "auth": {
+        "title": "需要身份验证",
+        "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。"
+      },
+      "general-config": {
+        "title": "方式一：JSON 配置"
+      },
+      "setup": {
+        "add-to-config": "将此 JSON 添加到您的 MCP 客户端配置文件。"
+      },
+      "quick-start": {
+        "title": "方式二：CLI 命令",
+        "description": "或者使用以下 CLI 命令。"
+      }
+    },
+    "general": {
+      "workspace": {
+        "external-url": {
+          "description": "用户或回调能访问到的 Bytebase URL，必须以 http:// 或 https:// 开头。",
+          "self": "External URL",
+          "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的"
+        },
+        "id": "工作空间 ID",
+        "id-description": "唯一且只读的工作空间 ID",
+        "ai-assistant": {
+          "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
+          "enable-ai-assistant": "启用 AI 助手",
+          "description": "使用 AI 来辅助数据库开发任务。",
+          "provider": {
+            "self": "AI 提供方",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
+          },
+          "api-key": {
+            "self": "API Key",
+            "description": "提供 API 密钥，只读。{{viewDoc}}",
+            "find-my-key": "找到我的 Key",
+            "placeholder": "API Key 通常以 sk-***** 开头"
+          },
+          "endpoint": {
+            "self": "API Endpoint",
+            "description": "提供私有化部署的 API Endpoint。"
+          },
+          "model": {
+            "self": "Model Name",
+            "description": "提供私有化部署的模型名称。"
+          },
+          "self": "AI 助手"
+        },
+        "disallow-signup": {
+          "enable": "禁用自助注册",
+          "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
+        },
+        "password-restriction": {
+          "self": "密码限制",
+          "min-length": "密码最小长度不得少于 {{min}} 个字符",
+          "require-number": "密码必须至少包含一个数字",
+          "require-letter": "密码必须至少包含一个字母（不区分大小写）",
+          "require-uppercase-letter": "密码必须至少包含一个大写字母",
+          "require-special-character": "密码必须至少包含一个特殊字符",
+          "require-reset-password-for-first-login": "要求用户在首次登录后重置密码",
+          "password-rotation": "要求用户每 {{day}} 天重置一次密码"
+        },
+        "require-2fa": {
+          "enable": "要求所有用户配置双重认证",
+          "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。"
+        },
+        "disallow-password-signin": {
+          "enable": "禁止使用密码登录",
+          "require-sso-setup": "开启前必须先要创建 SSO，否则用户将无法正常登录。",
+          "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。"
+        },
+        "access-token-duration": {
+          "self": "访问令牌有效期",
+          "description": "访问令牌在需要刷新前保持有效的时间。较短的有效期可提高安全性。",
+          "minutes": "分钟",
+          "hours": "小时"
+        },
+        "refresh-token-duration": {
+          "self": "刷新令牌有效期",
+          "description": "用户需要完全重新认证的频率。配置更新后需要用户重新登录才能生效。",
+          "hours": "小时",
+          "days": "天"
+        },
+        "inactive-session-timeout": {
+          "self": "非活动会话超时",
+          "description": "未检测到用户活动时的会话过期时间。用户达到限制时将被强制退出登录。",
+          "hours": "小时"
+        },
+        "no-limit": "当值 <= 0 时无限制",
+        "announcement-alert-level": {
+          "description": "等级",
+          "field": {
+            "info": "普通",
+            "warning": "警告",
+            "critical": "重要"
+          }
+        },
+        "announcement-text": {
+          "self": "标题",
+          "description": "如果要隐藏公告，则置为空。",
+          "placeholder": "输入公告标题"
+        },
+        "extra-link": {
+          "self": "链接",
+          "placeholder": "输入公告链接"
+        },
+        "log": "日志",
+        "audit-log-stdout": {
+          "enable": "启用审计日志输出到标准输出",
+          "description": "将结构化的 JSON 审计日志输出到标准输出，以便日志聚合器（Splunk、ELK、Datadog、Loki）摄取。需要 TEAM 或 ENTERPRISE 许可证。"
+        },
+        "enable-debug": {
+          "enable": "启用后端服务的调试级别日志"
+        },
+        "title": "工作空间名称",
+        "logo": "Logo",
+        "logo-aspect": "Logo 建议为 5:2 的宽:高比例（例如 100 x 40 像素）",
+        "select-logo": "选择",
+        "drag-logo": "或拖拽文件",
+        "logo-upload-tip": "支持 {{extension}} 类型文件，不能大于 {{size}} MiB",
+        "branding": "品牌",
+        "account": "帐户",
+        "security": "安全",
+        "announcement": {
+          "self": "公告"
+        },
+        "product-improvement": {
+          "self": "产品改进",
+          "participate": "参与改进计划",
+          "description": "通过分享匿名使用数据帮助改进 Bytebase"
+        },
+        "failed-to-update-setting": "无法更新设置“{{title}}”",
+        "config-updated": "配置已更新。",
+        "config-partly-updated": "配置部分更新。",
+        "default-landing-page": {
+          "self": "默认首页",
+          "workspace": {
+            "self": "工作区",
+            "description": "使用工单来请求、审查、推出和版本数据库更改，适用于具有访问控制和 CI 与 CD 工作流的团队。"
+          },
+          "sql-editor": {
+            "self": "SQL 编辑器",
+            "description": "使用 SQL 编辑器直接执行数据库更改，适合单人使用或不需要管控的环境。"
+          },
+          "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
+          "go-to-sql-editor": "转到 SQL 编辑器"
+        },
+        "data-export": "启用数据导出",
+        "data-copy": "启用复制数据",
+        "allow-admin-data-source": {
+          "self": "允许查询主数据源",
+          "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。"
+        },
+        "maximum-sql-result": {
+          "size": {
+            "self": "最大 SQL 结果大小",
+            "description": "限制输出 SQL 查询结果的大小。",
+            "default": "默认限制 {{limit}} MB"
+          },
+          "rows": {
+            "self": "SQL结果行数上限",
+            "description": "限制SQL查询结果的输出行数。",
+            "rows": "行"
+          }
+        },
+        "query-data-policy": {
+          "timeout": {
+            "self": "最大查询时间",
+            "description": "允许运行查询的最长时间。"
+          },
+          "seconds": "秒"
+        },
+        "watermark": {
+          "enable": "开启水印",
+          "description": "在页面上显示水印，包含用户名、ID 和 Email。"
+        },
+        "maximum-role-expiration": {
+          "self": "角色最大过期时间",
+          "description": "角色最大过期时间是可以赋予用户角色时所能设置的最大过期时间，会应用在项目所有者之外的其他项目角色上。",
+          "days": "天数",
+          "never-expires": "永不过期"
+        },
+        "domain-restriction": {
+          "self": "工作空间域名",
+          "description": "用于指定成员电子邮箱的域名。",
+          "domain-input-placeholder": "请输入域名，例如 example.com",
+          "members-restriction": {
+            "self": "成员邮箱限制",
+            "description": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
+          }
+        }
+      }
+    }
+  },
+  "database": {
+    "classification": {
+      "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
+    },
+    "edit-environment": "编辑环境",
+    "engine": "引擎"
+  },
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "确定要删除吗？"
+    }
+  },
+  "role": {
+    "workspace-roles": {
+      "self": "工作空间角色"
+    },
+    "project-roles": {
+      "self": "项目角色"
+    },
+    "custom-roles": {
+      "self": "自定义角色"
+    },
+    "import-from-role": "从角色导入",
+    "select-role": "选择角色",
+    "self": "角色",
+    "setting": {
+      "add": "添加角色",
+      "edit": "编辑角色",
+      "title-placeholder": "输入角色称谓",
+      "description-placeholder": "输入角色描述",
+      "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。"
+    },
+    "title": "称谓"
+  },
+  "policy": {
+    "rollout": {
+      "auto": "自动发布",
+      "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
+      "name": "发布策略",
+      "tip": "新策略对旧工单也生效",
+      "info": "拥有 “{{permission}}” 权限或以下角色的用户可以发布。"
+    },
+    "environment-tier": {
+      "name": "环境级别",
+      "description": "使该环境在显示上不同于其他环境。",
+      "mark-env-as-production": "标记为生产环境"
+    }
+  },
+  "sql-review": {
+    "title": "SQL 审核策略",
+    "configure-policy": "配置审核策略"
+  },
+  "environment": {
+    "successfully-updated-environment": "环境'{{name}}'更新成功",
+    "delete": "删除此环境",
+    "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
+    "create": "创建环境",
+    "reorder": "重新排序环境"
+  },
+  "custom-approval": {
+    "rule": {
+      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
+    },
+    "risk": {
+      "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
+      "how-it-works": "工作原理",
+      "how-it-works-description": "当您创建数据库变更时，Bytebase 会自动分析 SQL 语句，并根据预定义规则分配风险等级（低、中、高）。",
+      "risk-levels": "风险等级",
+      "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
+      "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
+      "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
+      "integration": "与审批流集成",
+      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审批。"
+    },
+    "risk-rule": {
+      "risk": {
+        "risk-level": {
+          "high": "高",
+          "moderate": "中",
+          "low": "低"
+        }
+      }
+    }
+  },
+  "identity-provider": {
+    "test-connection-success": "测试连接成功",
+    "userinfo-description": "匹配到的用户信息。",
+    "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
+    "no-claims": "身份提供商未返回 claims。",
+    "test-connection": "测试连接",
+    "delete-warning": "您确定要删除此身份提供者吗？通过此 SSO 注册的用户将无法再使用该身份提供者登录。如果您在工作区设置中禁用了密码登录，这些用户可能会被完全锁定。",
+    "identity-provider-update-failed": "无法更新身份提供商",
+    "identity-provider-permission-denied": "没有权限",
+    "identity-provider-deleted": "身份提供商已成功删除",
+    "identity-provider-delete-failed": "无法删除身份提供商",
+    "identity-provider-created": "身份提供商创建成功",
+    "identity-provider-create-failed": "无法创建身份提供商"
+  },
+  "error-page": {
+    "not-found": "页面未找到"
+  },
+  "instance": {
+    "successfully-archived-instance": "成功归档实例'{{0}}'。",
+    "successfully-restored-instance": "已成功恢复实例“{{0}}”。",
+    "archive-instance-instance-name": "归档实例'{{0}}'?",
+    "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
+    "force-archive-description": "强制归档。所有数据库均将被取消分配。",
+    "syncing": "同步中 ...",
+    "sync": {
+      "self": "同步实例",
+      "sync-all-tip": "数据库同步是异步的，可能需要几秒到几分钟",
+      "sync-all": "同步所有数据库",
+      "sync-new": "仅同步新数据库"
+    },
+    "selected-n-instances_one": "已选择 {{count}} 个实例",
+    "selected-n-instances_other": "已选择 {{count}} 个实例",
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "title": "服务器地址",
+          "description": "按实例服务器地址过滤。请输入值然后按 Enter。"
+        },
+        "port": {
+          "title": "端口",
+          "description": "按实例端口过滤。请输入值然后按 Enter。"
+        }
+      }
+    },
+    "filter-instance-name": "过滤实例名称"
+  },
+  "db": {
+    "start-to-sync-schema": "开始同步 schema"
+  },
+  "quick-action": {
+    "add-instance": "添加实例",
+    "create-project": "创建项目",
+    "new-project": "创建项目"
+  },
+  "landing": {
+    "quick-link": {
+      "visit-prjects": "访问项目",
+      "visit-issues": "访问工单",
+      "manage": "管理快捷访问",
+      "self": "快捷访问"
+    },
+    "last-visit": "上次访问",
+    "changelog-for-version": "{{version}} 的更新日志"
+  },
+  "remind": {
+    "release": {
+      "new-version-available-with-tag": "新版本 {{tag}} 已推出"
+    }
+  },
+  "banner": {
+    "external-url": "Bytebase 还没有配置 --external-url"
+  },
+  "project": {
+    "create-modal": {
+      "success-prompt": "成功创建 {{name}}.",
+      "project-name": "项目名称"
+    },
+    "batch": {
+      "archive": {
+        "success_one": "成功归档 {{count}} 个项目",
+        "success_other": "成功归档 {{count}} 个项目",
+        "error": "无法归档项目",
+        "title_one": "归档 {{count}} 个项目？",
+        "title_other": "归档 {{count}} 个项目？",
+        "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。"
+      },
+      "delete": {
+        "success_one": "成功删除 {{count}} 个项目",
+        "success_other": "成功删除 {{count}} 个项目",
+        "error": "无法删除项目",
+        "title_one": "删除 {{count}} 个项目？",
+        "title_other": "删除 {{count}} 个项目？",
+        "description": "这将永久删除所选项目，并将所有数据库移动到默认项目。",
+        "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
+      },
+      "selected_one": "已选择 {{count}} 个项目",
+      "selected_other": "已选择 {{count}} 个项目"
+    },
+    "filter-projects": "过滤项目",
+    "table": {
+      "name": "名称"
+    }
+  },
+  "resource": {
+    "delete-warning-with-resources": "以下资源使用了“{{name}}”：",
+    "delete-warning-retry": "请将其从这些资源中删除，然后重试。",
+    "delete-warning": "“{{name}}”将被删除。此操作无法撤消。"
+  },
+  "sql-editor": {
+    "self": "SQL 编辑器"
+  }
+}
