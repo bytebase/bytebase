@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { GripVertical, ListOrdered, Plus, ShieldAlert, X } from "lucide-react";
+import { GripVertical, ListOrdered, Plus, X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
@@ -56,7 +57,6 @@ import type { Environment } from "@/types/v1/environment";
 import {
   displayRoleTitle,
   hasWorkspacePermissionV2,
-  hexToRgb,
   sqlReviewPolicySlug,
 } from "@/utils";
 
@@ -83,60 +83,6 @@ function useEscapeKey(onEscape: () => void) {
       if (idx >= 0) escapeStack.splice(idx, 1);
     };
   }, [onEscape]);
-}
-
-// ============================================================
-// EnvironmentName - displays env name with color badge
-// ============================================================
-function EnvironmentName({
-  environment,
-  link = false,
-}: {
-  environment: Environment;
-  link?: boolean;
-}) {
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasEnvTierFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
-  );
-  const color = environment.color || "#4f46e5";
-  const rgbValues = hexToRgb(color);
-  const rgbStr = rgbValues.join(", ");
-  const showProductionIcon =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
-
-  const content = (
-    <span
-      className="inline-flex items-center gap-x-1 px-1.5 rounded select-none truncate"
-      style={{
-        backgroundColor: `rgba(${rgbStr}, 0.1)`,
-        color: `rgb(${rgbStr})`,
-      }}
-    >
-      <span className="truncate">{environment.title}</span>
-      {showProductionIcon && (
-        <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-control" />
-      )}
-    </span>
-  );
-
-  if (link) {
-    return (
-      <a
-        href={`/${formatEnvironmentName(environment.id)}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          router.push({ path: `/${formatEnvironmentName(environment.id)}` });
-        }}
-        className="hover:underline"
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return content;
 }
 
 // ============================================================
@@ -1231,7 +1177,7 @@ function ReorderDrawer({
             >
               <div className="flex items-center gap-x-2">
                 <span className="textinfo">{index + 1}.</span>
-                <EnvironmentName environment={env} />
+                <EnvironmentLabel environment={env} />
               </div>
               <GripVertical className="w-5 h-5 text-gray-500" />
             </div>
@@ -1436,7 +1382,7 @@ export function EnvironmentsPage() {
               onClick={() => selectTab(env.id)}
             >
               <span className="text-opacity-60">{index + 1}.</span>
-              <EnvironmentName environment={env} />
+              <EnvironmentLabel environment={env} />
             </button>
           ))}
         </div>

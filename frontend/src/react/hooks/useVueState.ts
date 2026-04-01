@@ -3,7 +3,8 @@ import { watch } from "vue";
 
 /**
  * Subscribe a React component to a Vue reactive getter.
- * Re-renders whenever the getter's tracked dependencies change.
+ * Re-renders whenever the getter's tracked dependencies change,
+ * AND whenever the getter's closure variables (e.g. props) change.
  *
  * @param getter — A function that reads Vue reactive state (Pinia store, ref, computed, etc.)
  * @returns The current value of the getter, kept in sync with Vue reactivity.
@@ -16,24 +17,33 @@ export function useVueState<T>(getter: () => T): T {
   // between renders when the value hasn't changed.
   const snapshotRef = useRef<T>(getter());
 
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => {
-      const stop = watch(
-        getter,
-        (newVal) => {
-          snapshotRef.current = newVal;
-          onStoreChange();
-        },
-        { flush: "sync" }
-      );
-      // Initialize with current value
-      snapshotRef.current = getter();
-      return stop;
-    },
-    // getter is typically an inline arrow — we intentionally omit it from deps
-    // to keep subscribe stable. The watch() inside tracks Vue deps automatically.
-    []
-  );
+  // Always point to the latest getter so the Vue watch evaluates
+  // up-to-date closure variables (props, local state, etc.).
+  const getterRef = useRef(getter);
+  getterRef.current = getter;
+
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    const stop = watch(
+      () => getterRef.current(),
+      (newVal) => {
+        snapshotRef.current = newVal;
+        onStoreChange();
+      },
+      { flush: "sync" }
+    );
+    // Initialize with current value
+    snapshotRef.current = getterRef.current();
+    return stop;
+  }, []);
+
+  // Re-evaluate getter on every render to catch closure-driven changes
+  // (e.g. a prop like environmentName changing from "prod" to "test").
+  // The Vue watch only fires for Vue reactive dep changes — it cannot
+  // detect plain JS closure variable changes, so we sync here.
+  const currentValue = getter();
+  if (!Object.is(snapshotRef.current, currentValue)) {
+    snapshotRef.current = currentValue;
+  }
 
   const getSnapshot = useCallback(() => snapshotRef.current, []);
 
