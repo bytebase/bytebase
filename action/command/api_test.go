@@ -20,9 +20,7 @@ func TestNewClientWithOptionsUsesServiceAccountAuth(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		require.NoError(t, client.close())
-	})
+	t.Cleanup(client.close)
 
 	require.Same(t, httpClient, client.httpClient)
 	require.Equal(t, int32(100), client.options.pageSize)
@@ -36,9 +34,7 @@ func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	client, err := newClient("https://example.com", "token", "", "", defaultClientOptions())
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		require.NoError(t, client.close())
-	})
+	t.Cleanup(client.close)
 
 	require.Equal(t, "", client.serviceAccount)
 	require.Equal(t, "", client.serviceAccountSecret)
@@ -59,9 +55,7 @@ func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
 	client, err := newClientFromWorld(w)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		require.NoError(t, client.close())
-	})
+	t.Cleanup(client.close)
 
 	require.Equal(t, 5*time.Second, client.httpClient.Timeout)
 	require.Equal(t, "", client.serviceAccount)

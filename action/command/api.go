@@ -239,11 +239,10 @@ func (c *client) getActuatorInfo(ctx context.Context) (*v1pb.ActuatorInfo, error
 	return resp.Msg, nil
 }
 
-func (c *client) close() error {
+func (c *client) close() {
 	if c.httpClient != nil {
 		c.httpClient.CloseIdleConnections()
 	}
-	return nil
 }
 
 // isRetryableError determines if an error should trigger a retry
