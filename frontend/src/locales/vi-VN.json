@@ -796,6 +796,7 @@
           "self": "Trợ lý AI",
           "enable-ai-assistant": "Bật Trợ lý AI",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
+          "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
           "provider": {
             "self": "Nhà cung cấp AI",
             "open_ai": "Open AI",

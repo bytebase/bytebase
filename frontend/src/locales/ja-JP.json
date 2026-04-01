@@ -796,6 +796,7 @@
           "self": "AI アシスタント",
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "description": "AI を使用してデータベース開発タスクを支援します。",
+          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "provider": {
             "self": "AIプロバイダー",
             "open_ai": "Open AI",

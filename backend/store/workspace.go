@@ -20,6 +20,15 @@ import (
 type WorkspaceMessage struct {
 	ResourceID string
 	Payload    *storepb.WorkspacePayload
+	// AdditionalSettings are extra settings to inject during workspace creation.
+	// These are applied after the default settings.
+	AdditionalSettings []AdditionalSetting
+}
+
+// AdditionalSetting is an extra setting to inject during workspace creation.
+type AdditionalSetting struct {
+	Name    storepb.SettingName
+	Payload proto.Message
 }
 
 // getWorkspace returns the workspace. Returns (nil, nil) if no workspace exists.
@@ -135,6 +144,11 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 			},
 		}},
 	}
+	// Append additional settings from the caller (e.g., AI config in SaaS mode).
+	for _, as := range create.AdditionalSettings {
+		settings = append(settings, defaultSetting{name: as.Name, payload: as.Payload})
+	}
+
 	for _, s := range settings {
 		value, err := protojson.Marshal(s.payload)
 		if err != nil {

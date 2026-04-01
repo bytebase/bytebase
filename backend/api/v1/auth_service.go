@@ -265,8 +265,9 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
 		}
 		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
-			ResourceID: wsID,
-			Payload:    &storepb.WorkspacePayload{Title: "Default workspace"},
+			ResourceID:         wsID,
+			Payload:            &storepb.WorkspacePayload{Title: "Default workspace"},
+			AdditionalSettings: s.getAdditionalWorkspaceSettings(),
 		}, request.Email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
@@ -648,8 +649,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
 		}
 		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
-			ResourceID: wsID,
-			Payload:    &storepb.WorkspacePayload{Title: "My Workspace"},
+			ResourceID:         wsID,
+			Payload:            &storepb.WorkspacePayload{Title: "Default Workspace"},
+			AdditionalSettings: s.getAdditionalWorkspaceSettings(),
 		}, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
@@ -1386,4 +1388,23 @@ func getAccountRestriction(
 	}
 
 	return restriction, nil
+}
+
+// getAdditionalWorkspaceSettings returns extra settings to inject during workspace creation.
+// In SaaS mode with Gemini API key configured, injects AI settings.
+func (s *AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
+	var settings []store.AdditionalSetting
+	if s.profile.GeminiAPIKey != "" {
+		settings = append(settings, store.AdditionalSetting{
+			Name: storepb.SettingName_AI,
+			Payload: &storepb.AISetting{
+				Enabled:  true,
+				Provider: storepb.AISetting_GEMINI,
+				ApiKey:   s.profile.GeminiAPIKey,
+				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
+				Model:    "gemini-2.5-pro",
+			},
+		})
+	}
+	return settings
 }

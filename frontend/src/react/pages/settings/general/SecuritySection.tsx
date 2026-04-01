@@ -248,7 +248,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 <div className="relative w-60">
                   <input
                     type="number"
-                    className="w-full rounded-md border border-control-border px-3 py-1.5 pr-14 text-sm disabled:opacity-50"
+                    className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-14 text-sm disabled:opacity-50"
                     value={state.inputValue}
                     min={1}
                     step={1}
@@ -310,7 +310,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 {state.domains.map((domain, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-sm"
+                    className="inline-flex items-center gap-1 rounded-xs bg-gray-100 px-2 py-1.5 text-sm"
                   >
                     {domain}
                     <button
@@ -325,7 +325,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 ))}
                 <input
                   type="text"
-                  className="min-w-[20rem] rounded-md border border-control-border px-3 py-1.5 text-sm disabled:opacity-50"
+                  className="min-w-[20rem] rounded-xs border border-control-border px-3 py-1.5 text-sm disabled:opacity-50"
                   placeholder={t(
                     "settings.general.workspace.domain-restriction.domain-input-placeholder"
                   )}

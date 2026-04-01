@@ -9,8 +9,10 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/react/components/ui/alert";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules";
 import {
   AISetting_Provider,
@@ -81,8 +83,10 @@ export const AIAugmentationSection = forwardRef<
   const settingV1Store = useSettingV1Store();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const actuatorStore = useActuatorV1Store();
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const canView = hasWorkspacePermissionV2("bb.settings.get");
-  const canEdit = hasWorkspacePermissionV2("bb.settings.set");
+  const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
 
   const aiSetting = useVueState(() => {
     const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
@@ -217,171 +221,183 @@ export const AIAugmentationSection = forwardRef<
         </div>
       </div>
       <div className="flex-1 lg:px-4">
-        <div className="mt-4 lg:mt-0 flex flex-col gap-y-4">
-          {/* Enable toggle */}
-          <div>
-            <div className="flex items-center gap-x-2">
-              <input
-                type="checkbox"
-                checked={state.enabled}
-                disabled={!canEdit}
-                onChange={(e) => toggleEnabled(e.target.checked)}
-              />
-              <span className="font-medium">
-                {t(
-                  "settings.general.workspace.ai-assistant.enable-ai-assistant"
-                )}
-              </span>
-            </div>
-            <div className="mt-1 mb-3 text-sm text-gray-400">
-              {t("settings.general.workspace.ai-assistant.description")}{" "}
-              <a
-                href="https://docs.bytebase.com/ai-assistant?source=console"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline text-sm ml-1"
-              >
-                {t("common.learn-more")}
-              </a>
-            </div>
-          </div>
-
-          {/* Collapsible fields when enabled */}
-          {state.enabled && (
-            <>
-              {/* Provider */}
-              <div>
-                <label className="flex items-center gap-x-2 mb-2">
-                  <span className="font-medium">
-                    {t("settings.general.workspace.ai-assistant.provider.self")}
-                  </span>
-                </label>
-                <select
-                  className="w-48 border border-control-border rounded-sm px-3 py-1.5 text-sm bg-white disabled:opacity-50"
-                  value={state.provider}
+        {isSaaSMode ? (
+          <Alert variant="info">
+            {t("settings.general.workspace.ai-assistant.enabled-in-saas")}
+          </Alert>
+        ) : (
+          <div className="mt-4 lg:mt-0 flex flex-col gap-y-4">
+            {/* Enable toggle */}
+            <div>
+              <div className="flex items-center gap-x-2">
+                <input
+                  type="checkbox"
+                  checked={state.enabled}
                   disabled={!canEdit}
-                  onChange={(e) =>
-                    onProviderChange(
-                      Number(e.target.value) as AISetting_Provider
-                    )
-                  }
+                  onChange={(e) => toggleEnabled(e.target.checked)}
+                />
+                <span className="font-medium">
+                  {t(
+                    "settings.general.workspace.ai-assistant.enable-ai-assistant"
+                  )}
+                </span>
+              </div>
+              <div className="mt-1 mb-3 text-sm text-gray-400">
+                {t("settings.general.workspace.ai-assistant.description")}{" "}
+                <a
+                  href="https://docs.bytebase.com/ai-assistant?source=console"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline text-sm ml-1"
                 >
-                  {PROVIDER_OPTIONS.map((provider) => (
-                    <option key={provider} value={provider}>
-                      {provider === AISetting_Provider.OPEN_AI &&
-                        t(
-                          "settings.general.workspace.ai-assistant.provider.open_ai"
-                        )}
-                      {provider === AISetting_Provider.AZURE_OPENAI &&
-                        t(
-                          "settings.general.workspace.ai-assistant.provider.azure_open_ai"
-                        )}
-                      {provider === AISetting_Provider.GEMINI &&
-                        t(
-                          "settings.general.workspace.ai-assistant.provider.gemini"
-                        )}
-                      {provider === AISetting_Provider.CLAUDE &&
-                        t(
-                          "settings.general.workspace.ai-assistant.provider.claude"
-                        )}
-                    </option>
-                  ))}
-                </select>
+                  {t("common.learn-more")}
+                </a>
               </div>
+            </div>
 
-              {/* API Key */}
-              <div>
-                <label className="flex items-center gap-x-2">
-                  <span className="font-medium">
-                    {t("settings.general.workspace.ai-assistant.api-key.self")}
-                  </span>
-                </label>
-                <div className="mb-3 text-sm text-gray-400">
-                  {t(
-                    "settings.general.workspace.ai-assistant.api-key.description",
-                    {
-                      viewDoc: "__LINK__",
-                      interpolation: { escapeValue: false },
+            {/* Collapsible fields when enabled */}
+            {state.enabled && (
+              <>
+                {/* Provider */}
+                <div>
+                  <label className="flex items-center gap-x-2 mb-2">
+                    <span className="font-medium">
+                      {t(
+                        "settings.general.workspace.ai-assistant.provider.self"
+                      )}
+                    </span>
+                  </label>
+                  <select
+                    className="w-48 border border-control-border rounded-xs px-3 py-1.5 text-sm bg-white disabled:opacity-50"
+                    value={state.provider}
+                    disabled={!canEdit}
+                    onChange={(e) =>
+                      onProviderChange(
+                        Number(e.target.value) as AISetting_Provider
+                      )
                     }
-                  )
-                    .split("__LINK__")
-                    .map((part, i) => (
-                      <span key={i}>
-                        {part}
-                        {i === 0 && (
-                          <a
-                            href={providerDefault.apiKeyDoc}
-                            className="normal-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {t(
-                              "settings.general.workspace.ai-assistant.api-key.find-my-key"
-                            )}
-                          </a>
-                        )}
-                      </span>
+                  >
+                    {PROVIDER_OPTIONS.map((provider) => (
+                      <option key={provider} value={provider}>
+                        {provider === AISetting_Provider.OPEN_AI &&
+                          t(
+                            "settings.general.workspace.ai-assistant.provider.open_ai"
+                          )}
+                        {provider === AISetting_Provider.AZURE_OPENAI &&
+                          t(
+                            "settings.general.workspace.ai-assistant.provider.azure_open_ai"
+                          )}
+                        {provider === AISetting_Provider.GEMINI &&
+                          t(
+                            "settings.general.workspace.ai-assistant.provider.gemini"
+                          )}
+                        {provider === AISetting_Provider.CLAUDE &&
+                          t(
+                            "settings.general.workspace.ai-assistant.provider.claude"
+                          )}
+                      </option>
                     ))}
+                  </select>
                 </div>
-                <Input
-                  value={state.apiKey}
-                  disabled={!canEdit}
-                  placeholder={t(
-                    "settings.general.workspace.ai-assistant.api-key.placeholder"
-                  )}
-                  onChange={(e) =>
-                    setState((s) => ({ ...s, apiKey: e.target.value }))
-                  }
-                />
-              </div>
 
-              {/* Endpoint */}
-              <div>
-                <label className="flex items-center gap-x-2">
-                  <span className="font-medium">
-                    {t("settings.general.workspace.ai-assistant.endpoint.self")}
-                  </span>
-                </label>
-                <div className="mb-3 text-sm text-gray-400">
-                  {t(
-                    "settings.general.workspace.ai-assistant.endpoint.description"
-                  )}
+                {/* API Key */}
+                <div>
+                  <label className="flex items-center gap-x-2">
+                    <span className="font-medium">
+                      {t(
+                        "settings.general.workspace.ai-assistant.api-key.self"
+                      )}
+                    </span>
+                  </label>
+                  <div className="mb-3 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.ai-assistant.api-key.description",
+                      {
+                        viewDoc: "__LINK__",
+                        interpolation: { escapeValue: false },
+                      }
+                    )
+                      .split("__LINK__")
+                      .map((part, i) => (
+                        <span key={i}>
+                          {part}
+                          {i === 0 && (
+                            <a
+                              href={providerDefault.apiKeyDoc}
+                              className="normal-link"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {t(
+                                "settings.general.workspace.ai-assistant.api-key.find-my-key"
+                              )}
+                            </a>
+                          )}
+                        </span>
+                      ))}
+                  </div>
+                  <Input
+                    value={state.apiKey}
+                    disabled={!canEdit}
+                    placeholder={t(
+                      "settings.general.workspace.ai-assistant.api-key.placeholder"
+                    )}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, apiKey: e.target.value }))
+                    }
+                  />
                 </div>
-                <Input
-                  value={state.endpoint}
-                  required
-                  disabled={!canEdit}
-                  placeholder={providerDefault.endpoint}
-                  onChange={(e) =>
-                    setState((s) => ({ ...s, endpoint: e.target.value }))
-                  }
-                />
-              </div>
 
-              {/* Model */}
-              <div>
-                <label className="flex items-center gap-x-2">
-                  <span className="font-medium">
-                    {t("settings.general.workspace.ai-assistant.model.self")}
-                  </span>
-                </label>
-                <div className="mb-3 text-sm text-gray-400">
-                  {t(
-                    "settings.general.workspace.ai-assistant.model.description"
-                  )}
+                {/* Endpoint */}
+                <div>
+                  <label className="flex items-center gap-x-2">
+                    <span className="font-medium">
+                      {t(
+                        "settings.general.workspace.ai-assistant.endpoint.self"
+                      )}
+                    </span>
+                  </label>
+                  <div className="mb-3 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.ai-assistant.endpoint.description"
+                    )}
+                  </div>
+                  <Input
+                    value={state.endpoint}
+                    required
+                    disabled={!canEdit}
+                    placeholder={providerDefault.endpoint}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, endpoint: e.target.value }))
+                    }
+                  />
                 </div>
-                <Input
-                  value={state.model}
-                  required
-                  disabled={!canEdit}
-                  onChange={(e) =>
-                    setState((s) => ({ ...s, model: e.target.value }))
-                  }
-                />
-              </div>
-            </>
-          )}
-        </div>
+
+                {/* Model */}
+                <div>
+                  <label className="flex items-center gap-x-2">
+                    <span className="font-medium">
+                      {t("settings.general.workspace.ai-assistant.model.self")}
+                    </span>
+                  </label>
+                  <div className="mb-3 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.ai-assistant.model.description"
+                    )}
+                  </div>
+                  <Input
+                    value={state.model}
+                    required
+                    disabled={!canEdit}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, model: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

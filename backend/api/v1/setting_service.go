@@ -531,6 +531,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = storeSemanticTypeSetting
 	case storepb.SettingName_AI:
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the AI setting cannot be changed in SaaS mode"))
+		}
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
