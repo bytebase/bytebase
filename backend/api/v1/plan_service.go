@@ -765,77 +765,201 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		return nil, nil
 	}
 
-	// Batch-fetch issues and plan check runs to avoid N+1 queries.
-	planUIDs := make([]int64, len(plans))
-	for i, p := range plans {
-		planUIDs[i] = int64(p.UID)
+	type planKey struct {
+		projectID string
+		planUID   int64
 	}
 
-	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{plans[0].ProjectID}, PlanUIDs: &planUIDs})
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	planUIDs := make([]int64, 0, len(plans))
+	projectIDSet := make(map[string]struct{}, len(plans))
+	hasRollout := false
+	for _, plan := range plans {
+		planUIDs = append(planUIDs, plan.UID)
+		projectIDSet[plan.ProjectID] = struct{}{}
+		hasRollout = hasRollout || (plan.Config != nil && plan.Config.HasRollout)
+	}
+	projectIDs := make([]string, 0, len(projectIDSet))
+	for projectID := range projectIDSet {
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{
+		Workspace:  workspaceID,
+		ProjectIDs: projectIDs,
+		PlanUIDs:   &planUIDs,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
-	issueByPlanUID := make(map[int64]*store.IssueMessage, len(issues))
+	issueByPlanKey := make(map[planKey]*store.IssueMessage, len(issues))
 	for _, issue := range issues {
 		if issue.PlanUID != nil {
-			issueByPlanUID[*issue.PlanUID] = issue
+			issueByPlanKey[planKey{projectID: issue.ProjectID, planUID: *issue.PlanUID}] = issue
 		}
 	}
 
-	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{ProjectID: plans[0].ProjectID, PlanUIDs: &planUIDs})
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		ProjectIDs: &projectIDs,
+		PlanUIDs:   &planUIDs,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list plan check runs")
 	}
-	planCheckRunByPlanUID := make(map[int64]*store.PlanCheckRunMessage, len(planCheckRuns))
+	planCheckRunByPlanKey := make(map[planKey]*store.PlanCheckRunMessage, len(planCheckRuns))
 	for _, run := range planCheckRuns {
-		planCheckRunByPlanUID[run.PlanUID] = run
+		planCheckRunByPlanKey[planKey{projectID: run.ProjectID, planUID: run.PlanUID}] = run
+	}
+
+	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
+	environmentOrderMap := map[string]int{}
+	if hasRollout {
+		environmentSetting, err := s.GetEnvironment(ctx, workspaceID)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get environments")
+		}
+		for i, env := range environmentSetting.GetEnvironments() {
+			environmentOrderMap[env.Id] = i
+		}
+
+		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, planUIDs)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to batch list task status counts")
+		}
+		for _, count := range taskStatusCounts {
+			key := planKey{projectID: count.ProjectID, planUID: count.PlanID}
+			taskStatusCountByPlanKey[key] = append(taskStatusCountByPlanKey[key], count)
+		}
 	}
 
 	v1Plans := make([]*v1pb.Plan, len(plans))
 	for i, plan := range plans {
-		planUID := int64(plan.UID)
-		v1Plans[i] = buildV1Plan(plan, issueByPlanUID[planUID], planCheckRunByPlanUID[planUID])
+		key := planKey{projectID: plan.ProjectID, planUID: plan.UID}
+		v1Plan := buildV1PlanFields(plan)
+
+		if issue := issueByPlanKey[key]; issue != nil {
+			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
+			v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+		}
+
+		if planCheckRun := planCheckRunByPlanKey[key]; planCheckRun != nil {
+			v1Plan.PlanCheckRunStatusCount[string(planCheckRun.Status)]++
+			for _, result := range planCheckRun.Result.Results {
+				v1Plan.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
+			}
+		}
+
+		if counts := taskStatusCountByPlanKey[key]; len(counts) > 0 {
+			v1Plan.RolloutStageSummaries = buildRolloutStageSummaries(plan.ProjectID, plan.UID, counts, environmentOrderMap)
+		}
+
+		v1Plans[i] = v1Plan
 	}
 	return v1Plans, nil
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{plan.ProjectID}, PlanUID: &plan.UID})
+	plans, err := convertToPlans(ctx, s, []*store.PlanMessage{plan})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
+		return nil, err
 	}
-	planCheckRun, err := s.GetPlanCheckRun(ctx, plan.ProjectID, int64(plan.UID))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)
-	}
-	return buildV1Plan(plan, issue, planCheckRun), nil
+	return plans[0], nil
 }
 
-func buildV1Plan(plan *store.PlanMessage, issue *store.IssueMessage, planCheckRun *store.PlanCheckRunMessage) *v1pb.Plan {
+func buildV1PlanFields(plan *store.PlanMessage) *v1pb.Plan {
+	var specs []*v1pb.Plan_Spec
+	if plan.Config != nil {
+		specs = convertToPlanSpecs(plan.ProjectID, plan.Config.Specs)
+	}
+
 	p := &v1pb.Plan{
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
-		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs),
+		Specs:                   specs,
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
 		State:                   convertDeletedToState(plan.Deleted),
 		PlanCheckRunStatusCount: map[string]int32{},
 	}
-	if issue != nil {
-		p.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
-	}
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
 	}
-	if planCheckRun != nil {
-		p.PlanCheckRunStatusCount[string(planCheckRun.Status)]++
-		for _, result := range planCheckRun.Result.Results {
-			p.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
-		}
-	}
 	return p
+}
+
+func buildRolloutStageSummaries(projectID string, planUID int64, counts []*store.TaskStatusCount, environmentOrderMap map[string]int) []*v1pb.Plan_RolloutStageSummary {
+	summariesByEnvironment := make(map[string]map[v1pb.Task_Status]int32)
+	for _, count := range counts {
+		if _, exists := environmentOrderMap[count.Environment]; !exists {
+			continue
+		}
+		status, ok := convertTaskRunStatusStringToAPITaskStatus(count.Status)
+		if !ok {
+			continue
+		}
+		if _, exists := summariesByEnvironment[count.Environment]; !exists {
+			summariesByEnvironment[count.Environment] = make(map[v1pb.Task_Status]int32)
+		}
+		summariesByEnvironment[count.Environment][status] += count.Count
+	}
+
+	environments := make([]string, 0, len(summariesByEnvironment))
+	for environment := range summariesByEnvironment {
+		environments = append(environments, environment)
+	}
+	slices.SortFunc(environments, func(a, b string) int {
+		return environmentOrderMap[a] - environmentOrderMap[b]
+	})
+
+	summaries := make([]*v1pb.Plan_RolloutStageSummary, 0, len(environments))
+	for _, environment := range environments {
+		stageID := common.FormatStageID(environment)
+		statusCounts := make([]*v1pb.Plan_TaskStatusCount, 0, len(summariesByEnvironment[environment]))
+		for _, status := range []v1pb.Task_Status{
+			v1pb.Task_NOT_STARTED,
+			v1pb.Task_PENDING,
+			v1pb.Task_RUNNING,
+			v1pb.Task_DONE,
+			v1pb.Task_FAILED,
+			v1pb.Task_CANCELED,
+			v1pb.Task_SKIPPED,
+		} {
+			if count, exists := summariesByEnvironment[environment][status]; exists {
+				statusCounts = append(statusCounts, &v1pb.Plan_TaskStatusCount{
+					Status: status,
+					Count:  count,
+				})
+			}
+		}
+		summaries = append(summaries, &v1pb.Plan_RolloutStageSummary{
+			Stage:            common.FormatStage(projectID, planUID, stageID),
+			TaskStatusCounts: statusCounts,
+		})
+	}
+	return summaries
+}
+
+func convertTaskRunStatusStringToAPITaskStatus(status string) (v1pb.Task_Status, bool) {
+	switch status {
+	case storepb.TaskRun_NOT_STARTED.String():
+		return v1pb.Task_NOT_STARTED, true
+	case storepb.TaskRun_PENDING.String():
+		return v1pb.Task_PENDING, true
+	case storepb.TaskRun_RUNNING.String():
+		return v1pb.Task_RUNNING, true
+	case storepb.TaskRun_DONE.String():
+		return v1pb.Task_DONE, true
+	case storepb.TaskRun_FAILED.String():
+		return v1pb.Task_FAILED, true
+	case storepb.TaskRun_CANCELED.String():
+		return v1pb.Task_CANCELED, true
+	case storepb.TaskRun_SKIPPED.String():
+		return v1pb.Task_SKIPPED, true
+	default:
+		return v1pb.Task_STATUS_UNSPECIFIED, false
+	}
 }
 
 func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {

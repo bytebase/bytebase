@@ -11,6 +11,8 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/issue_service.proto";
+import "v1/rollout_service.proto";
 import "v1/sql_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -241,6 +243,14 @@ message Plan {
   // Whether the plan has started the rollout.
   bool has_rollout = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The approval status of the linked issue.
+  // Unspecified when no linked issue exists.
+  Issue.ApprovalStatus approval_status = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Per-stage rollout status summary.
+  // Ordered by environment deployment order. Empty when no rollout exists.
+  repeated RolloutStageSummary rollout_stage_summaries = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
@@ -293,6 +303,21 @@ message Plan {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
+  }
+
+  message RolloutStageSummary {
+    // The stage resource name.
+    // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+    string stage = 1;
+    // Task status counts for this stage.
+    repeated TaskStatusCount task_status_counts = 2;
+  }
+
+  message TaskStatusCount {
+    // The task status.
+    Task.Status status = 1;
+    // The number of tasks in the status.
+    int32 count = 2;
   }
 }
 
