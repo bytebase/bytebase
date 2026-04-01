@@ -14,10 +14,7 @@ func TestNewClientWithOptionsUsesServiceAccountAuth(t *testing.T) {
 	t.Parallel()
 
 	httpClient := &http.Client{}
-	client, err := newClient("https://example.com", clientAuth{
-		serviceAccount:       "sa@example.com",
-		serviceAccountSecret: "secret",
-	}, clientOptions{
+	client, err := newClient("https://example.com", "", "sa@example.com", "secret", clientOptions{
 		httpClient: httpClient,
 		pageSize:   -1,
 	})
@@ -36,7 +33,7 @@ func TestNewClientWithOptionsUsesServiceAccountAuth(t *testing.T) {
 func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	t.Parallel()
 
-	client, err := newClient("https://example.com", clientAuth{accessToken: "token"}, defaultClientOptions())
+	client, err := newClient("https://example.com", "token", "", "", defaultClientOptions())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

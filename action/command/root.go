@@ -56,20 +56,18 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 	}
 }
 
+// newClientFromWorld creates a client using the authentication configured in World.
 func newClientFromWorld(w *world.World) (*client, error) {
 	options := defaultClientOptions()
 	if w.Timeout > 0 {
 		options.timeout = w.Timeout
 	}
 
-	auth := clientAuth{
-		serviceAccount:       w.ServiceAccount,
-		serviceAccountSecret: w.ServiceAccountSecret,
-	}
+	// Access tokens take precedence when both auth modes are populated.
 	if w.AccessToken != "" {
-		auth = clientAuth{accessToken: w.AccessToken}
+		return newClient(w.URL, w.AccessToken, "", "", options)
 	}
-	return newClient(w.URL, auth, options)
+	return newClient(w.URL, "", w.ServiceAccount, w.ServiceAccountSecret, options)
 }
 
 func checkVersionCompatibility(w *world.World, client *client, cliVersion string) {

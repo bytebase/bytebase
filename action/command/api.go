@@ -16,19 +16,29 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
+// retryConfig controls retry behavior for transient errors.
 type retryConfig struct {
-	maxAttempts     int
+	// maxAttempts is the maximum number of retry attempts.
+	maxAttempts int
+	// initialInterval is the initial retry interval.
 	initialInterval time.Duration
-	maxInterval     time.Duration
+	// maxInterval is the maximum retry interval.
+	maxInterval time.Duration
 }
 
+// clientOptions configures client behavior.
 type clientOptions struct {
-	pageSize    int32
-	httpClient  *http.Client
-	timeout     time.Duration
+	// pageSize controls the number of items per page in list operations.
+	pageSize int32
+	// httpClient allows providing a custom HTTP client.
+	httpClient *http.Client
+	// timeout applies only if httpClient is not provided.
+	timeout time.Duration
+	// retryConfig controls retry behavior for transient errors.
 	retryConfig *retryConfig
 }
 
+// defaultClientOptions returns the default client options.
 func defaultClientOptions() clientOptions {
 	return clientOptions{
 		pageSize: 100,
@@ -41,6 +51,7 @@ func defaultClientOptions() clientOptions {
 	}
 }
 
+// client is the Bytebase API client used inside the action command package.
 type client struct {
 	// HTTP client for Connect RPC
 	httpClient *http.Client
@@ -62,13 +73,8 @@ type client struct {
 	options clientOptions
 }
 
-type clientAuth struct {
-	accessToken          string
-	serviceAccount       string
-	serviceAccountSecret string
-}
-
-func newClient(url string, auth clientAuth, opts clientOptions) (*client, error) {
+// newClient creates a client using either access-token or service-account authentication.
+func newClient(url, accessToken, serviceAccount, serviceAccountSecret string, opts clientOptions) (*client, error) {
 	if opts.pageSize <= 0 {
 		opts.pageSize = 100
 	}
@@ -86,24 +92,24 @@ func newClient(url string, auth clientAuth, opts clientOptions) (*client, error)
 	}
 
 	var tokenRefresher func(ctx context.Context) (string, error)
-	if auth.accessToken != "" {
+	if accessToken != "" {
 		// Use the provided access token directly; no refresh needed.
 		tokenRefresher = func(_ context.Context) (string, error) {
-			return auth.accessToken, nil
+			return accessToken, nil
 		}
 	} else {
-		tokenRefresher = getTokenRefresher(httpClient, auth.serviceAccount, auth.serviceAccountSecret, url)
+		tokenRefresher = getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
 	}
 
-	// Create unified interceptor
+	// Create unified interceptor.
 	unifiedInt := newUnifiedInterceptor(opts.retryConfig, tokenRefresher)
 	interceptors := connect.WithInterceptors(unifiedInt)
 
 	return &client{
 		httpClient:           httpClient,
 		url:                  url,
-		serviceAccount:       auth.serviceAccount,
-		serviceAccountSecret: auth.serviceAccountSecret,
+		serviceAccount:       serviceAccount,
+		serviceAccountSecret: serviceAccountSecret,
 		options:              opts,
 		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
