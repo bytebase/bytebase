@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { t as vueT } from "@/plugins/i18n";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -143,7 +142,7 @@ export function GeneralPage() {
 
     const removeGuard = router.beforeEach((_to, _from, next) => {
       if (allRefs.some((ref) => ref.current?.isDirty())) {
-        if (!window.confirm(vueT("common.leave-without-saving"))) {
+        if (!window.confirm(t("common.leave-without-saving"))) {
           next(false);
           return;
         }
