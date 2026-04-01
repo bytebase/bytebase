@@ -38,12 +38,12 @@
     "unassigned": "割り当てられていない",
     "archive": "アーカイブ",
     "restore": "復元する",
+    "delete-resource": "Delete {type}",
     "labels": "ラベル",
     "state": "ステート",
     "address": "接続先",
     "rows-per-page": "ページあたりの行数",
     "load-more": "もっと読み込む",
-    "delete-resource": "Delete {type}",
     "configure-now": "今すぐ設定する",
     "restored": "Restored",
     "archived": "アーカイブ済み",
@@ -686,6 +686,8 @@
       "sync-all": "すべてのデータベースを同期する",
       "sync-new": "新しいデータベースのみを同期する"
     },
+    "selected-n-instances_one": "{count} 個のインスタンスが選択されました",
+    "selected-n-instances_other": "{count} 個のインスタンスが選択されました",
     "advanced-search": {
       "scope": {
         "host": {
@@ -698,8 +700,7 @@
         }
       }
     },
-    "filter-instance-name": "インスタンス名のフィルタリング",
-    "selected-n-instances": "{n} 個のインスタンスが選択されました"
+    "filter-instance-name": "インスタンス名のフィルタリング"
   },
   "db": {
     "start-to-sync-schema": "スキーマの同期を開始します"
@@ -734,21 +735,21 @@
     },
     "batch": {
       "archive": {
-        "error": "プロジェクトをアーカイブできませんでした",
-        "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。",
         "success_one": "{count} 件のプロジェクトを正常にアーカイブしました",
         "success_other": "{count} 件のプロジェクトを正常にアーカイブしました",
+        "error": "プロジェクトをアーカイブできませんでした",
         "title_one": "{count} 件のプロジェクトをアーカイブしますか?",
-        "title_other": "{count} 件のプロジェクトをアーカイブしますか?"
+        "title_other": "{count} 件のプロジェクトをアーカイブしますか?",
+        "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。"
       },
       "delete": {
-        "error": "プロジェクトを削除できませんでした",
-        "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
-        "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。",
         "success_one": "{count} 件のプロジェクトを正常に削除しました",
         "success_other": "{count} 件のプロジェクトを正常に削除しました",
+        "error": "プロジェクトを削除できませんでした",
         "title_one": "{count} 件のプロジェクトを削除しますか?",
-        "title_other": "{count} 件のプロジェクトを削除しますか?"
+        "title_other": "{count} 件のプロジェクトを削除しますか?",
+        "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
+        "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       },
       "selected_one": "{count} 件のプロジェクトが選択されました",
       "selected_other": "{count} 件のプロジェクトが選択されました"

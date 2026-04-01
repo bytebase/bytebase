@@ -38,12 +38,12 @@
     "unassigned": "Chưa gán",
     "archive": "Lưu trữ",
     "restore": "Khôi phục",
+    "delete-resource": "Delete {type}",
     "labels": "Nhãn",
     "state": "Trạng thái",
     "address": "Địa chỉ",
     "rows-per-page": "Số dòng mỗi trang",
     "load-more": "Tải thêm",
-    "delete-resource": "Delete {type}",
     "configure-now": "Cấu hình ngay",
     "restored": "Restored",
     "archived": "Đã lưu trữ",
@@ -686,6 +686,8 @@
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu",
       "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
     },
+    "selected-n-instances_one": "{count} phiên bản đã chọn",
+    "selected-n-instances_other": "{count} phiên bản đã chọn",
     "advanced-search": {
       "scope": {
         "host": {
@@ -698,9 +700,7 @@
         }
       }
     },
-    "filter-instance-name": "Lọc tên phiên bản",
-    "selected-n-instances_one": "{count} phiên bản đã chọn",
-    "selected-n-instances_other": "{count} phiên bản đã chọn"
+    "filter-instance-name": "Lọc tên phiên bản"
   },
   "db": {
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ"
@@ -735,21 +735,21 @@
     },
     "batch": {
       "archive": {
-        "error": "Không lưu trữ được dự án",
-        "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
         "success_one": "Đã lưu trữ thành công {count} dự án",
         "success_other": "Đã lưu trữ thành công {count} dự án",
+        "error": "Không lưu trữ được dự án",
         "title_one": "Lưu trữ {count} Dự án?",
-        "title_other": "Lưu trữ {count} Dự án?"
+        "title_other": "Lưu trữ {count} Dự án?",
+        "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần."
       },
       "delete": {
-        "error": "Không xóa được dự án",
-        "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
-        "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn.",
         "success_one": "Đã xóa thành công {count} dự án",
         "success_other": "Đã xóa thành công {count} dự án",
+        "error": "Không xóa được dự án",
         "title_one": "Xóa {count} Dự án?",
-        "title_other": "Xóa {count} Dự án?"
+        "title_other": "Xóa {count} Dự án?",
+        "description": "Thao tác này sẽ xóa vĩnh viễn các dự án đã chọn và chuyển tất cả cơ sở dữ liệu sang dự án mặc định.",
+        "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
       },
       "selected_one": "{count} dự án đã chọn",
       "selected_other": "{count} dự án đã chọn"

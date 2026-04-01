@@ -38,12 +38,12 @@
     "unassigned": "Unassigned",
     "archive": "Archive",
     "restore": "Restore",
+    "delete-resource": "Delete {type}",
     "labels": "Labels",
     "state": "State",
     "address": "Address",
     "rows-per-page": "Rows per page",
     "load-more": "Load more",
-    "delete-resource": "Delete {type}",
     "configure-now": "Configure now",
     "restored": "Restored",
     "archived": "Archived",
@@ -686,6 +686,8 @@
       "sync-all": "Sync all databases",
       "sync-new": "Only sync new databases"
     },
+    "selected-n-instances_one": "{count} instance selected",
+    "selected-n-instances_other": "{count} instances selected",
     "advanced-search": {
       "scope": {
         "host": {
@@ -698,9 +700,7 @@
         }
       }
     },
-    "filter-instance-name": "Filter instance name",
-    "selected-n-instances_one": "{count} instance selected",
-    "selected-n-instances_other": "{count} instances selected"
+    "filter-instance-name": "Filter instance name"
   },
   "db": {
     "start-to-sync-schema": "Start to sync schema"
@@ -735,21 +735,21 @@
     },
     "batch": {
       "archive": {
-        "error": "Failed to archive projects",
-        "description": "This will archive the selected projects. You can restore them later if needed.",
         "success_one": "Successfully archived {count} project",
         "success_other": "Successfully archived {count} projects",
+        "error": "Failed to archive projects",
         "title_one": "Archive {count} Project?",
-        "title_other": "Archive {count} Projects?"
+        "title_other": "Archive {count} Projects?",
+        "description": "This will archive the selected projects. You can restore them later if needed."
       },
       "delete": {
-        "error": "Failed to delete projects",
-        "description": "This will permanently delete the selected projects and move all databases to the default project.",
-        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed.",
         "success_one": "Successfully deleted {count} project",
         "success_other": "Successfully deleted {count} projects",
+        "error": "Failed to delete projects",
         "title_one": "Delete {count} Project?",
-        "title_other": "Delete {count} Projects?"
+        "title_other": "Delete {count} Projects?",
+        "description": "This will permanently delete the selected projects and move all databases to the default project.",
+        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
       },
       "selected_one": "{count} project selected",
       "selected_other": "{count} projects selected"

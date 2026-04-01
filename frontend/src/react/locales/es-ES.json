@@ -38,12 +38,12 @@
     "unassigned": "No asignado",
     "archive": "Archivo",
     "restore": "Restaurar",
+    "delete-resource": "Delete {type}",
     "labels": "Etiquetas",
     "state": "Estado",
     "address": "Dirección",
     "rows-per-page": "Filas por página",
     "load-more": "Cargar más",
-    "delete-resource": "Delete {type}",
     "configure-now": "Configurar ahora",
     "restored": "Restored",
     "archived": "Archivada",
@@ -686,6 +686,8 @@
       "sync-all": "Sincronizar todas las bases de datos",
       "sync-new": "Sincronizar únicamente bases de datos nuevas"
     },
+    "selected-n-instances_one": "{count} instancia seleccionada",
+    "selected-n-instances_other": "{count} instancias seleccionadas",
     "advanced-search": {
       "scope": {
         "host": {
@@ -698,9 +700,7 @@
         }
       }
     },
-    "filter-instance-name": "Filtrar nombre de instancia",
-    "selected-n-instances_one": "{count} instancia seleccionada",
-    "selected-n-instances_other": "{count} instancias seleccionadas"
+    "filter-instance-name": "Filtrar nombre de instancia"
   },
   "db": {
     "start-to-sync-schema": "Comenzar a sincronizar el esquema"
@@ -735,21 +735,21 @@
     },
     "batch": {
       "archive": {
-        "error": "No se pudieron archivar los proyectos",
-        "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas.",
         "success_one": "Proyecto {count} archivado correctamente",
         "success_other": "Proyectos {count} archivados correctamente",
+        "error": "No se pudieron archivar los proyectos",
         "title_one": "¿Archivar {count} Proyecto?",
-        "title_other": "¿Archivar {count} Proyectos?"
+        "title_other": "¿Archivar {count} Proyectos?",
+        "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas."
       },
       "delete": {
-        "error": "No se pudieron eliminar los proyectos",
-        "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
-        "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente.",
         "success_one": "Proyecto {count} eliminado correctamente",
         "success_other": "Proyectos {count} eliminados correctamente",
+        "error": "No se pudieron eliminar los proyectos",
         "title_one": "¿Eliminar {count} Proyecto?",
-        "title_other": "¿Eliminar {count} Proyectos?"
+        "title_other": "¿Eliminar {count} Proyectos?",
+        "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
+        "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
       },
       "selected_one": "{count} proyecto seleccionado",
       "selected_other": "{count} proyectos seleccionados"

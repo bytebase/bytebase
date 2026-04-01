@@ -1,6 +1,21 @@
+import { writeFileSync } from "fs";
+import { resolve } from "path";
 import vueI18n from "@intlify/eslint-plugin-vue-i18n";
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
+import i18nextNoUndefined from "eslint-plugin-i18next-no-undefined-translation-keys";
 import pluginVue from "eslint-plugin-vue";
+
+// Generate namespace mapping with absolute path for the no-undefined-translation-keys plugin.
+// The plugin uses require() internally, which needs absolute paths.
+const reactLocalesDir = resolve(import.meta.dirname, "src/react/locales");
+const namespaceMappingPath = resolve(
+  import.meta.dirname,
+  "react-i18n-namespace-mapping.json"
+);
+writeFileSync(
+  namespaceMappingPath,
+  JSON.stringify({ default: resolve(reactLocalesDir, "en-US.json") }) + "\n"
+);
 
 export default [
   ...pluginVue.configs["flat/essential"],
@@ -15,6 +30,22 @@ export default [
   ...vueI18n.configs["flat/recommended"],
   {
     ignores: ["**/dist/**", "**/node_modules/**", "**/proto-es/**"],
+  },
+  // React i18n: detect missing translation keys in .tsx files
+  {
+    files: ["src/react/**/*.tsx"],
+    plugins: {
+      "i18next-no-undefined-translation-keys": i18nextNoUndefined,
+    },
+    rules: {
+      "i18next-no-undefined-translation-keys/no-undefined-translation-keys": [
+        "error",
+        {
+          namespaceTranslationMappingFile: namespaceMappingPath,
+          defaultNamespace: "default",
+        },
+      ],
+    },
   },
   {
     rules: {

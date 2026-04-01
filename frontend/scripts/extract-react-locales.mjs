@@ -135,21 +135,6 @@ function unflatten(flat) {
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// 6. Process a single value: resolve links, handle pluralization
-// ---------------------------------------------------------------------------
-function processValue(key, value, flat, output) {
-  if (value.includes(" | ")) {
-    const parts = value.split(" | ");
-    const singular = resolveLinked(parts[0].trim(), flat);
-    const plural = resolveLinked(parts[parts.length - 1].trim(), flat);
-    // Normalize {n} to {count} for i18next pluralization
-    output[`${key}_one`] = singular.replace(/\{n\}/g, "{count}");
-    output[`${key}_other`] = plural.replace(/\{n\}/g, "{count}");
-  } else {
-    output[key] = resolveLinked(value, flat);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 7. Main
@@ -159,8 +144,7 @@ console.log(`Found ${reactKeys.size} unique translation keys in React code.`);
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-for (const locale of LOCALES) {
-  // Deep-merge all source files (main has a subscription key too)
+function loadMergedFlat(locale) {
   const main = JSON.parse(
     readFileSync(`${LOCALES_DIR}/${locale}.json`, "utf-8")
   );
@@ -170,23 +154,64 @@ for (const locale of LOCALES) {
   const dynamic = JSON.parse(
     readFileSync(`${LOCALES_DIR}/dynamic/${locale}.json`, "utf-8")
   );
+  return flatten(deepMerge({}, main, { subscription: sub }, { dynamic }));
+}
 
-  const merged = deepMerge({}, main, { subscription: sub }, { dynamic });
-  const flat = flatten(merged);
+// First pass: determine which keys are pluralized in en-US (the reference locale).
+// Other locales that lack pluralization (e.g. zh-CN) must still emit _one/_other
+// to keep the key set consistent across all locales.
+const enUSFlat = loadMergedFlat("en-US");
+const pluralizedKeys = new Set();
+for (const key of reactKeys) {
+  const raw = enUSFlat[key];
+  if (raw !== undefined && String(raw).includes(" | ")) {
+    pluralizedKeys.add(key);
+  }
+}
+for (const [fkey, fval] of Object.entries(enUSFlat)) {
+  if (
+    DYNAMIC_PREFIXES.some((p) => fkey.startsWith(p)) &&
+    String(fval).includes(" | ")
+  ) {
+    pluralizedKeys.add(fkey);
+  }
+}
 
+// Process a value, forcing pluralization split when en-US has it
+function processValueConsistent(key, value, flat, output) {
+  if (value.includes(" | ")) {
+    // This locale has pluralization — split normally
+    const parts = value.split(" | ");
+    const singular = resolveLinked(parts[0].trim(), flat);
+    const plural = resolveLinked(parts[parts.length - 1].trim(), flat);
+    output[`${key}_one`] = singular.replace(/\{n\}/g, "{count}");
+    output[`${key}_other`] = plural.replace(/\{n\}/g, "{count}");
+  } else if (pluralizedKeys.has(key)) {
+    // en-US pluralizes this key but this locale doesn't — emit both _one/_other
+    // with the same resolved value to keep key sets consistent
+    const resolved = resolveLinked(value, flat).replace(/\{n\}/g, "{count}");
+    output[`${key}_one`] = resolved;
+    output[`${key}_other`] = resolved;
+  } else {
+    output[key] = resolveLinked(value, flat);
+  }
+}
+
+for (const locale of LOCALES) {
+  const flat = loadMergedFlat(locale);
   const output = {};
 
   // Static keys extracted from source code
   for (const key of reactKeys) {
     const raw = flat[key];
     if (raw === undefined) continue;
-    processValue(key, String(raw), flat, output);
+    processValueConsistent(key, String(raw), flat, output);
   }
 
   // Dynamic prefix keys — copy entire subtrees
   for (const [fkey, fval] of Object.entries(flat)) {
     if (DYNAMIC_PREFIXES.some((p) => fkey.startsWith(p))) {
-      processValue(fkey, String(fval), flat, output);
+      processValueConsistent(fkey, String(fval), flat, output);
     }
   }
 
