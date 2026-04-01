@@ -2331,9 +2331,7 @@
     "usage": {
       "instance-count": {
         "title": "Giới hạn số lượng phiên bản",
-        "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại {count} phiên bản.",
-        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình.",
-        "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch phiên bản."
+        "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình."
       },
       "user-count": {
         "title": "Giới hạn số lượng người dùng",

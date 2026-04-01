@@ -19,6 +19,7 @@ type World struct {
 	// bytebase-action flags
 	Output               string
 	URL                  string
+	Timeout              time.Duration
 	ServiceAccount       string
 	ServiceAccountSecret string
 	AccessToken          string // Alternative to service account auth, e.g. from workload identity exchange
