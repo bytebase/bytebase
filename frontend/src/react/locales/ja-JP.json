@@ -706,9 +706,9 @@
     "start-to-sync-schema": "スキーマの同期を開始します"
   },
   "quick-action": {
-    "add-instance": "common.instance@:common.add",
-    "create-project": "common.create@:common.project",
-    "new-project": "common.new@:common.project"
+    "add-instance": "インスタンス追加",
+    "create-project": "作成するプロジェクト",
+    "new-project": "作成するプロジェクト"
   },
   "landing": {
     "quick-link": {

@@ -98,7 +98,8 @@ function deepMerge(target, ...sources) {
 // 4. Resolve vue-i18n @:linked messages
 // ---------------------------------------------------------------------------
 function resolveLinked(value, flat) {
-  return value.replace(/@:(?:\{'([^']+)'\}|(\S+))/g, (_m, quoted, plain) => {
+  // Match @:{'quoted.key'} or @:dotted.key (stop at whitespace or next @)
+  return value.replace(/@:(?:\{'([^']+)'\}|([^\s@]+))/g, (_m, quoted, plain) => {
     const ref = quoted ?? plain;
     const resolved = flat[ref];
     if (resolved === undefined) return ref;

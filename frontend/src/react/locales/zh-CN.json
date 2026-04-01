@@ -706,9 +706,9 @@
     "start-to-sync-schema": "开始同步 schema"
   },
   "quick-action": {
-    "add-instance": "common.add@:common.instance",
-    "create-project": "common.create@:common.project",
-    "new-project": "common.new@:common.project"
+    "add-instance": "添加实例",
+    "create-project": "创建项目",
+    "new-project": "创建项目"
   },
   "landing": {
     "quick-link": {
