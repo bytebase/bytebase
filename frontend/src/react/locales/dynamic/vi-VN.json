@@ -1,0 +1,348 @@
+{
+  "settings": {
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "title": "Mặc định",
+            "description": "Loại mặc định với che giấu toàn bộ",
+            "algorithm": {
+              "title": "Che giấu toàn bộ",
+              "description": "Tất cả các giá trị sẽ được che giấu thành \"******\""
+            }
+          },
+          "bb-default-partial": {
+            "title": "Mặc định một phần",
+            "description": "Loại mặc định một phần với che giấu một phần",
+            "algorithm": {
+              "title": "Che giấu phạm vi",
+              "description": "Chỉ giữ lại dữ liệu thô ở giữa và che phần đầu và phần cuối bằng \"**\".\nVí dụ: \"address\" sẽ được che giấu thành \"**dre**\"."
+            }
+          }
+        }
+      }
+    }
+  },
+  "subscription": {
+    "features": {
+      "FEATURE_DATABASE_CHANGE": {
+        "title": "Thay đổi cơ sở dữ liệu",
+        "desc": "Chức năng quản lý thay đổi cơ sở dữ liệu cốt lõi."
+      },
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "title": "Kiểm soát phiên bản schema dựa trên Git",
+        "desc": "Xem xét các thay đổi SQL trong pull request VCS với kiểm tra tự động."
+      },
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "title": "Di chuyển schema khai báo",
+        "desc": "Xác định trạng thái schema mong muốn và để Bytebase xử lý việc di chuyển."
+      },
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "title": "So sánh và đồng bộ schema",
+        "desc": "So sánh schema giữa các cơ sở dữ liệu và đồng bộ hóa sự khác biệt."
+      },
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "title": "Thay đổi schema trực tuyến",
+        "desc": "Thực hiện thay đổi schema trên các bảng lớn với khóa tối thiểu."
+      },
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "title": "Đánh giá SQL",
+        "desc": "Thực thi các phương pháp hay nhất cho SQL với hơn 100 quy tắc lint và kiểm tra tính nhất quán của schema."
+      },
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "title": "Sao lưu tự động",
+        "desc": "Tự động sao lưu dữ liệu trước khi thực hiện thay đổi."
+      },
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "title": "Khôi phục dữ liệu một cú nhấp chuột",
+        "desc": "Nhanh chóng khôi phục các thay đổi dữ liệu chỉ với một cú nhấp chuột."
+      },
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "title": "Thay đổi hàng loạt nhiều cơ sở dữ liệu",
+        "desc": "Áp dụng cùng một thay đổi cho nhiều cơ sở dữ liệu trên các tenant hoặc phân vùng khác nhau."
+      },
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "title": "Triển khai môi trường tuần tự",
+        "desc": "Triển khai thay đổi tuần tự qua các môi trường khác nhau."
+      },
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "title": "Thời gian triển khai theo lịch",
+        "desc": "Lên lịch thay đổi cơ sở dữ liệu để chạy vào thời gian cụ thể."
+      },
+      "FEATURE_DATABASE_CHANGELOG": {
+        "title": "Nhật ký thay đổi cơ sở dữ liệu",
+        "desc": "Theo dõi tất cả các thay đổi schema và dữ liệu của cơ sở dữ liệu."
+      },
+      "FEATURE_ROLLOUT_POLICY": {
+        "title": "Chính sách triển khai",
+        "desc": "Kiểm soát việc tác vụ thay đổi schema có yêu cầu triển khai thủ công hay không."
+      },
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "title": "Trình soạn thảo SQL trên web",
+        "desc": "Thực thi các truy vấn SQL trực tiếp từ giao diện web."
+      },
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "title": "Chế độ quản trị SQL editor",
+        "desc": "Truy cập các chức năng quản trị trong trình soạn thảo SQL."
+      },
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "title": "Ngôn ngữ tự nhiên sang SQL",
+        "desc": "Chuyển đổi truy vấn ngôn ngữ tự nhiên sang SQL bằng AI."
+      },
+      "FEATURE_AI_QUERY_EXPLANATION": {
+        "title": "Giải thích truy vấn AI",
+        "desc": "Nhận giải thích bằng AI cho các truy vấn SQL phức tạp."
+      },
+      "FEATURE_AI_QUERY_SUGGESTIONS": {
+        "title": "Gợi ý truy vấn AI",
+        "desc": "Nhận gợi ý truy vấn và khuyến nghị chỉ mục được hỗ trợ bởi AI."
+      },
+      "FEATURE_AUTO_COMPLETE": {
+        "title": "Tự động hoàn thành",
+        "desc": "Tự động hoàn thành SQL thông minh trong trình soạn thảo."
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "title": "Sơ đồ schema",
+        "desc": "Trực quan hóa schema cơ sở dữ liệu với sơ đồ tương tác."
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "title": "Trình chỉnh sửa schema",
+        "desc": "Chỉnh sửa schema trực quan với giao diện kéo và thả."
+      },
+      "FEATURE_DATA_EXPORT": {
+        "title": "Xuất dữ liệu",
+        "desc": "Xuất kết quả truy vấn ở nhiều định dạng khác nhau."
+      },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "title": "Xuất dữ liệu ngoại tuyến",
+        "desc": "Xuất dữ liệu để sử dụng và phân tích ngoại tuyến."
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "title": "Lịch sử truy vấn",
+        "desc": "Truy cập lịch sử thực thi truy vấn đầy đủ với khả năng tìm kiếm."
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "title": "Lưu và chia sẻ tập lệnh SQL",
+        "desc": "Lưu và chia sẻ tập lệnh SQL với các thành viên trong nhóm."
+      },
+      "FEATURE_BATCH_QUERY": {
+        "title": "Truy vấn hàng loạt",
+        "desc": "Thực thi truy vấn trên nhiều cơ sở dữ liệu cùng lúc."
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "title": "Kết nối chỉ đọc",
+        "desc": "Kết nối đến bản sao chỉ đọc cho các hoạt động chỉ đọc."
+      },
+      "FEATURE_QUERY_POLICY": {
+        "title": "Chính sách truy vấn",
+        "desc": "Cấu hình các hạn chế và quyền truy vấn nâng cao."
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "title": "Hạn chế sao chép dữ liệu",
+        "desc": "Kiểm soát quyền truy cập của người dùng để sao chép dữ liệu từ kết quả truy vấn."
+      },
+      "FEATURE_IAM": {
+        "title": "Quản lý danh tính và truy cập",
+        "desc": "Hệ thống kiểm soát truy cập dựa trên vai trò chi tiết."
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "title": "Kết nối SSL",
+        "desc": "Kết nối cơ sở dữ liệu an toàn với mã hóa SSL/TLS."
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "title": "Kết nối qua SSH tunnel",
+        "desc": "Kết nối đến các instance thông qua SSH tunnel để tăng cường bảo mật."
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "title": "Xác thực IAM",
+        "desc": "Sử dụng IAM của nhà cung cấp đám mây để xác thực cơ sở dữ liệu."
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "title": "Thời gian đồng bộ instance tùy chỉnh",
+        "desc": "Tùy chỉnh khoảng thời gian và cài đặt đồng bộ hóa cơ sở dữ liệu."
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "title": "Giới hạn kết nối instance tùy chỉnh",
+        "desc": "Cấu hình giới hạn kết nối cơ sở dữ liệu tối đa."
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "title": "Google và GitHub SSO",
+        "desc": "Đăng nhập bằng tài khoản Google hoặc GitHub."
+      },
+      "FEATURE_USER_GROUPS": {
+        "title": "Nhóm người dùng",
+        "desc": "Tổ chức người dùng thành các nhóm để quản lý dễ dàng hơn."
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "title": "Tắt đăng ký tự phục vụ",
+        "desc": "Yêu cầu mời của quản trị viên cho đăng ký người dùng mới."
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "title": "Đánh giá rủi ro",
+        "desc": "Đánh giá và phân loại mức độ rủi ro của các thay đổi cơ sở dữ liệu."
+      },
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "title": "Quy trình phê duyệt",
+        "desc": "Cấu hình mức độ rủi ro và quy trình phê duyệt cho các tác vụ khác nhau."
+      },
+      "FEATURE_AUDIT_LOG": {
+        "title": "Nhật ký kiểm toán",
+        "desc": "Theo dõi tất cả các hoạt động được thực hiện bởi người dùng trong workspace."
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "title": "Enterprise SSO",
+        "desc": "Đăng nhập một lần với các nhà cung cấp SAML, OIDC và OAuth."
+      },
+      "FEATURE_TWO_FA": {
+        "title": "Xác thực hai yếu tố",
+        "desc": "Thêm lớp bảo mật bổ sung với xác minh ứng dụng xác thực."
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
+        "title": "Hạn chế mật khẩu",
+        "desc": "Thực thi các yêu cầu về độ phức tạp và bảo mật mật khẩu."
+      },
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "title": "Tắt đăng nhập bằng mật khẩu",
+        "desc": "Chỉ yêu cầu xác thực SSO để đăng nhập người dùng."
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "title": "Vai trò tùy chỉnh",
+        "desc": "Xác định vai trò tùy chỉnh với quyền cụ thể cho tổ chức của bạn."
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "title": "Quy trình yêu cầu vai trò",
+        "desc": "Người dùng có thể yêu cầu vai trò dự án với quy trình phê duyệt."
+      },
+      "FEATURE_DATA_MASKING": {
+        "title": "Che giấu dữ liệu",
+        "desc": "Đánh dấu các cột bảng là dữ liệu nhạy cảm và che giấu kết quả truy vấn."
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "title": "Phân loại dữ liệu",
+        "desc": "Phân loại và gắn nhãn dữ liệu dựa trên mức độ nhạy cảm."
+      },
+      "FEATURE_SCIM": {
+        "title": "SCIM",
+        "desc": "Hỗ trợ System for Cross-domain Identity Management."
+      },
+      "FEATURE_DIRECTORY_SYNC": {
+        "title": "Đồng bộ thư mục",
+        "desc": "Đồng bộ người dùng và nhóm từ Entra ID vào Bytebase."
+      },
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "Kiểm soát thời lượng token",
+        "desc": "Cấu hình thời lượng token truy cập và token làm mới."
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "title": "Trình quản lý bí mật bên ngoài",
+        "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "title": "Hạn chế tên miền email",
+        "desc": "Hạn chế đăng nhập cho người dùng từ các tên miền email được chỉ định."
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "title": "Quản lý dự án",
+        "desc": "Quản lý và tổ chức dự án với các khả năng nâng cao."
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "title": "Quản lý môi trường",
+        "desc": "Quản lý và cấu hình các môi trường triển khai khác nhau."
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "title": "Thông báo IM",
+        "desc": "Gửi thông báo đến các nền tảng IM như Slack và Teams."
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "title": "Terraform provider",
+        "desc": "Quản lý tài nguyên Bytebase bằng Terraform."
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "title": "Nhóm cơ sở dữ liệu",
+        "desc": "Nhóm cơ sở dữ liệu để thực hiện hoạt động hàng loạt và quản lý."
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "title": "Cấp môi trường",
+        "desc": "Xác định các cấp môi trường như sản xuất và phát triển."
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "title": "Thông báo bảng điều khiển",
+        "desc": "Hiển thị thông báo tùy chỉnh trên bảng điều khiển."
+      },
+      "FEATURE_API_INTEGRATION_GUIDANCE": {
+        "title": "Hướng dẫn tích hợp API",
+        "desc": "Tài liệu và hướng dẫn cho tích hợp API."
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "title": "Logo tùy chỉnh",
+        "desc": "Tùy chỉnh logo cho tổ chức của bạn."
+      },
+      "FEATURE_WATERMARK": {
+        "title": "Hình mờ",
+        "desc": "Hiển thị hình mờ với thông tin người dùng trên các trang."
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "title": "Ưu tiên lộ trình",
+        "desc": "Ảnh hưởng đến ưu tiên phát triển tính năng."
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "title": "MSA tùy chỉnh",
+        "desc": "Điều khoản Thỏa thuận dịch vụ chính tùy chỉnh."
+      },
+      "FEATURE_COMMUNITY_SUPPORT": {
+        "title": "Hỗ trợ cộng đồng",
+        "desc": "Nhận trợ giúp từ cộng đồng Bytebase."
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "title": "Hỗ trợ qua email",
+        "desc": "Hỗ trợ email trực tiếp từ đội ngũ Bytebase."
+      },
+      "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
+        "title": "Hỗ trợ chuyên dụng với SLA",
+        "desc": "Hỗ trợ ưu tiên với thời gian phản hồi được đảm bảo."
+      }
+    },
+    "purchase": {
+      "features": {
+        "free": {
+          "limits": "Tối đa 20 người dùng và 10 phiên bản",
+          "dcm": "Quản lý thay đổi cơ sở dữ liệu hoàn chỉnh",
+          "git": "Kiểm soát phiên bản và di chuyển schema dựa trên Git",
+          "sql-review": "Đánh giá SQL với hơn 200 quy tắc",
+          "backup": "Sao lưu tự động và hoàn tác một cú nhấp",
+          "sql-editor": "Trình soạn SQL trên web với hỗ trợ AI",
+          "schema": "Sơ đồ schema và xuất dữ liệu",
+          "iam": "Các tính năng IAM và bảo mật cơ bản",
+          "support": "Hỗ trợ cộng đồng"
+        },
+        "pro": {
+          "limits": "Người dùng không giới hạn với $20/người dùng/tháng, 10 phiên bản",
+          "everything": "Tất cả trong Miễn phí, cộng thêm:",
+          "batch-query": "Khả năng truy vấn hàng loạt",
+          "read-only": "Kết nối chỉ đọc phiên bản",
+          "query-policy": "Chính sách truy vấn cho quản trị",
+          "sso": "Google & GitHub SSO",
+          "groups": "Quản lý nhóm người dùng",
+          "db-groups": "Nhóm cơ sở dữ liệu",
+          "audit-log": "Nhật ký kiểm toán hạn chế",
+          "support": "Hỗ trợ qua email"
+        },
+        "enterprise": {
+          "limits": "Giới hạn tùy chỉnh theo nhu cầu",
+          "everything": "Tất cả trong Pro, cộng thêm:",
+          "custom-limits": "Giới hạn người dùng và phiên bản tùy chỉnh",
+          "approval": "Đánh giá rủi ro và quy trình phê duyệt",
+          "audit-log": "Nhật ký kiểm toán đầy đủ",
+          "sso": "SSO doanh nghiệp (OAuth2, OIDC, LDAP tùy chỉnh)",
+          "2fa": "Xác thực hai yếu tố và chính sách xác thực nâng cao",
+          "masking": "Che dấu và phân loại dữ liệu",
+          "roles": "Vai trò tùy chỉnh và quy trình yêu cầu vai trò",
+          "scim": "Cung cấp người dùng SCIM và đồng bộ thư mục",
+          "secret": "Tích hợp trình quản lý bí mật bên ngoài",
+          "branding": "Thương hiệu tùy chỉnh và hình mờ",
+          "support": "Hỗ trợ chuyên dụng với SLA"
+        }
+      }
+    }
+  }
+}

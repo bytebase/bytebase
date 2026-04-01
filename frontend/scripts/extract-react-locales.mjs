@@ -191,9 +191,19 @@ for (const locale of LOCALES) {
   }
 
   const nested = unflatten(output);
-  const outPath = `${OUT_DIR}/${locale}.json`;
-  writeFileSync(outPath, JSON.stringify(nested, null, 2) + "\n");
-  console.log(`Wrote ${outPath} (${Object.keys(output).length} keys)`);
+
+  // Split dynamic keys into a separate file (mirrors Vue's locales/dynamic/ structure)
+  const dynamicData = nested.dynamic || {};
+  delete nested.dynamic;
+
+  const mainOutPath = `${OUT_DIR}/${locale}.json`;
+  writeFileSync(mainOutPath, JSON.stringify(nested, null, 2) + "\n");
+
+  mkdirSync(`${OUT_DIR}/dynamic`, { recursive: true });
+  const dynamicOutPath = `${OUT_DIR}/dynamic/${locale}.json`;
+  writeFileSync(dynamicOutPath, JSON.stringify(dynamicData, null, 2) + "\n");
+
+  console.log(`Wrote ${mainOutPath} + ${dynamicOutPath} (${Object.keys(output).length} keys)`);
 }
 
 console.log("Done.");

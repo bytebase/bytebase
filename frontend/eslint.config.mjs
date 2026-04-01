@@ -34,7 +34,7 @@ export default [
           src: "./src",
           extensions: [".js", ".vue", ".ts", ".tsx"],
           ignores: [
-            // Used in React .tsx via tVue() wrapper — linter can't detect these
+            // Used in React .tsx — vue-i18n linter can't detect these
             "project.batch.selected",
             "project.batch.archive.title",
             "project.batch.archive.success",

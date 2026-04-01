@@ -1,6 +1,10 @@
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-
+import enUSDynamic from "@/react/locales/dynamic/en-US.json";
+import esESDynamic from "@/react/locales/dynamic/es-ES.json";
+import jaJPDynamic from "@/react/locales/dynamic/ja-JP.json";
+import viVNDynamic from "@/react/locales/dynamic/vi-VN.json";
+import zhCNDynamic from "@/react/locales/dynamic/zh-CN.json";
 import enUS from "@/react/locales/en-US.json";
 import esES from "@/react/locales/es-ES.json";
 import jaJP from "@/react/locales/ja-JP.json";
@@ -30,11 +34,11 @@ function getLocale(): string {
 }
 
 const resources = {
-  "en-US": { translation: enUS },
-  "zh-CN": { translation: zhCN },
-  "es-ES": { translation: esES },
-  "ja-JP": { translation: jaJP },
-  "vi-VN": { translation: viVN },
+  "en-US": { translation: { ...enUS, dynamic: enUSDynamic } },
+  "zh-CN": { translation: { ...zhCN, dynamic: zhCNDynamic } },
+  "es-ES": { translation: { ...esES, dynamic: esESDynamic } },
+  "ja-JP": { translation: { ...jaJP, dynamic: jaJPDynamic } },
+  "vi-VN": { translation: { ...viVN, dynamic: viVNDynamic } },
 };
 
 const i18n: import("i18next").i18n = i18next.createInstance();
