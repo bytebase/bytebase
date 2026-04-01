@@ -270,7 +270,9 @@
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
+    "scope": "スコープ",
+    "classification-level": "分類レベル"
   },
   "error-page": {
     "forbidden": "アクセス禁止",
@@ -1969,7 +1971,14 @@
     "masking-exemption": {
       "self": "マスキング免除",
       "grant-exemption": "免除を付与",
-      "revoke-exemption-title": "{member} のエクスポートおよびクエリのマスキング免除を両方削除しますか？"
+      "revoke-exemption-title": "{member} のマスキング免除を削除しますか？",
+      "no-reason": "理由が提供されていません",
+      "no-exemptions": "マスキング免除はまだ付与されていません",
+      "expires-today": "本日期限切れ",
+      "expires-in-days": "{days} 日後に期限切れ",
+      "all-levels": "全レベル",
+      "n-exemptions": "{n} 件の免除",
+      "level": "レベル"
     },
     "batch": {
       "selected": "{count} 件のプロジェクトが選択されました | {count} 件のプロジェクトが選択されました",

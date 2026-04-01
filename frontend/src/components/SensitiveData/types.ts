@@ -24,6 +24,11 @@ export interface SensitiveColumn {
   maskData: MaskData;
 }
 
+export interface ClassificationLevel {
+  operator: string;
+  value: number;
+}
+
 export interface AccessUser {
   type: "user" | "group";
   key: string;
@@ -35,4 +40,28 @@ export interface AccessUser {
   // The condition portion of the CEL expression, excluding request.time.
   // Used as fallback display when databaseResources can't be parsed.
   conditionExpression: string;
+}
+
+export interface ExemptionGrant {
+  id: string;
+  description: string;
+  expirationTimestamp?: number;
+  rawExpression: string;
+  databaseResources?: DatabaseResource[];
+  conditionExpression: string;
+  classificationLevel?: ClassificationLevel;
+  // TODO(BYT-9098): Add grantedBy (creator) and grantedAt (creation timestamp)
+  // for auditability. Requires proto change: MaskingExemptionPolicy_Exemption
+  // currently only stores members + condition. The DB policy table only has
+  // updated_at, no created_at or creator. Needs schema migration + proto update.
+}
+
+export interface ExemptionMember {
+  type: "user" | "group";
+  member: string;
+  grants: ExemptionGrant[];
+  totalResources: number;
+  databaseNames: string[];
+  neverExpires: boolean;
+  nearestExpiration?: number;
 }
