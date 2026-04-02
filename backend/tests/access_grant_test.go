@@ -32,8 +32,9 @@ func TestAccessGrantApproverVisibility(t *testing.T) {
 	projectID := generateRandomString("grant-vis")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
-			Name:  fmt.Sprintf("projects/%s", projectID),
-			Title: projectID,
+			Name:              fmt.Sprintf("projects/%s", projectID),
+			Title:             projectID,
+			AllowSelfApproval: true,
 		},
 		ProjectId: projectID,
 	}))
