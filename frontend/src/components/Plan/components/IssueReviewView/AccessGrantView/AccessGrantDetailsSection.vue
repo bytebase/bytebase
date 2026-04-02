@@ -128,6 +128,7 @@ watchEffect(async () => {
     if (getErrorCode(error) !== Code.PermissionDenied) {
       throw error;
     }
+    accessGrant.value = undefined;
   } finally {
     isLoading.value = false;
   }
