@@ -1,5 +1,4 @@
 - statement: CREATE TABLE techBook(id int, name varchar(255));
-  changeType: 1
   want:
     - status: 2
       code: 301
@@ -10,9 +9,7 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE tech_book_copy(id int, name varchar(255));
-  changeType: 1
 - statement: CREATE TABLE cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde(id int, name varchar(255));
-  changeType: 1
   want:
     - status: 2
       code: 301
@@ -25,7 +22,6 @@
 - statement: |
     CREATE TABLE book(a INT);
     ALTER TABLE book RENAME TO TechBook;
-  changeType: 1
   want:
     - status: 2
       code: 301
@@ -38,11 +34,9 @@
 - statement: |
     CREATE TABLE book(a INT);
     ALTER TABLE book RENAME TO tech_book_copy;
-  changeType: 1
 - statement: |
     CREATE TABLE book (a INT);
     RENAME TABLE book TO tech_book_copy, tech_book_copy TO LiteraryBook;
-  changeType: 1
   want:
     - status: 2
       code: 301
@@ -56,7 +50,6 @@
     CREATE TABLE literary_book(a int);
     CREATE TABLE book(a int);
     RENAME TABLE book TO TechBook, literary_book TO LiteraryBook;
-  changeType: 1
   want:
     - status: 2
       code: 301
@@ -78,4 +71,3 @@
     CREATE TABLE literary_book(a int);
     CREATE TABLE book(a int);
     RENAME TABLE book TO tech_book_copy, literary_book TO literary_book_copy;
-  changeType: 1

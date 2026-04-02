@@ -1,7 +1,5 @@
 - statement: SELECT * FROM t;
-  changeType: 1
 - statement: select name from hello join world on hello.id = world.id join baby on world.id = baby.id;
-  changeType: 1
   want:
     - status: 2
       code: 223

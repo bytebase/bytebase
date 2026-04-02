@@ -1,5 +1,4 @@
 - statement: SELECT * FROM employee WHERE id = RAND();
-  changeType: 1
   want:
     - status: 2
       code: 1702

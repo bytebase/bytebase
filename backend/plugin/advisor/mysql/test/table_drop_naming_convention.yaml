@@ -2,11 +2,9 @@
     CREATE TABLE foo(a INT);
     RENAME TABLE foo to foo_delete;
     DROP TABLE IF EXISTS foo_delete;
-  changeType: 1
 - statement: |-
     CREATE TABLE foo(a INT);
     DROP TABLE IF EXISTS foo;
-  changeType: 1
   want:
     - status: 2
       code: 603
@@ -21,7 +19,6 @@
     RENAME TABLE foo to foo_delete;
     CREATE TABLE bar(a INT);
     DROP TABLE IF EXISTS foo_delete, bar;
-  changeType: 1
   want:
     - status: 2
       code: 603
