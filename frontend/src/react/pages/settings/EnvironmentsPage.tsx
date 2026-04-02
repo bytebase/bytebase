@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { GripVertical, ListOrdered, Plus, X } from "lucide-react";
+import { GripVertical, ListOrdered, Plus, ShieldAlert, X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -11,8 +11,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -57,6 +57,7 @@ import type { Environment } from "@/types/v1/environment";
 import {
   displayRoleTitle,
   hasWorkspacePermissionV2,
+  hexToRgb,
   sqlReviewPolicySlug,
 } from "@/utils";
 
@@ -83,6 +84,60 @@ function useEscapeKey(onEscape: () => void) {
       if (idx >= 0) escapeStack.splice(idx, 1);
     };
   }, [onEscape]);
+}
+
+// ============================================================
+// EnvironmentName - displays env name with color badge
+// ============================================================
+function EnvironmentName({
+  environment,
+  link = false,
+}: {
+  environment: Environment;
+  link?: boolean;
+}) {
+  const subscriptionStore = useSubscriptionV1Store();
+  const hasEnvTierFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
+  );
+  const color = environment.color || "#4f46e5";
+  const rgbValues = hexToRgb(color);
+  const rgbStr = rgbValues.join(", ");
+  const showProductionIcon =
+    hasEnvTierFeature && environment.tags?.protected === "protected";
+
+  const content = (
+    <span
+      className="inline-flex items-center gap-x-1 px-1.5 rounded-xs select-none truncate"
+      style={{
+        backgroundColor: `rgba(${rgbStr}, 0.1)`,
+        color: `rgb(${rgbStr})`,
+      }}
+    >
+      <span className="truncate">{environment.title}</span>
+      {showProductionIcon && (
+        <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-control" />
+      )}
+    </span>
+  );
+
+  if (link) {
+    return (
+      <a
+        href={`/${formatEnvironmentName(environment.id)}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          router.push({ path: `/${formatEnvironmentName(environment.id)}` });
+        }}
+        className="hover:underline"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return content;
 }
 
 // ============================================================
@@ -245,7 +300,7 @@ function RolloutPolicyConfig({
           {rolloutPolicy.roles.map((role) => (
             <span
               key={role}
-              className="inline-flex items-center gap-x-1 rounded-md bg-gray-100 px-2 py-1 text-sm"
+              className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
             >
               {displayRoleTitle(role)}
               {canUpdatePolicy && (
@@ -270,7 +325,7 @@ function RolloutPolicyConfig({
                 {t("common.add")}
               </Button>
               {showRoleDropdown && (
-                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-md border border-control-border bg-white py-1 shadow-md">
+                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
                   {availableRoles.map((group) => (
                     <div key={group.label}>
                       <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
@@ -483,7 +538,7 @@ function SQLReviewSectionInner(
               {t("sql-review.configure-policy")}
             </Button>
             {showSelectPanel && (
-              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-md border border-control-border bg-white py-1 shadow-md">
+              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
                 {reviewPolicyList.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-400">
                     {t("common.no-data")}
@@ -782,7 +837,7 @@ function EnvironmentDetail({
                 checked={editProtected}
                 disabled={!canEdit}
                 onChange={(e) => setEditProtected(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded-xs border-gray-300"
               />
               <span className="text-sm">
                 {t("policy.environment-tier.mark-env-as-production")}
@@ -869,7 +924,7 @@ function EnvironmentDetail({
             onClick={() => setShowDeleteConfirm(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-md shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white rounded-sm shadow-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-medium mb-2">
                 {t("environment.delete")} '{editTitle}'?
               </h3>
@@ -880,7 +935,7 @@ function EnvironmentDetail({
                       type="checkbox"
                       checked={confirmDelete}
                       onChange={(e) => setConfirmDelete(e.target.checked)}
-                      className="mt-0.5 rounded border-gray-300"
+                      className="mt-0.5 rounded-xs border-gray-300"
                     />
                     <span className="text-sm text-gray-600">
                       {t("environment.delete-description")}
@@ -1068,7 +1123,7 @@ function CreateDrawer({
                   type="checkbox"
                   checked={isProtected}
                   onChange={(e) => setIsProtected(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded-xs border-gray-300"
                 />
                 <span className="text-sm">
                   {t("policy.environment-tier.mark-env-as-production")}
@@ -1177,7 +1232,7 @@ function ReorderDrawer({
             >
               <div className="flex items-center gap-x-2">
                 <span className="textinfo">{index + 1}.</span>
-                <EnvironmentLabel environment={env} />
+                <EnvironmentName environment={env} />
               </div>
               <GripVertical className="w-5 h-5 text-gray-500" />
             </div>
@@ -1382,29 +1437,33 @@ export function EnvironmentsPage() {
               onClick={() => selectTab(env.id)}
             >
               <span className="text-opacity-60">{index + 1}.</span>
-              <EnvironmentLabel environment={env} />
+              <EnvironmentName environment={env} />
             </button>
           ))}
         </div>
 
         {/* Toolbar */}
-        {canEdit && (
+        <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
           <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
             <Button
               variant="outline"
               size="sm"
-              disabled={environmentList.length <= 1}
+              disabled={!canEdit || environmentList.length <= 1}
               onClick={() => setShowReorder(true)}
             >
               <ListOrdered className="h-4 w-4 mr-1" />
               {t("common.reorder")}
             </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Button
+              size="sm"
+              disabled={!canEdit}
+              onClick={() => setShowCreate(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
               {t("environment.create")}
             </Button>
           </div>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Tab content */}

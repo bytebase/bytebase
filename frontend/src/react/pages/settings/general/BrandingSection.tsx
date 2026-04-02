@@ -10,6 +10,11 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -20,7 +25,6 @@ import {
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const MAX_FILE_SIZE_MIB = 2;
@@ -49,7 +53,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
       useSubscriptionV1Store().hasFeature(PlanFeature.FEATURE_CUSTOM_LOGO)
     );
 
-    const canEdit = hasWorkspacePermissionV2("bb.workspaces.update");
+    const [canEdit] = usePermissionCheck(["bb.workspaces.update"]);
 
     const [localTitle, setLocalTitle] = useState(workspace?.title ?? "");
     const [logoUrl, setLogoUrl] = useState(workspace?.logo ?? "");
@@ -177,105 +181,111 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
         <div className="text-left lg:w-1/4">
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
-        <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
-          {/* Workspace ID */}
-          <div>
-            <label className="font-medium">
-              {t("settings.general.workspace.id")}
-            </label>
-            <Input value={workspaceID} disabled className="mt-1" />
-          </div>
+        <PermissionGuard permissions={["bb.workspaces.update"]} display="block">
+          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+            {/* Workspace ID */}
+            <div>
+              <label className="font-medium">
+                {t("settings.general.workspace.id")}
+              </label>
+              <Input value={workspaceID} disabled className="mt-1" />
+            </div>
 
-          {/* Workspace Title */}
-          <div>
-            <label className="font-medium">
-              {t("settings.general.workspace.title")}
-            </label>
-            <Input
-              value={localTitle}
-              onChange={(e) => setLocalTitle(e.target.value)}
-              disabled={!canEdit}
-              className="mt-1"
-            />
-          </div>
+            {/* Workspace Title */}
+            <div>
+              <label className="font-medium">
+                {t("settings.general.workspace.title")}
+              </label>
+              <Input
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                disabled={!canEdit}
+                className="mt-1"
+              />
+            </div>
 
-          {/* Logo */}
-          <div>
-            <div className="mb-4 mt-4 lg:mt-0">
-              <div className="flex items-center gap-x-2 font-medium">
-                {t("settings.general.workspace.logo")}
-              </div>
-              <p className="mb-3 text-sm text-gray-400">
-                {t("settings.general.workspace.logo-aspect")}
-              </p>
-              <div
-                className={`flex justify-center border-2 border-gray-300 border-dashed rounded-xs relative h-48 transition-all ${
-                  dropActive ? "bg-gray-300 opacity-100" : ""
-                } ${uploadDisabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
-                onClick={() => {
-                  if (!uploadDisabled) fileInputRef.current?.click();
-                }}
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={() => setDropActive(true)}
-                onDragLeave={() => setDropActive(false)}
-              >
-                {/* Logo preview */}
+            {/* Logo */}
+            <div>
+              <div className="mb-4 mt-4 lg:mt-0">
+                <div className="flex items-center gap-x-2 font-medium">
+                  {t("settings.general.workspace.logo")}
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_CUSTOM_LOGO}
+                    clickable
+                  />
+                </div>
+                <p className="mb-3 text-sm text-gray-400">
+                  {t("settings.general.workspace.logo-aspect")}
+                </p>
                 <div
-                  className="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
-                  style={{
-                    backgroundImage: logoUrl ? `url(${logoUrl})` : undefined,
+                  className={`flex justify-center border-2 border-gray-300 border-dashed rounded-xs relative h-48 transition-all ${
+                    dropActive ? "bg-gray-300 opacity-100" : ""
+                  } ${uploadDisabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
+                  onClick={() => {
+                    if (!uploadDisabled) fileInputRef.current?.click();
                   }}
-                />
-                {/* Upload overlay */}
-                <div
-                  className={`flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0 ${
-                    logoUrl ? "opacity-0 hover:opacity-90" : ""
-                  }`}
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={() => setDropActive(true)}
+                  onDragLeave={() => setDropActive(false)}
                 >
-                  {!logoUrl && (
-                    <div className="py-4 text-gray-500">
-                      {t("common.no-data")}
+                  {/* Logo preview */}
+                  <div
+                    className="w-full bg-no-repeat bg-contain bg-center rounded-sm pointer-events-none m-4"
+                    style={{
+                      backgroundImage: logoUrl ? `url(${logoUrl})` : undefined,
+                    }}
+                  />
+                  {/* Upload overlay */}
+                  <div
+                    className={`flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0 ${
+                      logoUrl ? "opacity-0 hover:opacity-90" : ""
+                    }`}
+                  >
+                    {!logoUrl && (
+                      <div className="py-4 text-gray-500">
+                        {t("common.no-data")}
+                      </div>
+                    )}
+                    <div className="text-sm text-gray-600 inline-flex pointer-events-none">
+                      <span className="relative cursor-pointer rounded-xs font-medium text-indigo-600 hover:text-indigo-500">
+                        {t("settings.general.workspace.select-logo")}
+                      </span>
+                      <p className="pl-1">
+                        {t("settings.general.workspace.drag-logo")}
+                      </p>
                     </div>
-                  )}
-                  <div className="text-sm text-gray-600 inline-flex pointer-events-none">
-                    <span className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500">
-                      {t("settings.general.workspace.select-logo")}
-                    </span>
-                    <p className="pl-1">
-                      {t("settings.general.workspace.drag-logo")}
+                    <p className="text-xs text-gray-500 pointer-events-none">
+                      {t("settings.general.workspace.logo-upload-tip", {
+                        extension: SUPPORT_IMAGE_EXTENSIONS.join(", "),
+                        size: MAX_FILE_SIZE_MIB,
+                      })}
                     </p>
                   </div>
-                  <p className="text-xs text-gray-500 pointer-events-none">
-                    {t("settings.general.workspace.logo-upload-tip", {
-                      extension: SUPPORT_IMAGE_EXTENSIONS.join(", "),
-                      size: MAX_FILE_SIZE_MIB,
-                    })}
-                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={SUPPORT_IMAGE_EXTENSIONS.join(",")}
+                    className="sr-only hidden"
+                    disabled={uploadDisabled}
+                    onChange={handleFileInput}
+                  />
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={SUPPORT_IMAGE_EXTENSIONS.join(",")}
-                  className="sr-only hidden"
-                  disabled={uploadDisabled}
-                  onChange={handleFileInput}
-                />
               </div>
+              {logoUrl && (
+                <div className="flex justify-end gap-x-3">
+                  <Button
+                    variant="destructive"
+                    disabled={!canEdit}
+                    onClick={() => setLogoUrl("")}
+                  >
+                    {t("common.delete")}
+                  </Button>
+                </div>
+              )}
             </div>
-            {logoUrl && (
-              <div className="flex justify-end gap-x-3">
-                <Button
-                  variant="destructive"
-                  disabled={!canEdit}
-                  onClick={() => setLogoUrl("")}
-                >
-                  {t("common.delete")}
-                </Button>
-              </div>
-            )}
           </div>
-        </div>
+        </PermissionGuard>
       </div>
     );
   }

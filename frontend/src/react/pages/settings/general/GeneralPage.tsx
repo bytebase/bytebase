@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { t as vueT } from "@/plugins/i18n";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -142,7 +144,7 @@ export function GeneralPage() {
 
     const removeGuard = router.beforeEach((_to, _from, next) => {
       if (allRefs.some((ref) => ref.current?.isDirty())) {
-        if (!window.confirm(t("common.leave-without-saving"))) {
+        if (!window.confirm(vueT("common.leave-without-saving"))) {
           next(false);
           return;
         }
@@ -201,18 +203,28 @@ export function GeneralPage() {
         onDirtyChange={onDirtyChange}
       />
       {!isSaaSMode && (
-        <ProductImprovementSection
-          ref={productImprovementRef}
-          allowEdit={canEditProfile}
-          onDirtyChange={onDirtyChange}
-        />
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <ProductImprovementSection
+            ref={productImprovementRef}
+            allowEdit={canEditProfile}
+            onDirtyChange={onDirtyChange}
+          />
+        </PermissionGuard>
       )}
       {!isSaaSMode && (
-        <AuditLogSection
-          ref={auditLogRef}
-          allowEdit={canEditProfile}
-          onDirtyChange={onDirtyChange}
-        />
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <AuditLogSection
+            ref={auditLogRef}
+            allowEdit={canEditProfile}
+            onDirtyChange={onDirtyChange}
+          />
+        </PermissionGuard>
       )}
 
       {isDirty && (

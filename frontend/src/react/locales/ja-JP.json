@@ -55,6 +55,7 @@
     "added": "作成した",
     "description": "説明",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
+    "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
     "add-permissions": "権限を追加",
     "system": "システム",

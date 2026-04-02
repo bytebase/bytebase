@@ -9,6 +9,7 @@ import feishuIcon from "@/assets/im/feishu.webp";
 import slackIcon from "@/assets/im/slack.png";
 import teamsIcon from "@/assets/im/teams.svg";
 import wecomIcon from "@/assets/im/wecom.png";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -389,11 +390,16 @@ export function IMPage() {
         <Description />
         <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-4 text-control-light">
           <span>{t("common.no-data")}</span>
-          {availableTypes.length > 0 && allowEdit && (
-            <Button onClick={() => handleAdd(availableTypes[0].type)}>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("settings.im.add-im-integration")}
-            </Button>
+          {availableTypes.length > 0 && (
+            <PermissionGuard permissions={["bb.settings.set"]}>
+              <Button
+                disabled={!allowEdit}
+                onClick={() => handleAdd(availableTypes[0].type)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {t("settings.im.add-im-integration")}
+              </Button>
+            </PermissionGuard>
           )}
         </div>
       </div>
@@ -411,7 +417,7 @@ export function IMPage() {
           ) : (
             <select
               value={item.type}
-              className="flex h-9 w-full max-w-xs rounded-md border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
+              className="flex h-9 w-full max-w-xs rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
               onChange={(e) => handleChangeType(i, e.target.value)}
             >
               <option value={item.type}>{item.typeLabel}</option>
@@ -476,15 +482,18 @@ export function IMPage() {
         </div>
       ))}
 
-      {availableTypes.length > 0 && allowEdit && (
+      {availableTypes.length > 0 && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            onClick={() => handleAdd(availableTypes[0].type)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("settings.im.add-another-im")}
-          </Button>
+          <PermissionGuard permissions={["bb.settings.set"]}>
+            <Button
+              variant="outline"
+              disabled={!allowEdit}
+              onClick={() => handleAdd(availableTypes[0].type)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t("settings.im.add-another-im")}
+            </Button>
+          </PermissionGuard>
         </div>
       )}
     </div>

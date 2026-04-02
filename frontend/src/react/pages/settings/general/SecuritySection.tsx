@@ -11,11 +11,15 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSubscriptionV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
@@ -47,7 +51,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
       )
     );
-    const canEdit = hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile");
+    const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const getInitialState = useCallback((): SecurityState => {
       const profile = settingV1Store.workspaceProfile;
@@ -207,172 +211,183 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         <div className="text-left lg:w-1/4">
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
-        <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
-          {/* Watermark */}
-          <div>
-            <div className="flex items-center gap-x-2">
-              <input
-                type="checkbox"
-                checked={state.enableWatermark}
-                disabled={!canEdit || !hasWatermarkFeature}
-                onChange={(e) =>
-                  setState((prev) => ({
-                    ...prev,
-                    enableWatermark: e.target.checked,
-                  }))
-                }
-              />
-              <span className="font-medium">
-                {t("settings.general.workspace.watermark.enable")}
-              </span>
-            </div>
-            <div className="mt-1 text-sm text-gray-400">
-              {t("settings.general.workspace.watermark.description")}
-            </div>
-          </div>
-
-          {/* Maximum Role Expiration */}
-          <div>
-            <p className="font-medium flex flex-row justify-start items-center">
-              <span className="mr-2">
-                {t("settings.general.workspace.maximum-role-expiration.self")}
-              </span>
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.maximum-role-expiration.description"
-              )}
-            </p>
-            <div className="mt-3 w-full flex flex-row">
-              <div className="flex items-center gap-4">
-                <div className="relative w-60">
-                  <input
-                    type="number"
-                    className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-14 text-sm disabled:opacity-50"
-                    value={state.inputValue}
-                    min={1}
-                    step={1}
-                    disabled={!canEdit || state.neverExpire}
-                    onChange={(e) => {
-                      const val = Math.max(
-                        1,
-                        Math.floor(Number(e.target.value))
-                      );
-                      if (!Number.isNaN(val)) {
-                        setState((prev) => ({ ...prev, inputValue: val }));
-                      }
-                    }}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
-                    {t(
-                      "settings.general.workspace.maximum-role-expiration.days"
-                    )}
-                  </span>
-                </div>
-                <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
-                    checked={state.neverExpire}
-                    disabled={!canEdit}
-                    onChange={(e) =>
-                      setState((prev) => ({
-                        ...prev,
-                        neverExpire: e.target.checked,
-                      }))
-                    }
-                  />
-                  <span>
-                    {t(
-                      "settings.general.workspace.maximum-role-expiration.never-expires"
-                    )}
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Domain Restriction */}
-          <div>
-            <h3
-              id="domain-restriction"
-              className="font-medium flex flex-row justify-start items-center"
-            >
-              <span className="mr-2">
-                {t("settings.general.workspace.domain-restriction.self")}
-              </span>
-            </h3>
-            <p className="text-sm text-gray-400 mt-1">
-              {t("settings.general.workspace.domain-restriction.description")}
-            </p>
-            <div className="w-full flex flex-col gap-2 mt-2">
-              {/* Domain tags + input */}
-              <div className="flex flex-wrap items-center gap-2">
-                {state.domains.map((domain, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1 rounded-xs bg-gray-100 px-2 py-1.5 text-sm"
-                  >
-                    {domain}
-                    <button
-                      type="button"
-                      className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                      disabled={!canEdit}
-                      onClick={() => removeDomain(index)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                ))}
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
+            {/* Watermark */}
+            <div>
+              <div className="flex items-center gap-x-2">
                 <input
-                  type="text"
-                  className="min-w-[20rem] rounded-xs border border-control-border px-3 py-1.5 text-sm disabled:opacity-50"
-                  placeholder={t(
-                    "settings.general.workspace.domain-restriction.domain-input-placeholder"
-                  )}
-                  value={domainInput}
-                  disabled={!canEdit}
-                  onChange={(e) => setDomainInput(e.target.value)}
-                  onKeyDown={handleDomainKeyDown}
-                  onBlur={addDomain}
+                  type="checkbox"
+                  checked={state.enableWatermark}
+                  disabled={!canEdit || !hasWatermarkFeature}
+                  onChange={(e) =>
+                    setState((prev) => ({
+                      ...prev,
+                      enableWatermark: e.target.checked,
+                    }))
+                  }
                 />
+                <span className="font-medium">
+                  {t("settings.general.workspace.watermark.enable")}
+                </span>
+                <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
               </div>
+              <div className="mt-1 text-sm text-gray-400">
+                {t("settings.general.workspace.watermark.description")}
+              </div>
+            </div>
 
-              {/* Enforce restriction checkbox */}
-              <div className="w-full flex flex-row justify-between items-center">
-                <label className="flex items-start gap-x-2">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={state.enableRestriction}
-                    disabled={
-                      !canEdit ||
-                      validDomains.length === 0 ||
-                      !hasDomainRestrictionFeature
-                    }
-                    onChange={(e) =>
-                      setState((prev) => ({
-                        ...prev,
-                        enableRestriction: e.target.checked,
-                      }))
-                    }
-                  />
-                  <div>
-                    <div className="font-medium">
+            {/* Maximum Role Expiration */}
+            <div>
+              <p className="font-medium flex flex-row justify-start items-center">
+                <span className="mr-2">
+                  {t("settings.general.workspace.maximum-role-expiration.self")}
+                </span>
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t(
+                  "settings.general.workspace.maximum-role-expiration.description"
+                )}
+              </p>
+              <div className="mt-3 w-full flex flex-row">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-60">
+                    <input
+                      type="number"
+                      className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-14 text-sm disabled:opacity-50"
+                      value={state.inputValue}
+                      min={1}
+                      step={1}
+                      disabled={!canEdit || state.neverExpire}
+                      onChange={(e) => {
+                        const val = Math.max(
+                          1,
+                          Math.floor(Number(e.target.value))
+                        );
+                        if (!Number.isNaN(val)) {
+                          setState((prev) => ({ ...prev, inputValue: val }));
+                        }
+                      }}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
                       {t(
-                        "settings.general.workspace.domain-restriction.members-restriction.self"
+                        "settings.general.workspace.maximum-role-expiration.days"
                       )}
-                    </div>
-                    <p className="text-sm text-gray-400 leading-tight">
-                      {t(
-                        "settings.general.workspace.domain-restriction.members-restriction.description"
-                      )}
-                    </p>
+                    </span>
                   </div>
-                </label>
+                  <label className="flex items-center gap-x-2">
+                    <input
+                      type="checkbox"
+                      checked={state.neverExpire}
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        setState((prev) => ({
+                          ...prev,
+                          neverExpire: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      {t(
+                        "settings.general.workspace.maximum-role-expiration.never-expires"
+                      )}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Domain Restriction */}
+            <div>
+              <h3
+                id="domain-restriction"
+                className="font-medium flex flex-row justify-start items-center"
+              >
+                <span className="mr-2">
+                  {t("settings.general.workspace.domain-restriction.self")}
+                </span>
+              </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                {t("settings.general.workspace.domain-restriction.description")}
+              </p>
+              <div className="w-full flex flex-col gap-2 mt-2">
+                {/* Domain tags + input */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {state.domains.map((domain, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 rounded-xs bg-gray-100 px-2 py-1.5 text-sm"
+                    >
+                      {domain}
+                      <button
+                        type="button"
+                        className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                        disabled={!canEdit}
+                        onClick={() => removeDomain(index)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    className="min-w-[20rem] rounded-xs border border-control-border px-3 py-1.5 text-sm disabled:opacity-50"
+                    placeholder={t(
+                      "settings.general.workspace.domain-restriction.domain-input-placeholder"
+                    )}
+                    value={domainInput}
+                    disabled={!canEdit}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={handleDomainKeyDown}
+                    onBlur={addDomain}
+                  />
+                </div>
+
+                {/* Enforce restriction checkbox */}
+                <div className="w-full flex flex-row justify-between items-center">
+                  <label className="flex items-start gap-x-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={state.enableRestriction}
+                      disabled={
+                        !canEdit ||
+                        validDomains.length === 0 ||
+                        !hasDomainRestrictionFeature
+                      }
+                      onChange={(e) =>
+                        setState((prev) => ({
+                          ...prev,
+                          enableRestriction: e.target.checked,
+                        }))
+                      }
+                    />
+                    <div>
+                      <div className="font-medium flex items-center gap-x-2">
+                        {t(
+                          "settings.general.workspace.domain-restriction.members-restriction.self"
+                        )}
+                        <FeatureBadge
+                          feature={
+                            PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                          }
+                        />
+                      </div>
+                      <p className="text-sm text-gray-400 leading-tight">
+                        {t(
+                          "settings.general.workspace.domain-restriction.members-restriction.description"
+                        )}
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </PermissionGuard>
       </div>
     );
   }

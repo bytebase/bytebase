@@ -82,7 +82,7 @@ function TestConnectionResultDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-md shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
+      <div className="bg-white rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-x-2">
             <div className="w-6 h-6 text-green-500">&#10003;</div>
@@ -99,7 +99,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
-          <div className="bg-gray-50 rounded-md p-4">
+          <div className="bg-gray-50 rounded-xs p-4">
             <div className="flex flex-col gap-y-1">
               {Object.entries(response.userInfo).map(([key, value]) => (
                 <div
@@ -126,7 +126,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.claims-description")}
           </p>
-          <div className="bg-gray-50 rounded-md p-4">
+          <div className="bg-gray-50 rounded-xs p-4">
             {Object.keys(response.claims).length === 0 ? (
               <div className="text-sm text-control-light italic">
                 {t("identity-provider.no-claims")}
@@ -345,7 +345,7 @@ function DeleteConfirmDialog({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-md shadow-lg w-96 p-6">
+      <div className="bg-white rounded-sm shadow-lg w-96 p-6">
         <h3 className="text-lg font-medium mb-2">{t("settings.sso.delete")}</h3>
         <p className="text-sm text-gray-600 mb-6">
           {t("identity-provider.delete-warning")}
@@ -765,7 +765,7 @@ function ProviderConfigForm({
               min={1}
               max={65535}
               placeholder="389"
-              className="flex h-9 w-full rounded-md border border-control-border bg-transparent px-3 py-1 text-sm"
+              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm"
             />
           </div>
         </div>
@@ -1502,7 +1502,7 @@ export function IDPDetailPage() {
               <p className="text-base font-semibold text-gray-800 mb-2">
                 {t("common.type")}
               </p>
-              <div className="flex items-center gap-x-3 p-3 bg-gray-50 rounded-md">
+              <div className="flex items-center gap-x-3 p-3 bg-gray-50 rounded-xs">
                 <ProviderIcon className="w-5 h-5 text-gray-600" />
                 <span className="text-base font-medium text-gray-800">
                   {identityProviderTypeToString(localIdp.type)}

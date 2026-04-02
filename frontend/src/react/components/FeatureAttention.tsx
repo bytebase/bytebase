@@ -99,7 +99,7 @@ export function FeatureAttention({
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-md border px-4 py-3 ${
+      className={`flex items-start gap-3 rounded-xs border px-4 py-3 ${
         isWarning
           ? "border-yellow-300 bg-yellow-50"
           : "border-blue-200 bg-blue-50"
@@ -110,7 +110,7 @@ export function FeatureAttention({
           isWarning ? "text-yellow-600" : "text-blue-600"
         }`}
       />
-      <div className="flex-1 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="flex-1 flex flex-col gap-3">
         <div>
           <p
             className={`font-medium text-sm ${
@@ -128,14 +128,16 @@ export function FeatureAttention({
           </p>
         </div>
         {actionText && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0 whitespace-nowrap"
-            onClick={onAction}
-          >
-            {actionText}
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              onClick={onAction}
+            >
+              {actionText}
+            </Button>
+          </div>
         )}
       </div>
     </div>

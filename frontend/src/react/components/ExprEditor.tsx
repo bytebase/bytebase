@@ -205,7 +205,7 @@ function SearchableSelect({
     <div ref={containerRef} className="relative min-w-28">
       <button
         type="button"
-        className="h-8 px-2 text-sm rounded border border-control-border bg-white w-full text-left disabled:opacity-50 truncate"
+        className="h-8 px-2 text-sm rounded-xs border border-control-border bg-white w-full text-left disabled:opacity-50 truncate"
         disabled={disabled}
         onClick={handleOpen}
       >
@@ -214,11 +214,11 @@ function SearchableSelect({
         )}
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded shadow-md">
+        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded-xs shadow-md">
           <div className="p-1 border-b border-control-border">
             <input
               autoFocus
-              className="w-full h-8 px-2 text-sm rounded border border-control-border outline-none"
+              className="w-full h-8 px-2 text-sm rounded-xs border border-control-border outline-none"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -384,7 +384,7 @@ function MultiSearchableSelect({
   return (
     <div ref={containerRef} className="relative min-w-32 max-w-xs">
       <div
-        className="min-h-8 px-2 py-0.5 text-sm rounded border border-control-border bg-white flex flex-wrap gap-1 cursor-pointer"
+        className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white flex flex-wrap gap-1 cursor-pointer"
         onClick={disabled ? undefined : handleOpen}
       >
         {value.length === 0 && (
@@ -414,11 +414,11 @@ function MultiSearchableSelect({
         ))}
       </div>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded shadow-md">
+        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded-xs shadow-md">
           <div className="p-1 border-b border-control-border">
             <input
               autoFocus
-              className="w-full h-8 px-2 text-sm rounded border border-control-border outline-none"
+              className="w-full h-8 px-2 text-sm rounded-xs border border-control-border outline-none"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -501,7 +501,7 @@ function TagInput({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 min-h-8 px-2 py-0.5 rounded border border-control-border bg-white min-w-64 max-w-xs">
+    <div className="flex flex-wrap items-center gap-1 min-h-8 px-2 py-0.5 rounded-xs border border-control-border bg-white min-w-64 max-w-xs">
       {value.map((tag) => (
         <span
           key={tag}
@@ -593,7 +593,7 @@ function MultiCheckSelect({
     <div ref={containerRef} className="relative min-w-32">
       <button
         type="button"
-        className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-md border border-control-border bg-white text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
+        className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
         disabled={disabled}
         onClick={() => setOpen(!open)}
       >
@@ -894,7 +894,7 @@ function ValueInput({
       return (
         <input
           type="number"
-          className="h-8 px-2 text-sm rounded border border-control-border bg-white disabled:opacity-50 max-w-20"
+          className="h-8 px-2 text-sm rounded-xs border border-control-border bg-white disabled:opacity-50 max-w-20"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}
@@ -1012,7 +1012,7 @@ function ConditionRow({
       {!readonly && (
         <button
           type="button"
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-control-placeholder hover:text-control hover:bg-gray-100"
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
           onClick={onRemove}
         >
           <X className="w-4 h-4" />
@@ -1040,7 +1040,7 @@ function RawStringEditor({
   return (
     <div className="w-full flex items-start gap-x-1">
       <textarea
-        className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded border border-control-border bg-white resize-y disabled:opacity-50"
+        className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-white resize-y disabled:opacity-50"
         placeholder="Enter raw CEL expression"
         value={expr.content}
         disabled={readonly}
@@ -1053,7 +1053,7 @@ function RawStringEditor({
       {!readonly && (
         <button
           type="button"
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-control-placeholder hover:text-control hover:bg-gray-100"
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
           onClick={onRemove}
         >
           <X className="w-4 h-4" />
@@ -1144,7 +1144,7 @@ function ConditionGroup({
   return (
     <div
       className={`w-full flex flex-col gap-y-2 py-0.5 ${
-        root ? "" : "border rounded-[3px] bg-gray-50"
+        root ? "" : "border rounded-xs bg-gray-50"
       }`}
     >
       {!root && (
@@ -1171,7 +1171,7 @@ function ConditionGroup({
             <div className="flex items-center justify-end">
               <button
                 type="button"
-                className="w-[22px] h-[22px] flex items-center justify-center rounded hover:bg-gray-100"
+                className="w-[22px] h-[22px] flex items-center justify-center rounded-xs hover:bg-gray-100"
                 onClick={onRemove}
               >
                 <X className="w-3.5 h-3.5" />
@@ -1253,7 +1253,7 @@ function ConditionGroup({
         <div className="pl-1.5 pb-1 flex gap-x-1">
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
             disabled={readonly}
             onClick={addCondition}
           >
@@ -1262,7 +1262,7 @@ function ConditionGroup({
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
             disabled={readonly}
             onClick={addRawString}
           >
@@ -1276,7 +1276,7 @@ function ConditionGroup({
         <div className="flex gap-x-1">
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
             disabled={readonly}
             onClick={addCondition}
           >
@@ -1285,7 +1285,7 @@ function ConditionGroup({
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
             disabled={readonly}
             onClick={addConditionGroup}
           >
@@ -1295,7 +1295,7 @@ function ConditionGroup({
           {enableRawExpression && (
             <button
               type="button"
-              className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded hover:bg-gray-100 disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
               disabled={readonly}
               onClick={addRawString}
             >

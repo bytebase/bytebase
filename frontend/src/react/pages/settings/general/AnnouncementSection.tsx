@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
-import { SparklesIcon } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -10,6 +9,11 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSubscriptionV1Store } from "@/store";
@@ -18,11 +22,7 @@ import {
   Announcement_AlertLevel,
   AnnouncementSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
 interface AnnouncementSectionProps {
@@ -54,7 +54,7 @@ export const AnnouncementSection = forwardRef<
     subscriptionStore.hasFeature(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT)
   );
 
-  const canEdit = hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile");
+  const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
   const getRawAnnouncement = useCallback((): AnnouncementState => {
     const announcement = settingV1Store.workspaceProfile.announcement;
@@ -104,107 +104,103 @@ export const AnnouncementSection = forwardRef<
 
   const disabled = !canEdit || !hasFeature;
 
-  const minimumPlan = useVueState(() =>
-    subscriptionStore.getMinimumRequiredPlan(
-      PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT
-    )
-  );
-
   return (
     <div id="announcement" className="py-6 lg:flex">
       <div className="text-left lg:w-1/4">
         <div className="flex items-center gap-x-2">
           <h1 className="text-2xl font-bold">{title}</h1>
-          {!hasFeature && (
-            <a
-              href="/setting/subscription"
-              className="text-accent"
-              title={t("subscription.require-subscription", {
-                requiredPlan: t(
-                  `subscription.plan.${PlanType[minimumPlan].toLowerCase()}.title`
-                ),
-              })}
-            >
-              <SparklesIcon className="w-5 h-5" />
-            </a>
-          )}
+          <FeatureBadge
+            feature={PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT}
+            clickable
+          />
         </div>
       </div>
-      <div className="flex-1 lg:px-5">
-        <div className="mt-5 lg:mt-0">
-          {/* Alert level radio */}
-          <label className="flex items-center gap-x-2">
-            <span className="font-medium">
-              {t(
-                "settings.general.workspace.announcement-alert-level.description"
+      <PermissionGuard
+        permissions={["bb.settings.setWorkspaceProfile"]}
+        display="block"
+      >
+        <div className="flex-1 lg:px-5">
+          <div className="mt-5 lg:mt-0">
+            {/* Alert level radio */}
+            <label className="flex items-center gap-x-2">
+              <span className="font-medium">
+                {t(
+                  "settings.general.workspace.announcement-alert-level.description"
+                )}
+              </span>
+            </label>
+            <div className="flex flex-wrap py-2 gap-4">
+              {ALERT_LEVELS.map((level) => (
+                <label
+                  key={level}
+                  className="flex items-center gap-x-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="announcementLevel"
+                    disabled={disabled}
+                    checked={state.level === level}
+                    onChange={() => setState((s) => ({ ...s, level }))}
+                  />
+                  <span>
+                    {level === Announcement_AlertLevel.INFO &&
+                      t(
+                        "settings.general.workspace.announcement-alert-level.field.info"
+                      )}
+                    {level === Announcement_AlertLevel.WARNING &&
+                      t(
+                        "settings.general.workspace.announcement-alert-level.field.warning"
+                      )}
+                    {level === Announcement_AlertLevel.CRITICAL &&
+                      t(
+                        "settings.general.workspace.announcement-alert-level.field.critical"
+                      )}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Announcement text */}
+            <label className="flex items-center mt-2 gap-x-2">
+              <span className="font-medium">
+                {t("settings.general.workspace.announcement-text.self")}
+              </span>
+            </label>
+            <div className="mb-3 text-sm text-gray-400">
+              {t("settings.general.workspace.announcement-text.description")}
+            </div>
+            <Input
+              value={state.text}
+              className="mb-3 w-full"
+              placeholder={t(
+                "settings.general.workspace.announcement-text.placeholder"
               )}
-            </span>
-          </label>
-          <div className="flex flex-wrap py-2 gap-4">
-            {ALERT_LEVELS.map((level) => (
-              <label
-                key={level}
-                className="flex items-center gap-x-2 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name="announcementLevel"
-                  disabled={disabled}
-                  checked={state.level === level}
-                  onChange={() => setState((s) => ({ ...s, level }))}
-                />
-                <span>
-                  {level === Announcement_AlertLevel.INFO &&
-                    t(
-                      "settings.general.workspace.announcement-alert-level.field.info"
-                    )}
-                  {level === Announcement_AlertLevel.WARNING &&
-                    t(
-                      "settings.general.workspace.announcement-alert-level.field.warning"
-                    )}
-                  {level === Announcement_AlertLevel.CRITICAL &&
-                    t(
-                      "settings.general.workspace.announcement-alert-level.field.critical"
-                    )}
-                </span>
-              </label>
-            ))}
-          </div>
+              disabled={disabled}
+              onChange={(e) =>
+                setState((s) => ({ ...s, text: e.target.value }))
+              }
+            />
 
-          {/* Announcement text */}
-          <label className="flex items-center mt-2 gap-x-2">
-            <span className="font-medium">
-              {t("settings.general.workspace.announcement-text.self")}
-            </span>
-          </label>
-          <div className="mb-3 text-sm text-gray-400">
-            {t("settings.general.workspace.announcement-text.description")}
+            {/* Extra link */}
+            <label className="flex items-center py-2 gap-x-2">
+              <span className="font-medium">
+                {t("settings.general.workspace.extra-link.self")}
+              </span>
+            </label>
+            <Input
+              value={state.link}
+              className="mb-5 w-full"
+              placeholder={t(
+                "settings.general.workspace.extra-link.placeholder"
+              )}
+              disabled={disabled}
+              onChange={(e) =>
+                setState((s) => ({ ...s, link: e.target.value }))
+              }
+            />
           </div>
-          <Input
-            value={state.text}
-            className="mb-3 w-full"
-            placeholder={t(
-              "settings.general.workspace.announcement-text.placeholder"
-            )}
-            disabled={disabled}
-            onChange={(e) => setState((s) => ({ ...s, text: e.target.value }))}
-          />
-
-          {/* Extra link */}
-          <label className="flex items-center py-2 gap-x-2">
-            <span className="font-medium">
-              {t("settings.general.workspace.extra-link.self")}
-            </span>
-          </label>
-          <Input
-            value={state.link}
-            className="mb-5 w-full"
-            placeholder={t("settings.general.workspace.extra-link.placeholder")}
-            disabled={disabled}
-            onChange={(e) => setState((s) => ({ ...s, link: e.target.value }))}
-          />
         </div>
-      </div>
+      </PermissionGuard>
     </div>
   );
 });

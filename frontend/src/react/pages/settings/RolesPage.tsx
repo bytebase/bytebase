@@ -5,6 +5,8 @@ import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -117,7 +119,7 @@ function PermissionTransfer({
   };
 
   return (
-    <div className="flex h-[28rem] border rounded-md overflow-hidden">
+    <div className="flex h-[28rem] border rounded-sm overflow-hidden">
       {/* Source */}
       <div className="flex-1 flex flex-col border-r min-w-0">
         <div className="flex items-center gap-x-2 px-3 py-2 border-b">
@@ -226,7 +228,7 @@ function ImportPermissionModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-md shadow-lg w-[28rem] p-6">
+      <div className="bg-white rounded-sm shadow-lg w-[28rem] p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium">{t("role.import-from-role")}</h3>
           <Button variant="ghost" size="icon" onClick={onCancel}>
@@ -242,7 +244,7 @@ function ImportPermissionModal({
             <select
               value={selectedRoleName}
               onChange={(e) => setSelectedRoleName(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-control-border bg-transparent px-3 py-1 text-sm"
+              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm"
             >
               <option value="">--</option>
               {roleList.map((role) => (
@@ -316,7 +318,7 @@ function DeleteConfirmModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-md shadow-lg w-[28rem] p-6">
+      <div className="bg-white rounded-sm shadow-lg w-[28rem] p-6">
         <h3 className="text-lg font-medium mb-4">
           {t("common.delete")} - {displayRoleTitle(roleName)}
         </h3>
@@ -818,10 +820,17 @@ export function RolesPage() {
       </div>
 
       <div className="w-full flex justify-end">
-        <Button disabled={!canCreate} onClick={addRole}>
-          <Plus className="h-4 w-4 mr-1" />
-          {t("common.add")}
-        </Button>
+        <PermissionGuard permissions={["bb.roles.create"]}>
+          <Button disabled={!canCreate} onClick={addRole}>
+            <FeatureBadge
+              feature={PlanFeature.FEATURE_CUSTOM_ROLES}
+              clickable={false}
+              className="mr-1 text-white inline-flex"
+            />
+            <Plus className="h-4 w-4 mr-1" />
+            {t("common.add")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       {/* Roles Table */}

@@ -686,7 +686,7 @@ function MaskingAlgorithmDrawer({
               : t("settings.sensitive-data.algorithms.add")}
           </h2>
           <button
-            className="p-1 rounded hover:bg-gray-200 text-gray-500"
+            className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
             onClick={onDismiss}
           >
             <X className="w-5 h-5" />
@@ -704,7 +704,7 @@ function MaskingAlgorithmDrawer({
               {maskingTypeOptions.map((opt) => (
                 <button
                   key={opt.value}
-                  className={`px-3 py-2 text-sm border rounded-md transition-colors ${
+                  className={`px-3 py-2 text-sm border rounded-sm transition-colors ${
                     maskingType === opt.value
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-control-border hover:bg-gray-50"
@@ -802,7 +802,7 @@ function MaskingAlgorithmDrawer({
                       />
                     </div>
                     <button
-                      className="p-1 rounded hover:bg-red-100 text-red-500 mb-0.5"
+                      className="p-1 rounded-xs hover:bg-red-100 text-red-500 mb-0.5"
                       onClick={() =>
                         setRangeMaskSlices((prev) =>
                           prev.filter((_, idx) => idx !== i)
@@ -1015,7 +1015,7 @@ function SemanticTemplateDrawer({
             {t("settings.sensitive-data.semantic-types.add-from-template")}
           </h2>
           <button
-            className="p-1 rounded hover:bg-gray-200 text-gray-500"
+            className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
             onClick={onDismiss}
           >
             <X className="w-5 h-5" />
@@ -1218,7 +1218,7 @@ function SemanticTypeRow({
           )}
           {!isItemReadonly && (
             <button
-              className="p-1 rounded hover:bg-gray-200 text-gray-500"
+              className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
               onClick={() => {
                 const algo = getMaskingType(row.item.algorithm)
                   ? row.item.algorithm
@@ -1247,7 +1247,7 @@ function SemanticTypeRow({
               <>
                 {isEditing && (
                   <button
-                    className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                    className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
                     onClick={() => onCancel(index)}
                   >
                     <Undo2 className="w-4 h-4" />
@@ -1265,7 +1265,7 @@ function SemanticTypeRow({
                 )}
                 {isEditing && (
                   <button
-                    className="p-1 rounded hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isConfirmDisabled(row)}
                     onClick={() => onConfirm(index)}
                   >
@@ -1274,7 +1274,7 @@ function SemanticTypeRow({
                 )}
                 {row.mode === "NORMAL" && (
                   <button
-                    className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                    className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
                     onClick={() => onStartEdit(index)}
                   >
                     <Pencil className="w-4 h-4" />
@@ -1332,7 +1332,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         <div className="flex items-center gap-1">
           <img src={value} className="w-6 h-6 object-contain" alt="" />
           <button
-            className="p-0.5 rounded hover:bg-gray-200 text-gray-500"
+            className="p-0.5 rounded-xs hover:bg-gray-200 text-gray-500"
             onClick={handleOpen}
           >
             <Pencil className="w-3 h-3" />
@@ -1340,7 +1340,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         </div>
       ) : (
         <button
-          className="p-1 rounded hover:bg-gray-200 text-gray-500"
+          className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
           onClick={handleOpen}
         >
           <Pencil className="w-4 h-4" />
@@ -1354,7 +1354,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
           >
             {tempValue ? (
               <div
-                className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-md"
+                className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-sm"
                 style={{ backgroundImage: `url(${tempValue})` }}
               />
             ) : (
@@ -1420,7 +1420,7 @@ function DeleteConfirmButton({
   return (
     <div className="relative" ref={popoverRef}>
       <button
-        className="p-1 rounded hover:bg-red-100 text-red-500"
+        className="p-1 rounded-xs hover:bg-red-100 text-red-500"
         onClick={() => onShowChange(!show)}
       >
         <Trash2 className="w-4 h-4" />

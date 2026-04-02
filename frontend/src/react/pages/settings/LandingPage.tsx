@@ -505,7 +505,7 @@ export function LandingPage({
                 {t("landing.quick-link.self")}
               </div>
               <button
-                className="p-1 rounded hover:bg-gray-100"
+                className="p-1 rounded-xs hover:bg-gray-100"
                 onClick={() => setShowConfigDrawer(true)}
               >
                 <Settings className="w-4 h-4 text-gray-500" />

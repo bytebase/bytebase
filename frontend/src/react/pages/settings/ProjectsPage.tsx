@@ -17,6 +17,7 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -167,7 +168,7 @@ function ConfirmDialog({
       <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
       <div
         className={cn(
-          "relative bg-white rounded-md shadow-lg max-w-lg w-full mx-4 border-t-4",
+          "relative bg-white rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
           borderColor
         )}
       >
@@ -182,7 +183,7 @@ function ConfirmDialog({
           </Button>
           <button
             className={cn(
-              "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium",
+              "inline-flex items-center justify-center rounded-xs px-4 py-2 text-sm font-medium",
               okBg
             )}
             onClick={onOk}
@@ -549,7 +550,7 @@ function BatchOperationsBar({
             projects={selectedProjects}
             iconColor="text-red-600"
           />
-          <div className="rounded-md border border-error bg-error/5 p-3">
+          <div className="rounded-xs border border-error bg-error/5 p-3">
             <p className="text-sm font-medium text-error">
               {t("common.cannot-undo-this-action")}
             </p>
@@ -1046,12 +1047,15 @@ export function ProjectsPage() {
           placeholder={t("project.filter-projects")}
           onParamsChange={setSearchParams}
         />
-        {canCreate && (
-          <Button onClick={() => setShowCreateDrawer(true)}>
+        <PermissionGuard permissions={["bb.projects.create"]}>
+          <Button
+            disabled={!canCreate}
+            onClick={() => setShowCreateDrawer(true)}
+          >
             <Plus className="h-4 w-4 mr-1" />
             {t("quick-action.new-project")}
           </Button>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Batch operations */}
@@ -1073,7 +1077,7 @@ export function ProjectsPage() {
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    className="rounded border-control-border"
+                    className="rounded-xs border-control-border"
                   />
                 </th>
               )}
@@ -1140,7 +1144,7 @@ export function ProjectsPage() {
                           disabled={isDefault}
                           onChange={() => toggleSelection(project.name)}
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded border-control-border disabled:opacity-50"
+                          className="rounded-xs border-control-border disabled:opacity-50"
                         />
                       </td>
                     )}
@@ -1232,7 +1236,7 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-md bg-gray-100 py-0.5 px-2 text-sm">
+        <span key={key} className="rounded-xs bg-gray-100 py-0.5 px-2 text-sm">
           {key}:{value}
         </span>
       ))}
