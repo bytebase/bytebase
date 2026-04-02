@@ -298,7 +298,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.audit-log"),
           requiredPermissionList: () => ["bb.auditLogs.search"],
         },
-        component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
+        component: () => import("@/react/ProjectAuditLogPageMount.vue"),
         props: true,
       },
       {
