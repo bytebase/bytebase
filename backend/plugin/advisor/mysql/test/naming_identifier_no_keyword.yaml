@@ -4,7 +4,9 @@
     - status: 3
       code: 201
       title: Syntax error
-      content: 'Syntax error at line 1: expected identifier'
+      content: |-
+        Syntax error at line 1:14: expected identifier
+        related text: CREATE TABLE interval(id int);
       startposition:
         line: 1
         column: 14

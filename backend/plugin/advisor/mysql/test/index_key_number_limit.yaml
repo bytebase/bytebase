@@ -8,13 +8,29 @@
       foreign key fk (a, b, b, b, b, b) references t1(a, b, b, b, b, b)
     );
   want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 4: unexpected token'
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `pk` in table `t` should be not greater than 5
       startposition:
         line: 4
-        column: 15
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `uk` in table `t` should be not greater than 5
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `fk` in table `t` should be not greater than 5
+      startposition:
+        line: 6
+        column: 0
       endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
@@ -42,13 +58,21 @@
     ALTER TABLE t ADD PRIMARY KEY pk (a, b, c, d, e, f, g);
     ALTER TABLE t ADD UNIQUE KEY uk (a, b, c, d, e, f, g);
   want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 2: unexpected token'
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `pk` in table `t` should be not greater than 5
       startposition:
         line: 2
-        column: 31
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `uk` in table `t` should be not greater than 5
+      startposition:
+        line: 3
+        column: 0
       endposition: null
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);

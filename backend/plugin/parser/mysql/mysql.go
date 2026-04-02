@@ -78,9 +78,14 @@ func convertOmniError(err error, stmt base.Statement) error {
 		pos.Line += stmt.Start.Line - 1
 	}
 
+	msg := fmt.Sprintf("Syntax error at line %d:%d: %s", pos.Line, pos.Column, parseErr.Message)
+	if parseErr.RelatedText != "" {
+		msg += "\nrelated text: " + parseErr.RelatedText
+	}
+
 	return &base.SyntaxError{
 		Position:   pos,
-		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
+		Message:    msg,
 		RawMessage: parseErr.Message,
 	}
 }
