@@ -91,10 +91,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       requiredPermissionList: () => ["bb.databases.list"],
     },
     components: {
-      content: () => import("@/views/DatabaseDashboard.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: () => ({ page: "DatabasesPage" }),
+      leftSidebar: true,
+    },
   },
   {
     path: "environments",

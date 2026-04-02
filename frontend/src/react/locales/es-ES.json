@@ -194,6 +194,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "General",
+      "members": "Miembros",
+      "users-and-groups": "Usuarios y grupos",
+      "members-and-groups": "Miembros y grupos",
+      "sso": "SSO",
+      "subscription": "Suscripción",
+      "audit-log": "Registros de auditoría",
+      "custom-roles": "Roles personalizados",
+      "global-masking": "Enmascaramiento Global",
+      "data-classification": "Clasificación de datos",
+      "im-integration": "Integración de IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",

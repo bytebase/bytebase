@@ -194,6 +194,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "通用",
+      "members": "成员",
+      "users-and-groups": "用户和群组",
+      "members-and-groups": "成员和群组",
+      "sso": "SSO",
+      "subscription": "订阅",
+      "audit-log": "审计日志",
+      "custom-roles": "自定义角色",
+      "global-masking": "全局数据脱敏",
+      "data-classification": "数据分类",
+      "im-integration": "IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "JSON 格式无效",

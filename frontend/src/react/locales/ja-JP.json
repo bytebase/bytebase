@@ -194,6 +194,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "全般",
+      "members": "メンバー",
+      "users-and-groups": "ユーザーとグループ",
+      "members-and-groups": "メンバーとグループ",
+      "sso": "SSO",
+      "subscription": "サブスクリプション",
+      "audit-log": "監査ログ",
+      "custom-roles": "カスタムロール",
+      "global-masking": "グローバルマスキング",
+      "data-classification": "データ分類",
+      "im-integration": "IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",

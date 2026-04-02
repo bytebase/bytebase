@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { sortBy, uniq } from "lodash-es";
 import {
   ArrowRightLeft,
   CheckCircle,
@@ -22,12 +21,21 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { LabelsDisplay } from "@/react/components/LabelsDisplay";
 import { Button } from "@/react/components/ui/button";
+import { Combobox } from "@/react/components/ui/combobox";
+import { useClickOutside } from "@/react/hooks/useClickOutside";
+import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import {
+  getPageSizeOptions,
+  useSessionPageSize,
+} from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { router } from "@/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   pushNotification,
@@ -50,6 +58,8 @@ import {
   defaultCharsetOfEngineV1,
   defaultCollationOfEngineV1,
   isValidDatabaseName,
+  isValidInstanceName,
+  isValidProjectName,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
@@ -77,7 +87,6 @@ import {
   extractProjectResourceName,
   getDatabaseEnvironment,
   getDatabaseProject,
-  getDefaultPagination,
   getInstanceResource,
   hasWorkspacePermissionV2,
   hostPortOfInstanceV1,
@@ -85,102 +94,7 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 
-// ============================================================
-// Pagination helpers
-// ============================================================
-
-const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
-
-function getPageSizeOptions(): number[] {
-  const defaultSize = getDefaultPagination();
-  return sortBy(uniq([defaultSize, ...PAGE_SIZE_OPTIONS]));
-}
-
-function useSessionPageSize(
-  sessionKey: string
-): [number, (size: number) => void] {
-  const currentUser = useCurrentUserV1();
-  const email = useVueState(() => currentUser.value.email);
-  const storageKey = `bb.paged-table.${sessionKey}.${email}`;
-
-  const [pageSize, setPageSize] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const size = parsed?.pageSize;
-        const options = getPageSizeOptions();
-        if (typeof size === "number" && options.includes(size)) {
-          return Math.max(options[0], size);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return getPageSizeOptions()[0];
-  });
-
-  const updatePageSize = useCallback(
-    (size: number) => {
-      setPageSize(size);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({ pageSize: size }));
-      } catch {
-        // ignore
-      }
-    },
-    [storageKey]
-  );
-
-  return [pageSize, updatePageSize];
-}
-
-// ============================================================
-// Shared hooks
-// ============================================================
-
-function useEscapeKey(active: boolean, onClose: () => void) {
-  useEffect(() => {
-    if (!active) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [active, onClose]);
-}
-
-// ============================================================
-// LabelsDisplay
-// ============================================================
-
-function LabelsDisplay({
-  labels,
-  showCount = 1,
-}: {
-  labels: { [key: string]: string };
-  showCount?: number;
-}) {
-  const entries = Object.entries(labels);
-  if (entries.length === 0)
-    return <span className="text-control-placeholder">-</span>;
-  const displayEntries = entries.slice(0, showCount);
-  const hasMore = entries.length > showCount;
-  return (
-    <div className="flex items-center gap-x-1">
-      {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-md bg-gray-100 py-0.5 px-2 text-sm">
-          {key}:{value}
-        </span>
-      ))}
-      {hasMore && (
-        <span className="text-control-placeholder">
-          +{entries.length - showCount}
-        </span>
-      )}
-    </div>
-  );
-}
+const INTERNAL_RDS_USERS = ["rds_ad", "rdsadmin", "rds_iam"];
 
 // ============================================================
 // DatabaseBatchOperationsBar
@@ -248,96 +162,6 @@ function DatabaseBatchOperationsBar({
           <ArrowRightLeft className="h-4 w-4 mr-1" />
           {t("database.transfer-project")}
         </Button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// EditEnvironmentDrawer
-// ============================================================
-
-function EditEnvironmentDrawer({
-  open,
-  onClose,
-  onUpdate,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onUpdate: (environment: string) => Promise<void>;
-}) {
-  const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
-  const [selected, setSelected] = useState("");
-  const [updating, setUpdating] = useState(false);
-  useEscapeKey(open, onClose);
-  useEffect(() => {
-    if (open) {
-      setSelected("");
-      setUpdating(false);
-    }
-  }, [open]);
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">
-            {t("database.edit-environment")}
-          </h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="flex flex-col gap-y-1">
-            {environments.map((env) => (
-              <label
-                key={env.name}
-                className={cn(
-                  "flex items-center gap-x-3 px-3 py-2.5 rounded-lg cursor-pointer border transition-colors",
-                  selected === env.name
-                    ? "border-accent bg-accent/5"
-                    : "border-transparent hover:bg-gray-50"
-                )}
-              >
-                <input
-                  type="radio"
-                  name="environment"
-                  checked={selected === env.name}
-                  onChange={() => setSelected(env.name)}
-                  className="accent-accent"
-                />
-                <EnvironmentLabel environment={env} />
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t border-control-border">
-          <Button variant="ghost" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!selected || updating}
-            onClick={async () => {
-              setUpdating(true);
-              try {
-                await onUpdate(selected);
-                onClose();
-              } finally {
-                setUpdating(false);
-              }
-            }}
-          >
-            {t("common.confirm")}
-          </Button>
-        </div>
       </div>
     </div>
   );
@@ -691,6 +515,126 @@ function TransferProjectDrawer({
 }
 
 // ============================================================
+// IssueLabelSelect
+// ============================================================
+
+function IssueLabelSelect({
+  labels,
+  selected,
+  required,
+  onChange,
+}: {
+  labels: { value: string; color: string }[];
+  selected: string[];
+  required: boolean;
+  onChange: (labels: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const closeDropdown = useCallback(() => setOpen(false), []);
+  useClickOutside(containerRef, open, closeDropdown);
+
+  const toggleLabel = (value: string) => {
+    onChange(
+      selected.includes(value)
+        ? selected.filter((l) => l !== value)
+        : [...selected, value]
+    );
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">
+        {t("issue.labels")}
+        {required && <span className="text-error"> *</span>}
+      </label>
+      <div ref={containerRef} className="relative">
+        <button
+          type="button"
+          className={cn(
+            "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-md h-9 px-3 text-sm bg-white text-left transition-colors",
+            "hover:border-gray-400",
+            open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
+          )}
+          onClick={() => setOpen(!open)}
+        >
+          {selected.length > 0 ? (
+            <div className="flex items-center gap-1.5 truncate">
+              {selected.map((val) => {
+                const label = labels.find((l) => l.value === val);
+                return (
+                  <span
+                    key={val}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-xs"
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-sm shrink-0"
+                      style={{ backgroundColor: label?.color }}
+                    />
+                    {val}
+                    <X
+                      className="w-3 h-3 text-gray-400 hover:text-gray-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLabel(val);
+                      }}
+                    />
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="text-gray-400">{t("common.select")}</span>
+          )}
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-gray-400 shrink-0 transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+        {open && (
+          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+            <div className="max-h-60 overflow-y-auto">
+              {labels.length === 0 ? (
+                <div className="px-3 py-6 text-sm text-gray-400 text-center">
+                  {t("common.no-data")}
+                </div>
+              ) : (
+                labels.map((label) => {
+                  const isSelected = selected.includes(label.value);
+                  return (
+                    <button
+                      key={label.value}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleLabel(label.value)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        readOnly
+                        className="rounded border-gray-300 accent-accent"
+                      />
+                      <span
+                        className="w-4 h-4 rounded-sm shrink-0"
+                        style={{ backgroundColor: label.color }}
+                      />
+                      <span>{label.value}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // CreateDatabaseDrawer
 // ============================================================
 
@@ -712,158 +656,167 @@ function CreateDatabaseDrawer({
   const [instanceName, setInstanceName] = useState("");
   const [databaseName, setDatabaseName] = useState("");
   const [environmentName, setEnvironmentName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [characterSet, setCharacterSet] = useState("");
   const [collation, setCollation] = useState("");
   const [creating, setCreating] = useState(false);
+  const [issueLabels, setIssueLabels] = useState<string[]>([]);
+  const [instanceRoles, setInstanceRoles] = useState<
+    { name: string; roleName: string }[]
+  >([]);
 
-  // Project search
-  const [projectSearch, setProjectSearch] = useState("");
+  // Loaded options
   const [projects, setProjects] = useState<{ name: string; title: string }[]>(
     []
   );
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const projectSearchTimerRef = useRef<ReturnType<typeof setTimeout>>(
-    undefined
-  );
-
-  // Instance search
-  const [instanceSearch, setInstanceSearch] = useState("");
   const [instances, setInstances] = useState<Instance[]>([]);
-  const [loadingInstances, setLoadingInstances] = useState(false);
-  const instanceSearchTimerRef = useRef<ReturnType<typeof setTimeout>>(
-    undefined
-  );
-
-  // Environments
   const environments = useVueState(
     () => environmentStore.environmentList ?? []
   );
 
-  // Selected instance details (for engine-specific fields)
+  // Fetch full project for issue labels when selection changes
+  const [selectedProject, setSelectedProject] = useState<
+    | {
+        issueLabels: { value: string; color: string }[];
+        forceIssueLabels: boolean;
+      }
+    | undefined
+  >();
+
+  useEffect(() => {
+    setIssueLabels([]);
+    setSelectedProject(undefined);
+    if (!projectName) return;
+    projectStore.getOrFetchProjectByName(projectName).then((project) => {
+      setSelectedProject({
+        issueLabels: project.issueLabels ?? [],
+        forceIssueLabels: project.forceIssueLabels ?? false,
+      });
+    });
+  }, [projectName, projectStore]);
+
+  const projectIssueLabels = selectedProject?.issueLabels ?? [];
+  const forceIssueLabels = selectedProject?.forceIssueLabels ?? false;
+
+  // Selected instance for engine-specific fields
   const selectedInstance = useMemo(
     () => instances.find((i) => i.name === instanceName),
     [instances, instanceName]
   );
 
+  // Engine checks
+  const requireOwner =
+    selectedInstance &&
+    [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
+      selectedInstance.engine
+    );
+
   // Validation
   const isReservedName = databaseName.toLowerCase() === "bytebase";
   const allowCreate =
-    !!projectName && !!instanceName && !!databaseName && !isReservedName;
+    isValidProjectName(projectName) &&
+    isValidInstanceName(instanceName) &&
+    !!databaseName &&
+    !isReservedName &&
+    (!requireOwner || !!ownerName) &&
+    (!forceIssueLabels || issueLabels.length > 0);
 
   useEscapeKey(open, onClose);
 
-  // Fetch projects
-  const fetchProjects = useCallback(
-    async (query: string) => {
-      setLoadingProjects(true);
-      try {
-        const { projects: result } = await projectStore.fetchProjectList({
+  const searchProjects = useCallback(
+    (query: string) => {
+      projectStore
+        .fetchProjectList({
           filter: { query, excludeDefault: true },
           pageSize: 50,
-        });
-        setProjects(result.map((p) => ({ name: p.name, title: p.title })));
-      } finally {
-        setLoadingProjects(false);
-      }
+        })
+        .then(({ projects: result }) =>
+          setProjects(result.map((p) => ({ name: p.name, title: p.title })))
+        );
     },
     [projectStore]
   );
 
-  // Fetch instances
-  const fetchInstances = useCallback(
-    async (query: string) => {
-      setLoadingInstances(true);
-      try {
-        const result = await instanceStore.fetchInstanceList({
+  const searchInstances = useCallback(
+    (query: string) => {
+      instanceStore
+        .fetchInstanceList({
           pageSize: 50,
           filter: { query, engines: enginesSupportCreateDatabase() },
-        });
-        setInstances(result.instances);
-      } finally {
-        setLoadingInstances(false);
-      }
+        })
+        .then((result) => setInstances(result.instances));
     },
     [instanceStore]
   );
 
-  // Reset state on open
+  // Reset state and load initial data on open
   useEffect(() => {
-    if (open) {
-      setProjectName("");
-      setInstanceName("");
-      setDatabaseName("");
-      setEnvironmentName("");
-      setCharacterSet("");
-      setCollation("");
-      setCreating(false);
-      setProjectSearch("");
-      setInstanceSearch("");
-      fetchProjects("");
-      fetchInstances("");
+    if (!open) return;
+    setProjectName("");
+    setInstanceName("");
+    setDatabaseName("");
+    setEnvironmentName("");
+    setOwnerName("");
+    setIssueLabels([]);
+    setCharacterSet("");
+    setCollation("");
+    setCreating(false);
+    setInstanceRoles([]);
+    searchProjects("");
+    searchInstances("");
+  }, [open, searchProjects, searchInstances]);
+
+  const handleInstanceChange = async (name: string) => {
+    setInstanceName(name);
+    setOwnerName("");
+    setInstanceRoles([]);
+    const inst = instances.find((i) => i.name === name);
+    if (inst?.environment) setEnvironmentName(inst.environment);
+    // Fetch full instance with roles for Postgres/Redshift/CockroachDB
+    if (
+      inst &&
+      [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(
+        inst.engine
+      )
+    ) {
+      const full = await instanceStore.getOrFetchInstanceByName(name);
+      if (full?.roles) {
+        setInstanceRoles(
+          full.roles
+            .filter((r) => !INTERNAL_RDS_USERS.includes(r.roleName))
+            .map((r) => ({ name: r.name, roleName: r.roleName }))
+        );
+      }
     }
-  }, [open, fetchProjects, fetchInstances]);
-
-  // Debounced project search
-  useEffect(() => {
-    if (!open) return;
-    if (projectSearchTimerRef.current)
-      clearTimeout(projectSearchTimerRef.current);
-    projectSearchTimerRef.current = setTimeout(
-      () => fetchProjects(projectSearch),
-      300
-    );
-    return () => {
-      if (projectSearchTimerRef.current)
-        clearTimeout(projectSearchTimerRef.current);
-    };
-  }, [projectSearch, open, fetchProjects]);
-
-  // Debounced instance search
-  useEffect(() => {
-    if (!open) return;
-    if (instanceSearchTimerRef.current)
-      clearTimeout(instanceSearchTimerRef.current);
-    instanceSearchTimerRef.current = setTimeout(
-      () => fetchInstances(instanceSearch),
-      300
-    );
-    return () => {
-      if (instanceSearchTimerRef.current)
-        clearTimeout(instanceSearchTimerRef.current);
-    };
-  }, [instanceSearch, open, fetchInstances]);
-
-  const selectInstance = (inst: Instance) => {
-    setInstanceName(inst.name);
-    if (inst.environment) setEnvironmentName(inst.environment);
   };
 
   const handleCreate = async () => {
     if (!allowCreate || creating) return;
     setCreating(true);
     try {
-      const project =
-        await projectStore.getOrFetchProjectByName(projectName);
-      const engine = selectedInstance?.engine ?? Engine.UNRECOGNIZED;
+      const project = await projectStore.getOrFetchProjectByName(projectName);
+      const engine = selectedInstance?.engine ?? 0;
       const createDatabaseConfig = create(Plan_CreateDatabaseConfigSchema, {
         target: instanceName,
         database: databaseName,
         environment: environmentName || undefined,
         characterSet: characterSet || defaultCharsetOfEngineV1(engine),
         collation: collation || defaultCollationOfEngineV1(engine),
+        owner: requireOwner ? ownerName : "",
       });
       const spec = create(Plan_SpecSchema, {
         id: uuidv4(),
         config: { case: "createDatabaseConfig", value: createDatabaseConfig },
       });
       const planCreate = create(PlanSchema, {
-        title: `Create database '${databaseName}'`,
+        title: `${t("quick-action.create-db")} '${databaseName}'`,
         specs: [spec],
         creator: currentUser.value.name,
       });
       const issueCreate = create(IssueSchema, {
         type: Issue_Type.DATABASE_CHANGE,
         creator: `users/${currentUser.value.email}`,
+        labels: issueLabels,
       });
       const { createdIssue } = await experimentalCreateIssueByPlan(
         project,
@@ -893,190 +846,146 @@ function CreateDatabaseDrawer({
   if (!open) return null;
 
   const showCharsetCollation =
-    selectedInstance &&
-    instanceV1HasCollationAndCharacterSet(selectedInstance);
+    selectedInstance && instanceV1HasCollationAndCharacterSet(selectedInstance);
 
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[36rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
-            {t("quick-action.new-db")}
+            {t("quick-action.create-db")}
           </h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded"
-            onClick={onClose}
-          >
+          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-y-6">
-          {/* Project selector */}
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-y-4">
+          {/* Project */}
           <div>
             <label className="block text-sm font-medium mb-1">
               {t("common.project")} <span className="text-error">*</span>
             </label>
-            <input
-              type="text"
-              value={projectSearch}
-              onChange={(e) => setProjectSearch(e.target.value)}
-              placeholder={t("common.filter-by-name")}
-              className="w-full border border-control-border rounded-md px-3 py-2 text-sm mb-2"
+            <Combobox
+              value={projectName}
+              onChange={setProjectName}
+              placeholder={t("common.project")}
+              noResultsText={t("common.no-data")}
+              onSearch={searchProjects}
+              options={projects.map((p) => ({
+                value: p.name,
+                label: p.title,
+                description: p.name,
+              }))}
             />
-            <div className="border border-control-border rounded-md max-h-48 overflow-y-auto">
-              {loadingProjects ? (
-                <div className="px-3 py-4 text-sm text-center text-control-placeholder">
-                  {t("common.loading")}
-                </div>
-              ) : projects.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-center text-control-placeholder">
-                  {t("common.no-data")}
-                </div>
-              ) : (
-                projects.map((project) => (
-                  <label
-                    key={project.name}
-                    className={cn(
-                      "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer border-b last:border-b-0 transition-colors",
-                      projectName === project.name
-                        ? "bg-accent/5"
-                        : "hover:bg-gray-50"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="create-db-project"
-                      checked={projectName === project.name}
-                      onChange={() => setProjectName(project.name)}
-                      className="accent-accent"
-                    />
-                    <span className="text-sm">{project.title}</span>
-                    <span className="text-xs text-control-placeholder">
-                      {extractProjectResourceName(project.name)}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
           </div>
 
-          {/* Instance selector */}
+          {/* Issue Labels */}
+          {selectedProject && projectIssueLabels.length > 0 && (
+            <IssueLabelSelect
+              labels={projectIssueLabels}
+              selected={issueLabels}
+              required={forceIssueLabels}
+              onChange={setIssueLabels}
+            />
+          )}
+
+          {/* Instance */}
           <div>
             <label className="block text-sm font-medium mb-1">
               {t("common.instance")} <span className="text-error">*</span>
             </label>
-            <input
-              type="text"
-              value={instanceSearch}
-              onChange={(e) => setInstanceSearch(e.target.value)}
-              placeholder={t("common.filter-by-name")}
-              className="w-full border border-control-border rounded-md px-3 py-2 text-sm mb-2"
+            <Combobox
+              value={instanceName}
+              onChange={handleInstanceChange}
+              placeholder={t("common.instance")}
+              noResultsText={t("common.no-data")}
+              onSearch={searchInstances}
+              options={instances.map((inst) => ({
+                value: inst.name,
+                label: inst.title,
+                description: hostPortOfInstanceV1(inst),
+              }))}
             />
-            <div className="border border-control-border rounded-md max-h-48 overflow-y-auto">
-              {loadingInstances ? (
-                <div className="px-3 py-4 text-sm text-center text-control-placeholder">
-                  {t("common.loading")}
-                </div>
-              ) : instances.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-center text-control-placeholder">
-                  {t("common.no-data")}
-                </div>
-              ) : (
-                instances.map((inst) => (
-                  <label
-                    key={inst.name}
-                    className={cn(
-                      "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer border-b last:border-b-0 transition-colors",
-                      instanceName === inst.name
-                        ? "bg-accent/5"
-                        : "hover:bg-gray-50"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="create-db-instance"
-                      checked={instanceName === inst.name}
-                      onChange={() => selectInstance(inst)}
-                      className="accent-accent"
-                    />
-                    <img
-                      className="h-4 w-4"
-                      src={EngineIconPath[inst.engine]}
-                      alt=""
-                    />
-                    <span className="text-sm">{inst.title}</span>
-                    <span className="text-xs text-control-placeholder">
-                      {hostPortOfInstanceV1(inst)}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
           </div>
 
           {/* Database name */}
           <div>
             <label className="block text-sm font-medium mb-1">
-              {t("common.database")} <span className="text-error">*</span>
+              {t("create-db.new-database-name")}{" "}
+              <span className="text-error">*</span>
             </label>
             <input
               type="text"
               value={databaseName}
               onChange={(e) => setDatabaseName(e.target.value)}
-              placeholder={t("common.database")}
+              placeholder={t("create-db.new-database-name")}
               className={cn(
                 "w-full border rounded-md px-3 py-2 text-sm",
-                isReservedName
-                  ? "border-error"
-                  : "border-control-border"
+                isReservedName ? "border-error" : "border-control-border"
               )}
             />
             {isReservedName && (
               <p className="mt-1 text-xs text-error">
-                &quot;bytebase&quot; is a reserved name
+                {t("create-db.reserved-db-error", {
+                  databaseName,
+                })}
               </p>
             )}
           </div>
 
-          {/* Environment selector */}
+          {/* Database Owner (Postgres/Redshift/CockroachDB) */}
+          {requireOwner && instanceName && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {t("create-db.database-owner-name")}{" "}
+                <span className="text-error">*</span>
+              </label>
+              <Combobox
+                value={ownerName}
+                onChange={setOwnerName}
+                placeholder={t("create-db.database-owner-name")}
+                noResultsText={t("common.no-data")}
+                options={instanceRoles.map((role) => ({
+                  value: role.roleName,
+                  label: role.roleName,
+                }))}
+              />
+            </div>
+          )}
+
+          {/* Environment */}
           <div>
             <label className="block text-sm font-medium mb-1">
               {t("common.environment")}
             </label>
-            <div className="border border-control-border rounded-md max-h-36 overflow-y-auto">
-              {environments.map((env) => (
-                <label
-                  key={env.name}
-                  className={cn(
-                    "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer border-b last:border-b-0 transition-colors",
-                    environmentName === env.name
-                      ? "bg-accent/5"
-                      : "hover:bg-gray-50"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="create-db-environment"
-                    checked={environmentName === env.name}
-                    onChange={() => setEnvironmentName(env.name)}
-                    className="accent-accent"
-                  />
-                  <EnvironmentLabel environment={env} />
-                </label>
-              ))}
-            </div>
+            <Combobox
+              value={environmentName}
+              onChange={setEnvironmentName}
+              placeholder={t("common.environment")}
+              noResultsText={t("common.no-data")}
+              renderValue={(opt) => (
+                <EnvironmentLabel environmentName={opt.value} />
+              )}
+              options={environments.map((env) => ({
+                value: env.name,
+                label: env.title,
+                render: () => <EnvironmentLabel environmentName={env.name} />,
+              }))}
+            />
           </div>
 
           {/* Character Set & Collation */}
           {showCharsetCollation && (
-            <div className="flex gap-x-4">
-              <div className="flex-1">
+            <>
+              <div>
                 <label className="block text-sm font-medium mb-1">
-                  {t("db.character-set")}
+                  {selectedInstance.engine === Engine.POSTGRES
+                    ? t("db.encoding")
+                    : t("db.character-set")}
                 </label>
                 <input
                   type="text"
@@ -1088,7 +997,7 @@ function CreateDatabaseDrawer({
                   className="w-full border border-control-border rounded-md px-3 py-2 text-sm"
                 />
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="block text-sm font-medium mb-1">
                   {t("db.collation")}
                 </label>
@@ -1096,13 +1005,14 @@ function CreateDatabaseDrawer({
                   type="text"
                   value={collation}
                   onChange={(e) => setCollation(e.target.value)}
-                  placeholder={defaultCollationOfEngineV1(
-                    selectedInstance.engine
-                  )}
+                  placeholder={
+                    defaultCollationOfEngineV1(selectedInstance.engine) ||
+                    "default"
+                  }
                   className="w-full border border-control-border rounded-md px-3 py-2 text-sm"
                 />
               </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -1112,7 +1022,7 @@ function CreateDatabaseDrawer({
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowCreate || creating} onClick={handleCreate}>
-            {creating ? t("common.creating") : t("common.create")}
+            {t("common.create")}
           </Button>
         </div>
 

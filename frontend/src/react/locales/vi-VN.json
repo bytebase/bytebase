@@ -194,6 +194,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "Chung",
+      "members": "Thành viên",
+      "users-and-groups": "Người dùng & Nhóm",
+      "members-and-groups": "Thành viên & Nhóm",
+      "sso": "SSO",
+      "subscription": "Gói đăng ký",
+      "audit-log": "Nhật ký kiểm tra",
+      "custom-roles": "Vai trò tùy chỉnh",
+      "global-masking": "Che giấu toàn cục",
+      "data-classification": "Phân loại dữ liệu",
+      "im-integration": "Tích hợp",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",
