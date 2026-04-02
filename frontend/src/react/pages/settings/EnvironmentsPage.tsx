@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
@@ -816,8 +817,9 @@ function EnvironmentDetail({
           {/* Tier section */}
           <div className="flex flex-col gap-y-2">
             <div className="gap-y-1">
-              <label className="font-medium flex items-center">
+              <label className="font-medium flex items-center gap-x-1">
                 {t("policy.environment-tier.name")}
+                <FeatureBadge feature={PlanFeature.FEATURE_ENVIRONMENT_TIERS} />
               </label>
               <p className="text-sm text-gray-600">
                 {t("policy.environment-tier.description", { newline: "\n" })}

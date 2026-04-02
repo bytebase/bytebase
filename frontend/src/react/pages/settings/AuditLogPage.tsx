@@ -208,7 +208,7 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-md shadow-lg flex flex-col"
+            className="bg-white rounded-sm shadow-lg flex flex-col"
             style={{
               width: "calc(100vw - 12rem)",
               height: "calc(100vh - 12rem)",

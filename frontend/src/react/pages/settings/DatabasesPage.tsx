@@ -24,6 +24,7 @@ import {
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
@@ -1595,13 +1596,20 @@ export function DatabasesPage() {
           placeholder={t("database.filter-database")}
           scopeOptions={scopeOptions}
         />
-        {hasWorkspacePermissionV2("bb.instances.list") &&
-          hasWorkspacePermissionV2("bb.issues.create") && (
-            <Button onClick={() => setShowCreateDrawer(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("quick-action.new-db")}
-            </Button>
-          )}
+        <PermissionGuard
+          permissions={["bb.instances.list", "bb.issues.create"]}
+        >
+          <Button
+            disabled={
+              !hasWorkspacePermissionV2("bb.instances.list") ||
+              !hasWorkspacePermissionV2("bb.issues.create")
+            }
+            onClick={() => setShowCreateDrawer(true)}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {t("quick-action.new-db")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       <div className="flex flex-col gap-y-4">

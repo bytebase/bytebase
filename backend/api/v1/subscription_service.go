@@ -196,7 +196,7 @@ func (s *SubscriptionService) createCheckout(workspaceID string, v1Plan v1pb.Pla
 		PriceModel:    priceModel,
 		SuccessURL:    redirectURL + "?session_id={CHECKOUT_SESSION_ID}",
 		CancelURL:     redirectURL,
-		PromotionCode: priceModel.GetPromotionCode(),
+		PromotionCode: pricing.GetPromotionCode(plan, interval),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create checkout session"))
@@ -352,7 +352,10 @@ func (s *SubscriptionService) ListPurchasePlans(_ context.Context, _ *connect.Re
 		for _, bm := range limit.BillingMethods {
 			method := &v1pb.PurchaseBillingMethod{
 				Interval: convertStoreIntervalToV1(bm.Interval),
-				Discount: bm.Discount,
+			}
+			// Look up discount from Stripe if a promotion code is configured.
+			if code := pricing.GetPromotionCode(p, bm.Interval); code != "" {
+				method.Discount = stripeplugin.GetPromotionDiscount(code)
 			}
 			plan.BillingMethods = append(plan.BillingMethods, method)
 		}

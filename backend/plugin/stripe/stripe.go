@@ -19,6 +19,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/pricing"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // WebhookSource is used to filter webhook events from our checkout sessions.
@@ -90,6 +91,10 @@ func CreateCheckoutSession(params *CheckoutParams) (*CheckoutResult, error) {
 				{PromotionCode: stripego.String(promo.ID)},
 			}
 		}
+	} else {
+		// Allow customers to manually enter promotion codes at checkout.
+		// This is mutually exclusive with the Discounts param above.
+		checkoutParams.AllowPromotionCodes = stripego.Bool(true)
 	}
 
 	s, err := checkoutsession.New(checkoutParams)
@@ -380,6 +385,38 @@ func CreateBillingPortalSession(customerID string, returnURL string) (string, er
 		return "", errors.Wrap(err, "failed to create billing portal session")
 	}
 	return s.URL, nil
+}
+
+// GetPromotionDiscount looks up an active promotion code and returns its discount info
+// for display in the frontend. Returns nil if the code is invalid or inactive.
+func GetPromotionDiscount(code string) *v1pb.PurchaseDiscount {
+	iter := promotioncode.List(&stripego.PromotionCodeListParams{
+		Code:   stripego.String(code),
+		Active: stripego.Bool(true),
+	})
+	for iter.Next() {
+		promo := iter.PromotionCode()
+		if promo.Coupon == nil {
+			continue
+		}
+		c := promo.Coupon
+		if c.PercentOff > 0 {
+			return &v1pb.PurchaseDiscount{
+				Type:  v1pb.PurchaseDiscount_PERCENTAGE_OFF,
+				Value: int32(c.PercentOff),
+			}
+		}
+		if c.DurationInMonths > 0 && c.AmountOff > 0 {
+			return &v1pb.PurchaseDiscount{
+				Type:  v1pb.PurchaseDiscount_FIXED_MONTH_OFF,
+				Value: int32(c.DurationInMonths),
+			}
+		}
+	}
+	if err := iter.Err(); err != nil {
+		slog.Error("failed to look up promotion discount", log.BBError(err), slog.String("code", code))
+	}
+	return nil
 }
 
 // GetPromotionByCode looks up an active promotion code eligible for first-time customers.

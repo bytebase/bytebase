@@ -112,13 +112,14 @@ export const SQLEditorSection = forwardRef<
   const [state, setState] = useState<LocalState>(getInitialState);
 
   // Re-sync state when underlying data loads (e.g. after policy fetch on mount).
-  const prevPolicyRef = useRef(policyPayload);
+  const prevInitialRef = useRef<LocalState>(getInitialState());
   useEffect(() => {
-    if (prevPolicyRef.current !== policyPayload) {
-      prevPolicyRef.current = policyPayload;
-      setState(getInitialState());
+    const next = getInitialState();
+    if (!isEqual(prevInitialRef.current, next)) {
+      prevInitialRef.current = next;
+      setState(next);
     }
-  }, [policyPayload, getInitialState]);
+  }, [getInitialState]);
 
   const isDirty = useCallback(
     () => !isEqual(state, getInitialState()),

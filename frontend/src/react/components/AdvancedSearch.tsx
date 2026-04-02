@@ -405,7 +405,7 @@ export function AdvancedSearch({
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex items-center border border-gray-300 rounded-xs bg-white transition-colors"
+        className="flex items-center h-9 border border-gray-300 rounded-xs bg-white transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
         {/* Prefix: filter icon + tags */}
@@ -448,7 +448,7 @@ export function AdvancedSearch({
         {/* Input */}
         <input
           ref={inputRef}
-          className="flex-1 min-w-[120px] h-9 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
+          className="flex-1 min-w-[120px] bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
           value={inputText}
           placeholder={visibleTags.length > 0 ? "" : placeholder}
           onClick={handleInputClick}

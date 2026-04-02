@@ -239,7 +239,9 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                   {/* Upload overlay */}
                   <div
                     className={`flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0 ${
-                      logoUrl ? "opacity-0 hover:opacity-90" : ""
+                      logoUrl
+                        ? "opacity-0 hover:opacity-80 hover:bg-gray-100"
+                        : ""
                     }`}
                   >
                     {!logoUrl && (
