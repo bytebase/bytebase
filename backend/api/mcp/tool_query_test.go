@@ -44,30 +44,57 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves a ListDatabases response.
-// It applies basic filter awareness: if the request contains a "filter" field with
-// an instance constraint, only matching databases are returned.
+// mockListDatabases returns an HTTP handler that routes by URL path:
+// - ListProjects: returns distinct projects extracted from the databases
+// - ListDatabases: filters databases by the parent project and CEL filter
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if strings.Contains(r.URL.Path, "ProjectService/ListProjects") {
+			// Extract distinct projects from databases.
+			seen := map[string]bool{}
+			var projects []map[string]any
+			for _, db := range databases {
+				proj, ok := db["project"].(string)
+				if ok && proj != "" && !seen[proj] {
+					seen[proj] = true
+					projects = append(projects, map[string]any{"name": proj})
+				}
+			}
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]any{"projects": projects})
+			return
+		}
+
 		var reqBody struct {
+			Parent string `json:"parent"`
 			Filter string `json:"filter"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
-		result := databases
-		if reqBody.Filter != "" {
-			result = applyMockFilter(databases, reqBody.Filter)
+		// Filter by parent project.
+		var scoped []map[string]any
+		for _, db := range databases {
+			proj, ok := db["project"].(string)
+			if !ok || (reqBody.Parent != "" && proj != reqBody.Parent) {
+				continue
+			}
+			scoped = append(scoped, db)
 		}
 
-		resp := map[string]any{"databases": result}
-		w.Header().Set("Content-Type", "application/json")
+		result := scoped
+		if reqBody.Filter != "" {
+			result = applyMockFilter(scoped, reqBody.Filter)
+		}
+
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(map[string]any{"databases": result})
 	})
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.matches("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.matches("x"), instance == "instances/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -80,10 +107,6 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			continue
 		}
 		instanceName, ok := ir["name"].(string)
-		if !ok {
-			continue
-		}
-		project, ok := db["project"].(string)
 		if !ok {
 			continue
 		}
@@ -107,17 +130,6 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			if end > 0 {
 				expected := filter[start : start+end]
 				if instanceName != expected {
-					match = false
-				}
-			}
-		}
-		// Check project == "projects/x"
-		if idx := strings.Index(filter, `project == "`); idx >= 0 {
-			start := idx + len(`project == "`)
-			end := strings.Index(filter[start:], `"`)
-			if end > 0 {
-				expected := filter[start : start+end]
-				if project != expected {
 					match = false
 				}
 			}

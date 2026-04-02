@@ -157,43 +157,91 @@ type dataSource struct {
 }
 
 // buildDatabaseFilter builds a CEL filter expression for ListDatabases.
+// Project filtering is handled by the parent field, not the filter.
 func buildDatabaseFilter(input QueryInput) string {
 	// name.matches does substring matching server-side.
 	filter := fmt.Sprintf("name.matches(%q)", input.Database)
 	if input.Instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", "instances/"+input.Instance)
 	}
-	if input.Project != "" {
-		filter += fmt.Sprintf(" && project == %q", "projects/"+input.Project)
-	}
 	return filter
 }
 
-// resolveDatabase resolves a database name to a unique resource using tiered matching.
-func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
+// listProjectsResponse is the typed response from ListProjects API.
+type listProjectsResponse struct {
+	Projects []projectEntry `json:"projects"`
+}
+
+// projectEntry represents a project in the ListProjects response.
+type projectEntry struct {
+	Name string `json:"name"`
+}
+
+// listProjects returns the resource names of projects accessible to the current user.
+func (s *Server) listProjects(ctx context.Context) ([]string, error) {
+	resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/ListProjects", map[string]any{
+		"pageSize": 1000,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list projects")
+	}
+	if resp.Status >= 400 {
+		return nil, errors.Errorf("failed to list projects: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	}
+
+	var listResp listProjectsResponse
+	if err := json.Unmarshal(resp.Body, &listResp); err != nil {
+		return nil, errors.Wrap(err, "failed to parse project list")
+	}
+
+	names := make([]string, 0, len(listResp.Projects))
+	for _, p := range listResp.Projects {
+		names = append(names, p.Name)
+	}
+	return names, nil
+}
+
+// listDatabasesInProject lists databases in a single project matching the given filter.
+// Returns nil on HTTP or parse errors (permission denied on a project is not fatal).
+func (s *Server) listDatabasesInProject(ctx context.Context, project, filter string) []databaseEntry {
 	body := map[string]any{
-		"parent":   "workspaces/-",
-		"filter":   buildDatabaseFilter(input),
+		"parent":   project,
+		"filter":   filter,
 		"pageSize": 1000,
 	}
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list databases")
-	}
-	if resp.Status >= 400 {
-		return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	if err != nil || resp.Status >= 400 {
+		return nil
 	}
 
 	var listResp listDatabasesResponse
 	if err := json.Unmarshal(resp.Body, &listResp); err != nil {
-		return nil, errors.Wrap(err, "failed to parse database list")
+		return nil
+	}
+	return listResp.Databases
+}
+
+// resolveDatabase resolves a database name to a unique resource using tiered matching.
+func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
+	filter := buildDatabaseFilter(input)
+
+	var databases []databaseEntry
+	if input.Project != "" {
+		// Query a single project directly.
+		databases = s.listDatabasesInProject(ctx, "projects/"+input.Project, filter)
+	} else {
+		// Discover projects, then query each one.
+		projects, err := s.listProjects(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, proj := range projects {
+			databases = append(databases, s.listDatabasesInProject(ctx, proj, filter)...)
+		}
 	}
 
-	// Server-side filter already narrows by name substring and instance/project.
+	// Server-side filter already narrows by name substring and instance.
 	// Apply client-side tiered matching to pick the best result.
-	databases := listResp.Databases
-
-	// Tiered matching: exact -> case-insensitive exact -> substring.
 	matches := matchExact(databases, input.Database)
 	if len(matches) == 0 {
 		matches = matchCaseInsensitive(databases, input.Database)
