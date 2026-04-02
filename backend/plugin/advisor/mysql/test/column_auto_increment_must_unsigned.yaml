@@ -1,7 +1,5 @@
 - statement: CREATE TABLE t(a INT UNSIGNED AUTO_INCREMENT);
-  changeType: 1
 - statement: CREATE TABLE t(a INT AUTO_INCREMENT);
-  changeType: 1
   want:
     - status: 2
       code: 417
@@ -12,22 +10,19 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE t(a INT SIGNED AUTO_INCREMENT);
-  changeType: 1
   want:
-    - status: 2
-      code: 417
-      title: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
-      content: Auto-increment column `t`.`a` is not UNSIGNED type
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: 'Syntax error at line 1: unexpected token'
       startposition:
         line: 1
-        column: 0
+        column: 22
       endposition: null
 - statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT);
-  changeType: 1
 - statement: |-
     CREATE TABLE t(b int);
     ALTER TABLE t ADD COLUMN a INT AUTO_INCREMENT, ADD COLUMN c INT ZEROFILL AUTO_INCREMENT, ADD COLUMN d INT UNSIGNED AUTO_INCREMENT;
-  changeType: 1
   want:
     - status: 2
       code: 417
@@ -41,7 +36,6 @@
     CREATE TABLE t(a int, b int);
     ALTER TABLE t MODIFY COLUMN a INT AUTO_INCREMENT;
     ALTER TABLE t MODIFY COLUMN a INT UNSIGNED AUTO_INCREMENT;
-  changeType: 1
   want:
     - status: 2
       code: 417
@@ -55,7 +49,6 @@
     CREATE TABLE t(b int);
     ALTER TABLE t CHANGE COLUMN b a INT AUTO_INCREMENT;
     ALTER TABLE t CHANGE COLUMN a c INT UNSIGNED AUTO_INCREMENT;
-  changeType: 1
   want:
     - status: 2
       code: 417

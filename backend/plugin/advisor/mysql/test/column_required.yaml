@@ -5,7 +5,6 @@
     CREATE TABLE t3(id INT, creator_id INT, created_ts timestamp);
     CREATE TABLE t4(id INT, creator_id INT, created_ts timestamp, updater_id INT);
     CREATE TABLE t5(id INT, creator_id INT, created_ts timestamp, updater_id INT, updated_ts timestamp);
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -55,7 +54,6 @@
       updater_id int,
       updated_ts timestamp
     );
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -65,7 +63,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book RENAME COLUMN creator_id TO creator;
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -84,7 +81,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book RENAME COLUMN creator TO creator_id;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -94,7 +90,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book CHANGE COLUMN creator_id creator int;
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -113,7 +108,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book CHANGE COLUMN creator creator_id int;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -123,7 +117,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book DROP COLUMN creator_id;
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -143,7 +136,6 @@
       content varchar(255)
     );
     ALTER TABLE book DROP COLUMN content;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -152,7 +144,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book ADD COLUMN content varchar(255);
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -171,7 +162,6 @@
       updated_ts timestamp
     );
     ALTER TABLE book ADD COLUMN creator_id int;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -184,7 +174,6 @@
       created_ts timestamp,
       updated_ts timestamp
     );
-  changeType: 1
   want:
     - status: 2
       code: 401
@@ -211,7 +200,6 @@
       updated_ts timestamp
     );
     DROP TABLE book;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int
@@ -222,4 +210,3 @@
       updater_id int,
       updated_ts timestamp
     );
-  changeType: 1

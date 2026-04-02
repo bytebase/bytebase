@@ -3,7 +3,6 @@
       id INT PRIMARY KEY,
       name VARCHAR(50)
     ) CHARSET=utf8;
-  changeType: 1
   want:
     - status: 2
       code: 612
@@ -23,7 +22,6 @@
       name VARCHAR(50)
     );
     ALTER TABLE employee CONVERT TO CHARACTER SET utf8;
-  changeType: 1
   want:
     - status: 2
       code: 612

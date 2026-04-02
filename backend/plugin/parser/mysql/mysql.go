@@ -1,13 +1,15 @@
 package mysql
 
 import (
+	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/antlr4-go/antlr/v4"
+	mysqlomniparser "github.com/bytebase/omni/mysql/parser"
 	parser "github.com/bytebase/parser/mysql"
+	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -32,27 +34,55 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Parse using the pre-split statements to avoid double-splitting
-	parseResults, err := parseMySQLStatementsInternal(stmts)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		if stmt.Empty {
+			continue
 		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
-			astIndex++
+
+		list, omniErr := ParseMySQLOmni(stmt.Text)
+		if omniErr != nil {
+			return nil, convertOmniError(omniErr, stmt)
 		}
-		result = append(result, ps)
+
+		if list == nil || len(list.Items) == 0 {
+			continue
+		}
+
+		for _, node := range list.Items {
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Node:          node,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				},
+			})
+		}
 	}
 
 	return result, nil
+}
+
+// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertOmniError(err error, stmt base.Statement) error {
+	var parseErr *mysqlomniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
+
+	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
+	if stmt.Start != nil {
+		pos.Line += stmt.Start.Line - 1
+	}
+
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
+		RawMessage: parseErr.Message,
+	}
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
@@ -176,6 +206,22 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	return tree, stream, nil
 }
 
+// parseSingleStatementLenient parses a single MySQL statement with ANTLR in error-recovery mode
+// (no error listeners). Used by OmniAST.AsANTLRAST() for backward-compatible tree walking.
+func parseSingleStatementLenient(statement string) (antlr.Tree, *antlr.CommonTokenStream) {
+	statement = mysqlAddSemicolonIfNeeded(statement)
+	input := antlr.NewInputStream(statement)
+	lexer := parser.NewMySQLLexer(input)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+
+	p := parser.NewMySQLParser(stream)
+	p.RemoveErrorListeners()
+	p.BuildParseTrees = true
+
+	tree := p.Script()
+	return tree, stream
+}
+
 func mysqlAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
 	lexerErrorListener := &base.ParseErrorListener{
@@ -234,7 +280,7 @@ func ExtractDelimiter(stmt string) (string, error) {
 	if index >= 0 && index < len(matchList) {
 		return matchList[index], nil
 	}
-	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
+	return "", pkgerrors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
 func hasDelimiter(statement string) (bool, []base.Statement, error) {
@@ -242,7 +288,7 @@ func hasDelimiter(statement string) (bool, []base.Statement, error) {
 	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitTiDBMultiSQL()
 	if err != nil {
-		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
+		return false, nil, pkgerrors.Errorf("failed to split multi sql: %v", err)
 	}
 
 	for _, sql := range list {

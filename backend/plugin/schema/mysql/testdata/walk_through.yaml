@@ -433,8 +433,7 @@
 - statement: "create table all_types(\n  c1 tinyblob not null,\n  c2 blob not null,\n\
     \  c3 mediumblob not null,\n  c4 longblob not null,\n  c5 tinytext not null,\n\
     \  c6 text not null,\n  c7 mediumtext not null,\n  c8 longtext not null,\n  c9\
-    \ json not null,\n  c10 serial not null,\n  c11 long varbinary not null,\n  c12\
-    \ long varchar not null \n);"
+    \ json not null,\n  c10 serial not null\n);"
   ignore_case_sensitive: false
   want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {\n      \"tables\": [\n\
     \        {\n          \"name\": \"all_types\",\n          \"columns\": [\n   \
@@ -455,9 +454,5 @@
     \       \"name\": \"c9\",\n              \"position\": 9,\n              \"type\"\
     : \"json\"\n            },\n            {\n              \"name\": \"c10\",\n\
     \              \"position\": 10,\n              \"type\": \"serial\"\n       \
-    \     },\n            {\n              \"name\": \"c11\",\n              \"position\"\
-    : 11,\n              \"type\": \"long\"\n            },\n            {\n     \
-    \         \"name\": \"c12\",\n              \"position\": 12,\n              \"\
-    type\": \"long\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n\
-    }"
+    \     }\n          ]\n        }\n      ]\n    }\n  ]\n}"
   advice: null

@@ -1,6 +1,3 @@
 - statement: INSERT INTO tech_book values(1, 'zp');
-  changeType: 1
 - statement: DELETE FROM tech_book;
-  changeType: 1
 - statement: UPDATE tech_book SET name = 'xz' WHERE id = 1;
-  changeType: 1
