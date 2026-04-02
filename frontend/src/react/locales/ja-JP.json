@@ -66,7 +66,11 @@
       "type-limit": "タイプ {{extension}} のファイルのみがサポートされます",
       "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります"
     },
-    "ok": "わかりました"
+    "ok": "わかりました",
+    "failed": "失敗",
+    "instance": "インスタンス",
+    "project": "プロジェクト",
+    "select": "選択してください"
   },
   "cel": {
     "condition": {
@@ -195,6 +199,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "全般",
+      "members": "メンバー",
+      "users-and-groups": "ユーザーとグループ",
+      "members-and-groups": "メンバーとグループ",
+      "sso": "SSO",
+      "subscription": "サブスクリプション",
+      "audit-log": "監査ログ",
+      "custom-roles": "カスタムロール",
+      "global-masking": "グローバルマスキング",
+      "data-classification": "データ分類",
+      "im-integration": "IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",
@@ -578,7 +596,16 @@
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "環境の編集",
-    "engine": "エンジン"
+    "engine": "エンジン",
+    "edit-labels": "ラベルを編集",
+    "filter-database": "データベースをフィルター",
+    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
+    "successfully-transferred-databases": "データベースの転送に成功しました",
+    "sync-schema-button": "スキーマを同期",
+    "sync-status": "同期ステータス",
+    "sync-status-failed": "同期に失敗しました",
+    "transfer-project": "プロジェクトの転送",
+    "unassign": "割り当てを解除する"
   },
   "bbkit": {
     "confirm-button": {
@@ -704,12 +731,19 @@
     "filter-instance-name": "インスタンス名のフィルタリング"
   },
   "db": {
-    "start-to-sync-schema": "スキーマの同期を開始します"
+    "start-to-sync-schema": "スキーマの同期を開始します",
+    "character-set": "文字セット",
+    "collation": "照合順序",
+    "encoding": "エンコーディング",
+    "failed-to-sync-schema": "スキーマの同期に失敗しました",
+    "successfully-synced-schema": "スキーマの同期に成功しました"
   },
   "quick-action": {
     "add-instance": "インスタンス追加",
     "create-project": "作成するプロジェクト",
-    "new-project": "作成するプロジェクト"
+    "new-project": "作成するプロジェクト",
+    "create-db": "データベースの作成",
+    "new-db": "データベースの作成"
   },
   "landing": {
     "quick-link": {
@@ -767,5 +801,15 @@
   },
   "sql-editor": {
     "self": "SQLエディタ"
+  },
+  "create-db": {
+    "cluster": "集まる",
+    "database-owner-name": "データベース所有者",
+    "new-collection-name": "新しいコレクション名",
+    "new-database-name": "新しいデータベース名",
+    "reserved-db-error": "{{databaseName}} は予約された名前です"
+  },
+  "issue": {
+    "labels": "イシューラベル"
   }
 }

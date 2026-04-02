@@ -66,7 +66,11 @@
       "type-limit": "仅支持 {{extension}} 类型的文件",
       "size-limit": "文件大小需小于 {{size}} MiB"
     },
-    "ok": "OK"
+    "ok": "OK",
+    "failed": "失败",
+    "instance": "实例",
+    "project": "项目",
+    "select": "请选择"
   },
   "cel": {
     "condition": {
@@ -195,6 +199,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "通用",
+      "members": "成员",
+      "users-and-groups": "用户和群组",
+      "members-and-groups": "成员和群组",
+      "sso": "SSO",
+      "subscription": "订阅",
+      "audit-log": "审计日志",
+      "custom-roles": "自定义角色",
+      "global-masking": "全局数据脱敏",
+      "data-classification": "数据分类",
+      "im-integration": "IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "JSON 格式无效",
@@ -578,7 +596,16 @@
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
     "edit-environment": "编辑环境",
-    "engine": "引擎"
+    "engine": "引擎",
+    "edit-labels": "编辑标签",
+    "filter-database": "筛选数据库",
+    "selected-n-databases": "已选择 {{n}} 个数据库",
+    "successfully-transferred-databases": "成功转移数据库",
+    "sync-schema-button": "同步 Schema",
+    "sync-status": "同步状态",
+    "sync-status-failed": "同步失败",
+    "transfer-project": "转移项目",
+    "unassign": "取消分配"
   },
   "bbkit": {
     "confirm-button": {
@@ -704,12 +731,19 @@
     "filter-instance-name": "过滤实例名称"
   },
   "db": {
-    "start-to-sync-schema": "开始同步 schema"
+    "start-to-sync-schema": "开始同步 schema",
+    "character-set": "字符集",
+    "collation": "排序规则",
+    "encoding": "编码",
+    "failed-to-sync-schema": "同步 schema 失败",
+    "successfully-synced-schema": "成功同步 schema"
   },
   "quick-action": {
     "add-instance": "添加实例",
     "create-project": "创建项目",
-    "new-project": "创建项目"
+    "new-project": "创建项目",
+    "create-db": "创建数据库",
+    "new-db": "创建数据库"
   },
   "landing": {
     "quick-link": {
@@ -767,5 +801,15 @@
   },
   "sql-editor": {
     "self": "SQL 编辑器"
+  },
+  "create-db": {
+    "cluster": "集群",
+    "database-owner-name": "数据库所有者",
+    "new-collection-name": "新集合名称",
+    "new-database-name": "新数据库名称",
+    "reserved-db-error": "{{databaseName}} 是一个预留名称"
+  },
+  "issue": {
+    "labels": "工单标签"
   }
 }

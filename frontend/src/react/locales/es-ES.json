@@ -66,7 +66,11 @@
       "type-limit": "Solo se admiten archivos {{extension}}",
       "size-limit": "El tamaño del archivo debe ser menor que {{size}} MiB"
     },
-    "ok": "OK"
+    "ok": "OK",
+    "failed": "Error",
+    "instance": "Instancia",
+    "project": "Proyecto",
+    "select": "Seleccionar"
   },
   "cel": {
     "condition": {
@@ -195,6 +199,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "General",
+      "members": "Miembros",
+      "users-and-groups": "Usuarios y grupos",
+      "members-and-groups": "Miembros y grupos",
+      "sso": "SSO",
+      "subscription": "Suscripción",
+      "audit-log": "Registros de auditoría",
+      "custom-roles": "Roles personalizados",
+      "global-masking": "Enmascaramiento Global",
+      "data-classification": "Clasificación de datos",
+      "im-integration": "Integración de IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",
@@ -578,7 +596,16 @@
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "Editar entorno",
-    "engine": "Motor"
+    "engine": "Motor",
+    "edit-labels": "Editar etiquetas",
+    "filter-database": "Filtrar base de datos",
+    "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
+    "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
+    "sync-schema-button": "Sincronizar esquema",
+    "sync-status": "Estado de sincronización",
+    "sync-status-failed": "Sincronización fallida",
+    "transfer-project": "Transferir proyecto",
+    "unassign": "Desasignar"
   },
   "bbkit": {
     "confirm-button": {
@@ -704,12 +731,19 @@
     "filter-instance-name": "Filtrar nombre de instancia"
   },
   "db": {
-    "start-to-sync-schema": "Comenzar a sincronizar el esquema"
+    "start-to-sync-schema": "Comenzar a sincronizar el esquema",
+    "character-set": "Juego de caracteres",
+    "collation": "Colación",
+    "encoding": "Codificación",
+    "failed-to-sync-schema": "Error al sincronizar el esquema",
+    "successfully-synced-schema": "Esquema sincronizado exitosamente"
   },
   "quick-action": {
     "add-instance": "Agregar Instancia",
     "create-project": "Crear Proyecto",
-    "new-project": "Nuevo Proyecto"
+    "new-project": "Nuevo Proyecto",
+    "create-db": "Crear base de datos",
+    "new-db": "Nueva BD"
   },
   "landing": {
     "quick-link": {
@@ -767,5 +801,15 @@
   },
   "sql-editor": {
     "self": "Editor de SQL"
+  },
+  "create-db": {
+    "cluster": "Clúster",
+    "database-owner-name": "Nombre del propietario de la base de datos",
+    "new-collection-name": "Nuevo Nombre de Colección",
+    "new-database-name": "Nuevo nombre de la base de datos",
+    "reserved-db-error": "{{databaseName}} es un nombre reservado"
+  },
+  "issue": {
+    "labels": "Etiquetas de problema"
   }
 }
