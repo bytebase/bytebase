@@ -62,7 +62,6 @@ func (m *PriceModel) GetStripeInterval() string {
 	return "month"
 }
 
-
 // GetPlanText returns a display name for the plan.
 func (m *PriceModel) GetPlanText() string {
 	switch m.Plan.Plan {
