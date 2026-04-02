@@ -1,13 +1,15 @@
 package tsql
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
-
+	mssqlparser "github.com/bytebase/omni/mssql/parser"
 	parser "github.com/bytebase/parser/tsql"
+	pkgerrors "github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -20,34 +22,66 @@ func init() {
 
 // parseTSQLStatements is the ParseStatementsFunc for T-SQL (MSSQL).
 // Returns []ParsedStatement with both text and AST populated.
+// Uses the omni parser for parsing, with lazy ANTLR fallback via OmniAST.AsANTLRAST().
 func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
+	// Split once to get Statement with text and positions.
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Then parse to get ASTs
-	antlrASTs, err := ParseTSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		if stmt.Empty {
+			continue
 		}
-		if !stmt.Empty && astIndex < len(antlrASTs) {
-			ps.AST = antlrASTs[astIndex]
-			astIndex++
+
+		omniStmts, omniErr := ParseTSQLOmni(stmt.Text)
+		if omniErr != nil {
+			return nil, convertOmniError(omniErr, stmt)
 		}
-		result = append(result, ps)
+
+		if len(omniStmts) == 0 {
+			continue
+		}
+
+		for _, os := range omniStmts {
+			if os.Empty() {
+				continue
+			}
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST: &OmniAST{
+					Node:          os.AST,
+					Text:          stmt.Text,
+					StartPosition: stmt.Start,
+				},
+			})
+		}
 	}
 
 	return result, nil
+}
+
+// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertOmniError(err error, stmt base.Statement) error {
+	var parseErr *mssqlparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return err
+	}
+
+	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
+
+	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
+	if stmt.Start != nil {
+		pos.Line += stmt.Start.Line - 1
+	}
+
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    fmt.Sprintf("Syntax error at line %d: %s", pos.Line, parseErr.Message),
+		RawMessage: parseErr.Message,
+	}
 }
 
 // ParseTSQL parses the given SQL and returns a list of ANTLRAST (one per statement).
@@ -274,7 +308,7 @@ func NormalizeFullTableName(ctx parser.IFull_table_nameContext) (*FullTableName,
 			fullTableName.Schema = ids[2]
 			fullTableName.Table = ids[3]
 		default:
-			return nil, errors.New("invalid full table name")
+			return nil, pkgerrors.New("invalid full table name")
 		}
 	}
 
