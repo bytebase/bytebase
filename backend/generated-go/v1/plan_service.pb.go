@@ -484,9 +484,15 @@ type Plan struct {
 	// - RUNNING
 	PlanCheckRunStatusCount map[string]int32 `protobuf:"bytes,11,rep,name=plan_check_run_status_count,json=planCheckRunStatusCount,proto3" json:"plan_check_run_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	// Whether the plan has started the rollout.
-	HasRollout    bool `protobuf:"varint,12,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	HasRollout bool `protobuf:"varint,12,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
+	// The approval status of the linked issue.
+	// Unspecified when no linked issue exists.
+	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,13,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
+	// Per-stage rollout status summary.
+	// Ordered by environment deployment order. Empty when no rollout exists.
+	RolloutStageSummaries []*Plan_RolloutStageSummary `protobuf:"bytes,14,rep,name=rollout_stage_summaries,json=rolloutStageSummaries,proto3" json:"rollout_stage_summaries,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *Plan) Reset() {
@@ -594,6 +600,20 @@ func (x *Plan) GetHasRollout() bool {
 		return x.HasRollout
 	}
 	return false
+}
+
+func (x *Plan) GetApprovalStatus() Issue_ApprovalStatus {
+	if x != nil {
+		return x.ApprovalStatus
+	}
+	return Issue_APPROVAL_STATUS_UNSPECIFIED
+}
+
+func (x *Plan) GetRolloutStageSummaries() []*Plan_RolloutStageSummary {
+	if x != nil {
+		return x.RolloutStageSummaries
+	}
+	return nil
 }
 
 type GetPlanCheckRunRequest struct {
@@ -1265,6 +1285,115 @@ func (x *Plan_ExportDataConfig) GetPassword() string {
 	return ""
 }
 
+type Plan_RolloutStageSummary struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The stage resource name.
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+	Stage string `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	// Task status counts for this stage.
+	TaskStatusCounts []*Plan_TaskStatusCount `protobuf:"bytes,2,rep,name=task_status_counts,json=taskStatusCounts,proto3" json:"task_status_counts,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *Plan_RolloutStageSummary) Reset() {
+	*x = Plan_RolloutStageSummary{}
+	mi := &file_v1_plan_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Plan_RolloutStageSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Plan_RolloutStageSummary) ProtoMessage() {}
+
+func (x *Plan_RolloutStageSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_plan_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Plan_RolloutStageSummary.ProtoReflect.Descriptor instead.
+func (*Plan_RolloutStageSummary) Descriptor() ([]byte, []int) {
+	return file_v1_plan_service_proto_rawDescGZIP(), []int{5, 5}
+}
+
+func (x *Plan_RolloutStageSummary) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+func (x *Plan_RolloutStageSummary) GetTaskStatusCounts() []*Plan_TaskStatusCount {
+	if x != nil {
+		return x.TaskStatusCounts
+	}
+	return nil
+}
+
+type Plan_TaskStatusCount struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The task status.
+	Status Task_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.Task_Status" json:"status,omitempty"`
+	// The number of tasks in the status.
+	Count         int32 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Plan_TaskStatusCount) Reset() {
+	*x = Plan_TaskStatusCount{}
+	mi := &file_v1_plan_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Plan_TaskStatusCount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Plan_TaskStatusCount) ProtoMessage() {}
+
+func (x *Plan_TaskStatusCount) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_plan_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Plan_TaskStatusCount.ProtoReflect.Descriptor instead.
+func (*Plan_TaskStatusCount) Descriptor() ([]byte, []int) {
+	return file_v1_plan_service_proto_rawDescGZIP(), []int{5, 6}
+}
+
+func (x *Plan_TaskStatusCount) GetStatus() Task_Status {
+	if x != nil {
+		return x.Status
+	}
+	return Task_STATUS_UNSPECIFIED
+}
+
+func (x *Plan_TaskStatusCount) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 type PlanCheckRun_Result struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Status  Advice_Level           `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.v1.Advice_Level" json:"status,omitempty"`
@@ -1286,7 +1415,7 @@ type PlanCheckRun_Result struct {
 
 func (x *PlanCheckRun_Result) Reset() {
 	*x = PlanCheckRun_Result{}
-	mi := &file_v1_plan_service_proto_msgTypes[17]
+	mi := &file_v1_plan_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1298,7 +1427,7 @@ func (x *PlanCheckRun_Result) String() string {
 func (*PlanCheckRun_Result) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_plan_service_proto_msgTypes[17]
+	mi := &file_v1_plan_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1408,7 +1537,7 @@ type PlanCheckRun_Result_SqlSummaryReport struct {
 
 func (x *PlanCheckRun_Result_SqlSummaryReport) Reset() {
 	*x = PlanCheckRun_Result_SqlSummaryReport{}
-	mi := &file_v1_plan_service_proto_msgTypes[18]
+	mi := &file_v1_plan_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1420,7 +1549,7 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) String() string {
 func (*PlanCheckRun_Result_SqlSummaryReport) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_plan_service_proto_msgTypes[18]
+	mi := &file_v1_plan_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1590,7 @@ type PlanCheckRun_Result_SqlReviewReport struct {
 
 func (x *PlanCheckRun_Result_SqlReviewReport) Reset() {
 	*x = PlanCheckRun_Result_SqlReviewReport{}
-	mi := &file_v1_plan_service_proto_msgTypes[19]
+	mi := &file_v1_plan_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1473,7 +1602,7 @@ func (x *PlanCheckRun_Result_SqlReviewReport) String() string {
 func (*PlanCheckRun_Result_SqlReviewReport) ProtoMessage() {}
 
 func (x *PlanCheckRun_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_plan_service_proto_msgTypes[19]
+	mi := &file_v1_plan_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1507,7 +1636,7 @@ var File_v1_plan_service_proto protoreflect.FileDescriptor
 
 const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"?\n" +
+	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/rollout_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
 	"\x0eGetPlanRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\"\x9c\x01\n" +
@@ -1529,7 +1658,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xc5\f\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd3\x0f\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1545,7 +1674,9 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"updateTime\x12q\n" +
 	"\x1bplan_check_run_status_count\x18\v \x03(\v2..bytebase.v1.Plan.PlanCheckRunStatusCountEntryB\x03\xe0A\x03R\x17planCheckRunStatusCount\x12$\n" +
 	"\vhas_rollout\x18\f \x01(\bB\x03\xe0A\x03R\n" +
-	"hasRollout\x1a\xb4\x02\n" +
+	"hasRollout\x12O\n" +
+	"\x0fapproval_status\x18\r \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
+	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x1a\xb4\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
@@ -1575,7 +1706,13 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
-	"\t_password:7\xeaA4\n" +
+	"\t_password\x1a|\n" +
+	"\x13RolloutStageSummary\x12\x14\n" +
+	"\x05stage\x18\x01 \x01(\tR\x05stage\x12O\n" +
+	"\x12task_status_counts\x18\x02 \x03(\v2!.bytebase.v1.Plan.TaskStatusCountR\x10taskStatusCounts\x1aY\n" +
+	"\x0fTaskStatusCount\x120\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x18.bytebase.v1.Task.StatusR\x06status\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count:7\xeaA4\n" +
 	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"O\n" +
 	"\x16GetPlanCheckRunRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
@@ -1653,7 +1790,7 @@ func file_v1_plan_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_plan_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_plan_service_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_v1_plan_service_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_v1_plan_service_proto_goTypes = []any{
 	(PlanCheckRun_Status)(0),                     // 0: bytebase.v1.PlanCheckRun.Status
 	(PlanCheckRun_Result_Type)(0),                // 1: bytebase.v1.PlanCheckRun.Result.Type
@@ -1674,60 +1811,68 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(*Plan_CreateDatabaseConfig)(nil),            // 16: bytebase.v1.Plan.CreateDatabaseConfig
 	(*Plan_ChangeDatabaseConfig)(nil),            // 17: bytebase.v1.Plan.ChangeDatabaseConfig
 	(*Plan_ExportDataConfig)(nil),                // 18: bytebase.v1.Plan.ExportDataConfig
-	(*PlanCheckRun_Result)(nil),                  // 19: bytebase.v1.PlanCheckRun.Result
-	(*PlanCheckRun_Result_SqlSummaryReport)(nil), // 20: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	(*PlanCheckRun_Result_SqlReviewReport)(nil),  // 21: bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	(*fieldmaskpb.FieldMask)(nil),                // 22: google.protobuf.FieldMask
-	(State)(0),                                   // 23: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),                // 24: google.protobuf.Timestamp
-	(ExportFormat)(0),                            // 25: bytebase.v1.ExportFormat
-	(Advice_Level)(0),                            // 26: bytebase.v1.Advice.Level
-	(StatementType)(0),                           // 27: bytebase.v1.StatementType
-	(*Position)(nil),                             // 28: bytebase.v1.Position
+	(*Plan_RolloutStageSummary)(nil),             // 19: bytebase.v1.Plan.RolloutStageSummary
+	(*Plan_TaskStatusCount)(nil),                 // 20: bytebase.v1.Plan.TaskStatusCount
+	(*PlanCheckRun_Result)(nil),                  // 21: bytebase.v1.PlanCheckRun.Result
+	(*PlanCheckRun_Result_SqlSummaryReport)(nil), // 22: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	(*PlanCheckRun_Result_SqlReviewReport)(nil),  // 23: bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	(*fieldmaskpb.FieldMask)(nil),                // 24: google.protobuf.FieldMask
+	(State)(0),                                   // 25: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),                // 26: google.protobuf.Timestamp
+	(Issue_ApprovalStatus)(0),                    // 27: bytebase.v1.Issue.ApprovalStatus
+	(ExportFormat)(0),                            // 28: bytebase.v1.ExportFormat
+	(Task_Status)(0),                             // 29: bytebase.v1.Task.Status
+	(Advice_Level)(0),                            // 30: bytebase.v1.Advice.Level
+	(StatementType)(0),                           // 31: bytebase.v1.StatementType
+	(*Position)(nil),                             // 32: bytebase.v1.Position
 }
 var file_v1_plan_service_proto_depIdxs = []int32{
 	7,  // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
 	7,  // 1: bytebase.v1.CreatePlanRequest.plan:type_name -> bytebase.v1.Plan
 	7,  // 2: bytebase.v1.UpdatePlanRequest.plan:type_name -> bytebase.v1.Plan
-	22, // 3: bytebase.v1.UpdatePlanRequest.update_mask:type_name -> google.protobuf.FieldMask
-	23, // 4: bytebase.v1.Plan.state:type_name -> bytebase.v1.State
+	24, // 3: bytebase.v1.UpdatePlanRequest.update_mask:type_name -> google.protobuf.FieldMask
+	25, // 4: bytebase.v1.Plan.state:type_name -> bytebase.v1.State
 	14, // 5: bytebase.v1.Plan.specs:type_name -> bytebase.v1.Plan.Spec
-	24, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
-	24, // 7: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
+	26, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
+	26, // 7: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
 	15, // 8: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
-	0,  // 9: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
-	19, // 10: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
-	24, // 11: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
-	16, // 12: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	17, // 13: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
-	18, // 14: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
-	25, // 15: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
-	26, // 16: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
-	1,  // 17: bytebase.v1.PlanCheckRun.Result.type:type_name -> bytebase.v1.PlanCheckRun.Result.Type
-	20, // 18: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
-	21, // 19: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	27, // 20: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.statement_types:type_name -> bytebase.v1.StatementType
-	28, // 21: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
-	28, // 22: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
-	2,  // 23: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	3,  // 24: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	5,  // 25: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	6,  // 26: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	8,  // 27: bytebase.v1.PlanService.GetPlanCheckRun:input_type -> bytebase.v1.GetPlanCheckRunRequest
-	9,  // 28: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	11, // 29: bytebase.v1.PlanService.CancelPlanCheckRun:input_type -> bytebase.v1.CancelPlanCheckRunRequest
-	7,  // 30: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
-	4,  // 31: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	7,  // 32: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
-	7,  // 33: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
-	13, // 34: bytebase.v1.PlanService.GetPlanCheckRun:output_type -> bytebase.v1.PlanCheckRun
-	10, // 35: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	12, // 36: bytebase.v1.PlanService.CancelPlanCheckRun:output_type -> bytebase.v1.CancelPlanCheckRunResponse
-	30, // [30:37] is the sub-list for method output_type
-	23, // [23:30] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	27, // 9: bytebase.v1.Plan.approval_status:type_name -> bytebase.v1.Issue.ApprovalStatus
+	19, // 10: bytebase.v1.Plan.rollout_stage_summaries:type_name -> bytebase.v1.Plan.RolloutStageSummary
+	0,  // 11: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
+	21, // 12: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
+	26, // 13: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
+	16, // 14: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	17, // 15: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
+	18, // 16: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
+	28, // 17: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
+	20, // 18: bytebase.v1.Plan.RolloutStageSummary.task_status_counts:type_name -> bytebase.v1.Plan.TaskStatusCount
+	29, // 19: bytebase.v1.Plan.TaskStatusCount.status:type_name -> bytebase.v1.Task.Status
+	30, // 20: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
+	1,  // 21: bytebase.v1.PlanCheckRun.Result.type:type_name -> bytebase.v1.PlanCheckRun.Result.Type
+	22, // 22: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
+	23, // 23: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
+	31, // 24: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.statement_types:type_name -> bytebase.v1.StatementType
+	32, // 25: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
+	32, // 26: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
+	2,  // 27: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	3,  // 28: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	5,  // 29: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	6,  // 30: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	8,  // 31: bytebase.v1.PlanService.GetPlanCheckRun:input_type -> bytebase.v1.GetPlanCheckRunRequest
+	9,  // 32: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	11, // 33: bytebase.v1.PlanService.CancelPlanCheckRun:input_type -> bytebase.v1.CancelPlanCheckRunRequest
+	7,  // 34: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
+	4,  // 35: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	7,  // 36: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
+	7,  // 37: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
+	13, // 38: bytebase.v1.PlanService.GetPlanCheckRun:output_type -> bytebase.v1.PlanCheckRun
+	10, // 39: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	12, // 40: bytebase.v1.PlanService.CancelPlanCheckRun:output_type -> bytebase.v1.CancelPlanCheckRunResponse
+	34, // [34:41] is the sub-list for method output_type
+	27, // [27:34] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_v1_plan_service_proto_init() }
@@ -1737,6 +1882,8 @@ func file_v1_plan_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
+	file_v1_issue_service_proto_init()
+	file_v1_rollout_service_proto_init()
 	file_v1_sql_service_proto_init()
 	file_v1_plan_service_proto_msgTypes[7].OneofWrappers = []any{}
 	file_v1_plan_service_proto_msgTypes[12].OneofWrappers = []any{
@@ -1745,7 +1892,7 @@ func file_v1_plan_service_proto_init() {
 		(*Plan_Spec_ExportDataConfig)(nil),
 	}
 	file_v1_plan_service_proto_msgTypes[16].OneofWrappers = []any{}
-	file_v1_plan_service_proto_msgTypes[17].OneofWrappers = []any{
+	file_v1_plan_service_proto_msgTypes[19].OneofWrappers = []any{
 		(*PlanCheckRun_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRun_Result_SqlReviewReport_)(nil),
 	}
@@ -1755,7 +1902,7 @@ func file_v1_plan_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_plan_service_proto_rawDesc), len(file_v1_plan_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

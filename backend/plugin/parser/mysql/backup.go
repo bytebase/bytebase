@@ -27,7 +27,15 @@ const (
 )
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
+	var dbMetadata *model.DatabaseMetadata
+	if tCtx.GetDatabaseMetadataFunc != nil {
+		_, metadata, err := tCtx.GetDatabaseMetadataFunc(ctx, tCtx.InstanceID, sourceDatabase)
+		if err == nil {
+			dbMetadata = metadata
+		}
+	}
+
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement, dbMetadata)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
@@ -60,7 +68,7 @@ type StatementInfo struct {
 	EndPosition   *store.Position
 }
 
-func prepareTransformation(databaseName, statement string) ([]StatementInfo, error) {
+func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
 	list, err := SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split sql")
@@ -81,7 +89,7 @@ func prepareTransformation(databaseName, statement string) ([]StatementInfo, err
 			// After splitting the SQL, we should have only one statement in the list.
 			// The FOR loop is just for safety.
 			// So we can use the i as the offset.
-			tables, err := ExtractTables(databaseName, sql, i)
+			tables, err := ExtractTables(databaseName, sql, i, dbMetadata)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
@@ -424,9 +432,10 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-func ExtractTables(databaseName string, ast *base.ANTLRAST, offset int) ([]StatementInfo, error) {
+func ExtractTables(databaseName string, ast *base.ANTLRAST, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
+		dbMetadata:   dbMetadata,
 		offset:       offset,
 	}
 
@@ -439,6 +448,7 @@ type tableReferenceListener struct {
 	*parser.BaseMySQLParserListener
 
 	databaseName string
+	dbMetadata   *model.DatabaseMetadata
 	offset       int
 	tables       []StatementInfo
 	err          error
@@ -540,6 +550,52 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 	}
 }
 
+// resolveUnqualifiedColumns resolves unqualified column names to their owning
+// table(s) using database metadata. Falls back to all tables if metadata is
+// unavailable or column cannot be resolved.
+func (l *tableReferenceListener) resolveUnqualifiedColumns(columns []string, singleTables map[string]*TableReference) map[string]bool {
+	result := make(map[string]bool)
+
+	schema := l.getSchemaMetadata()
+	if schema == nil {
+		// No metadata available, fall back to all tables.
+		for tableName := range singleTables {
+			result[tableName] = true
+		}
+		return result
+	}
+
+	for _, col := range columns {
+		resolved := false
+		for aliasOrName, ref := range singleTables {
+			tableMetadata := schema.GetTable(ref.Table)
+			if tableMetadata == nil {
+				continue
+			}
+			if tableMetadata.GetColumn(col) != nil {
+				result[aliasOrName] = true
+				resolved = true
+			}
+		}
+		if !resolved {
+			// Column not found in any table metadata, fall back to all tables.
+			for tableName := range singleTables {
+				result[tableName] = true
+			}
+			return result
+		}
+	}
+
+	return result
+}
+
+func (l *tableReferenceListener) getSchemaMetadata() *model.SchemaMetadata {
+	if l.dbMetadata == nil {
+		return nil
+	}
+	return l.dbMetadata.GetSchemaMetadata("")
+}
+
 func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 	if !isTopLevel(ctx.GetParent()) {
 		return
@@ -568,14 +624,14 @@ func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatemen
 
 	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
 
-	if len(singleTables.singleTables) == 1 {
-		// We only allow users do not specify table alias when there is only one table in the update statement.
-		// TODO: Support other cases.
-		if _, exists := listener.tables[""]; exists {
-			delete(listener.tables, "")
-			for tableName := range singleTables.singleTables {
-				listener.tables[tableName] = true
-			}
+	// When SET clause columns are unqualified (no table prefix), resolve them
+	// to the owning table using database metadata. MySQL allows unqualified
+	// columns when they are unambiguous.
+	if _, exists := listener.tables[""]; exists {
+		delete(listener.tables, "")
+		resolved := l.resolveUnqualifiedColumns(listener.unqualifiedColumns, singleTables.singleTables)
+		for tableName := range resolved {
+			listener.tables[tableName] = true
 		}
 	}
 
@@ -631,13 +687,17 @@ func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
 type updateTableListener struct {
 	*parser.BaseMySQLParserListener
 
-	tables map[string]bool
-	cteMap map[string]bool
+	tables             map[string]bool
+	unqualifiedColumns []string
+	cteMap             map[string]bool
 }
 
 func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, table, _ := NormalizeMySQLColumnRef(ctx.ColumnRef())
+	_, table, column := NormalizeMySQLColumnRef(ctx.ColumnRef())
 	if _, exists := l.cteMap[table]; !exists {
 		l.tables[table] = true
+		if table == "" {
+			l.unqualifiedColumns = append(l.unqualifiedColumns, column)
+		}
 	}
 }

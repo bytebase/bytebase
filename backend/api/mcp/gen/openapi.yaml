@@ -14372,6 +14372,20 @@ components:
           type: boolean
           title: has_rollout
           description: Whether the plan has started the rollout.
+        approvalStatus:
+          title: approval_status
+          description: |-
+            The approval status of the linked issue.
+             Unspecified when no linked issue exists.
+          $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+        rolloutStageSummaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Plan.RolloutStageSummary'
+          title: rollout_stage_summaries
+          description: |-
+            Per-stage rollout status summary.
+             Ordered by environment deployment order. Empty when no rollout exists.
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -14491,6 +14505,23 @@ components:
           format: int32
       title: PlanCheckRunStatusCountEntry
       additionalProperties: false
+    bytebase.v1.Plan.RolloutStageSummary:
+      type: object
+      properties:
+        stage:
+          type: string
+          title: stage
+          description: |-
+            The stage resource name.
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+        taskStatusCounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Plan.TaskStatusCount'
+          title: task_status_counts
+          description: Task status counts for this stage.
+      title: RolloutStageSummary
+      additionalProperties: false
     bytebase.v1.Plan.Spec:
       type: object
       allOf:
@@ -14525,6 +14556,20 @@ components:
               required:
                 - exportDataConfig
       title: Spec
+      additionalProperties: false
+    bytebase.v1.Plan.TaskStatusCount:
+      type: object
+      properties:
+        status:
+          title: status
+          description: The task status.
+          $ref: '#/components/schemas/bytebase.v1.Task.Status'
+        count:
+          type: integer
+          title: count
+          format: int32
+          description: The number of tasks in the status.
+      title: TaskStatusCount
       additionalProperties: false
     bytebase.v1.PlanCheckRun:
       type: object
@@ -21121,6 +21166,8 @@ tags:
     description: IdentityProviderService manages external identity providers for SSO authentication.
   - name: bytebase.v1.OrgPolicyService
     description: OrgPolicyService manages organizational policies at various resource levels.
+  - name: bytebase.v1.RolloutService
+    description: RolloutService manages the execution of deployment plans.
   - name: bytebase.v1.SQLService
     description: SQLService executes SQL queries and manages query operations.
   - name: bytebase.v1.PlanService
@@ -21135,8 +21182,6 @@ tags:
     description: RevisionService manages schema revision history.
   - name: bytebase.v1.RoleService
     description: RoleService manages workspace roles and permissions.
-  - name: bytebase.v1.RolloutService
-    description: RolloutService manages the execution of deployment plans.
   - name: bytebase.v1.ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: bytebase.v1.SheetService

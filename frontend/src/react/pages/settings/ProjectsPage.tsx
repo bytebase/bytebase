@@ -47,42 +47,6 @@ import {
 } from "@/utils";
 
 // ============================================================
-// i18n helpers for vue-i18n compat
-// ============================================================
-
-// vue-i18n uses "@:key" for linked messages and "singular | plural" for pluralization.
-// react-i18next doesn't support either, so we resolve them manually.
-
-function resolveLinkedMessages(
-  value: string,
-  t: (key: string) => string
-): string {
-  return value.replace(/@:(?:\{'([^']+)'\}|(\S+))/g, (_match, quoted, plain) =>
-    t(quoted ?? plain)
-  );
-}
-
-function tVue(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  key: string,
-  options?: Record<string, unknown>
-): string {
-  const raw = t(key, { ...options, interpolation: { escapeValue: false } });
-  // Handle vue-i18n pipe pluralization: "singular | plural"
-  if (raw.includes(" | ")) {
-    const parts = raw.split(" | ");
-    const count = typeof options?.count === "number" ? options.count : 1;
-    const chosen = count === 1 ? parts[0] : parts[parts.length - 1];
-    // Re-interpolate {count} etc.
-    const interpolated = chosen.replace(/\{(\w+)\}/g, (_m, k) =>
-      String(options?.[k] ?? `{${k}}`)
-    );
-    return resolveLinkedMessages(interpolated, t);
-  }
-  return resolveLinkedMessages(raw, t);
-}
-
-// ============================================================
 // Escape key stack for overlays
 // ============================================================
 
@@ -338,7 +302,7 @@ function CreateProjectDrawer({
       <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
-            {tVue(t, "quick-action.create-project")}
+            {t("quick-action.create-project")}
           </h2>
           <button
             className="p-1 hover:bg-control-bg rounded"
@@ -352,14 +316,14 @@ function CreateProjectDrawer({
           <div className="flex flex-col gap-y-6">
             <div>
               <label className="text-base leading-6 font-medium text-control">
-                {tVue(t, "project.create-modal.project-name")}
+                {t("project.create-modal.project-name")}
                 <span className="text-error ml-0.5">*</span>
               </label>
               <Input
                 className="mt-2 mb-1"
                 value={title}
                 maxLength={200}
-                placeholder={tVue(t, "project.create-modal.project-name")}
+                placeholder={t("project.create-modal.project-name")}
                 onChange={(e) => setTitle(e.target.value)}
               />
               <ResourceIdField
@@ -429,7 +393,7 @@ function BatchOperationsBar({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: tVue(t, "project.batch.archive.success", {
+        title: t("project.batch.archive.success", {
           count: activeProjects.length,
         }),
       });
@@ -480,7 +444,7 @@ function BatchOperationsBar({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: tVue(t, "project.batch.delete.success", {
+        title: t("project.batch.delete.success", {
           count: selectedProjects.length,
         }),
       });
@@ -503,7 +467,7 @@ function BatchOperationsBar({
     <>
       <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto">
         <span className="whitespace-nowrap">
-          {tVue(t, "project.batch.selected", {
+          {t("project.batch.selected", {
             count: selectedProjects.length,
           })}
         </span>
@@ -541,7 +505,7 @@ function BatchOperationsBar({
       <ConfirmDialog
         open={showArchiveConfirm}
         variant="warning"
-        title={tVue(t, "project.batch.archive.title", {
+        title={t("project.batch.archive.title", {
           count: selectedProjects.length,
         })}
         description={t("project.batch.archive.description")}
@@ -573,7 +537,7 @@ function BatchOperationsBar({
       <ConfirmDialog
         open={showDeleteConfirm}
         variant="error"
-        title={tVue(t, "project.batch.delete.title", {
+        title={t("project.batch.delete.title", {
           count: selectedProjects.length,
         })}
         description={t("project.batch.delete.description")}
@@ -1089,7 +1053,7 @@ export function ProjectsPage() {
             onClick={() => setShowCreateDrawer(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
-            {tVue(t, "quick-action.new-project")}
+            {t("quick-action.new-project")}
           </Button>
         </PermissionGuard>
       </div>
@@ -1125,7 +1089,7 @@ export function ProjectsPage() {
                 onClick={() => toggleSort("title")}
               >
                 <div className="flex items-center gap-x-1">
-                  {tVue(t, "project.table.name")}
+                  {t("project.table.name")}
                   {renderSortIndicator("title")}
                 </div>
               </th>

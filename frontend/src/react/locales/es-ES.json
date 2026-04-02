@@ -1,0 +1,770 @@
+{
+  "common": {
+    "filter-by-name": "Filtrar por nombre",
+    "loading": "Cargando",
+    "no-data": "Sin datos",
+    "all": "Todos",
+    "edit": "Editar",
+    "updated": "Actualizado",
+    "learn-more": "Aprender más",
+    "revert": "Revertir",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "confirm": "Confirmar",
+    "clear": "Limpiar",
+    "add": "Agregar",
+    "warning": "Advertencia",
+    "environment-name": "Nombre del entorno",
+    "environment": "Entorno",
+    "confirm-and-update": "Confirmar y actualizar",
+    "cannot-undo-this-action": "No se puede deshacer esta acción",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "leave-without-saving": "¿Salir sin guardar?",
+    "deleted": "Eliminado",
+    "reorder": "Reordenar",
+    "close": "Cerrar",
+    "general": "General",
+    "type": "Tipo",
+    "discard-changes": "Descartar cambios",
+    "update": "Actualizar",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "id": "ID",
+    "name": "Nombre",
+    "sensitive-placeholder": "Sensible - solo escritura",
+    "unassigned": "No asignado",
+    "archive": "Archivo",
+    "restore": "Restaurar",
+    "delete-resource": "Delete {{type}}",
+    "labels": "Etiquetas",
+    "state": "Estado",
+    "address": "Dirección",
+    "rows-per-page": "Filas por página",
+    "load-more": "Cargar más",
+    "configure-now": "Configurar ahora",
+    "restored": "Restored",
+    "archived": "Archivada",
+    "select-all": "Seleccionar todo",
+    "total-n-items": "Total {{n}} elementos",
+    "search": "Buscar",
+    "n-items-selected": "{{n}} elementos seleccionados",
+    "permissions": "Permisos",
+    "added": "Agregado",
+    "description": "Descripción",
+    "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
+    "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
+    "add-permissions": "Agregar permisos",
+    "system": "Sistema",
+    "created": "Creado",
+    "upload": "Subir",
+    "unlimited": "Ilimitado",
+    "file-selector": {
+      "type-limit": "Solo se admiten archivos {{extension}}",
+      "size-limit": "El tamaño del archivo debe ser menor que {{size}} MiB"
+    },
+    "ok": "OK"
+  },
+  "cel": {
+    "condition": {
+      "input-value": "Valor de entrada",
+      "select-value": "Seleccionar valor",
+      "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+      "group": {
+        "or": {
+          "description": "Cualquiera de los siguientes es verdadero..."
+        },
+        "and": {
+          "description": "Todos los siguientes son verdaderos..."
+        }
+      },
+      "add-condition-in-group-placeholder": "Agregar {{plus}} para agregar condición",
+      "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición",
+      "add": "Agregar condición",
+      "add-raw-expression": "Agregar expresión cruda",
+      "add-group": "Agregar grupo de condiciones"
+    }
+  },
+  "subscription": {
+    "trial-for-days": "Puedes iniciar una prueba gratuita por {{days}} días - no se requiere tarjeta de crédito.",
+    "required-plan-with-trial": "Esta función requiere {{requiredPlan}}. {{startTrial}}",
+    "instance-assignment": {
+      "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
+      "assign-license": "Asignar licencia",
+      "license": "Licencia",
+      "used-and-total-user": "Límite de usuarios activos/totales",
+      "used-and-total-license": "Licencia asignada / total"
+    },
+    "request-n-days-trial": "Solicite una prueba de {{days}} días (no se requiere tarjeta de crédito)",
+    "usage": {
+      "instance-count": {
+        "title": "Límite de cantidad de instancias",
+        "runoutof": "Te has quedado sin tu cuota de instancias {{total}}."
+      }
+    },
+    "plan": {
+      "free": {
+        "title": "Comunitario",
+        "label": "",
+        "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos."
+      },
+      "team": {
+        "title": "Pro",
+        "label": "",
+        "desc": "Más políticas para estandarizar y facilitar la colaboración entre equipos."
+      },
+      "enterprise": {
+        "title": "Empresarial",
+        "label": "",
+        "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA."
+      },
+      "try": "Empezar la prueba gratuita",
+      "title": "Plan"
+    },
+    "purchase": {
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "discount": {
+        "percentage-off": "primer mes {{value}}% de descuento",
+        "month-off": "{{value}} mes gratis",
+        "price-off": "${{value}} de descuento"
+      },
+      "update": "Actualizar suscripción",
+      "subscribe": "Suscribirse ahora",
+      "cancel-confirm": "¿Está seguro de que desea cancelar su suscripción?",
+      "canceled": "Suscripción cancelada",
+      "pending-title": "Completando su compra...",
+      "pending-description": "Por favor espere mientras confirmamos su pago. Esto suele tardar unos segundos.",
+      "payment-info": "Información de pago",
+      "total-price": "Precio total",
+      "manage-invoices": "Gestionar facturas",
+      "billing-period": "Período de facturación",
+      "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {{date}}.",
+      "cancel": "Cancelar suscripción",
+      "per-user-per-month": "/ usuario / mes",
+      "custom": "Personalizado",
+      "seats": "Usuarios",
+      "accept-terms-prefix": "Acepto los",
+      "terms-of-service": "Términos de servicio",
+      "and": "y",
+      "privacy-policy": "Política de privacidad",
+      "see-comparison": "Ver comparación detallada de funciones"
+    },
+    "current": "Plan actual",
+    "contact-us": "Contáctenos",
+    "update": {
+      "success": {
+        "title": "Licencia actualizada con éxito",
+        "description": "Se desbloquearon funciones premium en el plan de suscripción."
+      },
+      "failure": {
+        "title": "Error al actualizar la licencia",
+        "description": "Por favor, comprueba si tu licencia es válida."
+      }
+    },
+    "expired": "expirado",
+    "trialing": "probando",
+    "expires-at": "Expira el",
+    "try-for-free": "Prueba gratis",
+    "enterprise-free-trial": "{{days}}-días de prueba gratuita para la empresa",
+    "inquire-enterprise-plan": "Consulta el Plan de Empresas",
+    "upload-license": "Subir licencia",
+    "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
+    "plan-compare": "Compara características entre los diferentes planes",
+    "max-instance-count": "Recuento máximo de instancias",
+    "require-subscription": "Esta función requiere una suscripción a {{requiredPlan}}. Compre una licencia de Bytebase para desbloquearla."
+  },
+  "resource-id": {
+    "validation": {
+      "empty": "El ID {{resource}} no puede estar vacío",
+      "overflow": "El ID de {{resource}} es demasiado largo. Debe tener menos de 64 caracteres.",
+      "pattern": "La identificación {{recurso}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
+      "duplicated": "El ID de {{resource}} ya existe. Por favor, elige otro."
+    },
+    "self": "ID de {{resource}}",
+    "cannot-be-changed-later": "No se puede cambiar posteriormente.",
+    "description": "El ID de {{resource}} es un identificador único. No se puede cambiar una vez creado."
+  },
+  "schema-template": {
+    "classification": {
+      "search": "Clasificación de búsqueda"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "classification": {
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "empty-classification": "The \"classification\" field is empty",
+        "missing-levels": "Missing \"levels\" field",
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children)."
+      },
+      "global-rules": {
+        "error": {
+          "missing-semantic-type": "Se requiere el tipo semántico.",
+          "invalid-condition": "La condición no es válida."
+        },
+        "condition-order": "Orden de condición",
+        "delete-rule-tip": "¿Eliminar esta regla?",
+        "re-order": "Reordenar",
+        "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento."
+      },
+      "semantic-types": {
+        "table": {
+          "semantic-type": "Tipo Semántico",
+          "icon": "Icono",
+          "description": "Descripción",
+          "masking-algorithm": "Algoritmo de enmascaramiento",
+          "delete": "¿Eliminar este tipo semántico?"
+        },
+        "select": "Seleccionar tipo semántico",
+        "template": {
+          "duplicate-warning": "El tipo semántico \"{{title}}\" ya existe",
+          "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar."
+        },
+        "use-predefined-type": "Utiliza el Tipo Predefinido",
+        "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
+        "add-from-template": "Agregar desde plantilla"
+      },
+      "algorithms": {
+        "full-mask": {
+          "self": "Máscara completa",
+          "substitution": "Sustitución",
+          "substitution-label": "La sustitución es la cadena utilizada para reemplazar el valor original, la longitud máxima de la cadena es 16 bytes."
+        },
+        "range-mask": {
+          "self": "Máscara de rango",
+          "label": "La máscara de rango reemplazará el valor original desde el índice inicial hasta el índice final (final no incluido) con la sustitución. El índice comienza desde 0.",
+          "slice-start": "Inicio de corte",
+          "slice-end": "Fin del corte",
+          "substitution": "Sustitución"
+        },
+        "md5-mask": {
+          "self": "Máscara MD5",
+          "salt": "Sal (Salt)",
+          "salt-label": "La sal (Salt) se utiliza para generar un hash a partir del valor original."
+        },
+        "inner-outer-mask": {
+          "self": "Máscara interna / externa",
+          "type": "Tipo de máscara",
+          "inner-label": "La máscara interna enmascara la parte interior de una cadena. El prefijo y el sufijo representan las partes no enmascaradas de los datos.",
+          "outer-label": "La máscara externa enmascara los extremos izquierdo y derecho de una cadena. El prefijo y el sufijo representan las partes enmascaradas de los datos.",
+          "inner-mask": "Mascarilla interior",
+          "outer-mask": "Mascarilla exterior",
+          "prefix-length": "Longitud del prefijo",
+          "suffix-length": "Longitud del sufijo"
+        },
+        "error": {
+          "slice-required": "Se requiere rebanada",
+          "slice-invalid-number": "El inicio o el final del segmento no es un número válido",
+          "slice-overlap": "El rango de corte no puede superponerse",
+          "substitution-required": "Se requiere sustitución",
+          "substitution-length": "La sustitución debe ser inferior a 16 bytes",
+          "salt-required": "Se requiere sal"
+        },
+        "edit": "Editar algoritmo",
+        "add": "Agregar algoritmo",
+        "table": {
+          "masking-type": "Tipo De Enmascaramiento"
+        }
+      }
+    },
+    "sso": {
+      "delete": "Eliminar este SSO",
+      "form": {
+        "auth-url": "URL de autorización",
+        "auth-url-placeholder": "p.ej. https://github.com/login/oauth/authorize",
+        "auth-url-description": "El enlace a la página de inicio de sesión de OAuth",
+        "token-url": "URL del token",
+        "token-url-placeholder": "p.ej. https://github.com/login/oauth/access_token",
+        "token-url-description": "La dirección API para obtener el token de acceso",
+        "user-info-url": "URL de información del usuario",
+        "user-info-url-placeholder": "p.ej. https://api.github.com/user",
+        "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
+        "scopes": "Ámbitos",
+        "scopes-placeholder": "p. ej. perfil de correo electrónico del usuario",
+        "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación",
+        "authentication-style": "Estilo de autenticación",
+        "in-parameters": "En parámetros",
+        "in-parameters-description": "Enviar credenciales en el cuerpo del POST (recomendado)",
+        "in-header": "En el encabezado",
+        "in-header-description": "Enviar credenciales mediante la autorización básica HTTP",
+        "security-options": "Opciones de seguridad",
+        "skip-tls-verification": "Omitir la verificación del certificado TLS",
+        "skip-tls-warning": "Habilite esto solo para fines de desarrollo o prueba",
+        "issuer-url-placeholder": "p. ej. https://acme.okta.com",
+        "issuer-url-description": "La URL del emisor de OIDC (la configuración conocida se descubrirá automáticamente)",
+        "scopes-placeholder-oidc": "p. ej. correo electrónico del perfil de OpenID",
+        "openid-scopes-description": "Lista separada por espacios de ámbitos OIDC (se requiere openid)",
+        "host-placeholder": "p. ej. ldap.example.com",
+        "bind-dn": "Vincular DN",
+        "bind-dn-placeholder": "p.ej. uid=sistema,ou=Usuarios,dc=ejemplo,dc=com",
+        "bind-dn-description": "El DN del usuario al que se vinculará para las solicitudes de búsqueda",
+        "bind-password": "Vincular contraseña",
+        "base-dn": "DN base",
+        "base-dn-placeholder": "p.ej. ou=usuarios,dc=ejemplo,dc=com",
+        "base-dn-description": "El DN base para buscar usuarios",
+        "user-filter": "Filtro de usuario",
+        "user-filter-placeholder": "p. ej. (uid=%s)",
+        "user-filter-description": "El filtro para buscar usuarios (%s será reemplazado por el nombre de usuario)",
+        "security-protocol": "Protocolo de seguridad",
+        "starttls": "StartTLS",
+        "starttls-description": "Actualizar la conexión a TLS (recomendado)",
+        "ldaps": "LDAPS",
+        "ldaps-description": "Utilice TLS desde el principio (puerto 636)",
+        "none": "Ninguno",
+        "none-description": "Sin cifrado (no recomendado para producción)",
+        "identifier-placeholder": "p. ej. inicio de sesión, correo electrónico",
+        "identifier": "Correo electrónico de usuario de Bytebase",
+        "identifier-tips": "Debe ser una cadena única. Y si no está en formato de correo electrónico, se empalmará con el dominio.",
+        "display-name-placeholder": "p. ej. nombre, nombre para mostrar",
+        "display-name": "Nombre para mostrar de usuario de Bytebase",
+        "phone-placeholder": "p. ej. teléfono, móvil",
+        "phone": "Número de teléfono de usuario de Bytebase",
+        "groups-placeholder": "p. ej. grupos",
+        "groups": "Grupos de usuarios de Bytebase",
+        "groups-description": "Se utiliza para el control de acceso basado en grupos (solo proveedores de OIDC)",
+        "provider-type-readonly-hint": "El tipo de proveedor no se puede cambiar después de la creación",
+        "name": "Nombre",
+        "name-description": "El nombre de visualización que se mostrará a los usuarios",
+        "domain": "Dominio",
+        "domain-description": "El nombre de dominio del proveedor de identidad",
+        "domain-optional-hint": "Opcional: Úselo para concatenar con el identificador si no está en formato de correo electrónico",
+        "configuration": "Configuración",
+        "configuration-description": "Configure los ajustes de conexión para su proveedor de identidad",
+        "user-information-mapping": "Mapeo de información del usuario",
+        "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase.",
+        "identity-provider-needed-information": "Cree su aplicación SSO con la siguiente información.",
+        "redirect-url-description": "Se utilizará para completar el campo correspondiente en el formulario de la aplicación del proveedor de identidad.",
+        "redirect-url": "URL de redireccionamiento de autorización",
+        "type": "Tipo",
+        "use-template": "Usar plantilla",
+        "oauth2-description": "Conéctese con proveedores de OAuth 2.0 como Google, GitHub, GitLab",
+        "oidc-description": "Conéctese con proveedores de OpenID Connect como Microsoft Entra ID (Azure AD), Okta, Auth0",
+        "ldap-description": "Conéctese con proveedores LDAP como Microsoft Active Directory, OpenLDAP",
+        "google-template-description": "Iniciar sesión con cuentas de Google",
+        "github-template-description": "Iniciar sesión con cuentas de GitHub",
+        "gitlab-template-description": "Iniciar sesión con cuentas de GitLab",
+        "microsoft-entra-template-description": "Iniciar sesión con el ID de Microsoft Entra",
+        "custom-template-description": "Configurar un proveedor OAuth 2.0 personalizado",
+        "type-description": "Elija el tipo de proveedor de identidad que desea configurar",
+        "template-description": "Elija una plantilla preconfigurada o configure un proveedor OAuth 2.0 personalizado",
+        "general-setting-description": "Proporcione información básica sobre su proveedor de identidad."
+      },
+      "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
+      "create": "Crear SSO"
+    },
+    "im": {
+      "add-im-integration": "Agregar integración de mensajería instantánea",
+      "add-another-im": "Añadir otro IM"
+    },
+    "im-integration": {
+      "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
+    },
+    "mcp": {
+      "first-prompt": {
+        "example": "Listar todos los proyectos en mi instancia de Bytebase",
+        "title": "Tu primer prompt",
+        "description": "Una vez conectado, intente preguntar a su asistente de IA:"
+      },
+      "title": "Integración MCP",
+      "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
+      "auth": {
+        "title": "Autenticación requerida",
+        "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase."
+      },
+      "general-config": {
+        "title": "Opción 1: Configuración JSON"
+      },
+      "setup": {
+        "add-to-config": "Agregue este JSON a su archivo de configuración del cliente MCP."
+      },
+      "quick-start": {
+        "title": "Opción 2: Comandos CLI",
+        "description": "Alternativamente, use uno de estos comandos CLI."
+      }
+    },
+    "general": {
+      "workspace": {
+        "external-url": {
+          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://.",
+          "self": "URL Externa",
+          "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url"
+        },
+        "id": "ID del espacio de trabajo",
+        "id-description": "La identificación única del espacio de trabajo de solo lectura.",
+        "ai-assistant": {
+          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
+          "enable-ai-assistant": "Habilitar el Asistente de IA",
+          "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
+          "provider": {
+            "self": "Proveedor de IA",
+            "open_ai": "Open AI",
+            "azure_open_ai": "Azure Open AI",
+            "gemini": "Gemini",
+            "claude": "Claude"
+          },
+          "api-key": {
+            "self": "Clave de API",
+            "description": "Proporcionar clave API, solo lectura. {{viewDoc}}",
+            "find-my-key": "Encuentra mi llave",
+            "placeholder": "Una clave de API generalmente comienza con sk-*****"
+          },
+          "endpoint": {
+            "self": "Punto de conexión de API",
+            "description": "Proporcione una implementación privada del Punto de conexión de API."
+          },
+          "model": {
+            "self": "Nombre del modelo",
+            "description": "Suministro de implementación privada del nombre del modelo."
+          },
+          "self": "Asistente de AI"
+        },
+        "disallow-signup": {
+          "enable": "Deshabilitar el registro de autoservicio",
+          "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
+        },
+        "password-restriction": {
+          "self": "Restricción de contraseña",
+          "min-length": "La longitud mínima de la contraseña no debe ser inferior a {{min}} caracteres",
+          "require-number": "Requiere que la contraseña contenga al menos un número",
+          "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
+          "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
+          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial",
+          "require-reset-password-for-first-login": "Requerir que los usuarios restablezcan su contraseña después del primer inicio de sesión",
+          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {{day}} días"
+        },
+        "require-2fa": {
+          "enable": "Requerir autenticación de dos factores para todos los usuarios",
+          "description": "Cuando está habilitado, los usuarios que no tienen la autenticación de dos factores habilitada para sus cuentas personales serán obligados a configurarla."
+        },
+        "disallow-password-signin": {
+          "enable": "No permitir el inicio de sesión con correo electrónico y contraseña",
+          "require-sso-setup": "Primero se debe crear un SSO funcional o los usuarios no podrán iniciar sesión.",
+          "description": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO."
+        },
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
+        },
+        "inactive-session-timeout": {
+          "self": "Tiempo de espera de sesión inactiva",
+          "description": "Tiempo de expiración de la sesión si no se detecta actividad del usuario. Los usuarios serán forzados a cerrar sesión cuando alcancen el límite.",
+          "hours": "Horas"
+        },
+        "no-limit": "No hay límite cuando el valor <= 0",
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "info": "Común",
+            "warning": "Advertencia",
+            "critical": "Importante"
+          }
+        },
+        "announcement-text": {
+          "self": "Título",
+          "description": "Para ocultar el anuncio, déjelo vacío.",
+          "placeholder": "Título del anuncio de entrada"
+        },
+        "extra-link": {
+          "self": "Enlace",
+          "placeholder": "Enlace de anuncio de entrada"
+        },
+        "log": "Registro",
+        "audit-log-stdout": {
+          "enable": "Habilitar el registro de auditoría en la salida estándar",
+          "description": "Generar registros de auditoría JSON estructurados en la salida estándar para su ingesta por agregadores de registros (Splunk, ELK, Datadog, Loki). Requiere licencia TEAM o ENTERPRISE."
+        },
+        "enable-debug": {
+          "enable": "Habilitar el nivel de registro de depuración para el servicio backend"
+        },
+        "title": "Nombre del espacio de trabajo",
+        "logo": "Logo",
+        "logo-aspect": "El tamaño sugerido para el logo debería tener una proporción de 5:2, por ejemplo, 100 x 40.",
+        "select-logo": "Subir un archivo",
+        "drag-logo": "o arrastrar aquí",
+        "logo-upload-tip": "{{extension}} hasta {{size}} MiB",
+        "branding": "Marca",
+        "account": "Cuenta",
+        "security": "Seguridad",
+        "announcement": {
+          "self": "Anuncio"
+        },
+        "product-improvement": {
+          "self": "Mejora del Producto",
+          "participate": "Participar en el programa de mejora",
+          "description": "Ayuda a mejorar Bytebase compartiendo datos de uso anónimos"
+        },
+        "failed-to-update-setting": "No se pudo actualizar la configuración \"{{title}}\"",
+        "config-updated": "La configuración se ha actualizado.",
+        "config-partly-updated": "Configuración parcialmente actualizada.",
+        "default-landing-page": {
+          "self": "Página de destino predeterminada",
+          "workspace": {
+            "self": "Espacio de trabajo",
+            "description": "Utilice el problema para solicitar, revisar, implementar y versionar cambios en la base de datos, adecuado para equipos con control de acceso y flujo de trabajo de CI y CD."
+          },
+          "sql-editor": {
+            "self": "Editor de SQL",
+            "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente, adecuado para uso de una sola persona o entornos que no requieren supervisión."
+          },
+          "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
+          "go-to-sql-editor": "Ir al Editor SQL"
+        },
+        "data-export": "Habilitar la exportación de datos",
+        "data-copy": "Habilitar la copia de datos",
+        "allow-admin-data-source": {
+          "self": "Permitir consultar la fuente de datos de administración",
+          "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración."
+        },
+        "maximum-sql-result": {
+          "size": {
+            "self": "Tamaño máximo del resultado de SQL",
+            "description": "Limite el tamaño del resultado de la consulta SQL de salida.",
+            "default": "Límite predeterminado {{limit}} MB"
+          },
+          "rows": {
+            "self": "Máximo de filas de resultados de SQL",
+            "description": "Limite las filas de salida en el resultado de la consulta SQL.",
+            "rows": "Filas"
+          }
+        },
+        "query-data-policy": {
+          "timeout": {
+            "self": "Tiempo máximo de consulta",
+            "description": "El tiempo máximo permitido para la ejecución de una consulta."
+          },
+          "seconds": "Segundos"
+        },
+        "watermark": {
+          "enable": "Activar marca de agua",
+          "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico."
+        },
+        "maximum-role-expiration": {
+          "self": "Caducidad máxima del rol",
+          "description": "La expiración máxima del rol es el período máximo durante el cual se puede otorgar un rol a un usuario y se aplicará a todos los roles del proyecto excepto al propietario del proyecto.",
+          "days": "Días)",
+          "never-expires": "Nunca expira"
+        },
+        "domain-restriction": {
+          "self": "Dominio de espacio de trabajo",
+          "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",
+          "domain-input-placeholder": "Por favor ingrese el dominio, p.e. ejemplo.com",
+          "members-restriction": {
+            "self": "Restricción de miembros",
+            "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+          }
+        }
+      }
+    }
+  },
+  "database": {
+    "classification": {
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
+    },
+    "edit-environment": "Editar entorno",
+    "engine": "Motor"
+  },
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "¿Estás seguro de que deseas eliminar?"
+    }
+  },
+  "role": {
+    "workspace-roles": {
+      "self": "Roles de espacio de trabajo"
+    },
+    "project-roles": {
+      "self": "Roles de proyecto"
+    },
+    "custom-roles": {
+      "self": "Roles personalizados"
+    },
+    "import-from-role": "Importar desde el rol",
+    "select-role": "Seleccionar rol",
+    "self": "Rol",
+    "setting": {
+      "add": "Agregar rol",
+      "edit": "Editar rol",
+      "title-placeholder": "Ingrese el título del rol",
+      "description-placeholder": "Ingrese la descripción del rol",
+      "description": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
+    },
+    "title": "Título"
+  },
+  "policy": {
+    "rollout": {
+      "auto": "Automático",
+      "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
+      "name": "Política de Implementación",
+      "tip": "La política se aplica retrospectivamente a las incidencias.",
+      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{{permission}}' o los siguientes roles."
+    },
+    "environment-tier": {
+      "name": "Nivel de Entorno",
+      "description": "El entorno aparecerá de manera diferente a otros entornos.",
+      "mark-env-as-production": "Marcar como entorno de producción"
+    }
+  },
+  "sql-review": {
+    "title": "Revisión de SQL",
+    "configure-policy": "Configurar política"
+  },
+  "environment": {
+    "successfully-updated-environment": "entorno '{{name}}' actualizado exitosamente.",
+    "delete": "Eliminar este entorno",
+    "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
+    "create": "Crear entorno",
+    "reorder": "Reordenar entornos"
+  },
+  "custom-approval": {
+    "rule": {
+      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
+    },
+    "risk": {
+      "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
+      "how-it-works": "Cómo funciona",
+      "how-it-works-description": "Cuando crea un cambio en la base de datos, Bytebase analiza automáticamente las sentencias SQL y asigna un nivel de riesgo (Bajo, Moderado o Alto) basándose en reglas predefinidas.",
+      "risk-levels": "Niveles de Riesgo",
+      "risk-level-high": "Las operaciones de alto riesgo incluyen cambios destructivos como DROP TABLE, TRUNCATE o modificaciones de datos a gran escala.",
+      "risk-level-moderate": "Las operaciones de riesgo moderado incluyen cambios DDL estándar como agregar columnas o índices.",
+      "risk-level-low": "Las operaciones de bajo riesgo incluyen consultas SELECT y cambios menores en el esquema que es poco probable que causen problemas.",
+      "integration": "Integración con Flujo de Aprobación",
+      "integration-description": "Los niveles de riesgo se integran con el sistema de Aprobación Personalizada. Puede configurar flujos de aprobación que requieran diferentes niveles de revisión según el nivel de riesgo evaluado de un cambio."
+    },
+    "risk-rule": {
+      "risk": {
+        "risk-level": {
+          "high": "Alto",
+          "moderate": "Moderado",
+          "low": "Bajo"
+        }
+      }
+    }
+  },
+  "identity-provider": {
+    "test-connection-success": "Conexión de prueba exitosa",
+    "userinfo-description": "La información del usuario coincidente.",
+    "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
+    "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
+    "test-connection": "Probar conexión",
+    "delete-warning": "¿Seguro que desea eliminar este proveedor de identidad? Los usuarios que se registraron con este SSO ya no podrán iniciar sesión con él. Si el inicio de sesión con contraseña está deshabilitado en la configuración de su espacio de trabajo, es posible que estos usuarios queden completamente bloqueados.",
+    "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
+    "identity-provider-permission-denied": "Permiso denegado",
+    "identity-provider-deleted": "Proveedor de identidad eliminado exitosamente",
+    "identity-provider-delete-failed": "No se pudo eliminar el proveedor de identidad",
+    "identity-provider-created": "Proveedor de identidad creado exitosamente",
+    "identity-provider-create-failed": "No se pudo crear el proveedor de identidad"
+  },
+  "error-page": {
+    "not-found": "No encontrado"
+  },
+  "instance": {
+    "successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
+    "successfully-restored-instance": "Se restauró exitosamente la instancia '{{0}}'.",
+    "archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
+    "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
+    "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
+    "syncing": "Sincronizando...",
+    "sync": {
+      "self": "Instancia de sincronización",
+      "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos.",
+      "sync-all": "Sincronizar todas las bases de datos",
+      "sync-new": "Sincronizar únicamente bases de datos nuevas"
+    },
+    "selected-n-instances_one": "{{count}} instancia seleccionada",
+    "selected-n-instances_other": "{{count}} instancias seleccionadas",
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "title": "Host",
+          "description": "Filtrar por host de instancia. Introduce el valor y pulsa Intro."
+        },
+        "port": {
+          "title": "Puerto",
+          "description": "Filtrar por puerto de instancia. Ingrese el valor y presione Enter."
+        }
+      }
+    },
+    "filter-instance-name": "Filtrar nombre de instancia"
+  },
+  "db": {
+    "start-to-sync-schema": "Comenzar a sincronizar el esquema"
+  },
+  "quick-action": {
+    "add-instance": "Agregar Instancia",
+    "create-project": "Crear Proyecto",
+    "new-project": "Nuevo Proyecto"
+  },
+  "landing": {
+    "quick-link": {
+      "visit-prjects": "Visitar Proyectos",
+      "visit-issues": "Problemas de visita",
+      "manage": "Administrar enlace rápido",
+      "self": "Enlace rápido"
+    },
+    "last-visit": "Última visita",
+    "changelog-for-version": "Registro de cambios para {{version}}"
+  },
+  "remind": {
+    "release": {
+      "new-version-available-with-tag": "La nueva versión {{tag}} está disponible"
+    }
+  },
+  "banner": {
+    "external-url": "Bytebase no ha configurado --external-url"
+  },
+  "project": {
+    "create-modal": {
+      "success-prompt": "Proyecto {{name}} creado exitosamente.",
+      "project-name": "Proyecto Nombre"
+    },
+    "batch": {
+      "archive": {
+        "success_one": "Proyecto {{count}} archivado correctamente",
+        "success_other": "Proyectos {{count}} archivados correctamente",
+        "error": "No se pudieron archivar los proyectos",
+        "title_one": "¿Archivar {{count}} Proyecto?",
+        "title_other": "¿Archivar {{count}} Proyectos?",
+        "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas."
+      },
+      "delete": {
+        "success_one": "Proyecto {{count}} eliminado correctamente",
+        "success_other": "Proyectos {{count}} eliminados correctamente",
+        "error": "No se pudieron eliminar los proyectos",
+        "title_one": "¿Eliminar {{count}} Proyecto?",
+        "title_other": "¿Eliminar {{count}} Proyectos?",
+        "description": "Esto eliminará permanentemente los proyectos seleccionados y moverá todas las bases de datos al proyecto predeterminado.",
+        "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
+      },
+      "selected_one": "{{count}} proyecto seleccionado",
+      "selected_other": "{{count}} proyectos seleccionados"
+    },
+    "filter-projects": "Filtrar proyectos",
+    "table": {
+      "name": "Nombre"
+    }
+  },
+  "resource": {
+    "delete-warning-with-resources": "El \"{{name}}\" lo utilizan los siguientes recursos:",
+    "delete-warning-retry": "Elimínelo de estos recursos y vuelva a intentarlo.",
+    "delete-warning": "Se eliminará el elemento \"{{name}}\". Esta acción no se puede deshacer."
+  },
+  "sql-editor": {
+    "self": "Editor de SQL"
+  }
+}
