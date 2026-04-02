@@ -125,7 +125,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 		containsSourceTable := false
 		for _, sql := range parseResult {
-			tables, err := ExtractTables(sourceDatabase, sql, i)
+			tables, err := ExtractTables(sourceDatabase, sql, i, nil)
 			if err != nil {
 				return "", errors.Wrap(err, "failed to extract tables")
 			}

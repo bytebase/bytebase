@@ -158,6 +158,20 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 						},
 					},
 				},
+				{
+					Name: "t3",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "d",
+						},
+					},
+				},
 			},
 		},
 	}
