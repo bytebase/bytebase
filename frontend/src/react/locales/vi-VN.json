@@ -65,7 +65,11 @@
       "type-limit": "Chỉ hỗ trợ tệp {{extension}}",
       "size-limit": "Kích thước tệp phải nhỏ hơn {{size}} MiB"
     },
-    "ok": "OK"
+    "ok": "OK",
+    "failed": "Thất bại",
+    "instance": "Phiên bản",
+    "project": "Dự án",
+    "select": "Vui lòng chọn"
   },
   "cel": {
     "condition": {
@@ -591,7 +595,16 @@
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "Chỉnh sửa Môi trường",
-    "engine": "Engine"
+    "engine": "Engine",
+    "edit-labels": "Chỉnh sửa nhãn",
+    "filter-database": "Lọc cơ sở dữ liệu",
+    "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
+    "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
+    "sync-schema-button": "Đồng bộ lược đồ",
+    "sync-status": "Trạng thái đồng bộ",
+    "sync-status-failed": "Đồng bộ thất bại",
+    "transfer-project": "Chuyển dự án",
+    "unassign": "Hủy gán"
   },
   "bbkit": {
     "confirm-button": {
@@ -717,12 +730,19 @@
     "filter-instance-name": "Lọc tên phiên bản"
   },
   "db": {
-    "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ"
+    "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
+    "character-set": "Bộ ký tự",
+    "collation": "Đối chiếu",
+    "encoding": "Mã hóa",
+    "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
+    "successfully-synced-schema": "Đồng bộ hóa lược đồ thành công"
   },
   "quick-action": {
     "add-instance": "Thêm Phiên bản",
     "create-project": "Tạo Dự án",
-    "new-project": "Mới Dự án"
+    "new-project": "Mới Dự án",
+    "create-db": "Tạo cơ sở dữ liệu",
+    "new-db": "Cơ sở dữ liệu mới"
   },
   "landing": {
     "quick-link": {
@@ -780,5 +800,15 @@
   },
   "sql-editor": {
     "self": "Trình soạn thảo SQL"
+  },
+  "create-db": {
+    "cluster": "Cụm",
+    "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",
+    "new-collection-name": "Tên bộ sưu tập mới",
+    "new-database-name": "Tên cơ sở dữ liệu mới",
+    "reserved-db-error": "{{databaseName}} là một tên dành riêng"
+  },
+  "issue": {
+    "labels": "Nhãn vấn đề"
   }
 }
