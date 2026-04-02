@@ -1,12 +1,10 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 1
 - statement: |-
     CREATE TABLE b(a INT);
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
           );
-  changeType: 1
   want:
     - status: 2
       code: 608
@@ -25,7 +23,6 @@
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
           );
-  changeType: 1
   want:
     - status: 2
       code: 608
@@ -48,7 +45,6 @@
             PARTITION p0 VALUES LESS THAN (6),
             PARTITION p1 VALUES LESS THAN (11)
           );
-  changeType: 1
   want:
     - status: 2
       code: 608

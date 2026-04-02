@@ -1,5 +1,4 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 1
 - statement: |-
     CREATE EVENT daily_backup
     ON SCHEDULE
@@ -9,7 +8,6 @@
       INSERT INTO backup_table (backup_date, data)
       SELECT NOW(), data
       FROM main_table;
-  changeType: 1
   want:
     - status: 2
       code: 1501

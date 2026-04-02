@@ -1,6 +1,8 @@
 // Use import.meta.glob so vue-tsc does not follow the import into React .tsx files.
 // Vite resolves the glob at build time and creates a lazy chunk for the matched module.
-const pageLoaders = import.meta.glob("./pages/settings/*.tsx");
+const settingsPageLoaders = import.meta.glob("./pages/settings/*.tsx");
+const projectPageLoaders = import.meta.glob("./pages/project/*.tsx");
+const pageLoaders = { ...settingsPageLoaders, ...projectPageLoaders };
 
 // biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
 type ReactDeps = any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -34,13 +36,17 @@ async function loadCoreDeps() {
   return cachedDeps;
 }
 
+const pageDirs = ["./pages/settings", "./pages/project"];
+
 async function loadPage(name: string): Promise<ReactComponent> {
   const hit = cachedPages.get(name);
   if (hit) return hit;
-  const path = `./pages/settings/${name}.tsx`;
-  const loader = pageLoaders[path] as
-    | (() => Promise<Record<string, unknown>>)
-    | undefined;
+  let loader: (() => Promise<Record<string, unknown>>) | undefined;
+  for (const dir of pageDirs) {
+    const path = `${dir}/${name}.tsx`;
+    loader = pageLoaders[path] as typeof loader;
+    if (loader) break;
+  }
   if (!loader) throw new Error(`Unknown React page: ${name}`);
   const mod = await loader();
   const Component = mod[name] as ReactComponent;

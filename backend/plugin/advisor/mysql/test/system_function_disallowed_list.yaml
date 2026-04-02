@@ -1,7 +1,5 @@
 - statement: CREATE TABLE t(a int);
-  changeType: 1
 - statement: SELECT RAND();
-  changeType: 1
   want:
     - status: 2
       code: 1702
@@ -17,7 +15,6 @@
       name VARCHAR(255),
       age INT
     );
-  changeType: 1
   want:
     - status: 2
       code: 1702
@@ -33,7 +30,6 @@
         column: 0
       endposition: null
 - statement: SELECT SLEEP(5);
-  changeType: 1
   want:
     - status: 2
       code: 1702

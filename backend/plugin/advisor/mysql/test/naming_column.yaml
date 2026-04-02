@@ -1,5 +1,4 @@
 - statement: CREATE TABLE book(id int, creatorId int);
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -10,7 +9,6 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int);
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -21,12 +19,10 @@
         column: 0
       endposition: null
 - statement: CREATE TABLE book(id int, creator_id int);
-  changeType: 1
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
     ALTER TABLE book RENAME COLUMN creator_id TO creatorId;
     ALTER TABLE book CHANGE COLUMN creatorId gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx int;
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -47,7 +43,6 @@
 - statement: |
     ALTER TABLE tech_book RENAME COLUMN id TO creator_id;
     ALTER TABLE tech_book RENAME COLUMN creator_id TO gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx;
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -65,7 +60,6 @@
       updater_id int,
       updated_ts timestamp);
     ALTER TABLE book CHANGE COLUMN creator_id creatorId int;
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -78,9 +72,7 @@
 - statement: |-
     CREATE TABLE book (id INT);
     ALTER TABLE book CHANGE COLUMN id creator_id int;
-  changeType: 1
 - statement: ALTER TABLE tech_book DROP COLUMN id;
-  changeType: 1
 - statement: |-
     CREATE TABLE book(
       id int,
@@ -88,7 +80,6 @@
       created_ts timestamp,
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN contentString varchar(255);
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -105,7 +96,6 @@
       created_ts timestamp,
       updated_ts timestamp);
     ALTER TABLE book ADD COLUMN (personAge INT, contentString varchar(255));
-  changeType: 1
   want:
     - status: 2
       code: 302
@@ -133,7 +123,6 @@
       id int,
       createdTs timestamp,
       updatedTs timestamp);
-  changeType: 1
   want:
     - status: 2
       code: 302

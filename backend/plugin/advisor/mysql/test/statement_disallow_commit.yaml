@@ -2,7 +2,6 @@
     START TRANSACTION;
     CREATE TABLE techBook(id int, name varchar(255));
     COMMIT;
-  changeType: 1
   want:
     - status: 2
       code: 206
@@ -20,7 +19,6 @@
     START TRANSACTION;
     INSERT INTO techBook(id, name) VALUES(1, "book");
     COMMIT;
-  changeType: 1
   want:
     - status: 2
       code: 206

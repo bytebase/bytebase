@@ -1,5 +1,4 @@
 - statement: DROP DATABASE IF EXISTS test;
-  changeType: 1
   want:
     - status: 2
       code: 701

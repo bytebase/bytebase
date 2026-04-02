@@ -12,7 +12,7 @@
       {
         "status": "ERROR",
         "title": "Syntax error",
-        "content": "Syntax error at line 1:21 \nrelated text: CREATE TABLE user(id)",
+        "content": "Syntax error at line 1:21: expected data type\nrelated text: CREATE TABLE user(id);",
         "code": 201,
         "sqlReviewReport": {
           "startPosition": {
