@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { AuditLogTable } from "@/react/components/AuditLogTable";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useProjectV1Store } from "@/store";
@@ -13,11 +14,16 @@ export function ProjectAuditLogPage({ projectId }: { projectId: string }) {
     ? hasProjectPermissionV2(project, "bb.auditLogs.export")
     : false;
 
+  const readonlyScopes = useMemo(
+    () => [{ id: "project", value: projectId }],
+    [projectId]
+  );
+
   return (
     <AuditLogTable
       parent={projectName}
       canExport={canExport}
-      readonlyScopes={[{ id: "project", value: projectId }]}
+      readonlyScopes={readonlyScopes}
     />
   );
 }
