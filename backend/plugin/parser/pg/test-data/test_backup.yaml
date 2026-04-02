@@ -157,3 +157,48 @@
       endposition:
         line: 2
         column: 44
+- input: WITH cte AS (SELECT a FROM test2) UPDATE test SET c = 1 FROM cte WHERE test.a = cte.a;
+  result:
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+        WITH cte AS (SELECT a FROM test2)
+          SELECT "public"."test".* FROM test, cte WHERE test.a = cte.a;
+      sourceschema: public
+      sourcetablename: test
+      targettablename: rollback_test_public
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 84
+- input: WITH cte AS (SELECT a FROM test2) DELETE FROM test USING cte WHERE test.a = cte.a;
+  result:
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+        WITH cte AS (SELECT a FROM test2)
+          SELECT "public"."test".* FROM test, cte WHERE test.a = cte.a;
+      sourceschema: public
+      sourcetablename: test
+      targettablename: rollback_test_public
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 80
+- input: WITH cte AS (SELECT a FROM test2) UPDATE test ta SET b = 1 FROM cte WHERE cte.a = ta.a;
+  result:
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+        WITH cte AS (SELECT a FROM test2)
+          SELECT "ta".* FROM test ta, cte WHERE cte.a = ta.a;
+      sourceschema: public
+      sourcetablename: test
+      targettablename: rollback_test_public
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 85
