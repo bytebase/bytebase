@@ -2,15 +2,31 @@
 package pricing
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// BillingMethodConfig defines a billing method with optional discount.
+// BillingMethodConfig defines a billing method.
 type BillingMethodConfig struct {
-	Interval      storepb.SubscriptionPayload_BillingInterval
-	PromotionCode string // Stripe promotion code (e.g., "FIRSTMONTH90")
-	Discount      *v1pb.PurchaseDiscount
+	Interval storepb.SubscriptionPayload_BillingInterval
+}
+
+// GetPromotionCode returns the Stripe promotion code for the given plan and interval
+// from environment variables. The env var name follows the pattern:
+//
+//	STRIPE_PROMOTION_CODE_<PLAN>_<INTERVAL>
+//
+// For example: STRIPE_PROMOTION_CODE_TEAM_MONTH=FIRSTMONTH90
+//
+// Returns empty string if not set.
+func GetPromotionCode(plan storepb.SubscriptionPayload_Plan, interval storepb.SubscriptionPayload_BillingInterval) string {
+	planName := strings.TrimPrefix(plan.String(), "PLAN_")
+	intervalName := strings.TrimPrefix(interval.String(), "BILLING_INTERVAL_")
+	key := fmt.Sprintf("STRIPE_PROMOTION_CODE_%s_%s", planName, intervalName)
+	return os.Getenv(key)
 }
 
 // PlanLimitConfig defines pricing and limits for a plan.
@@ -33,17 +49,8 @@ var planLimits = map[storepb.SubscriptionPayload_Plan]*PlanLimitConfig{
 		PricePerSeatPerMonth: 2000, // $20/user/month
 		InstanceCount:        10,
 		BillingMethods: []BillingMethodConfig{
-			{
-				Interval:      storepb.SubscriptionPayload_MONTH,
-				PromotionCode: "FISRTMONTH90",
-				Discount: &v1pb.PurchaseDiscount{
-					Type:  v1pb.PurchaseDiscount_PERCENTAGE_OFF,
-					Value: 90,
-				},
-			},
-			{
-				Interval: storepb.SubscriptionPayload_YEAR,
-			},
+			{Interval: storepb.SubscriptionPayload_MONTH},
+			{Interval: storepb.SubscriptionPayload_YEAR},
 		},
 	},
 	storepb.SubscriptionPayload_ENTERPRISE: {

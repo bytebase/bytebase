@@ -132,7 +132,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               <div className="mb-4 font-medium">
                 {t("settings.general.workspace.default-landing-page.self")}
               </div>
-              <div className="w-full flex flex-col gap-8">
+              <div className="w-full flex flex-col gap-4">
                 <label className="flex items-start gap-x-3 cursor-pointer">
                   <input
                     type="radio"

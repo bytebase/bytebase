@@ -504,6 +504,7 @@ function EditEnvironmentDrawer({
     () => environmentStore.environmentList ?? []
   );
   const [selected, setSelected] = useState("");
+  const [updating, setUpdating] = useState(false);
   useEscapeKey(open, onClose);
   useEffect(() => {
     if (open) setSelected("");
@@ -560,10 +561,15 @@ function EditEnvironmentDrawer({
             {t("common.cancel")}
           </Button>
           <Button
-            disabled={!selected}
+            disabled={!selected || updating}
             onClick={async () => {
-              await onUpdate(selected);
-              onClose();
+              setUpdating(true);
+              try {
+                await onUpdate(selected);
+                onClose();
+              } finally {
+                setUpdating(false);
+              }
             }}
           >
             {t("common.confirm")}
