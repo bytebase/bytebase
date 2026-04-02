@@ -655,6 +655,8 @@ function CreateDatabaseDrawer({
   const [projectName, setProjectName] = useState("");
   const [instanceName, setInstanceName] = useState("");
   const [databaseName, setDatabaseName] = useState("");
+  const [tableName, setTableName] = useState(""); // MongoDB collection name
+  const [cluster, setCluster] = useState(""); // ClickHouse cluster
   const [environmentName, setEnvironmentName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [characterSet, setCharacterSet] = useState("");
@@ -758,6 +760,8 @@ function CreateDatabaseDrawer({
     setProjectName("");
     setInstanceName("");
     setDatabaseName("");
+    setTableName("");
+    setCluster("");
     setEnvironmentName("");
     setOwnerName("");
     setIssueLabels([]);
@@ -769,9 +773,12 @@ function CreateDatabaseDrawer({
     searchInstances("");
   }, [open, searchProjects, searchInstances]);
 
+  const instanceFetchRef = useRef(0);
   const handleInstanceChange = async (name: string) => {
     setInstanceName(name);
     setOwnerName("");
+    setTableName("");
+    setCluster("");
     setInstanceRoles([]);
     const inst = instances.find((i) => i.name === name);
     if (inst?.environment) setEnvironmentName(inst.environment);
@@ -782,7 +789,9 @@ function CreateDatabaseDrawer({
         inst.engine
       )
     ) {
+      const fetchId = ++instanceFetchRef.current;
       const full = await instanceStore.getOrFetchInstanceByName(name);
+      if (fetchId !== instanceFetchRef.current) return;
       if (full?.roles) {
         setInstanceRoles(
           full.roles
@@ -802,9 +811,11 @@ function CreateDatabaseDrawer({
       const createDatabaseConfig = create(Plan_CreateDatabaseConfigSchema, {
         target: instanceName,
         database: databaseName,
+        table: tableName,
         environment: environmentName || undefined,
         characterSet: characterSet || defaultCharsetOfEngineV1(engine),
         collation: collation || defaultCollationOfEngineV1(engine),
+        cluster,
         owner: requireOwner ? ownerName : "",
       });
       const spec = create(Plan_SpecSchema, {
@@ -939,6 +950,37 @@ function CreateDatabaseDrawer({
               </p>
             )}
           </div>
+
+          {/* MongoDB collection name */}
+          {selectedInstance?.engine === Engine.MONGODB && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {t("create-db.new-collection-name")}{" "}
+                <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                value={tableName}
+                onChange={(e) => setTableName(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+          )}
+
+          {/* ClickHouse cluster */}
+          {selectedInstance?.engine === Engine.CLICKHOUSE && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                {t("create-db.cluster")}
+              </label>
+              <input
+                type="text"
+                value={cluster}
+                onChange={(e) => setCluster(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+            </div>
+          )}
 
           {/* Database Owner (Postgres/Redshift/CockroachDB) */}
           {requireOwner && instanceName && (
