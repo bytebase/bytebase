@@ -772,12 +772,14 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	planUIDs := make([]int64, 0, len(plans))
+	rolloutPlanUIDs := make([]int64, 0, len(plans))
 	projectIDSet := make(map[string]struct{}, len(plans))
-	hasRollout := false
 	for _, plan := range plans {
 		planUIDs = append(planUIDs, plan.UID)
+		if plan.Config != nil && plan.Config.HasRollout {
+			rolloutPlanUIDs = append(rolloutPlanUIDs, plan.UID)
+		}
 		projectIDSet[plan.ProjectID] = struct{}{}
-		hasRollout = hasRollout || (plan.Config != nil && plan.Config.HasRollout)
 	}
 	projectIDs := make([]string, 0, len(projectIDSet))
 	for projectID := range projectIDSet {
@@ -813,7 +815,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
 	environmentOrderMap := map[string]int{}
-	if hasRollout {
+	if len(rolloutPlanUIDs) > 0 {
 		environmentSetting, err := s.GetEnvironment(ctx, workspaceID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environments")
@@ -822,7 +824,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 			environmentOrderMap[env.Id] = i
 		}
 
-		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, planUIDs)
+		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to batch list task status counts")
 		}
