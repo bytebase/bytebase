@@ -18,6 +18,7 @@ const DYNAMIC_PREFIXES = [
   "dynamic.settings.sensitive-data.semantic-types.template.",
   "subscription.plan.",
   "settings.sensitive-data.algorithms.",
+  "instance.selected-n-instances",
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
