@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,14 +68,14 @@ func TestApplyMultiStatements(t *testing.T) {
 	}
 
 	total := 0
-	countStatements := func(string) error {
+	countStatements := func(_ string, _, _ int) error {
 		total++
 		return nil
 	}
 
 	for _, test := range tests {
 		total = 0
-		err := applyMultiStatements(strings.NewReader(test.statement), countStatements)
+		err := applyMultiStatements(test.statement, countStatements)
 		require.NoError(t, err)
 		require.Equal(t, test.total, total)
 	}
