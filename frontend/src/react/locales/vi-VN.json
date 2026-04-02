@@ -70,7 +70,43 @@
     "failed": "Thất bại",
     "instance": "Phiên bản",
     "project": "Dự án",
-    "select": "Vui lòng chọn"
+    "select": "Vui lòng chọn",
+    "export": "Xuất",
+    "view": "Xem",
+    "view-details": "Xem Chi tiết",
+    "from": "Từ",
+    "to": "Đến"
+  },
+  "audit-log": {
+    "export-finished": "Xuất hoàn tất",
+    "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
+    "table": {
+      "created-ts": "Thời gian",
+      "actor": "Người thực hiện",
+      "level": "Mức độ",
+      "method": "Phương thức",
+      "request": "Yêu cầu",
+      "response": "Phản hồi",
+      "status": "Trạng thái",
+      "latency": "Độ trễ",
+      "service-data": "Dữ liệu Dịch vụ"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Người thực hiện",
+          "description": "Tìm kiếm theo người thực hiện"
+        },
+        "method": {
+          "title": "Phương thức",
+          "description": "Tìm kiếm theo phương thức"
+        },
+        "level": {
+          "title": "Mức độ",
+          "description": "Tìm kiếm theo mức độ"
+        }
+      }
+    }
   },
   "cel": {
     "condition": {

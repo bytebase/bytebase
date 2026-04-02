@@ -304,8 +304,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.audit-log"),
           requiredPermissionList: () => ["bb.auditLogs.search"],
         },
-        component: () => import("@/views/SettingWorkspaceAuditLog.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "AuditLogPage" }),
       },
       {
         path: "users",
