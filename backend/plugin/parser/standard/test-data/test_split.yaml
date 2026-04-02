@@ -184,3 +184,60 @@
         start: 9
         end: 22
       empty: false
+- description: 'CRLF: multi-line without semicolon'
+  input: "select col_a,count(col_b)\r\nfrom tbl\r\ngroup by col_a"
+  result:
+    - text: "select col_a,count(col_b)\r\nfrom tbl\r\ngroup by col_a"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 15
+      range:
+        start: 0
+        end: 51
+      empty: false
+- description: 'CRLF: multiple statements'
+  input: "SELECT 1;\r\nSELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
+      empty: false
+    - text: "\r\nSELECT 2;"
+      baseline: 0
+      start:
+        line: 1
+        column: 10
+      end:
+        line: 2
+        column: 10
+      range:
+        start: 9
+        end: 20
+      empty: false
+- description: 'CRLF: single statement with semicolon'
+  input: "SELECT\r\n  1;"
+  result:
+    - text: "SELECT\r\n  1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 2
+        column: 5
+      range:
+        start: 0
+        end: 12
+      empty: false
