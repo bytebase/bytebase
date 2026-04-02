@@ -65,7 +65,11 @@
       "type-limit": "Only support {{extension}} file",
       "size-limit": "File size should less than {{size}} MiB"
     },
-    "ok": "OK"
+    "ok": "OK",
+    "failed": "Failed",
+    "project": "Project",
+    "instance": "Instance",
+    "select": "Please Select"
   },
   "cel": {
     "condition": {
@@ -194,6 +198,20 @@
     }
   },
   "settings": {
+    "sidebar": {
+      "general": "General",
+      "members": "Members",
+      "users-and-groups": "Users & Groups",
+      "members-and-groups": "Members & Groups",
+      "sso": "SSO",
+      "subscription": "Subscription",
+      "audit-log": "Audit Logs",
+      "custom-roles": "Custom Roles",
+      "global-masking": "Global Masking",
+      "data-classification": "Data Classification",
+      "im-integration": "IM",
+      "mcp": "MCP"
+    },
     "sensitive-data": {
       "classification": {
         "invalid-json": "Invalid JSON format",
@@ -577,7 +595,16 @@
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "Edit Environment",
-    "engine": "Engine"
+    "edit-labels": "Edit Labels",
+    "engine": "Engine",
+    "filter-database": "Filter database",
+    "selected-n-databases": "{{n}} database(s) selected",
+    "successfully-transferred-databases": "Successfully transferred databases",
+    "sync-schema-button": "Sync Schema",
+    "sync-status": "Sync status",
+    "sync-status-failed": "Sync failed",
+    "transfer-project": "Transfer Project",
+    "unassign": "Unassign"
   },
   "bbkit": {
     "confirm-button": {
@@ -702,12 +729,29 @@
     },
     "filter-instance-name": "Filter instance name"
   },
+  "create-db": {
+    "new-database-name": "New database name",
+    "database-owner-name": "Database owner name",
+    "cluster": "Cluster",
+    "reserved-db-error": "{{databaseName}} is a reserved name",
+    "new-collection-name": "New Collection Name"
+  },
   "db": {
-    "start-to-sync-schema": "Start to sync schema"
+    "character-set": "Character set",
+    "collation": "Collation",
+    "encoding": "Encoding",
+    "failed-to-sync-schema": "Failed to sync schema",
+    "start-to-sync-schema": "Start to sync schema",
+    "successfully-synced-schema": "Successfully synced schema"
+  },
+  "issue": {
+    "labels": "Issue Labels"
   },
   "quick-action": {
     "add-instance": "Add Instance",
+    "create-db": "Create database",
     "create-project": "Create Project",
+    "new-db": "New DB",
     "new-project": "New Project"
   },
   "landing": {
