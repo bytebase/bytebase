@@ -683,11 +683,14 @@ function CreateDatabaseDrawer({
     | undefined
   >();
 
+  const projectFetchRef = useRef(0);
   useEffect(() => {
     setIssueLabels([]);
     setSelectedProject(undefined);
     if (!projectName) return;
+    const fetchId = ++projectFetchRef.current;
     projectStore.getOrFetchProjectByName(projectName).then((project) => {
+      if (fetchId !== projectFetchRef.current) return;
       setSelectedProject({
         issueLabels: project.issueLabels ?? [],
         forceIssueLabels: project.forceIssueLabels ?? false,
@@ -1550,12 +1553,13 @@ export function DatabasesPage() {
           placeholder={t("database.filter-database")}
           scopeOptions={scopeOptions}
         />
-        {hasWorkspacePermissionV2("bb.instances.list") && (
-          <Button onClick={() => setShowCreateDrawer(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            {t("quick-action.new-db")}
-          </Button>
-        )}
+        {hasWorkspacePermissionV2("bb.instances.list") &&
+          hasWorkspacePermissionV2("bb.issues.create") && (
+            <Button onClick={() => setShowCreateDrawer(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              {t("quick-action.new-db")}
+            </Button>
+          )}
       </div>
 
       <div className="flex flex-col gap-y-4">
