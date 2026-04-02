@@ -49,7 +49,8 @@ func NewAccessGrantService(store *store.Store, iamManager *iam.Manager, licenseS
 
 // GetAccessGrant gets an access grant by name.
 // Uses CUSTOM auth: allows access if user has bb.accessGrants.get permission,
-// OR if the user is an approver on the linked issue.
+// OR if the user is the grant creator, OR if the user is an approver on the
+// linked issue.
 func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connect.Request[v1pb.GetAccessGrantRequest]) (*connect.Response[v1pb.AccessGrant], error) {
 	req := request.Msg
 	projectID, accessGrantID, err := common.GetProjectIDAccessGrantID(req.Name)
@@ -87,7 +88,8 @@ func (s *AccessGrantService) GetAccessGrant(ctx context.Context, request *connec
 	}
 
 	if !hasPermission {
-		if !s.isApproverForGrant(ctx, workspaceID, projectID, grant, user) {
+		isCreator := grant.Creator == user.Email
+		if !isCreator && !s.isApproverForGrant(ctx, workspaceID, projectID, grant, user) {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission to view access grant %q", req.Name))
 		}
 	}

@@ -80,6 +80,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Code } from "@connectrpc/connect";
 import hljs from "highlight.js/lib/core";
 import { NCheckbox, NCode, NConfigProvider } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
@@ -89,6 +90,7 @@ import { useAccessGrantStore, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { getAccessGrantExpirationText } from "@/utils/accessGrant";
+import { getErrorCode } from "@/utils/connect";
 import { usePlanContextWithIssue } from "../../../logic";
 
 const { issue } = usePlanContextWithIssue();
@@ -119,6 +121,12 @@ watchEffect(async () => {
           dbStore.getOrFetchDatabaseByName(target);
         }
       }
+    }
+  } catch (error) {
+    // Silently handle permission denied — the section will render empty
+    // for users who can view the issue but not the grant details.
+    if (getErrorCode(error) !== Code.PermissionDenied) {
+      throw error;
     }
   } finally {
     isLoading.value = false;
