@@ -4,6 +4,7 @@ package stripe
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -376,11 +377,17 @@ func refundCustomerBalance(customerID string, totalRefundAmount int64, workspace
 }
 
 // CreateBillingPortalSession creates a Stripe Billing Portal session for invoice management.
+// If STRIPE_BILLING_PORTAL_ID is set, uses that configuration to restrict
+// portal features (e.g. disable subscription switching so changes go through our UI).
 func CreateBillingPortalSession(customerID string, returnURL string) (string, error) {
-	s, err := billingportalsession.New(&stripego.BillingPortalSessionParams{
+	params := &stripego.BillingPortalSessionParams{
 		Customer:  stripego.String(customerID),
 		ReturnURL: stripego.String(returnURL),
-	})
+	}
+	if configID := os.Getenv("STRIPE_BILLING_PORTAL_ID"); configID != "" {
+		params.Configuration = stripego.String(configID)
+	}
+	s, err := billingportalsession.New(params)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create billing portal session")
 	}
