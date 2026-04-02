@@ -212,7 +212,7 @@ function ConfirmDialog({
       <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
       <div
         className={cn(
-          "relative bg-white rounded-md shadow-lg max-w-lg w-full mx-4 border-t-4",
+          "relative bg-white rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
           borderColor
         )}
       >
@@ -227,7 +227,7 @@ function ConfirmDialog({
           </Button>
           <button
             className={cn(
-              "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium",
+              "inline-flex items-center justify-center rounded-xs px-4 py-2 text-sm font-medium",
               okBg
             )}
             onClick={onOk}
@@ -470,7 +470,7 @@ function InstanceActionDropdown({
             type="checkbox"
             checked={forceArchive}
             onChange={(e) => setForceArchive(e.target.checked)}
-            className="rounded border-control-border"
+            className="rounded-xs border-control-border"
           />
           {t("instance.force-archive-description")}
         </label>
@@ -506,7 +506,7 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-md bg-gray-100 py-0.5 px-2 text-sm">
+        <span key={key} className="rounded-xs bg-gray-100 py-0.5 px-2 text-sm">
           {key}:{value}
         </span>
       ))}
@@ -559,7 +559,7 @@ function EditEnvironmentDrawer({
               <label
                 key={env.name}
                 className={cn(
-                  "flex items-center gap-x-3 px-3 py-2 rounded cursor-pointer border",
+                  "flex items-center gap-x-3 px-3 py-2 rounded-xs cursor-pointer border",
                   selected === env.name
                     ? "border-accent bg-accent/5"
                     : "border-transparent hover:bg-gray-50"
@@ -1161,7 +1161,7 @@ export function InstancesPage() {
     <div className="py-4 flex flex-col">
       {/* Instance count warning */}
       {quotaExhausted && (
-        <div className="mx-4 mb-2 p-3 rounded-md border border-warning bg-warning/5">
+        <div className="mx-4 mb-2 p-3 rounded-xs border border-warning bg-warning/5">
           <p className="text-sm font-medium text-warning">
             {t("subscription.usage.instance-count.title")}
           </p>
@@ -1215,7 +1215,7 @@ export function InstancesPage() {
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleSelectAll}
-                  className="rounded border-control-border"
+                  className="rounded-xs border-control-border"
                 />
               </th>
               <th
@@ -1291,7 +1291,7 @@ export function InstancesPage() {
                         checked={isSelected}
                         onChange={() => toggleSelection(instance.name)}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded border-control-border"
+                        className="rounded-xs border-control-border"
                       />
                     </td>
                     <td className="px-4 py-2">
@@ -1320,7 +1320,7 @@ export function InstancesPage() {
                         </span>
                         {hasMultipleDS && (
                           <button
-                            className="p-0.5 hover:bg-control-bg rounded shrink-0"
+                            className="p-0.5 hover:bg-control-bg rounded-xs shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleDataSource(instance.name);

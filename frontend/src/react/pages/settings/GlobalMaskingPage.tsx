@@ -342,7 +342,7 @@ function MaskingRuleConfig({
                 {t("common.confirm")}
               </Button>
               {errorMessages.length > 0 && (
-                <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
                   <ul className="list-disc pl-4">
                     {errorMessages.map((msg, i) => (
                       <li key={i}>{msg}</li>
@@ -563,7 +563,7 @@ export function GlobalMaskingPage() {
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
       {hasSensitiveDataFeature && (
-        <div className="rounded-md border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm">
+        <div className="rounded-xs border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm">
           {t("custom-approval.rule.first-match-wins")}
         </div>
       )}
@@ -654,7 +654,7 @@ export function GlobalMaskingPage() {
                     {index > 0 && (
                       <button
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
+                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
                         onClick={() => onReorder(item, -1)}
                       >
                         <ChevronUp className="w-4 h-4" />
@@ -663,7 +663,7 @@ export function GlobalMaskingPage() {
                     {index !== items.length - 1 && (
                       <button
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
+                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
                         onClick={() => onReorder(item, 1)}
                       >
                         <ChevronDown className="w-4 h-4" />
@@ -674,7 +674,7 @@ export function GlobalMaskingPage() {
                   <div className="pt-2">
                     <button
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
+                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
                       onClick={() => onEdit(index)}
                     >
                       <Pencil className="w-4 h-4" />

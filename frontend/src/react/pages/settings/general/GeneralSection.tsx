@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -16,7 +17,6 @@ import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 interface GeneralSectionProps {
@@ -40,7 +40,9 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
       () => actuatorV1Store.serverInfo?.externalUrlFromFlag ?? false
     );
 
-    const canEdit = hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile");
+    const [canEdit, permissionTooltip] = usePermissionCheck([
+      "bb.settings.setWorkspaceProfile",
+    ]);
 
     const getInitialState = useCallback((): LocalState => {
       const mode = settingV1Store.workspaceProfile.databaseChangeMode;
@@ -119,7 +121,10 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             <h1 className="text-2xl font-bold">{title}</h1>
           </div>
         </div>
-        <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+        <div
+          className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6"
+          title={permissionTooltip}
+        >
           {/* Database change mode */}
           <div>
             <div className="mb-4 font-medium">
@@ -228,7 +233,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               className="fixed inset-0 bg-black/40"
               onClick={() => setShowModal(false)}
             />
-            <div className="relative bg-white rounded-md shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
+            <div className="relative bg-white rounded-sm shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
               <h2 className="text-lg font-semibold">
                 {t("settings.general.workspace.config-updated")}
               </h2>

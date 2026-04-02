@@ -107,7 +107,7 @@ function EnvironmentName({
 
   const content = (
     <span
-      className="inline-flex items-center gap-x-1 px-1.5 rounded select-none truncate"
+      className="inline-flex items-center gap-x-1 px-1.5 rounded-xs select-none truncate"
       style={{
         backgroundColor: `rgba(${rgbStr}, 0.1)`,
         color: `rgb(${rgbStr})`,
@@ -299,7 +299,7 @@ function RolloutPolicyConfig({
           {rolloutPolicy.roles.map((role) => (
             <span
               key={role}
-              className="inline-flex items-center gap-x-1 rounded-md bg-gray-100 px-2 py-1 text-sm"
+              className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
             >
               {displayRoleTitle(role)}
               {canUpdatePolicy && (
@@ -324,7 +324,7 @@ function RolloutPolicyConfig({
                 {t("common.add")}
               </Button>
               {showRoleDropdown && (
-                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-md border border-control-border bg-white py-1 shadow-md">
+                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
                   {availableRoles.map((group) => (
                     <div key={group.label}>
                       <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
@@ -537,7 +537,7 @@ function SQLReviewSectionInner(
               {t("sql-review.configure-policy")}
             </Button>
             {showSelectPanel && (
-              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-md border border-control-border bg-white py-1 shadow-md">
+              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
                 {reviewPolicyList.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-400">
                     {t("common.no-data")}
@@ -836,7 +836,7 @@ function EnvironmentDetail({
                 checked={editProtected}
                 disabled={!canEdit}
                 onChange={(e) => setEditProtected(e.target.checked)}
-                className="rounded border-gray-300"
+                className="rounded-xs border-gray-300"
               />
               <span className="text-sm">
                 {t("policy.environment-tier.mark-env-as-production")}
@@ -923,7 +923,7 @@ function EnvironmentDetail({
             onClick={() => setShowDeleteConfirm(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-md shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white rounded-sm shadow-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-medium mb-2">
                 {t("environment.delete")} '{editTitle}'?
               </h3>
@@ -934,7 +934,7 @@ function EnvironmentDetail({
                       type="checkbox"
                       checked={confirmDelete}
                       onChange={(e) => setConfirmDelete(e.target.checked)}
-                      className="mt-0.5 rounded border-gray-300"
+                      className="mt-0.5 rounded-xs border-gray-300"
                     />
                     <span className="text-sm text-gray-600">
                       {t("environment.delete-description")}
@@ -1122,7 +1122,7 @@ function CreateDrawer({
                   type="checkbox"
                   checked={isProtected}
                   onChange={(e) => setIsProtected(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded-xs border-gray-300"
                 />
                 <span className="text-sm">
                   {t("policy.environment-tier.mark-env-as-production")}

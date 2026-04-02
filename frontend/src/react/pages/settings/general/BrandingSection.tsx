@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -20,7 +22,6 @@ import {
 } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const MAX_FILE_SIZE_MIB = 2;
@@ -49,7 +50,9 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
       useSubscriptionV1Store().hasFeature(PlanFeature.FEATURE_CUSTOM_LOGO)
     );
 
-    const canEdit = hasWorkspacePermissionV2("bb.workspaces.update");
+    const [canEdit, permissionTooltip] = usePermissionCheck([
+      "bb.workspaces.update",
+    ]);
 
     const [localTitle, setLocalTitle] = useState(workspace?.title ?? "");
     const [logoUrl, setLogoUrl] = useState(workspace?.logo ?? "");
@@ -175,9 +178,14 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
     return (
       <div id="branding" className="py-6 lg:flex">
         <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <div className="flex items-center gap-x-2">
+            <h1 className="text-2xl font-bold">{title}</h1>
+          </div>
         </div>
-        <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+        <div
+          className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6"
+          title={permissionTooltip}
+        >
           {/* Workspace ID */}
           <div>
             <label className="font-medium">
@@ -204,6 +212,10 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
             <div className="mb-4 mt-4 lg:mt-0">
               <div className="flex items-center gap-x-2 font-medium">
                 {t("settings.general.workspace.logo")}
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_CUSTOM_LOGO}
+                  clickable
+                />
               </div>
               <p className="mb-3 text-sm text-gray-400">
                 {t("settings.general.workspace.logo-aspect")}
@@ -222,7 +234,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
               >
                 {/* Logo preview */}
                 <div
-                  className="w-full bg-no-repeat bg-contain bg-center rounded-md pointer-events-none m-4"
+                  className="w-full bg-no-repeat bg-contain bg-center rounded-sm pointer-events-none m-4"
                   style={{
                     backgroundImage: logoUrl ? `url(${logoUrl})` : undefined,
                   }}
@@ -239,7 +251,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                     </div>
                   )}
                   <div className="text-sm text-gray-600 inline-flex pointer-events-none">
-                    <span className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500">
+                    <span className="relative cursor-pointer rounded-xs font-medium text-indigo-600 hover:text-indigo-500">
                       {t("settings.general.workspace.select-logo")}
                     </span>
                     <p className="pl-1">

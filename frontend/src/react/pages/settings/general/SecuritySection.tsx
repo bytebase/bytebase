@@ -11,11 +11,12 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSubscriptionV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
@@ -47,7 +48,9 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
       )
     );
-    const canEdit = hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile");
+    const [canEdit, permissionTooltip] = usePermissionCheck([
+      "bb.settings.setWorkspaceProfile",
+    ]);
 
     const getInitialState = useCallback((): SecurityState => {
       const profile = settingV1Store.workspaceProfile;
@@ -207,7 +210,10 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         <div className="text-left lg:w-1/4">
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
-        <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
+        <div
+          className="flex-1 lg:px-4 flex flex-col gap-y-6"
+          title={permissionTooltip}
+        >
           {/* Watermark */}
           <div>
             <div className="flex items-center gap-x-2">
@@ -225,6 +231,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
               <span className="font-medium">
                 {t("settings.general.workspace.watermark.enable")}
               </span>
+              <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
             </div>
             <div className="mt-1 text-sm text-gray-400">
               {t("settings.general.workspace.watermark.description")}
@@ -357,10 +364,15 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     }
                   />
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium flex items-center gap-x-2">
                       {t(
                         "settings.general.workspace.domain-restriction.members-restriction.self"
                       )}
+                      <FeatureBadge
+                        feature={
+                          PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
+                        }
+                      />
                     </div>
                     <p className="text-sm text-gray-400 leading-tight">
                       {t(

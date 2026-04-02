@@ -411,7 +411,7 @@ export function IMPage() {
           ) : (
             <select
               value={item.type}
-              className="flex h-9 w-full max-w-xs rounded-md border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
+              className="flex h-9 w-full max-w-xs rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm cursor-pointer"
               onChange={(e) => handleChangeType(i, e.target.value)}
             >
               <option value={item.type}>{item.typeLabel}</option>

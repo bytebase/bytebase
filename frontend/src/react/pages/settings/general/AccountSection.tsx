@@ -12,6 +12,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useActuatorV1Store,
@@ -26,7 +28,6 @@ import {
 import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
 import { WorkspaceProfileSetting_PasswordRestrictionSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const DEFAULT_MIN_LENGTH = 8;
@@ -82,9 +83,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       )
     );
 
-    const allowEdit = hasWorkspacePermissionV2(
-      "bb.settings.setWorkspaceProfile"
-    );
+    const [allowEdit, permissionTooltip] = usePermissionCheck([
+      "bb.settings.setWorkspaceProfile",
+    ]);
 
     const existActiveIdentityProvider = useVueState(
       () => idpStore.identityProviderList.length > 0
@@ -365,7 +366,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         <div className="text-left lg:w-1/4">
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
-        <div className="flex-1 lg:px-4">
+        <div className="flex-1 lg:px-4" title={permissionTooltip}>
           {/* Sub-section 1: Disallow signup (non-SaaS only) */}
           {!isSaaSMode && (
             <>
@@ -385,6 +386,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   <span className="font-medium">
                     {t("settings.general.workspace.disallow-signup.enable")}
                   </span>
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP}
+                  />
                 </div>
                 <div className="mt-1 mb-3 text-sm text-gray-400">
                   {t("settings.general.workspace.disallow-signup.description")}
@@ -398,6 +402,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
           <div className="mb-7 mt-4 lg:mt-0">
             <p className="font-medium flex flex-row justify-start items-center mb-2 gap-x-2">
               {t("settings.general.workspace.password-restriction.self")}
+              <FeatureBadge
+                feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
+              />
             </p>
             <div className="flex flex-col gap-y-3">
               <div className="flex items-center">
@@ -564,7 +571,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             </div>
           </div>
 
-          <hr />
+          <hr className="my-4" />
 
           {/* Sub-section 3: Require 2FA */}
           <div className="flex flex-col gap-y-7">
@@ -584,6 +591,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <span className="font-medium">
                   {t("settings.general.workspace.require-2fa.enable")}
                 </span>
+                <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
               </div>
               <div className="mt-1 text-sm text-gray-400">
                 {t("settings.general.workspace.require-2fa.description")}
@@ -614,6 +622,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     {t(
                       "settings.general.workspace.disallow-password-signin.enable"
                     )}
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN}
+                    />
                     {hasDisallowPasswordSigninFeature &&
                       !toggleState.disallowPasswordSignin &&
                       !existActiveIdentityProvider && (
@@ -636,7 +647,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             )}
           </div>
 
-          <hr />
+          <hr className="my-4" />
 
           {/* Sub-section 5: Token Duration */}
           {/* Access Token Duration */}

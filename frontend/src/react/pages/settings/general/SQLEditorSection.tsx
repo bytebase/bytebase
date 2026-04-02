@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { Sparkles } from "lucide-react";
 import {
   type ChangeEvent,
   forwardRef,
@@ -12,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
@@ -41,17 +41,6 @@ interface LocalState {
   maximumResultSize: number;
   maximumResultRows: number;
   maxQueryTimeInSeconds: number;
-}
-
-function FeatureBadge({ feature }: { feature: PlanFeature }) {
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasFeature = useVueState(() => subscriptionStore.hasFeature(feature));
-  if (hasFeature) return null;
-  return (
-    <span className="text-accent">
-      <Sparkles className="w-5 h-5" />
-    </span>
-  );
 }
 
 export const SQLEditorSection = forwardRef<
@@ -120,6 +109,15 @@ export const SQLEditorSection = forwardRef<
   }, [policyPayload, workspaceProfile]);
 
   const [state, setState] = useState<LocalState>(getInitialState);
+
+  // Re-sync state when underlying data loads (e.g. after policy fetch on mount).
+  const prevPolicyRef = useRef(policyPayload);
+  useEffect(() => {
+    if (prevPolicyRef.current !== policyPayload) {
+      prevPolicyRef.current = policyPayload;
+      setState(getInitialState());
+    }
+  }, [policyPayload, getInitialState]);
 
   const isDirty = useCallback(
     () => !isEqual(state, getInitialState()),

@@ -228,7 +228,7 @@ function LevelBadge({
   if (!levelObj) return null;
   const color = bgColorList[level - 1] ?? "bg-gray-200";
   return (
-    <span className={`ml-1 px-1 py-0.5 rounded text-xs ${color}`}>
+    <span className={`ml-1 px-1 py-0.5 rounded-xs text-xs ${color}`}>
       {levelObj.title}
     </span>
   );
@@ -290,7 +290,7 @@ function ClassificationTreeNode({
   return (
     <div>
       <div
-        className="flex items-center gap-1 py-1 px-1 rounded hover:bg-control-bg cursor-pointer select-none"
+        className="flex items-center gap-1 py-1 px-1 rounded-xs hover:bg-control-bg cursor-pointer select-none"
         onClick={() => hasChildren && setExpanded(!expanded)}
       >
         {hasChildren ? (
