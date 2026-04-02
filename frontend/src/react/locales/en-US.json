@@ -54,6 +54,8 @@
     "permissions": "Permissions",
     "added": "Added",
     "description": "Description",
+    "operations": "Operations",
+    "title": "Title",
     "missing-required-permission": "Missing required permissions {{permissions}}",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
@@ -124,7 +126,9 @@
       "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition",
       "add": "Add condition",
       "add-raw-expression": "Add raw expression",
-      "add-group": "Add condition group"
+      "add-group": "Add condition group",
+      "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
+      "self": "Condition"
     }
   },
   "subscription": {
@@ -698,6 +702,36 @@
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
+    "approval-flow": {
+      "add-rule": "Add rule",
+      "create-approval-flow": "Create approval flow",
+      "edit-rule": "Edit rule",
+      "fallback-rules": "Fallback Rules",
+      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
+      "self": "Approval Flow",
+      "skip": "No approval required",
+      "node": {
+        "add": "Add node",
+        "approver": "Approver",
+        "delete": "Delete approval node",
+        "description": "Only one approval is required on this node when there are multiple approvers.",
+        "nodes": "Approval nodes",
+        "order": "Order"
+      },
+      "template": {
+        "presets-title": "Presets",
+        "preset-descriptions": {
+          "drop-or-truncate": "Require approval for DROP TABLE or TRUNCATE statements.",
+          "fallback": "A catch-all rule that matches all requests. Place at the end of your rules list.",
+          "high-affected-rows": "Require approval when affected rows exceed 100."
+        },
+        "presets": {
+          "drop-or-truncate": "Drop/Truncate Table",
+          "fallback": "Fallback Rule",
+          "high-affected-rows": "High Affected Rows"
+        }
+      }
+    },
     "risk": {
       "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
       "how-it-works": "How it works",
@@ -711,7 +745,15 @@
     },
     "risk-rule": {
       "risk": {
+        "namespace": {
+          "change_database": "Change Database",
+          "create_database": "Create Database",
+          "data_export": "Export Data",
+          "request-role": "Request Role",
+          "request-access": "Request Just-In-Time Access"
+        },
         "risk-level": {
+          "default": "Default",
           "high": "High",
           "moderate": "Moderate",
           "low": "Low"
