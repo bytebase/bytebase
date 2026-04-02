@@ -24,13 +24,17 @@
             PARTITION p1 VALUES LESS THAN (11)
           );
   want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 1: expected ALTER TABLE operation'
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
       startposition:
         line: 1
-        column: 23
+        column: 0
       endposition: null
 - statement: |-
     CREATE TABLE t(a int) PARTITION BY RANGE (a) (
@@ -42,11 +46,27 @@
             PARTITION p1 VALUES LESS THAN (11)
           );
   want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 5: expected ALTER TABLE operation'
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
+                PARTITION p0 VALUES LESS THAN (6),
+                PARTITION p1 VALUES LESS THAN (11)
+              );" creates
       startposition:
         line: 5
-        column: 23
+        column: 0
       endposition: null

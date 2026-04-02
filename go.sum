@@ -253,8 +253,8 @@ github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35 h1:SjcZSrUMNj6GZq
 github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35/go.mod h1:jHdAD+tN3bO2Hazme0crgkNiHqkDR/3Igesy1chhjLA=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20260331094502-07f157a265aa h1:o1a+V1HLaXt/Rv2atFZaEQv2+YoZrimKHvC0BUgKN6I=
-github.com/bytebase/omni v0.0.0-20260331094502-07f157a265aa/go.mod h1:7kUVQrivlkckALafCX5j4W3M95Cg9+Kw69ZukIHKXhQ=
+github.com/bytebase/omni v0.0.0-20260402080103-53faca11c5bb h1:aEQO/47L5mcn40u91PonVVYJizzv5Ev6ONilPmm1FFg=
+github.com/bytebase/omni v0.0.0-20260402080103-53faca11c5bb/go.mod h1:7kUVQrivlkckALafCX5j4W3M95Cg9+Kw69ZukIHKXhQ=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50 h1:Kq5wlhZ586Rch39y/IQV9MnrEzHob4iiXBG6zrbvSMU=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
@@ -999,6 +999,8 @@ github.com/testcontainers/testcontainers-go v0.41.0 h1:mfpsD0D36YgkxGj2LrIyxuwQ9
 github.com/testcontainers/testcontainers-go v0.41.0/go.mod h1:pdFrEIfaPl24zmBjerWTTYaY0M6UHsqA1YSvsoU40MI=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0 h1:z/1qHeliTLDKNaJ7uOHOx1FjwghbcbYfga4dTFkF0hU=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0/go.mod h1:GaunAWwMXLtsMKG3xn2HYIBDbKddGArfcGsF2Aog81E=
+github.com/testcontainers/testcontainers-go/modules/mysql v0.41.0 h1:5rwejaJr5nIfw8NK99eKPX7O6k27lnSMklTj5DbYybM=
+github.com/testcontainers/testcontainers-go/modules/mysql v0.41.0/go.mod h1:iMO/aFWnbjYkqHw8VPsJB3rVTOD9hKDsUtV0PvzD0DA=
 github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0 h1:AOtFXssrDlLm84A2sTTR/AhvJiYbrIuCO59d+Ro9Tb0=
 github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0/go.mod h1:k2a09UKhgSp6vNpliIY0QSgm4Hi7GXVTzWvWgUemu/8=
 github.com/the42/cartconvert v0.0.0-20131203171324-aae784c392b8 h1:I4DY8wLxJXCrMYzDM6lKCGc3IQwJX0PlTLsd3nQqI3c=

@@ -107,12 +107,3 @@
       c11 long varbinary not null,
       c12 long varchar not null
     );
-  want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 12: expected data type'
-      startposition:
-        line: 12
-        column: 7
-      endposition: null

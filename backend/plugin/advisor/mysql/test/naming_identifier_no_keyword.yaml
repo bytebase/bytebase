@@ -1,5 +1,14 @@
 - statement: CREATE TABLE `t`(a int);
 - statement: CREATE TABLE interval(id int);
+  want:
+    - status: 3
+      code: 201
+      title: Syntax error
+      content: 'Syntax error at line 1: expected identifier'
+      startposition:
+        line: 1
+        column: 14
+      endposition: null
 - statement: CREATE TABLE execute(id int)
   want:
     - status: 2

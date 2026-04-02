@@ -11,13 +11,13 @@
       endposition: null
 - statement: CREATE TABLE t(a INT SIGNED AUTO_INCREMENT);
   want:
-    - status: 3
-      code: 201
-      title: Syntax error
-      content: 'Syntax error at line 1: unexpected token'
+    - status: 2
+      code: 417
+      title: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
+      content: Auto-increment column `t`.`a` is not UNSIGNED type
       startposition:
         line: 1
-        column: 22
+        column: 0
       endposition: null
 - statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT);
 - statement: |-
