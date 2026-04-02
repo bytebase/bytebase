@@ -78,18 +78,15 @@ func (s *Service) handleDiscovery(c *echo.Context) error {
 }
 
 // getOAuthBasePath returns the base path for OAuth2 endpoints.
-// In SaaS mode, it uses workspace-scoped paths with the resolved workspace ID.
 // In self-hosted mode, it uses legacy paths that don't require a workspace ID.
-func (s *Service) getOAuthBasePath(c *echo.Context, baseURL string) string {
-	if s.profile.SaaS {
-		workspaceID, err := s.getWorkspaceFromRequest(c)
-		if err != nil {
-			slog.Warn("failed to get workspace ID for OAuth2 discovery, using template", log.BBError(err))
-			return fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2", baseURL)
-		}
-		return fmt.Sprintf("%s/api/workspaces/%s/oauth2", baseURL, workspaceID)
+// In SaaS mode, the discovery endpoint cannot resolve a workspace ID (the route
+// has no :workspaceID param), so it falls back to templated URLs. SaaS workspace
+// discovery requires a separate mechanism (e.g., workspace-scoped well-known endpoint).
+func (s *Service) getOAuthBasePath(_ *echo.Context, baseURL string) string {
+	if !s.profile.SaaS {
+		return fmt.Sprintf("%s/api/oauth2", baseURL)
 	}
-	return fmt.Sprintf("%s/api/oauth2", baseURL)
+	return fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2", baseURL)
 }
 
 // handleProtectedResourceMetadata returns RFC 9728 protected resource metadata.
