@@ -238,44 +238,42 @@ func (s *Server) listDatabasesInProject(ctx context.Context, project, filter str
 	return listResp.Databases, nil
 }
 
-// resolveDatabase resolves a database name to a unique resource using tiered matching.
-func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
-	filter := buildDatabaseFilter(input)
-
-	var databases []databaseEntry
+// fetchDatabases retrieves databases matching the filter across accessible projects.
+func (s *Server) fetchDatabases(ctx context.Context, input QueryInput, filter string) ([]databaseEntry, error) {
 	if input.Project != "" {
-		// Query a single project directly — all errors are fatal.
 		project := "projects/" + input.Project
 		dbs, err := s.listDatabasesInProject(ctx, project, filter)
 		if err != nil {
 			return nil, err
 		}
 		if dbs == nil {
-			// listDatabasesInProject returns nil for 403/404 — surface as error for explicit lookups.
 			return nil, &toolError{
 				Code:       "PROJECT_ACCESS_DENIED",
 				Message:    fmt.Sprintf("cannot access project %q", input.Project),
 				Suggestion: "check the project name and your permissions",
 			}
 		}
-		databases = dbs
-	} else {
-		// Discover projects, then query each one.
-		projects, err := s.listProjects(ctx)
+		return dbs, nil
+	}
+
+	projects, err := s.listProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var databases []databaseEntry
+	for _, proj := range projects {
+		dbs, err := s.listDatabasesInProject(ctx, proj, filter)
 		if err != nil {
 			return nil, err
 		}
-		for _, proj := range projects {
-			dbs, err := s.listDatabasesInProject(ctx, proj, filter)
-			if err != nil {
-				return nil, err
-			}
-			databases = append(databases, dbs...)
-		}
+		databases = append(databases, dbs...)
 	}
+	return databases, nil
+}
 
-	// Server-side filter already narrows by name substring and instance.
-	// Apply client-side tiered matching to pick the best result.
+// matchDatabases applies tiered matching (exact > case-insensitive > substring) and
+// returns the resolved result, an ambiguous result, or a not-found error.
+func matchDatabases(databases []databaseEntry, input QueryInput) (*resolvedDatabase, error) {
 	matches := matchExact(databases, input.Database)
 	if len(matches) == 0 {
 		matches = matchCaseInsensitive(databases, input.Database)
@@ -297,26 +295,39 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 	}
 
 	if len(matches) > 1 {
-		candidates := make([]Candidate, 0, len(matches))
-		dsIDs := make(map[string]string, len(matches))
-		for _, db := range matches {
-			candidates = append(candidates, Candidate{
-				Database: db.Name,
-				Instance: extractShortName(db.InstanceResource.Name),
-				Project:  extractShortName(db.Project),
-				Engine:   db.InstanceResource.Engine,
-			})
-			dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
-		}
-		return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}, nil
+		return buildAmbiguousResult(matches), nil
 	}
 
-	// Single match.
 	db := matches[0]
 	return &resolvedDatabase{
 		resourceName: db.Name,
 		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
 	}, nil
+}
+
+// buildAmbiguousResult constructs a resolvedDatabase with multiple candidates.
+func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
+	candidates := make([]Candidate, 0, len(matches))
+	dsIDs := make(map[string]string, len(matches))
+	for _, db := range matches {
+		candidates = append(candidates, Candidate{
+			Database: db.Name,
+			Instance: extractShortName(db.InstanceResource.Name),
+			Project:  extractShortName(db.Project),
+			Engine:   db.InstanceResource.Engine,
+		})
+		dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
+	}
+	return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}
+}
+
+// resolveDatabase resolves a database name to a unique resource using tiered matching.
+func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
+	databases, err := s.fetchDatabases(ctx, input, buildDatabaseFilter(input))
+	if err != nil {
+		return nil, err
+	}
+	return matchDatabases(databases, input)
 }
 
 // elicitDatabaseChoice prompts the user to pick from ambiguous database matches
