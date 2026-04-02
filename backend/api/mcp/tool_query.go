@@ -244,10 +244,19 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 
 	var databases []databaseEntry
 	if input.Project != "" {
-		// Query a single project directly — propagate all errors.
-		dbs, err := s.listDatabasesInProject(ctx, "projects/"+input.Project, filter)
+		// Query a single project directly — all errors are fatal.
+		project := "projects/" + input.Project
+		dbs, err := s.listDatabasesInProject(ctx, project, filter)
 		if err != nil {
 			return nil, err
+		}
+		if dbs == nil {
+			// listDatabasesInProject returns nil for 403/404 — surface as error for explicit lookups.
+			return nil, &toolError{
+				Code:       "PROJECT_ACCESS_DENIED",
+				Message:    fmt.Sprintf("cannot access project %q", input.Project),
+				Suggestion: "check the project name and your permissions",
+			}
 		}
 		databases = dbs
 	} else {
