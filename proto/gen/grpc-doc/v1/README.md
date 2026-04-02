@@ -426,6 +426,60 @@
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
+- [v1/rollout_service.proto](#v1_rollout_service-proto)
+    - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
+    - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
+    - [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest)
+    - [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse)
+    - [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest)
+    - [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse)
+    - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
+    - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
+    - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
+    - [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest)
+    - [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest)
+    - [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest)
+    - [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse)
+    - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
+    - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
+    - [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest)
+    - [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse)
+    - [Rollout](#bytebase-v1-Rollout)
+    - [Stage](#bytebase-v1-Stage)
+    - [Task](#bytebase-v1-Task)
+    - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
+    - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
+    - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
+    - [TaskRun](#bytebase-v1-TaskRun)
+    - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
+    - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
+    - [TaskRunLog](#bytebase-v1-TaskRunLog)
+    - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
+    - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
+    - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
+    - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
+    - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
+    - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item)
+    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table)
+    - [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute)
+    - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
+    - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
+    - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
+    - [TaskRunSession](#bytebase-v1-TaskRunSession)
+    - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
+    - [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session)
+  
+    - [Task.Status](#bytebase-v1-Task-Status)
+    - [Task.Type](#bytebase-v1-Task-Type)
+    - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
+    - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
+    - [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type)
+    - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
+  
+    - [RolloutService](#bytebase-v1-RolloutService)
+  
 - [v1/sql_service.proto](#v1_sql_service-proto)
     - [AICompletionRequest](#bytebase-v1-AICompletionRequest)
     - [AICompletionRequest.Message](#bytebase-v1-AICompletionRequest-Message)
@@ -480,7 +534,9 @@
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
+    - [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
+    - [Plan.TaskStatusCount](#bytebase-v1-Plan-TaskStatusCount)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
@@ -591,60 +647,6 @@
     - [Role.Type](#bytebase-v1-Role-Type)
   
     - [RoleService](#bytebase-v1-RoleService)
-  
-- [v1/rollout_service.proto](#v1_rollout_service-proto)
-    - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
-    - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
-    - [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest)
-    - [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse)
-    - [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest)
-    - [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse)
-    - [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest)
-    - [GetRolloutRequest](#bytebase-v1-GetRolloutRequest)
-    - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
-    - [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest)
-    - [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest)
-    - [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest)
-    - [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse)
-    - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
-    - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
-    - [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest)
-    - [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse)
-    - [Rollout](#bytebase-v1-Rollout)
-    - [Stage](#bytebase-v1-Stage)
-    - [Task](#bytebase-v1-Task)
-    - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
-    - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
-    - [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate)
-    - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
-    - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
-    - [TaskRunLog](#bytebase-v1-TaskRunLog)
-    - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
-    - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
-    - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
-    - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
-    - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
-    - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
-    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail)
-    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item)
-    - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table)
-    - [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute)
-    - [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo)
-    - [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump)
-    - [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl)
-    - [TaskRunSession](#bytebase-v1-TaskRunSession)
-    - [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres)
-    - [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session)
-  
-    - [Task.Status](#bytebase-v1-Task-Status)
-    - [Task.Type](#bytebase-v1-Task-Type)
-    - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
-    - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
-    - [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type)
-    - [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type)
-  
-    - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/service_account_service.proto](#v1_service_account_service-proto)
     - [CreateServiceAccountRequest](#bytebase-v1-CreateServiceAccountRequest)
@@ -7130,6 +7132,865 @@ OrgPolicyService manages organizational policies at various resource levels.
 
 
 
+<a name="v1_rollout_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/rollout_service.proto
+
+
+
+<a name="bytebase-v1-BatchCancelTaskRunsRequest"></a>
+
+### BatchCancelTaskRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The task name for the taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
+| task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCancelTaskRunsResponse"></a>
+
+### BatchCancelTaskRunsResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchRunTasksRequest"></a>
+
+### BatchRunTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
+| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
+| skip_prior_backup | [bool](#bool) |  | If true, skip prior backup for this run even if the task has prior backup enabled. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchRunTasksResponse"></a>
+
+### BatchRunTasksResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSkipTasksRequest"></a>
+
+### BatchSkipTasksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
+| reason | [string](#string) |  | The reason for skipping the tasks. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSkipTasksResponse"></a>
+
+### BatchSkipTasksResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-CreateRolloutRequest"></a>
+
+### CreateRolloutRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent plan for which this rollout will be created. Format: projects/{project}/plans/{plan} |
+| target | [string](#string) | optional | Create the rollout only for the specified target. Format: environments/{environment} If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetRolloutRequest"></a>
+
+### GetRolloutRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the rollout to retrieve. This is the rollout resource name, which is the plan name plus /rollout suffix. Format: projects/{project}/plans/{plan}/rollout |
+
+
+
+
+
+
+<a name="bytebase-v1-GetTaskRunLogRequest"></a>
+
+### GetTaskRunLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetTaskRunRequest"></a>
+
+### GetTaskRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetTaskRunSessionRequest"></a>
+
+### GetTaskRunSessionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolloutsRequest"></a>
+
+### ListRolloutsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of rollouts. Format: projects/{project} Use &#34;projects/-&#34; to list all rollouts from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of rollouts to return. The service may return fewer than this value. If unspecified, at most 10 rollouts will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRollouts` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRollouts` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter rollouts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters: - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;in&#34; operator, check the Task.Type enum for the values.
+
+For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolloutsResponse"></a>
+
+### ListRolloutsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollouts | [Rollout](#bytebase-v1-Rollout) | repeated | The rollouts from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListTaskRunsRequest"></a>
+
+### ListTaskRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListTaskRunsResponse"></a>
+
+### ListTaskRunsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewTaskRunRollbackRequest"></a>
+
+### PreviewTaskRunRollbackRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewTaskRunRollbackResponse"></a>
+
+### PreviewTaskRunRollbackResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement | [string](#string) |  | The rollback SQL statement that would undo the task run. |
+
+
+
+
+
+
+<a name="bytebase-v1-Rollout"></a>
+
+### Rollout
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/plans/{plan}/rollout |
+| title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
+| stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Stage"></a>
+
+### Stage
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
+| id | [string](#string) |  | id is the environment id of the stage. e.g., &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
+| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
+| tasks | [Task](#bytebase-v1-Task) | repeated | The tasks within this stage. |
+
+
+
+
+
+
+<a name="bytebase-v1-Task"></a>
+
+### Task
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
+| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
+| skipped_reason | [string](#string) |  | The reason why the task was skipped. |
+| type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
+| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
+| database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
+| database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
+| database_data_export | [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
+| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The run_time is the scheduled run time of latest task run. If there are no task runs or the task run is not scheduled, it will be empty. |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-DatabaseCreate"></a>
+
+### Task.DatabaseCreate
+Payload for creating a new database.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-DatabaseDataExport"></a>
+
+### Task.DatabaseDataExport
+Payload for exporting database data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+
+
+
+
+
+
+<a name="bytebase-v1-Task-DatabaseUpdate"></a>
+
+### Task.DatabaseUpdate
+Payload for updating a database schema.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
+| release | [string](#string) |  | Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun"></a>
+
+### TaskRun
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  | The current execution status of the task run. |
+| detail | [string](#string) |  | Below are the results of a task run. Detailed information about the task run result. |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the task run started execution. |
+| export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  | The export archive status for data export tasks. |
+| has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, rollback SQL can be generated via PreviewTaskRunRollback. Backup details are available in the task run logs. |
+| scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  | Scheduling information about the task run. |
+| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. This can only be set when creating the task run calling BatchRunTasks. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo"></a>
+
+### TaskRun.SchedulerInfo
+Information about task run scheduling.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the scheduling info was reported. |
+| waiting_cause | [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause) |  | The cause for the task run waiting. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo-WaitingCause"></a>
+
+### TaskRun.SchedulerInfo.WaitingCause
+Information about why a task run is waiting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parallel_tasks_limit | [bool](#bool) |  | Waiting due to parallel tasks limit. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLog"></a>
+
+### TaskRunLog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log |
+| entries | [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry) | repeated | The log entries for this task run. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry"></a>
+
+### TaskRunLogEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  | The type of this log entry. |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the log was recorded. |
+| replica_id | [string](#string) |  | The replica ID for this log entry. |
+| schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  | Schema dump details (if type is SCHEMA_DUMP). |
+| command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  | Command execution details (if type is COMMAND_EXECUTE). |
+| database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  | Database sync details (if type is DATABASE_SYNC). |
+| transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  | Transaction control details (if type is TRANSACTION_CONTROL). |
+| prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  | Prior backup details (if type is PRIOR_BACKUP). |
+| retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
+| compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  | Compute diff details (if type is COMPUTE_DIFF). |
+| release_file_execute | [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute) |  | Release file execution details (if type is RELEASE_FILE_EXECUTE). |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-CommandExecute"></a>
+
+### TaskRunLogEntry.CommandExecute
+Command execution details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the command was logged. |
+| range | [Range](#bytebase-v1-Range) |  | The byte offset range of the executed command in the sheet. Uses byte offsets (not character indices) for efficient slicing of sheet content bytes. Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. |
+| statement | [string](#string) |  | The executed statement. |
+| response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  | The response from executing the command. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse"></a>
+
+### TaskRunLogEntry.CommandExecute.CommandResponse
+Command execution response.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the response was logged. |
+| error | [string](#string) |  | Error message if command execution failed. |
+| affected_rows | [int64](#int64) |  | Total affected rows. |
+| all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-ComputeDiff"></a>
+
+### TaskRunLogEntry.ComputeDiff
+Schema diff computation details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When diff computation started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When diff computation ended. |
+| error | [string](#string) |  | Error message if computation failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-DatabaseSync"></a>
+
+### TaskRunLogEntry.DatabaseSync
+Database synchronization details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync ended. |
+| error | [string](#string) |  | Error message if sync failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup"></a>
+
+### TaskRunLogEntry.PriorBackup
+Prior backup operation details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup ended. |
+| prior_backup_detail | [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail) |  | The backup details. |
+| error | [string](#string) |  | Error message if the backup failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail
+Prior backup detail for rollback purposes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item) | repeated | The list of backed up tables. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item
+A single backup table mapping.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The original table information. |
+| target_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The target backup table information. |
+| start_position | [Position](#bytebase-v1-Position) |  | The start position in the SQL statement. |
+| end_position | [Position](#bytebase-v1-Position) |  | The end position in the SQL statement. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table"></a>
+
+### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table
+Table information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | The schema name. |
+| table | [string](#string) |  | The table name. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-ReleaseFileExecute"></a>
+
+### TaskRunLogEntry.ReleaseFileExecute
+Release file execution details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The version of the file being executed (e.g., &#34;0001&#34;). |
+| file_path | [string](#string) |  | The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-RetryInfo"></a>
+
+### TaskRunLogEntry.RetryInfo
+Retry information for failed operations.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | The error that triggered the retry. |
+| retry_count | [int32](#int32) |  | Current retry attempt number. |
+| maximum_retries | [int32](#int32) |  | Maximum number of retries allowed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-SchemaDump"></a>
+
+### TaskRunLogEntry.SchemaDump
+Schema dump operation details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the schema dump started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the schema dump ended. |
+| error | [string](#string) |  | Error message if the schema dump failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TransactionControl"></a>
+
+### TaskRunLogEntry.TransactionControl
+Transaction control operation details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type) |  | The type of transaction control. |
+| error | [string](#string) |  | Error message if the operation failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession"></a>
+
+### TaskRunSession
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
+| postgres | [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres) |  | PostgreSQL session information. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres"></a>
+
+### TaskRunSession.Postgres
+PostgreSQL session information.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| session | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) |  | `session` is the session of the task run executing commands. |
+| blocking_sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated | `blocking_sessions` block `session`. |
+| blocked_sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated | `blocked_sessions` are blocked by `session`. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunSession-Postgres-Session"></a>
+
+### TaskRunSession.Postgres.Session
+PostgreSQL session information read from `pg_stat_activity`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pid | [string](#string) |  | Process ID of the session. |
+| blocked_by_pids | [string](#string) | repeated | PIDs of sessions blocking this session. |
+| query | [string](#string) |  | Current query being executed. |
+| state | [string](#string) | optional | Session state (active, idle, etc.). |
+| wait_event_type | [string](#string) | optional | Wait event type if session is waiting. |
+| wait_event | [string](#string) | optional | Specific wait event if session is waiting. |
+| datname | [string](#string) | optional | Database name. |
+| usename | [string](#string) | optional | User name. |
+| application_name | [string](#string) |  | Application name. |
+| client_addr | [string](#string) | optional | Client IP address. |
+| client_port | [string](#string) | optional | Client port number. |
+| backend_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backend process started. |
+| xact_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | When the current transaction started. |
+| query_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | When the current query started. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Task-Status"></a>
+
+### Task.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| NOT_STARTED | 1 | Task has not started and is awaiting its turn in the deployment sequence. |
+| PENDING | 2 | Task is ready to run and waiting for approval or scheduled time. |
+| RUNNING | 3 | Task is currently executing. |
+| DONE | 4 | Task completed successfully. |
+| FAILED | 5 | Task execution failed with errors. |
+| CANCELED | 6 | Task execution was canceled by a user. |
+| SKIPPED | 7 | Task was skipped and will not be executed. |
+
+
+
+<a name="bytebase-v1-Task-Type"></a>
+
+### Task.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified task type. |
+| GENERAL | 1 | General task for miscellaneous operations. |
+| DATABASE_CREATE | 2 | Database creation task that creates a new database. Use payload DatabaseCreate. |
+| DATABASE_MIGRATE | 3 | Database migration task that applies versioned schema changes. Use payload DatabaseUpdate. |
+| DATABASE_EXPORT | 4 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
+
+
+
+<a name="bytebase-v1-TaskRun-ExportArchiveStatus"></a>
+
+### TaskRun.ExportArchiveStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_ARCHIVE_STATUS_UNSPECIFIED | 0 | Unspecified export archive status. |
+| READY | 1 | Export archive is ready for download. |
+| EXPORTED | 2 | Export archive has been downloaded by the user. |
+
+
+
+<a name="bytebase-v1-TaskRun-Status"></a>
+
+### TaskRun.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified status. |
+| PENDING | 1 | Task run is queued and waiting to start execution. |
+| RUNNING | 2 | Task run is currently executing. |
+| DONE | 3 | Task run completed successfully. |
+| FAILED | 4 | Task run execution failed with errors. |
+| CANCELED | 5 | Task run execution was canceled by a user. |
+| AVAILABLE | 6 | Task run is ready for immediate execution. |
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-TransactionControl-Type"></a>
+
+### TaskRunLogEntry.TransactionControl.Type
+Transaction control type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| BEGIN | 1 | Begin transaction. |
+| COMMIT | 2 | Commit transaction. |
+| ROLLBACK | 3 | Rollback transaction. |
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-Type"></a>
+
+### TaskRunLogEntry.Type
+The type of log entry.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| SCHEMA_DUMP | 1 | Schema dump operation. |
+| COMMAND_EXECUTE | 2 | Command execution. |
+| DATABASE_SYNC | 3 | Database synchronization. |
+| TRANSACTION_CONTROL | 5 | Transaction control (BEGIN, COMMIT, ROLLBACK). |
+| PRIOR_BACKUP | 6 | Prior backup operation. |
+| RETRY_INFO | 7 | Retry information. |
+| COMPUTE_DIFF | 8 | Schema diff computation. |
+| RELEASE_FILE_EXECUTE | 9 | Release file execution. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-RolloutService"></a>
+
+### RolloutService
+RolloutService manages the execution of deployment plans.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by its plan name. Permissions required: bb.rollouts.get |
+| ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Lists rollouts in a project. Permissions required: bb.rollouts.list |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout for a plan. Permissions required: bb.rollouts.create (or issue creator for data export issues) |
+| ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Lists task run executions for a task. Permissions required: bb.taskRuns.list |
+| GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Retrieves a task run by name. Permissions required: bb.taskRuns.list |
+| GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Retrieves execution logs for a task run. Permissions required: bb.taskRuns.list |
+| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) | Retrieves database session information for a running task. Permissions required: bb.taskRuns.list |
+| BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) | Executes multiple tasks in a rollout stage. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
+| BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) | Skips multiple tasks in a rollout stage. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
+| BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) | Cancels multiple running task executions. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
+| PreviewTaskRunRollback | [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest) | [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse) | Generates rollback SQL for a completed task run. Permissions required: bb.taskRuns.list |
+
+ 
+
+
+
 <a name="v1_sql_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -7925,6 +8786,8 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
 | has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
+| approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  | The approval status of the linked issue. Unspecified when no linked issue exists. |
+| rollout_stage_summaries | [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary) | repeated | Per-stage rollout status summary. Ordered by environment deployment order. Empty when no rollout exists. |
 
 
 
@@ -8005,6 +8868,22 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 
 
 
+<a name="bytebase-v1-Plan-RolloutStageSummary"></a>
+
+### Plan.RolloutStageSummary
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| stage | [string](#string) |  | The stage resource name. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| task_status_counts | [Plan.TaskStatusCount](#bytebase-v1-Plan-TaskStatusCount) | repeated | Task status counts for this stage. |
+
+
+
+
+
+
 <a name="bytebase-v1-Plan-Spec"></a>
 
 ### Plan.Spec
@@ -8017,6 +8896,22 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-TaskStatusCount"></a>
+
+### Plan.TaskStatusCount
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Task.Status](#bytebase-v1-Task-Status) |  | The task status. |
+| count | [int32](#int32) |  | The number of tasks in the status. |
 
 
 
@@ -9672,865 +10567,6 @@ RoleService manages workspace roles and permissions.
 | CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) | Creates a new custom role. Permissions required: bb.roles.create |
 | UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) | Updates a role&#39;s properties. Permissions required: bb.roles.update When allow_missing=true, also requires: bb.roles.create |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a custom role. Permissions required: bb.roles.delete |
-
- 
-
-
-
-<a name="v1_rollout_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/rollout_service.proto
-
-
-
-<a name="bytebase-v1-BatchCancelTaskRunsRequest"></a>
-
-### BatchCancelTaskRunsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The task name for the taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
-| task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchCancelTaskRunsResponse"></a>
-
-### BatchCancelTaskRunsResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-BatchRunTasksRequest"></a>
-
-### BatchRunTasksRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
-| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
-| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
-| skip_prior_backup | [bool](#bool) |  | If true, skip prior backup for this run even if the task has prior backup enabled. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchRunTasksResponse"></a>
-
-### BatchRunTasksResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSkipTasksRequest"></a>
-
-### BatchSkipTasksRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
-| tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
-| reason | [string](#string) |  | The reason for skipping the tasks. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSkipTasksResponse"></a>
-
-### BatchSkipTasksResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-CreateRolloutRequest"></a>
-
-### CreateRolloutRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent plan for which this rollout will be created. Format: projects/{project}/plans/{plan} |
-| target | [string](#string) | optional | Create the rollout only for the specified target. Format: environments/{environment} If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetRolloutRequest"></a>
-
-### GetRolloutRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the rollout to retrieve. This is the rollout resource name, which is the plan name plus /rollout suffix. Format: projects/{project}/plans/{plan}/rollout |
-
-
-
-
-
-
-<a name="bytebase-v1-GetTaskRunLogRequest"></a>
-
-### GetTaskRunLogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetTaskRunRequest"></a>
-
-### GetTaskRunRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetTaskRunSessionRequest"></a>
-
-### GetTaskRunSessionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListRolloutsRequest"></a>
-
-### ListRolloutsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of rollouts. Format: projects/{project} Use &#34;projects/-&#34; to list all rollouts from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of rollouts to return. The service may return fewer than this value. If unspecified, at most 10 rollouts will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRollouts` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListRollouts` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter rollouts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters: - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;in&#34; operator, check the Task.Type enum for the values.
-
-For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
-
-
-
-
-
-
-<a name="bytebase-v1-ListRolloutsResponse"></a>
-
-### ListRolloutsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rollouts | [Rollout](#bytebase-v1-Rollout) | repeated | The rollouts from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListTaskRunsRequest"></a>
-
-### ListTaskRunsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListTaskRunsResponse"></a>
-
-### ListTaskRunsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewTaskRunRollbackRequest"></a>
-
-### PreviewTaskRunRollbackRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewTaskRunRollbackResponse"></a>
-
-### PreviewTaskRunRollbackResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statement | [string](#string) |  | The rollback SQL statement that would undo the task run. |
-
-
-
-
-
-
-<a name="bytebase-v1-Rollout"></a>
-
-### Rollout
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/plans/{plan}/rollout |
-| title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
-| stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Stage"></a>
-
-### Stage
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
-| id | [string](#string) |  | id is the environment id of the stage. e.g., &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
-| environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
-| tasks | [Task](#bytebase-v1-Task) | repeated | The tasks within this stage. |
-
-
-
-
-
-
-<a name="bytebase-v1-Task"></a>
-
-### Task
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
-| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
-| status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
-| skipped_reason | [string](#string) |  | The reason why the task was skipped. |
-| type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
-| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
-| database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
-| database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
-| database_data_export | [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
-| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The run_time is the scheduled run time of latest task run. If there are no task runs or the task run is not scheduled, it will be empty. |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseCreate"></a>
-
-### Task.DatabaseCreate
-Payload for creating a new database.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseDataExport"></a>
-
-### Task.DatabaseDataExport
-Payload for exporting database data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseUpdate"></a>
-
-### Task.DatabaseUpdate
-Payload for updating a database schema.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
-| release | [string](#string) |  | Format: projects/{project}/releases/{release} |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun"></a>
-
-### TaskRun
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  | The current execution status of the task run. |
-| detail | [string](#string) |  | Below are the results of a task run. Detailed information about the task run result. |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the task run started execution. |
-| export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  | The export archive status for data export tasks. |
-| has_prior_backup | [bool](#bool) |  | Indicates whether a prior backup was created for this task run. When true, rollback SQL can be generated via PreviewTaskRunRollback. Backup details are available in the task run logs. |
-| scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  | Scheduling information about the task run. |
-| run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. This can only be set when creating the task run calling BatchRunTasks. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-SchedulerInfo"></a>
-
-### TaskRun.SchedulerInfo
-Information about task run scheduling.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the scheduling info was reported. |
-| waiting_cause | [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause) |  | The cause for the task run waiting. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-SchedulerInfo-WaitingCause"></a>
-
-### TaskRun.SchedulerInfo.WaitingCause
-Information about why a task run is waiting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parallel_tasks_limit | [bool](#bool) |  | Waiting due to parallel tasks limit. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLog"></a>
-
-### TaskRunLog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log |
-| entries | [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry) | repeated | The log entries for this task run. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry"></a>
-
-### TaskRunLogEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [TaskRunLogEntry.Type](#bytebase-v1-TaskRunLogEntry-Type) |  | The type of this log entry. |
-| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the log was recorded. |
-| replica_id | [string](#string) |  | The replica ID for this log entry. |
-| schema_dump | [TaskRunLogEntry.SchemaDump](#bytebase-v1-TaskRunLogEntry-SchemaDump) |  | Schema dump details (if type is SCHEMA_DUMP). |
-| command_execute | [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute) |  | Command execution details (if type is COMMAND_EXECUTE). |
-| database_sync | [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync) |  | Database sync details (if type is DATABASE_SYNC). |
-| transaction_control | [TaskRunLogEntry.TransactionControl](#bytebase-v1-TaskRunLogEntry-TransactionControl) |  | Transaction control details (if type is TRANSACTION_CONTROL). |
-| prior_backup | [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup) |  | Prior backup details (if type is PRIOR_BACKUP). |
-| retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
-| compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  | Compute diff details (if type is COMPUTE_DIFF). |
-| release_file_execute | [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute) |  | Release file execution details (if type is RELEASE_FILE_EXECUTE). |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-CommandExecute"></a>
-
-### TaskRunLogEntry.CommandExecute
-Command execution details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the command was logged. |
-| range | [Range](#bytebase-v1-Range) |  | The byte offset range of the executed command in the sheet. Uses byte offsets (not character indices) for efficient slicing of sheet content bytes. Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. |
-| statement | [string](#string) |  | The executed statement. |
-| response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  | The response from executing the command. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse"></a>
-
-### TaskRunLogEntry.CommandExecute.CommandResponse
-Command execution response.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the response was logged. |
-| error | [string](#string) |  | Error message if command execution failed. |
-| affected_rows | [int64](#int64) |  | Total affected rows. |
-| all_affected_rows | [int64](#int64) | repeated | `all_affected_rows` is the affected rows of each command. `all_affected_rows` may be unavailable if the database driver doesn&#39;t support it. Caller should fallback to `affected_rows` in that case. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-ComputeDiff"></a>
-
-### TaskRunLogEntry.ComputeDiff
-Schema diff computation details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When diff computation started. |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When diff computation ended. |
-| error | [string](#string) |  | Error message if computation failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-DatabaseSync"></a>
-
-### TaskRunLogEntry.DatabaseSync
-Database synchronization details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync started. |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync ended. |
-| error | [string](#string) |  | Error message if sync failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-PriorBackup"></a>
-
-### TaskRunLogEntry.PriorBackup
-Prior backup operation details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup started. |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backup ended. |
-| prior_backup_detail | [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail) |  | The backup details. |
-| error | [string](#string) |  | Error message if the backup failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail"></a>
-
-### TaskRunLogEntry.PriorBackup.PriorBackupDetail
-Prior backup detail for rollback purposes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item) | repeated | The list of backed up tables. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item"></a>
-
-### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item
-A single backup table mapping.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The original table information. |
-| target_table | [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table) |  | The target backup table information. |
-| start_position | [Position](#bytebase-v1-Position) |  | The start position in the SQL statement. |
-| end_position | [Position](#bytebase-v1-Position) |  | The end position in the SQL statement. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item-Table"></a>
-
-### TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table
-Table information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  | The schema name. |
-| table | [string](#string) |  | The table name. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-ReleaseFileExecute"></a>
-
-### TaskRunLogEntry.ReleaseFileExecute
-Release file execution details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  | The version of the file being executed (e.g., &#34;0001&#34;). |
-| file_path | [string](#string) |  | The file path within the release (e.g., &#34;2.2/V0001_create_table.sql&#34;). |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-RetryInfo"></a>
-
-### TaskRunLogEntry.RetryInfo
-Retry information for failed operations.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error | [string](#string) |  | The error that triggered the retry. |
-| retry_count | [int32](#int32) |  | Current retry attempt number. |
-| maximum_retries | [int32](#int32) |  | Maximum number of retries allowed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-SchemaDump"></a>
-
-### TaskRunLogEntry.SchemaDump
-Schema dump operation details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the schema dump started. |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the schema dump ended. |
-| error | [string](#string) |  | Error message if the schema dump failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-TransactionControl"></a>
-
-### TaskRunLogEntry.TransactionControl
-Transaction control operation details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [TaskRunLogEntry.TransactionControl.Type](#bytebase-v1-TaskRunLogEntry-TransactionControl-Type) |  | The type of transaction control. |
-| error | [string](#string) |  | Error message if the operation failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunSession"></a>
-
-### TaskRunSession
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
-| postgres | [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres) |  | PostgreSQL session information. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunSession-Postgres"></a>
-
-### TaskRunSession.Postgres
-PostgreSQL session information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| session | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) |  | `session` is the session of the task run executing commands. |
-| blocking_sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated | `blocking_sessions` block `session`. |
-| blocked_sessions | [TaskRunSession.Postgres.Session](#bytebase-v1-TaskRunSession-Postgres-Session) | repeated | `blocked_sessions` are blocked by `session`. |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRunSession-Postgres-Session"></a>
-
-### TaskRunSession.Postgres.Session
-PostgreSQL session information read from `pg_stat_activity`.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| pid | [string](#string) |  | Process ID of the session. |
-| blocked_by_pids | [string](#string) | repeated | PIDs of sessions blocking this session. |
-| query | [string](#string) |  | Current query being executed. |
-| state | [string](#string) | optional | Session state (active, idle, etc.). |
-| wait_event_type | [string](#string) | optional | Wait event type if session is waiting. |
-| wait_event | [string](#string) | optional | Specific wait event if session is waiting. |
-| datname | [string](#string) | optional | Database name. |
-| usename | [string](#string) | optional | User name. |
-| application_name | [string](#string) |  | Application name. |
-| client_addr | [string](#string) | optional | Client IP address. |
-| client_port | [string](#string) | optional | Client port number. |
-| backend_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the backend process started. |
-| xact_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | When the current transaction started. |
-| query_start | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | When the current query started. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Task-Status"></a>
-
-### Task.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| NOT_STARTED | 1 | Task has not started and is awaiting its turn in the deployment sequence. |
-| PENDING | 2 | Task is ready to run and waiting for approval or scheduled time. |
-| RUNNING | 3 | Task is currently executing. |
-| DONE | 4 | Task completed successfully. |
-| FAILED | 5 | Task execution failed with errors. |
-| CANCELED | 6 | Task execution was canceled by a user. |
-| SKIPPED | 7 | Task was skipped and will not be executed. |
-
-
-
-<a name="bytebase-v1-Task-Type"></a>
-
-### Task.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified task type. |
-| GENERAL | 1 | General task for miscellaneous operations. |
-| DATABASE_CREATE | 2 | Database creation task that creates a new database. Use payload DatabaseCreate. |
-| DATABASE_MIGRATE | 3 | Database migration task that applies versioned schema changes. Use payload DatabaseUpdate. |
-| DATABASE_EXPORT | 4 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
-
-
-
-<a name="bytebase-v1-TaskRun-ExportArchiveStatus"></a>
-
-### TaskRun.ExportArchiveStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| EXPORT_ARCHIVE_STATUS_UNSPECIFIED | 0 | Unspecified export archive status. |
-| READY | 1 | Export archive is ready for download. |
-| EXPORTED | 2 | Export archive has been downloaded by the user. |
-
-
-
-<a name="bytebase-v1-TaskRun-Status"></a>
-
-### TaskRun.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| PENDING | 1 | Task run is queued and waiting to start execution. |
-| RUNNING | 2 | Task run is currently executing. |
-| DONE | 3 | Task run completed successfully. |
-| FAILED | 4 | Task run execution failed with errors. |
-| CANCELED | 5 | Task run execution was canceled by a user. |
-| AVAILABLE | 6 | Task run is ready for immediate execution. |
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-TransactionControl-Type"></a>
-
-### TaskRunLogEntry.TransactionControl.Type
-Transaction control type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| BEGIN | 1 | Begin transaction. |
-| COMMIT | 2 | Commit transaction. |
-| ROLLBACK | 3 | Rollback transaction. |
-
-
-
-<a name="bytebase-v1-TaskRunLogEntry-Type"></a>
-
-### TaskRunLogEntry.Type
-The type of log entry.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| SCHEMA_DUMP | 1 | Schema dump operation. |
-| COMMAND_EXECUTE | 2 | Command execution. |
-| DATABASE_SYNC | 3 | Database synchronization. |
-| TRANSACTION_CONTROL | 5 | Transaction control (BEGIN, COMMIT, ROLLBACK). |
-| PRIOR_BACKUP | 6 | Prior backup operation. |
-| RETRY_INFO | 7 | Retry information. |
-| COMPUTE_DIFF | 8 | Schema diff computation. |
-| RELEASE_FILE_EXECUTE | 9 | Release file execution. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-RolloutService"></a>
-
-### RolloutService
-RolloutService manages the execution of deployment plans.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by its plan name. Permissions required: bb.rollouts.get |
-| ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Lists rollouts in a project. Permissions required: bb.rollouts.list |
-| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout for a plan. Permissions required: bb.rollouts.create (or issue creator for data export issues) |
-| ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Lists task run executions for a task. Permissions required: bb.taskRuns.list |
-| GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Retrieves a task run by name. Permissions required: bb.taskRuns.list |
-| GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Retrieves execution logs for a task run. Permissions required: bb.taskRuns.list |
-| GetTaskRunSession | [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest) | [TaskRunSession](#bytebase-v1-TaskRunSession) | Retrieves database session information for a running task. Permissions required: bb.taskRuns.list |
-| BatchRunTasks | [BatchRunTasksRequest](#bytebase-v1-BatchRunTasksRequest) | [BatchRunTasksResponse](#bytebase-v1-BatchRunTasksResponse) | Executes multiple tasks in a rollout stage. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
-| BatchSkipTasks | [BatchSkipTasksRequest](#bytebase-v1-BatchSkipTasksRequest) | [BatchSkipTasksResponse](#bytebase-v1-BatchSkipTasksResponse) | Skips multiple tasks in a rollout stage. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
-| BatchCancelTaskRuns | [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest) | [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse) | Cancels multiple running task executions. Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment) |
-| PreviewTaskRunRollback | [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest) | [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse) | Generates rollback SQL for a completed task run. Permissions required: bb.taskRuns.list |
 
  
 

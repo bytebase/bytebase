@@ -213,6 +213,43 @@ func (x *Plan_ExportDataConfig) Equal(y *Plan_ExportDataConfig) bool {
 	return true
 }
 
+func (x *Plan_RolloutStageSummary) Equal(y *Plan_RolloutStageSummary) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Stage != y.Stage {
+		return false
+	}
+	if len(x.TaskStatusCounts) != len(y.TaskStatusCounts) {
+		return false
+	}
+	for i := 0; i < len(x.TaskStatusCounts); i++ {
+		if !x.TaskStatusCounts[i].Equal(y.TaskStatusCounts[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *Plan_TaskStatusCount) Equal(y *Plan_TaskStatusCount) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Status != y.Status {
+		return false
+	}
+	if x.Count != y.Count {
+		return false
+	}
+	return true
+}
+
 func (x *Plan) Equal(y *Plan) bool {
 	if x == y {
 		return true
@@ -266,6 +303,17 @@ func (x *Plan) Equal(y *Plan) bool {
 	}
 	if x.HasRollout != y.HasRollout {
 		return false
+	}
+	if x.ApprovalStatus != y.ApprovalStatus {
+		return false
+	}
+	if len(x.RolloutStageSummaries) != len(y.RolloutStageSummaries) {
+		return false
+	}
+	for i := 0; i < len(x.RolloutStageSummaries); i++ {
+		if !x.RolloutStageSummaries[i].Equal(y.RolloutStageSummaries[i]) {
+			return false
+		}
 	}
 	return true
 }

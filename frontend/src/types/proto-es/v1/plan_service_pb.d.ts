@@ -6,6 +6,8 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { ExportFormat, Position, State, StatementType } from "./common_pb";
+import type { Issue_ApprovalStatus } from "./issue_service_pb";
+import type { Task_Status } from "./rollout_service_pb";
 import type { Advice_Level } from "./sql_service_pb";
 
 /**
@@ -271,6 +273,22 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: bool has_rollout = 12;
    */
   hasRollout: boolean;
+
+  /**
+   * The approval status of the linked issue.
+   * Unspecified when no linked issue exists.
+   *
+   * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 13;
+   */
+  approvalStatus: Issue_ApprovalStatus;
+
+  /**
+   * Per-stage rollout status summary.
+   * Ordered by environment deployment order. Empty when no rollout exists.
+   *
+   * @generated from field: repeated bytebase.v1.Plan.RolloutStageSummary rollout_stage_summaries = 14;
+   */
+  rolloutStageSummaries: Plan_RolloutStageSummary[];
 };
 
 /**
@@ -475,6 +493,57 @@ export declare type Plan_ExportDataConfig = Message<"bytebase.v1.Plan.ExportData
  * Use `create(Plan_ExportDataConfigSchema)` to create a new message.
  */
 export declare const Plan_ExportDataConfigSchema: GenMessage<Plan_ExportDataConfig>;
+
+/**
+ * @generated from message bytebase.v1.Plan.RolloutStageSummary
+ */
+export declare type Plan_RolloutStageSummary = Message<"bytebase.v1.Plan.RolloutStageSummary"> & {
+  /**
+   * The stage resource name.
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+   *
+   * @generated from field: string stage = 1;
+   */
+  stage: string;
+
+  /**
+   * Task status counts for this stage.
+   *
+   * @generated from field: repeated bytebase.v1.Plan.TaskStatusCount task_status_counts = 2;
+   */
+  taskStatusCounts: Plan_TaskStatusCount[];
+};
+
+/**
+ * Describes the message bytebase.v1.Plan.RolloutStageSummary.
+ * Use `create(Plan_RolloutStageSummarySchema)` to create a new message.
+ */
+export declare const Plan_RolloutStageSummarySchema: GenMessage<Plan_RolloutStageSummary>;
+
+/**
+ * @generated from message bytebase.v1.Plan.TaskStatusCount
+ */
+export declare type Plan_TaskStatusCount = Message<"bytebase.v1.Plan.TaskStatusCount"> & {
+  /**
+   * The task status.
+   *
+   * @generated from field: bytebase.v1.Task.Status status = 1;
+   */
+  status: Task_Status;
+
+  /**
+   * The number of tasks in the status.
+   *
+   * @generated from field: int32 count = 2;
+   */
+  count: number;
+};
+
+/**
+ * Describes the message bytebase.v1.Plan.TaskStatusCount.
+ * Use `create(Plan_TaskStatusCountSchema)` to create a new message.
+ */
+export declare const Plan_TaskStatusCountSchema: GenMessage<Plan_TaskStatusCount>;
 
 /**
  * @generated from message bytebase.v1.GetPlanCheckRunRequest
