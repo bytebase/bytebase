@@ -7,7 +7,11 @@ import {
 } from "@/react/components/ui/select";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useRoleStore } from "@/store";
-import { PRESET_WORKSPACE_ROLES } from "@/types/iam";
+import {
+  PRESET_PROJECT_ROLES,
+  PRESET_ROLES,
+  PRESET_WORKSPACE_ROLES,
+} from "@/types/iam";
 import { displayRoleTitle } from "@/utils";
 
 interface RoleSelectProps {
@@ -17,9 +21,17 @@ interface RoleSelectProps {
 }
 
 export function RoleSelect({ value, onChange, disabled }: RoleSelectProps) {
-  const customRoles = useVueState(() => useRoleStore().roleList);
+  const allRoles = useVueState(() => useRoleStore().roleList);
 
-  const roles = [...PRESET_WORKSPACE_ROLES, ...customRoles.map((r) => r.name)];
+  const customRoles = allRoles
+    .filter((r) => !PRESET_ROLES.includes(r.name))
+    .map((r) => r.name);
+
+  const roles = [
+    ...PRESET_WORKSPACE_ROLES,
+    ...PRESET_PROJECT_ROLES,
+    ...customRoles,
+  ];
 
   return (
     <Select
