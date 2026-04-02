@@ -70,7 +70,42 @@
     "failed": "Error",
     "instance": "Instancia",
     "project": "Proyecto",
-    "select": "Seleccionar"
+    "select": "Seleccionar",
+    "export": "Exportar",
+    "view": "Ver",
+    "view-details": "Ver Detalles",
+    "from": "Desde",
+    "to": "Hasta"
+  },
+  "audit-log": {
+    "export-tooltip": "Debe seleccionar hora de inicio y fin dentro de 30 días",
+    "table": {
+      "created-ts": "Hora",
+      "actor": "Actor",
+      "level": "Nivel",
+      "method": "Método",
+      "request": "Solicitud",
+      "response": "Respuesta",
+      "status": "Estado",
+      "latency": "Latencia",
+      "service-data": "Datos de Servicio"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Buscar por el actor del registro de auditoría"
+        },
+        "method": {
+          "title": "Método",
+          "description": "Buscar por el método del registro de auditoría"
+        },
+        "level": {
+          "title": "Nivel",
+          "description": "Buscar por el nivel del registro de auditoría"
+        }
+      }
+    }
   },
   "cel": {
     "condition": {
