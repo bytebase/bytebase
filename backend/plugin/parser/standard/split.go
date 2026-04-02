@@ -22,30 +22,9 @@ func init() {
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.Statement, error) {
 	var list []base.Statement
-	byteOffset := 0
-	err := applyMultiStatements(strings.NewReader(statement), func(sql string) error {
-		// sql may have trailing newline added by applyMultiStatements
-		// Strip trailing whitespace for searching in the original statement
-		sqlTrimmed := strings.TrimRight(sql, "\n\r\t ")
-
-		// Find where the SQL content exists in the remaining statement
-		sqlPos := strings.Index(statement[byteOffset:], sqlTrimmed)
-		if sqlPos == -1 {
-			sqlPos = 0
-		}
-
-		// startPos includes leading whitespace from where previous statement ended
-		startPos := byteOffset
-		// endPos is where the SQL content ends
-		endPos := byteOffset + sqlPos + len(sqlTrimmed)
-
-		// The actual text includes leading whitespace + SQL content
-		text := statement[startPos:endPos]
-
-		// Calculate line and column for Start position
-		startLine, startColumn := base.CalculateLineAndColumn(statement, startPos)
-		// Calculate line and column for End position
-		endLine, endColumn := base.CalculateLineAndColumn(statement, endPos)
+	err := applyMultiStatements(statement, func(text string, start, end int) error {
+		startLine, startColumn := base.CalculateLineAndColumn(statement, start)
+		endLine, endColumn := base.CalculateLineAndColumn(statement, end)
 
 		list = append(list, base.Statement{
 			Text: text,
@@ -58,12 +37,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Column: int32(endColumn + 1), // 1-based per proto spec
 			},
 			Range: &storepb.Range{
-				Start: int32(startPos),
-				End:   int32(endPos),
+				Start: int32(start),
+				End:   int32(end),
 			},
 			Empty: isEmptySQL(text),
 		})
-		byteOffset = endPos
 		return nil
 	})
 	return list, err
@@ -98,26 +76,34 @@ func isEmptySQL(sql string) bool {
 	return false
 }
 
-// applyMultiStatements will apply the split statements from scanner.
-// This function only used for SQLite, snowflake.
-// For MySQL and PostgreSQL, use parser.SplitSQL.
-// Copy from plugin/db/util/driverutil.go.
-func applyMultiStatements(sc io.Reader, f func(string) error) error {
-	// TODO(rebelice): use parser/tokenizer to split SQL statements.
-	reader := bufio.NewReader(sc)
-	var sb strings.Builder
+// applyMultiStatements splits the statement by semicolons and invokes f for
+// each sub-statement with the text slice from the original statement and its
+// [start, end) byte offsets. The text for each statement includes any leading
+// whitespace from the end of the previous statement, matching the original
+// behavior needed for position tracking.
+func applyMultiStatements(statement string, f func(text string, start, end int) error) error {
+	reader := bufio.NewReader(strings.NewReader(statement))
 	delimiter := false
 	comment := false
 	done := false
+	hasContent := false
+	// byteOffset tracks our read position in the original statement.
+	byteOffset := 0
+	// prevEnd tracks where the last emitted statement ended; the next
+	// statement's text will start here (to include inter-statement whitespace).
+	prevEnd := 0
+	// contentEnd is the byte offset just past the last content character of
+	// the statement being accumulated (excludes trailing whitespace/newlines).
+	contentEnd := 0
 	for !done {
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			if err == io.EOF {
-				done = true
-			} else {
+			if err != io.EOF {
 				return err
 			}
+			done = true
 		}
+		lineLen := len(line)
 		line = strings.TrimRightFunc(line, unicode.IsSpace)
 
 		execute := false
@@ -130,56 +116,50 @@ func applyMultiStatements(sc io.Reader, f func(string) error) error {
 			} else {
 				comment = true
 			}
-			continue
 		case comment && !strings.Contains(line, "*/"):
-			// Skip the line when in comment mode.
-			continue
+			// skip line in comment mode
 		case comment && strings.Contains(line, "*/"):
 			if !strings.HasSuffix(line, "*/") {
 				return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
 			}
 			comment = false
-			continue
-		case sb.Len() == 0 && line == "":
-			continue
+		case !hasContent && line == "":
+			// skip leading blank lines
 		case strings.HasPrefix(line, "--"):
-			continue
+			// skip comment lines
 		case line == "DELIMITER ;;":
 			delimiter = true
-			continue
 		case line == "DELIMITER ;" && delimiter:
 			delimiter = false
 			execute = true
 		case strings.HasSuffix(line, ";"):
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
+			hasContent = true
+			contentEnd = byteOffset + len(line)
 			if !delimiter {
 				execute = true
 			}
 		default:
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
-			continue
-		}
-		if execute {
-			s := sb.String()
-			// Don't trim - include leading whitespace in Text for position consistency
-			if s != "" {
-				if err := f(s); err != nil {
-					return errors.Wrapf(err, "execute query %q failed", s)
-				}
+			if line != "" {
+				hasContent = true
+				contentEnd = byteOffset + len(line)
 			}
-			sb.Reset()
 		}
+		if execute && hasContent {
+			text := statement[prevEnd:contentEnd]
+			if err := f(text, prevEnd, contentEnd); err != nil {
+				return errors.Wrapf(err, "execute query %q failed", text)
+			}
+			hasContent = false
+			prevEnd = contentEnd
+		}
+		byteOffset += lineLen
 	}
 	// Apply the remaining content.
-	s := sb.String()
-	// Don't trim - include leading whitespace in Text for position consistency
-	if s != "" {
-		if err := f(s); err != nil {
-			return errors.Wrapf(err, "execute query %q failed", s)
+	if hasContent {
+		text := statement[prevEnd:contentEnd]
+		if err := f(text, prevEnd, contentEnd); err != nil {
+			return errors.Wrapf(err, "execute query %q failed", text)
 		}
 	}
-
 	return nil
 }
