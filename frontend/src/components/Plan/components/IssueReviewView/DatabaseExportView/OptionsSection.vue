@@ -48,7 +48,7 @@
 <script lang="ts" setup>
 import { clone, create } from "@bufbuild/protobuf";
 import { NButton } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { planServiceClientConnect } from "@/connect";
 import { pushNotification } from "@/store";
@@ -82,17 +82,15 @@ const state = reactive({
 });
 
 // Initialize editableConfig when exportDataConfig becomes available
-watchEffect(() => {
-  if (
-    exportDataConfig.value &&
-    Object.keys(state.editableConfig).length === 0
-  ) {
-    state.editableConfig = clone(
-      Plan_ExportDataConfigSchema,
-      exportDataConfig.value
-    );
-  }
-});
+watch(
+  exportDataConfig,
+  (config) => {
+    if (config && !state.isEditing) {
+      state.editableConfig = clone(Plan_ExportDataConfigSchema, config);
+    }
+  },
+  { immediate: true }
+);
 
 const isEditing = computed(() => state.isEditing);
 
