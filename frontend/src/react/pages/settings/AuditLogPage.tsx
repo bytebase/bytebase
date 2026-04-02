@@ -742,8 +742,9 @@ export function AuditLogPage() {
   }, [fetchAuditLogs]);
 
   const loadMore = useCallback(() => {
-    if (nextPageTokenRef.current && !isFetchingMore) fetchAuditLogs(false);
-  }, [isFetchingMore, fetchAuditLogs]);
+    if (nextPageTokenRef.current && !isFetchingMore && !loading)
+      fetchAuditLogs(false);
+  }, [isFetchingMore, loading, fetchAuditLogs]);
 
   // Export
   const [exporting, setExporting] = useState(false);
@@ -978,11 +979,13 @@ export function AuditLogPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={isFetchingMore}
+                disabled={isFetchingMore || loading}
                 onClick={loadMore}
               >
                 <span className="text-sm text-control-light">
-                  {isFetchingMore ? t("common.loading") : t("common.load-more")}
+                  {isFetchingMore || loading
+                    ? t("common.loading")
+                    : t("common.load-more")}
                 </span>
               </Button>
             )}
