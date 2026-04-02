@@ -78,7 +78,6 @@
     "to": "Đến"
   },
   "audit-log": {
-    "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
     "table": {
       "created-ts": "Thời gian",

@@ -78,7 +78,6 @@
     "to": "To"
   },
   "audit-log": {
-    "export-finished": "Export finished",
     "export-tooltip": "Must select start time and end time within 30 days",
     "table": {
       "created-ts": "Time",

@@ -78,7 +78,6 @@
     "to": "到"
   },
   "audit-log": {
-    "export-finished": "导出完成",
     "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
     "table": {
       "created-ts": "时间",

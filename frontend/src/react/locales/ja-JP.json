@@ -78,7 +78,6 @@
     "to": "終了"
   },
   "audit-log": {
-    "export-finished": "エクスポート完了",
     "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
     "table": {
       "created-ts": "時間",
