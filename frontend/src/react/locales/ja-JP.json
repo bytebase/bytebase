@@ -70,7 +70,42 @@
     "failed": "失敗",
     "instance": "インスタンス",
     "project": "プロジェクト",
-    "select": "選択してください"
+    "select": "選択してください",
+    "export": "エクスポート",
+    "view": "表示",
+    "view-details": "詳細を表示",
+    "from": "開始",
+    "to": "終了"
+  },
+  "audit-log": {
+    "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
+    "table": {
+      "created-ts": "時間",
+      "actor": "操作者",
+      "level": "レベル",
+      "method": "メソッド",
+      "request": "リクエスト",
+      "response": "レスポンス",
+      "status": "ステータス",
+      "latency": "レイテンシー",
+      "service-data": "サービスデータ"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "操作者",
+          "description": "監査ログの操作者で検索"
+        },
+        "method": {
+          "title": "メソッド",
+          "description": "監査ログのメソッドで検索"
+        },
+        "level": {
+          "title": "レベル",
+          "description": "監査ログのレベルで検索"
+        }
+      }
+    }
   },
   "cel": {
     "condition": {

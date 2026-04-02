@@ -70,7 +70,42 @@
     "failed": "失败",
     "instance": "实例",
     "project": "项目",
-    "select": "请选择"
+    "select": "请选择",
+    "export": "导出",
+    "view": "查看",
+    "view-details": "查看详情",
+    "from": "从",
+    "to": "到"
+  },
+  "audit-log": {
+    "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
+    "table": {
+      "created-ts": "时间",
+      "actor": "操作者",
+      "level": "事件等级",
+      "method": "操作",
+      "request": "请求信息",
+      "response": "响应信息",
+      "status": "状态",
+      "latency": "延迟",
+      "service-data": "服务数据"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "操作者",
+          "description": "按审计日志操作者搜索"
+        },
+        "method": {
+          "title": "操作",
+          "description": "按审计日志操作搜索"
+        },
+        "level": {
+          "title": "事件等级",
+          "description": "按审计日志事件等级搜索"
+        }
+      }
+    }
   },
   "cel": {
     "condition": {

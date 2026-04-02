@@ -70,7 +70,42 @@
     "failed": "Failed",
     "project": "Project",
     "instance": "Instance",
-    "select": "Please Select"
+    "select": "Please Select",
+    "export": "Export",
+    "view": "View",
+    "view-details": "View Details",
+    "from": "From",
+    "to": "To"
+  },
+  "audit-log": {
+    "export-tooltip": "Must select start time and end time within 30 days",
+    "table": {
+      "created-ts": "Time",
+      "actor": "Actor",
+      "level": "Level",
+      "method": "Method",
+      "request": "Request",
+      "response": "Response",
+      "status": "Status",
+      "latency": "Latency",
+      "service-data": "Service Data"
+    },
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "title": "Actor",
+          "description": "Search by the audit log actor"
+        },
+        "method": {
+          "title": "Method",
+          "description": "Search by the method of audit log"
+        },
+        "level": {
+          "title": "Level",
+          "description": "Search by the level of audit log"
+        }
+      }
+    }
   },
   "cel": {
     "condition": {
