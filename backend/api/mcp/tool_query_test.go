@@ -45,13 +45,13 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 }
 
 // mockListDatabases returns an HTTP handler that routes by URL path:
-// - ListProjects: returns distinct projects extracted from the databases
+// - SearchProjects: returns distinct projects extracted from the databases
 // - ListDatabases: filters databases by the parent project and CEL filter
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if strings.Contains(r.URL.Path, "ProjectService/ListProjects") {
+		if strings.Contains(r.URL.Path, "ProjectService/SearchProjects") {
 			// Extract distinct projects from databases.
 			seen := map[string]bool{}
 			var projects []map[string]any

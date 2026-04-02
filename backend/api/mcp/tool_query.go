@@ -179,6 +179,8 @@ type projectEntry struct {
 }
 
 // listProjects returns the resource names of projects accessible to the current user.
+// Uses SearchProjects (CUSTOM auth) instead of ListProjects (requires bb.projects.list)
+// so that WorkspaceMember users can discover projects they have project-level access to.
 func (s *Server) listProjects(ctx context.Context) ([]string, error) {
 	var names []string
 	pageToken := ""
@@ -187,12 +189,12 @@ func (s *Server) listProjects(ctx context.Context) ([]string, error) {
 		if pageToken != "" {
 			body["pageToken"] = pageToken
 		}
-		resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/ListProjects", body)
+		resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/SearchProjects", body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to list projects")
+			return nil, errors.Wrap(err, "failed to search projects")
 		}
 		if resp.Status >= 400 {
-			return nil, errors.Errorf("failed to list projects: HTTP %d: %s", resp.Status, parseError(resp.Body))
+			return nil, errors.Errorf("failed to search projects: HTTP %d: %s", resp.Status, parseError(resp.Body))
 		}
 		var listResp listProjectsResponse
 		if err := json.Unmarshal(resp.Body, &listResp); err != nil {
