@@ -54,6 +54,8 @@
     "permissions": "Permisos",
     "added": "Agregado",
     "description": "Descripción",
+    "operations": "Operaciones",
+    "title": "Título",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
@@ -124,7 +126,9 @@
       "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición",
       "add": "Agregar condición",
       "add-raw-expression": "Agregar expresión cruda",
-      "add-group": "Agregar grupo de condiciones"
+      "add-group": "Agregar grupo de condiciones",
+      "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
+      "self": "Condición"
     }
   },
   "subscription": {
@@ -698,6 +702,36 @@
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
     },
+    "approval-flow": {
+      "add-rule": "Agregar regla",
+      "create-approval-flow": "Crear flujo de aprobación",
+      "edit-rule": "Editar regla",
+      "fallback-rules": "Reglas de respaldo",
+      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
+      "self": "Flujo de aprobación",
+      "skip": "No se requiere aprobación",
+      "node": {
+        "add": "Agregar nodo",
+        "approver": "Aprobador",
+        "delete": "Eliminar nodo de aprobación",
+        "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
+        "nodes": "Nodos de aprobación",
+        "order": "Orden"
+      },
+      "template": {
+        "presets-title": "Plantillas",
+        "preset-descriptions": {
+          "drop-or-truncate": "Requerir aprobación para sentencias DROP TABLE o TRUNCATE.",
+          "fallback": "Una regla general que coincide con todas las solicitudes. Colóquela al final de su lista de reglas.",
+          "high-affected-rows": "Requerir aprobación cuando las filas afectadas excedan 100."
+        },
+        "presets": {
+          "drop-or-truncate": "Eliminar/Truncar Tabla",
+          "fallback": "Regla de respaldo",
+          "high-affected-rows": "Alto Número de Filas"
+        }
+      }
+    },
     "risk": {
       "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
       "how-it-works": "Cómo funciona",
@@ -711,7 +745,15 @@
     },
     "risk-rule": {
       "risk": {
+        "namespace": {
+          "change_database": "Cambiar base de datos",
+          "create_database": "Crear base de datos",
+          "data_export": "Exportar datos",
+          "request-role": "Rol de solicitud",
+          "request-access": "Solicitar acceso Just-In-Time"
+        },
         "risk-level": {
+          "default": "Por defecto",
           "high": "Alto",
           "moderate": "Moderado",
           "low": "Bajo"

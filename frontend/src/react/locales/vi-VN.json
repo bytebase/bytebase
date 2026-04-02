@@ -54,6 +54,8 @@
     "permissions": "Quyền",
     "added": "Đã thêm",
     "description": "Mô tả",
+    "operations": "Các thao tác",
+    "title": "Tiêu đề",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
@@ -124,7 +126,9 @@
       "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện",
       "add": "Thêm điều kiện",
       "add-raw-expression": "Thêm biểu thức thô",
-      "add-group": "Thêm nhóm điều kiện"
+      "add-group": "Thêm nhóm điều kiện",
+      "description-tips": "Điều kiện là một quy tắc có thể được định cấu hình thông qua một biểu thức. Ví dụ: điều kiện \"Môi trường là sản xuất\" sẽ khớp với các vấn đề được thực hiện trong môi trường \"sản xuất\".",
+      "self": "Điều kiện"
     }
   },
   "subscription": {
@@ -698,6 +702,36 @@
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },
+    "approval-flow": {
+      "add-rule": "Thêm quy tắc",
+      "create-approval-flow": "Tạo quy trình phê duyệt",
+      "edit-rule": "Chỉnh sửa quy tắc",
+      "fallback-rules": "Quy tắc dự phòng",
+      "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
+      "self": "Quy trình phê duyệt",
+      "skip": "Không cần phê duyệt",
+      "node": {
+        "add": "Thêm nút",
+        "approver": "Người phê duyệt",
+        "delete": "Xóa nút phê duyệt",
+        "description": "Chỉ cần một phê duyệt trên nút này khi có nhiều người phê duyệt.",
+        "nodes": "Nút phê duyệt",
+        "order": "Thứ tự"
+      },
+      "template": {
+        "presets-title": "Mẫu có sẵn",
+        "preset-descriptions": {
+          "drop-or-truncate": "Yêu cầu phê duyệt cho các câu lệnh DROP TABLE hoặc TRUNCATE.",
+          "fallback": "Quy tắc bắt tất cả khớp với mọi yêu cầu. Đặt ở cuối danh sách quy tắc của bạn.",
+          "high-affected-rows": "Yêu cầu phê duyệt khi số hàng bị ảnh hưởng vượt quá 100."
+        },
+        "presets": {
+          "drop-or-truncate": "Xóa/Truncate Bảng",
+          "fallback": "Quy tắc dự phòng",
+          "high-affected-rows": "Số Hàng Ảnh Hưởng Cao"
+        }
+      }
+    },
     "risk": {
       "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
       "how-it-works": "Cách hoạt động",
@@ -711,7 +745,15 @@
     },
     "risk-rule": {
       "risk": {
+        "namespace": {
+          "change_database": "Thay đổi cơ sở dữ liệu",
+          "create_database": "Tạo cơ sở dữ liệu",
+          "data_export": "Xuất dữ liệu",
+          "request-role": "Yêu cầu vai trò",
+          "request-access": "Yêu cầu quyền truy cập Just-In-Time"
+        },
         "risk-level": {
+          "default": "Mặc định",
           "high": "Cao",
           "moderate": "Trung bình",
           "low": "Thấp"

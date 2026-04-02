@@ -54,6 +54,8 @@
     "permissions": "権限",
     "added": "作成した",
     "description": "説明",
+    "operations": "操作",
+    "title": "タイトル",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
@@ -124,7 +126,9 @@
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
       "add": "条件を追加する",
       "add-raw-expression": "生の式を追加",
-      "add-group": "条件グループの追加"
+      "add-group": "条件グループの追加",
+      "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたイシューと一致します。",
+      "self": "状態"
     }
   },
   "subscription": {
@@ -698,6 +702,36 @@
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },
+    "approval-flow": {
+      "add-rule": "ルールを追加",
+      "create-approval-flow": "承認フローの作成",
+      "edit-rule": "ルールを編集",
+      "fallback-rules": "フォールバックルール",
+      "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
+      "self": "承認の流れ",
+      "skip": "承認不要",
+      "node": {
+        "add": "ノードの追加",
+        "approver": "承認者",
+        "delete": "承認ノードの削除",
+        "description": "ノードに複数の承認者がいる場合、必要な承認は 1 つだけです。",
+        "nodes": "承認ノード",
+        "order": "順序"
+      },
+      "template": {
+        "presets-title": "プリセット",
+        "preset-descriptions": {
+          "drop-or-truncate": "DROP TABLEまたはTRUNCATEステートメントには承認が必要です。",
+          "fallback": "すべてのリクエストに一致するキャッチオールルール。ルールリストの最後に配置してください。",
+          "high-affected-rows": "影響行数が100を超える場合は承認が必要です。"
+        },
+        "presets": {
+          "drop-or-truncate": "テーブル削除/切り捨て",
+          "fallback": "フォールバックルール",
+          "high-affected-rows": "高影響行数"
+        }
+      }
+    },
     "risk": {
       "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
       "how-it-works": "仕組み",
@@ -711,7 +745,15 @@
     },
     "risk-rule": {
       "risk": {
+        "namespace": {
+          "change_database": "データベースの変更",
+          "create_database": "データベースの作成",
+          "data_export": "データのエクスポート",
+          "request-role": "ロールのリクエスト",
+          "request-access": "ジャストインタイムアクセスのリクエスト"
+        },
         "risk-level": {
+          "default": "デフォルト",
           "high": "高",
           "moderate": "中",
           "low": "低"

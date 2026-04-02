@@ -54,6 +54,8 @@
     "permissions": "权限",
     "added": "已创建",
     "description": "描述",
+    "operations": "操作",
+    "title": "标题",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
@@ -124,7 +126,9 @@
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件",
       "add": "添加条件",
       "add-raw-expression": "添加 Raw 表达式",
-      "add-group": "添加条件组"
+      "add-group": "添加条件组",
+      "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
+      "self": "条件"
     }
   },
   "subscription": {
@@ -698,6 +702,36 @@
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },
+    "approval-flow": {
+      "add-rule": "添加规则",
+      "create-approval-flow": "创建审批流",
+      "edit-rule": "编辑规则",
+      "fallback-rules": "兜底规则",
+      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
+      "self": "审批流",
+      "skip": "无需审批",
+      "node": {
+        "add": "增加节点",
+        "approver": "审批人",
+        "delete": "删除审批节点",
+        "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
+        "nodes": "审批节点",
+        "order": "顺序"
+      },
+      "template": {
+        "presets-title": "预设模板",
+        "preset-descriptions": {
+          "drop-or-truncate": "DROP TABLE 或 TRUNCATE 语句需要审批。",
+          "fallback": "匹配所有请求的兜底规则，请将其放在规则列表的末尾。",
+          "high-affected-rows": "影响行数超过 100 时需要审批。"
+        },
+        "presets": {
+          "drop-or-truncate": "删除/清空表",
+          "fallback": "兜底规则",
+          "high-affected-rows": "高影响行数"
+        }
+      }
+    },
     "risk": {
       "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
       "how-it-works": "工作原理",
@@ -711,7 +745,15 @@
     },
     "risk-rule": {
       "risk": {
+        "namespace": {
+          "change_database": "变更数据库",
+          "create_database": "创建数据库",
+          "data_export": "导出数据",
+          "request-role": "请求角色",
+          "request-access": "请求即时访问"
+        },
         "risk-level": {
+          "default": "默认",
           "high": "高",
           "moderate": "中",
           "low": "低"
