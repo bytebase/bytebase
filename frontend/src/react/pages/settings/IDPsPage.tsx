@@ -17,6 +17,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { identityProviderServiceClientConnect } from "@/connect";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -2032,10 +2034,17 @@ export function IDPsPage() {
       </div>
 
       <div className="w-full flex justify-end">
-        <Button disabled={!canCreate} onClick={handleCreateSSO}>
-          <Plus className="h-4 w-4 mr-1" />
-          {t("settings.sso.create")}
-        </Button>
+        <PermissionGuard permissions={["bb.identityProviders.create"]}>
+          <Button disabled={!canCreate} onClick={handleCreateSSO}>
+            <FeatureBadge
+              feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO}
+              clickable={false}
+              className="mr-1 text-white inline-flex"
+            />
+            <Plus className="h-4 w-4 mr-1" />
+            {t("settings.sso.create")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       {ready ? (

@@ -13,7 +13,10 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
-import { usePermissionCheck } from "@/react/components/PermissionGuard";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useActuatorV1Store,
@@ -83,9 +86,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       )
     );
 
-    const [allowEdit, permissionTooltip] = usePermissionCheck([
-      "bb.settings.setWorkspaceProfile",
-    ]);
+    const [allowEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const existActiveIdentityProvider = useVueState(
       () => idpStore.identityProviderList.length > 0
@@ -366,469 +367,495 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         <div className="text-left lg:w-1/4">
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
-        <div className="flex-1 lg:px-4" title={permissionTooltip}>
-          {/* Sub-section 1: Disallow signup (non-SaaS only) */}
-          {!isSaaSMode && (
-            <>
-              <div className="mb-7 mt-4 lg:mt-0">
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <div className="flex-1 lg:px-4">
+            {/* Sub-section 1: Disallow signup (non-SaaS only) */}
+            {!isSaaSMode && (
+              <>
+                <div className="mt-4 lg:mt-0">
+                  <div className="flex items-center gap-x-2">
+                    <input
+                      type="checkbox"
+                      checked={toggleState.disallowSignup}
+                      disabled={disabled || !hasDisallowSignupFeature}
+                      onChange={(e) =>
+                        setToggleState((s) => ({
+                          ...s,
+                          disallowSignup: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span className="font-medium">
+                      {t("settings.general.workspace.disallow-signup.enable")}
+                    </span>
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP}
+                    />
+                  </div>
+                  <div className="mt-1 mb-3 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.disallow-signup.description"
+                    )}
+                  </div>
+                </div>
+                <hr className="my-6" />
+              </>
+            )}
+
+            {/* Sub-section 2: Password Restriction */}
+            <div className="mt-4 lg:mt-0">
+              <p className="font-medium flex flex-row justify-start items-center mb-2 gap-x-2">
+                {t("settings.general.workspace.password-restriction.self")}
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
+                />
+              </p>
+              <div className="flex flex-col gap-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    className="w-24 mr-2 rounded-xs border border-control-border px-2 py-1 text-sm"
+                    value={passwordState.minLength || DEFAULT_MIN_LENGTH}
+                    min={DEFAULT_MIN_LENGTH}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      updatePasswordField({
+                        minLength: Math.max(
+                          Number.isNaN(val) ? DEFAULT_MIN_LENGTH : val,
+                          DEFAULT_MIN_LENGTH
+                        ),
+                      });
+                    }}
+                  />
+                  <span>
+                    {t(
+                      "settings.general.workspace.password-restriction.min-length",
+                      {
+                        min: passwordState.minLength || DEFAULT_MIN_LENGTH,
+                      }
+                    )}
+                  </span>
+                </div>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={passwordState.requireNumber}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) =>
+                      updatePasswordField({
+                        requireNumber: e.target.checked,
+                      })
+                    }
+                  />
+                  {t(
+                    "settings.general.workspace.password-restriction.require-number"
+                  )}
+                </label>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={passwordState.requireLetter}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) =>
+                      updatePasswordField({
+                        requireLetter: e.target.checked,
+                      })
+                    }
+                  />
+                  {t(
+                    "settings.general.workspace.password-restriction.require-letter"
+                  )}
+                </label>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={passwordState.requireUppercaseLetter}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) =>
+                      updatePasswordField({
+                        requireUppercaseLetter: e.target.checked,
+                      })
+                    }
+                  />
+                  {t(
+                    "settings.general.workspace.password-restriction.require-uppercase-letter"
+                  )}
+                </label>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={passwordState.requireSpecialCharacter}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) =>
+                      updatePasswordField({
+                        requireSpecialCharacter: e.target.checked,
+                      })
+                    }
+                  />
+                  {t(
+                    "settings.general.workspace.password-restriction.require-special-character"
+                  )}
+                </label>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={passwordState.requireResetPasswordForFirstLogin}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) =>
+                      updatePasswordField({
+                        requireResetPasswordForFirstLogin: e.target.checked,
+                      })
+                    }
+                  />
+                  {t(
+                    "settings.general.workspace.password-restriction.require-reset-password-for-first-login"
+                  )}
+                </label>
+                <label className="flex items-center gap-x-2">
+                  <input
+                    type="checkbox"
+                    checked={!!passwordState.passwordRotation}
+                    disabled={disabled || !hasPasswordFeature}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        updatePasswordField({
+                          passwordRotation: create(DurationSchema, {
+                            seconds: BigInt(7 * 24 * 60 * 60),
+                            nanos: 0,
+                          }),
+                        });
+                      } else {
+                        setPasswordState((prev) => ({
+                          ...prev,
+                          passwordRotation: undefined,
+                        }));
+                      }
+                    }}
+                  />
+                  <span className="flex items-center gap-x-2">
+                    {
+                      t(
+                        "settings.general.workspace.password-restriction.password-rotation"
+                      ).split("{day}")[0]
+                    }
+                    {passwordState.passwordRotation ? (
+                      <input
+                        type="number"
+                        className="w-24 mx-2 rounded-xs border border-control-border px-2 py-1 text-sm"
+                        value={passwordRotationDays}
+                        min={1}
+                        disabled={disabled || !hasPasswordFeature}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          updatePasswordField({
+                            passwordRotation: create(DurationSchema, {
+                              seconds: BigInt(
+                                (Number.isNaN(val) || val < 1 ? 1 : val) *
+                                  24 *
+                                  60 *
+                                  60
+                              ),
+                              nanos: 0,
+                            }),
+                          });
+                        }}
+                      />
+                    ) : (
+                      <span className="mx-1">N</span>
+                    )}
+                    {
+                      t(
+                        "settings.general.workspace.password-restriction.password-rotation"
+                      ).split("{day}")[1]
+                    }
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <hr className="my-6" />
+
+            {/* Sub-section 3: Require 2FA */}
+            <div className="flex flex-col gap-y-7">
+              <div className="mt-4 lg:mt-0">
                 <div className="flex items-center gap-x-2">
                   <input
                     type="checkbox"
-                    checked={toggleState.disallowSignup}
-                    disabled={disabled || !hasDisallowSignupFeature}
+                    checked={toggleState.require2fa}
+                    disabled={disabled || !has2FAFeature}
                     onChange={(e) =>
                       setToggleState((s) => ({
                         ...s,
-                        disallowSignup: e.target.checked,
+                        require2fa: e.target.checked,
                       }))
                     }
                   />
                   <span className="font-medium">
-                    {t("settings.general.workspace.disallow-signup.enable")}
+                    {t("settings.general.workspace.require-2fa.enable")}
                   </span>
-                  <FeatureBadge
-                    feature={PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP}
-                  />
+                  <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
                 </div>
-                <div className="mt-1 mb-3 text-sm text-gray-400">
-                  {t("settings.general.workspace.disallow-signup.description")}
+                <div className="mt-1 text-sm text-gray-400">
+                  {t("settings.general.workspace.require-2fa.description")}
                 </div>
               </div>
-              <hr />
-            </>
-          )}
 
-          {/* Sub-section 2: Password Restriction */}
-          <div className="mb-7 mt-4 lg:mt-0">
-            <p className="font-medium flex flex-row justify-start items-center mb-2 gap-x-2">
-              {t("settings.general.workspace.password-restriction.self")}
-              <FeatureBadge
-                feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
-              />
-            </p>
-            <div className="flex flex-col gap-y-3">
-              <div className="flex items-center">
+              {/* Sub-section 4: Disallow password signin (non-SaaS only) */}
+              {!isSaaSMode && (
+                <div className="lg:mt-0">
+                  <div className="flex items-center gap-x-2">
+                    <input
+                      type="checkbox"
+                      checked={toggleState.disallowPasswordSignin}
+                      disabled={
+                        disabled ||
+                        !hasDisallowPasswordSigninFeature ||
+                        (!toggleState.disallowPasswordSignin &&
+                          !existActiveIdentityProvider)
+                      }
+                      onChange={(e) =>
+                        setToggleState((s) => ({
+                          ...s,
+                          disallowPasswordSignin: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span className="font-medium flex items-center gap-x-2">
+                      {t(
+                        "settings.general.workspace.disallow-password-signin.enable"
+                      )}
+                      <FeatureBadge
+                        feature={PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN}
+                      />
+                      {hasDisallowPasswordSigninFeature &&
+                        !toggleState.disallowPasswordSignin &&
+                        !existActiveIdentityProvider && (
+                          <span
+                            title={t(
+                              "settings.general.workspace.disallow-password-signin.require-sso-setup"
+                            )}
+                          >
+                            <TriangleAlert className="w-4 text-warning" />
+                          </span>
+                        )}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.disallow-password-signin.description"
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <hr className="my-6" />
+
+            {/* Sub-section 5: Token Duration */}
+            {/* Access Token Duration */}
+            <div className="mb-7 mt-4 lg:mt-0">
+              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+                <span>
+                  {t("settings.general.workspace.access-token-duration.self")}
+                </span>
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
+                />
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t(
+                  "settings.general.workspace.access-token-duration.description"
+                )}
+              </p>
+              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
                 <input
                   type="number"
-                  className="w-24 mr-2 rounded-xs border border-control-border px-2 py-1 text-sm"
-                  value={passwordState.minLength || DEFAULT_MIN_LENGTH}
-                  min={DEFAULT_MIN_LENGTH}
-                  disabled={disabled || !hasPasswordFeature}
+                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  value={tokenState.accessTokenDuration}
+                  min={1}
+                  max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
+                  disabled={disabled || !hasSecureTokenFeature}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
-                    updatePasswordField({
-                      minLength: Math.max(
-                        Number.isNaN(val) ? DEFAULT_MIN_LENGTH : val,
-                        DEFAULT_MIN_LENGTH
-                      ),
-                    });
-                  }}
-                />
-                <span>
-                  {t(
-                    "settings.general.workspace.password-restriction.min-length",
-                    {
-                      min: passwordState.minLength || DEFAULT_MIN_LENGTH,
-                    }
-                  )}
-                </span>
-              </div>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={passwordState.requireNumber}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) =>
-                    updatePasswordField({
-                      requireNumber: e.target.checked,
-                    })
-                  }
-                />
-                {t(
-                  "settings.general.workspace.password-restriction.require-number"
-                )}
-              </label>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={passwordState.requireLetter}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) =>
-                    updatePasswordField({
-                      requireLetter: e.target.checked,
-                    })
-                  }
-                />
-                {t(
-                  "settings.general.workspace.password-restriction.require-letter"
-                )}
-              </label>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={passwordState.requireUppercaseLetter}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) =>
-                    updatePasswordField({
-                      requireUppercaseLetter: e.target.checked,
-                    })
-                  }
-                />
-                {t(
-                  "settings.general.workspace.password-restriction.require-uppercase-letter"
-                )}
-              </label>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={passwordState.requireSpecialCharacter}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) =>
-                    updatePasswordField({
-                      requireSpecialCharacter: e.target.checked,
-                    })
-                  }
-                />
-                {t(
-                  "settings.general.workspace.password-restriction.require-special-character"
-                )}
-              </label>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={passwordState.requireResetPasswordForFirstLogin}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) =>
-                    updatePasswordField({
-                      requireResetPasswordForFirstLogin: e.target.checked,
-                    })
-                  }
-                />
-                {t(
-                  "settings.general.workspace.password-restriction.require-reset-password-for-first-login"
-                )}
-              </label>
-              <label className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={!!passwordState.passwordRotation}
-                  disabled={disabled || !hasPasswordFeature}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      updatePasswordField({
-                        passwordRotation: create(DurationSchema, {
-                          seconds: BigInt(7 * 24 * 60 * 60),
-                          nanos: 0,
-                        }),
-                      });
-                    } else {
-                      setPasswordState((prev) => ({
-                        ...prev,
-                        passwordRotation: undefined,
+                    if (!Number.isNaN(val)) {
+                      const max =
+                        tokenState.accessTokenTimeFormat === "MINUTES"
+                          ? 59
+                          : 23;
+                      setTokenState((s) => ({
+                        ...s,
+                        accessTokenDuration: Math.max(1, Math.min(val, max)),
                       }));
                     }
                   }}
                 />
-                <span className="flex items-center gap-x-2">
-                  {
-                    t(
-                      "settings.general.workspace.password-restriction.password-rotation"
-                    ).split("{day}")[0]
-                  }
-                  {passwordState.passwordRotation ? (
-                    <input
-                      type="number"
-                      className="w-24 mx-2 rounded-xs border border-control-border px-2 py-1 text-sm"
-                      value={passwordRotationDays}
-                      min={1}
-                      disabled={disabled || !hasPasswordFeature}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        updatePasswordField({
-                          passwordRotation: create(DurationSchema, {
-                            seconds: BigInt(
-                              (Number.isNaN(val) || val < 1 ? 1 : val) *
-                                24 *
-                                60 *
-                                60
-                            ),
-                            nanos: 0,
-                          }),
-                        });
-                      }}
-                    />
-                  ) : (
-                    <span className="mx-1">N</span>
-                  )}
-                  {
-                    t(
-                      "settings.general.workspace.password-restriction.password-rotation"
-                    ).split("{day}")[1]
-                  }
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <hr className="my-4" />
-
-          {/* Sub-section 3: Require 2FA */}
-          <div className="flex flex-col gap-y-7">
-            <div className="mt-4 lg:mt-0">
-              <div className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked={toggleState.require2fa}
-                  disabled={disabled || !has2FAFeature}
-                  onChange={(e) =>
-                    setToggleState((s) => ({
-                      ...s,
-                      require2fa: e.target.checked,
-                    }))
-                  }
-                />
-                <span className="font-medium">
-                  {t("settings.general.workspace.require-2fa.enable")}
-                </span>
-                <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
-              </div>
-              <div className="mt-1 text-sm text-gray-400">
-                {t("settings.general.workspace.require-2fa.description")}
-              </div>
-            </div>
-
-            {/* Sub-section 4: Disallow password signin (non-SaaS only) */}
-            {!isSaaSMode && (
-              <div className="lg:mt-0">
-                <div className="flex items-center gap-x-2">
+                <label className="flex items-center gap-x-1">
                   <input
-                    type="checkbox"
-                    checked={toggleState.disallowPasswordSignin}
-                    disabled={
-                      disabled ||
-                      !hasDisallowPasswordSigninFeature ||
-                      (!toggleState.disallowPasswordSignin &&
-                        !existActiveIdentityProvider)
-                    }
-                    onChange={(e) =>
-                      setToggleState((s) => ({
+                    type="radio"
+                    name="accessTokenTimeFormat"
+                    value="MINUTES"
+                    checked={tokenState.accessTokenTimeFormat === "MINUTES"}
+                    disabled={disabled || !hasSecureTokenFeature}
+                    onChange={() =>
+                      setTokenState((s) => ({
                         ...s,
-                        disallowPasswordSignin: e.target.checked,
+                        accessTokenTimeFormat: "MINUTES",
                       }))
                     }
                   />
-                  <span className="font-medium flex items-center gap-x-2">
-                    {t(
-                      "settings.general.workspace.disallow-password-signin.enable"
-                    )}
-                    <FeatureBadge
-                      feature={PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN}
-                    />
-                    {hasDisallowPasswordSigninFeature &&
-                      !toggleState.disallowPasswordSignin &&
-                      !existActiveIdentityProvider && (
-                        <span
-                          title={t(
-                            "settings.general.workspace.disallow-password-signin.require-sso-setup"
-                          )}
-                        >
-                          <TriangleAlert className="w-4 text-warning" />
-                        </span>
-                      )}
-                  </span>
-                </div>
-                <div className="mt-1 text-sm text-gray-400">
                   {t(
-                    "settings.general.workspace.disallow-password-signin.description"
+                    "settings.general.workspace.access-token-duration.minutes"
                   )}
-                </div>
+                </label>
+                <label className="flex items-center gap-x-1">
+                  <input
+                    type="radio"
+                    name="accessTokenTimeFormat"
+                    value="HOURS"
+                    checked={tokenState.accessTokenTimeFormat === "HOURS"}
+                    disabled={disabled || !hasSecureTokenFeature}
+                    onChange={() =>
+                      setTokenState((s) => ({
+                        ...s,
+                        accessTokenTimeFormat: "HOURS",
+                      }))
+                    }
+                  />
+                  {t("settings.general.workspace.access-token-duration.hours")}
+                </label>
               </div>
-            )}
-          </div>
+            </div>
 
-          <hr className="my-4" />
+            {/* Refresh Token Duration */}
+            <div className="mb-7 mt-4 lg:mt-0">
+              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+                <span>
+                  {t("settings.general.workspace.refresh-token-duration.self")}
+                </span>
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
+                />
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t(
+                  "settings.general.workspace.refresh-token-duration.description"
+                )}
+              </p>
+              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
+                <input
+                  type="number"
+                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  value={tokenState.refreshTokenDuration}
+                  min={1}
+                  max={
+                    tokenState.refreshTokenTimeFormat === "HOURS"
+                      ? 23
+                      : undefined
+                  }
+                  disabled={disabled || !hasSecureTokenFeature}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val)) {
+                      const max =
+                        tokenState.refreshTokenTimeFormat === "HOURS"
+                          ? 23
+                          : undefined;
+                      setTokenState((s) => ({
+                        ...s,
+                        refreshTokenDuration: Math.max(
+                          1,
+                          max ? Math.min(val, max) : val
+                        ),
+                      }));
+                    }
+                  }}
+                />
+                <label className="flex items-center gap-x-1">
+                  <input
+                    type="radio"
+                    name="refreshTokenTimeFormat"
+                    value="HOURS"
+                    checked={tokenState.refreshTokenTimeFormat === "HOURS"}
+                    disabled={disabled || !hasSecureTokenFeature}
+                    onChange={() =>
+                      setTokenState((s) => ({
+                        ...s,
+                        refreshTokenTimeFormat: "HOURS",
+                      }))
+                    }
+                  />
+                  {t("settings.general.workspace.refresh-token-duration.hours")}
+                </label>
+                <label className="flex items-center gap-x-1">
+                  <input
+                    type="radio"
+                    name="refreshTokenTimeFormat"
+                    value="DAYS"
+                    checked={tokenState.refreshTokenTimeFormat === "DAYS"}
+                    disabled={disabled || !hasSecureTokenFeature}
+                    onChange={() =>
+                      setTokenState((s) => ({
+                        ...s,
+                        refreshTokenTimeFormat: "DAYS",
+                      }))
+                    }
+                  />
+                  {t("settings.general.workspace.refresh-token-duration.days")}
+                </label>
+              </div>
+            </div>
 
-          {/* Sub-section 5: Token Duration */}
-          {/* Access Token Duration */}
-          <div className="mb-7 mt-4 lg:mt-0">
-            <p className="font-medium flex flex-row justify-start items-center">
-              <span className="mr-2">
-                {t("settings.general.workspace.access-token-duration.self")}
-              </span>
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.access-token-duration.description"
-              )}
-            </p>
-            <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-              <input
-                type="number"
-                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
-                value={tokenState.accessTokenDuration}
-                min={1}
-                max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
-                disabled={disabled || !hasSecureTokenFeature}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(val)) {
-                    const max =
-                      tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23;
-                    setTokenState((s) => ({
-                      ...s,
-                      accessTokenDuration: Math.max(1, Math.min(val, max)),
-                    }));
-                  }
-                }}
-              />
-              <label className="flex items-center gap-x-1">
-                <input
-                  type="radio"
-                  name="accessTokenTimeFormat"
-                  value="MINUTES"
-                  checked={tokenState.accessTokenTimeFormat === "MINUTES"}
-                  disabled={disabled || !hasSecureTokenFeature}
-                  onChange={() =>
-                    setTokenState((s) => ({
-                      ...s,
-                      accessTokenTimeFormat: "MINUTES",
-                    }))
-                  }
+            {/* Inactive Session Timeout */}
+            <div className="mt-4 lg:mt-0">
+              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+                <span>
+                  {t(
+                    "settings.general.workspace.inactive-session-timeout.self"
+                  )}
+                </span>
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_TOKEN_DURATION_CONTROL}
                 />
-                {t("settings.general.workspace.access-token-duration.minutes")}
-              </label>
-              <label className="flex items-center gap-x-1">
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t(
+                  "settings.general.workspace.inactive-session-timeout.description"
+                )}{" "}
+                <span className="font-semibold">
+                  {t("settings.general.workspace.no-limit")}
+                </span>
+              </p>
+              <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
                 <input
-                  type="radio"
-                  name="accessTokenTimeFormat"
-                  value="HOURS"
-                  checked={tokenState.accessTokenTimeFormat === "HOURS"}
+                  type="number"
+                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  value={tokenState.inactiveTimeout}
+                  min={-1}
                   disabled={disabled || !hasSecureTokenFeature}
-                  onChange={() =>
-                    setTokenState((s) => ({
-                      ...s,
-                      accessTokenTimeFormat: "HOURS",
-                    }))
-                  }
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val)) {
+                      setTokenState((s) => ({
+                        ...s,
+                        inactiveTimeout: Math.max(-1, val),
+                      }));
+                    }
+                  }}
                 />
-                {t("settings.general.workspace.access-token-duration.hours")}
-              </label>
+                <span className="text-sm text-gray-500">
+                  {t(
+                    "settings.general.workspace.inactive-session-timeout.hours"
+                  )}
+                </span>
+              </div>
             </div>
           </div>
-
-          {/* Refresh Token Duration */}
-          <div className="mb-7 mt-4 lg:mt-0">
-            <p className="font-medium flex flex-row justify-start items-center">
-              <span className="mr-2">
-                {t("settings.general.workspace.refresh-token-duration.self")}
-              </span>
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.refresh-token-duration.description"
-              )}
-            </p>
-            <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-              <input
-                type="number"
-                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
-                value={tokenState.refreshTokenDuration}
-                min={1}
-                max={
-                  tokenState.refreshTokenTimeFormat === "HOURS" ? 23 : undefined
-                }
-                disabled={disabled || !hasSecureTokenFeature}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(val)) {
-                    const max =
-                      tokenState.refreshTokenTimeFormat === "HOURS"
-                        ? 23
-                        : undefined;
-                    setTokenState((s) => ({
-                      ...s,
-                      refreshTokenDuration: Math.max(
-                        1,
-                        max ? Math.min(val, max) : val
-                      ),
-                    }));
-                  }
-                }}
-              />
-              <label className="flex items-center gap-x-1">
-                <input
-                  type="radio"
-                  name="refreshTokenTimeFormat"
-                  value="HOURS"
-                  checked={tokenState.refreshTokenTimeFormat === "HOURS"}
-                  disabled={disabled || !hasSecureTokenFeature}
-                  onChange={() =>
-                    setTokenState((s) => ({
-                      ...s,
-                      refreshTokenTimeFormat: "HOURS",
-                    }))
-                  }
-                />
-                {t("settings.general.workspace.refresh-token-duration.hours")}
-              </label>
-              <label className="flex items-center gap-x-1">
-                <input
-                  type="radio"
-                  name="refreshTokenTimeFormat"
-                  value="DAYS"
-                  checked={tokenState.refreshTokenTimeFormat === "DAYS"}
-                  disabled={disabled || !hasSecureTokenFeature}
-                  onChange={() =>
-                    setTokenState((s) => ({
-                      ...s,
-                      refreshTokenTimeFormat: "DAYS",
-                    }))
-                  }
-                />
-                {t("settings.general.workspace.refresh-token-duration.days")}
-              </label>
-            </div>
-          </div>
-
-          {/* Inactive Session Timeout */}
-          <div className="mb-7 mt-4 lg:mt-0">
-            <p className="font-medium flex flex-row justify-start items-center">
-              <span className="mr-2">
-                {t("settings.general.workspace.inactive-session-timeout.self")}
-              </span>
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {t(
-                "settings.general.workspace.inactive-session-timeout.description"
-              )}{" "}
-              <span className="font-semibold">
-                {t("settings.general.workspace.no-limit")}
-              </span>
-            </p>
-            <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-              <input
-                type="number"
-                className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
-                value={tokenState.inactiveTimeout}
-                min={-1}
-                disabled={disabled || !hasSecureTokenFeature}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(val)) {
-                    setTokenState((s) => ({
-                      ...s,
-                      inactiveTimeout: Math.max(-1, val),
-                    }));
-                  }
-                }}
-              />
-              <span className="text-sm text-gray-500">
-                {t("settings.general.workspace.inactive-session-timeout.hours")}
-              </span>
-            </div>
-          </div>
-        </div>
+        </PermissionGuard>
       </div>
     );
   }

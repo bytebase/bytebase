@@ -17,6 +17,7 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -1082,12 +1083,15 @@ export function ProjectsPage() {
           placeholder={t("project.filter-projects")}
           onParamsChange={setSearchParams}
         />
-        {canCreate && (
-          <Button onClick={() => setShowCreateDrawer(true)}>
+        <PermissionGuard permissions={["bb.projects.create"]}>
+          <Button
+            disabled={!canCreate}
+            onClick={() => setShowCreateDrawer(true)}
+          >
             <Plus className="h-4 w-4 mr-1" />
             {tVue(t, "quick-action.new-project")}
           </Button>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Batch operations */}

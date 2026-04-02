@@ -5,6 +5,8 @@ import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -818,10 +820,17 @@ export function RolesPage() {
       </div>
 
       <div className="w-full flex justify-end">
-        <Button disabled={!canCreate} onClick={addRole}>
-          <Plus className="h-4 w-4 mr-1" />
-          {t("common.add")}
-        </Button>
+        <PermissionGuard permissions={["bb.roles.create"]}>
+          <Button disabled={!canCreate} onClick={addRole}>
+            <FeatureBadge
+              feature={PlanFeature.FEATURE_CUSTOM_ROLES}
+              clickable={false}
+              className="mr-1 text-white inline-flex"
+            />
+            <Plus className="h-4 w-4 mr-1" />
+            {t("common.add")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       {/* Roles Table */}

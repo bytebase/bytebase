@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -1442,23 +1443,27 @@ export function EnvironmentsPage() {
         </div>
 
         {/* Toolbar */}
-        {canEdit && (
+        <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
           <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
             <Button
               variant="outline"
               size="sm"
-              disabled={environmentList.length <= 1}
+              disabled={!canEdit || environmentList.length <= 1}
               onClick={() => setShowReorder(true)}
             >
               <ListOrdered className="h-4 w-4 mr-1" />
               {t("common.reorder")}
             </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Button
+              size="sm"
+              disabled={!canEdit}
+              onClick={() => setShowCreate(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
               {t("environment.create")}
             </Button>
           </div>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Tab content */}

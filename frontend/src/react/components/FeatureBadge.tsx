@@ -16,6 +16,7 @@ interface FeatureBadgeProps {
   readonly feature: PlanFeature;
   readonly instance?: Instance | InstanceResource;
   readonly clickable?: boolean;
+  readonly className?: string;
 }
 
 const planLabel: Record<number, string> = {
@@ -35,6 +36,7 @@ export function FeatureBadge({
   feature,
   instance,
   clickable = true,
+  className,
 }: FeatureBadgeProps) {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
@@ -56,7 +58,7 @@ export function FeatureBadge({
           "subscription.instance-assignment.missing-license-attention"
         )}
       >
-        <span className="text-accent inline-flex">
+        <span className={className ?? "text-accent inline-flex"}>
           <Lock className="w-5 h-5" />
         </span>
       </Tooltip>
@@ -77,7 +79,10 @@ export function FeatureBadge({
   if (clickable) {
     return (
       <Tooltip content={tooltip}>
-        <a href="/setting/subscription" className="text-accent inline-flex">
+        <a
+          href="/setting/subscription"
+          className={className ?? "text-accent inline-flex"}
+        >
           <Sparkles className="w-5 h-5" />
         </a>
       </Tooltip>
@@ -86,7 +91,7 @@ export function FeatureBadge({
 
   return (
     <Tooltip content={tooltip}>
-      <span className="text-accent inline-flex">
+      <span className={className ?? "text-accent inline-flex"}>
         <Sparkles className="w-5 h-5" />
       </span>
     </Tooltip>

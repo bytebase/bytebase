@@ -20,6 +20,7 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -1181,12 +1182,12 @@ export function InstancesPage() {
           placeholder={t("instance.filter-instance-name")}
           onParamsChange={setSearchParams}
         />
-        {canCreate && (
-          <Button onClick={navigateToCreate}>
+        <PermissionGuard permissions={["bb.instances.create"]}>
+          <Button disabled={!canCreate} onClick={navigateToCreate}>
             <Plus className="h-4 w-4 mr-1" />
             {tVue(t, "quick-action.add-instance")}
           </Button>
-        )}
+        </PermissionGuard>
       </div>
 
       {/* Batch operations */}

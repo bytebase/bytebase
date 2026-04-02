@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -80,7 +81,10 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
     return (
       <div id="audit-log-stdout" className="py-6 lg:flex">
         <div className="text-left lg:w-1/4">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <div className="flex items-center gap-x-2">
+            <h1 className="text-2xl font-bold">{title}</h1>
+            <FeatureBadge feature={PlanFeature.FEATURE_AUDIT_LOG} />
+          </div>
         </div>
         <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
           {/* Audit log stdout toggle */}

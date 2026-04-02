@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
@@ -214,162 +215,184 @@ export const SQLEditorSection = forwardRef<
       </div>
       <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
         {/* Data Export toggle */}
-        <div className="w-full inline-flex items-center gap-x-2">
-          <input
-            type="checkbox"
-            checked={!state.disableExport}
-            disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-            onChange={(e) => handleToggle("disableExport", !e.target.checked)}
-            className="h-4 w-4"
-          />
-          <span className="font-medium">
-            {t("settings.general.workspace.data-export")}
-          </span>
-          <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-        </div>
-
-        {/* Data Copy toggle */}
-        <div className="w-full inline-flex items-center gap-x-2">
-          <input
-            type="checkbox"
-            checked={!state.disableCopyData}
-            disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
-            onChange={(e) => handleToggle("disableCopyData", !e.target.checked)}
-            className="h-4 w-4"
-          />
-          <span className="font-medium">
-            {t("settings.general.workspace.data-copy")}
-          </span>
-          <FeatureBadge feature={PlanFeature.FEATURE_RESTRICT_COPYING_DATA} />
-        </div>
-
-        {/* Allow Admin Data Source toggle */}
-        <div>
+        <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div className="w-full inline-flex items-center gap-x-2">
             <input
               type="checkbox"
-              checked={state.allowAdminDataSource}
+              checked={!state.disableExport}
               disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+              onChange={(e) => handleToggle("disableExport", !e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span className="font-medium">
+              {t("settings.general.workspace.data-export")}
+            </span>
+            <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+          </div>
+        </PermissionGuard>
+
+        {/* Data Copy toggle */}
+        <PermissionGuard permissions={["bb.policies.update"]} display="block">
+          <div className="w-full inline-flex items-center gap-x-2">
+            <input
+              type="checkbox"
+              checked={!state.disableCopyData}
+              disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
               onChange={(e) =>
-                handleToggle("allowAdminDataSource", e.target.checked)
+                handleToggle("disableCopyData", !e.target.checked)
               }
               className="h-4 w-4"
             />
             <span className="font-medium">
-              {t("settings.general.workspace.allow-admin-data-source.self")}
+              {t("settings.general.workspace.data-copy")}
             </span>
-            <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+            <FeatureBadge feature={PlanFeature.FEATURE_RESTRICT_COPYING_DATA} />
           </div>
-          <span className="mt-1 text-sm text-gray-400">
-            {t(
-              "settings.general.workspace.allow-admin-data-source.description"
-            )}
-          </span>
-        </div>
+        </PermissionGuard>
+
+        {/* Allow Admin Data Source toggle */}
+        <PermissionGuard permissions={["bb.policies.update"]} display="block">
+          <div>
+            <div className="w-full inline-flex items-center gap-x-2">
+              <input
+                type="checkbox"
+                checked={state.allowAdminDataSource}
+                disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
+                onChange={(e) =>
+                  handleToggle("allowAdminDataSource", e.target.checked)
+                }
+                className="h-4 w-4"
+              />
+              <span className="font-medium">
+                {t("settings.general.workspace.allow-admin-data-source.self")}
+              </span>
+              <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+            </div>
+            <span className="mt-1 text-sm text-gray-400">
+              {t(
+                "settings.general.workspace.allow-admin-data-source.description"
+              )}
+            </span>
+          </div>
+        </PermissionGuard>
 
         {/* Maximum SQL Result Size (MB) */}
         {canGetWorkspaceProfile && (
+          <PermissionGuard
+            permissions={["bb.settings.setWorkspaceProfile"]}
+            display="block"
+          >
+            <div>
+              <p className="font-medium flex flex-row justify-start items-center">
+                <span className="mr-2">
+                  {t("settings.general.workspace.maximum-sql-result.size.self")}
+                </span>
+                <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {t(
+                  "settings.general.workspace.maximum-sql-result.size.description"
+                )}{" "}
+                <span className="font-semibold! textinfolabel">
+                  {t(
+                    "settings.general.workspace.maximum-sql-result.size.default",
+                    { limit: DEFAULT_MAX_RESULT_SIZE_IN_MB }
+                  )}
+                </span>
+              </p>
+              <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+                <div className="relative w-60">
+                  <input
+                    type="number"
+                    value={state.maximumResultSize}
+                    min={1}
+                    disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
+                    onChange={(e) => handleNumberInput("maximumResultSize", e)}
+                    className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-12 text-sm disabled:opacity-50"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                    MB
+                  </span>
+                </div>
+              </div>
+            </div>
+          </PermissionGuard>
+        )}
+
+        {/* Maximum SQL Result Rows */}
+        <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div>
             <p className="font-medium flex flex-row justify-start items-center">
               <span className="mr-2">
-                {t("settings.general.workspace.maximum-sql-result.size.self")}
+                {t("settings.general.workspace.maximum-sql-result.rows.self")}
               </span>
               <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
             </p>
             <p className="text-sm text-gray-400 mt-1">
               {t(
-                "settings.general.workspace.maximum-sql-result.size.description"
+                "settings.general.workspace.maximum-sql-result.rows.description"
               )}{" "}
               <span className="font-semibold! textinfolabel">
-                {t(
-                  "settings.general.workspace.maximum-sql-result.size.default",
-                  { limit: DEFAULT_MAX_RESULT_SIZE_IN_MB }
-                )}
+                {t("settings.general.workspace.no-limit")}
               </span>
             </p>
             <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
               <div className="relative w-60">
                 <input
                   type="number"
-                  value={state.maximumResultSize}
-                  min={1}
-                  disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
-                  onChange={(e) => handleNumberInput("maximumResultSize", e)}
-                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-12 text-sm disabled:opacity-50"
+                  value={state.maximumResultRows}
+                  min={0}
+                  disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
+                  onChange={(e) => handleNumberInput("maximumResultRows", e)}
+                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-16 text-sm disabled:opacity-50"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                  MB
+                  {t("settings.general.workspace.maximum-sql-result.rows.rows")}
                 </span>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Maximum SQL Result Rows */}
-        <div>
-          <p className="font-medium flex flex-row justify-start items-center">
-            <span className="mr-2">
-              {t("settings.general.workspace.maximum-sql-result.rows.self")}
-            </span>
-            <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            {t(
-              "settings.general.workspace.maximum-sql-result.rows.description"
-            )}{" "}
-            <span className="font-semibold! textinfolabel">
-              {t("settings.general.workspace.no-limit")}
-            </span>
-          </p>
-          <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-            <div className="relative w-60">
-              <input
-                type="number"
-                value={state.maximumResultRows}
-                min={0}
-                disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
-                onChange={(e) => handleNumberInput("maximumResultRows", e)}
-                className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-16 text-sm disabled:opacity-50"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                {t("settings.general.workspace.maximum-sql-result.rows.rows")}
-              </span>
-            </div>
-          </div>
-        </div>
+        </PermissionGuard>
 
         {/* Query Timeout (seconds) */}
-        <div>
-          <p className="font-medium flex flex-row justify-start items-center">
-            <span className="mr-2">
-              {t("settings.general.workspace.query-data-policy.timeout.self")}
-            </span>
-            <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            {t(
-              "settings.general.workspace.query-data-policy.timeout.description"
-            )}{" "}
-            <span className="font-semibold! textinfolabel">
-              {t("settings.general.workspace.no-limit")}
-            </span>
-          </p>
-          <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-            <div className="relative w-60">
-              <input
-                type="number"
-                value={state.maxQueryTimeInSeconds}
-                min={0}
-                disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
-                onChange={(e) => handleNumberInput("maxQueryTimeInSeconds", e)}
-                className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-20 text-sm disabled:opacity-50"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                {t("settings.general.workspace.query-data-policy.seconds")}
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <div>
+            <p className="font-medium flex flex-row justify-start items-center">
+              <span className="mr-2">
+                {t("settings.general.workspace.query-data-policy.timeout.self")}
               </span>
+              <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              {t(
+                "settings.general.workspace.query-data-policy.timeout.description"
+              )}{" "}
+              <span className="font-semibold! textinfolabel">
+                {t("settings.general.workspace.no-limit")}
+              </span>
+            </p>
+            <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+              <div className="relative w-60">
+                <input
+                  type="number"
+                  value={state.maxQueryTimeInSeconds}
+                  min={0}
+                  disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
+                  onChange={(e) =>
+                    handleNumberInput("maxQueryTimeInSeconds", e)
+                  }
+                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-20 text-sm disabled:opacity-50"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                  {t("settings.general.workspace.query-data-policy.seconds")}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </PermissionGuard>
       </div>
     </div>
   );

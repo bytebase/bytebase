@@ -9,7 +9,10 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { usePermissionCheck } from "@/react/components/PermissionGuard";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -40,9 +43,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
       () => actuatorV1Store.serverInfo?.externalUrlFromFlag ?? false
     );
 
-    const [canEdit, permissionTooltip] = usePermissionCheck([
-      "bb.settings.setWorkspaceProfile",
-    ]);
+    const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const getInitialState = useCallback((): LocalState => {
       const mode = settingV1Store.workspaceProfile.databaseChangeMode;
@@ -121,110 +122,114 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             <h1 className="text-2xl font-bold">{title}</h1>
           </div>
         </div>
-        <div
-          className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6"
-          title={permissionTooltip}
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
         >
-          {/* Database change mode */}
-          <div>
-            <div className="mb-4 font-medium">
-              {t("settings.general.workspace.default-landing-page.self")}
-            </div>
-            <div className="w-full flex flex-col gap-8">
-              <label className="flex items-start gap-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="databaseChangeMode"
-                  className="mt-1"
-                  disabled={!canEdit}
-                  checked={
-                    state.databaseChangeMode === DatabaseChangeMode.PIPELINE
-                  }
-                  onChange={() =>
-                    setState((s) => ({
-                      ...s,
-                      databaseChangeMode: DatabaseChangeMode.PIPELINE,
-                    }))
-                  }
-                />
-                <div className="flex flex-col gap-1">
-                  <div className="textinfo">
-                    {t(
-                      "settings.general.workspace.default-landing-page.workspace.self"
-                    )}
-                  </div>
-                  <div className="textinfolabel">
-                    {t(
-                      "settings.general.workspace.default-landing-page.workspace.description"
-                    )}
-                  </div>
-                </div>
-              </label>
-              <label className="flex items-start gap-x-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="databaseChangeMode"
-                  className="mt-1"
-                  disabled={!canEdit}
-                  checked={
-                    state.databaseChangeMode === DatabaseChangeMode.EDITOR
-                  }
-                  onChange={() =>
-                    setState((s) => ({
-                      ...s,
-                      databaseChangeMode: DatabaseChangeMode.EDITOR,
-                    }))
-                  }
-                />
-                <div className="flex flex-col gap-1">
-                  <div className="textinfo">
-                    {t(
-                      "settings.general.workspace.default-landing-page.sql-editor.self"
-                    )}
-                  </div>
-                  <div className="textinfolabel">
-                    {t(
-                      "settings.general.workspace.default-landing-page.sql-editor.description"
-                    )}
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* External URL */}
-          <div>
-            <label className="flex items-center gap-x-2">
-              <span className="font-medium">
-                {t("settings.general.workspace.external-url.self")}
-              </span>
-            </label>
-            <div className="mb-3 text-sm text-gray-400">
-              {t("settings.general.workspace.external-url.description")}{" "}
-              <a
-                href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                {t("common.learn-more")}
-              </a>
-            </div>
-            {externalUrlFromFlag && !isSaaSMode && (
-              <div className="mb-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xs">
-                {t("settings.general.workspace.external-url.cannot-edit-flag")}
+          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+            {/* Database change mode */}
+            <div>
+              <div className="mb-4 font-medium">
+                {t("settings.general.workspace.default-landing-page.self")}
               </div>
-            )}
-            <Input
-              value={state.externalUrl}
-              className="mb-4 w-full"
-              disabled={!canEdit || isSaaSMode || externalUrlFromFlag}
-              onChange={(e) =>
-                setState((s) => ({ ...s, externalUrl: e.target.value }))
-              }
-            />
+              <div className="w-full flex flex-col gap-8">
+                <label className="flex items-start gap-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="databaseChangeMode"
+                    className="mt-1"
+                    disabled={!canEdit}
+                    checked={
+                      state.databaseChangeMode === DatabaseChangeMode.PIPELINE
+                    }
+                    onChange={() =>
+                      setState((s) => ({
+                        ...s,
+                        databaseChangeMode: DatabaseChangeMode.PIPELINE,
+                      }))
+                    }
+                  />
+                  <div className="flex flex-col gap-1">
+                    <div className="textinfo">
+                      {t(
+                        "settings.general.workspace.default-landing-page.workspace.self"
+                      )}
+                    </div>
+                    <div className="textinfolabel">
+                      {t(
+                        "settings.general.workspace.default-landing-page.workspace.description"
+                      )}
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="databaseChangeMode"
+                    className="mt-1"
+                    disabled={!canEdit}
+                    checked={
+                      state.databaseChangeMode === DatabaseChangeMode.EDITOR
+                    }
+                    onChange={() =>
+                      setState((s) => ({
+                        ...s,
+                        databaseChangeMode: DatabaseChangeMode.EDITOR,
+                      }))
+                    }
+                  />
+                  <div className="flex flex-col gap-1">
+                    <div className="textinfo">
+                      {t(
+                        "settings.general.workspace.default-landing-page.sql-editor.self"
+                      )}
+                    </div>
+                    <div className="textinfolabel">
+                      {t(
+                        "settings.general.workspace.default-landing-page.sql-editor.description"
+                      )}
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* External URL */}
+            <div>
+              <label className="flex items-center gap-x-2">
+                <span className="font-medium">
+                  {t("settings.general.workspace.external-url.self")}
+                </span>
+              </label>
+              <div className="mb-3 text-sm text-gray-400">
+                {t("settings.general.workspace.external-url.description")}{" "}
+                <a
+                  href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  {t("common.learn-more")}
+                </a>
+              </div>
+              {externalUrlFromFlag && !isSaaSMode && (
+                <div className="mb-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xs">
+                  {t(
+                    "settings.general.workspace.external-url.cannot-edit-flag"
+                  )}
+                </div>
+              )}
+              <Input
+                value={state.externalUrl}
+                className="mb-4 w-full"
+                disabled={!canEdit || isSaaSMode || externalUrlFromFlag}
+                onChange={(e) =>
+                  setState((s) => ({ ...s, externalUrl: e.target.value }))
+                }
+              />
+            </div>
           </div>
-        </div>
+        </PermissionGuard>
 
         {/* Modal after switching to Editor mode */}
         {showModal && (
