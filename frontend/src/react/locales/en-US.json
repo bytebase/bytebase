@@ -55,6 +55,7 @@
     "added": "Added",
     "description": "Description",
     "missing-required-permission": "Missing required permissions {{permissions}}",
+    "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
     "add-permissions": "Add permissions",
     "system": "System",

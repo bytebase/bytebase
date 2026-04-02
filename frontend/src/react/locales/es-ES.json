@@ -55,6 +55,7 @@
     "added": "Agregado",
     "description": "Descripción",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
+    "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
     "add-permissions": "Agregar permisos",
     "system": "Sistema",

@@ -55,6 +55,7 @@
     "added": "已创建",
     "description": "描述",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
+    "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
     "add-permissions": "添加权限",
     "system": "系统",
