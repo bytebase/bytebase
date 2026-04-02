@@ -973,6 +973,8 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+		// Oracle may include a trailing C-string null terminator via the go-ora driver.
+		view.Definition = strings.TrimRight(view.Definition, "\x00")
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
 		view.Columns = columnMap[key]
 		view.Triggers = triggerMap[key]
@@ -1118,6 +1120,8 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
 			return nil, err
 		}
+		// Oracle may include a trailing C-string null terminator via the go-ora driver.
+		materializedView.Definition = strings.TrimRight(materializedView.Definition, "\x00")
 
 		// Ensure the definition ends with a newline to match expected format
 		if materializedView.Definition != "" && !strings.HasSuffix(materializedView.Definition, "\n") {
@@ -1243,11 +1247,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 		if name == currentName && t == currentType {
 			defText = append(defText, def)
 		} else {
+			// Oracle may include a trailing C-string null terminator via the go-ora driver.
 			switch currentType {
 			case "FUNCTION":
 				function := &storepb.FunctionMetadata{
 					Name:       currentName,
-					Definition: strings.Join(defText, ""),
+					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 				}
 				key := db.TableKey{Schema: schemaName, Table: currentName}
 				if comment, ok := functionCommentMap[key]; ok {
@@ -1257,12 +1262,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			case "PROCEDURE":
 				procedures = append(procedures, &storepb.ProcedureMetadata{
 					Name:       currentName,
-					Definition: strings.Join(defText, ""),
+					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 				})
 			case "PACKAGE":
 				packages = append(packages, &storepb.PackageMetadata{
 					Name:       currentName,
-					Definition: strings.Join(defText, ""),
+					Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 				})
 			default:
 				// Ignore other types
@@ -1272,11 +1277,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			defText = []string{def}
 		}
 	}
+	// Oracle may include a trailing C-string null terminator via the go-ora driver.
 	switch currentType {
 	case "FUNCTION":
 		function := &storepb.FunctionMetadata{
 			Name:       currentName,
-			Definition: strings.Join(defText, ""),
+			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 		}
 		key := db.TableKey{Schema: schemaName, Table: currentName}
 		if comment, ok := functionCommentMap[key]; ok {
@@ -1286,12 +1292,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	case "PROCEDURE":
 		procedures = append(procedures, &storepb.ProcedureMetadata{
 			Name:       currentName,
-			Definition: strings.Join(defText, ""),
+			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 		})
 	case "PACKAGE":
 		packages = append(packages, &storepb.PackageMetadata{
 			Name:       currentName,
-			Definition: strings.Join(defText, ""),
+			Definition: strings.TrimRight(strings.Join(defText, ""), "\x00"),
 		})
 	default:
 		// Ignore other types
