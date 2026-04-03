@@ -137,10 +137,11 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			errContains: "expect string",
 		},
 		{
-			name:        "matches is unsupported",
-			filter:      `statement.matches("SELECT")`,
-			wantErr:     true,
-			errContains: "unexpected function matches",
+			name:     "statement matches operator compatibility",
+			filter:   `statement.matches("SELECT")`,
+			wantSQL:  "(query_history.statement LIKE $1)",
+			wantArgs: []any{"%SELECT%"},
+			wantErr:  false,
 		},
 	}
 
