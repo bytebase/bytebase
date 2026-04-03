@@ -116,12 +116,14 @@ import {
 function usePagedData<T extends { name: string }>({
   sessionKey,
   fetchList,
+  enabled = true,
 }: {
   sessionKey: string;
   fetchList: (params: {
     pageSize: number;
     pageToken: string;
   }) => Promise<{ list: T[]; nextPageToken?: string }>;
+  enabled?: boolean;
 }) {
   const [pageSize, setPageSize] = useSessionPageSize(sessionKey);
   const pageSizeOptions = getPageSizeOptions();
@@ -205,6 +207,7 @@ function usePagedData<T extends { name: string }>({
   // Fetch on mount and when fetchList/pageSize changes (handles search text reactivity)
   const isFirstLoad = useRef(true);
   useEffect(() => {
+    if (!enabled) return;
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
       doFetch(true);
@@ -212,7 +215,7 @@ function usePagedData<T extends { name: string }>({
     }
     const timer = setTimeout(() => doFetch(true), 300);
     return () => clearTimeout(timer);
-  }, [doFetch]);
+  }, [doFetch, enabled]);
 
   useEffect(() => {
     return () => {
@@ -297,13 +300,11 @@ function PagedTableFooter({
 function UserTable({
   users,
   onUserUpdated,
-  onUserRemoved,
   onUserSelected,
   onGroupSelected,
 }: {
   users: User[];
   onUserUpdated: (user: User) => void;
-  onUserRemoved: (user: User) => void;
   onUserSelected?: (user: User) => void;
   onGroupSelected?: (group: Group) => void;
 }) {
@@ -367,7 +368,7 @@ function UserTable({
       }
 
       const updated = create(UserSchema, { ...user, state: State.ACTIVE });
-      onUserRemoved(updated);
+      onUserUpdated(updated);
 
       pushNotification({
         module: "bytebase",
@@ -2764,6 +2765,7 @@ export function UsersPage() {
   const activeUsers = usePagedData<User>({
     sessionKey: "bb.users.active.page-size",
     fetchList: fetchActiveUsers,
+    enabled: !isSaaSMode,
   });
 
   // Inactive users paged data
@@ -2782,6 +2784,7 @@ export function UsersPage() {
 
   const inactiveUsers = usePagedData<User>({
     sessionKey: "bb.users.inactive.page-size",
+    enabled: !isSaaSMode,
     fetchList: fetchInactiveUsers,
   });
 
@@ -2836,10 +2839,6 @@ export function UsersPage() {
     }
   };
 
-  const handleActiveUserRemoved = (user: User) => {
-    activeUsers.removeCache(user);
-  };
-
   const handleInactiveUserUpdated = (user: User) => {
     if (user.state === State.ACTIVE) {
       // Restored: remove from inactive list, add to active list
@@ -2848,10 +2847,6 @@ export function UsersPage() {
     } else {
       inactiveUsers.updateCache([user]);
     }
-  };
-
-  const handleInactiveUserRemoved = (user: User) => {
-    inactiveUsers.removeCache(user);
   };
 
   const handleGroupSelected = (group: Group) => {
@@ -3052,7 +3047,6 @@ export function UsersPage() {
                   <UserTable
                     users={activeUsers.dataList}
                     onUserUpdated={handleActiveUserUpdated}
-                    onUserRemoved={handleActiveUserRemoved}
                     onUserSelected={(user) => {
                       setEditingUser(user);
                       setShowCreateUserDrawer(true);
@@ -3112,7 +3106,6 @@ export function UsersPage() {
                       <UserTable
                         users={inactiveUsers.dataList}
                         onUserUpdated={handleInactiveUserUpdated}
-                        onUserRemoved={handleInactiveUserRemoved}
                         onUserSelected={(user) => {
                           setEditingUser(user);
                           setShowCreateUserDrawer(true);
