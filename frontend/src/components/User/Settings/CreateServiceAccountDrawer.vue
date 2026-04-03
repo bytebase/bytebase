@@ -110,7 +110,6 @@ import {
   getServiceAccountNameInBinding,
   getServiceAccountSuffix,
 } from "@/types";
-import { PresetRoleType } from "@/types/iam";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
@@ -141,7 +140,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const state = reactive<LocalState>({
   isRequesting: false,
   serviceAccount: create(ServiceAccountSchema),
-  roles: props.project ? [] : [PresetRoleType.WORKSPACE_MEMBER],
+  roles: [],
 });
 
 const projectEntity = computed(() => {

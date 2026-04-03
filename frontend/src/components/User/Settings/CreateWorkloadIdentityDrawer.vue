@@ -349,7 +349,6 @@ import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
 } from "@/types";
-import { PresetRoleType } from "@/types/iam";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
@@ -402,7 +401,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const state = reactive<LocalState>({
   isRequesting: false,
   workloadIdentity: create(WorkloadIdentitySchema),
-  roles: props.project ? [] : [PresetRoleType.WORKSPACE_MEMBER],
+  roles: [],
   wif: {
     emailPrefix: "",
     providerType: WorkloadIdentityConfig_ProviderType.GITHUB,
