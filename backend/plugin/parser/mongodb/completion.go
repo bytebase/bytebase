@@ -2,7 +2,9 @@ package mongodb
 
 import (
 	"context"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/bytebase/omni/mongo/catalog"
 	omnicompletion "github.com/bytebase/omni/mongo/completion"
@@ -10,6 +12,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+// validIdentifierRegexp matches valid JavaScript identifiers that can be used with dot notation.
+var validIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z_$][a-zA-Z0-9_$]*$`)
 
 func init() {
 	base.RegisterCompleteFunc(storepb.Engine_MONGODB, Completion)
@@ -26,12 +31,19 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	// Get omni completion candidates.
 	candidates := omnicompletion.Complete(statement, byteOffset, cat)
 
-	// Convert to base.Candidate.
+	// Detect whether cursor is inside bracket notation (db[|).
+	inBracket := isAfterOpenBracket(statement, byteOffset)
+
+	// Convert to base.Candidate, formatting collection names for context.
 	var result []base.Candidate
 	for _, c := range candidates {
+		text := c.Text
+		if c.Type == omnicompletion.CandidateCollection {
+			text = formatCollectionCandidate(c.Text, inBracket)
+		}
 		result = append(result, base.Candidate{
 			Type: omniCandidateTypeToBase(c.Type),
-			Text: c.Text,
+			Text: text,
 		})
 	}
 
@@ -101,6 +113,37 @@ func caretToByteOffset(statement string, caretLine int, caretOffset int) int {
 		}
 	}
 	return len(statement)
+}
+
+// isAfterOpenBracket checks if the cursor position is inside bracket notation (db[|).
+func isAfterOpenBracket(statement string, byteOffset int) bool {
+	// Scan backwards from cursor to find the nearest unmatched '['.
+	for i := byteOffset - 1; i >= 0; i-- {
+		switch statement[i] {
+		case '[':
+			return true
+		case ']', '\n', ';':
+			return false
+		}
+	}
+	return false
+}
+
+// formatCollectionCandidate formats a collection name for completion context.
+// In bracket context (db[|): returns "name"] to complete the bracket expression.
+// In dot context (db.|): returns bracket notation ["name"] for special chars, bare name otherwise.
+func formatCollectionCandidate(name string, inBracket bool) string {
+	if inBracket {
+		escaped := strings.ReplaceAll(name, `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+		return `"` + escaped + `"]`
+	}
+	if !validIdentifierRegexp.MatchString(name) {
+		escaped := strings.ReplaceAll(name, `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+		return `["` + escaped + `"]`
+	}
+	return name
 }
 
 // omniCandidateTypeToBase maps omni completion candidate types to Bytebase base types.

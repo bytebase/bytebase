@@ -205,7 +205,7 @@
       definition: ""
       comment: ""
       priority: 0
-    - text: my-collection
+    - text: '["my-collection"]'
       type: TABLE
       definition: ""
       comment: ""
@@ -239,17 +239,17 @@
       priority: 0
 - input: db[|
   want:
-    - text: my-collection
+    - text: '"my-collection"]'
       type: TABLE
       definition: ""
       comment: ""
       priority: 0
-    - text: orders
+    - text: '"orders"]'
       type: TABLE
       definition: ""
       comment: ""
       priority: 0
-    - text: users
+    - text: '"users"]'
       type: TABLE
       definition: ""
       comment: ""
@@ -1527,7 +1527,7 @@
       definition: ""
       comment: ""
       priority: 0
-    - text: my-collection
+    - text: '["my-collection"]'
       type: TABLE
       definition: ""
       comment: ""
