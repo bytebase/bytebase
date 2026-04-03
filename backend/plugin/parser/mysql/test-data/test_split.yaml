@@ -64,10 +64,10 @@
         start: 16
         end: 39
       empty: false
-- description: comments only creates empty statement
+- description: comments only - empty segments filtered
   input: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n"
   result: []
-- description: statement followed by trailing block comment
+- description: statement followed by trailing block comment - trailing empty filtered
   input: "select * from t;\n\t\t\t/* sdfasdf */"
   result:
     - text: select * from t;
@@ -82,7 +82,7 @@
         start: 0
         end: 16
       empty: false
-- description: statement then empty comment statement then statement
+- description: statement then empty comment statement then statement - middle empty filtered
   input: "select * from t;\n\t\t\t/* sdfasdf */;\n\t\t\tselect * from t;"
   result:
     - text: select * from t;
@@ -351,6 +351,21 @@
       range:
         start: 238
         end: 255
+      empty: false
+- description: trailing whitespace after last semicolon - empty filtered
+  input: "SELECT 1;\n\t\t\t"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 10
+      range:
+        start: 0
+        end: 9
       empty: false
 - description: CRLF line endings
   input: "CREATE TABLE t\r\n(a int);\r\nCREATE TABLE t1(b int);"
