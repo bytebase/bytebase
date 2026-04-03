@@ -157,12 +157,14 @@ type dataSource struct {
 }
 
 // buildDatabaseFilter builds a CEL filter expression for ListDatabases.
-// Project filtering is handled by the parent field, not the filter.
 func buildDatabaseFilter(input QueryInput) string {
 	// name.contains does substring matching server-side.
 	filter := fmt.Sprintf("name.contains(%q)", input.Database)
 	if input.Instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", "instances/"+input.Instance)
+	}
+	if input.Project != "" {
+		filter += fmt.Sprintf(" && project == %q", "projects/"+input.Project)
 	}
 	return filter
 }

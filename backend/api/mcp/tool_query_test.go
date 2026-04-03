@@ -134,6 +134,18 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 				}
 			}
 		}
+		// Check project == "projects/x"
+		if idx := strings.Index(filter, `project == "`); idx >= 0 {
+			start := idx + len(`project == "`)
+			end := strings.Index(filter[start:], `"`)
+			if end > 0 {
+				expected := filter[start : start+end]
+				proj, _ := db["project"].(string)
+				if proj != expected {
+					match = false
+				}
+			}
+		}
 		if match {
 			result = append(result, db)
 		}
@@ -179,6 +191,41 @@ func mockQueryServer(databases []map[string]any, queryResp map[string]any) http.
 		}
 		listHandler.ServeHTTP(w, r)
 	})
+}
+
+func TestBuildDatabaseFilter(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  QueryInput
+		expect string
+	}{
+		{
+			name:   "database only",
+			input:  QueryInput{Database: "employee_db"},
+			expect: `name.contains("employee_db")`,
+		},
+		{
+			name:   "with instance",
+			input:  QueryInput{Database: "employee_db", Instance: "prod-pg"},
+			expect: `name.contains("employee_db") && instance == "instances/prod-pg"`,
+		},
+		{
+			name:   "with project",
+			input:  QueryInput{Database: "employee_db", Project: "hr-system"},
+			expect: `name.contains("employee_db") && project == "projects/hr-system"`,
+		},
+		{
+			name:   "with instance and project",
+			input:  QueryInput{Database: "employee_db", Instance: "prod-pg", Project: "hr-system"},
+			expect: `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := buildDatabaseFilter(tc.input)
+			require.Equal(t, tc.expect, got)
+		})
+	}
 }
 
 func TestQueryDatabase_SingleMatch(t *testing.T) {
