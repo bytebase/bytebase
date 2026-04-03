@@ -161,7 +161,6 @@ function usePagedData<T extends { name: string }>({
         );
         nextPageTokenRef.current = result.nextPageToken ?? "";
         setHasMore(Boolean(result.nextPageToken));
-        setHasFetched(true);
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
         console.error(e);
@@ -169,6 +168,7 @@ function usePagedData<T extends { name: string }>({
         if (currentFetchId === fetchIdRef.current) {
           setIsLoading(false);
           setIsFetchingMore(false);
+          setHasFetched(true);
         }
       }
     },
@@ -1186,6 +1186,12 @@ function CreateUserDrawer({
   const passwordRestriction = useVueState(
     () => settingV1Store.workspaceProfile.passwordRestriction
   );
+  const enforceIdentityDomain = useVueState(
+    () => settingV1Store.workspaceProfile.enforceIdentityDomain
+  );
+  const workspaceDomains = useVueState(
+    () => settingV1Store.workspaceProfile.domains
+  );
 
   const isEditMode =
     !!user && user.name !== "" && !user.name.endsWith("/unknown");
@@ -1261,8 +1267,18 @@ function CreateUserDrawer({
     password.length > 0 && passwordChecks.some((c) => !c.matched);
   const passwordMismatch = password.length > 0 && password !== passwordConfirm;
 
+  const emailDomainValid = useMemo(() => {
+    if (isEditMode) return true;
+    if (!enforceIdentityDomain || workspaceDomains.length === 0) return true;
+    const atIdx = email.indexOf("@");
+    if (atIdx < 0) return false;
+    const domain = email.slice(atIdx + 1);
+    return workspaceDomains.includes(domain);
+  }, [email, isEditMode, enforceIdentityDomain, workspaceDomains]);
+
   const allowConfirm =
     email.length > 0 &&
+    emailDomainValid &&
     !passwordHint &&
     !passwordMismatch &&
     (isEditMode || password.length > 0);
@@ -1602,10 +1618,23 @@ function CreateGroupDrawer({
   const workspaceDomains = useVueState(
     () => settingV1Store.workspaceProfile.domains
   );
-  const domainSuffix =
-    workspaceDomains.length > 0 ? `@${workspaceDomains[0]}` : "";
+  const domainOptions = workspaceDomains.filter((d) => d.trim());
 
-  const [email, setEmail] = useState(group?.email ?? "");
+  const [email, setEmail] = useState(() => {
+    if (!group) return "";
+    // For editing, extract local part if domain is in workspace domains
+    return group.email ?? "";
+  });
+  const [selectedDomain, setSelectedDomain] = useState(() => {
+    if (group?.email) {
+      const atIdx = group.email.indexOf("@");
+      if (atIdx >= 0) {
+        const domain = group.email.slice(atIdx + 1);
+        if (domainOptions.includes(domain)) return domain;
+      }
+    }
+    return domainOptions[0] ?? "";
+  });
   const [title, setTitle] = useState(group?.title ?? "");
   const [description, setDescription] = useState(group?.description ?? "");
   const [members, setMembers] = useState<GroupMember[]>(() => {
@@ -1641,14 +1670,13 @@ function CreateGroupDrawer({
   const fullEmail = useMemo(() => {
     if (isEditMode) return email;
     if (!email) return "";
-    // When workspace domain is configured, enforce it by stripping any
-    // user-entered domain and appending the workspace domain suffix.
-    if (domainSuffix) {
+    // When workspace domains are configured, enforce by using selected domain
+    if (domainOptions.length > 0 && selectedDomain) {
       const localPart = email.split("@")[0];
-      return `${localPart}${domainSuffix}`;
+      return `${localPart}@${selectedDomain}`;
     }
     return email;
-  }, [email, isEditMode, domainSuffix]);
+  }, [email, isEditMode, domainOptions, selectedDomain]);
 
   const errorMessage = useMemo(() => {
     if (!title.trim())
@@ -1832,14 +1860,32 @@ function CreateGroupDrawer({
               </span>
               <div className="flex items-center gap-x-1">
                 <Input
-                  value={email}
+                  value={isEditMode ? email : email.split("@")[0]}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isEditMode || !allowEdit}
                 />
-                {!isEditMode && domainSuffix && (
-                  <span className="text-sm text-control-light whitespace-nowrap">
-                    {domainSuffix}
-                  </span>
+                {!isEditMode && domainOptions.length > 0 && (
+                  <>
+                    <span className="text-sm text-control-light">@</span>
+                    {domainOptions.length === 1 ? (
+                      <span className="text-sm text-control-light whitespace-nowrap">
+                        {domainOptions[0]}
+                      </span>
+                    ) : (
+                      <select
+                        value={selectedDomain}
+                        onChange={(e) => setSelectedDomain(e.target.value)}
+                        className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
+                        disabled={!allowEdit}
+                      >
+                        {domainOptions.map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -2552,6 +2598,10 @@ function EditMemberRoleDrawer({
           "workloadIdentity:",
         ];
         const memberList = emails.map((input) => {
+          // Preserve the special allUsers principal as-is
+          if (input === ALL_USERS_USER_EMAIL) {
+            return input;
+          }
           if (KNOWN_PREFIXES.some((p) => input.startsWith(p))) {
             return input;
           }
@@ -2876,24 +2926,32 @@ export function UsersPage() {
   });
 
   // Handle query param for group opening
+  // Watch for ?name=groups/... query param (reactive to route changes)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get("name");
-    if (name && name.startsWith("groups/")) {
-      setTab("GROUPS");
-      groupStore
-        .getOrFetchGroupByIdentifier(name)
-        .then((group) => {
-          if (group) {
-            setEditingGroup(group);
-            setShowCreateGroupDrawer(true);
-          }
-        })
-        .catch(() => {
-          // Group not found or fetch failed — silently ignore
-        });
-    }
-  }, []); // mount-only: read query param once
+    const handleRouteChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get("name");
+      if (name && name.startsWith("groups/")) {
+        setTab("GROUPS");
+        groupStore
+          .getOrFetchGroupByIdentifier(name)
+          .then((group) => {
+            if (group) {
+              setEditingGroup(group);
+              setShowCreateGroupDrawer(true);
+            }
+          })
+          .catch(() => {
+            // Group not found or fetch failed — silently ignore
+          });
+      }
+    };
+    // Run on mount
+    handleRouteChange();
+    // Listen for in-app navigation (Vue router uses popstate)
+    window.addEventListener("popstate", handleRouteChange);
+    return () => window.removeEventListener("popstate", handleRouteChange);
+  }, []); // mount-only setup, popstate handles subsequent changes
   // Sync tab ↔ URL hash (bidirectional)
   useEffect(() => {
     window.location.hash = tab;
