@@ -280,8 +280,9 @@
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
-    "scope": "Phạm vi",
-    "classification-level": "Cấp phân loại"
+"scope": "Phạm vi",
+    "classification-level": "Cấp phân loại",
+    "is-required": "is required"
   },
   "error-page": {
     "forbidden": "Bị cấm",
@@ -508,8 +509,10 @@
           }
         },
         "n-members": "{n} thành viên",
-        "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
+        "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước.",
+        "external-readonly": "External group is read-only."
       },
+      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "Bạn có chắc muốn vô hiệu hóa?",
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"

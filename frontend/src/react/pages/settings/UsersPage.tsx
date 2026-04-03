@@ -47,6 +47,12 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useClickOutside } from "@/react/hooks/useClickOutside";
+import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import {
+  getPageSizeOptions,
+  useSessionPageSize,
+} from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
@@ -100,7 +106,6 @@ import {
   isValidEmail,
   sortRoles,
 } from "@/utils";
-import { getDefaultPagination } from "@/utils/pagination";
 
 // ============================================================
 // usePagedData hook
@@ -109,85 +114,74 @@ import { getDefaultPagination } from "@/utils/pagination";
 function usePagedData<T extends { name: string }>({
   sessionKey,
   fetchList,
-  debounce = 500,
 }: {
   sessionKey: string;
   fetchList: (params: {
     pageSize: number;
     pageToken: string;
   }) => Promise<{ list: T[]; nextPageToken?: string }>;
-  debounce?: number;
 }) {
-  const pageSizeOptions = [getDefaultPagination(), 50, 100, 200, 500].filter(
-    (v, i, a) => a.indexOf(v) === i
-  );
+  const [pageSize, setPageSize] = useSessionPageSize(sessionKey);
+  const pageSizeOptions = getPageSizeOptions();
 
-  const getStoredPageSize = () => {
-    try {
-      const stored = localStorage.getItem(sessionKey);
-      if (stored) {
-        const n = parseInt(stored, 10);
-        if (n > 0) return n;
-      }
-    } catch {
-      // ignore
-    }
-    return pageSizeOptions[0];
-  };
-
-  const [pageSize, setPageSize] = useState(getStoredPageSize);
   const [dataList, setDataList] = useState<T[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(
     undefined
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchIdRef = useRef(0);
 
   const hasMore = !!nextPageToken;
 
   const doFetch = useCallback(
-    async (token: string, append: boolean) => {
+    async (isRefresh: boolean) => {
+      const currentFetchId = ++fetchIdRef.current;
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setIsLoading(true);
+      if (isRefresh) {
+        setIsLoading(true);
+      } else {
+        setIsFetchingMore(true);
+      }
+
       try {
+        const token = isRefresh ? "" : (nextPageToken ?? "");
         const result = await fetchList({ pageSize, pageToken: token });
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || currentFetchId !== fetchIdRef.current)
+          return;
         setDataList((prev) =>
-          append ? [...prev, ...result.list] : result.list
+          isRefresh ? result.list : [...prev, ...result.list]
         );
         setNextPageToken(result.nextPageToken || undefined);
         setHasFetched(true);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+        console.error(e);
       } finally {
-        if (!controller.signal.aborted) {
+        if (currentFetchId === fetchIdRef.current) {
           setIsLoading(false);
+          setIsFetchingMore(false);
         }
       }
     },
-    [fetchList, pageSize]
+    [fetchList, pageSize, nextPageToken]
   );
 
   const loadMore = useCallback(() => {
-    if (nextPageToken) {
-      doFetch(nextPageToken, true);
+    if (hasMore && !isFetchingMore) {
+      doFetch(false);
     }
-  }, [nextPageToken, doFetch]);
+  }, [hasMore, isFetchingMore, doFetch]);
 
   const refresh = useCallback(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      setDataList([]);
-      setNextPageToken(undefined);
-      doFetch("", false);
-    }, debounce);
-  }, [doFetch, debounce]);
+    doFetch(true);
+  }, [doFetch]);
 
   const updateCache = useCallback((items: T[]) => {
     setDataList((prev) => {
@@ -208,28 +202,28 @@ function usePagedData<T extends { name: string }>({
     setDataList((prev) => prev.filter((d) => d.name !== item.name));
   }, []);
 
-  const onPageSizeChange = useCallback(
-    (size: number) => {
-      setPageSize(size);
-      localStorage.setItem(sessionKey, String(size));
-    },
-    [sessionKey]
-  );
-
-  // Initial fetch
+  // Fetch on mount and when fetchList/pageSize changes (handles search text reactivity)
+  const isFirstLoad = useRef(true);
   useEffect(() => {
-    doFetch("", false);
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      doFetch(true);
+      return;
+    }
+    const timer = setTimeout(() => doFetch(true), 300);
+    return () => clearTimeout(timer);
+  }, [doFetch]);
+
+  useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
     };
-  }, [doFetch]);
+  }, []);
 
   return {
     dataList,
     isLoading: isLoading || !hasFetched,
+    isFetchingMore,
     hasMore,
     loadMore,
     refresh,
@@ -237,7 +231,7 @@ function usePagedData<T extends { name: string }>({
     removeCache,
     pageSize,
     pageSizeOptions,
-    onPageSizeChange,
+    onPageSizeChange: setPageSize,
   };
 }
 
@@ -250,14 +244,14 @@ function PagedTableFooter({
   pageSizeOptions,
   onPageSizeChange,
   hasMore,
-  isLoading,
+  isFetchingMore,
   onLoadMore,
 }: {
   pageSize: number;
   pageSizeOptions: number[];
   onPageSizeChange: (size: number) => void;
   hasMore: boolean;
-  isLoading: boolean;
+  isFetchingMore: boolean;
   onLoadMore: () => void;
 }) {
   const { t } = useTranslation();
@@ -284,11 +278,11 @@ function PagedTableFooter({
         <Button
           variant="ghost"
           size="sm"
-          disabled={isLoading}
+          disabled={isFetchingMore}
           onClick={onLoadMore}
         >
           <span className="text-sm text-control-light">
-            {isLoading ? t("common.loading") : t("common.load-more")}
+            {isFetchingMore ? t("common.loading") : t("common.load-more")}
           </span>
         </Button>
       )}
@@ -346,7 +340,7 @@ function UserTable({
         await userStore.archiveUser(fullName);
       }
 
-      const updated = { ...user, state: State.DELETED } as User;
+      const updated = create(UserSchema, { ...user, state: State.DELETED });
       onUserUpdated(updated);
 
       pushNotification({
@@ -372,7 +366,7 @@ function UserTable({
         await userStore.restoreUser(fullName);
       }
 
-      const updated = { ...user, state: State.ACTIVE } as User;
+      const updated = create(UserSchema, { ...user, state: State.ACTIVE });
       onUserRemoved(updated);
 
       pushNotification({
@@ -503,7 +497,7 @@ function UserTable({
                             variant="success"
                             className="text-xs px-1.5 py-0"
                           >
-                            MFA
+                            {t("two-factor.enabled")}
                           </Badge>
                         )}
                         {user.profile?.source && (
@@ -951,32 +945,6 @@ function GroupRow({
 }
 
 // ============================================================
-// Escape key stack
-// ============================================================
-
-const escapeStack: (() => void)[] = [];
-
-function useEscapeKey(onEscape: () => void) {
-  useEffect(() => {
-    escapeStack.push(onEscape);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === onEscape
-      ) {
-        onEscape();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.lastIndexOf(onEscape);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [onEscape]);
-}
-
-// ============================================================
 // RoleMultiSelect
 // ============================================================
 
@@ -997,20 +965,11 @@ function RoleMultiSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-        setSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const handleClickOutside = useCallback(() => {
+    setOpen(false);
+    setSearch("");
+  }, []);
+  useClickOutside(containerRef, open, handleClickOutside);
 
   const groups = useMemo(() => {
     const kw = search.toLowerCase();
@@ -1214,7 +1173,7 @@ function CreateUserDrawer({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEscapeKey(onClose);
+  useEscapeKey(true, onClose);
 
   // Password validation
   const passwordChecks = useMemo(() => {
@@ -1361,7 +1320,11 @@ function CreateUserDrawer({
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
@@ -1611,7 +1574,7 @@ function CreateGroupDrawer({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEscapeKey(onClose);
+  useEscapeKey(true, onClose);
 
   const isExternalGroup = !!group?.source;
 
@@ -1633,7 +1596,10 @@ function CreateGroupDrawer({
   }, [email, isEditMode, domainSuffix]);
 
   const errorMessage = useMemo(() => {
-    if (!title.trim()) return "Title is required";
+    if (!title.trim())
+      return (
+        t("settings.members.groups.form.title") + " " + t("common.is-required")
+      );
     if (!fullEmail || !isValidEmail(fullEmail))
       return t("settings.members.groups.form.email-tips");
     return "";
@@ -1757,7 +1723,11 @@ function CreateGroupDrawer({
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
@@ -1776,7 +1746,7 @@ function CreateGroupDrawer({
             {isExternalGroup && (
               <Alert variant="info">
                 <AlertDescription>
-                  External group is read-only.
+                  {t("settings.members.groups.external-readonly")}
                 </AlertDescription>
               </Alert>
             )}
@@ -1973,7 +1943,7 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
     () => settingV1Store.workspaceProfile.directorySyncToken
   );
 
-  useEscapeKey(onClose);
+  useEscapeKey(true, onClose);
 
   const scimUrl =
     externalUrl && workspaceResourceName
@@ -2014,7 +1984,11 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
@@ -2483,7 +2457,7 @@ function EditMemberRoleDrawer({
   );
   const [isRequesting, setIsRequesting] = useState(false);
 
-  useEscapeKey(onClose);
+  useEscapeKey(true, onClose);
 
   const handleSubmit = async () => {
     setIsRequesting(true);
@@ -2559,7 +2533,11 @@ function EditMemberRoleDrawer({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
             {isEditMode
@@ -2703,7 +2681,7 @@ export function UsersPage() {
     "bb.workspaces.setIamPolicy"
   );
 
-  const handleRevokeSelected = () => {
+  const handleRevokeSelected = async () => {
     if (
       selectedMembers.some(
         (m) => m === `${userBindingPrefix}${currentUser.email}`
@@ -2712,12 +2690,12 @@ export function UsersPage() {
       pushNotification({
         module: "bytebase",
         style: "WARN",
-        title: "You cannot revoke yourself",
+        title: t("settings.members.cannot-revoke-self"),
       });
       return;
     }
     if (window.confirm(t("settings.members.revoke-access-alert"))) {
-      workspaceStore.patchIamPolicy(
+      await workspaceStore.patchIamPolicy(
         selectedMembers.map((m) => ({ member: m, roles: [] }))
       );
       pushNotification({
@@ -2734,8 +2712,10 @@ export function UsersPage() {
     setShowEditMemberDrawer(true);
   };
 
-  const handleMemberRevokeBinding = (binding: MemberBinding) => {
-    workspaceStore.patchIamPolicy([{ member: binding.binding, roles: [] }]);
+  const handleMemberRevokeBinding = async (binding: MemberBinding) => {
+    await workspaceStore.patchIamPolicy([
+      { member: binding.binding, roles: [] },
+    ]);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -2766,10 +2746,6 @@ export function UsersPage() {
     fetchList: fetchActiveUsers,
   });
 
-  // Refresh active users when search text changes
-  useEffect(() => {
-    activeUsers.refresh();
-  }, [userSearchText]);
   // Inactive users paged data
   const fetchInactiveUsers = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
@@ -2789,12 +2765,6 @@ export function UsersPage() {
     fetchList: fetchInactiveUsers,
   });
 
-  // Refresh inactive users when search text changes
-  useEffect(() => {
-    if (showInactiveUsers) {
-      inactiveUsers.refresh();
-    }
-  }, [inactiveUserSearchText, showInactiveUsers]);
   // Groups paged data
   const fetchGroups = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
@@ -2813,10 +2783,6 @@ export function UsersPage() {
     fetchList: fetchGroups,
   });
 
-  // Refresh groups when search text changes
-  useEffect(() => {
-    groupPaged.refresh();
-  }, [groupSearchText]);
   // Handle query param for group opening
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -3069,7 +3035,7 @@ export function UsersPage() {
                     pageSizeOptions={activeUsers.pageSizeOptions}
                     onPageSizeChange={activeUsers.onPageSizeChange}
                     hasMore={activeUsers.hasMore}
-                    isLoading={activeUsers.isLoading}
+                    isFetchingMore={activeUsers.isFetchingMore}
                     onLoadMore={activeUsers.loadMore}
                   />
                 </>
@@ -3129,7 +3095,7 @@ export function UsersPage() {
                         pageSizeOptions={inactiveUsers.pageSizeOptions}
                         onPageSizeChange={inactiveUsers.onPageSizeChange}
                         hasMore={inactiveUsers.hasMore}
-                        isLoading={inactiveUsers.isLoading}
+                        isFetchingMore={inactiveUsers.isFetchingMore}
                         onLoadMore={inactiveUsers.loadMore}
                       />
                     </>
@@ -3202,7 +3168,7 @@ export function UsersPage() {
                     pageSizeOptions={groupPaged.pageSizeOptions}
                     onPageSizeChange={groupPaged.onPageSizeChange}
                     hasMore={groupPaged.hasMore}
-                    isLoading={groupPaged.isLoading}
+                    isFetchingMore={groupPaged.isFetchingMore}
                     onLoadMore={groupPaged.loadMore}
                   />
                 </>

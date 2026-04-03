@@ -101,6 +101,7 @@
     "groups": "Groups",
     "id": "ID",
     "instance": "Instance",
+    "is-required": "is required",
     "labels": "Labels",
     "learn-more": "Learn more",
     "leave-without-saving": "Leave without saving?",
@@ -625,6 +626,7 @@
       },
       "add-member": "Add member",
       "add-user": "Add user",
+      "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
         "endpoint": "Endpoint",
@@ -638,6 +640,7 @@
       "grant-access": "Grant Access",
       "groups": {
         "add-group": "Add Group",
+        "external-readonly": "External group is read-only.",
         "form": {
           "description": "Description",
           "email": "Email",
@@ -968,5 +971,8 @@
         "upgrade": "Upgrade to get more user quota."
       }
     }
+  },
+  "two-factor": {
+    "enabled": "2FA Enabled"
   }
 }

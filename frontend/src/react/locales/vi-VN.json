@@ -101,6 +101,7 @@
     "groups": "Nhóm",
     "id": "ID",
     "instance": "Phiên bản",
+    "is-required": "is required",
     "labels": "Nhãn",
     "learn-more": "Tìm hiểu thêm",
     "leave-without-saving": "Thoát mà không lưu?",
@@ -625,6 +626,7 @@
       },
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
+      "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
@@ -638,6 +640,7 @@
       "grant-access": "Cấp Quyền truy cập",
       "groups": {
         "add-group": "Thêm nhóm",
+        "external-readonly": "External group is read-only.",
         "form": {
           "description": "Mô tả",
           "email": "Email",
@@ -968,5 +971,8 @@
         "upgrade": "Nâng cấp để có thêm hạn ngạch người dùng."
       }
     }
+  },
+  "two-factor": {
+    "enabled": "Đã bật 2FA"
   }
 }

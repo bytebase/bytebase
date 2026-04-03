@@ -280,8 +280,9 @@
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
-    "scope": "スコープ",
-    "classification-level": "分類レベル"
+"scope": "スコープ",
+    "classification-level": "分類レベル",
+    "is-required": "is required"
   },
   "error-page": {
     "forbidden": "アクセス禁止",
@@ -508,8 +509,10 @@
           }
         },
         "n-members": "{n} 人のメンバー",
-        "workspace-domain-required": "まずワークスペースドメインを設定してください。"
+        "workspace-domain-required": "まずワークスペースドメインを設定してください。",
+        "external-readonly": "External group is read-only."
       },
+      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "無効にしてもOK",
         "reactivate-confirm-title": "[OK] を有効にします"

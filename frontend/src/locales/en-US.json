@@ -280,8 +280,9 @@
     "apply-to-database": "Apply to database",
     "unlimited": "Unlimited",
     "unknown": "Unknown",
-    "scope": "Scope",
-    "classification-level": "Classification Level"
+    "classification-level": "Classification Level",
+    "is-required": "is required",
+    "scope": "Scope"
   },
   "error-page": {
     "forbidden": "Forbidden",
@@ -508,8 +509,10 @@
           }
         },
         "n-members": "{n} members",
-        "workspace-domain-required": "Please set a workspace domain first."
+        "workspace-domain-required": "Please set a workspace domain first.",
+        "external-readonly": "External group is read-only."
       },
+      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "Are you sure to deactivate?",
         "reactivate-confirm-title": "Are you sure to reactivate"

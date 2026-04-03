@@ -101,6 +101,7 @@
     "groups": "分组",
     "id": "ID",
     "instance": "实例",
+    "is-required": "is required",
     "labels": "标签",
     "learn-more": "了解更多",
     "leave-without-saving": "不保存变动？",
@@ -625,6 +626,7 @@
       },
       "add-member": "添加成员",
       "add-user": "添加用户",
+      "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "Endpoint",
@@ -638,6 +640,7 @@
       "grant-access": "授予访问权限",
       "groups": {
         "add-group": "添加组",
+        "external-readonly": "External group is read-only.",
         "form": {
           "description": "描述",
           "email": "邮箱",
@@ -968,5 +971,8 @@
         "upgrade": "升级来获取更多用户额度。"
       }
     }
+  },
+  "two-factor": {
+    "enabled": "双重认证已开启"
   }
 }

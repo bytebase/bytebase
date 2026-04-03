@@ -280,8 +280,9 @@
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
-    "scope": "Alcance",
-    "classification-level": "Nivel de clasificación"
+"scope": "Alcance",
+    "classification-level": "Nivel de clasificación",
+    "is-required": "is required"
   },
   "error-page": {
     "forbidden": "Prohibido",
@@ -508,8 +509,10 @@
           }
         },
         "n-members": "{n} miembros",
-        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
+        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo.",
+        "external-readonly": "External group is read-only."
       },
+      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"

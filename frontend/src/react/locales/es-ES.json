@@ -101,6 +101,7 @@
     "groups": "Grupos",
     "id": "ID",
     "instance": "Instancia",
+    "is-required": "is required",
     "labels": "Etiquetas",
     "learn-more": "Aprender más",
     "leave-without-saving": "¿Salir sin guardar?",
@@ -625,6 +626,7 @@
       },
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
+      "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
         "endpoint": "Punto final",
@@ -638,6 +640,7 @@
       "grant-access": "Conceder acceso",
       "groups": {
         "add-group": "Añadir grupo",
+        "external-readonly": "External group is read-only.",
         "form": {
           "description": "Descripción",
           "email": "Correo electrónico",
@@ -968,5 +971,8 @@
         "upgrade": "Actualizar para obtener más cuota de usuario."
       }
     }
+  },
+  "two-factor": {
+    "enabled": "2FA habilitado"
   }
 }

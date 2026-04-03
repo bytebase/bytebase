@@ -101,6 +101,7 @@
     "groups": "グループ",
     "id": "ID",
     "instance": "インスタンス",
+    "is-required": "is required",
     "labels": "ラベル",
     "learn-more": "もっと詳しく知る",
     "leave-without-saving": "変更を保存していませんか?",
@@ -625,6 +626,7 @@
       },
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "Endpoint",
@@ -638,6 +640,7 @@
       "grant-access": "アクセスを許可する",
       "groups": {
         "add-group": "グループを追加",
+        "external-readonly": "External group is read-only.",
         "form": {
           "description": "説明",
           "email": "Eメール",
@@ -968,5 +971,8 @@
         "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
     }
+  },
+  "two-factor": {
+    "enabled": "二要素認証がオンになっています"
   }
 }
