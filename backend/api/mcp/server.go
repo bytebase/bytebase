@@ -131,7 +131,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Extract workspace ID from token claims.
-		workspaceID, _ := claims["workspace_id"].(string)
+		workspaceID, ok := claims["workspace_id"].(string)
+		if !ok {
+			workspaceID = ""
+		}
 
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()

@@ -127,8 +127,7 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			end := strings.Index(filter[start:], `"`)
 			if end > 0 {
 				expected := filter[start : start+end]
-				proj, _ := db["project"].(string)
-				if proj != expected {
+				if proj, ok := db["project"].(string); ok && proj != expected {
 					match = false
 				}
 			}
