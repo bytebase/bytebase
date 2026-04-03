@@ -2249,7 +2249,7 @@ function MemberTable({
               </td>
               <td className="px-4 py-2">
                 <div className="flex items-center gap-x-1">
-                  {canEdit(mb) && (
+                  {allowEdit && canEdit(mb) && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -2401,7 +2401,7 @@ function MemberTableByRole({
                       <td className="px-4 py-2" />
                       <td className="w-24 px-4 py-2">
                         <div className="flex items-center gap-x-1">
-                          {canEdit(mb) && (
+                          {allowEdit && canEdit(mb) && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -2654,6 +2654,7 @@ export function UsersPage() {
   const hasDirectorySyncFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
+  const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
 
   // Drawer visibility
   const [showCreateUserDrawer, setShowCreateUserDrawer] = useState(false);
@@ -2915,7 +2916,7 @@ export function UsersPage() {
                 </div>
                 <Button
                   variant="outline"
-                  disabled={!hasDirectorySyncFeature}
+                  disabled={!hasDirectorySyncFeature || !canAccessSettings}
                   onClick={() => setShowAadSyncDrawer(true)}
                 >
                   <Settings className="h-4 w-4 mr-1" />
@@ -2949,7 +2950,7 @@ export function UsersPage() {
                 </div>
                 <Button
                   variant="outline"
-                  disabled={!hasDirectorySyncFeature}
+                  disabled={!hasDirectorySyncFeature || !canAccessSettings}
                   onClick={() => setShowAadSyncDrawer(true)}
                 >
                   <Settings className="h-4 w-4 mr-1" />
