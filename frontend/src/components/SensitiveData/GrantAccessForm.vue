@@ -100,6 +100,7 @@ import {
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { batchConvertParsedExprToCELString } from "@/utils";
+import { rewriteResourceDatabase } from "./exemptionDataUtils";
 import type { SensitiveColumn } from "./types";
 import {
   convertSensitiveColumnToDatabaseResource,
@@ -202,7 +203,12 @@ const getPendingUpdatePolicy = async (
   if (expr) {
     const parsedExpr = await buildCELExpr(expr);
     if (parsedExpr) {
-      const [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
+      let [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
+      // The expression editor uses `resource.database` as a convenience factor
+      // (e.g., resource.database == "instances/X/databases/Y"), but the backend
+      // masking exemption CEL evaluator only supports resource.instance_id and
+      // resource.database_name. Rewrite to the backend-compatible form.
+      celString = rewriteResourceDatabase(celString);
       const parts = [celString, ...extraExpressions].filter((e) => e);
       exemptions.push(
         create(MaskingExemptionPolicy_ExemptionSchema, {

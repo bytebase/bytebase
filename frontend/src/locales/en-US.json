@@ -282,7 +282,9 @@
     "column": "Column",
     "apply-to-database": "Apply to database",
     "unlimited": "Unlimited",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "scope": "Scope",
+    "classification-level": "Classification Level"
   },
   "error-page": {
     "forbidden": "Forbidden",
@@ -2006,7 +2008,14 @@
     "masking-exemption": {
       "self": "Masking Exemptions",
       "grant-exemption": "Grant Exemption",
-      "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
+      "revoke-exemption-title": "Remove masking exemption for {member}?",
+      "no-reason": "No reason provided",
+      "no-exemptions": "No masking exemptions granted yet",
+      "expires-today": "Expires today",
+      "expires-in-days": "Expires in {days} day | Expires in {days} days",
+      "all-levels": "All levels",
+      "n-exemptions": "{n} exemption | {n} exemptions",
+      "level": "level"
     },
     "batch": {
       "selected": "{count} project selected | {count} projects selected",

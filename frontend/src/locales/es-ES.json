@@ -279,7 +279,9 @@
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
+    "scope": "Alcance",
+    "classification-level": "Nivel de clasificación"
   },
   "error-page": {
     "forbidden": "Prohibido",
@@ -2003,7 +2005,14 @@
     "masking-exemption": {
       "self": "Exenciones de Enmascaramiento",
       "grant-exemption": "Conceder Exención",
-      "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
+      "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {member}?",
+      "no-reason": "No se proporcionó motivo",
+      "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
+      "expires-today": "Expira hoy",
+      "expires-in-days": "Expira en {days} día | Expira en {days} días",
+      "all-levels": "Todos los niveles",
+      "n-exemptions": "{n} exención | {n} exenciones",
+      "level": "nivel"
     },
     "batch": {
       "selected": "{count} proyecto seleccionado | {count} proyectos seleccionados",

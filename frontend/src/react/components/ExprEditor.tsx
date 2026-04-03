@@ -36,6 +36,7 @@ import {
   isStringOperator,
   isTimestampFactor,
   LogicalOperatorList,
+  operatorDisplayLabel,
 } from "@/plugins/cel";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Input } from "@/react/components/ui/input";
@@ -782,19 +783,8 @@ function FactorSelect({
 // OperatorSelect
 // ============================================================
 
-const OPERATOR_DICT: Record<string, string> = {
-  "_==_": "==",
-  "_!=_": "!=",
-  "_<_": "<",
-  "_<=_": "≤",
-  "_>=_": "≥",
-  "_>_": ">",
-  "@not_in": "not in",
-  "@not_contains": "not contains",
-};
-
 function operatorLabel(op: string): string {
-  return OPERATOR_DICT[op] ?? op.replace(/^@/, "");
+  return operatorDisplayLabel(op);
 }
 
 function OperatorSelect({

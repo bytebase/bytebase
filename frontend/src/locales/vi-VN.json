@@ -279,7 +279,9 @@
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
+    "scope": "Phạm vi",
+    "classification-level": "Cấp phân loại"
   },
   "error-page": {
     "forbidden": "Bị cấm",
@@ -2003,7 +2005,14 @@
     "masking-exemption": {
       "self": "Miễn trừ Che giấu",
       "grant-exemption": "Cấp Miễn trừ",
-      "revoke-exemption-title": "Xóa cả miễn trừ che giấu xuất và truy vấn cho {member}?"
+      "revoke-exemption-title": "Xóa miễn trừ che giấu cho {member}?",
+      "no-reason": "Không có lý do được cung cấp",
+      "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",
+      "expires-today": "Hết hạn hôm nay",
+      "expires-in-days": "Hết hạn sau {days} ngày",
+      "all-levels": "Tất cả các cấp",
+      "n-exemptions": "{n} miễn trừ",
+      "level": "cấp"
     },
     "batch": {
       "selected": "{count} dự án đã chọn | {count} dự án đã chọn",
