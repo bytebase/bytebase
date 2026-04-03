@@ -2948,10 +2948,12 @@ export function UsersPage() {
     };
     // Run on mount
     handleRouteChange();
-    // Listen for in-app navigation (Vue router uses popstate)
-    window.addEventListener("popstate", handleRouteChange);
-    return () => window.removeEventListener("popstate", handleRouteChange);
-  }, []); // mount-only setup, popstate handles subsequent changes
+    // Listen for in-app navigation via Vue router (pushState/replaceState)
+    const unregister = router.afterEach(() => {
+      handleRouteChange();
+    });
+    return () => unregister();
+  }, []); // mount-only setup, router.afterEach handles subsequent changes
   // Sync tab ↔ URL hash (bidirectional)
   useEffect(() => {
     window.location.hash = tab;
@@ -3185,34 +3187,36 @@ export function UsersPage() {
         {!isSaaSMode && (
           <TabsPanel value="USERS">
             <div className="py-4 flex flex-col gap-y-4">
-              {activeUsers.isLoading && activeUsers.dataList.length === 0 ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
-                </div>
-              ) : (
-                <>
-                  <UserTable
-                    users={activeUsers.dataList}
-                    onUserUpdated={handleActiveUserUpdated}
-                    onUserSelected={(user) => {
-                      setEditingUser(user);
-                      setShowCreateUserDrawer(true);
-                    }}
-                    onGroupSelected={(group) => {
-                      setTab("GROUPS");
-                      handleGroupSelected(group);
-                    }}
-                  />
-                  <PagedTableFooter
-                    pageSize={activeUsers.pageSize}
-                    pageSizeOptions={activeUsers.pageSizeOptions}
-                    onPageSizeChange={activeUsers.onPageSizeChange}
-                    hasMore={activeUsers.hasMore}
-                    isFetchingMore={activeUsers.isFetchingMore}
-                    onLoadMore={activeUsers.loadMore}
-                  />
-                </>
-              )}
+              <ComponentPermissionGuard permissions={["bb.users.list"]}>
+                {activeUsers.isLoading && activeUsers.dataList.length === 0 ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+                  </div>
+                ) : (
+                  <>
+                    <UserTable
+                      users={activeUsers.dataList}
+                      onUserUpdated={handleActiveUserUpdated}
+                      onUserSelected={(user) => {
+                        setEditingUser(user);
+                        setShowCreateUserDrawer(true);
+                      }}
+                      onGroupSelected={(group) => {
+                        setTab("GROUPS");
+                        handleGroupSelected(group);
+                      }}
+                    />
+                    <PagedTableFooter
+                      pageSize={activeUsers.pageSize}
+                      pageSizeOptions={activeUsers.pageSizeOptions}
+                      onPageSizeChange={activeUsers.onPageSizeChange}
+                      hasMore={activeUsers.hasMore}
+                      isFetchingMore={activeUsers.isFetchingMore}
+                      onLoadMore={activeUsers.loadMore}
+                    />
+                  </>
+                )}
+              </ComponentPermissionGuard>
 
               {/* Inactive users toggle */}
               <label className="flex items-center gap-x-2 text-sm cursor-pointer">
