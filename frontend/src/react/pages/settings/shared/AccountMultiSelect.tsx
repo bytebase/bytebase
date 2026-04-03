@@ -171,6 +171,8 @@ export function AccountMultiSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Cache display labels for selected items so they persist across search changes
+  const labelCacheRef = useRef<Map<string, string>>(new Map());
 
   // Fetch on search change (debounced 300ms)
   useEffect(() => {
@@ -205,15 +207,35 @@ export function AccountMultiSelect({
     if (disabled) return;
     const binding = fullnameToBinding(fullname);
     if (selectedFullnames.has(fullname)) {
+      labelCacheRef.current.delete(binding);
       onChange(value.filter((v) => v !== binding));
     } else {
+      // Cache display label at selection time so it survives search changes
+      const label = resolveLabel(fullname);
+      if (label) labelCacheRef.current.set(binding, label);
       onChange([...value, binding]);
     }
   };
 
   const remove = (binding: string) => {
     if (disabled) return;
+    labelCacheRef.current.delete(binding);
     onChange(value.filter((v) => v !== binding));
+  };
+
+  // Resolve display label from current search results
+  const resolveLabel = (fullname: string): string | undefined => {
+    if (fullname.startsWith("users/")) {
+      const email = extractUserEmail(fullname);
+      const user = users.find((u) => u.email === email);
+      return user?.title || user?.email;
+    }
+    if (fullname.startsWith(groupNamePrefix)) {
+      const email = fullname.slice(groupNamePrefix.length);
+      const group = groups.find((g) => g.email === email);
+      return group?.title || email;
+    }
+    return undefined;
   };
 
   // Detect service account / workload identity typed in search
@@ -233,27 +255,19 @@ export function AccountMultiSelect({
     return { type, email, fullname: `${prefix}${email}` };
   }, [search]);
 
-  // Label for a selected binding chip
+  // Label for a selected binding chip — uses cache to survive search changes
   const chipLabel = (binding: string): string => {
     if (binding === ALL_USERS_USER_EMAIL) {
       return t("settings.members.all-users");
     }
+    const cached = labelCacheRef.current.get(binding);
+    if (cached) return cached;
     const fullname = bindingToFullname(binding);
-    if (fullname.startsWith("users/")) {
-      const email = extractUserEmail(fullname);
-      const user = users.find((u) => u.email === email);
-      return user?.title || user?.email || email;
-    }
-    if (fullname.startsWith(groupNamePrefix)) {
-      const email = fullname.slice(groupNamePrefix.length);
-      const group = groups.find((g) => g.email === email);
-      return group?.title || email;
-    }
     if (fullname.startsWith("serviceAccounts/"))
       return fullname.slice("serviceAccounts/".length);
     if (fullname.startsWith("workloadIdentities/"))
       return fullname.slice("workloadIdentities/".length);
-    return binding;
+    return resolveLabel(fullname) || binding;
   };
 
   return (

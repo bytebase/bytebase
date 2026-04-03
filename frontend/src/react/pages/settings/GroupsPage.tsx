@@ -154,20 +154,24 @@ function GroupTable({
   // Invalidate member cache when groups data changes (e.g. after editing membership)
   // and refetch members for currently expanded groups
   const prevGroupsRef = useRef(groups);
+  const expandedGroupsRef = useRef(expandedGroups);
+  expandedGroupsRef.current = expandedGroups;
+  const fetchGroupMembersRef = useRef(fetchGroupMembers);
+  fetchGroupMembersRef.current = fetchGroupMembers;
   useEffect(() => {
     if (prevGroupsRef.current !== groups) {
       prevGroupsRef.current = groups;
       setMemberCache(new Map());
       loadingRef.current = new Set();
       // Refetch members for currently expanded groups
-      for (const groupName of expandedGroups) {
+      for (const groupName of expandedGroupsRef.current) {
         const group = groups.find((g) => g.name === groupName);
         if (group) {
-          fetchGroupMembers(group);
+          fetchGroupMembersRef.current(group);
         }
       }
     }
-  }, [groups, expandedGroups, fetchGroupMembers]);
+  }, [groups]);
 
   const toggleExpand = useCallback(
     (group: Group) => {
@@ -940,6 +944,11 @@ export function GroupsPage() {
       const params = new URLSearchParams(window.location.search);
       const name = params.get("name");
       if (name && name.startsWith("groups/")) {
+        // Clear the query param so the drawer doesn't reopen on refresh/navigation
+        router.replace({
+          ...router.currentRoute.value,
+          query: {},
+        });
         groupStore
           .getOrFetchGroupByIdentifier(name)
           .then((group) => {
