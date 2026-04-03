@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, EyeOff, Pencil, Plus, Search, Settings, Trash2, Undo2, Users, X } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Copy, Eye, EyeOff, Pencil, Plus, Search, Settings, Trash2, Undo2, Users, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -1641,6 +1641,172 @@ function CreateGroupDrawer({
 }
 
 // ============================================================
+// AADSyncDrawer
+// ============================================================
+
+function AADSyncDrawer({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const actuatorStore = useActuatorV1Store();
+  const settingV1Store = useSettingV1Store();
+
+  const externalUrl = useVueState(() => actuatorStore.serverInfo?.externalUrl ?? "");
+  const workspaceResourceName = useVueState(() => actuatorStore.workspaceResourceName);
+  const directorySyncToken = useVueState(
+    () => settingV1Store.workspaceProfile.directorySyncToken
+  );
+
+  useEscapeKey(onClose);
+
+  const scimUrl =
+    externalUrl && workspaceResourceName
+      ? `${externalUrl}/hook/scim/${workspaceResourceName}`
+      : "";
+
+  const copyToClipboard = (value: string) => {
+    navigator.clipboard.writeText(value);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  };
+
+  const handleResetToken = async () => {
+    const confirmed = window.confirm(
+      t("settings.members.entra-sync.reset-token-warning")
+    );
+    if (!confirmed) return;
+
+    await settingV1Store.updateWorkspaceProfile({
+      payload: { directorySyncToken: "" },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.directory_sync_token"],
+      }),
+    });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-lg font-medium">
+            {t("settings.members.entra-sync.self")}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto px-6 py-6">
+          <div className="flex flex-col gap-y-6">
+            {/* Description */}
+            <p className="text-sm text-control-light">
+              {t("settings.members.entra-sync.description")}{" "}
+              <a
+                href="https://docs.bytebase.com/administration/scim/overview?source=console"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {t("common.learn-more")}
+              </a>
+            </p>
+
+            {/* Missing external URL warning */}
+            {!externalUrl && (
+              <Alert variant="warning">
+                <AlertDescription>
+                  {t("banner.external-url")}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* SCIM Endpoint URL */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("settings.members.entra-sync.endpoint")}
+              </label>
+              <span className="textinfolabel text-sm">
+                {t("settings.members.entra-sync.endpoint-tip")}
+              </span>
+              <div className="flex items-center gap-x-2">
+                <Input
+                  readOnly
+                  value={scimUrl}
+                  className="flex-1 text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!scimUrl}
+                  onClick={() => copyToClipboard(scimUrl)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Secret Token */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("settings.members.entra-sync.secret-token")}
+              </label>
+              <span className="textinfolabel text-sm">
+                {t("settings.members.entra-sync.secret-token-tip")}
+              </span>
+              <div className="flex items-center gap-x-2">
+                <Input
+                  readOnly
+                  type="password"
+                  value={directorySyncToken}
+                  className="flex-1 text-sm"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!directorySyncToken}
+                  onClick={() => copyToClipboard(directorySyncToken)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              {hasWorkspacePermissionV2("bb.settings.setWorkspaceProfile") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start text-error border-error hover:bg-error/10"
+                  onClick={handleResetToken}
+                >
+                  {t("settings.members.entra-sync.reset-token")}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ============================================================
 // UsersPage (main)
 // ============================================================
 
@@ -1676,11 +1842,14 @@ export function UsersPage() {
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
   );
   const workspaceDomains = useVueState(() => settingV1Store.workspaceProfile.domains);
+  const hasDirectorySyncFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
+  );
 
   // Drawer visibility
   const [showCreateUserDrawer, setShowCreateUserDrawer] = useState(false);
   const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false);
-  const [_showAadSyncDrawer, _setShowAadSyncDrawer] = useState(false);
+  const [showAadSyncDrawer, setShowAadSyncDrawer] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
@@ -1863,7 +2032,11 @@ export function UsersPage() {
                   />
                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
                 </div>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  disabled={!hasDirectorySyncFeature}
+                  onClick={() => setShowAadSyncDrawer(true)}
+                >
                   <Settings className="h-4 w-4 mr-1" />
                   <FeatureBadge
                     feature={PlanFeature.FEATURE_DIRECTORY_SYNC}
@@ -1893,7 +2066,11 @@ export function UsersPage() {
                   />
                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
                 </div>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  disabled={!hasDirectorySyncFeature}
+                  onClick={() => setShowAadSyncDrawer(true)}
+                >
                   <Settings className="h-4 w-4 mr-1" />
                   <FeatureBadge
                     feature={PlanFeature.FEATURE_DIRECTORY_SYNC}
@@ -2118,6 +2295,10 @@ export function UsersPage() {
             setEditingGroup(undefined);
           }}
         />
+      )}
+
+      {showAadSyncDrawer && (
+        <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
       )}
     </div>
   );
