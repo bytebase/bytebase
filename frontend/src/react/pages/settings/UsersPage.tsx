@@ -225,7 +225,7 @@ function usePagedData<T extends { name: string }>({
 
   return {
     dataList,
-    isLoading: isLoading || !hasFetched,
+    isLoading: enabled && (isLoading || !hasFetched),
     isFetchingMore,
     hasMore,
     loadMore,
@@ -691,6 +691,16 @@ function GroupTable({
   const memberCacheRef = useRef(memberCache);
   memberCacheRef.current = memberCache;
   const loadingRef = useRef<Set<string>>(new Set());
+
+  // Invalidate member cache when groups data changes (e.g. after editing membership)
+  const prevGroupsRef = useRef(groups);
+  useEffect(() => {
+    if (prevGroupsRef.current !== groups) {
+      prevGroupsRef.current = groups;
+      setMemberCache(new Map());
+      loadingRef.current = new Set();
+    }
+  }, [groups]);
 
   const toggleExpand = useCallback(
     (group: Group) => {
@@ -2848,10 +2858,21 @@ export function UsersPage() {
       });
     }
   }, []); // mount-only: read query param once
-  // Sync tab to URL hash
+  // Sync tab ↔ URL hash (bidirectional)
   useEffect(() => {
     window.location.hash = tab;
   }, [tab]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace("#", "").toUpperCase();
+      if (hash === "USERS" && !isSaaSMode) setTab("USERS");
+      else if (hash === "MEMBERS" && isSaaSMode) setTab("MEMBERS");
+      else if (hash === "GROUPS") setTab("GROUPS");
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [isSaaSMode]);
 
   const handleTabChange = (value: TabValue) => {
     if (value) setTab(value);
