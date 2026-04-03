@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -35,87 +31,36 @@ func (*TableDisallowTriggerAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableDisallowTriggerRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableDisallowTriggerRule checks for disallow table trigger.
-type TableDisallowTriggerRule struct {
-	BaseRule
-	text string
-}
-
-// NewTableDisallowTriggerRule creates a new TableDisallowTriggerRule.
-func NewTableDisallowTriggerRule(level storepb.Advice_Status, title string) *TableDisallowTriggerRule {
-	return &TableDisallowTriggerRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableDisallowTriggerOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableDisallowTriggerRule) Name() string {
+type tableDisallowTriggerOmniRule struct {
+	OmniBaseRule
+}
+
+func (*tableDisallowTriggerOmniRule) Name() string {
 	return "TableDisallowTriggerRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowTriggerRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeCreateTrigger:
-		r.checkCreateTrigger(ctx.(*mysql.CreateTriggerContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowTriggerRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableDisallowTriggerRule) checkCreateTrigger(ctx *mysql.CreateTriggerContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *tableDisallowTriggerOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateTriggerStmt)
+	if !ok {
 		return
 	}
-	code := advisorcode.Ok
-	if ctx.TriggerName() != nil {
-		code = advisorcode.CreateTableTrigger
-	}
-
-	if code != advisorcode.Ok {
+	if n.Name != "" {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Trigger is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:        r.Level,
+			Code:          advisorcode.CreateTableTrigger.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Trigger is forbidden, but \"%s\" creates", r.QueryText()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

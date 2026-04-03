@@ -3,15 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,79 +34,74 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewNoSelectAllRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// NoSelectAllRule checks for no "select *".
-type NoSelectAllRule struct {
-	BaseRule
-	text string
-}
-
-// NewNoSelectAllRule creates a new NoSelectAllRule.
-func NewNoSelectAllRule(level storepb.Advice_Status, title string) *NoSelectAllRule {
-	return &NoSelectAllRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &noSelectAllOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*NoSelectAllRule) Name() string {
+type noSelectAllOmniRule struct {
+	OmniBaseRule
+}
+
+func (*noSelectAllOmniRule) Name() string {
 	return "NoSelectAllRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
+func (r *noSelectAllOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	ast.Inspect(node, func(n ast.Node) bool {
+		sel, ok := n.(*ast.SelectStmt)
 		if !ok {
-			return nil
+			return true
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeSelectItemList:
-		r.checkSelectItemList(ctx.(*mysql.SelectItemListContext))
+		// Only check TargetList on leaf SelectStmt (not UNION nodes).
+		if sel.SetOp != ast.SetOpNone {
+			return true
+		}
+		for _, target := range sel.TargetList {
+			if r.isStarTarget(target) {
+				r.AddAdviceAbsolute(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.StatementSelectAll.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("\"%s\" uses SELECT all", text),
+					StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.findStarLine(target))),
+				})
+			}
+		}
+		// Recurse into children (CTEs, subqueries in FROM, etc.) via Inspect.
+		return true
+	})
+}
+
+func (*noSelectAllOmniRule) isStarTarget(expr ast.ExprNode) bool {
+	switch e := expr.(type) {
+	case *ast.StarExpr:
+		return true
+	case *ast.ResTarget:
+		if _, ok := e.Val.(*ast.StarExpr); ok {
+			return true
+		}
 	default:
-		// Other node types
 	}
-	return nil
+	return false
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NoSelectAllRule) checkSelectItemList(ctx *mysql.SelectItemListContext) {
-	if ctx.MULT_OPERATOR() != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.StatementSelectAll.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" uses SELECT all", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
+func (r *noSelectAllOmniRule) findStarLine(expr ast.ExprNode) int32 {
+	switch e := expr.(type) {
+	case *ast.StarExpr:
+		return r.LocToLine(e.Loc)
+	case *ast.ResTarget:
+		if star, ok := e.Val.(*ast.StarExpr); ok {
+			return r.LocToLine(star.Loc)
+		}
+		return r.LocToLine(e.Loc)
+	default:
+		return r.ContentStartLine()
 	}
 }

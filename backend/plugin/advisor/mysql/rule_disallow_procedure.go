@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -35,85 +31,36 @@ func (*ProcedureDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewProcedureDisallowCreateRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ProcedureDisallowCreateRule checks for disallow create procedure.
-type ProcedureDisallowCreateRule struct {
-	BaseRule
-	text string
-}
-
-// NewProcedureDisallowCreateRule creates a new ProcedureDisallowCreateRule.
-func NewProcedureDisallowCreateRule(level storepb.Advice_Status, title string) *ProcedureDisallowCreateRule {
-	return &ProcedureDisallowCreateRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &procedureDisallowCreateOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ProcedureDisallowCreateRule) Name() string {
+type procedureDisallowCreateOmniRule struct {
+	OmniBaseRule
+}
+
+func (*procedureDisallowCreateOmniRule) Name() string {
 	return "ProcedureDisallowCreateRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ProcedureDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		}
-	case NodeTypeCreateProcedure:
-		r.checkCreateProcedure(ctx.(*mysql.CreateProcedureContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ProcedureDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ProcedureDisallowCreateRule) checkCreateProcedure(ctx *mysql.CreateProcedureContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *procedureDisallowCreateOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateFunctionStmt)
+	if !ok || !n.IsProcedure {
 		return
 	}
-	code := advisorcode.Ok
-	if ctx.ProcedureName() != nil {
-		code = advisorcode.DisallowCreateProcedure
-	}
-
-	if code != advisorcode.Ok {
+	if n.Name != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:        r.Level,
+			Code:          advisorcode.DisallowCreateProcedure.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", r.QueryText()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

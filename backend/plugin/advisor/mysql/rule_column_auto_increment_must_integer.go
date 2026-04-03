@@ -4,17 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -39,175 +33,81 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnAutoIncrementMustIntegerRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	rule := &columnAutoIncrementMustIntegerOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
-// ColumnAutoIncrementMustIntegerRule checks for auto-increment column type.
-type ColumnAutoIncrementMustIntegerRule struct {
-	BaseRule
+type columnAutoIncrementMustIntegerOmniRule struct {
+	OmniBaseRule
 }
 
-// NewColumnAutoIncrementMustIntegerRule creates a new ColumnAutoIncrementMustIntegerRule.
-func NewColumnAutoIncrementMustIntegerRule(level storepb.Advice_Status, title string) *ColumnAutoIncrementMustIntegerRule {
-	return &ColumnAutoIncrementMustIntegerRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnAutoIncrementMustIntegerRule) Name() string {
+func (*columnAutoIncrementMustIntegerOmniRule) Name() string {
 	return "ColumnAutoIncrementMustIntegerRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnAutoIncrementMustIntegerRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnAutoIncrementMustIntegerOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ColumnAutoIncrementMustIntegerRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *ColumnAutoIncrementMustIntegerRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableElementList() == nil || ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
-			continue
-		}
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 	}
 }
 
-func (r *ColumnAutoIncrementMustIntegerRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+func (r *columnAutoIncrementMustIntegerOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
 	if tableName == "" {
 		return
 	}
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
+	for _, col := range n.Columns {
+		r.checkColumn(tableName, col)
+	}
+}
 
-		var columnName string
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-				}
-			default:
-				// Ignore other ADD column syntax variations
-			}
-		// change column.
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			if item.FieldDefinition().DataType() == nil {
-				continue
-			}
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		// modify column.
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			if item.FieldDefinition().DataType() == nil {
-				continue
-			}
-			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		default:
-			// Ignore other alter table actions
+func (r *columnAutoIncrementMustIntegerOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
+		return
+	}
+	for _, cmd := range n.Commands {
+		for _, col := range omniGetColumnsFromCmd(cmd) {
+			r.checkColumn(tableName, col)
 		}
 	}
 }
 
-func (r *ColumnAutoIncrementMustIntegerRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !r.isAutoIncrementColumnIsInteger(ctx) {
+func (r *columnAutoIncrementMustIntegerOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !omniIsAutoIncrement(col) {
+		return
+	}
+	if !omniIsIntegerType(col.TypeName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.AutoIncrementColumnNotInteger.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", tableName, columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.AutoIncrementColumnNotInteger.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", tableName, col.Name),
+			StartPosition: &storepb.Position{
+				Line: r.LocToLine(col.Loc),
+			},
 		})
-	}
-}
-
-func (r *ColumnAutoIncrementMustIntegerRule) isAutoIncrementColumnIsInteger(ctx mysql.IFieldDefinitionContext) bool {
-	if r.isAutoIncrementColumn(ctx) && !r.isIntegerType(ctx.DataType()) {
-		return false
-	}
-	return true
-}
-
-func (*ColumnAutoIncrementMustIntegerRule) isAutoIncrementColumn(ctx mysql.IFieldDefinitionContext) bool {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (*ColumnAutoIncrementMustIntegerRule) isIntegerType(ctx mysql.IDataTypeContext) bool {
-	switch ctx.GetType_().GetTokenType() {
-	case mysql.MySQLParserINT_SYMBOL, mysql.MySQLParserTINYINT_SYMBOL, mysql.MySQLParserSMALLINT_SYMBOL, mysql.MySQLParserMEDIUMINT_SYMBOL, mysql.MySQLParserBIGINT_SYMBOL:
-		return true
-	default:
-		return false
 	}
 }

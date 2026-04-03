@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -37,29 +34,17 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewStatementMergeAlterTableRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &mergeAlterTableOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		tableMap: make(map[string]tableStatement),
 	}
 
-	// Generate advice based on collected table information
+	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	rule.generateAdvice()
-
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 // tableStatement represents information about a table's statements.
@@ -69,89 +54,47 @@ type tableStatement struct {
 	lastLine int
 }
 
-// StatementMergeAlterTableRule checks for mergeable ALTER TABLE statements.
-type StatementMergeAlterTableRule struct {
-	BaseRule
-	text     string
+type mergeAlterTableOmniRule struct {
+	OmniBaseRule
 	tableMap map[string]tableStatement
 }
 
-// NewStatementMergeAlterTableRule creates a new StatementMergeAlterTableRule.
-func NewStatementMergeAlterTableRule(level storepb.Advice_Status, title string) *StatementMergeAlterTableRule {
-	return &StatementMergeAlterTableRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		tableMap: make(map[string]tableStatement),
-	}
-}
-
-// Name returns the rule name.
-func (*StatementMergeAlterTableRule) Name() string {
+func (*mergeAlterTableOmniRule) Name() string {
 	return "StatementMergeAlterTableRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementMergeAlterTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
+func (r *mergeAlterTableOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Table == nil {
+			return
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+		tableName := n.Table.Name
+		r.tableMap[tableName] = tableStatement{
+			name:     tableName,
+			count:    1,
+			lastLine: r.BaseLine + int(r.ContentStartLine()),
+		}
+	case *ast.AlterTableStmt:
+		if n.Table == nil {
+			return
+		}
+		tableName := n.Table.Name
+		table, ok := r.tableMap[tableName]
+		if !ok {
+			table = tableStatement{
+				name:  tableName,
+				count: 0,
+			}
+		}
+		table.count++
+		table.lastLine = r.BaseLine + int(r.ContentStartLine())
+		r.tableMap[tableName] = table
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*StatementMergeAlterTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *StatementMergeAlterTableRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	r.tableMap[tableName] = tableStatement{
-		name:     tableName,
-		count:    1,
-		lastLine: r.baseLine + ctx.GetStart().GetLine(),
-	}
-}
-
-func (r *StatementMergeAlterTableRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table, ok := r.tableMap[tableName]
-	if !ok {
-		table = tableStatement{
-			name:  tableName,
-			count: 0,
-		}
-	}
-	table.count++
-	table.lastLine = r.baseLine + ctx.GetStart().GetLine()
-	r.tableMap[tableName] = table
-}
-
-func (r *StatementMergeAlterTableRule) generateAdvice() {
+func (r *mergeAlterTableOmniRule) generateAdvice() {
 	var tableList []tableStatement
 	for _, table := range r.tableMap {
 		tableList = append(tableList, table)
@@ -168,10 +111,10 @@ func (r *StatementMergeAlterTableRule) generateAdvice() {
 
 	for _, table := range tableList {
 		if table.count > 1 {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.StatementRedundantAlterTable.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
 				StartPosition: common.ConvertANTLRLineToPosition(table.lastLine),
 			})

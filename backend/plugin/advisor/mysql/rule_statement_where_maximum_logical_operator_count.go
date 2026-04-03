@@ -3,16 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -36,141 +36,149 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
+	maximum := int(numberPayload.Number)
 	var allAdvice []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
-		// Create the rule for each statement
-		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-
-		// Create the generic checker with the rule
-		checker := NewGenericChecker([]Rule{rule})
-
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		rule.resetForStatement()
+		rule := &maxLogicalOperatorOmniRule{
+			OmniBaseRule: OmniBaseRule{
+				Level: level,
+				Title: checkCtx.Rule.Type.String(),
+			},
+			maximum: maximum,
+		}
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-
-		// Check OR conditions after walking the tree
-		rule.checkOrConditions()
-
-		allAdvice = append(allAdvice, checker.GetAdviceList()...)
+		if br, ok2 := any(rule).(interface{ SetStatement(int, string) }); ok2 {
+			br.SetStatement(stmt.BaseLine(), stmt.Text)
+		}
+		rule.OnStatement(node)
+		allAdvice = append(allAdvice, rule.GetAdviceList()...)
 	}
 
 	return allAdvice, nil
 }
 
-// StatementWhereMaximumLogicalOperatorCountRule checks for maximum logical operators in WHERE.
-type StatementWhereMaximumLogicalOperatorCountRule struct {
-	BaseRule
-	text              string
-	maximum           int
-	reported          bool
-	depth             int
-	inPredicateExprIn bool
-	maxOrCount        int
-	maxOrCountLine    int
+type maxLogicalOperatorOmniRule struct {
+	OmniBaseRule
+	maximum int
 }
 
-// NewStatementWhereMaximumLogicalOperatorCountRule creates a new StatementWhereMaximumLogicalOperatorCountRule.
-func NewStatementWhereMaximumLogicalOperatorCountRule(level storepb.Advice_Status, title string, maximum int) *StatementWhereMaximumLogicalOperatorCountRule {
-	return &StatementWhereMaximumLogicalOperatorCountRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		maximum: maximum,
-	}
-}
-
-// Name returns the rule name.
-func (*StatementWhereMaximumLogicalOperatorCountRule) Name() string {
+func (*maxLogicalOperatorOmniRule) Name() string {
 	return "StatementWhereMaximumLogicalOperatorCountRule"
 }
 
-// resetForStatement resets state for a new statement.
-func (r *StatementWhereMaximumLogicalOperatorCountRule) resetForStatement() {
-	r.reported = false
-	r.depth = 0
-	r.inPredicateExprIn = false
-	r.maxOrCount = 0
-	r.maxOrCountLine = 0
+func (r *maxLogicalOperatorOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	r.walkNode(node, text)
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementWhereMaximumLogicalOperatorCountRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
+func (r *maxLogicalOperatorOmniRule) walkNode(node ast.Node, text string) {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		r.checkSelect(n, text)
+	case *ast.UpdateStmt:
+		r.checkExpr(n.Where, text)
+	case *ast.DeleteStmt:
+		r.checkExpr(n.Where, text)
+	case *ast.InsertStmt:
+		if n.Select != nil {
+			r.checkSelect(n.Select, text)
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypePredicateExprIn:
-		r.inPredicateExprIn = true
-	case NodeTypeExprList:
-		r.checkExprList(ctx.(*mysql.ExprListContext))
-	case NodeTypeExprOr:
-		r.checkExprOr(ctx.(*mysql.ExprOrContext))
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (r *StatementWhereMaximumLogicalOperatorCountRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypePredicateExprIn:
-		r.inPredicateExprIn = false
-	case NodeTypeExprOr:
-		r.depth--
-	default:
-	}
-	return nil
-}
-
-func (r *StatementWhereMaximumLogicalOperatorCountRule) checkExprList(ctx *mysql.ExprListContext) {
-	if r.reported {
+func (r *maxLogicalOperatorOmniRule) checkSelect(sel *ast.SelectStmt, text string) {
+	if sel == nil {
 		return
 	}
-	if !r.inPredicateExprIn {
+	if sel.SetOp != ast.SetOpNone {
+		r.checkSelect(sel.Left, text)
+		r.checkSelect(sel.Right, text)
 		return
 	}
-
-	count := len(ctx.AllExpr())
-	if count > r.maximum {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.StatementWhereMaximumLogicalOperatorCount.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, r.maximum, r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
-	}
+	r.checkExpr(sel.Where, text)
 }
 
-func (r *StatementWhereMaximumLogicalOperatorCountRule) checkExprOr(ctx *mysql.ExprOrContext) {
-	r.depth++
-	count := r.depth + 1
-	if count > r.maxOrCount {
-		r.maxOrCount = count
-		r.maxOrCountLine = r.baseLine + ctx.GetStart().GetLine()
+func (r *maxLogicalOperatorOmniRule) checkExpr(expr ast.ExprNode, text string) {
+	if expr == nil {
+		return
 	}
-}
-
-func (r *StatementWhereMaximumLogicalOperatorCountRule) checkOrConditions() {
-	if r.maxOrCount > r.maximum {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+	// Count OR operands.
+	orCount := r.countOrOperands(expr)
+	if orCount > r.maximum {
+		line := r.findFirstOrLine(expr)
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
 			Code:          code.StatementWhereMaximumLogicalOperatorCount.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", r.maxOrCount, r.maximum, r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.maxOrCountLine),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", orCount, r.maximum, text),
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
 		})
 	}
+	// Check IN lists.
+	r.walkExprForIn(expr, text)
+}
+
+// countOrOperands returns the number of operands in an OR chain.
+// For `a OR b OR c OR d OR e` (4 OR operators), returns 5.
+func (*maxLogicalOperatorOmniRule) countOrOperands(expr ast.ExprNode) int {
+	if expr == nil {
+		return 0
+	}
+	bin, ok := expr.(*ast.BinaryExpr)
+	if !ok || bin.Op != ast.BinOpOr {
+		return 0
+	}
+	count := 0
+	for {
+		count++
+		left, ok := bin.Left.(*ast.BinaryExpr)
+		if !ok || left.Op != ast.BinOpOr {
+			count++ // count the final left operand
+			break
+		}
+		bin = left
+	}
+	return count
+}
+
+func (r *maxLogicalOperatorOmniRule) findFirstOrLine(expr ast.ExprNode) int32 {
+	if expr == nil {
+		return r.ContentStartLine()
+	}
+	bin, ok := expr.(*ast.BinaryExpr)
+	if !ok || bin.Op != ast.BinOpOr {
+		return r.ContentStartLine()
+	}
+	// Find the deepest OR.
+	if left, ok := bin.Left.(*ast.BinaryExpr); ok && left.Op == ast.BinOpOr {
+		return r.findFirstOrLine(bin.Left)
+	}
+	return r.LocToLine(bin.Loc)
+}
+
+func (r *maxLogicalOperatorOmniRule) walkExprForIn(expr ast.ExprNode, text string) {
+	ast.Inspect(expr, func(n ast.Node) bool {
+		e, ok := n.(*ast.InExpr)
+		if !ok {
+			return true
+		}
+		count := len(e.List)
+		if count > r.maximum {
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.StatementWhereMaximumLogicalOperatorCount.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, r.maximum, text),
+				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(e.Loc))),
+			})
+		}
+		return false
+	})
 }

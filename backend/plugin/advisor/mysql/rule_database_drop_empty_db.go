@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -38,87 +34,48 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewDatabaseDropEmptyDBRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &databaseDropEmptyDBOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		originMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// DatabaseDropEmptyDBRule checks for drop database only if empty.
-type DatabaseDropEmptyDBRule struct {
-	BaseRule
+type databaseDropEmptyDBOmniRule struct {
+	OmniBaseRule
 	originMetadata *model.DatabaseMetadata
 }
 
-// NewDatabaseDropEmptyDBRule creates a new DatabaseDropEmptyDBRule.
-func NewDatabaseDropEmptyDBRule(level storepb.Advice_Status, title string, originMetadata *model.DatabaseMetadata) *DatabaseDropEmptyDBRule {
-	return &DatabaseDropEmptyDBRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		originMetadata: originMetadata,
-	}
-}
-
-// Name returns the rule name.
-func (*DatabaseDropEmptyDBRule) Name() string {
+func (*databaseDropEmptyDBOmniRule) Name() string {
 	return "DatabaseDropEmptyDBRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *DatabaseDropEmptyDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeDropDatabase {
-		r.checkDropDatabase(ctx.(*mysql.DropDatabaseContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*DatabaseDropEmptyDBRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *DatabaseDropEmptyDBRule) checkDropDatabase(ctx *mysql.DropDatabaseContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *databaseDropEmptyDBOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.DropDatabaseStmt)
+	if !ok {
 		return
 	}
-	if ctx.SchemaRef() == nil {
-		return
-	}
-
-	dbName := mysqlparser.NormalizeMySQLSchemaRef(ctx.SchemaRef())
+	dbName := n.Name
+	line := r.BaseLine + int(r.LocToLine(n.Loc))
 	if r.originMetadata.DatabaseName() != dbName {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.NotCurrentDatabase.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originMetadata.DatabaseName()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	} else if !r.originMetadata.HasNoTable() {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.DatabaseNotEmpty.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	}
 }

@@ -2,17 +2,15 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -43,105 +41,48 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, nil
 	}
 
-	// Create the rule
-	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
+	driver := checkCtx.Driver
+	title := checkCtx.Rule.Type.String()
+	var advice []*storepb.Advice
+	explainCount := 0
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	if checkCtx.Driver != nil {
+	if driver != nil {
 		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine())
-			checker.SetBaseLine(stmt.BaseLine())
 			if stmt.AST == nil {
 				continue
 			}
-			antlrAST, ok := base.GetANTLRAST(stmt.AST)
+			node, ok := mysqlparser.GetOmniNode(stmt.AST)
 			if !ok {
 				continue
 			}
-			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-			if rule.explainCount >= common.MaximumLintExplainSize {
+
+			// Only handle DML statements.
+			switch node.(type) {
+			case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+			default:
+				continue
+			}
+
+			baseLine := stmt.BaseLine()
+			text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
+			line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
+
+			explainCount++
+			if _, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
+				advice = append(advice, &storepb.Advice{
+					Status:        level,
+					Code:          code.StatementDMLDryRunFailed.Int32(),
+					Title:         title,
+					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+					StartPosition: common.ConvertANTLRLineToPosition(line),
+				})
+			}
+
+			if explainCount >= common.MaximumLintExplainSize {
 				break
 			}
 		}
 	}
 
-	return checker.GetAdviceList(), nil
-}
-
-// StatementDmlDryRunRule checks for DML dry run.
-type StatementDmlDryRunRule struct {
-	BaseRule
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-// NewStatementDmlDryRunRule creates a new StatementDmlDryRunRule.
-func NewStatementDmlDryRunRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB) *StatementDmlDryRunRule {
-	return &StatementDmlDryRunRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		driver: driver,
-		ctx:    ctx,
-	}
-}
-
-// Name returns the rule name.
-func (*StatementDmlDryRunRule) Name() string {
-	return "StatementDmlDryRunRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *StatementDmlDryRunRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeUpdateStatement:
-		updateCtx, ok := ctx.(*mysql.UpdateStatementContext)
-		if !ok {
-			return nil
-		}
-		if mysqlparser.IsTopMySQLRule(&updateCtx.BaseParserRuleContext) {
-			r.handleStmt(updateCtx.GetParser().GetTokenStream().GetTextFromRuleContext(updateCtx), updateCtx.GetStart().GetLine())
-		}
-	case NodeTypeDeleteStatement:
-		deleteCtx, ok := ctx.(*mysql.DeleteStatementContext)
-		if !ok {
-			return nil
-		}
-		if mysqlparser.IsTopMySQLRule(&deleteCtx.BaseParserRuleContext) {
-			r.handleStmt(deleteCtx.GetParser().GetTokenStream().GetTextFromRuleContext(deleteCtx), deleteCtx.GetStart().GetLine())
-		}
-	case NodeTypeInsertStatement:
-		insertCtx, ok := ctx.(*mysql.InsertStatementContext)
-		if !ok {
-			return nil
-		}
-		if mysqlparser.IsTopMySQLRule(&insertCtx.BaseParserRuleContext) {
-			r.handleStmt(insertCtx.GetParser().GetTokenStream().GetTextFromRuleContext(insertCtx), insertCtx.GetStart().GetLine())
-		}
-	default:
-		// Other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*StatementDmlDryRunRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
-	r.explainCount++
-	if _, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.StatementDMLDryRunFailed.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),
-		})
-	}
+	return advice, nil
 }

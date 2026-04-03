@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -35,126 +31,64 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	// Create the rule
-	rule := NewTableDisallowDDLRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableDisallowDDLOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		disallowList: stringArrayPayload.List,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// TableDisallowDDLRule checks for disallow DDL on specific tables.
-type TableDisallowDDLRule struct {
-	BaseRule
+type tableDisallowDDLOmniRule struct {
+	OmniBaseRule
 	disallowList []string
 }
 
-// NewTableDisallowDDLRule creates a new TableDisallowDDLRule.
-func NewTableDisallowDDLRule(level storepb.Advice_Status, title string, disallowList []string) *TableDisallowDDLRule {
-	return &TableDisallowDDLRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		disallowList: disallowList,
-	}
-}
-
-// Name returns the rule name.
-func (*TableDisallowDDLRule) Name() string {
+func (*tableDisallowDDLOmniRule) Name() string {
 	return "TableDisallowDDLRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeDropTable:
-		r.checkDropTable(ctx.(*mysql.DropTableContext))
-	case NodeTypeRenameTableStatement:
-		r.checkRenameTableStatement(ctx.(*mysql.RenameTableStatementContext))
-	case NodeTypeTruncateTableStatement:
-		r.checkTruncateTableStatement(ctx.(*mysql.TruncateTableStatementContext))
+func (r *tableDisallowDDLOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Table != nil {
+			r.checkTableName(n.Table.Name, r.LocToLine(n.Loc))
+		}
+	case *ast.AlterTableStmt:
+		if n.Table != nil {
+			r.checkTableName(n.Table.Name, r.LocToLine(n.Loc))
+		}
+	case *ast.DropTableStmt:
+		for _, tbl := range n.Tables {
+			r.checkTableName(tbl.Name, r.LocToLine(n.Loc))
+		}
+	case *ast.RenameTableStmt:
+		for _, pair := range n.Pairs {
+			if pair.Old != nil {
+				r.checkTableName(pair.Old.Name, r.LocToLine(n.Loc))
+			}
+		}
+	case *ast.TruncateStmt:
+		for _, tbl := range n.Tables {
+			r.checkTableName(tbl.Name, r.LocToLine(n.Loc))
+		}
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowDDLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableDisallowDDLRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	if tableName == "" {
-		return
-	}
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	if tableName == "" {
-		return
-	}
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) checkDropTable(ctx *mysql.DropTableContext) {
-	for _, tableRef := range ctx.TableRefList().AllTableRef() {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
-		if tableName == "" {
-			continue
-		}
-		r.checkTableName(tableName, ctx.GetStart().GetLine())
-	}
-}
-
-func (r *TableDisallowDDLRule) checkRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
-	for _, renamePair := range ctx.AllRenamePair() {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
-		if tableName == "" {
-			continue
-		}
-		r.checkTableName(tableName, ctx.GetStart().GetLine())
-	}
-}
-
-func (r *TableDisallowDDLRule) checkTruncateTableStatement(ctx *mysql.TruncateTableStatementContext) {
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	if tableName == "" {
-		return
-	}
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) checkTableName(tableName string, line int) {
+func (r *tableDisallowDDLOmniRule) checkTableName(tableName string, lineNumber int32) {
 	for _, disallow := range r.disallowList {
 		if tableName == disallow {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			absoluteLine := r.BaseLine + int(lineNumber)
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.TableDisallowDDL.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("DDL is disallowed on table %s.", tableName),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
+				StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
 			})
 			return
 		}

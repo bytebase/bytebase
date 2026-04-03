@@ -2,19 +2,17 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -42,120 +40,71 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	// Create the rule
-	rule := NewStatementAffectedRowLimitRule(ctx, level, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.Driver)
+	maxRow := int(numberPayload.Number)
+	driver := checkCtx.Driver
+	title := checkCtx.Rule.Type.String()
+	var advice []*storepb.Advice
+	explainCount := 0
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	if checkCtx.Driver != nil {
+	if driver != nil {
 		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine())
-			checker.SetBaseLine(stmt.BaseLine())
 			if stmt.AST == nil {
 				continue
 			}
-			antlrAST, ok := base.GetANTLRAST(stmt.AST)
+			node, ok := mysqlparser.GetOmniNode(stmt.AST)
 			if !ok {
 				continue
 			}
-			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-			if rule.explainCount >= common.MaximumLintExplainSize {
+
+			// Only handle UPDATE and DELETE statements.
+			switch node.(type) {
+			case *ast.UpdateStmt, *ast.DeleteStmt:
+			default:
+				continue
+			}
+
+			baseLine := stmt.BaseLine()
+			text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
+			line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
+
+			explainCount++
+			res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
+			if err != nil {
+				advice = append(advice, &storepb.Advice{
+					Status:        level,
+					Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+					Title:         title,
+					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+					StartPosition: common.ConvertANTLRLineToPosition(line),
+				})
+			} else {
+				rowCount, err := getRows(res)
+				if err != nil {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.Internal.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				} else if rowCount > int64(maxRow) {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+						Title:         title,
+						Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, maxRow),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				}
+			}
+
+			if explainCount >= common.MaximumLintExplainSize {
 				break
 			}
 		}
 	}
 
-	return checker.GetAdviceList(), nil
-}
-
-// StatementAffectedRowLimitRule checks for UPDATE/DELETE affected row limit.
-type StatementAffectedRowLimitRule struct {
-	BaseRule
-	text         string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-// NewStatementAffectedRowLimitRule creates a new StatementAffectedRowLimitRule.
-func NewStatementAffectedRowLimitRule(ctx context.Context, level storepb.Advice_Status, title string, maxRow int, driver *sql.DB) *StatementAffectedRowLimitRule {
-	return &StatementAffectedRowLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		maxRow: maxRow,
-		driver: driver,
-		ctx:    ctx,
-	}
-}
-
-// Name returns the rule name.
-func (*StatementAffectedRowLimitRule) Name() string {
-	return "StatementAffectedRowLimitRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *StatementAffectedRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeUpdateStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.UpdateStatementContext).BaseParserRuleContext) {
-			r.handleStmt(ctx.GetStart().GetLine())
-		}
-	case NodeTypeDeleteStatement:
-		if mysqlparser.IsTopMySQLRule(&ctx.(*mysql.DeleteStatementContext).BaseParserRuleContext) {
-			r.handleStmt(ctx.GetStart().GetLine())
-		}
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*StatementAffectedRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *StatementAffectedRowLimitRule) handleStmt(lineNumber int) {
-	lineNumber += r.baseLine
-	r.explainCount++
-	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", r.text))
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", r.text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
-		})
-	} else {
-		rowCount, err := getRows(res)
-		if err != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.Internal.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", r.text, err.Error()),
-				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
-			})
-		} else if rowCount > int64(r.maxRow) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", r.text, rowCount, r.maxRow),
-				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
-			})
-		}
-	}
+	return advice, nil
 }
 
 func getRows(res []any) (int64, error) {
@@ -175,24 +124,6 @@ func getRows(res []any) (int64, error) {
 		return 0, errors.Errorf("not found any data")
 	}
 
-	// MySQL EXPLAIN statement result has 12 columns.
-	// the column 9 is the data 'rows'.
-	// the first not-NULL value of column 9 is the affected rows count.
-	//
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 	rowsIndex, err := getColumnIndex(columns, "rows")
 	if err != nil {
 		return 0, errors.Errorf("failed to find rows column")

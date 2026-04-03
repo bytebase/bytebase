@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -48,80 +44,40 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	// Create the rule
-	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableDropNamingConventionRule checks for drop table naming convention.
-type TableDropNamingConventionRule struct {
-	BaseRule
-	format *regexp.Regexp
-}
-
-// NewTableDropNamingConventionRule creates a new TableDropNamingConventionRule.
-func NewTableDropNamingConventionRule(level storepb.Advice_Status, title string, format *regexp.Regexp) *TableDropNamingConventionRule {
-	return &TableDropNamingConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableDropNamingConventionOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format: format,
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableDropNamingConventionRule) Name() string {
+type tableDropNamingConventionOmniRule struct {
+	OmniBaseRule
+	format *regexp.Regexp
+}
+
+func (*tableDropNamingConventionOmniRule) Name() string {
 	return "TableDropNamingConventionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeDropTable {
-		r.checkDropTable(ctx.(*mysql.DropTableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDropNamingConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableDropNamingConventionRule) checkDropTable(ctx *mysql.DropTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *tableDropNamingConventionOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.DropTableStmt)
+	if !ok {
 		return
 	}
-	if ctx.TableRefList() == nil {
-		return
-	}
-
-	for _, tableRef := range ctx.TableRefList().AllTableRef() {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
-		if !r.format.MatchString(tableName) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+	for _, tbl := range n.Tables {
+		if !r.format.MatchString(tbl.Name) {
+			absoluteLine := r.BaseLine + int(r.LocToLine(n.Loc))
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.TableDropNamingConventionMismatch.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, r.format),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tbl.Name, r.format),
+				StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
 			})
 		}
 	}
