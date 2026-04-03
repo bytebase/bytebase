@@ -1,4 +1,4 @@
-import { Eye, Pencil, Plus, Search, Settings, Trash2, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, Pencil, Plus, Search, Settings, Trash2, Undo2, Users } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
   Alert,
@@ -30,15 +31,18 @@ import {
   useCurrentUserV1,
   useGroupStore,
   useServiceAccountStore,
+  useSettingV1Store,
   useSubscriptionV1Store,
   useUserStore,
   useWorkloadIdentityStore,
 } from "@/store";
-import { getUserFullNameByType } from "@/store/modules/v1/common";
+import { extractUserEmail, getUserFullNameByType } from "@/store/modules/v1/common";
 import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getDefaultPagination } from "@/utils/pagination";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -543,6 +547,275 @@ function UserGroupsCell({ user }: { user: User }) {
 }
 
 // ============================================================
+// Highlight helper
+// ============================================================
+
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword.trim()) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span className="bg-yellow-100">{text.slice(idx, idx + keyword.length)}</span>
+      {text.slice(idx + keyword.length)}
+    </>
+  );
+}
+
+// ============================================================
+// GroupTable
+// ============================================================
+
+function GroupTable({
+  groups,
+  searchText,
+  onGroupSelected,
+  onGroupDeleted,
+}: {
+  groups: Group[];
+  searchText: string;
+  onGroupSelected: (group: Group) => void;
+  onGroupDeleted: (group: Group) => void;
+}) {
+  const { t } = useTranslation();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const groupStore = useGroupStore();
+  const userStore = useUserStore();
+
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [memberCache, setMemberCache] = useState<Map<string, User[]>>(new Map());
+  const loadingRef = useRef<Set<string>>(new Set());
+
+  const toggleExpand = useCallback(async (group: Group) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group.name)) {
+        next.delete(group.name);
+      } else {
+        next.add(group.name);
+        // Fetch members if not cached
+        if (!memberCache.has(group.name) && !loadingRef.current.has(group.name)) {
+          loadingRef.current.add(group.name);
+          const memberNames = group.members.map((m) => m.member);
+          userStore.batchGetOrFetchUsers(memberNames).then((users) => {
+            loadingRef.current.delete(group.name);
+            setMemberCache((prev) => {
+              const next = new Map(prev);
+              next.set(group.name, users.filter((u): u is User => !!u));
+              return next;
+            });
+          });
+        }
+      }
+      return next;
+    });
+  }, [memberCache, userStore]);
+
+  const isGroupOwner = useCallback((group: Group) => {
+    return group.members.find(
+      (m) => extractUserEmail(m.member) === currentUser.email
+    )?.role === GroupMember_Role.OWNER;
+  }, [currentUser.email]);
+
+  const handleDelete = useCallback(async (group: Group) => {
+    const confirmed = window.confirm(
+      t("settings.members.action.deactivate-confirm-title")
+    );
+    if (!confirmed) return;
+
+    try {
+      await groupStore.deleteGroup(group.name);
+      onGroupDeleted(group);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
+    } catch {
+      // error shown by store
+    }
+  }, [groupStore, onGroupDeleted, t]);
+
+  if (groups.length === 0) {
+    return (
+      <div className="py-8 text-center text-control-light text-sm">
+        {t("common.no-data")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-sm overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-control-bg">
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+              {t("common.groups")} / {t("common.users")}
+            </th>
+            <th className="px-4 py-2 text-right font-medium whitespace-nowrap w-16" />
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group, i) => {
+            const isExpanded = expandedGroups.has(group.name);
+            const members = memberCache.get(group.name);
+            const canEdit = isGroupOwner(group) || hasWorkspacePermissionV2("bb.groups.update");
+            const canDelete = isGroupOwner(group) || hasWorkspacePermissionV2("bb.groups.delete");
+
+            return (
+              <GroupRow
+                key={group.name}
+                group={group}
+                index={i}
+                isExpanded={isExpanded}
+                members={members}
+                searchText={searchText}
+                canEdit={canEdit}
+                canDelete={canDelete}
+                onToggle={() => toggleExpand(group)}
+                onEdit={() => onGroupSelected(group)}
+                onDelete={() => handleDelete(group)}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function GroupRow({
+  group,
+  index,
+  isExpanded,
+  members,
+  searchText,
+  canEdit,
+  canDelete,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  group: Group;
+  index: number;
+  isExpanded: boolean;
+  members: User[] | undefined;
+  searchText: string;
+  canEdit: boolean;
+  canDelete: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const stripeBg = index % 2 === 1 ? "bg-gray-50" : "";
+
+  return (
+    <>
+      <tr className={`border-b last:border-b-0 ${stripeBg}`}>
+        <td className="px-4 py-2">
+          <div className="flex items-center gap-x-2">
+            <button
+              className="shrink-0 p-0.5 rounded hover:bg-gray-200"
+              onClick={onToggle}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+            <Users className="h-4 w-4 shrink-0 text-control-light" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-x-1.5">
+                <span>
+                  <HighlightText text={group.title} keyword={searchText} />
+                </span>
+                <span className="text-control-light text-xs">
+                  ({t("settings.members.groups.n-members", { n: group.members.length })})
+                </span>
+                {group.source && (
+                  <Badge className="text-xs px-1.5 py-0">{group.source}</Badge>
+                )}
+              </div>
+              <span className="textinfolabel text-xs">
+                <HighlightText text={group.name} keyword={searchText} />
+              </span>
+            </div>
+          </div>
+        </td>
+        <td className="px-4 py-2">
+          <div className="flex justify-end gap-x-1">
+            {canEdit && (
+              <Tooltip content={t("common.edit")}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={onEdit}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip content={t("common.delete")}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-error hover:text-error"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </td>
+      </tr>
+      {isExpanded && members && members.map((user) => {
+        const memberInfo = group.members.find(
+          (m) => extractUserEmail(m.member) === user.email
+        );
+        const isOwner = memberInfo?.role === GroupMember_Role.OWNER;
+
+        return (
+          <tr key={user.name} className={`border-b last:border-b-0 ${stripeBg}`}>
+            <td className="px-4 py-2 pl-14">
+              <div className="flex items-center gap-x-2">
+                <span>{user.title}</span>
+                <span className="textinfolabel text-xs">{user.email}</span>
+                {isOwner ? (
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                    {t("settings.members.groups.form.role.owner")}
+                  </Badge>
+                ) : (
+                  <Badge variant="default" className="text-xs px-1.5 py-0">
+                    {t("settings.members.groups.form.role.member")}
+                  </Badge>
+                )}
+              </div>
+            </td>
+            <td />
+          </tr>
+        );
+      })}
+      {isExpanded && !members && (
+        <tr className={stripeBg}>
+          <td colSpan={2} className="px-4 py-2 pl-14">
+            <div className="flex items-center gap-x-2 text-control-light text-sm">
+              <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+              {t("common.loading")}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// ============================================================
 // UsersPage (main)
 // ============================================================
 
@@ -560,7 +833,9 @@ export function UsersPage() {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
+  const settingV1Store = useSettingV1Store();
   const userStore = useUserStore();
+  const groupStore = useGroupStore();
 
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
@@ -572,13 +847,21 @@ export function UsersPage() {
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
   const [inactiveUserSearchText, setInactiveUserSearchText] = useState("");
 
+  const hasUserGroupFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
+  );
+  const workspaceDomains = useVueState(() => settingV1Store.workspaceProfile.domains);
+
   // Drawer visibility
   const [showCreateUserDrawer, setShowCreateUserDrawer] = useState(false);
-  const [_showCreateGroupDrawer, _setShowCreateGroupDrawer] = useState(false);
+  const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false);
   const [_showAadSyncDrawer, _setShowAadSyncDrawer] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
 
   // Suppress unused warnings for drawers not yet implemented
   void showCreateUserDrawer;
+  void showCreateGroupDrawer;
+  void editingGroup;
 
   const remainingUserCount = useMemo(
     () => Math.max(0, userCountLimit - activeUserCount),
@@ -634,6 +917,44 @@ export function UsersPage() {
     }
   }, [inactiveUserSearchText, showInactiveUsers]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Groups paged data
+  const fetchGroups = useCallback(
+    async (params: { pageSize: number; pageToken: string }) => {
+      const { groups, nextPageToken } = await groupStore.fetchGroupList({
+        pageSize: params.pageSize,
+        pageToken: params.pageToken,
+        filter: { query: groupSearchText },
+      });
+      return { list: groups, nextPageToken };
+    },
+    [groupStore, groupSearchText]
+  );
+
+  const groupPaged = usePagedData<Group>({
+    sessionKey: "bb.paged-group-table",
+    fetchList: fetchGroups,
+  });
+
+  // Refresh groups when search text changes
+  useEffect(() => {
+    groupPaged.refresh();
+  }, [groupSearchText]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle query param for group opening
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get("name");
+    if (name && name.startsWith("groups/")) {
+      setTab("GROUPS");
+      groupStore.getOrFetchGroupByIdentifier(name).then((group) => {
+        if (group) {
+          setEditingGroup(group);
+          setShowCreateGroupDrawer(true);
+        }
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sync tab to URL hash
   useEffect(() => {
     window.location.hash = tab;
@@ -657,6 +978,15 @@ export function UsersPage() {
 
   const handleInactiveUserRemoved = (user: User) => {
     inactiveUsers.removeCache(user);
+  };
+
+  const handleGroupSelected = (group: Group) => {
+    setEditingGroup(group);
+    setShowCreateGroupDrawer(true);
+  };
+
+  const handleGroupDeleted = (group: Group) => {
+    groupPaged.removeCache(group);
   };
 
   return (
@@ -745,10 +1075,45 @@ export function UsersPage() {
                   />
                   {t("settings.members.entra-sync.self")}
                 </Button>
-                <Button>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("settings.members.groups.add-group")}
-                </Button>
+                {workspaceDomains.length === 0 ? (
+                  <Tooltip
+                    content={
+                      <span>
+                        {t("settings.members.groups.workspace-domain-required")}{" "}
+                        <a
+                          href="/setting/general#domain-restriction"
+                          className="underline text-accent"
+                        >
+                          {t("common.configure")}
+                        </a>
+                      </span>
+                    }
+                  >
+                    <Button disabled>
+                      <Plus className="h-4 w-4 mr-1" />
+                      <FeatureBadge
+                        feature={PlanFeature.FEATURE_USER_GROUPS}
+                        clickable={false}
+                      />
+                      {t("settings.members.groups.add-group")}
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    disabled={!hasUserGroupFeature}
+                    onClick={() => {
+                      setEditingGroup(undefined);
+                      setShowCreateGroupDrawer(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_USER_GROUPS}
+                      clickable={false}
+                    />
+                    {t("settings.members.groups.add-group")}
+                  </Button>
+                )}
               </>
             )}
             {tab === "MEMBERS" && (
@@ -846,8 +1211,31 @@ export function UsersPage() {
           </TabsPanel>
         )}
         <TabsPanel value="GROUPS">
-          <div className="py-4 text-control-light">
-            Groups content here
+          <div className="py-4 flex flex-col gap-y-4">
+            <ComponentPermissionGuard permissions={["bb.groups.list"]}>
+              {groupPaged.isLoading && groupPaged.dataList.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <>
+                  <GroupTable
+                    groups={groupPaged.dataList}
+                    searchText={groupSearchText}
+                    onGroupSelected={handleGroupSelected}
+                    onGroupDeleted={handleGroupDeleted}
+                  />
+                  <PagedTableFooter
+                    pageSize={groupPaged.pageSize}
+                    pageSizeOptions={groupPaged.pageSizeOptions}
+                    onPageSizeChange={groupPaged.onPageSizeChange}
+                    hasMore={groupPaged.hasMore}
+                    isLoading={groupPaged.isLoading}
+                    onLoadMore={groupPaged.loadMore}
+                  />
+                </>
+              )}
+            </ComponentPermissionGuard>
           </div>
         </TabsPanel>
       </Tabs>
