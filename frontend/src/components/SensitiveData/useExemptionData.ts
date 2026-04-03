@@ -49,7 +49,6 @@ function getAccessUsers(
       ? ("group" as const)
       : ("user" as const),
     member,
-    key: `${member}:${expression}.${description}`,
     expirationTimestamp,
     rawExpression: expression,
     description,
@@ -166,8 +165,10 @@ export function useExemptionData(projectName: ComputedRef<string>) {
       for (let i = 0; i < exemptions.length; i++) {
         const exemption = exemptions[i];
         const condition = conditionList[i];
+        const expr = exemption.condition?.expression ?? "";
+        const desc = exemption.condition?.description ?? "";
         for (const item of getAccessUsers(exemption, condition)) {
-          const uniqueKey = `${item.key}:${i}`;
+          const uniqueKey = `${item.member}:${expr}.${desc}:${i}`;
           memberMap.set(uniqueKey, item);
         }
       }

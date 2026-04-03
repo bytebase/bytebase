@@ -165,7 +165,6 @@ describe("parseExpirationTimestamp", () => {
 describe("groupByMember", () => {
   const makeAccessUser = (overrides: Partial<AccessUser>): AccessUser => ({
     type: "user",
-    key: "default-key",
     member: "user:test@bytebase.com",
     rawExpression: "",
     description: "",
@@ -177,13 +176,11 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "admin:1",
         description: "Grant 1",
         conditionExpression: 'resource.instance_id == "prod"',
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "admin:2",
         description: "Grant 2",
         conditionExpression: "resource.classification_level <= 3",
       }),
@@ -200,8 +197,8 @@ describe("groupByMember", () => {
 
   test("separates different members", () => {
     const users: AccessUser[] = [
-      makeAccessUser({ member: "user:alice@bytebase.com", key: "a:1" }),
-      makeAccessUser({ member: "user:bob@bytebase.com", key: "b:1" }),
+      makeAccessUser({ member: "user:alice@bytebase.com" }),
+      makeAccessUser({ member: "user:bob@bytebase.com" }),
     ];
 
     const result = groupByMember(users);
@@ -216,7 +213,6 @@ describe("groupByMember", () => {
       makeAccessUser({
         type: "group",
         member: "group:analysts@bytebase.com",
-        key: "g:1",
       }),
     ];
 
@@ -228,12 +224,10 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         expirationTimestamp: new Date("2026-04-15").getTime(),
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         expirationTimestamp: undefined,
       }),
     ];
@@ -246,12 +240,10 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         expirationTimestamp: new Date("2026-04-15").getTime(),
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         expirationTimestamp: new Date("2026-06-30").getTime(),
       }),
     ];
@@ -266,12 +258,10 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         expirationTimestamp: jun,
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         expirationTimestamp: apr,
       }),
     ];
@@ -284,7 +274,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
       }),
     ];
 
@@ -296,7 +285,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         conditionExpression: "resource.classification_level <= 3",
       }),
     ];
@@ -310,7 +298,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         databaseResources: [
           {
             databaseFullName: "instances/prod/databases/hr_prod",
@@ -342,7 +329,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         conditionExpression:
           'resource.instance_id == "prod" && resource.classification_level <= 3',
       }),
@@ -359,7 +345,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         conditionExpression: 'resource.instance_id == "prod"',
       }),
     ];
@@ -377,7 +362,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "Production audit",
         expirationTimestamp: exp,
         databaseResources: [
@@ -390,7 +374,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "Production audit",
         expirationTimestamp: exp,
         databaseResources: [
@@ -403,7 +386,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:3",
         description: "Production audit",
         expirationTimestamp: exp,
         databaseResources: [
@@ -426,7 +408,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "",
         databaseResources: [
           {
@@ -443,7 +424,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "",
         databaseResources: [
           {
@@ -471,7 +451,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "Audit access",
         databaseResources: [
           {
@@ -483,7 +462,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "Dev access",
         databaseResources: [
           {
@@ -503,7 +481,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "Same reason",
         expirationTimestamp: new Date("2026-04-15").getTime(),
         databaseResources: [
@@ -516,7 +493,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "Same reason",
         expirationTimestamp: new Date("2026-06-30").getTime(),
         databaseResources: [
@@ -537,7 +513,6 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "",
         conditionExpression:
           'resource.instance_id == "prod" && resource.classification_level <= 3',
@@ -551,7 +526,6 @@ describe("groupByMember", () => {
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "",
         conditionExpression:
           'resource.instance_id == "prod" && resource.classification_level <= 5',
@@ -573,13 +547,11 @@ describe("groupByMember", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:1",
         description: "Level access",
         conditionExpression: "resource.classification_level <= 3",
       }),
       makeAccessUser({
         member: "user:admin@bytebase.com",
-        key: "a:2",
         description: "Level access",
         conditionExpression: "resource.classification_level <= 3",
       }),
