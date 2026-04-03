@@ -1634,7 +1634,10 @@ function CreateGroupDrawer({
   const { t } = useTranslation();
   const groupStore = useGroupStore();
   const settingV1Store = useSettingV1Store();
+  const actuatorStore = useActuatorV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const userStore = useUserStore();
 
   const isEditMode = !!group;
   const workspaceDomains = useVueState(
@@ -1711,13 +1714,21 @@ function CreateGroupDrawer({
     for (const m of members) {
       const raw = m.member.trim();
       if (!raw) continue;
-      const email = raw.startsWith("users/") ? raw.slice(6) : raw;
-      if (!isValidEmail(email)) {
+      const memberEmail = raw.startsWith("users/") ? raw.slice(6) : raw;
+      if (!isValidEmail(memberEmail)) {
         return `Invalid member: ${raw}`;
+      }
+      // In self-hosted mode, verify the user exists
+      if (!isSaaSMode) {
+        const normalized = raw.startsWith("users/") ? raw : `users/${raw}`;
+        const existingUser = userStore.getUserByIdentifier(normalized);
+        if (!existingUser) {
+          return `User not found: ${memberEmail}`;
+        }
       }
     }
     return "";
-  }, [title, fullEmail, members, t]);
+  }, [title, fullEmail, members, isSaaSMode, userStore, t]);
 
   const hasChanged = useMemo(() => {
     if (!isEditMode) return true;
@@ -1953,7 +1964,7 @@ function CreateGroupDrawer({
                       onChange={(e) =>
                         handleMemberChange(index, "member", e.target.value)
                       }
-                      placeholder="hello@example.com"
+                      placeholder="users/hello@example.com"
                       disabled={!allowEdit}
                     />
                     <select
@@ -2590,6 +2601,7 @@ function EditMemberRoleDrawer({
 }) {
   const { t } = useTranslation();
   const workspaceStore = useWorkspaceV1Store();
+  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
 
   const isEditMode = !!member;
 
@@ -2620,8 +2632,8 @@ function EditMemberRoleDrawer({
           "workloadIdentity:",
         ];
         const memberList = emails.map((input) => {
-          // Preserve the special allUsers principal as-is
-          if (input === ALL_USERS_USER_EMAIL) {
+          // Preserve the special allUsers principal (self-hosted only)
+          if (input === ALL_USERS_USER_EMAIL && !isSaaSMode) {
             return input;
           }
           if (KNOWN_PREFIXES.some((p) => input.startsWith(p))) {
