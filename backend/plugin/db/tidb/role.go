@@ -12,7 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) []*storepb.InstanceRole {
 	var instanceRoles []*storepb.InstanceRole
 	var users []string
 	var err error
@@ -22,7 +22,7 @@ func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole,
 		users, err = d.getUsersFromUserAttributes(ctx)
 		if err != nil {
 			slog.Info("failed to get users", log.BBError(err))
-			return nil, nil
+			return nil
 		}
 	}
 
@@ -32,7 +32,8 @@ func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole,
 	for _, name := range users {
 		grantList, err := d.getGrantFromUser(ctx, name)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get grants for %s", name)
+			slog.Info("failed to get grants for user", slog.String("user", name), log.BBError(err))
+			continue
 		}
 		attribute := strings.Join(grantList, "\n")
 		instanceRoles = append(instanceRoles, &storepb.InstanceRole{
@@ -40,7 +41,7 @@ func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole,
 			Attribute: &attribute,
 		})
 	}
-	return instanceRoles, nil
+	return instanceRoles
 }
 
 // getGrantFromUser reads grants for user with format "'<user>'@'<host>'".
@@ -50,8 +51,7 @@ func (d *Driver) getGrantFromUser(ctx context.Context, name string) ([]string, e
 		grantQuery,
 	)
 	if err != nil {
-		slog.Info("failed to get grants", slog.String("user", name), log.BBError(err))
-		return nil, nil
+		return nil, errors.Wrapf(err, "failed to query grants for %s", name)
 	}
 	defer grantRows.Close()
 
@@ -59,7 +59,7 @@ func (d *Driver) getGrantFromUser(ctx context.Context, name string) ([]string, e
 	for grantRows.Next() {
 		var grant string
 		if err := grantRows.Scan(&grant); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to scan grants for %s", name)
 		}
 		grants = append(grants, grant)
 	}
@@ -77,7 +77,8 @@ func (d *Driver) getUsersFromUserAttributes(ctx context.Context) ([]string, erro
 		user,
 		host
 	FROM information_schema.user_attributes
-	WHERE user NOT LIKE 'mysql.%'
+	WHERE user <> ''
+		AND user NOT LIKE 'mysql.%'
 	`
 	roleRows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
@@ -109,7 +110,8 @@ func (d *Driver) getUsersFromMySQLUser(ctx context.Context) ([]string, error) {
 		user,
 		host
 	FROM mysql.user
-	WHERE user NOT LIKE 'mysql.%'
+	WHERE user <> ''
+		AND user NOT LIKE 'mysql.%'
 	`
 	roleRows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
