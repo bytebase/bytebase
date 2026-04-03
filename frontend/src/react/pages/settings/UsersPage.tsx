@@ -997,7 +997,11 @@ function RoleMultiSelect({
 }) {
   const { t } = useTranslation();
   const roleStore = useRoleStore();
+  const subscriptionStore = useSubscriptionV1Store();
   const roleList = useVueState(() => [...roleStore.roleList]);
+  const hasCustomRoleFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  );
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1034,8 +1038,12 @@ function RoleMultiSelect({
     return result;
   }, [roleList, search, t]);
 
+  const isCustomRole = (name: string) => !PRESET_ROLES.includes(name);
+
   const toggle = (roleName: string) => {
     if (disabled) return;
+    // Block selecting custom roles without the plan feature
+    if (isCustomRole(roleName) && !hasCustomRoleFeature) return;
     if (value.includes(roleName)) {
       onChange(value.filter((r) => r !== roleName));
     } else {
@@ -1120,12 +1128,17 @@ function RoleMultiSelect({
               </div>
               {group.roles.map((roleName) => {
                 const selected = value.includes(roleName);
+                const isCustom = isCustomRole(roleName);
+                const blocked = isCustom && !hasCustomRoleFeature;
                 return (
                   <div
                     key={roleName}
                     className={cn(
-                      "flex items-center gap-x-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50",
-                      selected && "bg-accent/5"
+                      "flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-gray-50",
+                      selected && "bg-accent/5",
+                      blocked
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
                     )}
                     onClick={() => toggle(roleName)}
                   >
@@ -1140,7 +1153,15 @@ function RoleMultiSelect({
                       {selected && <Check className="h-3 w-3" />}
                     </div>
                     <div className="flex flex-col">
-                      <span>{displayRoleTitle(roleName)}</span>
+                      <div className="flex items-center gap-x-1">
+                        <span>{displayRoleTitle(roleName)}</span>
+                        {blocked && (
+                          <FeatureBadge
+                            feature={PlanFeature.FEATURE_CUSTOM_ROLES}
+                            clickable={false}
+                          />
+                        )}
+                      </div>
                       {displayRoleDescription(roleName) && (
                         <span className="text-xs text-control-light">
                           {displayRoleDescription(roleName)}
