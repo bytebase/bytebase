@@ -80,6 +80,7 @@
               <RequiredStar v-if="project.forceIssueLabels" />
             </label>
             <IssueLabelSelector
+              :disabled="state.creating"
               :selected="state.labels"
               :project="project"
               size="medium"
