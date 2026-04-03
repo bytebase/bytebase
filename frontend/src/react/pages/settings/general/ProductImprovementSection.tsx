@@ -86,7 +86,7 @@ export const ProductImprovementSection = forwardRef<
             }
           />
           <div className="flex flex-col gap-1">
-            <div className="textinfo">
+            <div className="text-base font-semibold">
               {t("settings.general.workspace.product-improvement.participate")}
             </div>
             <div className="textinfolabel">

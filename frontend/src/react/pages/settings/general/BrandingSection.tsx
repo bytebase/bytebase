@@ -185,7 +185,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
             {/* Workspace ID */}
             <div>
-              <label className="font-medium">
+              <label className="text-base font-semibold">
                 {t("settings.general.workspace.id")}
               </label>
               <Input value={workspaceID} disabled className="mt-1" />
@@ -193,7 +193,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
 
             {/* Workspace Title */}
             <div>
-              <label className="font-medium">
+              <label className="text-base font-semibold">
                 {t("settings.general.workspace.title")}
               </label>
               <Input
@@ -207,7 +207,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
             {/* Logo */}
             <div>
               <div className="mb-4 mt-4 lg:mt-0">
-                <div className="flex items-center gap-x-2 font-medium">
+                <div className="flex items-center gap-x-2 text-base font-semibold">
                   {t("settings.general.workspace.logo")}
                   <FeatureBadge
                     feature={PlanFeature.FEATURE_CUSTOM_LOGO}

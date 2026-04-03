@@ -102,7 +102,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
               }
             />
             <div className="flex flex-col gap-1">
-              <div className="textinfo">
+              <div className="text-base font-semibold">
                 {t("settings.general.workspace.audit-log-stdout.enable")}
               </div>
               <div className="textinfolabel">
@@ -126,7 +126,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
               }
             />
             <div className="flex flex-col gap-1">
-              <div className="textinfo">
+              <div className="text-base font-semibold">
                 {t("settings.general.workspace.enable-debug.enable")}
               </div>
             </div>

@@ -1493,9 +1493,7 @@ export function IDPDetailPage() {
         {/* General Section */}
         <div className="pb-6 lg:flex">
           <div className="text-left lg:w-1/4">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {t("common.general")}
-            </h1>
+            <h1 className="text-2xl font-bold">{t("common.general")}</h1>
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
             <div>
@@ -1514,7 +1512,7 @@ export function IDPDetailPage() {
             </div>
 
             <div>
-              <p className="text-base font-semibold text-gray-800 mb-2">
+              <p className="text-base font-semibold mb-2">
                 {t("settings.sso.form.name")}{" "}
                 <span className="text-error">*</span>
               </p>
@@ -1559,7 +1557,7 @@ export function IDPDetailPage() {
         {/* Configuration Section */}
         <div className="py-6 lg:flex">
           <div className="text-left lg:w-1/4">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold">
               {t("settings.sso.form.configuration")}
             </h1>
             <p className="text-base text-gray-600 mt-3">
@@ -1585,7 +1583,7 @@ export function IDPDetailPage() {
         {/* User Information Mapping Section */}
         <div className="py-6 lg:flex">
           <div className="text-left lg:w-1/4">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold">
               {t("settings.sso.form.user-information-mapping")}
             </h1>
             <p className="text-base text-gray-600 mt-3">

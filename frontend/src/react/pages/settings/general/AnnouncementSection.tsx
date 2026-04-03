@@ -123,7 +123,7 @@ export const AnnouncementSection = forwardRef<
           <div className="mt-5 lg:mt-0">
             {/* Alert level radio */}
             <label className="flex items-center gap-x-2">
-              <span className="font-medium">
+              <span className="text-base font-semibold">
                 {t(
                   "settings.general.workspace.announcement-alert-level.description"
                 )}
@@ -162,7 +162,7 @@ export const AnnouncementSection = forwardRef<
 
             {/* Announcement text */}
             <label className="flex items-center mt-2 gap-x-2">
-              <span className="font-medium">
+              <span className="text-base font-semibold">
                 {t("settings.general.workspace.announcement-text.self")}
               </span>
             </label>
@@ -183,13 +183,13 @@ export const AnnouncementSection = forwardRef<
 
             {/* Extra link */}
             <label className="flex items-center py-2 gap-x-2">
-              <span className="font-medium">
+              <span className="text-base font-semibold">
                 {t("settings.general.workspace.extra-link.self")}
               </span>
             </label>
             <Input
               value={state.link}
-              className="mb-5 w-full"
+              className="w-full"
               placeholder={t(
                 "settings.general.workspace.extra-link.placeholder"
               )}

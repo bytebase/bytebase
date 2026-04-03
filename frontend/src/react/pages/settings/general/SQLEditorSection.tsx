@@ -225,7 +225,7 @@ export const SQLEditorSection = forwardRef<
               onChange={(e) => handleToggle("disableExport", !e.target.checked)}
               className="h-4 w-4"
             />
-            <span className="font-medium">
+            <span className="text-base font-semibold">
               {t("settings.general.workspace.data-export")}
             </span>
             <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
@@ -244,7 +244,7 @@ export const SQLEditorSection = forwardRef<
               }
               className="h-4 w-4"
             />
-            <span className="font-medium">
+            <span className="text-base font-semibold">
               {t("settings.general.workspace.data-copy")}
             </span>
             <FeatureBadge feature={PlanFeature.FEATURE_RESTRICT_COPYING_DATA} />
@@ -264,7 +264,7 @@ export const SQLEditorSection = forwardRef<
                 }
                 className="h-4 w-4"
               />
-              <span className="font-medium">
+              <span className="text-base font-semibold">
                 {t("settings.general.workspace.allow-admin-data-source.self")}
               </span>
               <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
@@ -284,7 +284,7 @@ export const SQLEditorSection = forwardRef<
             display="block"
           >
             <div>
-              <p className="font-medium flex flex-row justify-start items-center">
+              <p className="text-base font-semibold flex flex-row justify-start items-center">
                 <span className="mr-2">
                   {t("settings.general.workspace.maximum-sql-result.size.self")}
                 </span>
@@ -323,7 +323,7 @@ export const SQLEditorSection = forwardRef<
         {/* Maximum SQL Result Rows */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div>
-            <p className="font-medium flex flex-row justify-start items-center">
+            <p className="text-base font-semibold flex flex-row justify-start items-center">
               <span className="mr-2">
                 {t("settings.general.workspace.maximum-sql-result.rows.self")}
               </span>
@@ -361,7 +361,7 @@ export const SQLEditorSection = forwardRef<
           display="block"
         >
           <div>
-            <p className="font-medium flex flex-row justify-start items-center">
+            <p className="text-base font-semibold flex flex-row justify-start items-center">
               <span className="mr-2">
                 {t("settings.general.workspace.query-data-policy.timeout.self")}
               </span>
