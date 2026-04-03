@@ -2,19 +2,17 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -43,155 +41,91 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	// Create the rule
-	rule := NewInsertRowLimitRule(ctx, level, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.Driver)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	maxRow := int(numberPayload.Number)
+	driver := checkCtx.Driver
+	var advice []*storepb.Advice
+	explainCount := 0
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		if rule.GetExplainCount() >= common.MaximumLintExplainSize {
-			break
-		}
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// InsertRowLimitRule checks for insert row limit.
-type InsertRowLimitRule struct {
-	BaseRule
-	text         string
-	line         int
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-// NewInsertRowLimitRule creates a new InsertRowLimitRule.
-func NewInsertRowLimitRule(ctx context.Context, level storepb.Advice_Status, title string, maxRow int, driver *sql.DB) *InsertRowLimitRule {
-	return &InsertRowLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		maxRow: maxRow,
-		driver: driver,
-		ctx:    ctx,
-	}
-}
-
-// Name returns the rule name.
-func (*InsertRowLimitRule) Name() string {
-	return "InsertRowLimitRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *InsertRowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
+		ins, ok := node.(*ast.InsertStmt)
 		if !ok {
-			return nil
+			continue
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeInsertStatement:
-		r.checkInsertStatement(ctx.(*mysql.InsertStatementContext))
-	default:
+
+		baseLine := stmt.BaseLine()
+		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
+		line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
+
+		// INSERT ... SELECT: use EXPLAIN to count rows.
+		if ins.Select != nil {
+			if driver == nil {
+				continue
+			}
+			explainCount++
+			res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
+			if err != nil {
+				advice = append(advice, &storepb.Advice{
+					Status:        level,
+					Code:          code.InsertTooManyRows.Int32(),
+					Title:         checkCtx.Rule.Type.String(),
+					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+					StartPosition: common.ConvertANTLRLineToPosition(line),
+				})
+			} else {
+				rowCount, err := getInsertRows(res)
+				if err != nil {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.Internal.Int32(),
+						Title:         checkCtx.Rule.Type.String(),
+						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				} else if rowCount > int64(maxRow) {
+					advice = append(advice, &storepb.Advice{
+						Status:        level,
+						Code:          code.InsertTooManyRows.Int32(),
+						Title:         checkCtx.Rule.Type.String(),
+						Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, rowCount, maxRow),
+						StartPosition: common.ConvertANTLRLineToPosition(line),
+					})
+				}
+			}
+			if explainCount >= common.MaximumLintExplainSize {
+				break
+			}
+			continue
+		}
+
+		// INSERT ... VALUES: count value rows directly.
+		if len(ins.Values) > maxRow {
+			advice = append(advice, &storepb.Advice{
+				Status:        level,
+				Code:          code.InsertTooManyRows.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, len(ins.Values), maxRow),
+				StartPosition: common.ConvertANTLRLineToPosition(line),
+			})
+		}
 	}
-	return nil
+
+	return advice, nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*InsertRowLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// GetExplainCount returns the explain count.
-func (r *InsertRowLimitRule) GetExplainCount() int {
-	return r.explainCount
-}
-
-func (r *InsertRowLimitRule) checkInsertStatement(ctx *mysql.InsertStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+func contentStartIndex(text string) int {
+	for i, c := range text {
+		if c != ' ' && c != '\t' && c != '\n' && c != '\r' {
+			return i
+		}
 	}
-	r.line = r.baseLine + ctx.GetStart().GetLine()
-	if ctx.InsertQueryExpression() != nil {
-		r.handleInsertQueryExpression(ctx.InsertQueryExpression())
-	}
-	r.handleNoInsertQueryExpression(ctx)
-}
-
-func (r *InsertRowLimitRule) handleInsertQueryExpression(ctx mysql.IInsertQueryExpressionContext) {
-	if r.driver == nil || ctx == nil {
-		return
-	}
-
-	r.explainCount++
-	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", r.text))
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.InsertTooManyRows.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", r.text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.line),
-		})
-		return
-	}
-	rowCount, err := getInsertRows(res)
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Internal.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", r.text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.line),
-		})
-	} else if rowCount > int64(r.maxRow) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.InsertTooManyRows.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", r.text, rowCount, r.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(r.line),
-		})
-	}
-}
-
-func (r *InsertRowLimitRule) handleNoInsertQueryExpression(ctx mysql.IInsertStatementContext) {
-	if ctx.InsertFromConstructor() == nil {
-		return
-	}
-	if ctx.InsertFromConstructor().InsertValues() == nil {
-		return
-	}
-	if ctx.InsertFromConstructor().InsertValues().ValueList() == nil {
-		return
-	}
-
-	allValues := ctx.InsertFromConstructor().InsertValues().ValueList().AllValues()
-	if len(allValues) > r.maxRow {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.InsertTooManyRows.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", r.text, len(allValues), r.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(r.line),
-		})
-	}
+	return 0
 }
 
 func getInsertRows(res []any) (int64, error) {
@@ -210,25 +144,6 @@ func getInsertRows(res []any) (int64, error) {
 	if len(rowList) < 1 {
 		return 0, errors.Errorf("not found any data")
 	}
-
-	// MySQL EXPLAIN statement result has 12 columns.
-	// the column 9 is the data 'rows'.
-	// the first not-NULL value of column 9 is the affected rows count.
-	//
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 
 	rowsIndex, err := getColumnIndex(columns, "rows")
 	if err != nil {

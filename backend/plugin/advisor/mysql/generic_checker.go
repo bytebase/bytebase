@@ -151,8 +151,8 @@ func (*GenericChecker) getNodeType(ctx antlr.ParserRuleContext) string {
 // BaseRule provides common functionality for rules.
 // Other rules can embed this struct to get common behavior.
 type BaseRule struct {
-	level      storepb.Advice_Status
-	title      string
+	level      storepb.Advice_Status // nolint:unused
+	title      string                // nolint:unused
 	adviceList []*storepb.Advice
 	baseLine   int
 }

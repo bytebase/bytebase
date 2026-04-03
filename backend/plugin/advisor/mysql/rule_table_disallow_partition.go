@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -37,107 +33,60 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableDisallowPartitionRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableDisallowPartitionRule checks for disallow table partition.
-type TableDisallowPartitionRule struct {
-	BaseRule
-	text string
-}
-
-// NewTableDisallowPartitionRule creates a new TableDisallowPartitionRule.
-func NewTableDisallowPartitionRule(level storepb.Advice_Status, title string) *TableDisallowPartitionRule {
-	return &TableDisallowPartitionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableDisallowPartitionOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableDisallowPartitionRule) Name() string {
+type tableDisallowPartitionOmniRule struct {
+	OmniBaseRule
+}
+
+func (*tableDisallowPartitionOmniRule) Name() string {
 	return "TableDisallowPartitionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowPartitionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *tableDisallowPartitionOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowPartitionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableDisallowPartitionRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	code := advisorcode.Ok
-	if ctx.PartitionClause() != nil && ctx.PartitionClause().PartitionTypeDef() != nil {
-		code = advisorcode.CreateTablePartition
-	}
-
-	if code != advisorcode.Ok {
+func (r *tableDisallowPartitionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Partitions != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:        r.Level,
+			Code:          advisorcode.CreateTablePartition.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 }
 
-func (r *TableDisallowPartitionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	code := advisorcode.Ok
-	if ctx.AlterTableActions() != nil && ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
-		code = advisorcode.CreateTablePartition
-	}
-	if code != advisorcode.Ok {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
+func (r *tableDisallowPartitionOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
+			continue
+		}
+		if cmd.Type == ast.ATPartitionBy && cmd.PartitionBy != nil {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.Level,
+				Code:          advisorcode.CreateTablePartition.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+			})
+			return
+		}
 	}
 }

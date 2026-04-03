@@ -3,17 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -34,86 +31,55 @@ func (*TableRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableRequireCollationRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableRequireCollationRule checks that tables have collation specified.
-type TableRequireCollationRule struct {
-	BaseRule
-}
-
-// NewTableRequireCollationRule creates a new TableRequireCollationRule.
-func NewTableRequireCollationRule(level storepb.Advice_Status, title string) *TableRequireCollationRule {
-	return &TableRequireCollationRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableRequireCollationOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableRequireCollationRule) Name() string {
+type tableRequireCollationOmniRule struct {
+	OmniBaseRule
+}
+
+func (*tableRequireCollationOmniRule) Name() string {
 	return "TableRequireCollationRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableRequireCollationRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeCreateTable {
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableRequireCollationRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableRequireCollationRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableName() == nil {
+func (r *tableRequireCollationOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateTableStmt)
+	if !ok {
 		return
 	}
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	r.checkCreateTable(n)
+}
+
+func (r *tableRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
+		return
+	}
+	tableName := n.Table.Name
 	if tableName == "" {
 		return
 	}
 
 	hasCollation := false
-	if ctx.CreateTableOptions() != nil {
-		for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
-			if tableOption.DefaultCollation() != nil {
-				hasCollation = true
-				break
-			}
+	for _, opt := range n.Options {
+		if opt != nil && (strings.EqualFold(opt.Name, "COLLATE") || strings.EqualFold(opt.Name, "DEFAULT COLLATE")) {
+			hasCollation = true
+			break
 		}
 	}
 	if !hasCollation {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.NoCollation.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Table %s does not have a collation specified", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 }

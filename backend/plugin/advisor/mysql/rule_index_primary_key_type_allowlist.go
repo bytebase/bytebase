@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -44,211 +40,175 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		allowlist[strings.ToLower(tp)] = true
 	}
 
-	// Create the rule
-	rule := NewIndexPrimaryKeyTypeAllowlistRule(level, checkCtx.Rule.Type.String(), allowlist, checkCtx.OriginalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &indexPrimaryKeyTypeAllowlistOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		allowlist:        allowlist,
+		originalMetadata: checkCtx.OriginalMetadata,
+		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// IndexPrimaryKeyTypeAllowlistRule checks for primary key type allowlist.
-type IndexPrimaryKeyTypeAllowlistRule struct {
-	BaseRule
+type indexPrimaryKeyTypeAllowlistOmniRule struct {
+	OmniBaseRule
 	allowlist        map[string]bool
 	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
-// NewIndexPrimaryKeyTypeAllowlistRule creates a new IndexPrimaryKeyTypeAllowlistRule.
-func NewIndexPrimaryKeyTypeAllowlistRule(level storepb.Advice_Status, title string, allowlist map[string]bool, originalMetadata *model.DatabaseMetadata) *IndexPrimaryKeyTypeAllowlistRule {
-	return &IndexPrimaryKeyTypeAllowlistRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		allowlist:        allowlist,
-		originalMetadata: originalMetadata,
-		tablesNewColumns: make(tableColumnTypes),
-	}
-}
-
-// Name returns the rule name.
-func (*IndexPrimaryKeyTypeAllowlistRule) Name() string {
+func (*indexPrimaryKeyTypeAllowlistOmniRule) Name() string {
 	return "IndexPrimaryKeyTypeAllowlistRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *IndexPrimaryKeyTypeAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *indexPrimaryKeyTypeAllowlistOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*IndexPrimaryKeyTypeAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *IndexPrimaryKeyTypeAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
+	tableName := n.Table.Name
+	for _, col := range n.Columns {
+		if col == nil || col.TypeName == nil {
 			continue
 		}
-		switch {
-		case tableElement.ColumnDefinition() != nil:
-			if tableElement.ColumnDefinition().FieldDefinition() == nil {
-				continue
-			}
-			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-			r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-		case tableElement.TableConstraintDef() != nil:
-			r.checkConstraintDef(tableName, tableElement.TableConstraintDef())
-		default:
-		}
-	}
-}
-
-func (r *IndexPrimaryKeyTypeAllowlistRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if alterListItem == nil {
-			continue
-		}
-
-		switch {
-		// add column
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.Identifier() != nil:
-			switch {
-			case alterListItem.Identifier() != nil && alterListItem.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
-				r.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
-			case alterListItem.OPEN_PAR_SYMBOL() != nil && alterListItem.TableElementList() != nil:
-				for _, tableElement := range alterListItem.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+		columnType := omniDataTypeNameCompact(col.TypeName)
+		for _, c := range col.Constraints {
+			if c.Type == ast.ColConstrPrimaryKey {
+				if _, exists := r.allowlist[columnType]; !exists {
+					r.AddAdviceAbsolute(&storepb.Advice{
+						Status:        r.Level,
+						Code:          code.IndexPKType.Int32(),
+						Title:         r.Title,
+						Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
+						StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(col.Loc))),
+					})
 				}
-			default:
 			}
-		// modify column
-		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
-		// change column
-		case alterListItem.CHANGE_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil && alterListItem.Identifier() != nil:
-			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
-			r.tablesNewColumns.delete(tableName, oldColumnName)
-			newColumnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
-			r.checkFieldDefinition(tableName, newColumnName, alterListItem.FieldDefinition())
-		// add constriant.
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
-			r.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+		}
+		r.tablesNewColumns.set(tableName, col.Name, columnType)
+	}
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
+			continue
+		}
+		r.checkConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
+	}
+}
+
+func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
+		return
+	}
+	tableName := n.Table.Name
+	for _, cmd := range n.Commands {
+		if cmd == nil {
+			continue
+		}
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			for _, col := range omniGetColumnsFromCmd(cmd) {
+				if col == nil || col.TypeName == nil {
+					continue
+				}
+				columnType := omniDataTypeNameCompact(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						if _, exists := r.allowlist[columnType]; !exists {
+							r.AddAdviceAbsolute(&storepb.Advice{
+								Status:        r.Level,
+								Code:          code.IndexPKType.Int32(),
+								Title:         r.Title,
+								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
+								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+							})
+						}
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
+			}
+		case ast.ATModifyColumn:
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				col := cmd.Column
+				columnType := omniDataTypeNameCompact(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						if _, exists := r.allowlist[columnType]; !exists {
+							r.AddAdviceAbsolute(&storepb.Advice{
+								Status:        r.Level,
+								Code:          code.IndexPKType.Int32(),
+								Title:         r.Title,
+								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
+								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+							})
+						}
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
+			}
+		case ast.ATChangeColumn:
+			r.tablesNewColumns.delete(tableName, cmd.Name)
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				col := cmd.Column
+				columnType := omniDataTypeNameCompact(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						if _, exists := r.allowlist[columnType]; !exists {
+							r.AddAdviceAbsolute(&storepb.Advice{
+								Status:        r.Level,
+								Code:          code.IndexPKType.Int32(),
+								Title:         r.Title,
+								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
+								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+							})
+						}
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
+			}
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil {
+				r.checkConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
+			}
 		default:
 		}
 	}
 }
 
-func (r *IndexPrimaryKeyTypeAllowlistRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if ctx.DataType() == nil {
+func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
+	if constraint.Type != ast.ConstrPrimaryKey {
 		return
 	}
-	// columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.DataType())
-	// columnType = strings.ToLower(columnType)
-	columnType := mysqlparser.NormalizeMySQLDataType(ctx.DataType(), true /* compact */)
-	for _, attribute := range ctx.AllColumnAttribute() {
-		if attribute.PRIMARY_SYMBOL() != nil {
-			if _, exists := r.allowlist[columnType]; !exists {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.IndexPKType.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
-		}
-	}
-	r.tablesNewColumns.set(tableName, columnName, columnType)
-}
-
-func (r *IndexPrimaryKeyTypeAllowlistRule) checkConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
-	if ctx.GetType_().GetTokenType() != mysql.MySQLParserPRIMARY_SYMBOL {
-		return
-	}
-	if ctx.KeyListVariants() == nil {
-		return
-	}
-	columnList := mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
-
-	for _, columnName := range columnList {
+	for _, columnName := range constraint.Columns {
 		columnType, err := r.getPKColumnType(tableName, columnName)
 		if err != nil {
 			continue
 		}
 		columnType = strings.ToLower(columnType)
 		if _, exists := r.allowlist[columnType]; !exists {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.IndexPKType.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
 			})
 		}
 	}
 }
 
-// getPKColumnType gets the column type string from r.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
-func (r *IndexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, columnName string) (string, error) {
+func (r *indexPrimaryKeyTypeAllowlistOmniRule) getPKColumnType(tableName string, columnName string) (string, error) {
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}

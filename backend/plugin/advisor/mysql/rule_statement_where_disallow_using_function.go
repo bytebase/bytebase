@@ -3,16 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -32,96 +30,46 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewStatementWhereDisallowUsingFunctionRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// StatementWhereDisallowUsingFunctionRule checks for functions in WHERE clause.
-type StatementWhereDisallowUsingFunctionRule struct {
-	BaseRule
-	text          string
-	isSelect      bool
-	inWhereClause bool
-}
-
-// NewStatementWhereDisallowUsingFunctionRule creates a new StatementWhereDisallowUsingFunctionRule.
-func NewStatementWhereDisallowUsingFunctionRule(level storepb.Advice_Status, title string) *StatementWhereDisallowUsingFunctionRule {
-	return &StatementWhereDisallowUsingFunctionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &whereDisallowFuncOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*StatementWhereDisallowUsingFunctionRule) Name() string {
+type whereDisallowFuncOmniRule struct {
+	OmniBaseRule
+}
+
+func (*whereDisallowFuncOmniRule) Name() string {
 	return "StatementWhereDisallowUsingFunctionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementWhereDisallowUsingFunctionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
+func (r *whereDisallowFuncOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	// Collect WHERE expressions from all SelectStmt nodes (including UNION branches).
+	ast.Inspect(node, func(n ast.Node) bool {
+		sel, ok := n.(*ast.SelectStmt)
 		if !ok {
-			return nil
+			return true
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeSelectStatement:
-		r.isSelect = true
-	case NodeTypeWhereClause:
-		r.inWhereClause = true
-	case NodeTypeFunctionCall:
-		r.checkFunctionCall(ctx.(*mysql.FunctionCallContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *StatementWhereDisallowUsingFunctionRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeSelectStatement:
-		r.isSelect = false
-	case NodeTypeWhereClause:
-		r.inWhereClause = false
-	default:
-	}
-	return nil
-}
-
-func (r *StatementWhereDisallowUsingFunctionRule) checkFunctionCall(ctx *mysql.FunctionCallContext) {
-	if !r.isSelect || !r.inWhereClause {
-		return
-	}
-
-	pi := ctx.PureIdentifier()
-	if pi != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.DisabledFunction.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
-	}
+		if sel.Where != nil {
+			ast.Inspect(sel.Where, func(wn ast.Node) bool {
+				if fn, ok := wn.(*ast.FuncCallExpr); ok {
+					r.AddAdviceAbsolute(&storepb.Advice{
+						Status:        r.Level,
+						Code:          code.DisabledFunction.Int32(),
+						Title:         r.Title,
+						Content:       fmt.Sprintf("Function is disallowed in where clause, but \"%s\" uses", text),
+						StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(fn.Loc))),
+					})
+				}
+				return true
+			})
+		}
+		return true
+	})
 }
