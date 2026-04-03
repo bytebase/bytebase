@@ -7,41 +7,23 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
-	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
+	base.RegisterTransformDMLToSelect(storepb.Engine_MYSQL, TransformDMLToSelect)
 }
 
 const (
 	maxTableNameLength = 64
 )
-
-func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	var dbMetadata *model.DatabaseMetadata
-	if tCtx.GetDatabaseMetadataFunc != nil {
-		_, metadata, err := tCtx.GetDatabaseMetadataFunc(ctx, tCtx.InstanceID, sourceDatabase)
-		if err == nil {
-			dbMetadata = metadata
-		}
-	}
-
-	statementInfoList, err := prepareTransformation(sourceDatabase, statement, dbMetadata)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare transformation")
-	}
-
-	return generateSQL(ctx, tCtx, statementInfoList, targetDatabase, tablePrefix)
-}
 
 type StatementType int
 
@@ -62,10 +44,28 @@ type TableReference struct {
 type StatementInfo struct {
 	Offset        int
 	Statement     string
-	Tree          antlr.ParserRuleContext
+	Node          ast.Node
 	Table         *TableReference
-	StartPosition *store.Position
-	EndPosition   *store.Position
+	StartPosition *storepb.Position
+	EndPosition   *storepb.Position
+	FullSQL       string
+}
+
+func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	var dbMetadata *model.DatabaseMetadata
+	if tCtx.GetDatabaseMetadataFunc != nil {
+		_, metadata, err := tCtx.GetDatabaseMetadataFunc(ctx, tCtx.InstanceID, sourceDatabase)
+		if err == nil {
+			dbMetadata = metadata
+		}
+	}
+
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement, dbMetadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare transformation")
+	}
+
+	return generateSQL(ctx, tCtx, statementInfoList, targetDatabase, tablePrefix)
 }
 
 func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
@@ -75,38 +75,414 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 	}
 
 	var result []StatementInfo
-
 	for i, item := range list {
 		if len(item.Text) == 0 || item.Empty {
 			continue
 		}
-		parseResult, err := ParseMySQL(item.Text)
+
+		parsed, err := ParseMySQLOmni(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
+		if parsed == nil || len(parsed.Items) == 0 {
+			continue
+		}
 
-		for _, sql := range parseResult {
-			// After splitting the SQL, we should have only one statement in the list.
-			// The FOR loop is just for safety.
-			// So we can use the i as the offset.
-			tables, err := ExtractTables(databaseName, sql, i, dbMetadata)
+		for _, node := range parsed.Items {
+			tables, err := ExtractTables(databaseName, node, item.Text, i, dbMetadata)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
 			for _, table := range tables {
 				result = append(result, StatementInfo{
-					Offset:        i,
+					Offset:        table.Offset,
 					Statement:     table.Statement,
+					Node:          table.Node,
 					Table:         table.Table,
-					Tree:          table.Tree,
 					StartPosition: item.Start,
 					EndPosition:   item.End,
+					FullSQL:       item.Text,
 				})
 			}
 		}
 	}
 
 	return result, nil
+}
+
+// ExtractTables extracts table references from a DML statement.
+func ExtractTables(databaseName string, node ast.Node, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		return extractTablesFromDelete(databaseName, n, fullSQL, offset, dbMetadata)
+	case *ast.UpdateStmt:
+		return extractTablesFromUpdate(databaseName, n, fullSQL, offset, dbMetadata)
+	default:
+		return nil, nil
+	}
+}
+
+func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL string, offset int, _ *model.DatabaseMetadata) ([]StatementInfo, error) {
+	cteNames := collectCTENames(fullSQL, n.Loc)
+	stmtText := extractStatementText(fullSQL, n.Loc)
+
+	// Collect all single table refs from the Tables list.
+	singleTables := collectSingleTables(databaseName, n.Tables)
+
+	if len(n.Using) == 0 {
+		// Single-table DELETE: DELETE FROM t WHERE ...
+		if len(singleTables) == 0 {
+			return nil, nil
+		}
+		for _, ref := range singleTables {
+			ref.StatementType = StatementTypeDelete
+		}
+		first := singleTables[firstKey(singleTables)]
+		return []StatementInfo{{
+			Offset:    offset,
+			Statement: stmtText,
+			Node:      n,
+			Table:     first,
+			FullSQL:   fullSQL,
+		}}, nil
+	}
+
+	// Multi-table DELETE: DELETE t1, t2 FROM t1 JOIN t2 ... WHERE ...
+	// Tables = targets to delete from, Using = referenced table list.
+	refTables := collectSingleTables(databaseName, n.Using)
+
+	var result []StatementInfo
+	for _, target := range singleTables {
+		name := target.Table
+		if target.Alias != "" {
+			name = target.Alias
+		}
+		if cteNames[name] {
+			continue
+		}
+		ref, ok := refTables[name]
+		if !ok {
+			return nil, errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", name)
+		}
+		ref.StatementType = StatementTypeDelete
+		result = append(result, StatementInfo{
+			Offset:    offset,
+			Statement: stmtText,
+			Node:      n,
+			Table:     ref,
+			FullSQL:   fullSQL,
+		})
+	}
+	return result, nil
+}
+
+func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
+	cteNames := collectCTENames(fullSQL, n.Loc)
+	stmtText := extractStatementText(fullSQL, n.Loc)
+	singleTables := collectSingleTables(databaseName, n.Tables)
+
+	// Determine which tables are updated via SET clause column prefixes.
+	updatedTables := make(map[string]bool)
+	var unqualifiedColumns []string
+	for _, assign := range n.SetList {
+		if assign.Column != nil {
+			table := assign.Column.Table
+			if !cteNames[table] {
+				updatedTables[table] = true
+				if table == "" {
+					unqualifiedColumns = append(unqualifiedColumns, assign.Column.Column)
+				}
+			}
+		}
+	}
+
+	// Resolve unqualified columns using metadata.
+	if updatedTables[""] {
+		delete(updatedTables, "")
+		resolved := resolveUnqualifiedColumns(unqualifiedColumns, singleTables, dbMetadata)
+		for t := range resolved {
+			updatedTables[t] = true
+		}
+	}
+
+	// Single-table UPDATE (only one table, no explicit qualification needed).
+	if len(updatedTables) == 0 && len(singleTables) == 1 {
+		for _, ref := range singleTables {
+			ref.StatementType = StatementTypeUpdate
+			return []StatementInfo{{
+				Offset:    offset,
+				Statement: stmtText,
+				Node:      n,
+				Table:     ref,
+				FullSQL:   fullSQL,
+			}}, nil
+		}
+	}
+
+	var result []StatementInfo
+	for table := range updatedTables {
+		ref, ok := singleTables[table]
+		if !ok {
+			return nil, errors.Errorf("cannot extract reference table: no matched updated table %q in referenced table list", table)
+		}
+		ref.StatementType = StatementTypeUpdate
+		result = append(result, StatementInfo{
+			Offset:    offset,
+			Statement: stmtText,
+			Node:      n,
+			Table:     ref,
+			FullSQL:   fullSQL,
+		})
+	}
+	return result, nil
+}
+
+// collectSingleTables walks TableExpr slices and collects TableRef entries keyed by alias or name.
+func collectSingleTables(databaseName string, exprs []ast.TableExpr) map[string]*TableReference {
+	result := make(map[string]*TableReference)
+	for _, expr := range exprs {
+		collectSingleTablesFromExpr(databaseName, expr, result)
+	}
+	return result
+}
+
+func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out map[string]*TableReference) {
+	switch e := expr.(type) {
+	case *ast.TableRef:
+		db := e.Schema
+		if db == "" {
+			db = databaseName
+		}
+		ref := &TableReference{
+			Database: db,
+			Table:    e.Name,
+			Alias:    e.Alias,
+		}
+		key := e.Name
+		if e.Alias != "" {
+			key = e.Alias
+		}
+		out[key] = ref
+	case *ast.JoinClause:
+		if e.Left != nil {
+			collectSingleTablesFromExpr(databaseName, e.Left, out)
+		}
+		if e.Right != nil {
+			collectSingleTablesFromExpr(databaseName, e.Right, out)
+		}
+	}
+}
+
+// collectCTENames extracts CTE names from the SQL text before the statement Loc.
+// MySQL's UPDATE/DELETE CTEs are not in the omni AST, so we parse the prefix.
+func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
+	result := make(map[string]bool)
+	if stmtLoc.Start <= 0 {
+		return result
+	}
+	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
+	if !strings.HasPrefix(strings.ToUpper(prefix), "WITH") {
+		return result
+	}
+	// Parse "prefix SELECT 1" to extract CTE names via omni.
+	tempSQL := prefix + " SELECT 1"
+	parsed, err := ParseMySQLOmni(tempSQL)
+	if err != nil || parsed == nil {
+		return result
+	}
+	for _, item := range parsed.Items {
+		if sel, ok := item.(*ast.SelectStmt); ok {
+			for _, cte := range sel.CTEs {
+				result[cte.Name] = true
+			}
+		}
+	}
+	return result
+}
+
+// extractCTE extracts the CTE (WITH clause) text from the SQL before the statement.
+func extractCTE(fullSQL string, stmtLoc ast.Loc) string {
+	if stmtLoc.Start <= 0 {
+		return ""
+	}
+	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
+	if !strings.HasPrefix(strings.ToUpper(prefix), "WITH") {
+		return ""
+	}
+	return prefix
+}
+
+func extractStatementText(fullSQL string, loc ast.Loc) string {
+	end := loc.End
+	if end <= 0 || end > len(fullSQL) {
+		end = len(fullSQL)
+	}
+	start := 0
+	if loc.Start > 0 {
+		start = loc.Start
+	}
+	return strings.TrimSpace(fullSQL[start:end])
+}
+
+// extractNodeText extracts trimmed text from SQL using a Loc range.
+func extractNodeText(loc ast.Loc, sql string) string {
+	if loc.Start < 0 || loc.End < 0 || loc.Start >= loc.End || loc.End > len(sql) {
+		return ""
+	}
+	return strings.TrimSpace(sql[loc.Start:loc.End])
+}
+
+// writeSuffixSelectClause writes the FROM ... WHERE ... suffix of a DML statement.
+func writeSuffixSelectClause(buf *strings.Builder, node ast.Node, fullSQL string) error {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return writeUpdateSuffix(buf, n, fullSQL)
+	case *ast.DeleteStmt:
+		return writeDeleteSuffix(buf, n, fullSQL)
+	}
+	return nil
+}
+
+func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) error {
+	// For UPDATE: write "table_refs WHERE ... ORDER BY ... LIMIT ..."
+	// The table refs are everything from the first table to before SET.
+	if len(n.Tables) > 0 && len(n.SetList) > 0 {
+		tablesStart := nodeLocStart(n.Tables[0])
+		setStart := n.SetList[0].Loc.Start
+		if tablesStart >= 0 && setStart > tablesStart {
+			// Find "SET" keyword and take everything before it.
+			setIdx := findKeywordAfter(sql, tablesStart, "SET")
+			if setIdx > tablesStart {
+				if _, err := buf.WriteString(strings.TrimSpace(sql[tablesStart:setIdx])); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Everything after the last SET assignment is WHERE + ORDER BY + LIMIT.
+	if len(n.SetList) > 0 {
+		lastAssign := n.SetList[len(n.SetList)-1]
+		afterSet := lastAssign.Loc.End
+		stmtEnd := n.Loc.End
+		if stmtEnd <= 0 || stmtEnd > len(sql) {
+			stmtEnd = len(sql)
+		}
+		suffix := strings.TrimSpace(sql[afterSet:stmtEnd])
+		if suffix != "" {
+			if _, err := fmt.Fprintf(buf, " %s", suffix); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) error {
+	// For single-table DELETE: everything from the table ref to statement end.
+	// For multi-table DELETE: everything from the USING/reference table list to end.
+	if len(n.Using) > 0 {
+		start := nodeLocStart(n.Using[0])
+		end := n.Loc.End
+		if end <= 0 || end > len(sql) {
+			end = len(sql)
+		}
+		if start >= 0 && end > start {
+			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
+				return err
+			}
+		}
+	} else if len(n.Tables) > 0 {
+		start := nodeLocStart(n.Tables[0])
+		end := n.Loc.End
+		if end <= 0 || end > len(sql) {
+			end = len(sql)
+		}
+		if start >= 0 && end > start {
+			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func nodeLocStart(expr ast.TableExpr) int {
+	switch e := expr.(type) {
+	case *ast.TableRef:
+		return e.Loc.Start
+	case *ast.JoinClause:
+		return e.Loc.Start
+	}
+	return -1
+}
+
+func nodeLocEnd(expr ast.TableExpr) int {
+	switch e := expr.(type) {
+	case *ast.TableRef:
+		return e.Loc.End
+	case *ast.JoinClause:
+		return e.Loc.End
+	}
+	return -1
+}
+
+// findKeywordAfter finds the byte offset of a case-insensitive keyword after position start.
+func findKeywordAfter(sql string, start int, keyword string) int {
+	upper := strings.ToUpper(sql[start:])
+	idx := strings.Index(upper, keyword)
+	if idx < 0 {
+		return -1
+	}
+	return start + idx
+}
+
+// resolveUnqualifiedColumns resolves unqualified column names to owning tables using metadata.
+func resolveUnqualifiedColumns(columns []string, singleTables map[string]*TableReference, dbMetadata *model.DatabaseMetadata) map[string]bool {
+	result := make(map[string]bool)
+
+	if dbMetadata == nil {
+		for t := range singleTables {
+			result[t] = true
+		}
+		return result
+	}
+	schema := dbMetadata.GetSchemaMetadata("")
+	if schema == nil {
+		for t := range singleTables {
+			result[t] = true
+		}
+		return result
+	}
+
+	for _, col := range columns {
+		resolved := false
+		for aliasOrName, ref := range singleTables {
+			tableMetadata := schema.GetTable(ref.Table)
+			if tableMetadata == nil {
+				continue
+			}
+			if tableMetadata.GetColumn(col) != nil {
+				result[aliasOrName] = true
+				resolved = true
+			}
+		}
+		if !resolved {
+			for t := range singleTables {
+				result[t] = true
+			}
+			return result
+		}
+	}
+	return result
+}
+
+func firstKey(m map[string]*TableReference) string {
+	for k := range m {
+		return k
+	}
+	return ""
 }
 
 func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoList []StatementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -116,7 +492,6 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 		groupByTable[key] = append(groupByTable[key], item)
 	}
 
-	// Check if the statement type is the same for all statements in one table.
 	for key, list := range groupByTable {
 		stmtType := StatementTypeUnknown
 		for _, item := range list {
@@ -130,7 +505,6 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 	}
 
 	var result []base.BackupStatement
-
 	for key, list := range groupByTable {
 		backupStatement, err := generateSQLForTable(ctx, tCtx, list, databaseName, tablePrefix)
 		if err != nil {
@@ -202,8 +576,6 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	}
 	for i, item := range statementInfoList {
 		if i != 0 {
-			// We assume that the source table has a primary key.
-			// If we have multiple statements, we need to use UNION DISTINCT to avoid duplicate rows.
 			if _, err := buf.WriteString("\n  UNION DISTINCT\n"); err != nil {
 				return nil, errors.Wrap(err, "failed to write union all statement")
 			}
@@ -215,12 +587,15 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 		if _, err := buf.WriteString("  "); err != nil {
 			return nil, errors.Wrap(err, "failed to write space")
 		}
-		cteString := extractCTE(item.Tree)
+
+		stmtLoc := nodeStmtLoc(item.Node)
+		cteString := extractCTE(item.FullSQL, stmtLoc)
 		if len(cteString) > 0 {
 			if _, err := fmt.Fprintf(&buf, "%s ", cteString); err != nil {
 				return nil, errors.Wrap(err, "failed to write cte")
 			}
 		}
+
 		if len(generatedColumns) == 0 {
 			if _, err := fmt.Fprintf(&buf, "SELECT `%s`.* FROM ", tableNameOrAlias); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
@@ -229,8 +604,8 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 			if _, err := buf.WriteString("SELECT "); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
-			for i, column := range normalColumns {
-				if i > 0 {
+			for j, column := range normalColumns {
+				if j > 0 {
 					if err := buf.WriteByte(','); err != nil {
 						return nil, errors.Wrap(err, "failed to write comma")
 					}
@@ -243,7 +618,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 				return nil, errors.Wrap(err, "failed to write from")
 			}
 		}
-		if err := extractSuffixSelectStatement(item.Tree, &buf); err != nil {
+		if err := writeSuffixSelectClause(&buf, item.Node, item.FullSQL); err != nil {
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
 	}
@@ -261,20 +636,14 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	}, nil
 }
 
-func extractCTE(ctx antlr.ParserRuleContext) string {
-	switch node := ctx.(type) {
-	case *parser.UpdateStatementContext:
-		if node.WithClause() != nil {
-			return node.GetParser().GetTokenStream().GetTextFromRuleContext(node.WithClause())
-		}
-	case *parser.DeleteStatementContext:
-		if node.WithClause() != nil {
-			return node.GetParser().GetTokenStream().GetTextFromRuleContext(node.WithClause())
-		}
-	default:
+func nodeStmtLoc(node ast.Node) ast.Loc {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return n.Loc
+	case *ast.DeleteStmt:
+		return n.Loc
 	}
-
-	return ""
+	return ast.Loc{}
 }
 
 func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
@@ -313,8 +682,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 		return nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
 	}
 
-	emptySchema := ""
-	schema := dbMetadata.GetSchemaMetadata(emptySchema)
+	schema := dbMetadata.GetSchemaMetadata("")
 	if schema == nil {
 		return nil, nil, errors.New("failed to get schema metadata")
 	}
@@ -344,360 +712,4 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	}
 
 	return generatedColumns, normalColumns, nil
-}
-
-func extractSuffixSelectStatement(tree antlr.Tree, buf *strings.Builder) error {
-	listener := &suffixSelectStatementListener{
-		buf: buf,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	return listener.err
-}
-
-type suffixSelectStatementListener struct {
-	*parser.BaseMySQLParserListener
-
-	buf *strings.Builder
-	err error
-}
-
-func (l *suffixSelectStatementListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	if ctx.TableRef() != nil {
-		// Single table delete statement.
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
-			ctx.TableRef().GetStart(),
-			ctx.GetStop(),
-		)); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.TableAliasRefList() != nil {
-		// Multi table delete statement.
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
-			ctx.TableReferenceList().GetStart(),
-			ctx.GetStop(),
-		)); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-}
-
-func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.TableReferenceList())); err != nil {
-		l.err = errors.Wrap(err, "failed to write suffix select statement")
-		return
-	}
-
-	if ctx.WhereClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.WhereClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.OrderClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.OrderClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.SimpleLimitClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.SimpleLimitClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-}
-
-func ExtractTables(databaseName string, ast *base.ANTLRAST, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
-	listener := &tableReferenceListener{
-		databaseName: databaseName,
-		dbMetadata:   dbMetadata,
-		offset:       offset,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, ast.Tree)
-
-	return listener.tables, listener.err
-}
-
-type tableReferenceListener struct {
-	*parser.BaseMySQLParserListener
-
-	databaseName string
-	dbMetadata   *model.DatabaseMetadata
-	offset       int
-	tables       []StatementInfo
-	err          error
-}
-
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-	switch ctx := ctx.(type) {
-	case *parser.SimpleStatementContext:
-		return isTopLevel(ctx.GetParent())
-	case *parser.QueryContext, *parser.ScriptContext:
-		return true
-	default:
-		return false
-	}
-}
-
-func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	cteMap := make(map[string]bool)
-	if ctx.WithClause() != nil {
-		for _, cte := range ctx.WithClause().AllCommonTableExpression() {
-			tableName := NormalizeMySQLIdentifier(cte.Identifier())
-			cteMap[tableName] = true
-		}
-	}
-
-	if ctx.TableRef() != nil {
-		// Single table delete statement.
-		database, table := NormalizeMySQLTableRef(ctx.TableRef())
-		if len(database) > 0 && database != l.databaseName {
-			l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-			return
-		}
-
-		alias := ""
-
-		if ctx.TableAlias() != nil {
-			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
-		}
-
-		if len(database) == 0 {
-			database = l.databaseName
-		}
-
-		l.tables = append(l.tables, StatementInfo{
-			Offset:    l.offset,
-			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			Tree:      ctx,
-			Table: &TableReference{
-				Database:      database,
-				Table:         table,
-				Alias:         alias,
-				StatementType: StatementTypeDelete,
-			},
-		})
-		return
-	}
-
-	if ctx.TableAliasRefList() != nil {
-		// Multi table delete statement.
-		singleTables := &singleTableListener{
-			databaseName: l.databaseName,
-			singleTables: make(map[string]*TableReference),
-		}
-
-		antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-		for _, tableRef := range ctx.TableAliasRefList().AllTableRefWithWildcard() {
-			database, table := NormalizeMySQLTableRefWithWildcard(tableRef)
-			if len(database) > 0 && database != l.databaseName {
-				l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-				return
-			}
-
-			if len(database) == 0 && cteMap[table] {
-				continue
-			}
-
-			singleTable, ok := singleTables.singleTables[table]
-			if !ok {
-				l.err = errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", table)
-				return
-			}
-
-			singleTable.StatementType = StatementTypeDelete
-			l.tables = append(l.tables, StatementInfo{
-				Offset:    l.offset,
-				Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-				Tree:      ctx,
-				Table:     singleTable,
-			})
-		}
-	}
-}
-
-// resolveUnqualifiedColumns resolves unqualified column names to their owning
-// table(s) using database metadata. Falls back to all tables if metadata is
-// unavailable or column cannot be resolved.
-func (l *tableReferenceListener) resolveUnqualifiedColumns(columns []string, singleTables map[string]*TableReference) map[string]bool {
-	result := make(map[string]bool)
-
-	schema := l.getSchemaMetadata()
-	if schema == nil {
-		// No metadata available, fall back to all tables.
-		for tableName := range singleTables {
-			result[tableName] = true
-		}
-		return result
-	}
-
-	for _, col := range columns {
-		resolved := false
-		for aliasOrName, ref := range singleTables {
-			tableMetadata := schema.GetTable(ref.Table)
-			if tableMetadata == nil {
-				continue
-			}
-			if tableMetadata.GetColumn(col) != nil {
-				result[aliasOrName] = true
-				resolved = true
-			}
-		}
-		if !resolved {
-			// Column not found in any table metadata, fall back to all tables.
-			for tableName := range singleTables {
-				result[tableName] = true
-			}
-			return result
-		}
-	}
-
-	return result
-}
-
-func (l *tableReferenceListener) getSchemaMetadata() *model.SchemaMetadata {
-	if l.dbMetadata == nil {
-		return nil
-	}
-	return l.dbMetadata.GetSchemaMetadata("")
-}
-
-func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	cteMap := make(map[string]bool)
-
-	if ctx.WithClause() != nil {
-		for _, cte := range ctx.WithClause().AllCommonTableExpression() {
-			tableName := NormalizeMySQLIdentifier(cte.Identifier())
-			cteMap[tableName] = true
-		}
-	}
-
-	listener := &updateTableListener{
-		tables: make(map[string]bool),
-		cteMap: cteMap,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, ctx.UpdateList())
-
-	singleTables := &singleTableListener{
-		databaseName: l.databaseName,
-		singleTables: make(map[string]*TableReference),
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-	// When SET clause columns are unqualified (no table prefix), resolve them
-	// to the owning table using database metadata. MySQL allows unqualified
-	// columns when they are unambiguous.
-	if _, exists := listener.tables[""]; exists {
-		delete(listener.tables, "")
-		resolved := l.resolveUnqualifiedColumns(listener.unqualifiedColumns, singleTables.singleTables)
-		for tableName := range resolved {
-			listener.tables[tableName] = true
-		}
-	}
-
-	for table := range listener.tables {
-		singleTable, ok := singleTables.singleTables[table]
-		if !ok {
-			l.err = errors.Errorf("cannot extract reference table: no matched updated table %q in referenced table list", table)
-			return
-		}
-
-		singleTable.StatementType = StatementTypeUpdate
-		l.tables = append(l.tables, StatementInfo{
-			Offset:    l.offset,
-			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			Tree:      ctx,
-			Table:     singleTable,
-		})
-	}
-}
-
-type singleTableListener struct {
-	*parser.BaseMySQLParserListener
-
-	databaseName string
-	singleTables map[string]*TableReference
-	err          error
-}
-
-func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
-	if l.err != nil {
-		return
-	}
-	database, tableName := NormalizeMySQLTableRef(ctx.TableRef())
-	if len(database) > 0 && database != l.databaseName {
-		l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-	}
-	if len(database) == 0 {
-		database = l.databaseName
-	}
-	table := &TableReference{
-		Database: database,
-		Table:    tableName,
-	}
-
-	if ctx.TableAlias() != nil {
-		table.Alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
-		l.singleTables[table.Alias] = table
-	} else {
-		l.singleTables[table.Table] = table
-	}
-}
-
-type updateTableListener struct {
-	*parser.BaseMySQLParserListener
-
-	tables             map[string]bool
-	unqualifiedColumns []string
-	cteMap             map[string]bool
-}
-
-func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, table, column := NormalizeMySQLColumnRef(ctx.ColumnRef())
-	if _, exists := l.cteMap[table]; !exists {
-		l.tables[table] = true
-		if table == "" {
-			l.unqualifiedColumns = append(l.unqualifiedColumns, column)
-		}
-	}
 }

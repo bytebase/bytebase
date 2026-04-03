@@ -117,11 +117,11 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		ast, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		tables, err := mysqlparser.ExtractTables(databaseName, ast, i, nil)
+		tables, err := mysqlparser.ExtractTables(databaseName, node, stmt.Text, i, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract tables")
 		}
