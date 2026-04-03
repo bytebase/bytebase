@@ -270,6 +270,7 @@ func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out ma
 		if e.Right != nil {
 			collectSingleTablesFromExpr(databaseName, e.Right, out)
 		}
+	default:
 	}
 }
 
@@ -324,14 +325,6 @@ func extractStatementText(fullSQL string, loc ast.Loc) string {
 	return strings.TrimSpace(fullSQL[start:end])
 }
 
-// extractNodeText extracts trimmed text from SQL using a Loc range.
-func extractNodeText(loc ast.Loc, sql string) string {
-	if loc.Start < 0 || loc.End < 0 || loc.Start >= loc.End || loc.End > len(sql) {
-		return ""
-	}
-	return strings.TrimSpace(sql[loc.Start:loc.End])
-}
-
 // writeSuffixSelectClause writes the FROM ... WHERE ... suffix of a DML statement.
 func writeSuffixSelectClause(buf *strings.Builder, node ast.Node, fullSQL string) error {
 	switch n := node.(type) {
@@ -345,17 +338,14 @@ func writeSuffixSelectClause(buf *strings.Builder, node ast.Node, fullSQL string
 
 func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) error {
 	// For UPDATE: write "table_refs WHERE ... ORDER BY ... LIMIT ..."
-	// The table refs are everything from the first table to before SET.
-	if len(n.Tables) > 0 && len(n.SetList) > 0 {
-		tablesStart := nodeLocStart(n.Tables[0])
-		setStart := n.SetList[0].Loc.Start
-		if tablesStart >= 0 && setStart > tablesStart {
-			// Find "SET" keyword and take everything before it.
-			setIdx := findKeywordAfter(sql, tablesStart, "SET")
-			if setIdx > tablesStart {
-				if _, err := buf.WriteString(strings.TrimSpace(sql[tablesStart:setIdx])); err != nil {
-					return err
-				}
+	// Use the last table's Loc.End as the boundary — everything from first table
+	// to last table's end is the table reference list.
+	if len(n.Tables) > 0 {
+		start := nodeLocStart(n.Tables[0])
+		end := nodeLocEnd(n.Tables[len(n.Tables)-1])
+		if start >= 0 && end > start && end <= len(sql) {
+			if _, err := buf.WriteString(strings.TrimSpace(sql[start:end])); err != nil {
+				return err
 			}
 		}
 	}
@@ -426,16 +416,6 @@ func nodeLocEnd(expr ast.TableExpr) int {
 		return e.Loc.End
 	}
 	return -1
-}
-
-// findKeywordAfter finds the byte offset of a case-insensitive keyword after position start.
-func findKeywordAfter(sql string, start int, keyword string) int {
-	upper := strings.ToUpper(sql[start:])
-	idx := strings.Index(upper, keyword)
-	if idx < 0 {
-		return -1
-	}
-	return start + idx
 }
 
 // resolveUnqualifiedColumns resolves unqualified column names to owning tables using metadata.

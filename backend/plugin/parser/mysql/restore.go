@@ -28,15 +28,13 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	// Find the matching DML statement node at the backup position.
-	matchingNode, err := findStatementAtPosition(originalSQL, backupItem)
+	// Parse the filtered SQL and find the first DML node.
+	matchingNode, err := findFirstDML(originalSQL)
 	if err != nil {
 		return "", err
 	}
 	if matchingNode == nil {
-		return "", errors.Errorf("could not find statement at position (line %d:%d - %d:%d)",
-			backupItem.StartPosition.Line, backupItem.StartPosition.Column,
-			backupItem.EndPosition.Line, backupItem.EndPosition.Column)
+		return "", errors.Errorf("no DML statement found in extracted SQL")
 	}
 
 	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
@@ -46,28 +44,19 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	return doGenerate(ctx, rCtx, sqlForComment, matchingNode, backupItem)
 }
 
-func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDetail_Item) (ast.Node, error) {
+func findFirstDML(statement string) (ast.Node, error) {
 	stmtList, err := ParseMySQLOmni(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
-
+	if stmtList == nil {
+		return nil, nil
+	}
 	for _, item := range stmtList.Items {
-		switch n := item.(type) {
-		case *ast.UpdateStmt:
-			startPos := ByteOffsetToRunePosition(statement, n.Loc.Start)
-			startPos.Column-- // 0-based to match backup convention
-			endPos := ByteOffsetToRunePosition(statement, n.Loc.End)
-			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
-				return n, nil
-			}
-		case *ast.DeleteStmt:
-			startPos := ByteOffsetToRunePosition(statement, n.Loc.Start)
-			startPos.Column-- // 0-based to match backup convention
-			endPos := ByteOffsetToRunePosition(statement, n.Loc.End)
-			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
-				return n, nil
-			}
+		switch item.(type) {
+		case *ast.UpdateStmt, *ast.DeleteStmt:
+			return item, nil
+		default:
 		}
 	}
 	return nil, nil
@@ -205,12 +194,13 @@ func collectTableRefs(databaseName string, expr ast.TableExpr, result map[string
 	case *ast.JoinClause:
 		collectTableRefs(databaseName, n.Left, result)
 		collectTableRefs(databaseName, n.Right, result)
+	default:
 	}
 }
 
 // extractUpdateColumns extracts column names from SET assignments that belong
 // to the original table.
-func extractUpdateColumns(setList []*ast.Assignment, database, originalTable string, matchedTable *TableReference, normalColumns []string) []string {
+func extractUpdateColumns(setList []*ast.Assignment, database, _ string, matchedTable *TableReference, normalColumns []string) []string {
 	var result []string
 	for _, assignment := range setList {
 		col := assignment.Column
@@ -358,6 +348,7 @@ func containsTable(node ast.Node, database, table string) bool {
 				return true
 			}
 		}
+	default:
 	}
 	return false
 }
@@ -374,16 +365,6 @@ func tableExprReferences(expr ast.TableExpr, database, table string) bool {
 		return tableExprReferences(n.Left, database, table) || tableExprReferences(n.Right, database, table)
 	}
 	return false
-}
-
-func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
-	if start.Line < targetStart.Line || (start.Line == targetStart.Line && start.Column < targetStart.Column) {
-		return false
-	}
-	if end.Line > targetEnd.Line || (end.Line == targetEnd.Line && end.Column > targetEnd.Column) {
-		return false
-	}
-	return true
 }
 
 func equalOrLess(a, b *storepb.Position) bool {
