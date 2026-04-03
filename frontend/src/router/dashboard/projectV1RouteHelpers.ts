@@ -1,4 +1,8 @@
-import type { LocationQueryValue, RouteLocationRaw } from "vue-router";
+import type {
+  LocationQueryValue,
+  RouteLocationNormalizedLoaded,
+  RouteLocationRaw,
+} from "vue-router";
 import {
   extractPlanUID,
   extractPlanUIDFromRolloutName,
@@ -7,7 +11,10 @@ import {
   extractStageUID,
   extractTaskUID,
 } from "@/utils";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "./projectV1";
+import {
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+} from "./projectV1";
 
 export const PLAN_DETAIL_PHASE_DEPLOY = "deploy";
 
@@ -44,6 +51,20 @@ export const buildPlanDeployRoute = ({
       ...(stageId ? { stageId } : {}),
       ...(taskId ? { taskId } : {}),
     },
+  };
+};
+
+export const buildSpecDetailRouteForCurrentPage = (
+  currentRoute: Pick<RouteLocationNormalizedLoaded, "params" | "query">,
+  specId: string
+): RouteLocationRaw => {
+  return {
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      ...(currentRoute.params || {}),
+      specId,
+    },
+    query: currentRoute.query || {},
   };
 };
 

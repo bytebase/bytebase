@@ -1,12 +1,14 @@
 <template>
   <div class="w-full flex flex-col gap-y-2">
-    <span class="text-base">{{ $t("issue.data-export.limits") }}</span>
+    <h3 class="text-base font-medium">
+      {{ $t("issue.data-export.limits") }}
+    </h3>
 
     <div class="flex items-center gap-x-2">
       <span class="text-sm">
         {{ $t("settings.general.workspace.maximum-sql-result.size.self") }}
       </span>
-      <span class=" font-medium">
+      <span class="font-medium">
         {{ maximumResultSize }} MB
       </span>
     </div>

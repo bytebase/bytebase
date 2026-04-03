@@ -1,6 +1,6 @@
 <template>
   <div v-if="viewMode === 'EDITOR'" class="flex-1">
-    <EditorView :key="editorViewKey" />
+    <EditorView :key="editorViewKey" :header-variant="headerVariant" />
   </div>
   <ReleaseView v-else-if="viewMode === 'RELEASE'" />
 </template>
@@ -11,6 +11,15 @@ import { sheetNameForSpec } from "../../logic";
 import { useSelectedSpec } from "../SpecDetailView/context";
 import EditorView from "./EditorView";
 import ReleaseView from "./ReleaseView";
+
+withDefaults(
+  defineProps<{
+    headerVariant?: "editor" | "section";
+  }>(),
+  {
+    headerVariant: "editor",
+  }
+);
 
 const { selectedSpec } = useSelectedSpec();
 

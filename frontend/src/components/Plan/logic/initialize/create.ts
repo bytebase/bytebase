@@ -4,11 +4,9 @@ import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
-  Plan_ExportDataConfigSchema,
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -18,7 +16,7 @@ import { sheetNameForSpec, targetsForSpec } from "../plan";
 import { getLocalSheetByName, getNextLocalSheetUID } from "../sheet";
 import { extractInitialSQLFromQuery } from "./util";
 
-type PlanTemplate = "bb.plan.change-database" | "bb.plan.export-data";
+type PlanTemplate = "bb.plan.change-database";
 
 export type InitialSQL = {
   sqlMap?: Record<string, string>;
@@ -48,9 +46,9 @@ export const createPlanSkeleton = async (
     `${projectNamePrefix}${projectName}`
   );
   const template = query.template as PlanTemplate | undefined;
-  if (!template) {
+  if (!template || template !== "bb.plan.change-database") {
     throw new Error(
-      "Template is required to create a plan skeleton. Please provide a valid template."
+      "Only change-database plan creation is supported from the plan detail route."
     );
   }
   const params: CreatePlanParams = {
@@ -111,17 +109,6 @@ const buildSpecForTargetsV1 = async (
           targets,
           sheet,
           enablePriorBackup: false,
-        }),
-      };
-      break;
-    }
-    case "bb.plan.export-data": {
-      spec.config = {
-        case: "exportDataConfig",
-        value: createProto(Plan_ExportDataConfigSchema, {
-          targets,
-          sheet,
-          format: ExportFormat.JSON, // default to JSON
         }),
       };
       break;

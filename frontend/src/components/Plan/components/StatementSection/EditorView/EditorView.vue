@@ -3,8 +3,7 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-1">
         <span
-          class="textlabel uppercase"
-          :class="isEmpty(state.statement) ? 'text-red-600!' : ''"
+          :class="titleClass"
         >
           {{ statementTitle }}
         </span>
@@ -13,7 +12,7 @@
       <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
           <SQLUploadButton
-            size="tiny"
+            :size="actionButtonSize"
             :loading="state.isUploadingFile"
             @update:sql="handleUpdateStatement"
           >
@@ -21,7 +20,7 @@
           </SQLUploadButton>
           <NButton
             v-if="shouldShowSchemaEditorButton && targetDatabaseNames.length > 0"
-            size="tiny"
+            :size="actionButtonSize"
             @click="handleOpenSchemaEditor"
           >
             <template #icon>
@@ -39,7 +38,7 @@
                 <template #trigger>
                   <NButton
                     v-if="!isSheetOversize"
-                    size="tiny"
+                    :size="actionButtonSize"
                     tag="div"
                     :disabled="denyEditStatementReasons.length > 0"
                     @click.prevent="beginEdit"
@@ -49,7 +48,7 @@
                   <!-- for oversized sheets, only allow to upload and overwrite the sheet -->
                   <SQLUploadButton
                     v-else
-                    size="tiny"
+                    :size="actionButtonSize"
                     :loading="state.isUploadingFile"
                     @update:sql="handleUpdateStatementAndOverwrite"
                   >
@@ -64,7 +63,7 @@
           </template>
           <template v-else>
             <SQLUploadButton
-              size="tiny"
+              :size="actionButtonSize"
               :loading="state.isUploadingFile"
               @update:sql="handleUpdateStatement"
             >
@@ -72,7 +71,7 @@
             </SQLUploadButton>
             <NButton
               v-if="shouldShowSchemaEditorButton"
-              size="tiny"
+              :size="actionButtonSize"
               @click="handleOpenSchemaEditor"
             >
               <template #icon>
@@ -82,7 +81,7 @@
             </NButton>
             <NButton
               v-if="editorState.isEditing.value"
-              size="tiny"
+              :size="actionButtonSize"
               :disabled="!allowSaveSQL"
               @click.prevent="saveEdit"
             >
@@ -90,7 +89,7 @@
             </NButton>
             <NButton
               v-if="editorState.isEditing.value"
-              size="tiny"
+              :size="actionButtonSize"
               quaternary
               @click.prevent="cancelEdit"
             >
@@ -244,6 +243,15 @@ type LocalState = {
   showSchemaEditorDrawer: boolean;
 };
 
+const props = withDefaults(
+  defineProps<{
+    headerVariant?: "editor" | "section";
+  }>(),
+  {
+    headerVariant: "editor",
+  }
+);
+
 const { t } = useI18n();
 const dialog = useDialog();
 const { project } = useCurrentProjectV1();
@@ -276,6 +284,21 @@ const dialect = computed((): SQLDialect => {
 });
 const statementTitle = computed(() => {
   return language.value === "sql" ? t("common.sql") : t("common.statement");
+});
+const titleClass = computed(() => {
+  if (props.headerVariant === "section") {
+    return [
+      "text-base font-medium",
+      isEmpty(state.statement) ? "text-red-600!" : "",
+    ];
+  }
+  return [
+    "textlabel uppercase",
+    isEmpty(state.statement) ? "text-red-600!" : "",
+  ];
+});
+const actionButtonSize = computed(() => {
+  return props.headerVariant === "section" ? "small" : "tiny";
 });
 const planCheckRunsForSelectedSpec = computed(() =>
   planCheckRunListForSpec(planCheckRuns.value, selectedSpec.value)

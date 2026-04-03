@@ -36,7 +36,11 @@
 import { NSpin } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  useRouter,
+} from "vue-router";
 import {
   providePlanContext,
   useBasePlanContext,
@@ -47,7 +51,7 @@ import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { setDocumentTitle } from "@/utils";
+import { getIssueRoute, setDocumentTitle } from "@/utils";
 import PlanDetailHeader from "./PlanDetailHeader.vue";
 import PlanDetailPage from "./PlanDetailPage.vue";
 import {
@@ -62,6 +66,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const {
   isCreating,
   plan,
@@ -98,6 +103,21 @@ provideSidebarContext(containerRef);
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const { project } = useProjectByName(projectName);
 
+const shouldRedirectToIssueDetail = computed(() => {
+  if (!issue.value?.name) {
+    return false;
+  }
+  if (plan.value.specs.length === 0) {
+    return false;
+  }
+  return plan.value.specs.every((spec) => {
+    return (
+      spec.config?.case === "createDatabaseConfig" ||
+      spec.config?.case === "exportDataConfig"
+    );
+  });
+});
+
 watch(
   [isCreating, ready, () => plan.value?.title, () => project.value.title],
   () => {
@@ -105,6 +125,18 @@ watch(
       setDocumentTitle(t("plan.new-plan"), project.value.title);
     } else if (ready.value && plan.value?.title) {
       setDocumentTitle(plan.value.title, project.value.title);
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  [ready, shouldRedirectToIssueDetail, () => issue.value?.name],
+  ([isReady, shouldRedirect, issueName]) => {
+    if (!isReady) return;
+
+    if (issueName && shouldRedirect) {
+      void router.replace(getIssueRoute({ name: issueName }));
     }
   },
   { immediate: true }

@@ -92,7 +92,10 @@ import {
   ErrorList,
   useSpecsValidation,
 } from "@/components/Plan/components/common";
-import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
+import {
+  usePlanCheckStatus,
+  usePlanContext,
+} from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect } from "@/connect";
 import {
@@ -227,6 +230,19 @@ const getIssueTypeFromPlan = (planValue: Plan): Issue_Type => {
   return Issue_Type.DATABASE_CHANGE;
 };
 
+const shouldStayOnPlanDetailPage = (planValue: Plan) => {
+  if (planValue.specs.length === 0) {
+    return true;
+  }
+
+  return !planValue.specs.every((spec: Plan_Spec) => {
+    return (
+      spec.config?.case === "createDatabaseConfig" ||
+      spec.config?.case === "exportDataConfig"
+    );
+  });
+};
+
 const doCreateIssue = async () => {
   if (loading.value) return;
   if (confirmErrors.value.length > 0) return;
@@ -253,13 +269,13 @@ const doCreateIssue = async () => {
     resetDraft();
     showPopover.value = false;
 
-    // On Plan Detail Page, stay in-place — the Review section will auto-expand.
-    // On other pages, navigate to the issue (backward compat).
+    // Only plan-scoped flows should remain on the dedicated Plan Detail page.
+    // Issue-scoped flows must continue on the issue page.
     const currentRoute = router.currentRoute.value;
     const isPlanDetailPage =
       typeof currentRoute.name === "string" &&
       currentRoute.name.startsWith(PROJECT_V1_ROUTE_PLAN_DETAIL);
-    if (!isPlanDetailPage) {
+    if (!(isPlanDetailPage && shouldStayOnPlanDetailPage(plan.value))) {
       nextTick(() => {
         router.push({
           name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

@@ -51,16 +51,11 @@
     </PagedTable>
   </div>
 
-  <Drawer
-    :auto-focus="true"
+  <DataExportPrepDrawer
     :show="state.showRequestExportPanel"
-    @close="state.showRequestExportPanel = false"
-  >
-    <DataExportPrepForm
-      :project-name="specificProject.name"
-      @dismiss="state.showRequestExportPanel = false"
-    />
-  </Drawer>
+    :project-name="specificProject.name"
+    @dismiss="state.showRequestExportPanel = false"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -68,11 +63,10 @@ import { DownloadIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import DataExportPrepForm from "@/components/DataExportPrepForm";
+import DataExportPrepDrawer from "@/components/DataExportPrepForm/DataExportPrepDrawer.vue";
 import IssueListV1 from "@/components/IssueV1/components/IssueListV1.vue";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
-import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useIssueV1Store,

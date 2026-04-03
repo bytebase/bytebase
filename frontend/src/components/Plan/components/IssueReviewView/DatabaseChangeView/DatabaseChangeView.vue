@@ -5,7 +5,7 @@
       <div v-if="selectedSpec" class="flex flex-col gap-2">
         <TargetListSection />
         <div class="h-72 flex flex-col">
-          <StatementSection />
+          <StatementSection header-variant="section" />
         </div>
         <OptionsSection />
       </div>

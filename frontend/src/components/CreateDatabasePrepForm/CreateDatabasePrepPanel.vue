@@ -396,6 +396,7 @@ const create = async () => {
       creator: currentUserV1.value.name,
     });
     const issueCreate = createProto(IssueSchema, {
+      title,
       type: Issue_Type.DATABASE_CHANGE,
       creator: `users/${currentUserV1.value.email}`,
       labels: state.labels,
