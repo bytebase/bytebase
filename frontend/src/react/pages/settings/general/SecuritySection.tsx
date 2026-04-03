@@ -230,7 +230,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     }))
                   }
                 />
-                <span className="font-medium">
+                <span className="text-base font-semibold">
                   {t("settings.general.workspace.watermark.enable")}
                 </span>
                 <FeatureBadge feature={PlanFeature.FEATURE_WATERMARK} />
@@ -242,7 +242,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
 
             {/* Maximum Role Expiration */}
             <div>
-              <p className="font-medium flex flex-row justify-start items-center">
+              <p className="text-base font-semibold flex flex-row justify-start items-center">
                 <span className="mr-2">
                   {t("settings.general.workspace.maximum-role-expiration.self")}
                 </span>
@@ -304,7 +304,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             <div>
               <h3
                 id="domain-restriction"
-                className="font-medium flex flex-row justify-start items-center"
+                className="text-base font-semibold flex flex-row justify-start items-center"
               >
                 <span className="mr-2">
                   {t("settings.general.workspace.domain-restriction.self")}
@@ -366,7 +366,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                       }
                     />
                     <div>
-                      <div className="font-medium flex items-center gap-x-2">
+                      <div className="text-base font-semibold flex items-center gap-x-2">
                         {t(
                           "settings.general.workspace.domain-restriction.members-restriction.self"
                         )}

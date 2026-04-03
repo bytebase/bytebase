@@ -129,7 +129,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
             {/* Database change mode */}
             <div>
-              <div className="mb-4 font-medium">
+              <div className="mb-4 text-base font-semibold">
                 {t("settings.general.workspace.default-landing-page.self")}
               </div>
               <div className="w-full flex flex-col gap-4">
@@ -150,7 +150,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                     }
                   />
                   <div className="flex flex-col gap-1">
-                    <div className="textinfo">
+                    <div className="textinfo font-semibold">
                       {t(
                         "settings.general.workspace.default-landing-page.workspace.self"
                       )}
@@ -179,7 +179,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                     }
                   />
                   <div className="flex flex-col gap-1">
-                    <div className="textinfo">
+                    <div className="textinfo font-semibold">
                       {t(
                         "settings.general.workspace.default-landing-page.sql-editor.self"
                       )}
@@ -197,7 +197,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             {/* External URL */}
             <div>
               <label className="flex items-center gap-x-2">
-                <span className="font-medium">
+                <span className="text-base font-semibold">
                   {t("settings.general.workspace.external-url.self")}
                 </span>
               </label>
@@ -221,7 +221,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               )}
               <Input
                 value={state.externalUrl}
-                className="mb-4 w-full"
+                className="w-full"
                 disabled={!canEdit || isSaaSMode || externalUrlFromFlag}
                 onChange={(e) =>
                   setState((s) => ({ ...s, externalUrl: e.target.value }))

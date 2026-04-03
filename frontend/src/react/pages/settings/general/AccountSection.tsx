@@ -388,7 +388,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                         }))
                       }
                     />
-                    <span className="font-medium">
+                    <span className="text-base font-semibold">
                       {t("settings.general.workspace.disallow-signup.enable")}
                     </span>
                     <FeatureBadge
@@ -407,7 +407,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
             {/* Sub-section 2: Password Restriction */}
             <div className="mt-4 lg:mt-0">
-              <p className="font-medium flex flex-row justify-start items-center mb-2 gap-x-2">
+              <p className="text-base font-semibold flex flex-row justify-start items-center mb-2 gap-x-2">
                 {t("settings.general.workspace.password-restriction.self")}
                 <FeatureBadge
                   feature={PlanFeature.FEATURE_PASSWORD_RESTRICTIONS}
@@ -595,7 +595,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                       }))
                     }
                   />
-                  <span className="font-medium">
+                  <span className="text-base font-semibold">
                     {t("settings.general.workspace.require-2fa.enable")}
                   </span>
                   <FeatureBadge feature={PlanFeature.FEATURE_TWO_FA} />
@@ -625,7 +625,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                         }))
                       }
                     />
-                    <span className="font-medium flex items-center gap-x-2">
+                    <span className="text-base font-semibold flex items-center gap-x-2">
                       {t(
                         "settings.general.workspace.disallow-password-signin.enable"
                       )}
@@ -659,7 +659,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             {/* Sub-section 5: Token Duration */}
             {/* Access Token Duration */}
             <div className="mb-7 mt-4 lg:mt-0">
-              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
                 <span>
                   {t("settings.general.workspace.access-token-duration.self")}
                 </span>
@@ -733,7 +733,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
             {/* Refresh Token Duration */}
             <div className="mb-7 mt-4 lg:mt-0">
-              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
                 <span>
                   {t("settings.general.workspace.refresh-token-duration.self")}
                 </span>
@@ -812,7 +812,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
             {/* Inactive Session Timeout */}
             <div className="mt-4 lg:mt-0">
-              <p className="font-medium flex flex-row justify-start items-center gap-x-2">
+              <p className="text-base font-semibold flex flex-row justify-start items-center gap-x-2">
                 <span>
                   {t(
                     "settings.general.workspace.inactive-session-timeout.self"
