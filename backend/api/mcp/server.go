@@ -130,9 +130,13 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing subject")
 		}
 
-		// Store access token in request context for MCP tools to forward auth
+		// Extract workspace ID from token claims.
+		workspaceID, _ := claims["workspace_id"].(string)
+
+		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
+		ctx = withWorkspaceID(ctx, workspaceID)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)

@@ -85,3 +85,14 @@ func TestApiRequest_RawMessage(t *testing.T) {
 	require.Equal(t, int64(12345), r.ID)
 	require.Equal(t, int64(9999999999), r.Count)
 }
+
+func TestWorkspaceIDContext(t *testing.T) {
+	ctx := context.Background()
+
+	// Empty context returns empty string.
+	require.Equal(t, "", getWorkspaceID(ctx))
+
+	// Round-trips through context.
+	ctx = withWorkspaceID(ctx, "wk-test-123")
+	require.Equal(t, "wk-test-123", getWorkspaceID(ctx))
+}
