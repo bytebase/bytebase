@@ -450,6 +450,7 @@ function EditMemberRoleDrawer({
   const handleRevoke = async () => {
     if (!member) return;
     const isAllUsers =
+      member.binding === ALL_USERS_USER_EMAIL ||
       member.binding === `${userBindingPrefix}${ALL_USERS_USER_EMAIL}`;
     const message = isAllUsers
       ? t("settings.members.revoke-allusers-alert")

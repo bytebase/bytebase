@@ -17,6 +17,7 @@ import { extractUserEmail, groupNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { isValidEmail } from "@/utils";
 
 import { getAvatarColor, getInitials } from "./UserAvatar";
 
@@ -255,6 +256,19 @@ export function AccountMultiSelect({
     return { type, email, fullname: `${prefix}${email}` };
   }, [search]);
 
+  // Allow selecting arbitrary user emails typed in the search box
+  // (for SaaS where admins grant access to emails before signup, or when
+  // the user can set IAM but cannot list users/groups)
+  const arbitraryEmailMatch = useMemo((): string | null => {
+    const trimmed = search.trim();
+    if (!trimmed || !isValidEmail(trimmed)) return null;
+    // Don't show if it's a service account or workload identity
+    if (specialAccountMatch) return null;
+    // Don't show if it already matches a fetched user
+    if (users.some((u) => u.email === trimmed)) return null;
+    return trimmed;
+  }, [search, specialAccountMatch, users]);
+
   // Label for a selected binding chip — uses cache to survive search changes
   const chipLabel = (binding: string): string => {
     if (binding === ALL_USERS_USER_EMAIL) {
@@ -462,11 +476,43 @@ export function AccountMultiSelect({
               />
             )}
 
+            {/* Arbitrary email fallback */}
+            {arbitraryEmailMatch && (
+              <div
+                className={cn(
+                  "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                  selectedFullnames.has(`users/${arbitraryEmailMatch}`) &&
+                    "bg-accent/5"
+                )}
+                onClick={() => toggle(`users/${arbitraryEmailMatch}`)}
+              >
+                <SelectionCheckbox
+                  selected={selectedFullnames.has(
+                    `users/${arbitraryEmailMatch}`
+                  )}
+                />
+                <div
+                  className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                  style={{
+                    backgroundColor: getAvatarColor(arbitraryEmailMatch),
+                  }}
+                >
+                  {getInitials(arbitraryEmailMatch.split("@")[0])}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {arbitraryEmailMatch}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Empty state */}
             {!includeAllUsers &&
               users.length === 0 &&
               groups.length === 0 &&
-              !specialAccountMatch && (
+              !specialAccountMatch &&
+              !arbitraryEmailMatch && (
                 <div className="px-3 py-4 text-sm text-center text-control-light">
                   {t("common.no-data")}
                 </div>
