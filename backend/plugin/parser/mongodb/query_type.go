@@ -38,8 +38,33 @@ func omniOperationToQueryType(a *analysis.StatementAnalysis) base.QueryType {
 			return base.DML
 		}
 		return base.Select
-	case analysis.OpRead, analysis.OpInfo:
+	case analysis.OpRead:
+		// OpRead covers runCommand({find:...}) and metadata reads (getIndexes, stats, etc.).
+		// For runCommand/adminCommand, treat as Select (data access, not just metadata).
+		// For collection metadata methods, treat as SelectInfoSchema.
+		if a.MethodName == "runCommand" || a.MethodName == "adminCommand" {
+			return base.Select
+		}
 		return base.SelectInfoSchema
+	case analysis.OpInfo:
+		// OpInfo covers show commands, db info methods, rs/sh info methods,
+		// and runCommand with info commands. Also the default for unknown db
+		// methods in omni — use SelectInfoSchema only for known info methods;
+		// default to DML for safety on unknowns.
+		switch a.MethodName {
+		case "show", "status",
+			"getCollectionNames", "getCollectionInfos",
+			"serverStatus", "serverBuildInfo", "version",
+			"hostInfo", "getName", "listCommands", "stats",
+			"conf", "config", "printReplicationInfo", "printSecondaryReplicationInfo",
+			"getBalancerState", "isBalancerRunning":
+			return base.SelectInfoSchema
+		case "runCommand", "adminCommand":
+			// runCommand({serverStatus:1}) etc. — info commands routed through OpInfo.
+			return base.SelectInfoSchema
+		default:
+			return base.DML
+		}
 	case analysis.OpWrite:
 		return base.DML
 	case analysis.OpAdmin:

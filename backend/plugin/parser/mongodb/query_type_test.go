@@ -313,7 +313,7 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "runCommand find",
 			statement:   `db.runCommand({find: "users"})`,
-			want:        base.SelectInfoSchema,
+			want:        base.Select,
 		},
 		{
 			description: "runCommand insert",
@@ -340,7 +340,7 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "unknown db method",
 			statement:   `db.someUnknownDbMethod()`,
-			want:        base.SelectInfoSchema,
+			want:        base.DML,
 		},
 
 		// Omni parser does not do error recovery, so incomplete input
