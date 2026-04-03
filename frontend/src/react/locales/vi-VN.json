@@ -127,6 +127,7 @@
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
     "search": "Tìm kiếm",
+    "search-for-more": "Tìm kiếm thêm",
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
@@ -627,6 +628,7 @@
       },
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
+      "all-users": "Tất cả người dùng",
       "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
@@ -662,7 +664,6 @@
       "revoke-allusers-alert": "Thu hồi \"Tất cả người dùng\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
       "revoked": "Đã thu hồi",
       "search-member": "Tìm kiếm thành viên",
-      "select-account-hint": "Bạn có thể tìm kiếm người dùng và nhóm, hoặc nhập toàn bộ email để chọn tài khoản dịch vụ hoặc danh tính khối lượng công việc.",
       "select-account_one": "Chọn tài khoản",
       "select-account_other": "Chọn tài khoản",
       "select-role_one": "Chọn vai trò",

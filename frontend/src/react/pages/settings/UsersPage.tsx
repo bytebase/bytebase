@@ -64,6 +64,7 @@ import {
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
+import { UserAvatar } from "./shared/UserAvatar";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
@@ -246,12 +247,15 @@ function UserTable({
               >
                 {/* Account column */}
                 <td className="px-4 py-2">
-                  <div className="flex items-center gap-x-2">
+                  <div className="flex items-center gap-x-3">
+                    <UserAvatar title={user.title || user.email} />
                     <div className="flex flex-col">
                       <div className="flex items-center gap-x-1.5">
                         <span
                           className={
-                            isDeleted ? "line-through text-control-light" : ""
+                            isDeleted
+                              ? "line-through text-control-light"
+                              : "font-medium text-accent"
                           }
                         >
                           {user.title}

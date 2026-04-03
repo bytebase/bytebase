@@ -127,6 +127,7 @@
     "rows-per-page": "Rows per page",
     "save": "Save",
     "search": "Search",
+    "search-for-more": "Search for more",
     "select": "Please Select",
     "select-all": "Select all",
     "sensitive-placeholder": "Sensitive - write only",
@@ -627,6 +628,7 @@
       },
       "add-member": "Add member",
       "add-user": "Add user",
+      "all-users": "All users",
       "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
@@ -662,7 +664,6 @@
       "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "revoked": "Revoked",
       "search-member": "Search member",
-      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-account_one": "Select account",
       "select-account_other": "Select accounts",
       "select-role_one": "Select role",

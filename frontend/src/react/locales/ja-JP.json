@@ -127,6 +127,7 @@
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
     "search": "検索",
+    "search-for-more": "さらに検索",
     "select": "選択してください",
     "select-all": "すべて選択",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
@@ -627,6 +628,7 @@
       },
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "all-users": "すべてのユーザー",
       "cannot-revoke-self": "You cannot revoke yourself",
       "entra-sync": {
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
@@ -662,7 +664,6 @@
       "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
       "revoked": "取り消されました",
       "search-member": "メンバーを検索",
-      "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
       "select-account_one": "アカウントを選択",
       "select-account_other": "アカウントを選択",
       "select-role_one": "ロールを選択",

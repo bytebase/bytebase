@@ -35,6 +35,7 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 import { AccountMultiSelect } from "./shared/AccountMultiSelect";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
+import { UserAvatar } from "./shared/UserAvatar";
 
 // ============================================================
 // MemberTable (view by members)
@@ -124,33 +125,41 @@ function MemberTable({
                 </td>
               )}
               <td className="px-4 py-2">
-                {mb.type === "users" ? (
+                <div className="flex items-center gap-x-3">
+                  {mb.type === "users" ? (
+                    <UserAvatar title={mb.title || mb.user?.email || "?"} />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-gray-500" />
+                    </div>
+                  )}
                   <div className="flex flex-col">
-                    <span className="font-medium">{mb.title}</span>
+                    <div className="flex items-center gap-x-1.5">
+                      <span className="font-medium text-accent">
+                        {mb.title}
+                      </span>
+                      {mb.group && (
+                        <span className="text-control-light text-xs">
+                          ({mb.group.members.length}{" "}
+                          {t("common.members", {
+                            count: mb.group.members.length,
+                          })}
+                          )
+                        </span>
+                      )}
+                      {mb.group?.deleted && (
+                        <Badge variant="destructive" className="text-xs">
+                          {t("common.deleted")}
+                        </Badge>
+                      )}
+                    </div>
                     <span className="text-control-light text-xs">
-                      {mb.user?.email}
+                      {mb.type === "users"
+                        ? mb.user?.email
+                        : mb.binding.replace("group:", "groups/")}
                     </span>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-x-2">
-                    <Users className="h-4 w-4 text-control-light" />
-                    <span className="font-medium">{mb.title}</span>
-                    {mb.group && (
-                      <span className="text-control-light text-xs">
-                        ({mb.group.members.length}{" "}
-                        {t("common.members", {
-                          count: mb.group.members.length,
-                        })}
-                        )
-                      </span>
-                    )}
-                    {mb.group?.deleted && (
-                      <Badge variant="destructive" className="text-xs">
-                        {t("common.deleted")}
-                      </Badge>
-                    )}
-                  </div>
-                )}
+                </div>
               </td>
               <td className="px-4 py-2">
                 <div className="flex flex-wrap gap-1">
@@ -303,24 +312,33 @@ function MemberTableByRole({
                       className="border-b last:border-b-0 hover:bg-gray-50"
                     >
                       <td className="px-4 py-2 pl-10">
-                        {mb.type === "users" ? (
+                        <div className="flex items-center gap-x-3">
+                          {mb.type === "users" ? (
+                            <UserAvatar
+                              title={mb.title || mb.user?.email || "?"}
+                              size="sm"
+                            />
+                          ) : (
+                            <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                              <Users className="h-3.5 w-3.5 text-gray-500" />
+                            </div>
+                          )}
                           <div className="flex flex-col">
-                            <span className="font-medium">{mb.title}</span>
+                            <span className="font-medium text-accent">
+                              {mb.title}
+                            </span>
                             <span className="text-control-light text-xs">
-                              {mb.user?.email}
+                              {mb.type === "users"
+                                ? mb.user?.email
+                                : mb.binding.replace("group:", "groups/")}
                             </span>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-x-2">
-                            <Users className="h-4 w-4 text-control-light" />
-                            <span className="font-medium">{mb.title}</span>
-                            {mb.group?.deleted && (
-                              <Badge variant="destructive" className="text-xs">
-                                {t("common.deleted")}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
+                          {mb.group?.deleted && (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("common.deleted")}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-2" />
                       <td className="w-24 px-4 py-2">

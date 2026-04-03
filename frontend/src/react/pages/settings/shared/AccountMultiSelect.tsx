@@ -1,4 +1,12 @@
-import { Check, ChevronDown, Search, Users, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  KeyRound,
+  Search,
+  Shield,
+  Users,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
@@ -10,45 +18,51 @@ import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 
-// ---- Avatar helpers ----
+import { getAvatarColor, getInitials } from "./UserAvatar";
 
-const AVATAR_COLORS = [
-  "#F59E0B",
-  "#10B981",
-  "#8B5CF6",
-  "#EC4899",
-  "#06B6D4",
-  "#EF4444",
-];
+// ---- Account type detection ----
 
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++)
-    hash = (hash * 31 + name.charCodeAt(i)) | 0;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+const SERVICE_ACCOUNT_SUFFIX = ".service.bytebase.com";
+const WORKLOAD_IDENTITY_SUFFIX = ".workload.bytebase.com";
+
+type SpecialAccountType = "serviceAccount" | "workloadIdentity" | null;
+
+function detectSpecialAccount(input: string): SpecialAccountType {
+  const lower = input.toLowerCase();
+  if (
+    lower.endsWith(SERVICE_ACCOUNT_SUFFIX) ||
+    lower.startsWith("serviceaccounts/") ||
+    lower.startsWith("serviceaccount:")
+  )
+    return "serviceAccount";
+  if (
+    lower.endsWith(WORKLOAD_IDENTITY_SUFFIX) ||
+    lower.startsWith("workloadidentities/") ||
+    lower.startsWith("workloadidentity:")
+  )
+    return "workloadIdentity";
+  return null;
 }
 
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+function extractSpecialEmail(input: string): string {
+  if (input.includes("/")) return input.split("/").slice(1).join("/");
+  if (input.includes(":")) return input.split(":").slice(1).join(":");
+  return input;
 }
 
 // ---- Conversion helpers ----
 
 // binding  →  fullname
-// "user:alice@example.com"  →  "users/alice@example.com"
-// "group:eng@example.com"   →  "groups/eng@example.com"
-// "allUsers"                →  "allUsers"
 function bindingToFullname(binding: string): string {
   if (binding === ALL_USERS_USER_EMAIL) return ALL_USERS_USER_EMAIL;
   if (binding.startsWith("user:"))
     return `users/${binding.slice("user:".length)}`;
   if (binding.startsWith("group:"))
     return `${groupNamePrefix}${binding.slice("group:".length)}`;
+  if (binding.startsWith("serviceAccount:"))
+    return `serviceAccounts/${binding.slice("serviceAccount:".length)}`;
+  if (binding.startsWith("workloadIdentity:"))
+    return `workloadIdentities/${binding.slice("workloadIdentity:".length)}`;
   return binding;
 }
 
@@ -59,6 +73,10 @@ function fullnameToBinding(fullname: string): string {
     return `${userBindingPrefix}${fullname.slice("users/".length)}`;
   if (fullname.startsWith(groupNamePrefix))
     return `group:${fullname.slice(groupNamePrefix.length)}`;
+  if (fullname.startsWith("serviceAccounts/"))
+    return `serviceAccount:${fullname.slice("serviceAccounts/".length)}`;
+  if (fullname.startsWith("workloadIdentities/"))
+    return `workloadIdentity:${fullname.slice("workloadIdentities/".length)}`;
   return fullname;
 }
 
@@ -133,6 +151,23 @@ export function AccountMultiSelect({
     onChange(value.filter((v) => v !== binding));
   };
 
+  // Detect service account / workload identity typed in search
+  const specialAccountMatch = useMemo((): {
+    type: SpecialAccountType;
+    email: string;
+    fullname: string;
+  } | null => {
+    const trimmed = search.trim();
+    if (!trimmed) return null;
+    const type = detectSpecialAccount(trimmed);
+    if (!type) return null;
+    const email = extractSpecialEmail(trimmed);
+    if (!email) return null;
+    const prefix =
+      type === "serviceAccount" ? "serviceAccounts/" : "workloadIdentities/";
+    return { type, email, fullname: `${prefix}${email}` };
+  }, [search]);
+
   // Label for a selected binding chip
   const chipLabel = (binding: string): string => {
     if (binding === ALL_USERS_USER_EMAIL) {
@@ -149,6 +184,10 @@ export function AccountMultiSelect({
       const group = groups.find((g) => g.email === email);
       return group?.title || email;
     }
+    if (fullname.startsWith("serviceAccounts/"))
+      return fullname.slice("serviceAccounts/".length);
+    if (fullname.startsWith("workloadIdentities/"))
+      return fullname.slice("workloadIdentities/".length);
     return binding;
   };
 
@@ -347,12 +386,69 @@ export function AccountMultiSelect({
               </div>
             )}
 
-            {/* Empty state */}
-            {!includeAllUsers && users.length === 0 && groups.length === 0 && (
-              <div className="px-3 py-4 text-sm text-center text-control-light">
-                {t("common.no-data")}
+            {/* Service account / workload identity match */}
+            {specialAccountMatch && (
+              <div>
+                {(() => {
+                  const { type, email, fullname } = specialAccountMatch;
+                  const selected = selectedFullnames.has(fullname);
+                  const isServiceAccount = type === "serviceAccount";
+                  const Icon = isServiceAccount ? KeyRound : Shield;
+                  const label = isServiceAccount
+                    ? t("settings.members.service-account")
+                    : t("settings.members.workload-identity");
+                  return (
+                    <div
+                      className={cn(
+                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                        selected && "bg-accent/5"
+                      )}
+                      onClick={() => toggle(fullname)}
+                    >
+                      <div
+                        className={cn(
+                          "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+                          selected
+                            ? "bg-accent border-accent text-white"
+                            : "border-control-border"
+                        )}
+                      >
+                        {selected && <Check className="h-3 w-3" />}
+                      </div>
+                      <div
+                        className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                        style={{ backgroundColor: getAvatarColor(email) }}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-x-1">
+                          <span className="text-sm font-medium truncate">
+                            {email.split("@")[0]}
+                          </span>
+                          <span className="text-xs text-control-light bg-gray-100 rounded px-1">
+                            {label}
+                          </span>
+                        </div>
+                        <span className="text-xs text-control-light truncate">
+                          {email}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
+
+            {/* Empty state */}
+            {!includeAllUsers &&
+              users.length === 0 &&
+              groups.length === 0 &&
+              !specialAccountMatch && (
+                <div className="px-3 py-4 text-sm text-center text-control-light">
+                  {t("common.no-data")}
+                </div>
+              )}
           </div>
         </div>
       )}
