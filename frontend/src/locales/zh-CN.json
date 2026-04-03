@@ -502,7 +502,6 @@
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "名称",
           "description": "描述",
-          "members": "成员",
           "role": {
             "owner": "群组所有者",
             "member": "群组成员"

@@ -502,7 +502,6 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
-          "members": "Members",
           "role": {
             "owner": "Group owner",
             "member": "Group member"
