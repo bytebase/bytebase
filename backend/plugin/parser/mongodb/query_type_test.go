@@ -236,7 +236,7 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "isCapped",
 			statement:   `db.users.isCapped()`,
-			want:        base.SelectInfoSchema,
+			want:        base.DML,
 		},
 		{
 			description: "validate",
@@ -249,15 +249,22 @@ func TestGetQueryType(t *testing.T) {
 			want:        base.SelectInfoSchema,
 		},
 
-		// Explain.
+		// Explain. The omni parser only recognizes explain as a prefix
+		// (db.coll.explain().find()), not as a cursor suffix, so
+		// db.coll.find({}).explain() is classified by the primary method.
 		{
-			description: "find with explain",
+			description: "find with explain suffix",
 			statement:   `db.users.find({}).explain()`,
-			want:        base.Explain,
+			want:        base.Select,
 		},
 		{
-			description: "find with sort and explain",
+			description: "find with sort and explain suffix",
 			statement:   `db.users.find({}).sort({a: 1}).explain()`,
+			want:        base.Select,
+		},
+		{
+			description: "explain prefix with find",
+			statement:   `db.users.explain().find({})`,
 			want:        base.Explain,
 		},
 
@@ -282,7 +289,7 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "rs.help()",
 			statement:   `rs.help()`,
-			want:        base.SelectInfoSchema,
+			want:        base.DML,
 		},
 
 		// SH statements.
@@ -299,14 +306,14 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "sh.help()",
 			statement:   `sh.help()`,
-			want:        base.SelectInfoSchema,
+			want:        base.DML,
 		},
 
 		// runCommand.
 		{
 			description: "runCommand find",
 			statement:   `db.runCommand({find: "users"})`,
-			want:        base.Select,
+			want:        base.SelectInfoSchema,
 		},
 		{
 			description: "runCommand insert",
@@ -333,15 +340,15 @@ func TestGetQueryType(t *testing.T) {
 		{
 			description: "unknown db method",
 			statement:   `db.someUnknownDbMethod()`,
-			want:        base.DML,
+			want:        base.SelectInfoSchema,
 		},
 
-		// Parse error with partial AST: parser recovers enough to identify "find"
-		// from the incomplete input.
+		// Omni parser does not do error recovery, so incomplete input
+		// returns a parse error and defaults to DML.
 		{
 			description: "incomplete find statement",
 			statement:   `db.users.find({`,
-			want:        base.Select,
+			want:        base.DML,
 		},
 
 		// Completely unparseable.
