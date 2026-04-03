@@ -789,12 +789,12 @@ type ListDatabasesRequest struct {
 	//
 	// Supported filter:
 	// - environment: the environment full name in "environments/{id}" format, support "==" operator.
-	// - name: the database name, support ".matches()" operator.
+	// - name: the database name, support ".contains()" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
 	// - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
 	// - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-	// - table: filter by the database table, support "==" and ".matches()" operator.
+	// - table: filter by the database table, support "==" and ".contains()" operator.
 	// - labels.{key}: the database label, support "==" and "in" operators.
 	//
 	// For example:
@@ -802,19 +802,19 @@ type ListDatabasesRequest struct {
 	// environment == "" (find databases which environment is not set)
 	// project == "projects/{project resource id}"
 	// instance == "instances/{instance resource id}"
-	// name.matches("database name")
+	// name.contains("database name")
 	// engine == "MYSQL"
 	// engine in ["MYSQL", "POSTGRES"]
 	// !(engine in ["MYSQL", "POSTGRES"])
 	// exclude_unassigned == true
 	// table == "sample"
-	// table.matches("sam")
+	// table.contains("sam")
 	// labels.environment == "production"
 	// labels.region == "asia"
 	// labels.region in ["asia", "europe"]
 	//
 	// You can combine filter conditions like:
-	// environment == "environments/prod" && name.matches("employee")
+	// environment == "environments/prod" && name.contains("employee")
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Show deleted database if specified.
 	ShowDeleted bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
@@ -1310,14 +1310,14 @@ type GetDatabaseMetadataRequest struct {
 	//
 	// Supported filter:
 	// - schema: the schema name, support "==" operator.
-	// - table: the table name, support "==" and ".matches()" operator.
+	// - table: the table name, support "==" and ".contains()" operator.
 	//
 	// For example:
 	// schema == "schema-a"
 	// table == "table-a"
-	// table.matches("table-a")
-	// schema == "schema-a" && table.matches("sample")
-	// The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
+	// table.contains("table-a")
+	// schema == "schema-a" && table.contains("sample")
+	// The filter is used to search for tables containing "sample" in the schema "schemas/schema-a".
 	// The column masking level will only be returned when a table filter is used.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Limit the response size of returned table metadata per schema.

@@ -253,7 +253,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
@@ -261,7 +261,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				}
 				value := args[0].AsLiteral().Value()
 				if variable != "statement" {
-					return nil, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Matches, variable)
+					return nil, errors.Errorf(`only "statement" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
 				strValue, ok := value.(string)
 				if !ok {

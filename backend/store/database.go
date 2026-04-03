@@ -601,7 +601,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
@@ -624,7 +624,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 						 	 json_array_elements(s->'tables') AS t
 						WHERE t->>'name' LIKE ?)`, "%"+strValue+"%"), nil
 				default:
-					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Matches, variable)
+					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)

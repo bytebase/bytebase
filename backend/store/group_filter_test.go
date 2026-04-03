@@ -37,15 +37,15 @@ func TestGetListGroupFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "title matches",
-			filter:   `title.matches("dev")`,
+			name:     "title contains",
+			filter:   `title.contains("dev")`,
 			wantSQL:  "(LOWER(name) LIKE $1)",
 			wantArgs: []any{"%dev%"},
 			wantErr:  false,
 		},
 		{
-			name:     "email matches",
-			filter:   `email.matches("example")`,
+			name:     "email contains",
+			filter:   `email.contains("example")`,
 			wantSQL:  "(LOWER(email) LIKE $1)",
 			wantArgs: []any{"%example%"},
 			wantErr:  false,
@@ -66,7 +66,7 @@ func TestGetListGroupFilter(t *testing.T) {
 		},
 		{
 			name:     "complex nested AND/OR",
-			filter:   `(title == "Developers" || title == "Admins") && email.matches("example")`,
+			filter:   `(title == "Developers" || title == "Admins") && email.contains("example")`,
 			wantSQL:  "(((name = $1 OR name = $2) AND LOWER(email) LIKE $3))",
 			wantArgs: []any{"Developers", "Admins", "%example%"},
 			wantErr:  false,
@@ -84,10 +84,16 @@ func TestGetListGroupFilter(t *testing.T) {
 			errContains: "unsupport variable",
 		},
 		{
-			name:        "empty matches value",
-			filter:      `title.matches("")`,
+			name:        "empty contains value",
+			filter:      `title.contains("")`,
 			wantErr:     true,
 			errContains: "empty value",
+		},
+		{
+			name:        "matches is unsupported",
+			filter:      `title.matches("dev")`,
+			wantErr:     true,
+			errContains: "unexpected function matches",
 		},
 	}
 

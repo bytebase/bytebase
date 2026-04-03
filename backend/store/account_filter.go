@@ -101,7 +101,7 @@ func GetAccountListFilter(filter string) (*AccountListFilter, error) {
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
@@ -109,7 +109,7 @@ func GetAccountListFilter(filter string) (*AccountListFilter, error) {
 				}
 				value := args[0].AsLiteral().Value()
 				if variable != "name" && variable != "email" {
-					return nil, errors.Errorf(`only "name" and "email" support %q operator, but found %q`, celoverloads.Matches, variable)
+					return nil, errors.Errorf(`only "name" and "email" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
 				strValue, ok := value.(string)
 				if !ok {

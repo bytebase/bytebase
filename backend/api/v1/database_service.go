@@ -481,7 +481,7 @@ func getDatabaseMetadataFilter(filter string) (*metadataFilter, error) {
 					}
 				}
 				return nil
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				if variable != "table" {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))

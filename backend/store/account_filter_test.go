@@ -38,15 +38,15 @@ func TestGetAccountListFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "name matches",
-			filter:   `name.matches("ED")`,
+			name:     "name contains",
+			filter:   `name.contains("ED")`,
 			wantSQL:  "(LOWER(name) LIKE $1)",
 			wantArgs: []any{"%ed%"},
 			wantErr:  false,
 		},
 		{
-			name:     "email matches",
-			filter:   `email.matches("test")`,
+			name:     "email contains",
+			filter:   `email.contains("test")`,
 			wantSQL:  "(LOWER(email) LIKE $1)",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
@@ -111,6 +111,12 @@ func TestGetAccountListFilter(t *testing.T) {
 			filter:      `state == "INVALID_STATE"`,
 			wantErr:     true,
 			errContains: "invalid state filter",
+		},
+		{
+			name:        "matches is unsupported",
+			filter:      `name.matches("ed")`,
+			wantErr:     true,
+			errContains: "unexpected function matches",
 		},
 	}
 

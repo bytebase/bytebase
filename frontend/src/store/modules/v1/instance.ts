@@ -53,7 +53,7 @@ const getListInstanceFilter = (params: InstanceFilter) => {
   const search = params.query?.trim().toLowerCase();
   if (search) {
     list.push(
-      `(name.matches("${search}") || resource_id.matches("${search}"))`
+      `(name.contains("${search}") || resource_id.contains("${search}"))`
     );
   }
   if (isValidProjectName(params.project)) {
@@ -65,10 +65,10 @@ const getListInstanceFilter = (params: InstanceFilter) => {
     list.push(`environment == "${params.environment}"`);
   }
   if (params.host) {
-    list.push(`host.matches("${params.host}")`);
+    list.push(`host.contains("${params.host}")`);
   }
   if (params.port) {
-    list.push(`port.matches("${params.port}")`);
+    list.push(`port.contains("${params.port}")`);
   }
   if (params.engines && params.engines.length > 0) {
     // engine filter should be:

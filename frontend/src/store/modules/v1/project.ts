@@ -47,7 +47,7 @@ const getListProjectFilter = (params: ProjectFilter) => {
     // It's a regular name/resource_id search
     const searchLower = search.toLowerCase();
     list.push(
-      `(name.matches("${searchLower}") || resource_id.matches("${searchLower}"))`
+      `(name.contains("${searchLower}") || resource_id.contains("${searchLower}"))`
     );
   }
 
