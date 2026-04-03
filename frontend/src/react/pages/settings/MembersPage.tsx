@@ -9,7 +9,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
@@ -227,6 +227,7 @@ function MemberTableByRole({
 }) {
   const { t } = useTranslation();
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   const roleToBindings = useMemo(() => {
     const map = new Map<string, MemberBinding[]>();
@@ -242,6 +243,14 @@ function MemberTableByRole({
       members: map.get(role) ?? [],
     }));
   }, [bindings]);
+
+  // Expand all roles by default on first load
+  useEffect(() => {
+    if (!initializedRef.current && roleToBindings.length > 0) {
+      initializedRef.current = true;
+      setExpandedRoles(new Set(roleToBindings.map((r) => r.role)));
+    }
+  }, [roleToBindings]);
 
   const toggleRole = (role: string) => {
     setExpandedRoles((prev) => {
