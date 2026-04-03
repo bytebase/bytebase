@@ -5,10 +5,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   factorText,
@@ -75,6 +77,85 @@ function useExprEditorCtx() {
 }
 
 // ============================================================
+// PortaledDropdown — renders dropdown via portal to avoid
+// overflow clipping and z-index issues inside dialogs
+// ============================================================
+
+function useClickOutside(
+  refs: React.RefObject<HTMLElement | null>[],
+  open: boolean,
+  onClose: () => void
+) {
+  const refsRef = useRef(refs);
+  refsRef.current = refs;
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (refsRef.current.every((r) => !r.current?.contains(target))) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, onClose]);
+}
+
+function PortaledDropdown({
+  anchorRef,
+  dropdownRef,
+  matchAnchorWidth,
+  className,
+  children,
+}: {
+  anchorRef: React.RefObject<HTMLElement | null>;
+  dropdownRef?: React.RefObject<HTMLDivElement | null>;
+  matchAnchorWidth?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [style, setStyle] = useState<React.CSSProperties>({});
+
+  const updatePosition = useCallback(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setStyle({
+      position: "fixed",
+      top: rect.bottom + 4,
+      left: rect.left,
+      zIndex: 100,
+      ...(matchAnchorWidth ? { width: rect.width } : {}),
+    });
+  }, [anchorRef, matchAnchorWidth]);
+
+  useLayoutEffect(() => {
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    const anchor = anchorRef.current;
+    let ro: ResizeObserver | undefined;
+    if (anchor) {
+      ro = new ResizeObserver(updatePosition);
+      ro.observe(anchor);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+      ro?.disconnect();
+    };
+  }, [updatePosition, anchorRef]);
+
+  return createPortal(
+    <div ref={dropdownRef} style={style} className={className}>
+      {children}
+    </div>,
+    document.body
+  );
+}
+
+// ============================================================
 // SearchableSelect — async searchable dropdown
 // ============================================================
 
@@ -101,7 +182,8 @@ function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SearchableSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedLabel = useMemo(() => {
@@ -158,19 +240,8 @@ function SearchableSelect({
     setSearch("");
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   if (!optionConfig.search) {
     return (
@@ -202,8 +273,9 @@ function SearchableSelect({
   }
 
   return (
-    <div ref={containerRef} className="relative min-w-28">
+    <div className="min-w-28">
       <button
+        ref={triggerRef}
         type="button"
         className="h-8 px-2 text-sm rounded-xs border border-control-border bg-white w-full text-left disabled:opacity-50 truncate"
         disabled={disabled}
@@ -214,7 +286,11 @@ function SearchableSelect({
         )}
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded-xs shadow-md">
+        <PortaledDropdown
+          anchorRef={triggerRef}
+          dropdownRef={dropdownRef}
+          className="w-56 bg-white border border-control-border rounded-xs shadow-md"
+        >
           <div className="p-1 border-b border-control-border">
             <input
               autoFocus
@@ -247,7 +323,7 @@ function SearchableSelect({
               </li>
             ))}
           </ul>
-        </div>
+        </PortaledDropdown>
       )}
     </div>
   );
@@ -277,7 +353,8 @@ function MultiSearchableSelect({
     []
   );
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [knownOptions, setKnownOptions] = useState<SearchableSelectOption[]>(
     []
@@ -355,19 +432,8 @@ function MultiSearchableSelect({
     onChange(value.filter((x) => x !== v));
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   if (!optionConfig.search) {
     return (
@@ -382,8 +448,9 @@ function MultiSearchableSelect({
   }
 
   return (
-    <div ref={containerRef} className="relative min-w-32 max-w-xs">
+    <div className="min-w-32 max-w-xs">
       <div
+        ref={triggerRef}
         className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white flex flex-wrap gap-1 cursor-pointer"
         onClick={disabled ? undefined : handleOpen}
       >
@@ -414,7 +481,11 @@ function MultiSearchableSelect({
         ))}
       </div>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-white border border-control-border rounded-xs shadow-md">
+        <PortaledDropdown
+          anchorRef={triggerRef}
+          dropdownRef={dropdownRef}
+          className="w-56 bg-white border border-control-border rounded-xs shadow-md"
+        >
           <div className="p-1 border-b border-control-border">
             <input
               autoFocus
@@ -453,7 +524,7 @@ function MultiSearchableSelect({
               </li>
             ))}
           </ul>
-        </div>
+        </PortaledDropdown>
       )}
     </div>
   );
@@ -557,7 +628,8 @@ function MultiCheckSelect({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const allValues = options.map((o) => o.value);
   const allSelected =
@@ -575,23 +647,13 @@ function MultiCheckSelect({
     }
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   return (
-    <div ref={containerRef} className="relative min-w-32">
+    <div className="min-w-32">
       <button
+        ref={triggerRef}
         type="button"
         className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
         disabled={disabled}
@@ -625,7 +687,12 @@ function MultiCheckSelect({
         ))}
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-md py-1">
+        <PortaledDropdown
+          anchorRef={triggerRef}
+          dropdownRef={dropdownRef}
+          matchAnchorWidth
+          className="bg-white border border-control-border rounded-sm shadow-md py-1"
+        >
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
             <input
               type="checkbox"
@@ -656,7 +723,7 @@ function MultiCheckSelect({
               {renderValue ? renderValue(o.value, o.label) : o.label}
             </label>
           ))}
-        </div>
+        </PortaledDropdown>
       )}
     </div>
   );
