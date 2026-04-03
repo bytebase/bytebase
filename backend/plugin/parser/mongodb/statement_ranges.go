@@ -15,10 +15,10 @@ func init() {
 }
 
 // GetStatementRanges returns the ranges of statements in the MongoDB shell script.
-// Returns best-effort results: if parsing fails (e.g. incomplete input during live typing),
-// returns empty ranges rather than an error so LSP features degrade gracefully.
+// Uses best-effort parsing so that valid statements are returned even when other
+// statements in the input have syntax errors (e.g. user is mid-typing).
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	stmts, _ := ParseMongoShell(statement)
+	stmts, _ := ParseMongoShellBestEffort(statement)
 
 	// Build byte offset to LSP position mapping.
 	positions := buildBytePositionMap(statement)
