@@ -33,6 +33,7 @@ import {
 import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
+import { AccountMultiSelect } from "./shared/AccountMultiSelect";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 
 // ============================================================
@@ -390,7 +391,7 @@ function EditMemberRoleDrawer({
 
   const isEditMode = !!member;
 
-  const [memberInput, setMemberInput] = useState("");
+  const [selectedBindings, setSelectedBindings] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() =>
     member ? [...member.workspaceLevelRoles] : []
   );
@@ -406,30 +407,10 @@ function EditMemberRoleDrawer({
           { member: member.binding, roles: selectedRoles },
         ]);
       } else {
-        const emails = memberInput
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const KNOWN_PREFIXES = [
-          "user:",
-          "group:",
-          "serviceAccount:",
-          "workloadIdentity:",
-        ];
-        const memberList = emails.map((input) => {
-          // Preserve the special allUsers principal (self-hosted only)
-          if (input === ALL_USERS_USER_EMAIL && !isSaaSMode) {
-            return input;
-          }
-          if (KNOWN_PREFIXES.some((p) => input.startsWith(p))) {
-            return input;
-          }
-          return `${userBindingPrefix}${input}`;
-        });
-        const batchPatch = memberList.map((m) => {
-          const existedRoles = workspaceStore.findRolesByMember(m);
+        const batchPatch = selectedBindings.map((binding) => {
+          const existedRoles = workspaceStore.findRolesByMember(binding);
           return {
-            member: m,
+            member: binding,
             roles: [...new Set([...selectedRoles, ...existedRoles])],
           };
         });
@@ -477,7 +458,7 @@ function EditMemberRoleDrawer({
 
   const allowConfirm = isEditMode
     ? selectedRoles.length > 0
-    : memberInput.trim().length > 0 && selectedRoles.length > 0;
+    : selectedBindings.length > 0 && selectedRoles.length > 0;
 
   return (
     <>
@@ -506,16 +487,11 @@ function EditMemberRoleDrawer({
               {isEditMode ? (
                 <Input value={member.binding} disabled />
               ) : (
-                <>
-                  <Input
-                    value={memberInput}
-                    onChange={(e) => setMemberInput(e.target.value)}
-                    placeholder="user:foo@example.com, group:bar@example.com"
-                  />
-                  <span className="text-xs text-control-light">
-                    {t("settings.members.select-account-hint")}
-                  </span>
-                </>
+                <AccountMultiSelect
+                  value={selectedBindings}
+                  onChange={setSelectedBindings}
+                  includeAllUsers={!isSaaSMode}
+                />
               )}
             </div>
 
