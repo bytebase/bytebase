@@ -44,11 +44,11 @@ function SelectContent({
 }: ComponentProps<typeof BaseSelect.Popup>) {
   return (
     <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={4}>
+      <BaseSelect.Positioner sideOffset={4} className="z-[100]">
         <BaseSelect.Popup
           ref={ref}
           className={cn(
-            "z-50 min-w-(--anchor-width) max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md",
+            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md",
             className
           )}
           {...props}
