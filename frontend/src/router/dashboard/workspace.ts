@@ -13,6 +13,7 @@ import {
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
+  WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
@@ -311,10 +312,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
         path: "users",
         name: WORKSPACE_ROUTE_USERS,
         meta: {
-          title: () => t("settings.sidebar.users-and-groups"),
+          title: () => t("common.users"),
+          requiredPermissionList: () => ["bb.users.list"],
         },
-        component: () => import("@/views/SettingWorkspaceUsers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "UsersPage" }),
       },
       {
         path: "service-accounts",
@@ -323,9 +325,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/ServiceAccountPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ServiceAccountsPage" }),
       },
       {
         path: "workload-identities",
@@ -334,23 +335,28 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.workload-identities"),
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "WorkloadIdentitiesPage" }),
       },
       {
         path: "members",
         name: WORKSPACE_ROUTE_MEMBERS,
         meta: {
           title: () => t("settings.sidebar.members"),
-          requiredPermissionList: () => [
-            "bb.workspaces.getIamPolicy",
-            "bb.users.list",
-            "bb.groups.list",
-          ],
+          requiredPermissionList: () => ["bb.workspaces.getIamPolicy"],
         },
-        component: () => import("@/views/SettingWorkspaceMembers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "MembersPage" }),
+      },
+      {
+        path: "groups",
+        name: WORKSPACE_ROUTE_GROUPS,
+        meta: {
+          title: () => t("settings.members.groups.self"),
+          requiredPermissionList: () => ["bb.groups.list"],
+        },
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GroupsPage" }),
       },
       {
         path: "roles",

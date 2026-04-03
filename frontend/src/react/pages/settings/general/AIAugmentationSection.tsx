@@ -238,7 +238,7 @@ export const AIAugmentationSection = forwardRef<
                       disabled={!canEdit}
                       onChange={(e) => toggleEnabled(e.target.checked)}
                     />
-                    <span className="font-medium">
+                    <span className="text-base font-semibold">
                       {t(
                         "settings.general.workspace.ai-assistant.enable-ai-assistant"
                       )}
@@ -263,7 +263,7 @@ export const AIAugmentationSection = forwardRef<
                     {/* Provider */}
                     <div>
                       <label className="flex items-center gap-x-2 mb-2">
-                        <span className="font-medium">
+                        <span className="text-base font-semibold">
                           {t(
                             "settings.general.workspace.ai-assistant.provider.self"
                           )}
@@ -305,7 +305,7 @@ export const AIAugmentationSection = forwardRef<
                     {/* API Key */}
                     <div>
                       <label className="flex items-center gap-x-2">
-                        <span className="font-medium">
+                        <span className="text-base font-semibold">
                           {t(
                             "settings.general.workspace.ai-assistant.api-key.self"
                           )}
@@ -353,7 +353,7 @@ export const AIAugmentationSection = forwardRef<
                     {/* Endpoint */}
                     <div>
                       <label className="flex items-center gap-x-2">
-                        <span className="font-medium">
+                        <span className="text-base font-semibold">
                           {t(
                             "settings.general.workspace.ai-assistant.endpoint.self"
                           )}
@@ -378,7 +378,7 @@ export const AIAugmentationSection = forwardRef<
                     {/* Model */}
                     <div>
                       <label className="flex items-center gap-x-2">
-                        <span className="font-medium">
+                        <span className="text-base font-semibold">
                           {t(
                             "settings.general.workspace.ai-assistant.model.self"
                           )}

@@ -383,7 +383,7 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 					return qb.Q().Space("plan.created_at >= ?", t), nil
 				}
 				return qb.Q().Space("plan.created_at <= ?", t), nil
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {
@@ -400,7 +400,7 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 				case "title":
 					return qb.Q().Space("LOWER(plan.name) LIKE ?", "%"+strValue+"%"), nil
 				default:
-					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Matches, variable)
+					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Contains, variable)
 				}
 			default:
 				return nil, errors.Errorf("unsupported function %v", functionName)

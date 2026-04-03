@@ -52,7 +52,7 @@ const getListAccessFilter = (filter: AccessFilter | undefined): string => {
     parts.push(`(${statusFilter.join(" || ")})`);
   }
   if (filter.statement) {
-    parts.push(`query.matches("${filter.statement.trim()}")`);
+    parts.push(`query.contains("${filter.statement.trim()}")`);
   }
   if (filter.creator) {
     parts.push(`creator == "${filter.creator}"`);

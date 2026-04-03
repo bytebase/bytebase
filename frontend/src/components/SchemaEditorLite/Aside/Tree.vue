@@ -234,7 +234,7 @@ const handleSearch = debounce(
             database: target.database.name,
             skipCache: false,
             limit: 100,
-            filter: `table.matches("${search.trim()}")`,
+            filter: `table.contains("${search.trim()}")`,
           });
           return metadata;
         })

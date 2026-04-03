@@ -230,6 +230,7 @@ export function RuleEditDialog({
               placeholder={t("common.description")}
               disabled={!allowAdmin}
               rows={2}
+              className="min-h-0 resize-none"
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>

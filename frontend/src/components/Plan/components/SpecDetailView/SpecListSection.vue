@@ -1,19 +1,16 @@
 <template>
-  <div class="flex items-center" :class="(plan.issue || plan.hasRollout) && 'mt-3'">
+  <div class="flex items-center pt-3">
     <NTabs
       :key="`${plan.specs.length}-${selectedSpec.id}`"
       :value="selectedSpec.id"
-      type="card"
+      type="line"
       size="small"
       class="flex-1"
       @update:value="handleTabChange"
     >
       <template #prefix>
-        <div class="pl-4 text-base font-medium">
-          {{ $t("plan.navigator.changes") }}
-        </div>
+        <div />
       </template>
-
       <NTab v-for="(spec, index) in plan.specs" :key="spec.id" :name="spec.id">
         <div class="flex items-center gap-1">
           <span v-if="plan.specs.length > 1" class="opacity-80"
@@ -48,7 +45,7 @@
           <NButton
             v-if="canModifySpecs"
             type="default"
-            size="small"
+            size="tiny"
             @click="showAddSpecDrawer = true"
           >
             {{ $t("plan.add-spec") }}
@@ -70,7 +67,7 @@ import { create } from "@bufbuild/protobuf";
 import { MoreVerticalIcon, TrashIcon } from "lucide-vue-next";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTab, NTabs, NTooltip, useDialog } from "naive-ui";
-import { computed, h, nextTick, ref } from "vue";
+import { computed, h, inject, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/connect";
@@ -90,7 +87,10 @@ import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
 import AddSpecDrawer from "../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../common";
-import { useSelectedSpec } from "./context";
+import { SELECTED_SPEC_ID_SETTER_KEY, useSelectedSpec } from "./context";
+
+// Check if spec selection is managed via injection (PlanDetailPage)
+const specIdSetter = inject(SELECTED_SPEC_ID_SETTER_KEY, null);
 
 const router = useRouter();
 const dialog = useDialog();
@@ -180,24 +180,35 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
 
 const gotoSpec = (specId: string, enableEditing = false) => {
   const currentRoute = router.currentRoute.value;
-  router
-    .push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-      params: {
-        ...(currentRoute.params || {}),
-        specId,
-      },
-      query: currentRoute.query || {},
-    })
-    .then(() => {
-      // Enable editing mode if requested (for newly created specs)
-      if (enableEditing) {
-        // Use nextTick to ensure the route navigation completes first
-        nextTick(() => {
-          setEditingState(true);
-        });
-      }
-    });
+  const nextRoute = {
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    params: {
+      ...(currentRoute.params || {}),
+      specId,
+    },
+    query: currentRoute.query || {},
+  };
+
+  // When spec selection is managed via injection (PlanDetailPage),
+  // keep the local selection responsive while still syncing the URL.
+  if (specIdSetter) {
+    specIdSetter(specId);
+    void router.push(nextRoute);
+    if (enableEditing) {
+      nextTick(() => setEditingState(true));
+    }
+    return;
+  }
+
+  router.push(nextRoute).then(() => {
+    // Enable editing mode if requested (for newly created specs)
+    if (enableEditing) {
+      // Use nextTick to ensure the route navigation completes first
+      nextTick(() => {
+        setEditingState(true);
+      });
+    }
+  });
 };
 
 const getDropdownOptions = (_spec: Plan_Spec): DropdownOption[] => {

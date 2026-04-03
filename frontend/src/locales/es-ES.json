@@ -53,22 +53,29 @@
     "canceled": "Cancelado",
     "rejected": "Rechazado",
     "under-review": "En revisión",
+    "in-review": "En revisión",
     "approve": "Aprobar",
     "approved": "Aprobado",
+    "done": "Hecho",
     "create": "Crear",
     "run": "Ejecutar",
     "retry": "Reintentar",
     "skip": "Saltar",
     "skipped": "Omitido",
+    "bypassed": "Omitido",
     "dismiss": "Descartar",
     "allow": "Permitir",
     "deny": "Denegar",
+    "and": "y",
     "go-back": "Volver",
     "back": "Volver",
     "next": "Siguiente",
     "edit": "Editar",
     "update": "Actualizar",
     "updated": "Actualizado",
+    "deploying": "Desplegando",
+    "in-progress": "En progreso",
+    "not-started": "No iniciado",
     "visit": "Visitar",
     "role": {
       "self": "Rol"
@@ -258,6 +265,7 @@
     },
     "collapse": "Colapsar",
     "show-more": "Mostrar más",
+    "show-less": "Mostrar menos",
     "n-more": "+{n} más",
     "remaining": "restante",
     "line": "Línea",
@@ -271,7 +279,9 @@
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
+    "scope": "Alcance",
+    "classification-level": "Nivel de clasificación"
   },
   "error-page": {
     "forbidden": "Prohibido",
@@ -437,8 +447,6 @@
       "integration": "Integración",
       "general": "General",
       "members": "Miembros",
-      "users-and-groups": "Usuarios y grupos",
-      "members-and-groups": "Miembros y grupos",
       "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
       "mcp": "MCP",
@@ -491,7 +499,6 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
-          "members": "Miembros",
           "role": {
             "owner": "Propietario del grupo",
             "member": "Miembro del grupo"
@@ -1112,8 +1119,6 @@
     "approval-flow": {
       "self": "Flujo de aprobación"
     },
-    "force-rollout-hint": "Proceda con el despliegue manual para anular las verificaciones fallidas.",
-    "checks-block-rollout-hint": "Las verificaciones fallidas impiden la creación del despliegue. Corrija los errores para continuar.",
     "checks-warning-hint": "Este plan tiene verificaciones fallidas. Se requerirá un despliegue manual tras la aprobación.",
     "risk-level": {
       "self": "Nivel de riesgo",
@@ -1203,8 +1208,33 @@
     "run": "Ejecutar verificación",
     "navigator": {
       "changes": "Cambios",
+      "review": "Revisión",
+      "deploy": "Desplegar",
       "checks": "Verificaciones",
       "statement-empty": "La declaración está vacía"
+    },
+    "phase": {
+      "review-description": "Envíe para revisión para continuar",
+      "deploy-description": "Disponible cuando la revisión está aprobada y las comprobaciones pasan",
+      "deploy-description-with-action": "Disponible cuando la revisión está aprobada y las comprobaciones pasan. Puede {action} para continuar manualmente.",
+      "create-rollout-action": "crear despliegue",
+      "show-details": "Mostrar detalles ↓",
+      "hide-details": "Ocultar detalles ↑"
+    },
+    "summary": {
+      "n-changes": "{n} cambios",
+      "n-databases": "{n} bases de datos",
+      "n-database-groups": "{n} grupos de bases de datos",
+      "n-passed": "{n} aprobadas",
+      "n-warning": "{n} advertencia",
+      "n-error": "{n} error",
+      "n-of-m-approved": "{n} de {m} aprobadas",
+      "last-approved-by": "Última aprobación por {name}",
+      "n-of-m-tasks": "{n}/{m} tareas"
+    },
+    "sidebar": {
+      "created-by-at": "Creado por {user} · {time}",
+      "future-sections-hint": "Revisión, etiquetas y enlace del issue aparecen después del envío"
     },
     "checks": {
       "self": "Verificaciones",
@@ -1274,10 +1304,11 @@
     },
     "description": {
       "placeholder": "Añadir descripción"
-    }
+    },
+    "view-discussion": "Ver discusión",
+    "go-to-plan-page": "Ir a la página del plan"
   },
   "rollout": {
-    "rollouts": "Despliegues",
     "bypass-stage-requirements": "Advertencias de bypass",
     "task-execution-errors": "Errores de ejecución de tareas",
     "stage": {
@@ -1971,7 +2002,14 @@
     "masking-exemption": {
       "self": "Exenciones de Enmascaramiento",
       "grant-exemption": "Conceder Exención",
-      "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
+      "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {member}?",
+      "no-reason": "No se proporcionó motivo",
+      "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
+      "expires-today": "Expira hoy",
+      "expires-in-days": "Expira en {days} día | Expira en {days} días",
+      "all-levels": "Todos los niveles",
+      "n-exemptions": "{n} exención | {n} exenciones",
+      "level": "nivel"
     },
     "batch": {
       "selected": "{count} proyecto seleccionado | {count} proyectos seleccionados",

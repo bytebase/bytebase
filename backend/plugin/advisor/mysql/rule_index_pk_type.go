@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -40,204 +36,144 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewIndexPkTypeRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &indexPkTypeOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		originalMetadata: checkCtx.OriginalMetadata,
+		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// IndexPkTypeRule checks for correct type of PK.
-type IndexPkTypeRule struct {
-	BaseRule
-	line             map[string]int
+type indexPkTypeOmniRule struct {
+	OmniBaseRule
 	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
-// NewIndexPkTypeRule creates a new IndexPkTypeRule.
-func NewIndexPkTypeRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *IndexPkTypeRule {
-	return &IndexPkTypeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		line:             make(map[string]int),
-		originalMetadata: originalMetadata,
-		tablesNewColumns: make(tableColumnTypes),
-	}
-}
-
-// Name returns the rule name.
-func (*IndexPkTypeRule) Name() string {
+func (*indexPkTypeOmniRule) Name() string {
 	return "IndexPkTypeRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *IndexPkTypeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *indexPkTypeOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*IndexPkTypeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *IndexPkTypeRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexPkTypeOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
+	tableName := n.Table.Name
+	for _, col := range n.Columns {
+		if col == nil || col.TypeName == nil {
 			continue
 		}
-		switch {
-		case tableElement.ColumnDefinition() != nil:
-			if tableElement.ColumnDefinition().FieldDefinition() == nil {
-				continue
+		columnType := r.getIntOrBigIntStr(col.TypeName)
+		for _, c := range col.Constraints {
+			if c.Type == ast.ColConstrPrimaryKey {
+				r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(col.Loc)))
 			}
-			_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-			r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-		case tableElement.TableConstraintDef() != nil:
-			r.checkConstraintDef(tableName, tableElement.TableConstraintDef())
-		default:
 		}
+		r.tablesNewColumns.set(tableName, col.Name, columnType)
+	}
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
+			continue
+		}
+		r.checkConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
 	}
 }
 
-func (r *IndexPkTypeRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexPkTypeOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if alterListItem == nil {
+	tableName := n.Table.Name
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
-		switch {
-		// add column
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.Identifier() != nil:
-			switch {
-			case alterListItem.Identifier() != nil && alterListItem.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
-				r.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
-			case alterListItem.OPEN_PAR_SYMBOL() != nil && alterListItem.TableElementList() != nil:
-				for _, tableElement := range alterListItem.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			for _, col := range omniGetColumnsFromCmd(cmd) {
+				if col == nil || col.TypeName == nil {
+					continue
 				}
-			default:
+				columnType := r.getIntOrBigIntStr(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
 			}
-		// modify column
-		case alterListItem.MODIFY_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, alterListItem.FieldDefinition())
-		// change column
-		case alterListItem.CHANGE_SYMBOL() != nil && alterListItem.ColumnInternalRef() != nil && alterListItem.Identifier() != nil:
-			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(alterListItem.ColumnInternalRef())
-			r.tablesNewColumns.delete(tableName, oldColumnName)
-			newColumnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
-			r.checkFieldDefinition(tableName, newColumnName, alterListItem.FieldDefinition())
-		// add constriant.
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
-			r.checkConstraintDef(tableName, alterListItem.TableConstraintDef())
+		case ast.ATModifyColumn:
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				col := cmd.Column
+				columnType := r.getIntOrBigIntStr(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
+			}
+		case ast.ATChangeColumn:
+			r.tablesNewColumns.delete(tableName, cmd.Name)
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				col := cmd.Column
+				columnType := r.getIntOrBigIntStr(col.TypeName)
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey {
+						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
+					}
+				}
+				r.tablesNewColumns.set(tableName, col.Name, columnType)
+			}
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil {
+				r.checkConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
+			}
 		default:
 		}
 	}
 }
 
-func (r *IndexPkTypeRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if ctx.DataType() == nil {
+func (r *indexPkTypeOmniRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
+	if constraint.Type != ast.ConstrPrimaryKey {
 		return
 	}
-	columnType := r.getIntOrBigIntStr(ctx.DataType())
-	for _, attribute := range ctx.AllColumnAttribute() {
-		if attribute.PRIMARY_SYMBOL() != nil {
-			r.addAdvice(tableName, columnName, columnType, r.baseLine+ctx.GetStart().GetLine())
-		}
-	}
-	r.tablesNewColumns.set(tableName, columnName, columnType)
-}
-
-func (r *IndexPkTypeRule) checkConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
-	if ctx.GetType_().GetTokenType() != mysql.MySQLParserPRIMARY_SYMBOL {
-		return
-	}
-	if ctx.KeyListVariants() == nil {
-		return
-	}
-	columnList := mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
-
-	for _, columnName := range columnList {
+	for _, columnName := range constraint.Columns {
 		columnType, err := r.getPKColumnType(tableName, columnName)
 		if err != nil {
 			continue
 		}
-		r.addAdvice(tableName, columnName, columnType, r.baseLine+ctx.GetStart().GetLine())
+		r.addAdvice(tableName, columnName, columnType, r.BaseLine+int(line))
 	}
 }
 
-func (r *IndexPkTypeRule) addAdvice(tableName, columnName, columnType string, lineNumber int) {
+func (r *indexPkTypeOmniRule) addAdvice(tableName, columnName, columnType string, lineNumber int) {
 	if !strings.EqualFold(columnType, "INT") && !strings.EqualFold(columnType, "BIGINT") {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
 			Code:          code.IndexPKType.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", tableName, columnName, columnType),
 			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 }
 
-// getPKColumnType gets the column type string from r.tablesNewColumns or catalog, returns empty string and non-nil error if cannot find the column in given table.
-func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (string, error) {
+func (r *indexPkTypeOmniRule) getPKColumnType(tableName string, columnName string) (string, error) {
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}
@@ -248,18 +184,23 @@ func (r *IndexPkTypeRule) getPKColumnType(tableName string, columnName string) (
 	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
 }
 
-// getIntOrBigIntStr returns the type string of tp.
-func (*IndexPkTypeRule) getIntOrBigIntStr(ctx mysql.IDataTypeContext) string {
-	switch ctx.GetType_().GetTokenType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLong
-	case mysql.MySQLParserINT_SYMBOL:
-		// tp.String() return int(11)
+func (*indexPkTypeOmniRule) getIntOrBigIntStr(dt *ast.DataType) string {
+	if dt == nil {
+		return ""
+	}
+	switch strings.ToUpper(dt.Name) {
+	case "INT", "INTEGER":
 		return "INT"
-		// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLonglong
-	case mysql.MySQLParserBIGINT_SYMBOL:
-		// tp.String() return bigint(20)
+	case "BIGINT":
 		return "BIGINT"
 	default:
+		name := strings.ToLower(dt.Name)
+		if dt.Length > 0 {
+			if dt.Scale > 0 {
+				return fmt.Sprintf("%s(%d,%d)", name, dt.Length, dt.Scale)
+			}
+			return fmt.Sprintf("%s(%d)", name, dt.Length)
+		}
+		return name
 	}
-	return strings.ToLower(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
 }

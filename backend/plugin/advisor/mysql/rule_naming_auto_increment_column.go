@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -52,175 +49,82 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	// Create the rule
-	rule := NewNamingAutoIncrementColumnRule(level, checkCtx.Rule.Type.String(), format, maxLength)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// NamingAutoIncrementColumnRule checks for auto-increment naming convention.
-type NamingAutoIncrementColumnRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
-}
-
-// NewNamingAutoIncrementColumnRule creates a new NamingAutoIncrementColumnRule.
-func NewNamingAutoIncrementColumnRule(level storepb.Advice_Status, title string, format *regexp.Regexp, maxLength int) *NamingAutoIncrementColumnRule {
-	return &NamingAutoIncrementColumnRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &namingAutoIncrementColumnOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		format:    format,
 		maxLength: maxLength,
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*NamingAutoIncrementColumnRule) Name() string {
+type namingAutoIncrementColumnOmniRule struct {
+	OmniBaseRule
+	format    *regexp.Regexp
+	maxLength int
+}
+
+func (*namingAutoIncrementColumnOmniRule) Name() string {
 	return "NamingAutoIncrementColumnRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NamingAutoIncrementColumnRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*NamingAutoIncrementColumnRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingAutoIncrementColumnRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableName() == nil || ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
-			continue
+func (r *namingAutoIncrementColumnOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Table == nil {
+			return
 		}
-		if tableElement.ColumnDefinition() == nil {
-			continue
+		tableName := n.Table.Name
+		for _, col := range n.Columns {
+			if col == nil || !col.AutoIncrement {
+				continue
+			}
+			r.handleAutoIncrementColumn(tableName, col.Name, r.LocToLine(n.Loc))
 		}
-		if tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-			continue
+	case *ast.AlterTableStmt:
+		tableName := ""
+		if n.Table != nil {
+			tableName = n.Table.Name
 		}
-
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-	}
-}
-
-func (r *NamingAutoIncrementColumnRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
+		for _, cmd := range n.Commands {
+			if cmd == nil {
+				continue
+			}
+			switch cmd.Type {
+			case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
+				for _, col := range omniGetColumnsFromCmd(cmd) {
+					if col.AutoIncrement {
+						r.handleAutoIncrementColumn(tableName, col.Name, r.LocToLine(n.Loc))
 					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
 				}
 			default:
 			}
-		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		default:
 		}
+	default:
 	}
 }
 
-func (r *NamingAutoIncrementColumnRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !r.isAutoIncrement(ctx) {
-		return
-	}
-
+func (r *namingAutoIncrementColumnOmniRule) handleAutoIncrementColumn(tableName, columnName string, lineNumber int32) {
+	absoluteLine := r.BaseLine + int(lineNumber)
 	if !r.format.MatchString(columnName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
 			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
 		})
 	}
 	if r.maxLength > 0 && len(columnName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
 			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
 		})
 	}
-}
-
-func (*NamingAutoIncrementColumnRule) isAutoIncrement(ctx mysql.IFieldDefinitionContext) bool {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil {
-			return true
-		}
-	}
-	return false
 }

@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 const (
@@ -40,157 +37,95 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewUseInnoDBRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// UseInnoDBRule checks for using InnoDB engine.
-type UseInnoDBRule struct {
-	BaseRule
-}
-
-// NewUseInnoDBRule creates a new UseInnoDBRule.
-func NewUseInnoDBRule(level storepb.Advice_Status, title string) *UseInnoDBRule {
-	return &UseInnoDBRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &useInnoDBOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*UseInnoDBRule) Name() string {
+type useInnoDBOmniRule struct {
+	OmniBaseRule
+}
+
+func (*useInnoDBOmniRule) Name() string {
 	return "UseInnoDBRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *UseInnoDBRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case NodeTypeSetStatement:
-		r.checkSetStatement(ctx.(*mysql.SetStatementContext))
+func (r *useInnoDBOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
+	case *ast.SetStmt:
+		r.checkSetStatement(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*UseInnoDBRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *UseInnoDBRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.CreateTableOptions() == nil {
+func (r *useInnoDBOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	engine := omniTableOptionValue(n.Options, "ENGINE")
+	if engine == "" {
 		return
 	}
-	for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
-		if tableOption.ENGINE_SYMBOL() != nil && tableOption.EngineRef() != nil {
-			if tableOption.EngineRef().TextOrIdentifier() == nil {
-				continue
-			}
-			engine := mysqlparser.NormalizeMySQLTextOrIdentifier(tableOption.EngineRef().TextOrIdentifier())
-			if strings.ToLower(engine) != innoDB {
-				content := "CREATE " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-				line := tableOption.GetStart().GetLine()
-				r.addAdvice(content, line)
-				break
+	if strings.ToLower(engine) != innoDB {
+		content := r.TrimmedStmtText()
+		r.addAdvice(content, r.FindLineByName(engine))
+	}
+}
+
+func (r *useInnoDBOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	for _, cmd := range n.Commands {
+		if cmd.Type == ast.ATTableOption && cmd.Option != nil {
+			if strings.EqualFold(cmd.Option.Name, "ENGINE") && strings.ToLower(cmd.Option.Value) != innoDB {
+				content := r.TrimmedStmtText()
+				r.addAdvice(content, r.ContentStartLine())
+				return
 			}
 		}
 	}
 }
 
-func (r *UseInnoDBRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-	code := advisorcode.Ok
-	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
-		for _, op := range option.AllCreateTableOption() {
-			if op.ENGINE_SYMBOL() != nil {
-				if op.EngineRef() == nil {
-					continue
-				}
-				engine := op.EngineRef().GetText()
-				if strings.ToLower(engine) != innoDB {
-					code = advisorcode.NotInnoDBEngine
-					break
+func (r *useInnoDBOmniRule) checkSetStatement(n *ast.SetStmt) {
+	for _, assign := range n.Assignments {
+		if assign.Column == nil {
+			continue
+		}
+		name := assign.Column.Column
+		if strings.ToLower(name) != defaultStorageEngin {
+			continue
+		}
+		if assign.Value != nil {
+			if lit, ok := assign.Value.(*ast.StringLit); ok {
+				if strings.ToLower(lit.Value) != innoDB {
+					content := r.TrimmedStmtText()
+					r.addAdvice(content, r.ContentStartLine())
+					return
 				}
 			}
+			// For identifiers like CSV (without quotes), they may be parsed as ColumnRef
+			if ref, ok := assign.Value.(*ast.ColumnRef); ok {
+				if strings.ToLower(ref.Column) != innoDB {
+					content := r.TrimmedStmtText()
+					r.addAdvice(content, r.ContentStartLine())
+					return
+				}
+			}
 		}
-	}
-
-	if code != advisorcode.Ok {
-		content := "ALTER " + ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-		line := ctx.GetStart().GetLine()
-		r.addAdvice(content, line)
 	}
 }
 
-func (r *UseInnoDBRule) checkSetStatement(ctx *mysql.SetStatementContext) {
-	code := advisorcode.Ok
-	if ctx.StartOptionValueList() == nil {
-		return
-	}
-
-	startOptionValueList := ctx.StartOptionValueList()
-	if startOptionValueList.OptionValueNoOptionType() == nil {
-		return
-	}
-	optionValueNoOptionType := startOptionValueList.OptionValueNoOptionType()
-	if optionValueNoOptionType.InternalVariableName() == nil {
-		return
-	}
-	name := optionValueNoOptionType.InternalVariableName().GetText()
-	if strings.ToLower(name) != defaultStorageEngin {
-		return
-	}
-	if optionValueNoOptionType.SetExprOrDefault() != nil {
-		engine := optionValueNoOptionType.SetExprOrDefault().GetText()
-		if strings.ToLower(engine) != innoDB {
-			code = advisorcode.NotInnoDBEngine
-		}
-	}
-
-	if code != advisorcode.Ok {
-		content := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-		line := ctx.GetStart().GetLine()
-		r.addAdvice(content, line)
-	}
-}
-
-func (r *UseInnoDBRule) addAdvice(content string, lineNumber int) {
-	lineNumber += r.baseLine
-	r.AddAdvice(&storepb.Advice{
-		Status:        r.level,
+func (r *useInnoDBOmniRule) addAdvice(content string, lineNumber int32) {
+	absoluteLine := r.BaseLine + int(lineNumber)
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:        r.Level,
 		Code:          advisorcode.NotInnoDBEngine.Int32(),
-		Title:         r.title,
+		Title:         r.Title,
 		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
-		StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
+		StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
 	})
 }

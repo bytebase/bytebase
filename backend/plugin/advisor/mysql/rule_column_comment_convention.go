@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -37,199 +33,97 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
-	// Create the rule
-	rule := NewColumnCommentConventionRule(level, checkCtx.Rule.Type.String(), commentPayload)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &columnCommentConventionOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		payload: commentPayload,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// ColumnCommentConventionRule checks for column comment convention.
-type ColumnCommentConventionRule struct {
-	BaseRule
+type columnCommentConventionOmniRule struct {
+	OmniBaseRule
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
-// NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *ColumnCommentConventionRule {
-	return &ColumnCommentConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		payload: payload,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnCommentConventionRule) Name() string {
+func (*columnCommentConventionOmniRule) Name() string {
 	return "ColumnCommentConventionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnCommentConventionOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnCommentConventionRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
+func (r *columnCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
 		return
 	}
 
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
-			continue
-		}
-		if tableElement.ColumnDefinition() == nil {
-			continue
-		}
-
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if tableElement.ColumnDefinition().FieldDefinition() == nil {
-			continue
-		}
-		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	for _, col := range n.Columns {
+		r.checkColumn(tableName, col)
 	}
 }
 
-func (r *ColumnCommentConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+func (r *columnCommentConventionOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
 		return
 	}
 
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		var columnName string
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-				}
-			default:
+	for _, cmd := range n.Commands {
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			if cmd.Column != nil {
+				r.checkColumn(tableName, cmd.Column)
 			}
-		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
+			for _, col := range cmd.Columns {
+				r.checkColumn(tableName, col)
+			}
+		case ast.ATModifyColumn, ast.ATChangeColumn:
+			if cmd.Column != nil {
+				r.checkColumn(tableName, cmd.Column)
+			}
 		default:
 		}
 	}
 }
 
-func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	comment := ""
+func (r *columnCommentConventionOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	comment := omniColumnComment(col)
 
-	// Check columnAttribute for regular columns.
-	for _, attribute := range ctx.AllColumnAttribute() {
-		if attribute == nil || attribute.GetValue() == nil {
-			continue
-		}
-		if attribute.GetValue().GetTokenType() != mysql.MySQLParserCOMMENT_SYMBOL {
-			continue
-		}
-		if attribute.TextLiteral() == nil {
-			continue
-		}
-		comment = mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
-		break
-	}
-
-	// Check gcolAttribute for generated/virtual columns.
-	// Generated columns use gcolAttribute which has a different structure.
-	if comment == "" {
-		for _, gcolAttr := range ctx.AllGcolAttribute() {
-			if gcolAttr == nil || gcolAttr.COMMENT_SYMBOL() == nil {
-				continue
-			}
-			if gcolAttr.TextString() == nil || gcolAttr.TextString().TextStringLiteral() == nil {
-				continue
-			}
-			comment = mysqlparser.NormalizeMySQLTextStringLiteral(gcolAttr.TextString().TextStringLiteral())
-			break
-		}
-	}
-
-	// Validate comment length.
 	if comment != "" && r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.CommentTooLong.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, r.payload.MaxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.CommentTooLong.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, col.Name, r.payload.MaxLength),
+			StartPosition: &storepb.Position{
+				Line:   r.LocToLine(col.Loc),
+				Column: 0,
+			},
 		})
 	}
 
-	// Check if comment is required but missing.
 	if comment == "" && r.payload.Required {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.CommentEmpty.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.CommentEmpty.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, col.Name),
+			StartPosition: &storepb.Position{
+				Line:   r.LocToLine(col.Loc),
+				Column: 0,
+			},
 		})
 	}
 }

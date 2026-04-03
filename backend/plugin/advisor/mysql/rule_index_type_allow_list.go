@@ -5,16 +5,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -37,162 +33,116 @@ func (*IndexTypeAllowListAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	// Create the rule
-	rule := NewIndexTypeAllowListRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &indexTypeAllowListOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		allowList: stringArrayPayload.List,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// IndexTypeAllowListRule checks for index types.
-type IndexTypeAllowListRule struct {
-	BaseRule
+type indexTypeAllowListOmniRule struct {
+	OmniBaseRule
 	allowList []string
 }
 
-// NewIndexTypeAllowListRule creates a new IndexTypeAllowListRule.
-func NewIndexTypeAllowListRule(level storepb.Advice_Status, title string, allowList []string) *IndexTypeAllowListRule {
-	return &IndexTypeAllowListRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		allowList: allowList,
-	}
-}
-
-// Name returns the rule name.
-func (*IndexTypeAllowListRule) Name() string {
+func (*indexTypeAllowListOmniRule) Name() string {
 	return "IndexTypeAllowListRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *IndexTypeAllowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case NodeTypeCreateIndex:
-		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+func (r *indexTypeAllowListOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
+	case *ast.CreateIndexStmt:
+		r.checkCreateIndex(n)
 	default:
-		// No action required for other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*IndexTypeAllowListRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *IndexTypeAllowListRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexTypeAllowListOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil || tableElement.TableConstraintDef() == nil {
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
 			continue
 		}
-		r.handleConstraintDef(tableElement.TableConstraintDef())
+		r.handleConstraint(constraint, r.LocToLine(constraint.Loc))
 	}
 }
 
-func (r *IndexTypeAllowListRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexTypeAllowListOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableRef() == nil {
-		return
-	}
-	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil || ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if alterListItem == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-		if alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil {
-			r.handleConstraintDef(alterListItem.TableConstraintDef())
+		switch cmd.Type {
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil {
+				r.handleConstraint(cmd.Constraint, r.LocToLine(n.Loc))
+			}
+		default:
 		}
 	}
 }
 
-func (r *IndexTypeAllowListRule) handleConstraintDef(ctx mysql.ITableConstraintDefContext) {
-	switch ctx.GetType_().GetTokenType() {
-	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
+func (r *indexTypeAllowListOmniRule) handleConstraint(constraint *ast.Constraint, line int32) {
+	switch constraint.Type {
+	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrFulltextIndex, ast.ConstrSpatialIndex:
 	default:
 		return
 	}
 
 	indexType := "BTREE"
-	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexType() != nil {
-		indexType = ctx.IndexNameAndType().IndexType().GetText()
+	if constraint.IndexType != "" {
+		indexType = constraint.IndexType
 	} else {
-		if ctx.FULLTEXT_SYMBOL() != nil {
+		switch constraint.Type {
+		case ast.ConstrFulltextIndex:
 			indexType = "FULLTEXT"
-		} else if ctx.SPATIAL_SYMBOL() != nil {
+		case ast.ConstrSpatialIndex:
 			indexType = "SPATIAL"
+		default:
 		}
 	}
-	r.validateIndexType(indexType, ctx.GetStart().GetLine())
+	r.validateIndexType(indexType, line)
 }
 
-func (r *IndexTypeAllowListRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
+func (r *indexTypeAllowListOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+	if n.Table == nil {
 		return
 	}
 
 	indexType := "BTREE"
-	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexType() != nil {
-		indexType = ctx.IndexNameAndType().IndexType().GetText()
-	} else {
-		if ctx.FULLTEXT_SYMBOL() != nil {
-			indexType = "FULLTEXT"
-		} else if ctx.SPATIAL_SYMBOL() != nil {
-			indexType = "SPATIAL"
-		}
+	if n.IndexType != "" {
+		indexType = n.IndexType
+	} else if n.Fulltext {
+		indexType = "FULLTEXT"
+	} else if n.Spatial {
+		indexType = "SPATIAL"
 	}
-	r.validateIndexType(indexType, ctx.GetStart().GetLine())
+	r.validateIndexType(indexType, r.LocToLine(n.Loc))
 }
 
-// validateIndexType checks if the index type is in the allow list.
-func (r *IndexTypeAllowListRule) validateIndexType(indexType string, line int) {
+func (r *indexTypeAllowListOmniRule) validateIndexType(indexType string, line int32) {
 	if slices.Contains(r.allowList, indexType) {
 		return
 	}
 
-	r.AddAdvice(&storepb.Advice{
-		Status:        r.level,
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:        r.Level,
 		Code:          code.IndexTypeNotAllowed.Int32(),
-		Title:         r.title,
+		Title:         r.Title,
 		Content:       fmt.Sprintf("Index type `%s` is not allowed", indexType),
-		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
+		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
 	})
 }

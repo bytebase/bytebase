@@ -214,6 +214,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 	if create.Email != "" {
 		s.groupCache.Add(getGroupCacheKey(create.Workspace, create.Email), create)
 	}
+	s.userCountCache.Remove(create.Workspace)
 	return create, nil
 }
 
@@ -282,6 +283,7 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		s.groupCache.Add(getGroupCacheKey(group.Workspace, group.Email), &group)
 		s.groupMembersCache.Remove(getGroupMembersCacheKey(group.Workspace, "groups/"+group.Email))
 	}
+	s.userCountCache.Remove(patch.Workspace)
 	return &group, nil
 }
 
@@ -302,6 +304,7 @@ func (s *Store) DeleteGroup(ctx context.Context, workspace string, id string) er
 		s.groupCache.Remove(getGroupCacheKey(workspace, email.String))
 		s.groupMembersCache.Remove(getGroupMembersCacheKey(workspace, "groups/"+email.String))
 	}
+	s.userCountCache.Remove(workspace)
 	return nil
 }
 
@@ -422,7 +425,7 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {

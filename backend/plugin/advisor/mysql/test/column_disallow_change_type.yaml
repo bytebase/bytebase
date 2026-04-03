@@ -7,14 +7,6 @@
     - status: 2
       code: 403
       title: COLUMN_DISALLOW_CHANGE_TYPE
-      content: '"ALTER TABLE tech_book MODIFY id INTEGER;" changes column type'
-      startposition:
-        line: 3
-        column: 0
-      endposition: null
-    - status: 2
-      code: 403
-      title: COLUMN_DISALLOW_CHANGE_TYPE
       content: '"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED;" changes column type'
       startposition:
         line: 4

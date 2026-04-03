@@ -17,10 +17,8 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/router/dashboard/projectV1";
+import { getRouteQueryString } from "@/router/dashboard/projectV1RouteHelpers";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -67,8 +65,12 @@ export const provideResourcePoller = () => {
 
   // Extract stage/task scope from route params for scoped taskRuns polling
   const taskRunScope = computed<TaskRunScope | undefined>(() => {
-    const stageId = route.params.stageId as string | undefined;
-    const taskId = route.params.taskId as string | undefined;
+    const stageId =
+      getRouteQueryString(route.query.stageId) ||
+      (route.params.stageId as string | undefined);
+    const taskId =
+      getRouteQueryString(route.query.taskId) ||
+      (route.params.taskId as string | undefined);
     if (!stageId) return undefined;
     return { stageId, taskId };
   });
@@ -166,18 +168,19 @@ export const provideResourcePoller = () => {
     if (isCreating.value) return [];
 
     const routeName = route.name as string;
-    const planRoutes = [
-      PROJECT_V1_ROUTE_PLAN_DETAIL,
+    const planSpecRoutes = [
       PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
       PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
     ];
-    const rolloutRoutes = [
-      PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-      PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-      PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-    ];
 
-    if (includes(planRoutes, routeName)) return ["plan"];
+    // Plan Detail Page (unified view) — poll all resources
+    if (routeName === PROJECT_V1_ROUTE_PLAN_DETAIL) {
+      return ["plan", "planCheckRuns", "issue", "rollout", "taskRuns"];
+    }
+    // Plan spec routes still render the unified Plan Detail page.
+    if (includes(planSpecRoutes, routeName)) {
+      return ["plan", "planCheckRuns", "issue", "rollout", "taskRuns"];
+    }
     if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL], routeName)) {
       if (planType.value === "CHANGE_DATABASE") {
         return ["plan", "issue"];
@@ -186,7 +189,6 @@ export const provideResourcePoller = () => {
         return ["plan", "issue", "rollout", "taskRuns"];
       }
     }
-    if (includes(rolloutRoutes, routeName)) return ["rollout", "taskRuns"];
 
     return ["plan", "planCheckRuns", "issue", "rollout", "taskRuns"];
   });

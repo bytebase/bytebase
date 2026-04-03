@@ -3,17 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -33,115 +30,60 @@ func (*TableDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableDisallowSetCharsetRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableDisallowSetCharsetRule checks for disallowing set charset on tables.
-type TableDisallowSetCharsetRule struct {
-	BaseRule
-	text string
-}
-
-// NewTableDisallowSetCharsetRule creates a new TableDisallowSetCharsetRule.
-func NewTableDisallowSetCharsetRule(level storepb.Advice_Status, title string) *TableDisallowSetCharsetRule {
-	return &TableDisallowSetCharsetRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableDisallowSetCharsetOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableDisallowSetCharsetRule) Name() string {
+type tableDisallowSetCharsetOmniRule struct {
+	OmniBaseRule
+}
+
+func (*tableDisallowSetCharsetOmniRule) Name() string {
 	return "TableDisallowSetCharsetRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowSetCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *tableDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowSetCharsetRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableDisallowSetCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.CreateTableOptions() != nil {
-		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
-			if option.DefaultCharset() != nil {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.DisallowSetCharset.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.text),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
+func (r *tableDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	for _, opt := range n.Options {
+		if opt != nil && strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARACTER SET") {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.DisallowSetCharset.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+			})
 		}
 	}
 }
 
-func (r *TableDisallowSetCharsetRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-
-	alterList := ctx.AlterTableActions().AlterCommandList().AlterList()
-	if alterList == nil {
-		return
-	}
-	for _, alterListItem := range alterList.AllAlterListItem() {
-		if alterListItem == nil {
+func (r *tableDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
-		if alterListItem.Charset() != nil {
+		if cmd.Type == ast.ATConvertCharset {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.DisallowSetCharset.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.text),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 			})
 		}
 	}

@@ -59,8 +59,13 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 		return nil, err
 	}
 
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	users, err := s.store.BatchGetUsersByEmails(ctx, workspaceID, []string{email})
+	// Only scope to workspace IAM in SaaS mode to prevent cross-workspace access.
+	// In non-SaaS mode, users may exist in the principal table before being added to IAM.
+	var workspace string
+	if s.profile.SaaS {
+		workspace = common.GetWorkspaceIDFromContext(ctx)
+	}
+	users, err := s.store.BatchGetUsersByEmails(ctx, workspace, []string{email})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
@@ -89,8 +94,12 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 		emails = append(emails, email)
 	}
 
-	// Batch get from store — scoped to the caller's workspace.
-	users, err := s.store.BatchGetUsersByEmails(ctx, common.GetWorkspaceIDFromContext(ctx), emails)
+	// Only scope to workspace IAM in SaaS mode.
+	var workspace string
+	if s.profile.SaaS {
+		workspace = common.GetWorkspaceIDFromContext(ctx)
+	}
+	users, err := s.store.BatchGetUsersByEmails(ctx, workspace, emails)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
 	}

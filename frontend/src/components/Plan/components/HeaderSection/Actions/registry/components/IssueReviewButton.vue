@@ -101,10 +101,8 @@ import { usePlanContext } from "@/components/Plan/logic";
 import { useSidebarContext } from "@/components/Plan/logic/sidebar";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClientConnect } from "@/connect";
-import {
-  PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -115,13 +113,7 @@ import {
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractIssueUID,
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-  flattenTaskV1List,
-} from "@/utils";
+import { extractIssueUID, extractProjectResourceName } from "@/utils";
 import IssueReviewForm, { type ReviewAction } from "./IssueReviewForm.vue";
 
 const props = defineProps<{
@@ -134,7 +126,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
-const { issue, rollout, planCheckRuns, events } = usePlanContext();
+const { plan, issue, planCheckRuns, events } = usePlanContext();
 const issueCommentStore = useIssueCommentStore();
 const { mode: sidebarMode } = useSidebarContext();
 
@@ -232,16 +224,12 @@ const handlePostActionNavigation = (
   issueValue: NonNullable<typeof issue.value>
 ) => {
   if (action === "COMMENT") return;
-
-  const rolloutValue = rollout?.value;
-  if (!rolloutValue) return;
-
-  const hasSpecialTasks = flattenTaskV1List(rolloutValue).some(
-    (task) =>
-      task.type === Task_Type.DATABASE_CREATE ||
-      task.type === Task_Type.DATABASE_EXPORT
+  const hasDeferredRollout = plan.value.specs.some(
+    (spec) =>
+      spec.config.case === "createDatabaseConfig" ||
+      spec.config.case === "exportDataConfig"
   );
-  if (hasSpecialTasks) return;
+  if (hasDeferredRollout) return;
 
   if (action === "APPROVE") {
     const { approvalTemplate, approvers } = issueValue;
@@ -256,14 +244,10 @@ const handlePostActionNavigation = (
         title: t("issue.approval.approved-and-waiting-for-rollout"),
       });
 
+      if (!plan.value.hasRollout) return;
+
       nextTick(() => {
-        router.push({
-          name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-          params: {
-            projectId: extractProjectResourceName(issueValue.name),
-            planId: extractPlanUIDFromRolloutName(rolloutValue.name),
-          },
-        });
+        router.push(buildPlanDeployRouteFromPlanName(plan.value.name));
       });
       return;
     }

@@ -1,12 +1,10 @@
 import {
   useCurrentProjectV1,
   useCurrentUserV1,
-  useDatabaseV1Store,
   usePolicyV1Store,
   useProjectIamPolicyStore,
 } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
-import { isValidDatabaseName } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -17,6 +15,13 @@ import {
   memberMapToRolesInProjectIAM,
 } from "@/utils";
 
+type RolloutPolicyAccessState = "loaded" | "unavailable";
+
+const rolloutPolicyAccessStateByEnvironment = new Map<
+  string,
+  RolloutPolicyAccessState
+>();
+
 /**
  * Check if the current user can rollout the given tasks
  * - For data export issues: only the issue creator can rollout
@@ -26,7 +31,11 @@ import {
  * @param issue - Optional issue to check for data export special handling
  * @returns true if user can rollout, false otherwise
  */
-export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
+export const canRolloutTasks = (
+  tasks: Task[],
+  issue?: Issue,
+  environment?: string
+): boolean => {
   if (tasks.length === 0) {
     return false;
   }
@@ -50,26 +59,34 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
 
   // Second check: if no permission, check if user matches environment rollout policy roles
   const projectIamPolicyStore = useProjectIamPolicyStore();
-  const databaseStore = useDatabaseV1Store();
   const policyStore = usePolicyV1Store();
+  const projectIamPolicy = projectIamPolicyStore.getProjectIamPolicy(
+    project.value.name
+  );
+  const memberRoles = memberMapToRolesInProjectIAM(projectIamPolicy);
+  const userRoles = memberRoles.get(currentUser.value.name);
 
-  return tasks.every((task) => {
-    // Get database from task target
-    const database = databaseStore.getDatabaseByName(task.target);
-    // If database is not in cache or is unknown, skip environment policy check
-    // and allow rollout (user already lacks bb.taskRuns.create, so this is a fallback).
-    if (!isValidDatabaseName(database.name) || !database.effectiveEnvironment) {
-      return true;
+  return tasks.every(() => {
+    if (!environment) {
+      return false;
     }
 
-    // Get rollout policy for the environment
-    // Note: Policies are prefetched by IssueLayout.vue and RolloutLayout.vue
+    // Get rollout policy for the environment.
+    // Policy data is expected to already be prefetched by the surrounding page.
     const rolloutPolicy = policyStore.getPolicyByParentAndType({
-      parentPath: database.effectiveEnvironment,
+      parentPath: environment,
       policyType: PolicyType.ROLLOUT_POLICY,
     });
 
-    // If no rollout policy is defined, allow rollout (permission check already passed)
+    // If policy data is not in cache yet, fail closed until the surrounding view
+    // has preloaded the relevant rollout policies.
+    if (!rolloutPolicy) {
+      return (
+        rolloutPolicyAccessStateByEnvironment.get(environment) === "unavailable"
+      );
+    }
+
+    // If no rollout policy is defined, allow rollout.
     if (
       !rolloutPolicy?.policy ||
       rolloutPolicy.policy.case !== "rolloutPolicy"
@@ -81,19 +98,47 @@ export const canRolloutTasks = (tasks: Task[], issue?: Issue): boolean => {
 
     // Check if current user has any of the required roles in the rollout policy
     for (const requiredRole of policy.roles) {
-      if (requiredRole.startsWith(roleNamePrefix)) {
-        // Check if user has this role (includes both project and workspace level roles)
-        const projectIamPolicy = projectIamPolicyStore.getProjectIamPolicy(
-          project.value.name
-        );
-        const memberRoles = memberMapToRolesInProjectIAM(projectIamPolicy);
-        const userRoles = memberRoles.get(currentUser.value.name);
-        if (userRoles?.has(requiredRole)) {
-          return true;
-        }
+      if (
+        requiredRole.startsWith(roleNamePrefix) &&
+        userRoles?.has(requiredRole)
+      ) {
+        return true;
       }
     }
 
     return false;
+  });
+};
+
+export const preloadRolloutPermissionContext = async (
+  tasks: Task[],
+  environment?: string
+) => {
+  if (tasks.length === 0 || !environment) return;
+
+  const { project } = useCurrentProjectV1();
+  const policyStore = usePolicyV1Store();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
+
+  const environmentNames = [environment];
+
+  await Promise.allSettled([
+    projectIamPolicyStore.getOrFetchProjectIamPolicy(project.value.name),
+  ]);
+
+  const policyResults = await Promise.allSettled(
+    environmentNames.map((environmentName) =>
+      policyStore.getOrFetchPolicyByParentAndType({
+        parentPath: environmentName,
+        policyType: PolicyType.ROLLOUT_POLICY,
+      })
+    )
+  );
+
+  policyResults.forEach((result, index) => {
+    rolloutPolicyAccessStateByEnvironment.set(
+      environmentNames[index],
+      result.status === "fulfilled" ? "loaded" : "unavailable"
+    );
   });
 };

@@ -77,10 +77,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		}
 	}
 
-	instanceRoles, err := d.getInstanceRoles(ctx)
-	if err != nil {
-		return nil, err
-	}
+	instanceRoles := d.getInstanceRoles(ctx)
 
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)

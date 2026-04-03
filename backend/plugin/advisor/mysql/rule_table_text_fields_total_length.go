@@ -7,17 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -43,79 +38,52 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	// Create the rule
-	rule := NewTableTextFieldsTotalLengthRule(level, checkCtx.Rule.Type.String(), checkCtx.FinalMetadata, int(numberPayload.Number))
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	rule := &tableTextFieldsTotalLengthOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		finalMetadata: checkCtx.FinalMetadata,
+		maximum:       int(numberPayload.Number),
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
-// TableTextFieldsTotalLengthRule checks for table text fields total length.
-type TableTextFieldsTotalLengthRule struct {
-	BaseRule
+type tableTextFieldsTotalLengthOmniRule struct {
+	OmniBaseRule
 	finalMetadata *model.DatabaseMetadata
 	maximum       int
 }
 
-// NewTableTextFieldsTotalLengthRule creates a new TableTextFieldsTotalLengthRule.
-func NewTableTextFieldsTotalLengthRule(level storepb.Advice_Status, title string, finalMetadata *model.DatabaseMetadata, maximum int) *TableTextFieldsTotalLengthRule {
-	return &TableTextFieldsTotalLengthRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		finalMetadata: finalMetadata,
-		maximum:       maximum,
-	}
-}
-
-// Name returns the rule name.
-func (*TableTextFieldsTotalLengthRule) Name() string {
+func (*tableTextFieldsTotalLengthOmniRule) Name() string {
 	return "TableTextFieldsTotalLengthRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableTextFieldsTotalLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *tableTextFieldsTotalLengthOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Ignore other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*TableTextFieldsTotalLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableElementList() == nil || ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+func (r *tableTextFieldsTotalLengthOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -130,30 +98,19 @@ func (r *TableTextFieldsTotalLengthRule) checkCreateTable(ctx *mysql.CreateTable
 	total := getTotalTextLength(tableInfo)
 	if total > int64(r.maximum) {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.IndexCountExceedsLimit.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.IndexCountExceedsLimit.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
+			StartPosition: &storepb.Position{
+				Line: r.LocToLine(n.Loc),
+			},
 		})
 	}
 }
 
-func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+func (r *tableTextFieldsTotalLengthOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -168,11 +125,13 @@ func (r *TableTextFieldsTotalLengthRule) checkAlterTable(ctx *mysql.AlterTableCo
 	total := getTotalTextLength(tableInfo)
 	if total > int64(r.maximum) {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.TotalTextLengthExceedsLimit.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.TotalTextLengthExceedsLimit.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
+			StartPosition: &storepb.Position{
+				Line: r.LocToLine(n.Loc),
+			},
 		})
 	}
 }

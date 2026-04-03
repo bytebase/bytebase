@@ -27,7 +27,7 @@ export const getAccountListFilter = (params: AccountFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+    filter.push(`(name.contains("${search}") || email.contains("${search}"))`);
   }
   if (params.state === State.DELETED) {
     filter.push(`state == "${State[params.state]}"`);

@@ -171,25 +171,25 @@ export declare type SearchProjectsRequest = Message<"bytebase.v1.SearchProjectsR
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filters:
-   * - name: the project name, support "==" and ".matches()" operator.
-   * - resource_id: the project id, support "==" and ".matches()" operator.
+   * - name: the project name, support "==" and ".contains()" operator.
+   * - resource_id: the project id, support "==" and ".contains()" operator.
    * - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
    * - state: check the State enum for the values, support "==" operator.
    * - labels.{key}: the project label, support "==" and "in" operators.
    *
    * For example:
    * name == "project name"
-   * name.matches("project name")
+   * name.contains("project name")
    * resource_id == "project id"
-   * resource_id.matches("project id")
+   * resource_id.contains("project id")
    * exclude_default == true
    * state == "DELETED"
    * labels.environment == "production"
    * labels.tier == "critical"
    * labels.environment in ["staging", "prod"]
    * You can combine filter conditions like:
-   * name == "project name" && resource_id.matches("project id")
-   * name.matches("project name") || resource_id == "project id"
+   * name == "project name" && resource_id.contains("project id")
+   * name.contains("project name") || resource_id == "project id"
    * labels.environment == "production" && labels.tier == "critical"
    *
    * @generated from field: string filter = 2;

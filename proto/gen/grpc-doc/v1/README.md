@@ -3222,9 +3222,9 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
 | filter | [string](#string) |  | Filter is used to filter users returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+Supported filter: - name: the user name, support &#34;==&#34; and &#34;.contains()&#34; operator. - email: the user email, support &#34;==&#34; and &#34;.contains()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.matches(&#34;ed&#34;) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
+For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; email.contains(&#34;ed&#34;) state == &#34;DELETED&#34; project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.contains(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; |
 
 
 
@@ -4619,9 +4619,9 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
 | filter | [string](#string) |  | Filter the instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.matches()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
+Supported filters: - name: the instance name, support &#34;==&#34; and &#34;.contains()&#34; operator. - resource_id: the instance id, support &#34;==&#34; and &#34;.contains()&#34; operator. - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - state: the instance state, check State enum for values, support &#34;==&#34; operator. - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - host: the instance host, support &#34;==&#34; and &#34;.contains()&#34; operator. - port: the instance port, support &#34;==&#34; and &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: name == &#34;sample instance&#34; name.matches(&#34;sample&#34;) resource_id == &#34;sample-instance&#34; resource_id.matches(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.matches(&#34;127.0&#34;) port == &#34;54321&#34; port.matches(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
+For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) resource_id == &#34;sample-instance&#34; resource_id.contains(&#34;sample&#34;) state == &#34;DELETED&#34; environment == &#34;environments/test&#34; environment == &#34;&#34; (find instances which environment is not set) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) host == &#34;127.0.0.1&#34; host.contains(&#34;127.0&#34;) port == &#34;54321&#34; port.contains(&#34;543&#34;) labels.org_group == &#34;infrastructure&#34; labels.environment in [&#34;prod&#34;, &#34;production&#34;] project == &#34;projects/sample-project&#34; You can combine filter conditions like: name.contains(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34; host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; |
 | order_by | [string](#string) |  | The order by of instances. Support title, environment. The default sorting order is ascending. For example: - order_by = &#34;title&#34; - order_by = &#34;title desc&#34; - order_by = &#34;title desc, environment asc&#34; |
 
 
@@ -5424,9 +5424,9 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the database to retrieve metadata. Format: instances/{instance}/databases/{database}/metadata |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.matches()&#34; operator.
+Supported filter: - schema: the schema name, support &#34;==&#34; operator. - table: the table name, support &#34;==&#34; and &#34;.contains()&#34; operator.
 
-For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.matches(&#34;table-a&#34;) schema == &#34;schema-a&#34; &amp;&amp; table.matches(&#34;sample&#34;) The filter used to search table with wildcard &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;. The column masking level will only be returned when a table filter is used. |
+For example: schema == &#34;schema-a&#34; table == &#34;table-a&#34; table.contains(&#34;table-a&#34;) schema == &#34;schema-a&#34; &amp;&amp; table.contains(&#34;sample&#34;) The filter is used to search for tables containing &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;. The column masking level will only be returned when a table filter is used. |
 | limit | [int32](#int32) |  | Limit the response size of returned table metadata per schema. For example, if the database has 3 schemas, and each schema has 100 tables, if limit is 20, then only 20 tables will be returned for each schema, total 60 tables. Default 0, means no limit. |
 
 
@@ -5617,11 +5617,11 @@ Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
+Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.matches(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.matches(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
+For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
 
-You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) |
+You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) |
 | show_deleted | [bool](#bool) |  | Show deleted database if specified. |
 | order_by | [string](#string) |  | The order by of databases. Support name, project, instance. The default sorting order is ascending. For example: - order_by = &#34;name&#34; - order by name ascending - order_by = &#34;name desc&#34; - order_by = &#34;name desc, project asc&#34; |
 
@@ -6348,9 +6348,9 @@ Request message for listing groups.
 When paginating, all other parameters provided to `ListGroups` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter groups returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - title: the group title, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the group email, support &#34;==&#34; and &#34;.matches()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
+Supported filter: - title: the group title, support &#34;==&#34; and &#34;.contains()&#34; operator. - email: the group email, support &#34;==&#34; and &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
-For example: title == &#34;dba&#34; email == &#34;dba@bytebase.com&#34; title.matches(&#34;dba&#34;) email.matches(&#34;dba&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: title.matches(&#34;dba&#34;) || email.matches(&#34;dba&#34;) |
+For example: title == &#34;dba&#34; email == &#34;dba@bytebase.com&#34; title.contains(&#34;dba&#34;) email.contains(&#34;dba&#34;) project == &#34;projects/sample-project&#34; You can combine filter conditions like: title.contains(&#34;dba&#34;) || email.contains(&#34;dba&#34;) |
 
 
 
@@ -8503,9 +8503,9 @@ Syntax error with position information for editor highlighting
 | page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
 | filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;.matches()&#34; operator.
+Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;.contains()&#34; operator.
 
-For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.matches(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.matches(&#34;select&#34;) |
+For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.contains(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) |
 
 
 
@@ -8742,9 +8742,9 @@ SQLService executes SQL queries and manages query operations.
 When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter plans returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_rollout: whether the plan has rollout, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_rollout: whether the plan has rollout, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.contains()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; has_rollout == false &amp;&amp; has_issue == true title == &#34;My Plan&#34; title.matches(&#34;database migration&#34;) spec_type == &#34;change_database_config&#34; state == &#34;ACTIVE&#34; |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; has_rollout == false &amp;&amp; has_issue == true title == &#34;My Plan&#34; title.contains(&#34;database migration&#34;) spec_type == &#34;change_database_config&#34; state == &#34;ACTIVE&#34; |
 
 
 
@@ -9362,9 +9362,9 @@ Execution retry policy configuration.
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
 | filter | [string](#string) |  | Filter the project. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator. - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
+Supported filters: - name: the project name, support &#34;==&#34; and &#34;.contains()&#34; operator. - resource_id: the project id, support &#34;==&#34; and &#34;.contains()&#34; operator. - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator. - state: check the State enum for the values, support &#34;==&#34; operator. - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: name == &#34;project name&#34; name.matches(&#34;project name&#34;) resource_id == &#34;project id&#34; resource_id.matches(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name == &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;) name.matches(&#34;project name&#34;) || resource_id == &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
+For example: name == &#34;project name&#34; name.contains(&#34;project name&#34;) resource_id == &#34;project id&#34; resource_id.contains(&#34;project id&#34;) exclude_default == true state == &#34;DELETED&#34; labels.environment == &#34;production&#34; labels.tier == &#34;critical&#34; labels.environment in [&#34;staging&#34;, &#34;prod&#34;] You can combine filter conditions like: name == &#34;project name&#34; &amp;&amp; resource_id.contains(&#34;project id&#34;) name.contains(&#34;project name&#34;) || resource_id == &#34;project id&#34; labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; |
 | page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchProjects` call. Provide this to retrieve the subsequent page.
 
@@ -10642,9 +10642,9 @@ When paginating, all other parameters provided to `ListServiceAccounts` must mat
 | show_deleted | [bool](#bool) |  | Show deleted service accounts if specified. |
 | filter | [string](#string) |  | Filter is used to filter service accounts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the service account name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the service account email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
+Supported filter: - name: the service account name, support &#34;==&#34; and &#34;.contains()&#34; operator. - email: the service account email, support &#34;==&#34; and &#34;.contains()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@service.bytebase.com&#34; email.matches(&#34;ed&#34;) |
+For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@service.bytebase.com&#34; email.contains(&#34;ed&#34;) |
 
 
 
@@ -11387,9 +11387,9 @@ When paginating, all other parameters provided to `ListWorkloadIdentities` must 
 | show_deleted | [bool](#bool) |  | Show deleted workload identities if specified. |
 | filter | [string](#string) |  | Filter is used to filter workload identities returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - name: the workload identity name, support &#34;==&#34; and &#34;.matches()&#34; operator. - email: the workload identity email, support &#34;==&#34; and &#34;.matches()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
+Supported filter: - name: the workload identity name, support &#34;==&#34; and &#34;.contains()&#34; operator. - email: the workload identity email, support &#34;==&#34; and &#34;.contains()&#34; operator. - state: check State enum for values, support &#34;==&#34; operator.
 
-For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@workload.bytebase.com&#34; email.matches(&#34;ed&#34;) |
+For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) state == &#34;DELETED&#34; email == &#34;ed@workload.bytebase.com&#34; email.contains(&#34;ed&#34;) |
 
 
 

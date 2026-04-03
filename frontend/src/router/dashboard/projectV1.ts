@@ -38,42 +38,51 @@ export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLL
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 
+const planDetailComponent = () =>
+  import("@/components/Plan/components/PlanDetailPage/PlanDetailLayout.vue");
+
+const planDetailMeta: RouteRecordRaw["meta"] = {
+  requiredPermissionList: () => [
+    "bb.plans.get",
+    "bb.planCheckRuns.get",
+    "bb.taskRuns.list",
+  ],
+};
+
+// Plan Detail Page — standalone layout, decoupled from Issue
+// All three routes render the same component; route name determines
+// whether changes section is auto-expanded and which spec is selected.
+const planRoutes: RouteRecordRaw[] = [
+  {
+    path: "plans/:planId",
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+    component: planDetailComponent,
+    meta: planDetailMeta,
+    props: true,
+  },
+  {
+    path: "plans/:planId/specs",
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+    component: planDetailComponent,
+    meta: planDetailMeta,
+    props: true,
+  },
+  {
+    path: "plans/:planId/specs/:specId",
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+    component: planDetailComponent,
+    meta: planDetailMeta,
+    props: true,
+  },
+];
+
+// Issue routes — uses IssueLayout (issue-only)
 const issueRoutes: RouteRecordRaw[] = [
   {
     path: "",
     component: () => import("@/views/project/IssueLayout.vue"),
     props: true,
     children: [
-      {
-        path: "plans/:planId",
-        meta: {
-          requiredPermissionList: () => [
-            "bb.plans.get",
-            "bb.planCheckRuns.get",
-            "bb.taskRuns.list",
-          ],
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-            redirect: {
-              name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-            },
-          },
-          {
-            path: "specs",
-            name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-            component: () => import("@/views/project/PlanSpecsView.vue"),
-          },
-          {
-            path: "specs/:specId",
-            name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-            component: () => import("@/views/project/PlanSpecDetailView.vue"),
-          },
-        ],
-      },
       {
         path: "issues/:issueId(\\d+)",
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -87,39 +96,38 @@ const issueRoutes: RouteRecordRaw[] = [
   },
 ];
 
-// Rollout routes - nested under plans/:planId/rollout
+// Legacy rollout paths → redirect to the canonical Plan Detail deploy view.
 const rolloutRoutes: RouteRecordRaw[] = [
   {
     path: "plans/:planId/rollout",
-    component: () => import("@/views/project/RolloutLayout.vue"),
-    props: true,
-    meta: {
-      title: () => t("common.rollout"),
-      requiredPermissionList: () => ["bb.rollouts.get", "bb.taskRuns.list"],
-    },
-    children: [
-      {
-        path: "",
-        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-        component: () =>
-          import("@/components/RolloutV1/components/Rollout/RolloutView.vue"),
-        props: true,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+    redirect: (to) => ({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: to.params.projectId, planId: to.params.planId },
+      query: { phase: "deploy" },
+    }),
+  },
+  {
+    path: "plans/:planId/rollout/stages/:stageId",
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+    redirect: (to) => ({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: to.params.projectId, planId: to.params.planId },
+      query: { phase: "deploy", stageId: to.params.stageId },
+    }),
+  },
+  {
+    path: "plans/:planId/rollout/stages/:stageId/tasks/:taskId",
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+    redirect: (to) => ({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: { projectId: to.params.projectId, planId: to.params.planId },
+      query: {
+        phase: "deploy",
+        stageId: to.params.stageId,
+        taskId: to.params.taskId,
       },
-      {
-        path: "stages/:stageId",
-        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-        component: () =>
-          import("@/components/RolloutV1/components/Rollout/RolloutView.vue"),
-        props: true,
-      },
-      {
-        path: "stages/:stageId/tasks/:taskId",
-        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-        component: () =>
-          import("@/components/RolloutV1/components/Task/TaskView.vue"),
-        props: true,
-      },
-    ],
+    }),
   },
 ];
 
@@ -262,16 +270,6 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
         },
         component: () => import("@/views/project/ProjectPlanDashboard.vue"),
-        props: true,
-      },
-      {
-        path: "rollouts",
-        name: PROJECT_V1_ROUTE_ROLLOUTS,
-        meta: {
-          title: () => t("rollout.rollouts"),
-          requiredPermissionList: () => ["bb.rollouts.list"],
-        },
-        component: () => import("@/views/project/ProjectRolloutDashboard.vue"),
         props: true,
       },
       {
@@ -477,6 +475,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         component: () => import("@/views/project/ProjectGitOpsDashboard.vue"),
         props: true,
       },
+      ...planRoutes,
       ...issueRoutes,
       ...rolloutRoutes,
     ],

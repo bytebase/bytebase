@@ -78,21 +78,10 @@ import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewVie
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import CommonDrawer from "@/components/RolloutV1/components/Rollout/CommonDrawer.vue";
-import {
-  issueServiceClientConnect,
-  rolloutServiceClientConnect,
-} from "@/connect";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
+import { rolloutServiceClientConnect } from "@/connect";
+import { buildPlanDeployRouteFromRolloutName } from "@/router/dashboard/projectV1RouteHelpers";
 import { pushNotification } from "@/store";
-import {
-  BatchUpdateIssuesStatusRequestSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-} from "@/utils";
 import type { ActionContext } from "../registry/types";
 
 const props = defineProps<{
@@ -120,6 +109,13 @@ const bypassWarnings = ref(false);
 // Errors: require_*=true and condition not met (blocking)
 const errorMessages = computed(() => {
   const msgs: string[] = [];
+  if (!props.context.permissions.createRollout) {
+    msgs.push(
+      t("common.missing-required-permission", {
+        permissions: "bb.rollouts.create",
+      })
+    );
+  }
   if (project.value.requireIssueApproval && !props.context.issueApproved) {
     msgs.push(
       t("project.settings.issue-related.require-issue-approval.description")
@@ -174,17 +170,6 @@ const handleConfirm = async () => {
       create(CreateRolloutRequestSchema, { parent: plan.value.name })
     );
 
-    // Mark issue as done after rollout created.
-    if (issue.value) {
-      await issueServiceClientConnect.batchUpdateIssuesStatus(
-        create(BatchUpdateIssuesStatusRequestSchema, {
-          parent: project.value.name,
-          issues: [issue.value.name],
-          status: IssueStatus.DONE,
-        })
-      );
-    }
-
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -194,13 +179,7 @@ const handleConfirm = async () => {
     events.emit("status-changed", { eager: true });
     emit("confirm");
 
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-      params: {
-        projectId: extractProjectResourceName(project.value.name),
-        planId: extractPlanUIDFromRolloutName(createdRollout.name),
-      },
-    });
+    router.push(buildPlanDeployRouteFromRolloutName(createdRollout.name));
   } catch (error) {
     pushNotification({
       module: "bytebase",

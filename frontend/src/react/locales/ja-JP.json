@@ -1,715 +1,168 @@
 {
-  "common": {
-    "filter-by-name": "名前でフィルタリングする",
-    "loading": "読み込み中",
-    "no-data": "データなし",
-    "all": "全て",
-    "edit": "編集",
-    "updated": "更新しました",
-    "learn-more": "もっと詳しく知る",
-    "revert": "元に戻す",
-    "cancel": "キャンセル",
-    "save": "保存",
-    "confirm": "確認する",
-    "clear": "クリア",
-    "add": "追加",
-    "warning": "警告する",
-    "environment-name": "環境名",
-    "environment": "環境",
-    "confirm-and-update": "確認して更新する",
-    "cannot-undo-this-action": "この操作は元に戻せません",
-    "delete": "消去",
-    "create": "作成する",
-    "leave-without-saving": "変更を保存していませんか?",
-    "deleted": "削除されました",
-    "reorder": "並び替え",
-    "close": "閉じる",
-    "general": "全般",
-    "type": "タイプ",
-    "discard-changes": "変更をキャンセルする",
-    "update": "更新する",
-    "copied": "コピーされました",
-    "copy": "コピー",
-    "back": "戻る",
-    "next": "次のステップ",
-    "id": "ID",
-    "name": "名前",
-    "sensitive-placeholder": "機密データ - 書き込みのみ",
-    "unassigned": "割り当てられていない",
-    "archive": "アーカイブ",
-    "restore": "復元する",
-    "delete-resource": "Delete {{type}}",
-    "labels": "ラベル",
-    "state": "ステート",
-    "address": "接続先",
-    "rows-per-page": "ページあたりの行数",
-    "load-more": "もっと読み込む",
-    "configure-now": "今すぐ設定する",
-    "restored": "Restored",
-    "archived": "アーカイブ済み",
-    "select-all": "すべて選択",
-    "total-n-items": "合計 {{n}} 件",
-    "search": "検索",
-    "n-items-selected": "{{n}} 件選択済み",
-    "permissions": "権限",
-    "added": "作成した",
-    "description": "説明",
-    "operations": "操作",
-    "title": "タイトル",
-    "missing-required-permission": "必要な権限がありません {{permissions}}",
-    "required-permission": "必要な権限",
-    "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
-    "add-permissions": "権限を追加",
-    "system": "システム",
-    "created": "作成済",
-    "upload": "アップロード",
-    "unlimited": "無制限",
-    "file-selector": {
-      "type-limit": "タイプ {{extension}} のファイルのみがサポートされます",
-      "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります"
-    },
-    "ok": "わかりました",
-    "failed": "失敗",
-    "instance": "インスタンス",
-    "project": "プロジェクト",
-    "select": "選択してください",
-    "export": "エクスポート",
-    "view": "表示",
-    "view-details": "詳細を表示",
-    "from": "開始",
-    "to": "終了"
-  },
   "audit-log": {
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "description": "監査ログの操作者で検索",
+          "title": "操作者"
+        },
+        "level": {
+          "description": "監査ログのレベルで検索",
+          "title": "レベル"
+        },
+        "method": {
+          "description": "監査ログのメソッドで検索",
+          "title": "メソッド"
+        }
+      }
+    },
     "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
     "table": {
-      "created-ts": "時間",
       "actor": "操作者",
+      "created-ts": "時間",
+      "latency": "レイテンシー",
       "level": "レベル",
       "method": "メソッド",
       "request": "リクエスト",
       "response": "レスポンス",
-      "status": "ステータス",
-      "latency": "レイテンシー",
-      "service-data": "サービスデータ"
-    },
-    "advanced-search": {
-      "scope": {
-        "actor": {
-          "title": "操作者",
-          "description": "監査ログの操作者で検索"
-        },
-        "method": {
-          "title": "メソッド",
-          "description": "監査ログのメソッドで検索"
-        },
-        "level": {
-          "title": "レベル",
-          "description": "監査ログのレベルで検索"
-        }
-      }
+      "service-data": "サービスデータ",
+      "status": "ステータス"
     }
   },
-  "cel": {
-    "condition": {
-      "input-value": "入力値",
-      "select-value": "値を選択してください",
-      "input-value-press-enter": "値を入力し、Enter キーを押して確定します",
-      "group": {
-        "or": {
-          "description": "次のいずれかが当てはまります…"
-        },
-        "and": {
-          "description": "以下はすべて真実です…"
-        }
-      },
-      "add-condition-in-group-placeholder": "{{plus}} をクリックして条件を追加します",
-      "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
-      "add": "条件を追加する",
-      "add-raw-expression": "生の式を追加",
-      "add-group": "条件グループの追加",
-      "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたイシューと一致します。",
-      "self": "状態"
-    }
-  },
-  "subscription": {
-    "trial-for-days": "{{days}} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
-    "required-plan-with-trial": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。{{startTrial}} ",
-    "instance-assignment": {
-      "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
-      "assign-license": "ライセンスの割り当て",
-      "license": "ライセンス",
-      "used-and-total-user": "アクティブ/合計ユーザー制限",
-      "used-and-total-license": "割り当てられた/合計インスタンスライセンス"
-    },
-    "request-n-days-trial": "{{days}} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
-    "usage": {
-      "instance-count": {
-        "title": "インスタンスの制限",
-        "runoutof": "すべての {{total}} インスタンス クレジットが使用されました。"
-      }
-    },
-    "plan": {
-      "free": {
-        "title": "コミュニティ",
-        "label": "",
-        "desc": "データベース開発ライフサイクルを管理するためのチームの基本機能。"
-      },
-      "team": {
-        "title": "プロ",
-        "label": "",
-        "desc": "チーム間のコラボレーションを標準化し、促進するためのさらなるポリシー。"
-      },
-      "enterprise": {
-        "title": "エンタープライズ",
-        "label": "",
-        "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。"
-      },
-      "try": "無料トライアルを開始する",
-      "title": "コミュニティ"
-    },
-    "purchase": {
-      "free-description": "Designed for solo devs, side-projects, and experiments.",
-      "pro-description": "Built for teams creating production-ready applications.",
-      "enterprise-description": "Scale your business securely while staying compliant.",
-      "discount": {
-        "percentage-off": "初月 {{value}}% オフ",
-        "month-off": "{{value}} ヶ月無料",
-        "price-off": "${{value}} オフ"
-      },
-      "update": "サブスクリプションを更新",
-      "subscribe": "今すぐ購読",
-      "cancel-confirm": "サブスクリプションをキャンセルしてもよろしいですか？",
-      "canceled": "サブスクリプションがキャンセルされました",
-      "pending-title": "購入を完了しています...",
-      "pending-description": "お支払いの確認中です。通常は数秒で完了します。",
-      "payment-info": "支払い情報",
-      "total-price": "合計金額",
-      "manage-invoices": "請求書を管理",
-      "billing-period": "請求期間",
-      "cancel-pending": "サブスクリプションはキャンセル済みで、{{date}} に終了します。",
-      "cancel": "サブスクリプションをキャンセル",
-      "per-user-per-month": "/ ユーザー / 月",
-      "custom": "カスタム",
-      "seats": "ユーザー数",
-      "accept-terms-prefix": "以下に同意します：",
-      "terms-of-service": "利用規約",
-      "and": "および",
-      "privacy-policy": "プライバシーポリシー",
-      "see-comparison": "機能の詳細比較を見る"
-    },
-    "current": "現在のプラン",
-    "contact-us": "お問い合わせ",
-    "update": {
-      "success": {
-        "title": "ライセンスが正常に更新されました",
-        "description": "サブスクリプション版のプレミアム機能がロック解除されました"
-      },
-      "failure": {
-        "title": "ライセンスの更新に失敗しました",
-        "description": "ライセンスが有効かどうかを確認してください"
-      }
-    },
-    "expired": "期限切れ",
-    "trialing": "トライアル中",
-    "expires-at": "有効期限",
-    "try-for-free": "無料トライアル",
-    "enterprise-free-trial": "Enterprise の {{days}} 日間の無料トライアル",
-    "inquire-enterprise-plan": "Enterprise版のお問い合わせ",
-    "upload-license": "ライセンスのアップロード",
-    "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
-    "plan-compare": "異なるプラン間の機能を比較する",
-    "max-instance-count": "最大インスタンス数",
-    "require-subscription": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。"
-  },
-  "resource-id": {
-    "validation": {
-      "empty": "{{resource}} ID は空にできません",
-      "overflow": "{{resource}} ID は 64 文字未満である必要があります。",
-      "pattern": "{{resource}} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
-      "duplicated": "{{resource}} ID はすでに存在します。別のIDを使用してください。"
-    },
-    "self": "{{resource}} ID",
-    "cannot-be-changed-later": "作成後に変更することはできません。",
-    "description": "{{resource}} ID は一意の識別子です。作成後に変更することはできません。"
-  },
-  "schema-template": {
-    "classification": {
-      "search": "カテゴリを検索する"
-    }
-  },
-  "settings": {
-    "sidebar": {
-      "general": "全般",
-      "members": "メンバー",
-      "users-and-groups": "ユーザーとグループ",
-      "members-and-groups": "メンバーとグループ",
-      "sso": "SSO",
-      "subscription": "サブスクリプション",
-      "audit-log": "監査ログ",
-      "custom-roles": "カスタムロール",
-      "global-masking": "グローバルマスキング",
-      "data-classification": "データ分類",
-      "im-integration": "IM",
-      "mcp": "MCP"
-    },
-    "sensitive-data": {
-      "classification": {
-        "invalid-json": "Invalid JSON format",
-        "missing-classification": "Missing \"classification\" field",
-        "empty-classification": "The \"classification\" field is empty",
-        "missing-levels": "Missing \"levels\" field",
-        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
-        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
-        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
-        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children)."
-      },
-      "global-rules": {
-        "error": {
-          "missing-semantic-type": "セマンティックタイプは必須です",
-          "invalid-condition": "条件が無効です"
-        },
-        "condition-order": "条件付きシーケンス",
-        "delete-rule-tip": "このルールを削除しますか?",
-        "re-order": "並び替え",
-        "description": "グローバル ルールを使用してバッチでマスキングを適用します。たとえば、「email」という名前のすべての列は特定のセマンティック タイプでマスキングされ、マスキング アルゴリズムが適用されます。"
-      },
-      "semantic-types": {
-        "table": {
-          "semantic-type": "セマンティックタイプ",
-          "icon": "アイコン",
-          "description": "説明",
-          "masking-algorithm": "マスキングアルゴリズム",
-          "delete": "このセマンティック タイプを削除しますか?"
-        },
-        "select": "セマンティックタイプの選択",
-        "template": {
-          "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します",
-          "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。"
-        },
-        "use-predefined-type": "事前定義されたタイプを使用する",
-        "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
-        "add-from-template": "テンプレートから追加"
-      },
-      "algorithms": {
-        "full-mask": {
-          "self": "完全マスク",
-          "substitution": "マスク文字列",
-          "substitution-label": "マスキング文字列は、元の値を置換するために使用される文字列であり、最大長 16 文字を超えることはできません。"
-        },
-        "range-mask": {
-          "self": "範囲マスキング",
-          "label": "範囲マスキングでは、マスクされた文字列を使用して、開始インデックスから終了インデックスまでの元の値を置き換えます (排他的)。インデックスは 0 から始まります。",
-          "slice-start": "出発点",
-          "slice-end": "終了位置",
-          "substitution": "マスク文字列"
-        },
-        "md5-mask": {
-          "self": "MD5ハッシュ",
-          "salt": "ソルト値",
-          "salt-label": "ソルト値は、元の値からハッシュ値を生成するために使用されます。"
-        },
-        "inner-outer-mask": {
-          "self": "内部/外部マスク",
-          "type": "マスクタイプ",
-          "inner-label": "内部マスクは文字列の内部部分をマスクします。プレフィックスとサフィックスはデータのマスクされていない部分を表します。",
-          "outer-label": "外部マスクは文字列の左右の端をマスクします。プレフィックスとサフィックスはデータのマスクされた部分を表します。",
-          "inner-mask": "インナーマスク",
-          "outer-mask": "アウターマスク",
-          "prefix-length": "プレフィックスの長さ",
-          "suffix-length": "サフィックスの長さ"
-        },
-        "error": {
-          "slice-required": "マスク範囲を空にすることはできません",
-          "slice-invalid-number": "マスク範囲の開始値と終了値は数値である必要があります",
-          "slice-overlap": "マスキング範囲は重複できません",
-          "substitution-required": "マスク文字列を入力してください",
-          "substitution-length": "マスク文字列の長さは 16 文字を超えることはできません",
-          "salt-required": "塩分値を入力してください"
-        },
-        "edit": "アルゴリズムを編集",
-        "add": "アルゴリズムを追加",
-        "table": {
-          "masking-type": "アルゴリズムの種類"
-        }
-      }
-    },
-    "sso": {
-      "delete": "この SSO を削除する",
-      "form": {
-        "auth-url": "認証URL",
-        "auth-url-placeholder": "例えばhttps://github.com/login/oauth/authorize",
-        "auth-url-description": "ログインページへのリンク",
-        "token-url": "トークンURL",
-        "token-url-placeholder": "例えばhttps://github.com/login/oauth/access_token",
-        "token-url-description": "accessTokenの取得に使用するAPIアドレス",
-        "user-info-url": "ユーザー情報URL",
-        "user-info-url-placeholder": "例えばhttps://api.github.com/user",
-        "user-info-url-description": "accessTokenによるユーザー情報の取得に使用するAPIアドレス",
-        "scopes": "スコープ",
-        "scopes-placeholder": "例: user, email, profile",
-        "scopes-description": "認証 URL にアクセスするときに渡される範囲パラメーター。複数の値を区切るにはスペースを使用します。",
-        "authentication-style": "認証スタイル",
-        "in-parameters": "パラメータ",
-        "in-parameters-description": "POST 本文で資格情報を送信する（推奨）",
-        "in-header": "ヘッダー内",
-        "in-header-description": "HTTP 基本認証を使用して資格情報を送信する",
-        "security-options": "セキュリティオプション",
-        "skip-tls-verification": "TLS証明書の検証をスキップする",
-        "skip-tls-warning": "開発またはテストの目的でのみ有効にしてください",
-        "issuer-url-placeholder": "例: https://acme.okta.com",
-        "issuer-url-description": "OIDC 発行者 URL (既知の構成は自動的に検出されます)",
-        "scopes-placeholder-oidc": "例: openid, user, email, profile",
-        "openid-scopes-description": "OIDC スコープのスペース区切りリスト (openid は必須)",
-        "host-placeholder": "例: ldap.example.com",
-        "bind-dn": "バインドDN",
-        "bind-dn-placeholder": "例えばuid=システム、ou=ユーザー、dc=example、dc=com",
-        "bind-dn-description": "検索リクエストにバインドするユーザーのDN",
-        "bind-password": "パスワードをバインドする",
-        "base-dn": "ベースDN",
-        "base-dn-placeholder": "例えばou=ユーザー、dc=例、dc=com",
-        "base-dn-description": "ユーザーを検索するためのベースDN",
-        "user-filter": "ユーザーフィルター",
-        "user-filter-placeholder": "例: (uid=%s)",
-        "user-filter-description": "ユーザーを検索するためのフィルター (%s はユーザー名に置き換えられます)",
-        "security-protocol": "セキュリティプロトコル",
-        "starttls": "TLS を開始",
-        "starttls-description": "接続を TLS にアップグレードする (推奨)",
-        "ldaps": "LDAP",
-        "ldaps-description": "最初から TLS を使用する (ポート 636)",
-        "none": "なし",
-        "none-description": "暗号化なし（本番環境では推奨されません）",
-        "identifier-placeholder": "例：ログイン、メール",
-        "identifier": "バイトベースユーザーの電子メールアドレス",
-        "identifier-tips": "電子メールは一意である必要があります。実際の値がメールボックス形式でない場合は、ドメインと連結されます。",
-        "display-name-placeholder": "例: name、displayName",
-        "display-name": "バイトベースユーザーのニックネーム",
-        "phone-placeholder": "例：電話、携帯電話",
-        "phone": "Bytebase ユーザーの携帯電話番号",
-        "groups-placeholder": "例：グループ",
-        "groups": "Bytebaseユーザーグループ",
-        "groups-description": "グループベースのアクセス制御に使用されます（OIDC プロバイダーのみ）",
-        "provider-type-readonly-hint": "プロバイダタイプは作成後に変更できません",
-        "name": "名前",
-        "name-description": "ログインユーザーに表示される名前",
-        "domain": "ドメイン名",
-        "domain-description": "OAuthプロバイダーのドメイン名",
-        "domain-optional-hint": "オプション: 電子メール形式でない場合は識別子と連結するために使用します",
-        "configuration": "構成",
-        "configuration-description": "IDプロバイダーの接続設定を構成する",
-        "user-information-mapping": "ユーザー情報のマッピング",
-        "user-information-mapping-description": "フィールド マップには、API ユーザー情報のフィールド名が保持されます。",
-        "identity-provider-needed-information": "次の情報を使用して SSO アプリケーションを作成します。",
-        "redirect-url-description": "ID プロバイダー要求フォームの対応するフィールドに入力するために使用されます。",
-        "redirect-url": "コールバックアドレス",
-        "type": "タイプ",
-        "use-template": "テンプレートを使用する",
-        "oauth2-description": "Google、GitHub、GitLabなどのOAuth 2.0プロバイダーと接続する",
-        "oidc-description": "Microsoft Entra ID (Azure AD)、Okta、Auth0 などの OpenID Connect プロバイダーと接続します。",
-        "ldap-description": "Microsoft Active Directory、OpenLDAPなどのLDAPプロバイダーに接続します",
-        "google-template-description": "Googleアカウントでログイン",
-        "github-template-description": "GitHubアカウントでサインイン",
-        "gitlab-template-description": "GitLabアカウントでサインイン",
-        "microsoft-entra-template-description": "Microsoft Entra IDでサインイン",
-        "custom-template-description": "カスタムOAuth 2.0プロバイダーを構成する",
-        "type-description": "設定するIDプロバイダーの種類を選択します",
-        "template-description": "事前設定されたテンプレートを選択するか、カスタムのOAuth 2.0プロバイダーを設定します",
-        "general-setting-description": "ID プロバイダーに関する基本情報を提供します。"
-      },
-      "description": "シングル サインオン (SSO) は、ユーザーが他のアプリケーションや Web サイトからログインできるようにする認証方法です。",
-      "create": "SSOの作成"
-    },
-    "im": {
-      "add-im-integration": "IM 連携の追加",
-      "add-another-im": "別のIMを追加"
-    },
-    "im-integration": {
-      "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
-    },
-    "mcp": {
-      "first-prompt": {
-        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
-        "title": "最初のプロンプト",
-        "description": "接続後、AI アシスタントに聞いてみてください："
-      },
-      "title": "MCP 連携",
-      "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
-      "auth": {
-        "title": "認証が必要",
-        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。"
-      },
-      "general-config": {
-        "title": "方法 1：JSON 設定"
-      },
-      "setup": {
-        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
-      },
-      "quick-start": {
-        "title": "方法 2：CLI コマンド",
-        "description": "または、以下の CLI コマンドを使用してください。"
-      }
-    },
-    "general": {
-      "workspace": {
-        "external-url": {
-          "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。",
-          "self": "外部URL",
-          "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません"
-        },
-        "id": "ワークスペースID",
-        "id-description": "一意の読み取り専用ワークスペース ID",
-        "ai-assistant": {
-          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
-          "enable-ai-assistant": "AIアシスタントを有効にする",
-          "description": "AI を使用してデータベース開発タスクを支援します。",
-          "provider": {
-            "self": "AIプロバイダー",
-            "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI",
-            "gemini": "Gemini",
-            "claude": "Claude"
-          },
-          "api-key": {
-            "self": "APIキー",
-            "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
-            "find-my-key": "鍵を探す",
-            "placeholder": "API キーは通常 sk-***** で始まります"
-          },
-          "endpoint": {
-            "self": "API エンドポイント",
-            "description": "プライベート展開用の API エンドポイントを提供します。"
-          },
-          "model": {
-            "self": "モデル名",
-            "description": "供給プライベートデプロイメントのモデル名。"
-          },
-          "self": "AI アシスタント"
-        },
-        "disallow-signup": {
-          "enable": "セルフサービス登録を無効にする",
-          "description": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
-        },
-        "password-restriction": {
-          "self": "パスワード制限",
-          "min-length": "パスワードの最小文字数は {{min}} 文字以上である必要があります",
-          "require-number": "パスワードには少なくとも1つの数字が含まれている必要があります",
-          "require-letter": "パスワードには大文字、小文字に関係なく少なくとも1文字が含まれている必要があります",
-          "require-uppercase-letter": "パスワードには少なくとも1つの大文字が含まれている必要があります",
-          "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります",
-          "require-reset-password-for-first-login": "初回ログイン後にユーザーにパスワードのリセットを要求する",
-          "password-rotation": "ユーザーに{{day}}日ごとにパスワードのリセットを要求する"
-        },
-        "require-2fa": {
-          "enable": "すべてのユーザーに 2 要素認証の設定を要求する",
-          "description": "有効にすると、2 要素認証が設定されていないユーザーは強制的に設定されます。"
-        },
-        "disallow-password-signin": {
-          "enable": "メールアドレスとパスワードによるサインインを禁止する",
-          "require-sso-setup": "最初に機能する SSO を作成する必要があります。そうしないと、ユーザーはログインできません。",
-          "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。"
-        },
-        "access-token-duration": {
-          "self": "Access token duration",
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
-          "minutes": "Minute(s)",
-          "hours": "Hour(s)"
-        },
-        "refresh-token-duration": {
-          "self": "Refresh token duration",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
-          "hours": "Hour(s)",
-          "days": "Day(s)"
-        },
-        "inactive-session-timeout": {
-          "self": "非アクティブセッションタイムアウト",
-          "description": "ユーザーの活動が検出されない場合のセッション有効期限です。ユーザーが制限時間に達すると、強制的にログアウトされます。",
-          "hours": "時間"
-        },
-        "no-limit": "値が0以下の場合、制限なし",
-        "announcement-alert-level": {
-          "description": "レベル",
-          "field": {
-            "info": "情報",
-            "warning": "警告",
-            "critical": "重要"
-          }
-        },
-        "announcement-text": {
-          "self": "タイトル",
-          "description": "お知らせを非表示にしたい場合は空白のままにしてください。",
-          "placeholder": "お知らせのタイトルを入力してください"
-        },
-        "extra-link": {
-          "self": "リンク",
-          "placeholder": "お知らせのリンクを入力してください"
-        },
-        "log": "ログ",
-        "audit-log-stdout": {
-          "enable": "監査ログの標準出力への出力を有効にする",
-          "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。"
-        },
-        "enable-debug": {
-          "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
-        },
-        "title": "ワークスペース名",
-        "logo": "ロゴ",
-        "logo-aspect": "推奨されるロゴの幅:高さの比率 (例: 100 x 40 ピクセル)",
-        "select-logo": "選ぶ",
-        "drag-logo": "またはファイルをドラッグ アンド ドロップします",
-        "logo-upload-tip": "{{extension}} タイプのファイルをサポートします。{{size}} MiB より大きくすることはできません",
-        "branding": "ブランド",
-        "account": "アカウント",
-        "security": "セキュリティ",
-        "announcement": {
-          "self": "お知らせ"
-        },
-        "product-improvement": {
-          "self": "製品改善",
-          "participate": "改善プログラムに参加",
-          "description": "匿名の使用データを共有してBytebaseの改善に協力する"
-        },
-        "failed-to-update-setting": "設定「{{title}}」の更新に失敗しました",
-        "config-updated": "設定が更新されました。",
-        "config-partly-updated": "設定が部分的に更新されました。",
-        "default-landing-page": {
-          "self": "デフォルトのランディングページ",
-          "workspace": {
-            "self": "ワークスペース",
-            "description": "イシューを使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。"
-          },
-          "sql-editor": {
-            "self": "SQLエディター",
-            "description": "SQL エディターを使用してデータベースの変更を直接実行します。これは、1 人で使用する場合や、監視を必要としない環境に適しています。"
-          },
-          "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
-          "go-to-sql-editor": "SQLエディタに移動"
-        },
-        "data-export": "データのエクスポートを有効にする",
-        "data-copy": "データのコピーを有効にする",
-        "allow-admin-data-source": {
-          "self": "管理データソースのクエリを許可する",
-          "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。"
-        },
-        "maximum-sql-result": {
-          "size": {
-            "self": "最大SQL結果サイズ",
-            "description": "出力される SQL クエリ結果のサイズを制限します。",
-            "default": "デフォルトの制限 {{limit}} MB"
-          },
-          "rows": {
-            "self": "最大SQL結果行数",
-            "description": "SQL クエリ結果の出力行を制限します。",
-            "rows": "行"
-          }
-        },
-        "query-data-policy": {
-          "timeout": {
-            "self": "最大クエリ時間",
-            "description": "クエリの実行に許容される最大時間。"
-          },
-          "seconds": "秒"
-        },
-        "watermark": {
-          "enable": "ウォーターマークをオンにする",
-          "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。"
-        },
-        "maximum-role-expiration": {
-          "self": "最大ロール有効期限",
-          "description": "最大ロール有効期限は、ロールをユーザーに付与できる最大期間であり、プロジェクト所有者を除くすべてのプロジェクト ロールに適用されます。",
-          "days": "日",
-          "never-expires": "期限切れなし"
-        },
-        "domain-restriction": {
-          "self": "ワークスペースドメイン",
-          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",
-          "domain-input-placeholder": "ドメインを入力してください。例: example.com",
-          "members-restriction": {
-            "self": "メンバー制限",
-            "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
-          }
-        }
-      }
-    }
-  },
-  "database": {
-    "classification": {
-      "description": "Define classification levels to apply consistent masking policies across columns and databases."
-    },
-    "edit-environment": "環境の編集",
-    "engine": "エンジン",
-    "edit-labels": "ラベルを編集",
-    "filter-database": "データベースをフィルター",
-    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
-    "successfully-transferred-databases": "データベースの転送に成功しました",
-    "sync-schema-button": "スキーマを同期",
-    "sync-status": "同期ステータス",
-    "sync-status-failed": "同期に失敗しました",
-    "transfer-project": "プロジェクトの転送",
-    "unassign": "割り当てを解除する"
+  "banner": {
+    "external-url": "Bytebase は --extern-url を設定していません"
   },
   "bbkit": {
     "confirm-button": {
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },
-  "role": {
-    "workspace-roles": {
-      "self": "ワークスペースのロール"
-    },
-    "project-roles": {
-      "self": "プロジェクトのロール"
-    },
-    "custom-roles": {
-      "self": "カスタムロール"
-    },
-    "import-from-role": "ロールからインポート",
-    "select-role": "ロールの選択",
-    "self": "ロール",
-    "setting": {
-      "add": "ロールの追加",
-      "edit": "ロールの編集",
-      "title-placeholder": "ロールのタイトルを入力してください",
-      "description-placeholder": "ロールの説明を入力してください",
-      "description": "プロジェクトメンバーとカスタム承認に適用できるカスタムロールを定義します。"
-    },
-    "title": "タイトル"
-  },
-  "policy": {
-    "rollout": {
-      "auto": "自動",
-      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
-      "name": "リリース戦略",
-      "tip": "新しいポリシーは古いイシューにも適用されます",
-      "info": "タスクは、「{{permission}}」許可または次のロールでユーザーが実行できます。"
-    },
-    "environment-tier": {
-      "name": "環境レベル",
-      "description": "この環境を他の環境とは異なって見えるようにします。",
-      "mark-env-as-production": "本番環境としてマークする"
+  "cel": {
+    "condition": {
+      "add": "条件を追加する",
+      "add-condition-in-group-placeholder": "{{plus}} をクリックして条件を追加します",
+      "add-group": "条件グループの追加",
+      "add-raw-expression": "生の式を追加",
+      "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
+      "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたイシューと一致します。",
+      "group": {
+        "and": {
+          "description": "以下はすべて真実です…"
+        },
+        "or": {
+          "description": "次のいずれかが当てはまります…"
+        }
+      },
+      "input-value": "入力値",
+      "input-value-press-enter": "値を入力し、Enter キーを押して確定します",
+      "select-value": "値を選択してください",
+      "self": "状態"
     }
   },
-  "sql-review": {
-    "title": "SQL レビューポリシー",
-    "configure-policy": "SQL レビューポリシーを設定する"
+  "common": {
+    "add": "追加",
+    "add-permissions": "権限を追加",
+    "added": "作成した",
+    "address": "接続先",
+    "all": "全て",
+    "archive": "アーカイブ",
+    "archived": "アーカイブ済み",
+    "back": "戻る",
+    "cancel": "キャンセル",
+    "cannot-undo-this-action": "この操作は元に戻せません",
+    "clear": "クリア",
+    "close": "閉じる",
+    "configure": "設定",
+    "configure-now": "今すぐ設定する",
+    "confirm": "確認する",
+    "confirm-and-update": "確認して更新する",
+    "copied": "コピーされました",
+    "copy": "コピー",
+    "create": "作成する",
+    "created": "作成済",
+    "delete": "消去",
+    "delete-resource": "Delete {{type}}",
+    "deleted": "削除されました",
+    "description": "説明",
+    "discard-changes": "変更をキャンセルする",
+    "edit": "編集",
+    "email": "メールアドレス",
+    "environment": "環境",
+    "environment-name": "環境名",
+    "export": "エクスポート",
+    "failed": "失敗",
+    "file-selector": {
+      "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります",
+      "type-limit": "タイプ {{extension}} のファイルのみがサポートされます"
+    },
+    "filter-by-name": "名前でフィルタリングする",
+    "from": "開始",
+    "general": "全般",
+    "groups": "グループ",
+    "id": "ID",
+    "instance": "インスタンス",
+    "is-required": "is required",
+    "labels": "ラベル",
+    "learn-more": "もっと詳しく知る",
+    "leave-without-saving": "変更を保存していませんか?",
+    "load-more": "もっと読み込む",
+    "loading": "読み込み中",
+    "members_one": "メンバー",
+    "members_other": "メンバー",
+    "missing-required-permission": "必要な権限がありません {{permissions}}",
+    "n-items-selected": "{{n}} 件選択済み",
+    "name": "名前",
+    "next": "次のステップ",
+    "no-data": "データなし",
+    "ok": "わかりました",
+    "operations": "操作",
+    "permissions": "権限",
+    "project": "プロジェクト",
+    "reorder": "並び替え",
+    "required-permission": "必要な権限",
+    "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
+    "restore": "復元する",
+    "restored": "Restored",
+    "revert": "元に戻す",
+    "rows-per-page": "ページあたりの行数",
+    "save": "保存",
+    "search": "検索",
+    "search-for-more": "さらに検索",
+    "select": "選択してください",
+    "select-all": "すべて選択",
+    "sensitive-placeholder": "機密データ - 書き込みのみ",
+    "state": "ステート",
+    "system": "システム",
+    "title": "タイトル",
+    "to": "終了",
+    "total-n-items": "合計 {{n}} 件",
+    "type": "タイプ",
+    "unassigned": "割り当てられていない",
+    "unlimited": "無制限",
+    "update": "更新する",
+    "updated": "更新しました",
+    "upload": "アップロード",
+    "users": "ユーザー",
+    "view": "表示",
+    "view-details": "詳細を表示",
+    "warning": "警告する",
+    "you": "あなた",
+    "copy-failed": "Copy failed"
   },
-  "environment": {
-    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました",
-    "delete": "この環境を削除します",
-    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
-    "create": "環境を作成する",
-    "reorder": "環境の並べ替え"
+  "create-db": {
+    "cluster": "集まる",
+    "database-owner-name": "データベース所有者",
+    "new-collection-name": "新しいコレクション名",
+    "new-database-name": "新しいデータベース名",
+    "reserved-db-error": "{{databaseName}} は予約された名前です"
   },
   "custom-approval": {
-    "rule": {
-      "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
-    },
     "approval-flow": {
       "add-rule": "ルールを追加",
       "create-approval-flow": "承認フローの作成",
       "edit-rule": "ルールを編集",
       "fallback-rules": "フォールバックルール",
       "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
-      "self": "承認の流れ",
-      "skip": "承認不要",
       "node": {
         "add": "ノードの追加",
         "approver": "承認者",
@@ -718,8 +171,9 @@
         "nodes": "承認ノード",
         "order": "順序"
       },
+      "self": "承認の流れ",
+      "skip": "承認不要",
       "template": {
-        "presets-title": "プリセット",
         "preset-descriptions": {
           "drop-or-truncate": "DROP TABLEまたはTRUNCATEステートメントには承認が必要です。",
           "fallback": "すべてのリクエストに一致するキャッチオールルール。ルールリストの最後に配置してください。",
@@ -729,19 +183,20 @@
           "drop-or-truncate": "テーブル削除/切り捨て",
           "fallback": "フォールバックルール",
           "high-affected-rows": "高影響行数"
-        }
+        },
+        "presets-title": "プリセット"
       }
     },
     "risk": {
       "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
       "how-it-works": "仕組み",
       "how-it-works-description": "データベースの変更を作成すると、Bytebaseは自動的にSQL文を分析し、事前定義されたルールに基づいてリスクレベル（低、中、高）を割り当てます。",
-      "risk-levels": "リスクレベル",
-      "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
-      "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
-      "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
       "integration": "承認フローとの連携",
-      "integration-description": "リスクレベルはカスタム承認システムと連携しています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。"
+      "integration-description": "リスクレベルはカスタム承認システムと連携しています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。",
+      "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
+      "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
+      "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
+      "risk-levels": "リスクレベル"
     },
     "risk-rule": {
       "risk": {
@@ -749,144 +204,809 @@
           "change_database": "データベースの変更",
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
-          "request-role": "ロールのリクエスト",
-          "request-access": "ジャストインタイムアクセスのリクエスト"
+          "request-access": "ジャストインタイムアクセスのリクエスト",
+          "request-role": "ロールのリクエスト"
         },
         "risk-level": {
           "default": "デフォルト",
           "high": "高",
-          "moderate": "中",
-          "low": "低"
+          "low": "低",
+          "moderate": "中"
         }
       }
+    },
+    "rule": {
+      "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     }
   },
-  "identity-provider": {
-    "test-connection-success": "テスト接続に成功しました",
-    "userinfo-description": "一致したユーザー情報。",
-    "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
-    "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
-    "test-connection": "テスト接続",
-    "delete-warning": "このアイデンティティプロバイダを削除してもよろしいですか？このSSO経由でサインアップしたユーザーは、今後このSSOでサインインできなくなります。ワークスペースの設定でパスワードによるサインインが無効になっている場合、これらのユーザーは完全にロックアウトされる可能性があります。",
-    "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
-    "identity-provider-permission-denied": "許可が拒否されました",
-    "identity-provider-deleted": "ID プロバイダが正常に削除されました",
-    "identity-provider-delete-failed": "IDプロバイダの削除に失敗しました",
-    "identity-provider-created": "ID プロバイダが正常に作成されました",
-    "identity-provider-create-failed": "IDプロバイダの作成に失敗しました"
-  },
-  "error-page": {
-    "not-found": "ページが見つかりません"
-  },
-  "instance": {
-    "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
-    "successfully-restored-instance": "インスタンス '{{0}}' を正常に復元しました。",
-    "archive-instance-instance-name": "インスタンス '{{0}}' をアーカイブしますか?",
-    "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
-    "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
-    "syncing": "同期中 ...",
-    "sync": {
-      "self": "インスタンスの同期",
-      "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。",
-      "sync-all": "すべてのデータベースを同期する",
-      "sync-new": "新しいデータベースのみを同期する"
+  "database": {
+    "classification": {
+      "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
-    "selected-n-instances_one": "{{count}} 個のインスタンスが選択されました",
-    "selected-n-instances_other": "{{count}} 個のインスタンスが選択されました",
-    "advanced-search": {
-      "scope": {
-        "host": {
-          "title": "サーバーアドレス",
-          "description": "インスタンス サーバーのアドレスでフィルターします。値を入力してEnterキーを押してください。"
-        },
-        "port": {
-          "title": "ポート",
-          "description": "インスタンス ポートでフィルターします。値を入力してEnterキーを押してください。"
-        }
-      }
-    },
-    "filter-instance-name": "インスタンス名のフィルタリング"
+    "edit-environment": "環境の編集",
+    "edit-labels": "ラベルを編集",
+    "engine": "エンジン",
+    "filter-database": "データベースをフィルター",
+    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
+    "successfully-transferred-databases": "データベースの転送に成功しました",
+    "sync-schema-button": "スキーマを同期",
+    "sync-status": "同期ステータス",
+    "sync-status-failed": "同期に失敗しました",
+    "transfer-project": "プロジェクトの転送",
+    "unassign": "割り当てを解除する"
   },
   "db": {
-    "start-to-sync-schema": "スキーマの同期を開始します",
     "character-set": "文字セット",
     "collation": "照合順序",
     "encoding": "エンコーディング",
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
+    "start-to-sync-schema": "スキーマの同期を開始します",
     "successfully-synced-schema": "スキーマの同期に成功しました"
   },
-  "quick-action": {
-    "add-instance": "インスタンス追加",
-    "create-project": "作成するプロジェクト",
-    "new-project": "作成するプロジェクト",
-    "create-db": "データベースの作成",
-    "new-db": "データベースの作成"
+  "environment": {
+    "create": "環境を作成する",
+    "delete": "この環境を削除します",
+    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
+    "reorder": "環境の並べ替え",
+    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
+  },
+  "error-page": {
+    "not-found": "ページが見つかりません"
+  },
+  "identity-provider": {
+    "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
+    "delete-warning": "このアイデンティティプロバイダを削除してもよろしいですか？このSSO経由でサインアップしたユーザーは、今後このSSOでサインインできなくなります。ワークスペースの設定でパスワードによるサインインが無効になっている場合、これらのユーザーは完全にロックアウトされる可能性があります。",
+    "identity-provider-create-failed": "IDプロバイダの作成に失敗しました",
+    "identity-provider-created": "ID プロバイダが正常に作成されました",
+    "identity-provider-delete-failed": "IDプロバイダの削除に失敗しました",
+    "identity-provider-deleted": "ID プロバイダが正常に削除されました",
+    "identity-provider-permission-denied": "許可が拒否されました",
+    "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
+    "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
+    "test-connection": "テスト接続",
+    "test-connection-success": "テスト接続に成功しました",
+    "userinfo-description": "一致したユーザー情報。"
+  },
+  "instance": {
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "description": "インスタンス サーバーのアドレスでフィルターします。値を入力してEnterキーを押してください。",
+          "title": "サーバーアドレス"
+        },
+        "port": {
+          "description": "インスタンス ポートでフィルターします。値を入力してEnterキーを押してください。",
+          "title": "ポート"
+        }
+      }
+    },
+    "archive-instance-instance-name": "インスタンス '{{0}}' をアーカイブしますか?",
+    "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
+    "filter-instance-name": "インスタンス名のフィルタリング",
+    "force-archive-description": "アーカイブを強制します。すべてのデータベースの割り当てが解除されます。",
+    "selected-n-instances_one": "{{count}} 個のインスタンスが選択されました",
+    "selected-n-instances_other": "{{count}} 個のインスタンスが選択されました",
+    "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
+    "successfully-restored-instance": "インスタンス '{{0}}' を正常に復元しました。",
+    "sync": {
+      "self": "インスタンスの同期",
+      "sync-all": "すべてのデータベースを同期する",
+      "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。",
+      "sync-new": "新しいデータベースのみを同期する"
+    },
+    "syncing": "同期中 ..."
+  },
+  "issue": {
+    "labels": "イシューラベル"
   },
   "landing": {
-    "quick-link": {
-      "visit-prjects": "プロジェクトを開く",
-      "visit-issues": "イシューを開く",
-      "manage": "クイックリンクを管理する",
-      "self": "クイックリンク"
-    },
+    "changelog-for-version": "{{version}} の変更履歴",
     "last-visit": "最終訪問",
-    "changelog-for-version": "{{version}} の変更履歴"
-  },
-  "remind": {
-    "release": {
-      "new-version-available-with-tag": "新しいバージョン {{tag}} が利用可能です"
+    "quick-link": {
+      "manage": "クイックリンクを管理する",
+      "self": "クイックリンク",
+      "visit-issues": "イシューを開く",
+      "visit-prjects": "プロジェクトを開く"
     }
   },
-  "banner": {
-    "external-url": "Bytebase は --extern-url を設定していません"
+  "policy": {
+    "environment-tier": {
+      "description": "この環境を他の環境とは異なって見えるようにします。",
+      "mark-env-as-production": "本番環境としてマークする",
+      "name": "環境レベル"
+    },
+    "rollout": {
+      "auto": "自動",
+      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
+      "info": "タスクは、「{{permission}}」許可または次のロールでユーザーが実行できます。",
+      "name": "リリース戦略",
+      "tip": "新しいポリシーは古いイシューにも適用されます"
+    }
   },
   "project": {
-    "create-modal": {
-      "success-prompt": "{{name}} が正常に作成されました。",
-      "project-name": "プロジェクト名前"
-    },
     "batch": {
       "archive": {
+        "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。",
+        "error": "プロジェクトをアーカイブできませんでした",
         "success_one": "{{count}} 件のプロジェクトを正常にアーカイブしました",
         "success_other": "{{count}} 件のプロジェクトを正常にアーカイブしました",
-        "error": "プロジェクトをアーカイブできませんでした",
         "title_one": "{{count}} 件のプロジェクトをアーカイブしますか?",
-        "title_other": "{{count}} 件のプロジェクトをアーカイブしますか?",
-        "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。"
+        "title_other": "{{count}} 件のプロジェクトをアーカイブしますか?"
       },
       "delete": {
+        "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
+        "error": "プロジェクトを削除できませんでした",
         "success_one": "{{count}} 件のプロジェクトを正常に削除しました",
         "success_other": "{{count}} 件のプロジェクトを正常に削除しました",
-        "error": "プロジェクトを削除できませんでした",
         "title_one": "{{count}} 件のプロジェクトを削除しますか?",
         "title_other": "{{count}} 件のプロジェクトを削除しますか?",
-        "description": "選択したプロジェクトを完全に削除し、すべてのデータベースをデフォルトプロジェクトに移動します。",
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
       },
       "selected_one": "{{count}} 件のプロジェクトが選択されました",
       "selected_other": "{{count}} 件のプロジェクトが選択されました"
+    },
+    "create-modal": {
+      "project-name": "プロジェクト名前",
+      "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
     "table": {
       "name": "名前"
     }
   },
+  "quick-action": {
+    "add-instance": "インスタンス追加",
+    "create-db": "データベースの作成",
+    "create-project": "作成するプロジェクト",
+    "new-db": "データベースの作成",
+    "new-project": "作成するプロジェクト"
+  },
+  "remind": {
+    "release": {
+      "new-version-available-with-tag": "新しいバージョン {{tag}} が利用可能です"
+    }
+  },
   "resource": {
-    "delete-warning-with-resources": "「{{name}}」は次のリソースによって使用されます:",
+    "delete-warning": "「{{name}}」は削除されます。この操作は元に戻せません。",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。",
-    "delete-warning": "「{{name}}」は削除されます。この操作は元に戻せません。"
+    "delete-warning-with-resources": "「{{name}}」は次のリソースによって使用されます:"
+  },
+  "resource-id": {
+    "cannot-be-changed-later": "作成後に変更することはできません。",
+    "description": "{{resource}} ID は一意の識別子です。作成後に変更することはできません。",
+    "self": "{{resource}} ID",
+    "validation": {
+      "duplicated": "{{resource}} ID はすでに存在します。別のIDを使用してください。",
+      "empty": "{{resource}} ID は空にできません",
+      "overflow": "{{resource}} ID は 64 文字未満である必要があります。",
+      "pattern": "{{resource}} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。"
+    }
+  },
+  "role": {
+    "custom-roles": {
+      "self": "カスタムロール"
+    },
+    "import-from-role": "ロールからインポート",
+    "project-roles": {
+      "self": "プロジェクトのロール"
+    },
+    "select-role": "ロールの選択",
+    "self": "ロール",
+    "setting": {
+      "add": "ロールの追加",
+      "description": "プロジェクトメンバーとカスタム承認に適用できるカスタムロールを定義します。",
+      "description-placeholder": "ロールの説明を入力してください",
+      "edit": "ロールの編集",
+      "title-placeholder": "ロールのタイトルを入力してください"
+    },
+    "title": "タイトル",
+    "workspace-roles": {
+      "self": "ワークスペースのロール"
+    }
+  },
+  "schema-template": {
+    "classification": {
+      "search": "カテゴリを検索する"
+    }
+  },
+  "settings": {
+    "general": {
+      "workspace": {
+        "access-token-duration": {
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "hours": "Hour(s)",
+          "minutes": "Minute(s)",
+          "self": "Access token duration"
+        },
+        "account": "アカウント",
+        "ai-assistant": {
+          "api-key": {
+            "description": "読み取り専用の API キーを入力してください。{{viewDoc}}",
+            "find-my-key": "鍵を探す",
+            "placeholder": "API キーは通常 sk-***** で始まります",
+            "self": "APIキー"
+          },
+          "description": "AI を使用してデータベース開発タスクを支援します。",
+          "enable-ai-assistant": "AIアシスタントを有効にする",
+          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
+          "endpoint": {
+            "description": "プライベート展開用の API エンドポイントを提供します。",
+            "self": "API エンドポイント"
+          },
+          "model": {
+            "description": "供給プライベートデプロイメントのモデル名。",
+            "self": "モデル名"
+          },
+          "provider": {
+            "azure_open_ai": "Azure Open AI",
+            "claude": "Claude",
+            "gemini": "Gemini",
+            "open_ai": "Open AI",
+            "self": "AIプロバイダー"
+          },
+          "self": "AI アシスタント"
+        },
+        "allow-admin-data-source": {
+          "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",
+          "self": "管理データソースのクエリを許可する"
+        },
+        "announcement": {
+          "self": "お知らせ"
+        },
+        "announcement-alert-level": {
+          "description": "レベル",
+          "field": {
+            "critical": "重要",
+            "info": "情報",
+            "warning": "警告"
+          }
+        },
+        "announcement-text": {
+          "description": "お知らせを非表示にしたい場合は空白のままにしてください。",
+          "placeholder": "お知らせのタイトルを入力してください",
+          "self": "タイトル"
+        },
+        "audit-log-stdout": {
+          "description": "構造化されたJSON監査ログを標準出力に出力し、ログアグリゲーター（Splunk、ELK、Datadog、Loki）で取り込めるようにします。TEAMまたはENTERPRISEライセンスが必要です。",
+          "enable": "監査ログの標準出力への出力を有効にする"
+        },
+        "branding": "ブランド",
+        "config-partly-updated": "設定が部分的に更新されました。",
+        "config-updated": "設定が更新されました。",
+        "data-copy": "データのコピーを有効にする",
+        "data-export": "データのエクスポートを有効にする",
+        "default-landing-page": {
+          "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
+          "go-to-sql-editor": "SQLエディタに移動",
+          "self": "デフォルトのランディングページ",
+          "sql-editor": {
+            "description": "SQL エディターを使用してデータベースの変更を直接実行します。これは、1 人で使用する場合や、監視を必要としない環境に適しています。",
+            "self": "SQLエディター"
+          },
+          "workspace": {
+            "description": "イシューを使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。",
+            "self": "ワークスペース"
+          }
+        },
+        "disallow-password-signin": {
+          "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。",
+          "enable": "メールアドレスとパスワードによるサインインを禁止する",
+          "require-sso-setup": "最初に機能する SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
+        },
+        "disallow-signup": {
+          "description": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。",
+          "enable": "セルフサービス登録を無効にする"
+        },
+        "domain-restriction": {
+          "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",
+          "domain-input-placeholder": "ドメインを入力してください。例: example.com",
+          "members-restriction": {
+            "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。",
+            "self": "メンバー制限"
+          },
+          "self": "ワークスペースドメイン"
+        },
+        "drag-logo": "またはファイルをドラッグ アンド ドロップします",
+        "enable-debug": {
+          "enable": "バックエンドサービスのデバッグレベルのログを有効にする"
+        },
+        "external-url": {
+          "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません",
+          "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。",
+          "self": "外部URL"
+        },
+        "extra-link": {
+          "placeholder": "お知らせのリンクを入力してください",
+          "self": "リンク"
+        },
+        "failed-to-update-setting": "設定「{{title}}」の更新に失敗しました",
+        "id": "ワークスペースID",
+        "id-description": "一意の読み取り専用ワークスペース ID",
+        "inactive-session-timeout": {
+          "description": "ユーザーの活動が検出されない場合のセッション有効期限です。ユーザーが制限時間に達すると、強制的にログアウトされます。",
+          "hours": "時間",
+          "self": "非アクティブセッションタイムアウト"
+        },
+        "log": "ログ",
+        "logo": "ロゴ",
+        "logo-aspect": "推奨されるロゴの幅:高さの比率 (例: 100 x 40 ピクセル)",
+        "logo-upload-tip": "{{extension}} タイプのファイルをサポートします。{{size}} MiB より大きくすることはできません",
+        "maximum-role-expiration": {
+          "days": "日",
+          "description": "最大ロール有効期限は、ロールをユーザーに付与できる最大期間であり、プロジェクト所有者を除くすべてのプロジェクト ロールに適用されます。",
+          "never-expires": "期限切れなし",
+          "self": "最大ロール有効期限"
+        },
+        "maximum-sql-result": {
+          "rows": {
+            "description": "SQL クエリ結果の出力行を制限します。",
+            "rows": "行",
+            "self": "最大SQL結果行数"
+          },
+          "size": {
+            "default": "デフォルトの制限 {{limit}} MB",
+            "description": "出力される SQL クエリ結果のサイズを制限します。",
+            "self": "最大SQL結果サイズ"
+          }
+        },
+        "no-limit": "値が0以下の場合、制限なし",
+        "password-restriction": {
+          "min-length": "パスワードの最小文字数は {{min}} 文字以上である必要があります",
+          "password-rotation": "ユーザーに{{day}}日ごとにパスワードのリセットを要求する",
+          "require-letter": "パスワードには大文字、小文字に関係なく少なくとも1文字が含まれている必要があります",
+          "require-number": "パスワードには少なくとも1つの数字が含まれている必要があります",
+          "require-reset-password-for-first-login": "初回ログイン後にユーザーにパスワードのリセットを要求する",
+          "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります",
+          "require-uppercase-letter": "パスワードには少なくとも1つの大文字が含まれている必要があります",
+          "self": "パスワード制限"
+        },
+        "product-improvement": {
+          "description": "匿名の使用データを共有してBytebaseの改善に協力する",
+          "participate": "改善プログラムに参加",
+          "self": "製品改善"
+        },
+        "query-data-policy": {
+          "seconds": "秒",
+          "timeout": {
+            "description": "クエリの実行に許容される最大時間。",
+            "self": "最大クエリ時間"
+          }
+        },
+        "refresh-token-duration": {
+          "days": "Day(s)",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "self": "Refresh token duration"
+        },
+        "require-2fa": {
+          "description": "有効にすると、2 要素認証が設定されていないユーザーは強制的に設定されます。",
+          "enable": "すべてのユーザーに 2 要素認証の設定を要求する"
+        },
+        "security": "セキュリティ",
+        "select-logo": "選ぶ",
+        "title": "ワークスペース名",
+        "watermark": {
+          "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。",
+          "enable": "ウォーターマークをオンにする"
+        }
+      }
+    },
+    "im": {
+      "add-another-im": "別のIMを追加",
+      "add-im-integration": "IM 連携の追加"
+    },
+    "im-integration": {
+      "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
+    },
+    "mcp": {
+      "auth": {
+        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。",
+        "title": "認証が必要"
+      },
+      "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "first-prompt": {
+        "description": "接続後、AI アシスタントに聞いてみてください：",
+        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
+        "title": "最初のプロンプト"
+      },
+      "general-config": {
+        "title": "方法 1：JSON 設定"
+      },
+      "quick-start": {
+        "description": "または、以下の CLI コマンドを使用してください。",
+        "title": "方法 2：CLI コマンド"
+      },
+      "setup": {
+        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
+      },
+      "title": "MCP 連携"
+    },
+    "members": {
+      "action": {
+        "deactivate-confirm-title": "無効にしてもOK",
+        "reactivate-confirm-title": "[OK] を有効にします"
+      },
+      "add-member": "メンバーを追加",
+      "add-service-account": "サービスアカウントを追加",
+      "add-user": "ユーザーを追加",
+      "add-workload-identity": "ワークロードIDを追加",
+      "all-users": "すべてのユーザー",
+      "cannot-revoke-self": "You cannot revoke yourself",
+      "copy-service-key": "サービスキーをコピーする",
+      "entra-sync": {
+        "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
+        "endpoint": "Endpoint",
+        "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
+        "reset-token": "トークンをリセット",
+        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
+        "secret-token": "Secret Token",
+        "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
+        "self": "SCIM から同期"
+      },
+      "grant-access": "アクセスを許可する",
+      "groups": {
+        "add-group": "グループを追加",
+        "external-readonly": "External group is read-only.",
+        "form": {
+          "description": "説明",
+          "email": "Eメール",
+          "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
+          "role": {
+            "member": "グループの人（仲間）たち",
+            "owner": "グループオーナー"
+          },
+          "title": "タイトル"
+        },
+        "n-members": "{{n}} 人のメンバー",
+        "update-group": "更新グループ",
+        "workspace-domain-required": "まずワークスペースドメインを設定してください。"
+      },
+      "inactive-service-accounts": "非アクティブサービスアカウント",
+      "inactive-users": "非アクティブユーザー",
+      "inactive-workload-identities": "非アクティブワークロードID",
+      "revoke-access": "アクセスを取り消す",
+      "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
+      "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
+      "reset-service-key": "サービスキーのリセット",
+      "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
+      "revoked": "取り消されました",
+      "search-member": "メンバーを検索",
+      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
+      "select-account_one": "アカウントを選択",
+      "select-account_other": "アカウントを選択",
+      "select-role_one": "ロールを選択",
+      "select-role_other": "ロールを選択",
+      "service-account": "サービスアカウント",
+      "service-accounts": "サービスアカウント",
+      "show-inactive": "非アクティブなアカウントを表示",
+      "table": {
+        "account": "アカウント",
+        "groups": "グループ",
+        "roles": "ロール"
+      },
+      "update-service-account": "サービスアカウントを更新",
+      "update-user": "ユーザーを更新",
+      "update-workload-identity": "ワークロードIDを更新",
+      "view-by-members": "メンバー別に表示",
+      "view-by-roles": "ロールごとに表示",
+      "workload-identities": "ワークロードID",
+      "workload-identity": "Workload Identity",
+      "workload-identity-advanced": "Advanced Settings",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-audience": "Audience",
+      "workload-identity-branch": "Branch",
+      "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-issuer": "Issuer URL",
+      "workload-identity-owner": "Organization / Username",
+      "workload-identity-platform": "Platform",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-repo": "Repository",
+      "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-subject": "Subject Pattern",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags"
+    },
+    "profile": {
+      "password": "パスワード",
+      "password-confirm": "パスワードの確認",
+      "password-confirm-placeholder": "新しいパスワードを確認します",
+      "password-hint": "パスワードは制限設定に従う必要があります",
+      "password-mismatch": "新しいパスワードが一致しません",
+      "phone": "電話番号",
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx"
+    },
+    "sensitive-data": {
+      "algorithms": {
+        "add": "アルゴリズムを追加",
+        "edit": "アルゴリズムを編集",
+        "error": {
+          "salt-required": "塩分値を入力してください",
+          "slice-invalid-number": "マスク範囲の開始値と終了値は数値である必要があります",
+          "slice-overlap": "マスキング範囲は重複できません",
+          "slice-required": "マスク範囲を空にすることはできません",
+          "substitution-length": "マスク文字列の長さは 16 文字を超えることはできません",
+          "substitution-required": "マスク文字列を入力してください"
+        },
+        "full-mask": {
+          "self": "完全マスク",
+          "substitution": "マスク文字列",
+          "substitution-label": "マスキング文字列は、元の値を置換するために使用される文字列であり、最大長 16 文字を超えることはできません。"
+        },
+        "inner-outer-mask": {
+          "inner-label": "内部マスクは文字列の内部部分をマスクします。プレフィックスとサフィックスはデータのマスクされていない部分を表します。",
+          "inner-mask": "インナーマスク",
+          "outer-label": "外部マスクは文字列の左右の端をマスクします。プレフィックスとサフィックスはデータのマスクされた部分を表します。",
+          "outer-mask": "アウターマスク",
+          "prefix-length": "プレフィックスの長さ",
+          "self": "内部/外部マスク",
+          "suffix-length": "サフィックスの長さ",
+          "type": "マスクタイプ"
+        },
+        "md5-mask": {
+          "salt": "ソルト値",
+          "salt-label": "ソルト値は、元の値からハッシュ値を生成するために使用されます。",
+          "self": "MD5ハッシュ"
+        },
+        "range-mask": {
+          "label": "範囲マスキングでは、マスクされた文字列を使用して、開始インデックスから終了インデックスまでの元の値を置き換えます (排他的)。インデックスは 0 から始まります。",
+          "self": "範囲マスキング",
+          "slice-end": "終了位置",
+          "slice-start": "出発点",
+          "substitution": "マスク文字列"
+        },
+        "table": {
+          "masking-type": "アルゴリズムの種類"
+        }
+      },
+      "classification": {
+        "empty-classification": "The \"classification\" field is empty",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "missing-levels": "Missing \"levels\" field"
+      },
+      "global-rules": {
+        "condition-order": "条件付きシーケンス",
+        "delete-rule-tip": "このルールを削除しますか?",
+        "description": "グローバル ルールを使用してバッチでマスキングを適用します。たとえば、「email」という名前のすべての列は特定のセマンティック タイプでマスキングされ、マスキング アルゴリズムが適用されます。",
+        "error": {
+          "invalid-condition": "条件が無効です",
+          "missing-semantic-type": "セマンティックタイプは必須です"
+        },
+        "re-order": "並び替え"
+      },
+      "semantic-types": {
+        "add-from-template": "テンプレートから追加",
+        "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
+        "select": "セマンティックタイプの選択",
+        "table": {
+          "delete": "このセマンティック タイプを削除しますか?",
+          "description": "説明",
+          "icon": "アイコン",
+          "masking-algorithm": "マスキングアルゴリズム",
+          "semantic-type": "セマンティックタイプ"
+        },
+        "template": {
+          "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。",
+          "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します"
+        },
+        "use-predefined-type": "事前定義されたタイプを使用する"
+      }
+    },
+    "sidebar": {
+      "audit-log": "監査ログ",
+      "custom-roles": "カスタムロール",
+      "data-classification": "データ分類",
+      "general": "全般",
+      "global-masking": "グローバルマスキング",
+      "im-integration": "IM",
+      "mcp": "MCP",
+      "members": "メンバー",
+      "members-and-groups": "メンバーとグループ",
+      "sso": "SSO",
+      "subscription": "サブスクリプション",
+      "users-and-groups": "ユーザーとグループ"
+    },
+    "sso": {
+      "create": "SSOの作成",
+      "delete": "この SSO を削除する",
+      "description": "シングル サインオン (SSO) は、ユーザーが他のアプリケーションや Web サイトからログインできるようにする認証方法です。",
+      "form": {
+        "auth-url": "認証URL",
+        "auth-url-description": "ログインページへのリンク",
+        "auth-url-placeholder": "例えばhttps://github.com/login/oauth/authorize",
+        "authentication-style": "認証スタイル",
+        "base-dn": "ベースDN",
+        "base-dn-description": "ユーザーを検索するためのベースDN",
+        "base-dn-placeholder": "例えばou=ユーザー、dc=例、dc=com",
+        "bind-dn": "バインドDN",
+        "bind-dn-description": "検索リクエストにバインドするユーザーのDN",
+        "bind-dn-placeholder": "例えばuid=システム、ou=ユーザー、dc=example、dc=com",
+        "bind-password": "パスワードをバインドする",
+        "configuration": "構成",
+        "configuration-description": "IDプロバイダーの接続設定を構成する",
+        "custom-template-description": "カスタムOAuth 2.0プロバイダーを構成する",
+        "display-name": "バイトベースユーザーのニックネーム",
+        "display-name-placeholder": "例: name、displayName",
+        "domain": "ドメイン名",
+        "domain-description": "OAuthプロバイダーのドメイン名",
+        "domain-optional-hint": "オプション: 電子メール形式でない場合は識別子と連結するために使用します",
+        "general-setting-description": "ID プロバイダーに関する基本情報を提供します。",
+        "github-template-description": "GitHubアカウントでサインイン",
+        "gitlab-template-description": "GitLabアカウントでサインイン",
+        "google-template-description": "Googleアカウントでログイン",
+        "groups": "Bytebaseユーザーグループ",
+        "groups-description": "グループベースのアクセス制御に使用されます（OIDC プロバイダーのみ）",
+        "groups-placeholder": "例：グループ",
+        "host-placeholder": "例: ldap.example.com",
+        "identifier": "バイトベースユーザーの電子メールアドレス",
+        "identifier-placeholder": "例：ログイン、メール",
+        "identifier-tips": "電子メールは一意である必要があります。実際の値がメールボックス形式でない場合は、ドメインと連結されます。",
+        "identity-provider-needed-information": "次の情報を使用して SSO アプリケーションを作成します。",
+        "in-header": "ヘッダー内",
+        "in-header-description": "HTTP 基本認証を使用して資格情報を送信する",
+        "in-parameters": "パラメータ",
+        "in-parameters-description": "POST 本文で資格情報を送信する（推奨）",
+        "issuer-url-description": "OIDC 発行者 URL (既知の構成は自動的に検出されます)",
+        "issuer-url-placeholder": "例: https://acme.okta.com",
+        "ldap-description": "Microsoft Active Directory、OpenLDAPなどのLDAPプロバイダーに接続します",
+        "ldaps": "LDAP",
+        "ldaps-description": "最初から TLS を使用する (ポート 636)",
+        "microsoft-entra-template-description": "Microsoft Entra IDでサインイン",
+        "name": "名前",
+        "name-description": "ログインユーザーに表示される名前",
+        "none": "なし",
+        "none-description": "暗号化なし（本番環境では推奨されません）",
+        "oauth2-description": "Google、GitHub、GitLabなどのOAuth 2.0プロバイダーと接続する",
+        "oidc-description": "Microsoft Entra ID (Azure AD)、Okta、Auth0 などの OpenID Connect プロバイダーと接続します。",
+        "openid-scopes-description": "OIDC スコープのスペース区切りリスト (openid は必須)",
+        "phone": "Bytebase ユーザーの携帯電話番号",
+        "phone-placeholder": "例：電話、携帯電話",
+        "provider-type-readonly-hint": "プロバイダタイプは作成後に変更できません",
+        "redirect-url": "コールバックアドレス",
+        "redirect-url-description": "ID プロバイダー要求フォームの対応するフィールドに入力するために使用されます。",
+        "scopes": "スコープ",
+        "scopes-description": "認証 URL にアクセスするときに渡される範囲パラメーター。複数の値を区切るにはスペースを使用します。",
+        "scopes-placeholder": "例: user, email, profile",
+        "scopes-placeholder-oidc": "例: openid, user, email, profile",
+        "security-options": "セキュリティオプション",
+        "security-protocol": "セキュリティプロトコル",
+        "skip-tls-verification": "TLS証明書の検証をスキップする",
+        "skip-tls-warning": "開発またはテストの目的でのみ有効にしてください",
+        "starttls": "TLS を開始",
+        "starttls-description": "接続を TLS にアップグレードする (推奨)",
+        "template-description": "事前設定されたテンプレートを選択するか、カスタムのOAuth 2.0プロバイダーを設定します",
+        "token-url": "トークンURL",
+        "token-url-description": "accessTokenの取得に使用するAPIアドレス",
+        "token-url-placeholder": "例えばhttps://github.com/login/oauth/access_token",
+        "type": "タイプ",
+        "type-description": "設定するIDプロバイダーの種類を選択します",
+        "use-template": "テンプレートを使用する",
+        "user-filter": "ユーザーフィルター",
+        "user-filter-description": "ユーザーを検索するためのフィルター (%s はユーザー名に置き換えられます)",
+        "user-filter-placeholder": "例: (uid=%s)",
+        "user-info-url": "ユーザー情報URL",
+        "user-info-url-description": "accessTokenによるユーザー情報の取得に使用するAPIアドレス",
+        "user-info-url-placeholder": "例えばhttps://api.github.com/user",
+        "user-information-mapping": "ユーザー情報のマッピング",
+        "user-information-mapping-description": "フィールド マップには、API ユーザー情報のフィールド名が保持されます。"
+      }
+    }
   },
   "sql-editor": {
     "self": "SQLエディタ"
   },
-  "create-db": {
-    "cluster": "集まる",
-    "database-owner-name": "データベース所有者",
-    "new-collection-name": "新しいコレクション名",
-    "new-database-name": "新しいデータベース名",
-    "reserved-db-error": "{{databaseName}} は予約された名前です"
+  "sql-review": {
+    "configure-policy": "SQL レビューポリシーを設定する",
+    "title": "SQL レビューポリシー"
   },
-  "issue": {
-    "labels": "イシューラベル"
+  "subscription": {
+    "contact-us": "お問い合わせ",
+    "current": "現在のプラン",
+    "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
+    "enterprise-free-trial": "Enterprise の {{days}} 日間の無料トライアル",
+    "expired": "期限切れ",
+    "expires-at": "有効期限",
+    "inquire-enterprise-plan": "Enterprise版のお問い合わせ",
+    "instance-assignment": {
+      "assign-license": "ライセンスの割り当て",
+      "license": "ライセンス",
+      "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
+      "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
+      "used-and-total-user": "アクティブ/合計ユーザー制限"
+    },
+    "max-instance-count": "最大インスタンス数",
+    "plan": {
+      "enterprise": {
+        "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。",
+        "label": "",
+        "title": "エンタープライズ"
+      },
+      "free": {
+        "desc": "データベース開発ライフサイクルを管理するためのチームの基本機能。",
+        "label": "",
+        "title": "コミュニティ"
+      },
+      "team": {
+        "desc": "チーム間のコラボレーションを標準化し、促進するためのさらなるポリシー。",
+        "label": "",
+        "title": "プロ"
+      },
+      "title": "コミュニティ",
+      "try": "無料トライアルを開始する"
+    },
+    "plan-compare": "異なるプラン間の機能を比較する",
+    "purchase": {
+      "accept-terms-prefix": "以下に同意します：",
+      "and": "および",
+      "billing-period": "請求期間",
+      "cancel": "サブスクリプションをキャンセル",
+      "cancel-confirm": "サブスクリプションをキャンセルしてもよろしいですか？",
+      "cancel-pending": "サブスクリプションはキャンセル済みで、{{date}} に終了します。",
+      "canceled": "サブスクリプションがキャンセルされました",
+      "custom": "カスタム",
+      "discount": {
+        "month-off": "{{value}} ヶ月無料",
+        "percentage-off": "初月 {{value}}% オフ",
+        "price-off": "${{value}} オフ"
+      },
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "manage-invoices": "請求書を管理",
+      "payment-info": "支払い情報",
+      "pending-description": "お支払いの確認中です。通常は数秒で完了します。",
+      "pending-title": "購入を完了しています...",
+      "per-user-per-month": "/ ユーザー / 月",
+      "privacy-policy": "プライバシーポリシー",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "seats": "ユーザー数",
+      "see-comparison": "機能の詳細比較を見る",
+      "subscribe": "今すぐ購読",
+      "terms-of-service": "利用規約",
+      "total-price": "合計金額",
+      "update": "サブスクリプションを更新"
+    },
+    "request-n-days-trial": "{{days}} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
+    "require-subscription": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。",
+    "required-plan-with-trial": "この機能は、{{requiredPlan}} のサブスクリプションが必要です。{{startTrial}} ",
+    "trial-for-days": "{{days}} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
+    "trialing": "トライアル中",
+    "try-for-free": "無料トライアル",
+    "update": {
+      "failure": {
+        "description": "ライセンスが有効かどうかを確認してください",
+        "title": "ライセンスの更新に失敗しました"
+      },
+      "success": {
+        "description": "サブスクリプション版のプレミアム機能がロック解除されました",
+        "title": "ライセンスが正常に更新されました"
+      }
+    },
+    "upload-license": "ライセンスのアップロード",
+    "usage": {
+      "instance-count": {
+        "runoutof": "すべての {{total}} インスタンス クレジットが使用されました。",
+        "title": "インスタンスの制限"
+      },
+      "user-count": {
+        "remaining": "現在の合計ユーザー割り当ては {{total}} で、使用できる共有は {{count}} 個のみです。",
+        "runoutof": "{{total}} 個のユーザー クレジットがすべて使用されました。",
+        "title": "ユーザー制限",
+        "upgrade": "アップグレード でユーザークォータをさらに取得します。"
+      }
+    }
+  },
+  "two-factor": {
+    "enabled": "二要素認証がオンになっています"
   }
 }

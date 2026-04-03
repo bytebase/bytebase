@@ -46,15 +46,19 @@ import { providePreBackupSettingContext } from "../../Configuration/PreBackupSec
 import PreBackupSwitch from "../../Configuration/PreBackupSection/PreBackupSwitch.vue";
 import { provideTransactionModeSettingContext } from "../../Configuration/TransactionModeSection/context";
 import TransactionModeSwitch from "../../Configuration/TransactionModeSection/TransactionModeSwitch.vue";
-import { useSelectedSpec } from "../../SpecDetailView/context";
+import {
+  useForceReadonly,
+  useSelectedSpec,
+} from "../../SpecDetailView/context";
 
 const { isCreating, plan, events, issue, readonly, allowEdit, project } =
   usePlanContext();
 const { selectedSpec } = useSelectedSpec();
 
+const forceReadonly = useForceReadonly();
+
 const allowChange = computed(() => {
-  // If readonly mode, disallow changes
-  if (readonly?.value) {
+  if (forceReadonly || readonly?.value) {
     return false;
   }
 

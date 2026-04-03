@@ -3,17 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -34,86 +31,55 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableRequireCharsetRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// TableRequireCharsetRule checks that tables have charset specified.
-type TableRequireCharsetRule struct {
-	BaseRule
-}
-
-// NewTableRequireCharsetRule creates a new TableRequireCharsetRule.
-func NewTableRequireCharsetRule(level storepb.Advice_Status, title string) *TableRequireCharsetRule {
-	return &TableRequireCharsetRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &tableRequireCharsetOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*TableRequireCharsetRule) Name() string {
+type tableRequireCharsetOmniRule struct {
+	OmniBaseRule
+}
+
+func (*tableRequireCharsetOmniRule) Name() string {
 	return "TableRequireCharsetRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableRequireCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeCreateTable {
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableRequireCharsetRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableRequireCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableName() == nil {
+func (r *tableRequireCharsetOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateTableStmt)
+	if !ok {
 		return
 	}
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
+	r.checkCreateTable(n)
+}
+
+func (r *tableRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
+		return
+	}
+	tableName := n.Table.Name
 	if tableName == "" {
 		return
 	}
 
 	hasCharset := false
-	if ctx.CreateTableOptions() != nil {
-		for _, tableOption := range ctx.CreateTableOptions().AllCreateTableOption() {
-			if tableOption.DefaultCharset() != nil {
-				hasCharset = true
-				break
-			}
+	for _, opt := range n.Options {
+		if opt != nil && (strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARACTER SET")) {
+			hasCharset = true
+			break
 		}
 	}
 	if !hasCharset {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.NoCharset.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Table %s does not have a character set specified", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 }

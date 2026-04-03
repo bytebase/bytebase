@@ -1,633 +1,222 @@
 {
-  "common": {
-    "filter-by-name": "Filter by name",
-    "loading": "Loading",
-    "no-data": "No data",
-    "all": "All",
-    "edit": "Edit",
-    "updated": "Updated",
-    "learn-more": "Learn more",
-    "revert": "Revert",
-    "cancel": "Cancel",
-    "save": "Save",
-    "confirm": "Confirm",
-    "clear": "Clear",
-    "add": "Add",
-    "warning": "Warning",
-    "environment-name": "Environment Name",
-    "environment": "Environment",
-    "confirm-and-update": "Confirm and update",
-    "cannot-undo-this-action": "You cannot undo this action",
-    "delete": "Delete",
-    "create": "Create",
-    "leave-without-saving": "Leave without saving?",
-    "deleted": "Deleted",
-    "reorder": "Reorder",
-    "close": "Close",
-    "general": "General",
-    "type": "Type",
-    "discard-changes": "Discard changes",
-    "update": "Update",
-    "copied": "Copied",
-    "copy": "Copy",
-    "back": "Back",
-    "next": "Next",
-    "id": "ID",
-    "name": "Name",
-    "sensitive-placeholder": "Sensitive - write only",
-    "unassigned": "Unassigned",
-    "archive": "Archive",
-    "restore": "Restore",
-    "delete-resource": "Delete {{type}}",
-    "labels": "Labels",
-    "state": "State",
-    "address": "Address",
-    "rows-per-page": "Rows per page",
-    "load-more": "Load more",
-    "configure-now": "Configure now",
-    "restored": "Restored",
-    "archived": "Archived",
-    "select-all": "Select all",
-    "total-n-items": "Total {{n}} items",
-    "search": "Search",
-    "n-items-selected": "{{n}} items selected",
-    "permissions": "Permissions",
-    "added": "Added",
-    "description": "Description",
-    "operations": "Operations",
-    "title": "Title",
-    "missing-required-permission": "Missing required permissions {{permissions}}",
-    "required-permission": "Required permissions",
-    "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
-    "add-permissions": "Add permissions",
-    "system": "System",
-    "created": "Created",
-    "upload": "Upload",
-    "unlimited": "Unlimited",
-    "file-selector": {
-      "type-limit": "Only support {{extension}} file",
-      "size-limit": "File size should less than {{size}} MiB"
-    },
-    "ok": "OK",
-    "failed": "Failed",
-    "project": "Project",
-    "instance": "Instance",
-    "select": "Please Select",
-    "export": "Export",
-    "view": "View",
-    "view-details": "View Details",
-    "from": "From",
-    "to": "To"
-  },
   "audit-log": {
+    "advanced-search": {
+      "scope": {
+        "actor": {
+          "description": "Search by the audit log actor",
+          "title": "Actor"
+        },
+        "level": {
+          "description": "Search by the level of audit log",
+          "title": "Level"
+        },
+        "method": {
+          "description": "Search by the method of audit log",
+          "title": "Method"
+        }
+      }
+    },
     "export-tooltip": "Must select start time and end time within 30 days",
     "table": {
-      "created-ts": "Time",
       "actor": "Actor",
+      "created-ts": "Time",
+      "latency": "Latency",
       "level": "Level",
       "method": "Method",
       "request": "Request",
       "response": "Response",
-      "status": "Status",
-      "latency": "Latency",
-      "service-data": "Service Data"
-    },
-    "advanced-search": {
-      "scope": {
-        "actor": {
-          "title": "Actor",
-          "description": "Search by the audit log actor"
-        },
-        "method": {
-          "title": "Method",
-          "description": "Search by the method of audit log"
-        },
-        "level": {
-          "title": "Level",
-          "description": "Search by the level of audit log"
-        }
-      }
+      "service-data": "Service Data",
+      "status": "Status"
+    }
+  },
+  "banner": {
+    "external-url": "Bytebase has not configured --external-url"
+  },
+  "bbkit": {
+    "confirm-button": {
+      "sure-to-delete": "Are you sure to delete?"
     }
   },
   "cel": {
     "condition": {
-      "input-value": "Input value",
-      "select-value": "Select value",
-      "input-value-press-enter": "Input value, press Enter to confirm",
+      "add": "Add condition",
+      "add-condition-in-group-placeholder": "Add {{plus}} to add condition",
+      "add-group": "Add condition group",
+      "add-raw-expression": "Add raw expression",
+      "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition",
+      "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
       "group": {
-        "or": {
-          "description": "Any of the following are true..."
-        },
         "and": {
           "description": "All of the following are true..."
+        },
+        "or": {
+          "description": "Any of the following are true..."
         }
       },
-      "add-condition-in-group-placeholder": "Add {{plus}} to add condition",
-      "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition",
-      "add": "Add condition",
-      "add-raw-expression": "Add raw expression",
-      "add-group": "Add condition group",
-      "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
+      "input-value": "Input value",
+      "input-value-press-enter": "Input value, press Enter to confirm",
+      "select-value": "Select value",
       "self": "Condition"
     }
   },
-  "subscription": {
-    "trial-for-days": "You can start a free trial for {{days}} days - no credit card required.",
-    "required-plan-with-trial": "This feature requires {{requiredPlan}}. {{startTrial}}",
-    "instance-assignment": {
-      "missing-license-attention": "You need to assign license to the instance to enable this feature.",
-      "assign-license": "Assign License",
-      "license": "License",
-      "used-and-total-user": "Active / Total User Limit",
-      "used-and-total-license": "Assigned / Total Instance License"
+  "common": {
+    "add": "Add",
+    "add-permissions": "Add permissions",
+    "added": "Added",
+    "address": "Address",
+    "all": "All",
+    "archive": "Archive",
+    "archived": "Archived",
+    "back": "Back",
+    "cancel": "Cancel",
+    "cannot-undo-this-action": "You cannot undo this action",
+    "clear": "Clear",
+    "close": "Close",
+    "configure": "Configure",
+    "configure-now": "Configure now",
+    "confirm": "Confirm",
+    "confirm-and-update": "Confirm and update",
+    "copied": "Copied",
+    "copy": "Copy",
+    "create": "Create",
+    "created": "Created",
+    "delete": "Delete",
+    "delete-resource": "Delete {{type}}",
+    "deleted": "Deleted",
+    "description": "Description",
+    "discard-changes": "Discard changes",
+    "edit": "Edit",
+    "email": "Email",
+    "environment": "Environment",
+    "environment-name": "Environment Name",
+    "export": "Export",
+    "failed": "Failed",
+    "file-selector": {
+      "size-limit": "File size should less than {{size}} MiB",
+      "type-limit": "Only support {{extension}} file"
     },
-    "request-n-days-trial": "Request {{days}} days trial (no credit card required)",
-    "usage": {
-      "instance-count": {
-        "title": "Instance count limit",
-        "runoutof": "You have run out of your {{total}} instance quota."
+    "filter-by-name": "Filter by name",
+    "from": "From",
+    "general": "General",
+    "groups": "Groups",
+    "id": "ID",
+    "instance": "Instance",
+    "is-required": "is required",
+    "labels": "Labels",
+    "learn-more": "Learn more",
+    "leave-without-saving": "Leave without saving?",
+    "load-more": "Load more",
+    "loading": "Loading",
+    "members_one": "Member",
+    "members_other": "Members",
+    "missing-required-permission": "Missing required permissions {{permissions}}",
+    "n-items-selected": "{{n}} items selected",
+    "name": "Name",
+    "next": "Next",
+    "no-data": "No data",
+    "ok": "OK",
+    "operations": "Operations",
+    "permissions": "Permissions",
+    "project": "Project",
+    "reorder": "Reorder",
+    "required-permission": "Required permissions",
+    "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "restore": "Restore",
+    "restored": "Restored",
+    "revert": "Revert",
+    "rows-per-page": "Rows per page",
+    "save": "Save",
+    "search": "Search",
+    "search-for-more": "Search for more",
+    "select": "Please Select",
+    "select-all": "Select all",
+    "sensitive-placeholder": "Sensitive - write only",
+    "state": "State",
+    "system": "System",
+    "title": "Title",
+    "to": "To",
+    "total-n-items": "Total {{n}} items",
+    "type": "Type",
+    "unassigned": "Unassigned",
+    "unlimited": "Unlimited",
+    "update": "Update",
+    "updated": "Updated",
+    "upload": "Upload",
+    "users": "Users",
+    "view": "View",
+    "view-details": "View Details",
+    "warning": "Warning",
+    "you": "you",
+    "copy-failed": "Copy failed"
+  },
+  "create-db": {
+    "cluster": "Cluster",
+    "database-owner-name": "Database owner name",
+    "new-collection-name": "New Collection Name",
+    "new-database-name": "New database name",
+    "reserved-db-error": "{{databaseName}} is a reserved name"
+  },
+  "custom-approval": {
+    "approval-flow": {
+      "add-rule": "Add rule",
+      "create-approval-flow": "Create approval flow",
+      "edit-rule": "Edit rule",
+      "fallback-rules": "Fallback Rules",
+      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
+      "node": {
+        "add": "Add node",
+        "approver": "Approver",
+        "delete": "Delete approval node",
+        "description": "Only one approval is required on this node when there are multiple approvers.",
+        "nodes": "Approval nodes",
+        "order": "Order"
+      },
+      "self": "Approval Flow",
+      "skip": "No approval required",
+      "template": {
+        "preset-descriptions": {
+          "drop-or-truncate": "Require approval for DROP TABLE or TRUNCATE statements.",
+          "fallback": "A catch-all rule that matches all requests. Place at the end of your rules list.",
+          "high-affected-rows": "Require approval when affected rows exceed 100."
+        },
+        "presets": {
+          "drop-or-truncate": "Drop/Truncate Table",
+          "fallback": "Fallback Rule",
+          "high-affected-rows": "High Affected Rows"
+        },
+        "presets-title": "Presets"
       }
     },
-    "plan": {
-      "free": {
-        "title": "Community",
-        "label": "",
-        "desc": "Team essentials to manage database development lifecycle."
-      },
-      "team": {
-        "title": "Pro",
-        "label": "",
-        "desc": "More policies to standardize and facilitate collaboration across teams."
-      },
-      "enterprise": {
-        "title": "Enterprise",
-        "label": "",
-        "desc": "Extra security, compliance, and permission features. Dedicated support with SLA."
-      },
-      "try": "Start free trial",
-      "title": "Community"
+    "risk": {
+      "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
+      "how-it-works": "How it works",
+      "how-it-works-description": "When you create a database change, Bytebase automatically analyzes the SQL statements and assigns a risk level (Low, Moderate, or High) based on predefined rules.",
+      "integration": "Integration with Approval Flow",
+      "integration-description": "Risk levels integrate with the Custom Approval system. You can configure approval flows that require different levels of review based on the assessed risk level of a change.",
+      "risk-level-high": "High risk operations include destructive changes like DROP TABLE, TRUNCATE, or large-scale data modifications.",
+      "risk-level-low": "Low risk operations include SELECT queries and minor schema changes that are unlikely to cause issues.",
+      "risk-level-moderate": "Moderate risk operations include standard DDL changes like adding columns or indexes.",
+      "risk-levels": "Risk Levels"
     },
-    "purchase": {
-      "free-description": "Designed for solo devs, side-projects, and experiments.",
-      "pro-description": "Built for teams creating production-ready applications.",
-      "enterprise-description": "Scale your business securely while staying compliant.",
-      "discount": {
-        "percentage-off": "first month {{value}}% off",
-        "month-off": "{{value}} month free",
-        "price-off": "${{value}} off"
-      },
-      "update": "Update Subscription",
-      "subscribe": "Subscribe now",
-      "cancel-confirm": "Are you sure you want to cancel your subscription?",
-      "canceled": "Subscription canceled",
-      "pending-title": "Completing your purchase...",
-      "pending-description": "Please wait while we confirm your payment. This usually takes a few seconds.",
-      "payment-info": "Payment Info",
-      "total-price": "Total Price",
-      "manage-invoices": "Manage Invoices",
-      "billing-period": "Billing Period",
-      "cancel-pending": "Your subscription has been canceled and will end on {{date}}.",
-      "cancel": "Cancel Subscription",
-      "per-user-per-month": "/ user monthly",
-      "custom": "Custom",
-      "seats": "Users",
-      "accept-terms-prefix": "I accept the",
-      "terms-of-service": "Terms of Service",
-      "and": "and",
-      "privacy-policy": "Privacy policy",
-      "see-comparison": "See detailed feature comparison"
-    },
-    "current": "Current plan",
-    "contact-us": "Contact us",
-    "update": {
-      "success": {
-        "title": "Successfully updated license",
-        "description": "Premium features in subscription plan unlocked."
-      },
-      "failure": {
-        "title": "Failed to update license",
-        "description": "Please check if your license is valid."
-      }
-    },
-    "expired": "expired",
-    "trialing": "trialing",
-    "expires-at": "Expires at",
-    "try-for-free": "Free trial",
-    "enterprise-free-trial": "{{days}}-day free Enterprise trial",
-    "inquire-enterprise-plan": "Inquire Enterprise Plan",
-    "upload-license": "Upload license",
-    "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
-    "plan-compare": "Compare features between different plans",
-    "max-instance-count": "Max instance count",
-    "require-subscription": "This feature requires {{requiredPlan}} subscription, please purchase Bytebase license to unlock it."
-  },
-  "resource-id": {
-    "validation": {
-      "empty": "The {{resource}} ID cannot be empty",
-      "overflow": "The {{resource}} ID is too long. It should have less than 64 characters.",
-      "pattern": "The {{resource}} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
-      "duplicated": "The {{resource}} ID already exists. Please choose another one."
-    },
-    "self": "{{resource}} ID",
-    "cannot-be-changed-later": "It cannot be changed later.",
-    "description": "The {{resource}} ID is a unique identifier. You cannot change it after created."
-  },
-  "schema-template": {
-    "classification": {
-      "search": "Search classification"
-    }
-  },
-  "settings": {
-    "sidebar": {
-      "general": "General",
-      "members": "Members",
-      "users-and-groups": "Users & Groups",
-      "members-and-groups": "Members & Groups",
-      "sso": "SSO",
-      "subscription": "Subscription",
-      "audit-log": "Audit Logs",
-      "custom-roles": "Custom Roles",
-      "global-masking": "Global Masking",
-      "data-classification": "Data Classification",
-      "im-integration": "IM",
-      "mcp": "MCP"
-    },
-    "sensitive-data": {
-      "classification": {
-        "invalid-json": "Invalid JSON format",
-        "missing-classification": "Missing \"classification\" field",
-        "empty-classification": "The \"classification\" field is empty",
-        "missing-levels": "Missing \"levels\" field",
-        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
-        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
-        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
-        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children)."
-      },
-      "global-rules": {
-        "error": {
-          "missing-semantic-type": "Semantic type is required",
-          "invalid-condition": "Condition is invalid"
+    "risk-rule": {
+      "risk": {
+        "namespace": {
+          "change_database": "Change Database",
+          "create_database": "Create Database",
+          "data_export": "Export Data",
+          "request-access": "Request Just-In-Time Access",
+          "request-role": "Request Role"
         },
-        "condition-order": "Condition order",
-        "delete-rule-tip": "Delete this rule?",
-        "re-order": "Re-order",
-        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm."
-      },
-      "semantic-types": {
-        "table": {
-          "semantic-type": "Semantic Type",
-          "icon": "Icon",
-          "description": "Description",
-          "masking-algorithm": "Masking Algorithm",
-          "delete": "Delete this semantic type?"
-        },
-        "select": "Select semantic type",
-        "template": {
-          "duplicate-warning": "Semantic type \"{{title}}\" already exists",
-          "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed."
-        },
-        "use-predefined-type": "Use Predefined Type",
-        "label": "Columns having the same semantic type will use the same masking algorithms.",
-        "add-from-template": "Add from template"
-      },
-      "algorithms": {
-        "full-mask": {
-          "self": "Full mask",
-          "substitution": "Substitution",
-          "substitution-label": "Substitution is the string used to replace the original value, the max length of the string is 16 bytes."
-        },
-        "range-mask": {
-          "self": "Range mask",
-          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
-          "slice-start": "Slice start",
-          "slice-end": "Slice end",
-          "substitution": "Substitution"
-        },
-        "md5-mask": {
-          "self": "MD5 mask",
-          "salt": "Salt",
-          "salt-label": "Salt is used to generate a hash from the original value."
-        },
-        "inner-outer-mask": {
-          "self": "Inner / Outer mask",
-          "type": "Mask Type",
-          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
-          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
-          "inner-mask": "Inner Mask",
-          "outer-mask": "Outer Mask",
-          "prefix-length": "Prefix Length",
-          "suffix-length": "Suffix Length"
-        },
-        "error": {
-          "slice-required": "Slice is required",
-          "slice-invalid-number": "Slice start or end is not a valid number",
-          "slice-overlap": "The slice range cannot overlap",
-          "substitution-required": "Substitution is required",
-          "substitution-length": "Substitution should be less than 16 bytes",
-          "salt-required": "Salt is required"
-        },
-        "edit": "Edit algorithm",
-        "add": "Add algorithm",
-        "table": {
-          "masking-type": "Masking Type"
+        "risk-level": {
+          "default": "Default",
+          "high": "High",
+          "low": "Low",
+          "moderate": "Moderate"
         }
       }
     },
-    "sso": {
-      "delete": "Delete this SSO",
-      "form": {
-        "auth-url": "Authorization URL",
-        "auth-url-placeholder": "e.g. https://github.com/login/oauth/authorize",
-        "auth-url-description": "The link to OAuth login page",
-        "token-url": "Token URL",
-        "token-url-placeholder": "e.g. https://github.com/login/oauth/access_token",
-        "token-url-description": "The API address for obtaining accessToken",
-        "user-info-url": "User Information URL",
-        "user-info-url-placeholder": "e.g. https://api.github.com/user",
-        "user-info-url-description": "The API address for obtaining user information by accessToken",
-        "scopes": "Scopes",
-        "scopes-placeholder": "e.g. user email profile",
-        "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
-        "authentication-style": "Authentication Style",
-        "in-parameters": "In Parameters",
-        "in-parameters-description": "Send credentials in POST body (recommended)",
-        "in-header": "In Header",
-        "in-header-description": "Send credentials using HTTP Basic Authorization",
-        "security-options": "Security Options",
-        "skip-tls-verification": "Skip TLS Certificate Verification",
-        "skip-tls-warning": "Only enable this for development or testing purposes",
-        "issuer-url-placeholder": "e.g. https://acme.okta.com",
-        "issuer-url-description": "The OIDC issuer URL (well-known configuration will be auto-discovered)",
-        "scopes-placeholder-oidc": "e.g. openid profile email",
-        "openid-scopes-description": "Space-separated list of OIDC scopes (openid is required)",
-        "host-placeholder": "e.g. ldap.example.com",
-        "bind-dn": "Bind DN",
-        "bind-dn-placeholder": "e.g. uid=system,ou=Users,dc=example,dc=com",
-        "bind-dn-description": "The DN of the user to bind as for search requests",
-        "bind-password": "Bind Password",
-        "base-dn": "Base DN",
-        "base-dn-placeholder": "e.g. ou=users,dc=example,dc=com",
-        "base-dn-description": "The base DN to search for users",
-        "user-filter": "User Filter",
-        "user-filter-placeholder": "e.g. (uid=%s)",
-        "user-filter-description": "The filter to search for users (%s will be replaced with username)",
-        "security-protocol": "Security Protocol",
-        "starttls": "StartTLS",
-        "starttls-description": "Upgrade connection to TLS (recommended)",
-        "ldaps": "LDAPS",
-        "ldaps-description": "Use TLS from the beginning (port 636)",
-        "none": "None",
-        "none-description": "No encryption (not recommended for production)",
-        "identifier-placeholder": "e.g. login, email",
-        "identifier": "Bytebase user's email",
-        "identifier-tips": "It should be a unique string. And if it is not in email format, it will be spliced with domain.",
-        "display-name-placeholder": "e.g. name, displayName",
-        "display-name": "Bytebase user's display name",
-        "phone-placeholder": "e.g. phone, mobile",
-        "phone": "Bytebase user's phone number",
-        "groups-placeholder": "e.g. groups",
-        "groups": "Bytebase user's groups",
-        "groups-description": "Used for group-based access control (OIDC providers only)",
-        "provider-type-readonly-hint": "Provider type cannot be changed after creation",
-        "name": "Name",
-        "name-description": "The display name to be shown to the users",
-        "domain": "Domain",
-        "domain-description": "The identity provider's domain name",
-        "domain-optional-hint": "Optional: Use to concat with identifier if it is not in email format",
-        "configuration": "Configuration",
-        "configuration-description": "Configure the connection settings for your identity provider",
-        "user-information-mapping": "User information mapping",
-        "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user.",
-        "identity-provider-needed-information": "Create your SSO application with the following information.",
-        "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
-        "redirect-url": "Authorization redirect URL",
-        "type": "Type",
-        "use-template": "Use template",
-        "oauth2-description": "Connect with OAuth 2.0 providers like Google, GitHub, GitLab",
-        "oidc-description": "Connect with OpenID Connect providers like Microsoft Entra ID (Azure AD), Okta, Auth0",
-        "ldap-description": "Connect with LDAP providers like Microsoft Active Directory, OpenLDAP",
-        "google-template-description": "Sign in with Google accounts",
-        "github-template-description": "Sign in with GitHub accounts",
-        "gitlab-template-description": "Sign in with GitLab accounts",
-        "microsoft-entra-template-description": "Sign in with Microsoft Entra ID",
-        "custom-template-description": "Configure custom OAuth 2.0 provider",
-        "type-description": "Choose the type of identity provider you want to configure",
-        "template-description": "Choose a pre-configured template or set up a custom OAuth 2.0 provider",
-        "general-setting-description": "Provide basic information about your identity provider."
-      },
-      "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
-      "create": "Create SSO"
-    },
-    "im": {
-      "add-im-integration": "Add IM Integration",
-      "add-another-im": "Add Another IM"
-    },
-    "im-integration": {
-      "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
-    },
-    "mcp": {
-      "first-prompt": {
-        "example": "List all projects in my Bytebase instance",
-        "title": "Your First Prompt",
-        "description": "Once connected, try asking your AI assistant:"
-      },
-      "title": "MCP Integration",
-      "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
-      "auth": {
-        "title": "Authentication Required",
-        "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions."
-      },
-      "general-config": {
-        "title": "Option 1: JSON Configuration"
-      },
-      "setup": {
-        "add-to-config": "Add this JSON to your MCP client configuration file."
-      },
-      "quick-start": {
-        "title": "Option 2: CLI Commands",
-        "description": "Alternatively, use one of these CLI commands."
-      }
-    },
-    "general": {
-      "workspace": {
-        "external-url": {
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
-          "self": "External URL",
-          "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
-        },
-        "id": "Workspace ID",
-        "id-description": "The unique, read-only workspace id.",
-        "ai-assistant": {
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
-          "enable-ai-assistant": "Enable AI Assistant",
-          "description": "Use AI to assist the database development tasks.",
-          "provider": {
-            "self": "AI Provider",
-            "open_ai": "Open AI",
-            "azure_open_ai": "Azure Open AI",
-            "gemini": "Gemini",
-            "claude": "Claude"
-          },
-          "api-key": {
-            "self": "API Key",
-            "description": "Supply API Key, read-only. {{viewDoc}}",
-            "find-my-key": "Find my key",
-            "placeholder": "An API Key usually starts with sk-*****"
-          },
-          "endpoint": {
-            "self": "API Endpoint",
-            "description": "Supply private deployment of API Endpoint."
-          },
-          "model": {
-            "self": "Model Name",
-            "description": "Supply private deployment of model name."
-          },
-          "self": "AI Assistant"
-        },
-        "disallow-signup": {
-          "enable": "Disallow self-service signup",
-          "description": "Users cannot self-service signup and can only be invited by the workspace admin."
-        },
-        "password-restriction": {
-          "self": "Password Restriction",
-          "min-length": "Minimum length for password should no less than {{min}} characters",
-          "require-number": "The password must contain at least one number",
-          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
-          "require-uppercase-letter": "The password must contain at least one upper case letter",
-          "require-special-character": "The password must contain at least one special character",
-          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
-          "password-rotation": "Require users reset their password every {{day}} days"
-        },
-        "require-2fa": {
-          "enable": "Require two-factor authentication for all users",
-          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure."
-        },
-        "disallow-password-signin": {
-          "enable": "Disallow signin with email & password",
-          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in.",
-          "description": "Users cannot sign in with email & password, only SSO is allowed."
-        },
-        "access-token-duration": {
-          "self": "Access token duration",
-          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
-          "minutes": "Minute(s)",
-          "hours": "Hour(s)"
-        },
-        "refresh-token-duration": {
-          "self": "Refresh token duration",
-          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
-          "hours": "Hour(s)",
-          "days": "Day(s)"
-        },
-        "inactive-session-timeout": {
-          "self": "Inactive session timeout",
-          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
-          "hours": "Hour(s)"
-        },
-        "no-limit": "No limit when the value <= 0",
-        "announcement-alert-level": {
-          "description": "Level",
-          "field": {
-            "info": "Normal",
-            "warning": "Warning",
-            "critical": "Critical"
-          }
-        },
-        "announcement-text": {
-          "self": "Title",
-          "description": "To hide the announcement, leave it empty.",
-          "placeholder": "Input announcement title"
-        },
-        "extra-link": {
-          "self": "Link",
-          "placeholder": "Input announcement link"
-        },
-        "log": "Log",
-        "audit-log-stdout": {
-          "enable": "Enable audit logging to stdout",
-          "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license."
-        },
-        "enable-debug": {
-          "enable": "Enable debug level log for the backend service"
-        },
-        "title": "Workspace title",
-        "logo": "Logo",
-        "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
-        "select-logo": "Upload a file",
-        "drag-logo": "or drag here",
-        "logo-upload-tip": "{{extension}} up to {{size}} MiB",
-        "branding": "Branding",
-        "account": "Account",
-        "security": "Security",
-        "announcement": {
-          "self": "Announcement"
-        },
-        "product-improvement": {
-          "self": "Product Improvement",
-          "participate": "Participate in improvement program",
-          "description": "Help improve Bytebase by sharing anonymous usage data"
-        },
-        "failed-to-update-setting": "Failed to update setting \"{{title}}\"",
-        "config-updated": "Configuration is updated.",
-        "config-partly-updated": "Configuration partly updated.",
-        "default-landing-page": {
-          "self": "Default landing page",
-          "workspace": {
-            "self": "Workspace",
-            "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow."
-          },
-          "sql-editor": {
-            "self": "SQL Editor",
-            "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision."
-          },
-          "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
-          "go-to-sql-editor": "Go to SQL Editor"
-        },
-        "data-export": "Enable data export",
-        "data-copy": "Enable data copying",
-        "allow-admin-data-source": {
-          "self": "Allow querying the admin data source",
-          "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources."
-        },
-        "maximum-sql-result": {
-          "size": {
-            "self": "Maximum SQL result size",
-            "description": "Limit the output SQL query result size.",
-            "default": "Default limit {{limit}} MB"
-          },
-          "rows": {
-            "self": "Maximum SQL result rows",
-            "description": "Limit the output rows in SQL query result.",
-            "rows": "Rows"
-          }
-        },
-        "query-data-policy": {
-          "timeout": {
-            "self": "Maximum query time",
-            "description": "The maximum time allowed for a query to run."
-          },
-          "seconds": "Seconds"
-        },
-        "watermark": {
-          "enable": "Enable watermark",
-          "description": "Display watermarks on pages, including username, ID and email."
-        },
-        "maximum-role-expiration": {
-          "self": "Maximum role expiration",
-          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
-          "days": "Day(s)",
-          "never-expires": "Never expires"
-        },
-        "domain-restriction": {
-          "self": "Workspace Domain",
-          "description": "Specify the domain that could be used as the email domain for workspace members.",
-          "domain-input-placeholder": "Please input domain, e.g. example.com",
-          "members-restriction": {
-            "self": "Members restriction",
-            "description": "Restrict sign-in to users with email addresses from the specified domains."
-          }
-        }
-      }
+    "rule": {
+      "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     }
   },
   "database": {
@@ -646,174 +235,6 @@
     "transfer-project": "Transfer Project",
     "unassign": "Unassign"
   },
-  "bbkit": {
-    "confirm-button": {
-      "sure-to-delete": "Are you sure to delete?"
-    }
-  },
-  "role": {
-    "workspace-roles": {
-      "self": "Workspace roles"
-    },
-    "project-roles": {
-      "self": "Project roles"
-    },
-    "custom-roles": {
-      "self": "Custom roles"
-    },
-    "import-from-role": "Import from role",
-    "select-role": "Select role",
-    "self": "Role",
-    "setting": {
-      "add": "Add role",
-      "edit": "Edit role",
-      "title-placeholder": "Input role title",
-      "description-placeholder": "Input role description",
-      "description": "Defining custom roles. You may apply them to project members and used in custom approval."
-    },
-    "title": "Title"
-  },
-  "policy": {
-    "rollout": {
-      "auto": "Automatic",
-      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "name": "Rollout Policy",
-      "tip": "The policy is applied to issues retroactively.",
-      "info": "Tasks can be executed by users with '{{permission}}' permission or the following roles."
-    },
-    "environment-tier": {
-      "name": "Environment Tier",
-      "description": "The environment will appear differently from other environments.",
-      "mark-env-as-production": "Mark as production environment"
-    }
-  },
-  "sql-review": {
-    "title": "SQL Review",
-    "configure-policy": "Configure policy"
-  },
-  "environment": {
-    "successfully-updated-environment": "Successfully updated environment '{{name}}'.",
-    "delete": "Delete this environment",
-    "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
-    "create": "Create Environment",
-    "reorder": "Reorder Environments"
-  },
-  "custom-approval": {
-    "rule": {
-      "first-match-wins": "Rules are evaluated in order. First matching rule applies."
-    },
-    "approval-flow": {
-      "add-rule": "Add rule",
-      "create-approval-flow": "Create approval flow",
-      "edit-rule": "Edit rule",
-      "fallback-rules": "Fallback Rules",
-      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
-      "self": "Approval Flow",
-      "skip": "No approval required",
-      "node": {
-        "add": "Add node",
-        "approver": "Approver",
-        "delete": "Delete approval node",
-        "description": "Only one approval is required on this node when there are multiple approvers.",
-        "nodes": "Approval nodes",
-        "order": "Order"
-      },
-      "template": {
-        "presets-title": "Presets",
-        "preset-descriptions": {
-          "drop-or-truncate": "Require approval for DROP TABLE or TRUNCATE statements.",
-          "fallback": "A catch-all rule that matches all requests. Place at the end of your rules list.",
-          "high-affected-rows": "Require approval when affected rows exceed 100."
-        },
-        "presets": {
-          "drop-or-truncate": "Drop/Truncate Table",
-          "fallback": "Fallback Rule",
-          "high-affected-rows": "High Affected Rows"
-        }
-      }
-    },
-    "risk": {
-      "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
-      "how-it-works": "How it works",
-      "how-it-works-description": "When you create a database change, Bytebase automatically analyzes the SQL statements and assigns a risk level (Low, Moderate, or High) based on predefined rules.",
-      "risk-levels": "Risk Levels",
-      "risk-level-high": "High risk operations include destructive changes like DROP TABLE, TRUNCATE, or large-scale data modifications.",
-      "risk-level-moderate": "Moderate risk operations include standard DDL changes like adding columns or indexes.",
-      "risk-level-low": "Low risk operations include SELECT queries and minor schema changes that are unlikely to cause issues.",
-      "integration": "Integration with Approval Flow",
-      "integration-description": "Risk levels integrate with the Custom Approval system. You can configure approval flows that require different levels of review based on the assessed risk level of a change."
-    },
-    "risk-rule": {
-      "risk": {
-        "namespace": {
-          "change_database": "Change Database",
-          "create_database": "Create Database",
-          "data_export": "Export Data",
-          "request-role": "Request Role",
-          "request-access": "Request Just-In-Time Access"
-        },
-        "risk-level": {
-          "default": "Default",
-          "high": "High",
-          "moderate": "Moderate",
-          "low": "Low"
-        }
-      }
-    }
-  },
-  "identity-provider": {
-    "test-connection-success": "Test Connection Successful",
-    "userinfo-description": "The matched user information.",
-    "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
-    "no-claims": "No claims returned by the identity provider.",
-    "test-connection": "Test Connection",
-    "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely.",
-    "identity-provider-update-failed": "Failed to update identity provider",
-    "identity-provider-permission-denied": "Permission denied",
-    "identity-provider-deleted": "Identity provider deleted successfully",
-    "identity-provider-delete-failed": "Failed to delete identity provider",
-    "identity-provider-created": "Identity provider created successfully",
-    "identity-provider-create-failed": "Failed to create identity provider"
-  },
-  "error-page": {
-    "not-found": "Not Found"
-  },
-  "instance": {
-    "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
-    "successfully-restored-instance": "Successfully restored the instance '{{0}}'.",
-    "archive-instance-instance-name": "Archive instance '{{0}}'?",
-    "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
-    "force-archive-description": "Force to archive. All databases will be unassigned.",
-    "syncing": "Syncing ...",
-    "sync": {
-      "self": "Sync instance",
-      "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes",
-      "sync-all": "Sync all databases",
-      "sync-new": "Only sync new databases"
-    },
-    "selected-n-instances_one": "{{count}} instance selected",
-    "selected-n-instances_other": "{{count}} instances selected",
-    "advanced-search": {
-      "scope": {
-        "host": {
-          "title": "Host",
-          "description": "Filter by instance host. Please input the value then press the Enter."
-        },
-        "port": {
-          "title": "Port",
-          "description": "Filter by instance port. Please input the value then press the Enter."
-        }
-      }
-    },
-    "filter-instance-name": "Filter instance name"
-  },
-  "create-db": {
-    "new-database-name": "New database name",
-    "database-owner-name": "Database owner name",
-    "cluster": "Cluster",
-    "reserved-db-error": "{{databaseName}} is a reserved name",
-    "new-collection-name": "New Collection Name"
-  },
   "db": {
     "character-set": "Character set",
     "collation": "Collation",
@@ -822,8 +243,116 @@
     "start-to-sync-schema": "Start to sync schema",
     "successfully-synced-schema": "Successfully synced schema"
   },
+  "environment": {
+    "create": "Create Environment",
+    "delete": "Delete this environment",
+    "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
+    "reorder": "Reorder Environments",
+    "successfully-updated-environment": "Successfully updated environment '{{name}}'."
+  },
+  "error-page": {
+    "not-found": "Not Found"
+  },
+  "identity-provider": {
+    "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
+    "delete-warning": "Are you sure you want to delete this identity provider? Users who signed up via this SSO will not be able to sign in with it anymore. If password sign-in is disabled in your workspace settings, these users may be locked out completely.",
+    "identity-provider-create-failed": "Failed to create identity provider",
+    "identity-provider-created": "Identity provider created successfully",
+    "identity-provider-delete-failed": "Failed to delete identity provider",
+    "identity-provider-deleted": "Identity provider deleted successfully",
+    "identity-provider-permission-denied": "Permission denied",
+    "identity-provider-update-failed": "Failed to update identity provider",
+    "no-claims": "No claims returned by the identity provider.",
+    "test-connection": "Test Connection",
+    "test-connection-success": "Test Connection Successful",
+    "userinfo-description": "The matched user information."
+  },
+  "instance": {
+    "advanced-search": {
+      "scope": {
+        "host": {
+          "description": "Filter by instance host. Please input the value then press the Enter.",
+          "title": "Host"
+        },
+        "port": {
+          "description": "Filter by instance port. Please input the value then press the Enter.",
+          "title": "Port"
+        }
+      }
+    },
+    "archive-instance-instance-name": "Archive instance '{{0}}'?",
+    "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
+    "filter-instance-name": "Filter instance name",
+    "force-archive-description": "Force to archive. All databases will be unassigned.",
+    "selected-n-instances_one": "{{count}} instance selected",
+    "selected-n-instances_other": "{{count}} instances selected",
+    "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
+    "successfully-restored-instance": "Successfully restored the instance '{{0}}'.",
+    "sync": {
+      "self": "Sync instance",
+      "sync-all": "Sync all databases",
+      "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes",
+      "sync-new": "Only sync new databases"
+    },
+    "syncing": "Syncing ..."
+  },
   "issue": {
     "labels": "Issue Labels"
+  },
+  "landing": {
+    "changelog-for-version": "Changelog for {{version}}",
+    "last-visit": "Last visit",
+    "quick-link": {
+      "manage": "Manage quick link",
+      "self": "Quick Link",
+      "visit-issues": "Visit Issues",
+      "visit-prjects": "Visit Projects"
+    }
+  },
+  "policy": {
+    "environment-tier": {
+      "description": "The environment will appear differently from other environments.",
+      "mark-env-as-production": "Mark as production environment",
+      "name": "Environment Tier"
+    },
+    "rollout": {
+      "auto": "Automatic",
+      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
+      "info": "Tasks can be executed by users with '{{permission}}' permission or the following roles.",
+      "name": "Rollout Policy",
+      "tip": "The policy is applied to issues retroactively."
+    }
+  },
+  "project": {
+    "batch": {
+      "archive": {
+        "description": "This will archive the selected projects. You can restore them later if needed.",
+        "error": "Failed to archive projects",
+        "success_one": "Successfully archived {{count}} project",
+        "success_other": "Successfully archived {{count}} projects",
+        "title_one": "Archive {{count}} Project?",
+        "title_other": "Archive {{count}} Projects?"
+      },
+      "delete": {
+        "description": "This will permanently delete the selected projects and move all databases to the default project.",
+        "error": "Failed to delete projects",
+        "success_one": "Successfully deleted {{count}} project",
+        "success_other": "Successfully deleted {{count}} projects",
+        "title_one": "Delete {{count}} Project?",
+        "title_other": "Delete {{count}} Projects?",
+        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
+      },
+      "selected_one": "{{count}} project selected",
+      "selected_other": "{{count}} projects selected"
+    },
+    "create-modal": {
+      "project-name": "Project Name",
+      "success-prompt": "Successfully created project {{name}}."
+    },
+    "filter-projects": "Filter projects",
+    "table": {
+      "name": "Name"
+    }
   },
   "quick-action": {
     "add-instance": "Add Instance",
@@ -832,61 +361,652 @@
     "new-db": "New DB",
     "new-project": "New Project"
   },
-  "landing": {
-    "quick-link": {
-      "visit-prjects": "Visit Projects",
-      "visit-issues": "Visit Issues",
-      "manage": "Manage quick link",
-      "self": "Quick Link"
-    },
-    "last-visit": "Last visit",
-    "changelog-for-version": "Changelog for {{version}}"
-  },
   "remind": {
     "release": {
       "new-version-available-with-tag": "New version {{tag}} is available"
     }
   },
-  "banner": {
-    "external-url": "Bytebase has not configured --external-url"
+  "resource": {
+    "delete-warning": "The \"{{name}}\" will be deleted. This action cannot be undone.",
+    "delete-warning-retry": "Please remove it from these resources then retry again.",
+    "delete-warning-with-resources": "The \"{{name}}\" is used by following resources:"
   },
-  "project": {
-    "create-modal": {
-      "success-prompt": "Successfully created project {{name}}.",
-      "project-name": "Project Name"
-    },
-    "batch": {
-      "archive": {
-        "success_one": "Successfully archived {{count}} project",
-        "success_other": "Successfully archived {{count}} projects",
-        "error": "Failed to archive projects",
-        "title_one": "Archive {{count}} Project?",
-        "title_other": "Archive {{count}} Projects?",
-        "description": "This will archive the selected projects. You can restore them later if needed."
-      },
-      "delete": {
-        "success_one": "Successfully deleted {{count}} project",
-        "success_other": "Successfully deleted {{count}} projects",
-        "error": "Failed to delete projects",
-        "title_one": "Delete {{count}} Project?",
-        "title_other": "Delete {{count}} Projects?",
-        "description": "This will permanently delete the selected projects and move all databases to the default project.",
-        "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
-      },
-      "selected_one": "{{count}} project selected",
-      "selected_other": "{{count}} projects selected"
-    },
-    "filter-projects": "Filter projects",
-    "table": {
-      "name": "Name"
+  "resource-id": {
+    "cannot-be-changed-later": "It cannot be changed later.",
+    "description": "The {{resource}} ID is a unique identifier. You cannot change it after created.",
+    "self": "{{resource}} ID",
+    "validation": {
+      "duplicated": "The {{resource}} ID already exists. Please choose another one.",
+      "empty": "The {{resource}} ID cannot be empty",
+      "overflow": "The {{resource}} ID is too long. It should have less than 64 characters.",
+      "pattern": "The {{resource}} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number."
     }
   },
-  "resource": {
-    "delete-warning-with-resources": "The \"{{name}}\" is used by following resources:",
-    "delete-warning-retry": "Please remove it from these resources then retry again.",
-    "delete-warning": "The \"{{name}}\" will be deleted. This action cannot be undone."
+  "role": {
+    "custom-roles": {
+      "self": "Custom roles"
+    },
+    "import-from-role": "Import from role",
+    "project-roles": {
+      "self": "Project roles"
+    },
+    "select-role": "Select role",
+    "self": "Role",
+    "setting": {
+      "add": "Add role",
+      "description": "Defining custom roles. You may apply them to project members and used in custom approval.",
+      "description-placeholder": "Input role description",
+      "edit": "Edit role",
+      "title-placeholder": "Input role title"
+    },
+    "title": "Title",
+    "workspace-roles": {
+      "self": "Workspace roles"
+    }
+  },
+  "schema-template": {
+    "classification": {
+      "search": "Search classification"
+    }
+  },
+  "settings": {
+    "general": {
+      "workspace": {
+        "access-token-duration": {
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "hours": "Hour(s)",
+          "minutes": "Minute(s)",
+          "self": "Access token duration"
+        },
+        "account": "Account",
+        "ai-assistant": {
+          "api-key": {
+            "description": "Supply API Key, read-only. {{viewDoc}}",
+            "find-my-key": "Find my key",
+            "placeholder": "An API Key usually starts with sk-*****",
+            "self": "API Key"
+          },
+          "description": "Use AI to assist the database development tasks.",
+          "enable-ai-assistant": "Enable AI Assistant",
+          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
+          "endpoint": {
+            "description": "Supply private deployment of API Endpoint.",
+            "self": "API Endpoint"
+          },
+          "model": {
+            "description": "Supply private deployment of model name.",
+            "self": "Model Name"
+          },
+          "provider": {
+            "azure_open_ai": "Azure Open AI",
+            "claude": "Claude",
+            "gemini": "Gemini",
+            "open_ai": "Open AI",
+            "self": "AI Provider"
+          },
+          "self": "AI Assistant"
+        },
+        "allow-admin-data-source": {
+          "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",
+          "self": "Allow querying the admin data source"
+        },
+        "announcement": {
+          "self": "Announcement"
+        },
+        "announcement-alert-level": {
+          "description": "Level",
+          "field": {
+            "critical": "Critical",
+            "info": "Normal",
+            "warning": "Warning"
+          }
+        },
+        "announcement-text": {
+          "description": "To hide the announcement, leave it empty.",
+          "placeholder": "Input announcement title",
+          "self": "Title"
+        },
+        "audit-log-stdout": {
+          "description": "Output structured JSON audit logs to stdout for ingestion by log aggregators (Splunk, ELK, Datadog, Loki). Requires TEAM or ENTERPRISE license.",
+          "enable": "Enable audit logging to stdout"
+        },
+        "branding": "Branding",
+        "config-partly-updated": "Configuration partly updated.",
+        "config-updated": "Configuration is updated.",
+        "data-copy": "Enable data copying",
+        "data-export": "Enable data export",
+        "default-landing-page": {
+          "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
+          "go-to-sql-editor": "Go to SQL Editor",
+          "self": "Default landing page",
+          "sql-editor": {
+            "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision.",
+            "self": "SQL Editor"
+          },
+          "workspace": {
+            "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow.",
+            "self": "Workspace"
+          }
+        },
+        "disallow-password-signin": {
+          "description": "Users cannot sign in with email & password, only SSO is allowed.",
+          "enable": "Disallow signin with email & password",
+          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
+        },
+        "disallow-signup": {
+          "description": "Users cannot self-service signup and can only be invited by the workspace admin.",
+          "enable": "Disallow self-service signup"
+        },
+        "domain-restriction": {
+          "description": "Specify the domain that could be used as the email domain for workspace members.",
+          "domain-input-placeholder": "Please input domain, e.g. example.com",
+          "members-restriction": {
+            "description": "Restrict sign-in to users with email addresses from the specified domains.",
+            "self": "Members restriction"
+          },
+          "self": "Workspace Domain"
+        },
+        "drag-logo": "or drag here",
+        "enable-debug": {
+          "enable": "Enable debug level log for the backend service"
+        },
+        "external-url": {
+          "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag",
+          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
+          "self": "External URL"
+        },
+        "extra-link": {
+          "placeholder": "Input announcement link",
+          "self": "Link"
+        },
+        "failed-to-update-setting": "Failed to update setting \"{{title}}\"",
+        "id": "Workspace ID",
+        "id-description": "The unique, read-only workspace id.",
+        "inactive-session-timeout": {
+          "description": "The session expiration time if no activity is detected for the user. The users will be forced to log out when they reach the limit.",
+          "hours": "Hour(s)",
+          "self": "Inactive session timeout"
+        },
+        "log": "Log",
+        "logo": "Logo",
+        "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
+        "logo-upload-tip": "{{extension}} up to {{size}} MiB",
+        "maximum-role-expiration": {
+          "days": "Day(s)",
+          "description": "Maximum role expiration is the maximum period a role can be granted to a user, will apply on all project roles expect the project owner.",
+          "never-expires": "Never expires",
+          "self": "Maximum role expiration"
+        },
+        "maximum-sql-result": {
+          "rows": {
+            "description": "Limit the output rows in SQL query result.",
+            "rows": "Rows",
+            "self": "Maximum SQL result rows"
+          },
+          "size": {
+            "default": "Default limit {{limit}} MB",
+            "description": "Limit the output SQL query result size.",
+            "self": "Maximum SQL result size"
+          }
+        },
+        "no-limit": "No limit when the value <= 0",
+        "password-restriction": {
+          "min-length": "Minimum length for password should no less than {{min}} characters",
+          "password-rotation": "Require users reset their password every {{day}} days",
+          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
+          "require-number": "The password must contain at least one number",
+          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
+          "require-special-character": "The password must contain at least one special character",
+          "require-uppercase-letter": "The password must contain at least one upper case letter",
+          "self": "Password Restriction"
+        },
+        "product-improvement": {
+          "description": "Help improve Bytebase by sharing anonymous usage data",
+          "participate": "Participate in improvement program",
+          "self": "Product Improvement"
+        },
+        "query-data-policy": {
+          "seconds": "Seconds",
+          "timeout": {
+            "description": "The maximum time allowed for a query to run.",
+            "self": "Maximum query time"
+          }
+        },
+        "refresh-token-duration": {
+          "days": "Day(s)",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "self": "Refresh token duration"
+        },
+        "require-2fa": {
+          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
+          "enable": "Require two-factor authentication for all users"
+        },
+        "security": "Security",
+        "select-logo": "Upload a file",
+        "title": "Workspace title",
+        "watermark": {
+          "description": "Display watermarks on pages, including username, ID and email.",
+          "enable": "Enable watermark"
+        }
+      }
+    },
+    "im": {
+      "add-another-im": "Add Another IM",
+      "add-im-integration": "Add IM Integration"
+    },
+    "im-integration": {
+      "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
+    },
+    "mcp": {
+      "auth": {
+        "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions.",
+        "title": "Authentication Required"
+      },
+      "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
+      "first-prompt": {
+        "description": "Once connected, try asking your AI assistant:",
+        "example": "List all projects in my Bytebase instance",
+        "title": "Your First Prompt"
+      },
+      "general-config": {
+        "title": "Option 1: JSON Configuration"
+      },
+      "quick-start": {
+        "description": "Alternatively, use one of these CLI commands.",
+        "title": "Option 2: CLI Commands"
+      },
+      "setup": {
+        "add-to-config": "Add this JSON to your MCP client configuration file."
+      },
+      "title": "MCP Integration"
+    },
+    "members": {
+      "action": {
+        "deactivate-confirm-title": "Are you sure to deactivate?",
+        "reactivate-confirm-title": "Are you sure to reactivate"
+      },
+      "add-member": "Add member",
+      "add-service-account": "Add Service Account",
+      "add-user": "Add user",
+      "add-workload-identity": "Add Workload Identity",
+      "all-users": "All users",
+      "cannot-revoke-self": "You cannot revoke yourself",
+      "copy-service-key": "Copy Service Key",
+      "entra-sync": {
+        "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
+        "endpoint": "Endpoint",
+        "endpoint-tip": "Users and groups will be synced to Bytebase via this endpoint.",
+        "reset-token": "Reset token",
+        "reset-token-warning": "You need to update the application provisioning config.",
+        "secret-token": "Secret Token",
+        "secret-token-tip": "The verification token for the endpoint. Please keep it in secret.",
+        "self": "Sync from SCIM"
+      },
+      "grant-access": "Grant Access",
+      "groups": {
+        "add-group": "Add Group",
+        "external-readonly": "External group is read-only.",
+        "form": {
+          "description": "Description",
+          "email": "Email",
+          "email-tips": "The email should be unique, and it cannot be changed after creation.",
+          "role": {
+            "member": "Group member",
+            "owner": "Group owner"
+          },
+          "title": "Title"
+        },
+        "n-members": "{{n}} members",
+        "update-group": "Update Group",
+        "workspace-domain-required": "Please set a workspace domain first."
+      },
+      "inactive-service-accounts": "Inactive service accounts",
+      "inactive-users": "Inactive users",
+      "inactive-workload-identities": "Inactive workload identities",
+      "revoke-access": "Revoke Access",
+      "revoke-access-alert": "Are you sure to revoke access?",
+      "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
+      "revoked": "Revoked",
+      "search-member": "Search member",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "select-account_one": "Select account",
+      "select-account_other": "Select accounts",
+      "select-role_one": "Select role",
+      "select-role_other": "Select roles",
+      "service-account": "Service Account",
+      "service-accounts": "Service Accounts",
+      "show-inactive": "Show inactive accounts",
+      "table": {
+        "account": "Account",
+        "groups": "Groups",
+        "roles": "Roles"
+      },
+      "update-service-account": "Update Service Account",
+      "update-user": "Update User",
+      "update-workload-identity": "Update Workload Identity",
+      "view-by-members": "View by members",
+      "view-by-roles": "View by roles",
+      "workload-identities": "Workload Identities",
+      "workload-identity": "Workload Identity",
+      "workload-identity-advanced": "Advanced Settings",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-audience": "Audience",
+      "workload-identity-branch": "Branch",
+      "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-issuer": "Issuer URL",
+      "workload-identity-owner": "Organization / Username",
+      "workload-identity-platform": "Platform",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-repo": "Repository",
+      "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-subject": "Subject Pattern",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags"
+    },
+    "profile": {
+      "password": "Password",
+      "password-confirm": "Password Confirm",
+      "password-confirm-placeholder": "Confirm new password",
+      "password-hint": "Password should follow restriction setting",
+      "password-mismatch": "New password mismatch",
+      "phone": "Phone",
+      "phone-tips": "Be sure to include the country code +1xxxxxx"
+    },
+    "sensitive-data": {
+      "algorithms": {
+        "add": "Add algorithm",
+        "edit": "Edit algorithm",
+        "error": {
+          "salt-required": "Salt is required",
+          "slice-invalid-number": "Slice start or end is not a valid number",
+          "slice-overlap": "The slice range cannot overlap",
+          "slice-required": "Slice is required",
+          "substitution-length": "Substitution should be less than 16 bytes",
+          "substitution-required": "Substitution is required"
+        },
+        "full-mask": {
+          "self": "Full mask",
+          "substitution": "Substitution",
+          "substitution-label": "Substitution is the string used to replace the original value, the max length of the string is 16 bytes."
+        },
+        "inner-outer-mask": {
+          "inner-label": "Inner mask masks the interior part of a string. The prefix and suffix represent the unmasked parts of the data.",
+          "inner-mask": "Inner Mask",
+          "outer-label": "Outer mask masks the left and right ends of a string. The prefix and suffix represent the masked parts of the data.",
+          "outer-mask": "Outer Mask",
+          "prefix-length": "Prefix Length",
+          "self": "Inner / Outer mask",
+          "suffix-length": "Suffix Length",
+          "type": "Mask Type"
+        },
+        "md5-mask": {
+          "salt": "Salt",
+          "salt-label": "Salt is used to generate a hash from the original value.",
+          "self": "MD5 mask"
+        },
+        "range-mask": {
+          "label": "Range mask will replace the original value from start index to end index (end not included) with the substitution. The index starts from 0.",
+          "self": "Range mask",
+          "slice-end": "Slice end",
+          "slice-start": "Slice start",
+          "substitution": "Substitution"
+        },
+        "table": {
+          "masking-type": "Masking Type"
+        }
+      },
+      "classification": {
+        "empty-classification": "The \"classification\" field is empty",
+        "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
+        "guide-hierarchy": "IDs use a dash-separated hierarchy (e.g., \"1\" is a parent, \"1-1\" and \"1-2\" are its children).",
+        "guide-intro": "Edit the classification JSON below. An example template is provided when no classification is configured.",
+        "guide-levels": "\"levels\" defines sensitivity tiers with consecutive numbers starting from 1 (e.g., 1 = Public, 2 = Internal, 3 = Confidential).",
+        "invalid-json": "Invalid JSON format",
+        "missing-classification": "Missing \"classification\" field",
+        "missing-levels": "Missing \"levels\" field"
+      },
+      "global-rules": {
+        "condition-order": "Condition order",
+        "delete-rule-tip": "Delete this rule?",
+        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm.",
+        "error": {
+          "invalid-condition": "Condition is invalid",
+          "missing-semantic-type": "Semantic type is required"
+        },
+        "re-order": "Re-order"
+      },
+      "semantic-types": {
+        "add-from-template": "Add from template",
+        "label": "Columns having the same semantic type will use the same masking algorithms.",
+        "select": "Select semantic type",
+        "table": {
+          "delete": "Delete this semantic type?",
+          "description": "Description",
+          "icon": "Icon",
+          "masking-algorithm": "Masking Algorithm",
+          "semantic-type": "Semantic Type"
+        },
+        "template": {
+          "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed.",
+          "duplicate-warning": "Semantic type \"{{title}}\" already exists"
+        },
+        "use-predefined-type": "Use Predefined Type"
+      }
+    },
+    "sidebar": {
+      "audit-log": "Audit Logs",
+      "custom-roles": "Custom Roles",
+      "data-classification": "Data Classification",
+      "general": "General",
+      "global-masking": "Global Masking",
+      "im-integration": "IM",
+      "mcp": "MCP",
+      "members": "Members",
+      "members-and-groups": "Members & Groups",
+      "sso": "SSO",
+      "subscription": "Subscription",
+      "users-and-groups": "Users & Groups"
+    },
+    "sso": {
+      "create": "Create SSO",
+      "delete": "Delete this SSO",
+      "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
+      "form": {
+        "auth-url": "Authorization URL",
+        "auth-url-description": "The link to OAuth login page",
+        "auth-url-placeholder": "e.g. https://github.com/login/oauth/authorize",
+        "authentication-style": "Authentication Style",
+        "base-dn": "Base DN",
+        "base-dn-description": "The base DN to search for users",
+        "base-dn-placeholder": "e.g. ou=users,dc=example,dc=com",
+        "bind-dn": "Bind DN",
+        "bind-dn-description": "The DN of the user to bind as for search requests",
+        "bind-dn-placeholder": "e.g. uid=system,ou=Users,dc=example,dc=com",
+        "bind-password": "Bind Password",
+        "configuration": "Configuration",
+        "configuration-description": "Configure the connection settings for your identity provider",
+        "custom-template-description": "Configure custom OAuth 2.0 provider",
+        "display-name": "Bytebase user's display name",
+        "display-name-placeholder": "e.g. name, displayName",
+        "domain": "Domain",
+        "domain-description": "The identity provider's domain name",
+        "domain-optional-hint": "Optional: Use to concat with identifier if it is not in email format",
+        "general-setting-description": "Provide basic information about your identity provider.",
+        "github-template-description": "Sign in with GitHub accounts",
+        "gitlab-template-description": "Sign in with GitLab accounts",
+        "google-template-description": "Sign in with Google accounts",
+        "groups": "Bytebase user's groups",
+        "groups-description": "Used for group-based access control (OIDC providers only)",
+        "groups-placeholder": "e.g. groups",
+        "host-placeholder": "e.g. ldap.example.com",
+        "identifier": "Bytebase user's email",
+        "identifier-placeholder": "e.g. login, email",
+        "identifier-tips": "It should be a unique string. And if it is not in email format, it will be spliced with domain.",
+        "identity-provider-needed-information": "Create your SSO application with the following information.",
+        "in-header": "In Header",
+        "in-header-description": "Send credentials using HTTP Basic Authorization",
+        "in-parameters": "In Parameters",
+        "in-parameters-description": "Send credentials in POST body (recommended)",
+        "issuer-url-description": "The OIDC issuer URL (well-known configuration will be auto-discovered)",
+        "issuer-url-placeholder": "e.g. https://acme.okta.com",
+        "ldap-description": "Connect with LDAP providers like Microsoft Active Directory, OpenLDAP",
+        "ldaps": "LDAPS",
+        "ldaps-description": "Use TLS from the beginning (port 636)",
+        "microsoft-entra-template-description": "Sign in with Microsoft Entra ID",
+        "name": "Name",
+        "name-description": "The display name to be shown to the users",
+        "none": "None",
+        "none-description": "No encryption (not recommended for production)",
+        "oauth2-description": "Connect with OAuth 2.0 providers like Google, GitHub, GitLab",
+        "oidc-description": "Connect with OpenID Connect providers like Microsoft Entra ID (Azure AD), Okta, Auth0",
+        "openid-scopes-description": "Space-separated list of OIDC scopes (openid is required)",
+        "phone": "Bytebase user's phone number",
+        "phone-placeholder": "e.g. phone, mobile",
+        "provider-type-readonly-hint": "Provider type cannot be changed after creation",
+        "redirect-url": "Authorization redirect URL",
+        "redirect-url-description": "It will be used to fill in the appropriate field in the identity provider application form.",
+        "scopes": "Scopes",
+        "scopes-description": "A space-separated list of scopes to be carried when accessing the Auth URL",
+        "scopes-placeholder": "e.g. user email profile",
+        "scopes-placeholder-oidc": "e.g. openid profile email",
+        "security-options": "Security Options",
+        "security-protocol": "Security Protocol",
+        "skip-tls-verification": "Skip TLS Certificate Verification",
+        "skip-tls-warning": "Only enable this for development or testing purposes",
+        "starttls": "StartTLS",
+        "starttls-description": "Upgrade connection to TLS (recommended)",
+        "template-description": "Choose a pre-configured template or set up a custom OAuth 2.0 provider",
+        "token-url": "Token URL",
+        "token-url-description": "The API address for obtaining accessToken",
+        "token-url-placeholder": "e.g. https://github.com/login/oauth/access_token",
+        "type": "Type",
+        "type-description": "Choose the type of identity provider you want to configure",
+        "use-template": "Use template",
+        "user-filter": "User Filter",
+        "user-filter-description": "The filter to search for users (%s will be replaced with username)",
+        "user-filter-placeholder": "e.g. (uid=%s)",
+        "user-info-url": "User Information URL",
+        "user-info-url-description": "The API address for obtaining user information by accessToken",
+        "user-info-url-placeholder": "e.g. https://api.github.com/user",
+        "user-information-mapping": "User information mapping",
+        "user-information-mapping-description": "Maps the field names from user info API to the Bytebase user."
+      }
+    }
   },
   "sql-editor": {
     "self": "SQL Editor"
+  },
+  "sql-review": {
+    "configure-policy": "Configure policy",
+    "title": "SQL Review"
+  },
+  "subscription": {
+    "contact-us": "Contact us",
+    "current": "Current plan",
+    "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
+    "enterprise-free-trial": "{{days}}-day free Enterprise trial",
+    "expired": "expired",
+    "expires-at": "Expires at",
+    "inquire-enterprise-plan": "Inquire Enterprise Plan",
+    "instance-assignment": {
+      "assign-license": "Assign License",
+      "license": "License",
+      "missing-license-attention": "You need to assign license to the instance to enable this feature.",
+      "used-and-total-license": "Assigned / Total Instance License",
+      "used-and-total-user": "Active / Total User Limit"
+    },
+    "max-instance-count": "Max instance count",
+    "plan": {
+      "enterprise": {
+        "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
+        "label": "",
+        "title": "Enterprise"
+      },
+      "free": {
+        "desc": "Team essentials to manage database development lifecycle.",
+        "label": "",
+        "title": "Community"
+      },
+      "team": {
+        "desc": "More policies to standardize and facilitate collaboration across teams.",
+        "label": "",
+        "title": "Pro"
+      },
+      "title": "Community",
+      "try": "Start free trial"
+    },
+    "plan-compare": "Compare features between different plans",
+    "purchase": {
+      "accept-terms-prefix": "I accept the",
+      "and": "and",
+      "billing-period": "Billing Period",
+      "cancel": "Cancel Subscription",
+      "cancel-confirm": "Are you sure you want to cancel your subscription?",
+      "cancel-pending": "Your subscription has been canceled and will end on {{date}}.",
+      "canceled": "Subscription canceled",
+      "custom": "Custom",
+      "discount": {
+        "month-off": "{{value}} month free",
+        "percentage-off": "first month {{value}}% off",
+        "price-off": "${{value}} off"
+      },
+      "enterprise-description": "Scale your business securely while staying compliant.",
+      "free-description": "Designed for solo devs, side-projects, and experiments.",
+      "manage-invoices": "Manage Invoices",
+      "payment-info": "Payment Info",
+      "pending-description": "Please wait while we confirm your payment. This usually takes a few seconds.",
+      "pending-title": "Completing your purchase...",
+      "per-user-per-month": "/ user monthly",
+      "privacy-policy": "Privacy policy",
+      "pro-description": "Built for teams creating production-ready applications.",
+      "seats": "Users",
+      "see-comparison": "See detailed feature comparison",
+      "subscribe": "Subscribe now",
+      "terms-of-service": "Terms of Service",
+      "total-price": "Total Price",
+      "update": "Update Subscription"
+    },
+    "request-n-days-trial": "Request {{days}} days trial (no credit card required)",
+    "require-subscription": "This feature requires {{requiredPlan}} subscription, please purchase Bytebase license to unlock it.",
+    "required-plan-with-trial": "This feature requires {{requiredPlan}}. {{startTrial}}",
+    "trial-for-days": "You can start a free trial for {{days}} days - no credit card required.",
+    "trialing": "trialing",
+    "try-for-free": "Free trial",
+    "update": {
+      "failure": {
+        "description": "Please check if your license is valid.",
+        "title": "Failed to update license"
+      },
+      "success": {
+        "description": "Premium features in subscription plan unlocked.",
+        "title": "Successfully updated license"
+      }
+    },
+    "upload-license": "Upload license",
+    "usage": {
+      "instance-count": {
+        "runoutof": "You have run out of your {{total}} instance quota.",
+        "title": "Instance count limit"
+      },
+      "user-count": {
+        "remaining": "Your total user quota is {{total}}, with only {{count}} users remaining.",
+        "runoutof": "You have run out of your {{total}} user quota.",
+        "title": "User count limit",
+        "upgrade": "Upgrade to get more user quota."
+      }
+    }
+  },
+  "two-factor": {
+    "enabled": "2FA Enabled"
   }
 }

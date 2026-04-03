@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -45,159 +40,84 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		typeRestriction[strings.ToUpper(tp)] = true
 	}
 
-	// Create the rule
-	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), typeRestriction)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnTypeDisallowListRule checks for column type restriction.
-type ColumnTypeDisallowListRule struct {
-	BaseRule
-	typeRestriction map[string]bool
-}
-
-// NewColumnTypeDisallowListRule creates a new ColumnTypeDisallowListRule.
-func NewColumnTypeDisallowListRule(level storepb.Advice_Status, title string, typeRestriction map[string]bool) *ColumnTypeDisallowListRule {
-	return &ColumnTypeDisallowListRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnTypeDisallowListOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		typeRestriction: typeRestriction,
 	}
+
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
+	}
+
+	return rule.GetAdviceList(), nil
 }
 
-// Name returns the rule name.
-func (*ColumnTypeDisallowListRule) Name() string {
+type columnTypeDisallowListOmniRule struct {
+	OmniBaseRule
+	typeRestriction map[string]bool
+}
+
+func (*columnTypeDisallowListOmniRule) Name() string {
 	return "ColumnTypeDisallowListRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnTypeDisallowListRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnTypeDisallowListOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnTypeDisallowListRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnTypeDisallowListRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *columnTypeDisallowListOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
-			continue
-		}
-		if tableElement.ColumnDefinition() == nil {
-			continue
-		}
-
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if tableElement.ColumnDefinition().FieldDefinition() == nil {
-			continue
-		}
-		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
+	for _, col := range n.Columns {
+		r.checkColumnType(tableName, col.Name, col.TypeName, col.Loc)
 	}
 }
 
-func (r *ColumnTypeDisallowListRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if ctx.DataType() == nil {
+func (r *columnTypeDisallowListOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
 		return
 	}
-	columnType := mysqlparser.NormalizeMySQLDataType(ctx.DataType(), true /* compact */)
-	columnType = strings.ToUpper(columnType)
+	for _, cmd := range n.Commands {
+		for _, col := range omniGetColumnsFromCmd(cmd) {
+			r.checkColumnType(tableName, col.Name, col.TypeName, col.Loc)
+		}
+	}
+}
+
+func (r *columnTypeDisallowListOmniRule) checkColumnType(tableName, colName string, dt *ast.DataType, loc ast.Loc) {
+	if dt == nil {
+		return
+	}
+	columnType := strings.ToUpper(omniDataTypeNameCompact(dt))
 	if _, exists := r.typeRestriction[columnType]; exists {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.DisabledColumnType.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.DisabledColumnType.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, colName),
+			StartPosition: &storepb.Position{
+				Line: r.LocToLine(loc),
+			},
 		})
-	}
-}
-
-func (r *ColumnTypeDisallowListRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-				}
-			default:
-			}
-		// modify column
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		default:
-		}
 	}
 }

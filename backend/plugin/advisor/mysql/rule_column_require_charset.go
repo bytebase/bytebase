@@ -3,18 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -35,131 +31,101 @@ func (*ColumnRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnRequireCharsetRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnRequireCharsetRule checks for require charset.
-type ColumnRequireCharsetRule struct {
-	BaseRule
-}
-
-// NewColumnRequireCharsetRule creates a new ColumnRequireCharsetRule.
-func NewColumnRequireCharsetRule(level storepb.Advice_Status, title string) *ColumnRequireCharsetRule {
-	return &ColumnRequireCharsetRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnRequireCharsetOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ColumnRequireCharsetRule) Name() string {
+type columnRequireCharsetOmniRule struct {
+	OmniBaseRule
+}
+
+func (*columnRequireCharsetOmniRule) Name() string {
 	return "ColumnRequireCharsetRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnRequireCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnRequireCharsetOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnRequireCharsetRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
+func (r *columnRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
+		return
+	}
+	for _, col := range n.Columns {
+		if col == nil || col.TypeName == nil {
+			continue
+		}
+		if omniIsCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.NoCharset.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Column %s does not have a character set specified", col.Name),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
+			})
+		}
+	}
 }
 
-func (r *ColumnRequireCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableName() == nil || ctx.TableElementList() == nil {
+func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	if tableName == "" {
-		return
-	}
-
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil || cmd.Type != ast.ATAddColumn {
 			continue
 		}
-		columnDefinition := tableElement.ColumnDefinition()
-		if columnDefinition.FieldDefinition() == nil || columnDefinition.FieldDefinition().DataType() == nil {
-			continue
-		}
-
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		dataType := columnDefinition.FieldDefinition().DataType()
-		if r.isCharsetDataType(dataType) {
-			if dataType.CharsetWithOptBinary() == nil {
+		// Single column ADD.
+		if cmd.Column != nil && cmd.Column.TypeName != nil {
+			if omniIsCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Charset == "" {
 				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
+					Status:        r.Level,
 					Code:          code.NoCharset.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnDefinition.GetStart().GetLine()),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Column %s does not have a character set specified", cmd.Column.Name),
+					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+				})
+			}
+		}
+		// Multi-column ADD.
+		for _, col := range cmd.Columns {
+			if col == nil || col.TypeName == nil {
+				continue
+			}
+			if omniIsCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.NoCharset.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Column %s does not have a character set specified", col.Name),
+					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 				})
 			}
 		}
 	}
 }
 
-func (r *ColumnRequireCharsetRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil || ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
+// omniIsCharsetDataType checks if a data type supports character sets.
+func omniIsCharsetDataType(dt *ast.DataType) bool {
+	if dt == nil {
+		return false
 	}
-	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		// Only check ADD COLUMN for now.
-		if alterListItem.ADD_SYMBOL() == nil || alterListItem.COLUMN_SYMBOL() == nil || alterListItem.FieldDefinition() == nil {
-			continue
-		}
-
-		columnName := mysqlparser.NormalizeMySQLIdentifier(alterListItem.Identifier())
-		dataType := alterListItem.FieldDefinition().DataType()
-		if r.isCharsetDataType(dataType) {
-			if dataType.CharsetWithOptBinary() == nil {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.NoCharset.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Column %s does not have a character set specified", columnName),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + alterListItem.GetStart().GetLine()),
-				})
-			}
-		}
+	switch strings.ToUpper(dt.Name) {
+	case "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT":
+		return true
+	default:
+		return false
 	}
-}
-
-func (*ColumnRequireCharsetRule) isCharsetDataType(dataType mysql.IDataTypeContext) bool {
-	return dataType != nil && (dataType.CHAR_SYMBOL() != nil ||
-		dataType.VARCHAR_SYMBOL() != nil ||
-		dataType.VARYING_SYMBOL() != nil ||
-		dataType.TINYTEXT_SYMBOL() != nil ||
-		dataType.TEXT_SYMBOL() != nil ||
-		dataType.MEDIUMTEXT_SYMBOL() != nil ||
-		dataType.LONGTEXT_SYMBOL() != nil)
 }

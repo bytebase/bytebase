@@ -3,16 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -34,106 +32,113 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// NamingIdentifierNoKeywordRule checks for identifier naming convention without keyword.
-type NamingIdentifierNoKeywordRule struct {
-	BaseRule
-}
-
-// NewNamingIdentifierNoKeywordRule creates a new NamingIdentifierNoKeywordRule.
-func NewNamingIdentifierNoKeywordRule(level storepb.Advice_Status, title string) *NamingIdentifierNoKeywordRule {
-	return &NamingIdentifierNoKeywordRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &namingIdentifierNoKeywordOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*NamingIdentifierNoKeywordRule) Name() string {
+type namingIdentifierNoKeywordOmniRule struct {
+	OmniBaseRule
+}
+
+func (*namingIdentifierNoKeywordOmniRule) Name() string {
 	return "NamingIdentifierNoKeywordRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NamingIdentifierNoKeywordRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypePureIdentifier:
-		r.checkPureIdentifier(ctx.(*mysql.PureIdentifierContext))
-	case NodeTypeIdentifierKeyword:
-		r.checkIdentifierKeyword(ctx.(*mysql.IdentifierKeywordContext))
+func (r *namingIdentifierNoKeywordOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
+	case *ast.CreateIndexStmt:
+		r.checkCreateIndex(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NamingIdentifierNoKeywordRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingIdentifierNoKeywordRule) checkPureIdentifier(ctx *mysql.PureIdentifierContext) {
-	// The suspect identifier should be always wrapped in backquotes, otherwise a syntax error will be thrown before entering this checker.
-	textNode := ctx.BACK_TICK_QUOTED_ID()
-	if textNode == nil {
-		return
+func (r *namingIdentifierNoKeywordOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table != nil {
+		r.checkIdentifierAtLine(n.Table.Name, r.LocToLine(n.Loc))
 	}
-
-	// Remove backticks as possible.
-	identifier := trimBackTicks(textNode.GetText())
-	advice := r.checkIdentifier(identifier)
-	if advice != nil {
-		advice.StartPosition = common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine())
-		r.adviceList = append(r.adviceList, advice)
+	for _, col := range n.Columns {
+		if col == nil {
+			continue
+		}
+		r.checkIdentifierAtLine(col.Name, r.findColumnLine(col.Name))
 	}
-}
-
-func (r *NamingIdentifierNoKeywordRule) checkIdentifierKeyword(ctx *mysql.IdentifierKeywordContext) {
-	identifier := ctx.GetText()
-	advice := r.checkIdentifier(identifier)
-	if advice != nil {
-		advice.StartPosition = common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine())
-		r.adviceList = append(r.adviceList, advice)
-	}
-}
-
-func (r *NamingIdentifierNoKeywordRule) checkIdentifier(identifier string) *storepb.Advice {
-	if isKeyword(identifier) {
-		return &storepb.Advice{
-			Status:  r.level,
-			Code:    code.NameIsKeywordIdentifier.Int32(),
-			Title:   r.title,
-			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
+			continue
+		}
+		if constraint.Name != "" {
+			r.checkIdentifierAtLine(constraint.Name, r.LocToLine(constraint.Loc))
 		}
 	}
-
-	return nil
 }
 
-func trimBackTicks(s string) string {
-	if len(s) < 2 {
-		return s
+func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
+			continue
+		}
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			for _, col := range omniGetColumnsFromCmd(cmd) {
+				r.checkIdentifierAtLine(col.Name, r.LocToLine(n.Loc))
+			}
+		case ast.ATRenameTable:
+			if cmd.NewName != "" {
+				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
+			}
+		case ast.ATRenameColumn:
+			if cmd.NewName != "" {
+				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
+			}
+		case ast.ATChangeColumn:
+			if cmd.Column != nil {
+				r.checkIdentifierAtLine(cmd.Column.Name, r.LocToLine(n.Loc))
+			}
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil && cmd.Constraint.Name != "" {
+				r.checkIdentifierAtLine(cmd.Constraint.Name, r.LocToLine(n.Loc))
+			}
+		case ast.ATRenameIndex:
+			if cmd.NewName != "" {
+				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
+			}
+		default:
+		}
 	}
-	return s[1 : len(s)-1]
+}
+
+func (r *namingIdentifierNoKeywordOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+	if n.IndexName != "" {
+		r.checkIdentifierAtLine(n.IndexName, r.LocToLine(n.Loc))
+	}
+}
+
+func (r *namingIdentifierNoKeywordOmniRule) checkIdentifierAtLine(identifier string, lineNumber int32) {
+	// Strip backticks if present.
+	identifier = strings.Trim(identifier, "`")
+	if !isKeyword(identifier) {
+		return
+	}
+	absoluteLine := r.BaseLine + int(lineNumber)
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:        r.Level,
+		Code:          code.NameIsKeywordIdentifier.Int32(),
+		Title:         r.Title,
+		Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
+		StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+	})
+}
+
+func (r *namingIdentifierNoKeywordOmniRule) findColumnLine(name string) int32 {
+	return r.FindLineByName(name)
 }

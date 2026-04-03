@@ -4,17 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -38,106 +33,47 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnDisallowChangingOrderRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnDisallowChangingOrderRule checks for disallow changing column order.
-type ColumnDisallowChangingOrderRule struct {
-	BaseRule
-	text string
-}
-
-// NewColumnDisallowChangingOrderRule creates a new ColumnDisallowChangingOrderRule.
-func NewColumnDisallowChangingOrderRule(level storepb.Advice_Status, title string) *ColumnDisallowChangingOrderRule {
-	return &ColumnDisallowChangingOrderRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnDisallowChangingOrderOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ColumnDisallowChangingOrderRule) Name() string {
+type columnDisallowChangingOrderOmniRule struct {
+	OmniBaseRule
+}
+
+func (*columnDisallowChangingOrderOmniRule) Name() string {
 	return "ColumnDisallowChangingOrderRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnDisallowChangingOrderRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		}
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ColumnDisallowChangingOrderRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnDisallowChangingOrderRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+func (r *columnDisallowChangingOrderOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.AlterTableStmt)
+	if !ok {
 		return
 	}
 
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
-		switch {
-		// modify column.
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil:
-			// do nothing.
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			// do nothing.
+		switch cmd.Type {
+		case ast.ATModifyColumn, ast.ATChangeColumn:
+			// Check if FIRST or AFTER is specified (column reordering).
+			if cmd.First || cmd.After != "" {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.ChangeColumnOrder.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("\"%s\" changes column order", r.QueryText()),
+					StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				})
+			}
 		default:
-			continue
-		}
-
-		if item.Place() != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.ChangeColumnOrder.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("\"%s\" changes column order", r.text),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-			})
 		}
 	}
 }

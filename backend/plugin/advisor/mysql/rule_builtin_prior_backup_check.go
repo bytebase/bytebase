@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -49,17 +49,15 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		checker := &mysqlparser.StatementTypeChecker{}
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
-		if checker.IsDDL {
+		if isOmniDDL(node) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Title:         title,
@@ -138,4 +136,22 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 	}
 
 	return result, nil
+}
+
+// isOmniDDL returns true if the omni AST node represents a DDL statement.
+func isOmniDDL(node ast.Node) bool {
+	switch node.(type) {
+	case *ast.CreateTableStmt, *ast.CreateDatabaseStmt, *ast.CreateIndexStmt,
+		*ast.CreateViewStmt, *ast.CreateTriggerStmt, *ast.CreateEventStmt,
+		*ast.CreateFunctionStmt,
+		*ast.AlterTableStmt, *ast.AlterDatabaseStmt, *ast.AlterViewStmt,
+		*ast.AlterEventStmt,
+		*ast.DropTableStmt, *ast.DropDatabaseStmt, *ast.DropIndexStmt,
+		*ast.DropViewStmt, *ast.DropTriggerStmt, *ast.DropEventStmt,
+		*ast.DropRoutineStmt,
+		*ast.RenameTableStmt, *ast.TruncateStmt:
+		return true
+	default:
+		return false
+	}
 }

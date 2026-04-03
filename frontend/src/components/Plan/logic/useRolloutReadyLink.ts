@@ -1,34 +1,29 @@
 import { computed } from "vue";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { useRoute } from "vue-router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { usePlanContext } from "./context";
+import { isDatabaseChangeSpec } from "./plan";
 
 /**
- * Composable that determines whether the "Rollout" link should be shown.
- * This link appears when:
- * - Rollout has been fetched (rollout ref is defined)
- * - Rollout does not contain database creation/export tasks
+ * Composable that determines whether the "Plan" link should be shown.
+ * This link appears on the Issue page when:
+ * - The plan has an existing rollout
+ * - All specs are database-change related
  */
 export const useRolloutReadyLink = () => {
-  const { rollout } = usePlanContext();
+  const route = useRoute();
+  const { plan } = usePlanContext();
 
   const shouldShow = computed(() => {
-    if (!rollout.value) {
-      return false;
-    }
+    // Only show on Issue page
+    if (route.name !== PROJECT_V1_ROUTE_ISSUE_DETAIL) return false;
 
-    // Don't show for rollouts with database creation/export tasks
-    const hasDatabaseCreateOrExportTasks = rollout.value.stages.some((stage) =>
-      stage.tasks.some(
-        (task) =>
-          task.type === Task_Type.DATABASE_CREATE ||
-          task.type === Task_Type.DATABASE_EXPORT
-      )
+    if (!plan.value.hasRollout) return false;
+
+    return (
+      plan.value.specs.length > 0 &&
+      plan.value.specs.every(isDatabaseChangeSpec)
     );
-    if (hasDatabaseCreateOrExportTasks) {
-      return false;
-    }
-
-    return true;
   });
 
   return {

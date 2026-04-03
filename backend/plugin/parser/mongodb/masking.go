@@ -2,12 +2,8 @@ package mongodb
 
 import (
 	"slices"
-	"strconv"
-	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	mongoparser "github.com/bytebase/parser/mongodb"
-	"github.com/pkg/errors"
+	"github.com/bytebase/omni/mongo/analysis"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -31,476 +27,67 @@ const (
 // AnalyzeMaskingStatement analyzes a MongoDB shell statement for masking checks.
 // It returns nil,nil for statements that are not relevant to masking flow.
 func AnalyzeMaskingStatement(statement string) (*MaskingAnalysis, error) {
-	raw := parseMongoShellRaw(statement)
-	if raw == nil || raw.Tree == nil {
-		return nil, nil
+	stmts, err := ParseMongoShell(statement)
+	if err != nil {
+		return nil, err
 	}
-	if len(raw.Errors) > 0 {
-		return nil, errors.Errorf("failed to parse MongoDB statement: %s", raw.Errors[0].Message)
-	}
-
-	if len(raw.Tree.AllStatement()) != 1 {
+	if len(stmts) != 1 {
 		return nil, nil
 	}
 
-	listener := &maskingAnalysisListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, raw.Tree)
-	if listener.analysis == nil {
+	node, ok := GetOmniNode(stmts[0].AST)
+	if !ok || node == nil {
 		return nil, nil
 	}
-	return listener.analysis, nil
+
+	a := analysis.Analyze(node)
+	if a == nil {
+		return nil, nil
+	}
+
+	return omniAnalysisToMasking(a)
 }
 
-type maskingAnalysisListener struct {
-	*mongoparser.BaseMongoShellParserListener
-
-	analysis *MaskingAnalysis
-}
-
-func (l *maskingAnalysisListener) EnterCollectionOperation(ctx *mongoparser.CollectionOperationContext) {
-	if l.analysis != nil {
-		return
+// omniAnalysisToMasking converts an omni StatementAnalysis to a MaskingAnalysis.
+// Returns nil,nil for non-read operations (not relevant to masking).
+func omniAnalysisToMasking(a *analysis.StatementAnalysis) (*MaskingAnalysis, error) {
+	if !a.Operation.IsRead() {
+		return nil, nil
 	}
 
-	collection := extractCollectionName(ctx.CollectionAccess())
-	if collection == "" {
-		return
+	result := &MaskingAnalysis{
+		Operation:  a.MethodName,
+		Collection: a.Collection,
 	}
 
-	chain := ctx.MethodChain()
-	if chain == nil {
-		return
-	}
-	mc := chain.CollectionMethodCall()
-	if mc == nil {
-		return
-	}
-
-	analysis := classifyMaskingMethod(mc)
-	if analysis == nil {
-		return
-	}
-	analysis.Collection = collection
-	if len(analysis.PredicateFields) > 0 {
-		slices.Sort(analysis.PredicateFields)
-	}
-	l.analysis = analysis
-}
-
-func classifyMaskingMethod(mc mongoparser.ICollectionMethodCallContext) *MaskingAnalysis {
-	switch {
-	case mc.FindMethod() != nil:
-		return &MaskingAnalysis{
-			API:             MaskableAPIFind,
-			Operation:       "find",
-			PredicateFields: extractFindPredicateFields(mc.FindMethod().Arguments()),
+	switch a.Operation {
+	case analysis.OpFind:
+		result.API = MaskableAPIFind
+		result.PredicateFields = a.PredicateFields
+	case analysis.OpFindOne:
+		result.API = MaskableAPIFindOne
+		result.PredicateFields = a.PredicateFields
+	case analysis.OpAggregate:
+		if a.UnsupportedStage != "" {
+			result.API = MaskableAPIUnsupportedRead
+			result.UnsupportedStage = a.UnsupportedStage
+			return result, nil
 		}
-	case mc.FindOneMethod() != nil:
-		return &MaskingAnalysis{
-			API:             MaskableAPIFindOne,
-			Operation:       "findOne",
-			PredicateFields: extractFindPredicateFields(mc.FindOneMethod().Arguments()),
-		}
-	case mc.CountDocumentsMethod() != nil:
-		return unsupportedReadAnalysis("countDocuments")
-	case mc.EstimatedDocumentCountMethod() != nil:
-		return unsupportedReadAnalysis("estimatedDocumentCount")
-	case mc.CollectionCountMethod() != nil:
-		return unsupportedReadAnalysis("count")
-	case mc.DistinctMethod() != nil:
-		return unsupportedReadAnalysis("distinct")
-	case mc.AggregateMethod() != nil:
-		return classifyAggregateForMasking(mc.AggregateMethod())
-	case mc.GetIndexesMethod() != nil:
-		return unsupportedReadAnalysis("getIndexes")
-	case mc.StatsMethod() != nil:
-		return unsupportedReadAnalysis("stats")
-	case mc.StorageSizeMethod() != nil:
-		return unsupportedReadAnalysis("storageSize")
-	case mc.TotalIndexSizeMethod() != nil:
-		return unsupportedReadAnalysis("totalIndexSize")
-	case mc.TotalSizeMethod() != nil:
-		return unsupportedReadAnalysis("totalSize")
-	case mc.DataSizeMethod() != nil:
-		return unsupportedReadAnalysis("dataSize")
-	case mc.IsCappedMethod() != nil:
-		return unsupportedReadAnalysis("isCapped")
-	case mc.ValidateMethod() != nil:
-		return unsupportedReadAnalysis("validate")
-	case mc.LatencyStatsMethod() != nil:
-		return unsupportedReadAnalysis("latencyStats")
-	case mc.GetShardDistributionMethod() != nil:
-		return unsupportedReadAnalysis("getShardDistribution")
-	case mc.GetShardVersionMethod() != nil:
-		return unsupportedReadAnalysis("getShardVersion")
-	case mc.AnalyzeShardKeyMethod() != nil:
-		return unsupportedReadAnalysis("analyzeShardKey")
-	default:
-		return nil
-	}
-}
-
-func unsupportedReadAnalysis(operation string) *MaskingAnalysis {
-	return &MaskingAnalysis{
-		API:       MaskableAPIUnsupportedRead,
-		Operation: operation,
-	}
-}
-
-func extractCollectionName(access mongoparser.ICollectionAccessContext) string {
-	switch access := access.(type) {
-	case *mongoparser.DotAccessContext:
-		if id := access.Identifier(); id != nil {
-			return id.GetText()
-		}
-	case *mongoparser.BracketAccessContext:
-		if sl := access.StringLiteral(); sl != nil {
-			return unquoteMongoString(sl.GetText())
-		}
-	case *mongoparser.GetCollectionAccessContext:
-		if sl := access.StringLiteral(); sl != nil {
-			return unquoteMongoString(sl.GetText())
+		result.API = MaskableAPIAggregate
+		result.PredicateFields = a.PredicateFields
+		for _, join := range a.Joins {
+			result.JoinedCollections = append(result.JoinedCollections, JoinedCollection{
+				Collection: join.Collection,
+				AsField:    join.AsField,
+			})
 		}
 	default:
-	}
-	return ""
-}
-
-func unquoteMongoString(s string) string {
-	if s == "" {
-		return ""
-	}
-	if unquoted, err := strconv.Unquote(s); err == nil {
-		return unquoted
-	}
-	return strings.Trim(s, `"'`)
-}
-
-func extractFindPredicateFields(args mongoparser.IArgumentsContext) []string {
-	if args == nil {
-		return nil
-	}
-	allArgs := args.AllArgument()
-	if len(allArgs) == 0 {
-		return nil
+		result.API = MaskableAPIUnsupportedRead
 	}
 
-	first := allArgs[0]
-	if first == nil || first.Value() == nil {
-		return nil
+	if len(result.PredicateFields) > 0 {
+		slices.Sort(result.PredicateFields)
 	}
 
-	doc := extractDocumentValue(first.Value())
-	if doc == nil {
-		return nil
-	}
-
-	fields := make(map[string]struct{})
-	collectPredicateFieldsFromDocument(doc, "", fields)
-	if len(fields) == 0 {
-		return nil
-	}
-
-	result := make([]string, 0, len(fields))
-	for field := range fields {
-		result = append(result, field)
-	}
-	return result
-}
-
-func extractDocumentValue(value mongoparser.IValueContext) mongoparser.IDocumentContext {
-	if value == nil {
-		return nil
-	}
-	switch value := value.(type) {
-	case *mongoparser.DocumentValueContext:
-		return value.Document()
-	default:
-		return nil
-	}
-}
-
-func extractArrayValue(value mongoparser.IValueContext) mongoparser.IArrayContext {
-	if value == nil {
-		return nil
-	}
-	switch value := value.(type) {
-	case *mongoparser.ArrayValueContext:
-		return value.Array()
-	default:
-		return nil
-	}
-}
-
-func collectPredicateFieldsFromDocument(doc mongoparser.IDocumentContext, prefix string, fields map[string]struct{}) {
-	if doc == nil {
-		return
-	}
-	for _, pair := range doc.AllPair() {
-		collectPredicateFieldsFromPair(pair, prefix, fields)
-	}
-}
-
-func collectPredicateFieldsFromPair(pair mongoparser.IPairContext, prefix string, fields map[string]struct{}) {
-	if pair == nil || pair.Key() == nil {
-		return
-	}
-
-	key := extractPairKey(pair.Key())
-	if key == "" {
-		return
-	}
-
-	if strings.HasPrefix(key, "$") {
-		collectLogicalPredicateFieldsByKey(key, pair.Value(), prefix, fields)
-		return
-	}
-
-	fullPath := buildPredicateFieldPath(prefix, key)
-	fields[fullPath] = struct{}{}
-	collectPredicateFieldValue(pair.Value(), fullPath, fields)
-}
-
-func collectLogicalPredicateFieldsByKey(key string, value mongoparser.IValueContext, prefix string, fields map[string]struct{}) {
-	if !isLogicalOperator(key) {
-		return
-	}
-	collectLogicalOperatorValue(value, prefix, fields)
-}
-
-func buildPredicateFieldPath(prefix, key string) string {
-	if prefix == "" {
-		return key
-	}
-	return prefix + "." + key
-}
-
-func collectPredicateFieldValue(value mongoparser.IValueContext, fullPath string, fields map[string]struct{}) {
-	if childDoc := extractDocumentValue(value); childDoc != nil {
-		collectPredicateFieldsFromDocument(childDoc, fullPath, fields)
-		return
-	}
-	if childArr := extractArrayValue(value); childArr != nil {
-		collectPredicateFieldsFromArray(childArr, fullPath, fields)
-	}
-}
-
-func collectPredicateFieldsFromArray(arr mongoparser.IArrayContext, prefix string, fields map[string]struct{}) {
-	if arr == nil {
-		return
-	}
-	for _, v := range arr.AllValue() {
-		if childDoc := extractDocumentValue(v); childDoc != nil {
-			collectPredicateFieldsFromDocument(childDoc, prefix, fields)
-		}
-	}
-}
-
-func collectLogicalOperatorValue(value mongoparser.IValueContext, prefix string, fields map[string]struct{}) {
-	if value == nil {
-		return
-	}
-	if doc := extractDocumentValue(value); doc != nil {
-		collectPredicateFieldsFromDocument(doc, prefix, fields)
-		return
-	}
-	if arr := extractArrayValue(value); arr != nil {
-		collectPredicateFieldsFromArray(arr, prefix, fields)
-	}
-}
-
-func extractPairKey(keyCtx mongoparser.IKeyContext) string {
-	switch keyCtx := keyCtx.(type) {
-	case *mongoparser.UnquotedKeyContext:
-		if id := keyCtx.Identifier(); id != nil {
-			return id.GetText()
-		}
-	case *mongoparser.QuotedKeyContext:
-		if sl := keyCtx.StringLiteral(); sl != nil {
-			return unquoteMongoString(sl.GetText())
-		}
-	default:
-	}
-	if keyCtx == nil {
-		return ""
-	}
-	return keyCtx.GetText()
-}
-
-func isLogicalOperator(key string) bool {
-	switch key {
-	case "$and", "$or", "$nor":
-		return true
-	default:
-		return false
-	}
-}
-
-// shapePreservingAggregateStages contains aggregate pipeline stages whose output
-// documents retain the collection's original structure (fields are not reshaped).
-var shapePreservingAggregateStages = map[string]bool{
-	"$match":           true,
-	"$sort":            true,
-	"$limit":           true,
-	"$skip":            true,
-	"$sample":          true,
-	"$addFields":       true,
-	"$set":             true,
-	"$unset":           true,
-	"$geoNear":         true,
-	"$setWindowFields": true,
-	"$fill":            true,
-	"$redact":          true,
-	"$unwind":          true,
-}
-
-func classifyAggregateForMasking(am mongoparser.IAggregateMethodContext) *MaskingAnalysis {
-	predicateFields, joinedCollections, unsupportedStage := extractAggregatePredicateFields(am.Arguments())
-	if unsupportedStage != "" {
-		return &MaskingAnalysis{
-			API:              MaskableAPIUnsupportedRead,
-			Operation:        "aggregate",
-			UnsupportedStage: unsupportedStage,
-		}
-	}
-	return &MaskingAnalysis{
-		API:               MaskableAPIAggregate,
-		Operation:         "aggregate",
-		PredicateFields:   predicateFields,
-		JoinedCollections: joinedCollections,
-	}
-}
-
-// extractAggregatePredicateFields walks the pipeline and returns:
-// - predicate fields from $match stages
-// - join info from $lookup/$graphLookup stages
-// - the first unsupported stage name, or "" if all stages are allowed
-func extractAggregatePredicateFields(args mongoparser.IArgumentsContext) ([]string, []JoinedCollection, string) {
-	if args == nil {
-		return nil, nil, ""
-	}
-	allArgs := args.AllArgument()
-	if len(allArgs) == 0 {
-		return nil, nil, ""
-	}
-
-	first := allArgs[0]
-	if first == nil || first.Value() == nil {
-		return nil, nil, ""
-	}
-
-	arr := extractArrayValue(first.Value())
-	if arr == nil {
-		return nil, nil, "unknown"
-	}
-
-	fields := make(map[string]struct{})
-	var joinedCollections []JoinedCollection
-	for _, elem := range arr.AllValue() {
-		doc := extractDocumentValue(elem)
-		if doc == nil {
-			return nil, nil, "unknown"
-		}
-		pairs := doc.AllPair()
-		if len(pairs) == 0 {
-			continue
-		}
-		stageName := extractPairKey(pairs[0].Key())
-		switch {
-		case shapePreservingAggregateStages[stageName]:
-			if stageName == "$match" {
-				stageDoc := extractDocumentValue(pairs[0].Value())
-				if stageDoc != nil {
-					collectPredicateFieldsFromDocument(stageDoc, "", fields)
-				}
-			}
-		case stageName == "$lookup":
-			join, unsupported := extractLookupJoin(pairs[0].Value())
-			if unsupported {
-				return nil, nil, "$lookup"
-			}
-			if join != nil {
-				joinedCollections = append(joinedCollections, *join)
-			}
-		case stageName == "$graphLookup":
-			join := extractGraphLookupJoin(pairs[0].Value())
-			if join != nil {
-				joinedCollections = append(joinedCollections, *join)
-			}
-		default:
-			return nil, nil, stageName
-		}
-	}
-
-	var predicateFields []string
-	if len(fields) > 0 {
-		predicateFields = make([]string, 0, len(fields))
-		for field := range fields {
-			predicateFields = append(predicateFields, field)
-		}
-	}
-	return predicateFields, joinedCollections, ""
-}
-
-// extractLookupJoin parses a $lookup stage value and returns the join info.
-// Returns (nil, true) if this is a pipeline-form $lookup (unsupported).
-// Returns (nil, false) if from/as cannot be extracted (treated as passthrough).
-func extractLookupJoin(value mongoparser.IValueContext) (*JoinedCollection, bool) {
-	doc := extractDocumentValue(value)
-	if doc == nil {
-		return nil, false
-	}
-	var from, as string
-	for _, pair := range doc.AllPair() {
-		key := extractPairKey(pair.Key())
-		switch key {
-		case "pipeline":
-			// Pipeline form is not supported.
-			return nil, true
-		case "from":
-			from = extractStringLiteralValue(pair.Value())
-		case "as":
-			as = extractStringLiteralValue(pair.Value())
-		default:
-		}
-	}
-	if from == "" || as == "" {
-		return nil, false
-	}
-	return &JoinedCollection{AsField: as, Collection: from}, false
-}
-
-// extractGraphLookupJoin parses a $graphLookup stage value and returns the join info.
-func extractGraphLookupJoin(value mongoparser.IValueContext) *JoinedCollection {
-	doc := extractDocumentValue(value)
-	if doc == nil {
-		return nil
-	}
-	var from, as string
-	for _, pair := range doc.AllPair() {
-		key := extractPairKey(pair.Key())
-		switch key {
-		case "from":
-			from = extractStringLiteralValue(pair.Value())
-		case "as":
-			as = extractStringLiteralValue(pair.Value())
-		default:
-		}
-	}
-	if from == "" || as == "" {
-		return nil
-	}
-	return &JoinedCollection{AsField: as, Collection: from}
-}
-
-// extractStringLiteralValue extracts a plain string value from a Value node.
-func extractStringLiteralValue(value mongoparser.IValueContext) string {
-	if value == nil {
-		return ""
-	}
-	text := value.GetText()
-	if len(text) >= 2 && (text[0] == '"' || text[0] == '\'') {
-		return unquoteMongoString(text)
-	}
-	return ""
+	return result, nil
 }

@@ -1,14 +1,14 @@
 <template>
-  <div class="flex items-center justify-between gap-3">
-    <!-- Left: Label + Tooltip -->
+  <div class="flex items-center gap-2">
+    <!-- Label + Tooltip -->
     <div class="flex items-center gap-1">
-      <label class="text-sm text-main whitespace-nowrap">
+      <label class="text-sm text-control-placeholder whitespace-nowrap">
         <slot name="label" />
       </label>
       <NTooltip v-if="$slots.tooltip">
         <template #trigger>
           <heroicons:information-circle
-            class="w-4 h-4 text-control-light cursor-help"
+            class="w-3.5 h-3.5 text-control-light cursor-help"
           />
         </template>
         <template #default>
@@ -19,7 +19,7 @@
       </NTooltip>
       <slot name="suffix" />
     </div>
-    <!-- Right: Value (switch/selector) -->
+    <!-- Value -->
     <slot />
   </div>
 </template>

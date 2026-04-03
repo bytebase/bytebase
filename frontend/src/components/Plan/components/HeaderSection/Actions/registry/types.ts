@@ -21,10 +21,7 @@ export type IssueAction =
 
 export type PlanAction = "PLAN_CLOSE" | "PLAN_REOPEN";
 
-export type RolloutAction =
-  | "ROLLOUT_CREATE"
-  | "ROLLOUT_START"
-  | "ROLLOUT_CANCEL";
+export type RolloutAction = "ROLLOUT_START" | "ROLLOUT_CANCEL";
 
 export type ExportAction = "EXPORT_DOWNLOAD";
 
@@ -82,7 +79,6 @@ export interface ActionContext {
   hasDatabaseCreateOrExportTasks: boolean;
   hasStartableTasks: boolean;
   hasRunningTasks: boolean;
-
   // Grouped
   permissions: ActionPermissions;
   validation: ActionValidation;

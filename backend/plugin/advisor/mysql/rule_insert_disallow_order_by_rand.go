@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -39,104 +36,71 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewInsertDisallowOrderByRandRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// InsertDisallowOrderByRandRule checks for to disallow order by rand in INSERT statements.
-type InsertDisallowOrderByRandRule struct {
-	BaseRule
-	isInsertStmt bool
-	text         string
-}
-
-// NewInsertDisallowOrderByRandRule creates a new InsertDisallowOrderByRandRule.
-func NewInsertDisallowOrderByRandRule(level storepb.Advice_Status, title string) *InsertDisallowOrderByRandRule {
-	return &InsertDisallowOrderByRandRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &insertDisallowOrderByRandOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*InsertDisallowOrderByRandRule) Name() string {
+type insertDisallowOrderByRandOmniRule struct {
+	OmniBaseRule
+}
+
+func (*insertDisallowOrderByRandOmniRule) Name() string {
 	return "InsertDisallowOrderByRandRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *InsertDisallowOrderByRandRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeInsertStatement:
-		insertCtx, ok := ctx.(*mysql.InsertStatementContext)
-		if !ok {
-			return nil
-		}
-		if mysqlparser.IsTopMySQLRule(&insertCtx.BaseParserRuleContext) {
-			if insertCtx.InsertQueryExpression() != nil {
-				r.isInsertStmt = true
-			}
-		}
-	case NodeTypeQueryExpression:
-		r.checkQueryExpression(ctx.(*mysql.QueryExpressionContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *InsertDisallowOrderByRandRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeInsertStatement {
-		r.isInsertStmt = false
-	}
-	return nil
-}
-
-func (r *InsertDisallowOrderByRandRule) checkQueryExpression(ctx *mysql.QueryExpressionContext) {
-	if !r.isInsertStmt {
+func (r *insertDisallowOrderByRandOmniRule) OnStatement(node ast.Node) {
+	ins, ok := node.(*ast.InsertStmt)
+	if !ok {
 		return
 	}
 
-	if ctx.OrderClause() == nil || ctx.OrderClause().OrderList() == nil {
+	// Only check INSERT ... SELECT statements.
+	if ins.Select == nil {
 		return
 	}
 
-	for _, expr := range ctx.OrderClause().OrderList().AllOrderExpression() {
-		text := expr.GetText()
-		if strings.EqualFold(text, RandFn) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+	text := r.TrimmedStmtText() + ";"
+
+	r.checkSelectForRandOrderBy(ins.Select, text)
+}
+
+func (r *insertDisallowOrderByRandOmniRule) checkSelectForRandOrderBy(sel *ast.SelectStmt, text string) {
+	if sel == nil {
+		return
+	}
+
+	for _, item := range sel.OrderBy {
+		if r.isRandFunc(item.Expr) {
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.InsertUseOrderByRand.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", r.text),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", text),
+				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
 			})
 		}
 	}
+
+	// Check set operations.
+	if sel.SetOp != ast.SetOpNone {
+		r.checkSelectForRandOrderBy(sel.Left, text)
+		r.checkSelectForRandOrderBy(sel.Right, text)
+	}
+}
+
+func (*insertDisallowOrderByRandOmniRule) isRandFunc(expr ast.ExprNode) bool {
+	if expr == nil {
+		return false
+	}
+	fc, ok := expr.(*ast.FuncCallExpr)
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(fc.Name, "rand")
 }

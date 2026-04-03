@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -38,128 +34,72 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnDisallowDropInIndexRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &columnDisallowDropInIndexOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		tables:           make(tableState),
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// ColumnDisallowDropInIndexRule checks for disallow DROP COLUMN in index.
-type ColumnDisallowDropInIndexRule struct {
-	BaseRule
+type columnDisallowDropInIndexOmniRule struct {
+	OmniBaseRule
 	tables           tableState
 	originalMetadata *model.DatabaseMetadata
 }
 
-// NewColumnDisallowDropInIndexRule creates a new ColumnDisallowDropInIndexRule.
-func NewColumnDisallowDropInIndexRule(level storepb.Advice_Status, title string, originalMetadata *model.DatabaseMetadata) *ColumnDisallowDropInIndexRule {
-	return &ColumnDisallowDropInIndexRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		tables:           make(tableState),
-		originalMetadata: originalMetadata,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnDisallowDropInIndexRule) Name() string {
+func (*columnDisallowDropInIndexOmniRule) Name() string {
 	return "ColumnDisallowDropInIndexRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnDisallowDropInIndexRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnDisallowDropInIndexOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnDisallowDropInIndexRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnDisallowDropInIndexRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *columnDisallowDropInIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
+	tableName := n.Table.Name
 
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil || tableElement.TableConstraintDef() == nil {
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
 			continue
 		}
-		if tableElement.TableConstraintDef().GetType_() == nil {
+		if constraint.Type != ast.ConstrIndex {
 			continue
 		}
-		switch tableElement.TableConstraintDef().GetType_().GetTokenType() {
-		case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL:
-			// do nothing.
-		default:
-			continue
-		}
-		if tableElement.TableConstraintDef().KeyListVariants() == nil {
-			continue
-		}
-
-		columnList := mysqlparser.NormalizeKeyListVariants(tableElement.TableConstraintDef().KeyListVariants())
-		for _, column := range columnList {
+		for _, col := range constraint.Columns {
 			if r.tables[tableName] == nil {
 				r.tables[tableName] = make(columnSet)
 			}
-			r.tables[tableName][column] = true
+			r.tables[tableName][col] = true
 		}
 	}
 }
 
-func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *columnDisallowDropInIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
+	tableName := n.Table.Name
 
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil || item.DROP_SYMBOL() == nil || item.ColumnInternalRef() == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil || cmd.Type != ast.ATDropColumn {
 			continue
 		}
 
+		// Load index columns from metadata.
 		table := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName)
 		if table != nil {
 			if r.tables[tableName] == nil {
@@ -172,22 +112,15 @@ func (r *ColumnDisallowDropInIndexRule) checkAlterTable(ctx *mysql.AlterTableCon
 			}
 		}
 
-		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-		if !r.canDrop(tableName, columnName) {
+		columnName := cmd.Name
+		if _, exists := r.tables[tableName][columnName]; exists {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.DropIndexColumn.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 			})
 		}
 	}
-}
-
-func (r *ColumnDisallowDropInIndexRule) canDrop(table string, column string) bool {
-	if _, ok := r.tables[table][column]; ok {
-		return false
-	}
-	return true
 }

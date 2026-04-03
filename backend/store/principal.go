@@ -96,7 +96,10 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, workspace string, ema
 
 	var users []*UserMessage
 
-	q := qb.Q().Space(`
+	var q *qb.Query
+	if workspace != "" {
+		// SaaS mode: scope to workspace IAM members only.
+		q = qb.Q().Space(`
 			SELECT p.id, p.deleted, p.email, p.name, p.password_hash, p.mfa_config, p.phone, p.profile, p.created_at
 			FROM principal p
 			JOIN policy pol ON pol.workspace = ? AND pol.resource_type = 'WORKSPACE' AND pol.type = 'IAM'
@@ -109,6 +112,15 @@ func (s *Store) BatchGetUsersByEmails(ctx context.Context, workspace string, ema
 			  )
 			ORDER BY p.created_at ASC
 		`, workspace, normalizedEmails, common.AllUsers)
+	} else {
+		// Non-SaaS mode: no workspace scoping.
+		q = qb.Q().Space(`
+			SELECT p.id, p.deleted, p.email, p.name, p.password_hash, p.mfa_config, p.phone, p.profile, p.created_at
+			FROM principal p
+			WHERE p.email = ANY(?)
+			ORDER BY p.created_at ASC
+		`, normalizedEmails)
+	}
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")

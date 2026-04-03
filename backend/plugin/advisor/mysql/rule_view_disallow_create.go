@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -35,85 +31,36 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewViewDisallowCreateRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ViewDisallowCreateRule checks for disallow creating view.
-type ViewDisallowCreateRule struct {
-	BaseRule
-	text string
-}
-
-// NewViewDisallowCreateRule creates a new ViewDisallowCreateRule.
-func NewViewDisallowCreateRule(level storepb.Advice_Status, title string) *ViewDisallowCreateRule {
-	return &ViewDisallowCreateRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &viewDisallowCreateOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ViewDisallowCreateRule) Name() string {
+type viewDisallowCreateOmniRule struct {
+	OmniBaseRule
+}
+
+func (*viewDisallowCreateOmniRule) Name() string {
 	return "ViewDisallowCreateRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ViewDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		}
-	case NodeTypeCreateView:
-		r.checkCreateView(ctx.(*mysql.CreateViewContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ViewDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ViewDisallowCreateRule) checkCreateView(ctx *mysql.CreateViewContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *viewDisallowCreateOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateViewStmt)
+	if !ok {
 		return
 	}
-	code := advisorcode.Ok
-	if ctx.ViewName() != nil {
-		code = advisorcode.DisallowCreateView
-	}
-
-	if code != advisorcode.Ok {
+	if n.Name != nil {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:        r.Level,
+			Code:          advisorcode.DisallowCreateView.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", r.QueryText()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

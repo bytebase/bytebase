@@ -50,6 +50,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
@@ -67,6 +68,7 @@ const { isCreating, plan, issue } = usePlanContext();
 
 const isPlanDetailPage = computed(() => {
   return (
+    route.name === PROJECT_V1_ROUTE_PLAN_DETAIL ||
     route.name === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
     route.name === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
   );
@@ -120,9 +122,10 @@ const showDoneTag = computed(() => {
 });
 
 const showDescriptionSection = computed(() => {
-  // Only show when there's no issue yet (draft plan)
-  return (
-    (isValidPlanName(plan.value.name) || isCreating.value) && !plan.value.issue
-  );
+  if (isCreating.value) return true;
+  // On Plan Detail Page: always show description
+  if (isPlanDetailPage.value) return isValidPlanName(plan.value.name);
+  // On Issue page: description is managed by the Issue page itself
+  return false;
 });
 </script>

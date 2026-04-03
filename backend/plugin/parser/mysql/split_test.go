@@ -3,10 +3,7 @@ package mysql
 import (
 	"testing"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/stretchr/testify/require"
-
-	parser "github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -58,9 +55,7 @@ func TestSplitMySQLStatements(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		lexer := parser.NewMySQLLexer(antlr.NewInputStream(test.statement))
-		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-		list, err := splitMySQLStatement(stream, test.statement)
+		list, err := SplitSQL(test.statement)
 		require.NoError(t, err)
 		require.Equal(t, len(test.expected), len(list))
 		for i, statement := range list {

@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -37,106 +34,66 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
-	// Create the rule
-	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), commentPayload)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableCommentConventionOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		payload: commentPayload,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// TableCommentConventionRule checks for table comment convention.
-type TableCommentConventionRule struct {
-	BaseRule
+type tableCommentConventionOmniRule struct {
+	OmniBaseRule
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
-// NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *TableCommentConventionRule {
-	return &TableCommentConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		payload: payload,
-	}
-}
-
-// Name returns the rule name.
-func (*TableCommentConventionRule) Name() string {
+func (*tableCommentConventionOmniRule) Name() string {
 	return "TableCommentConventionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableCommentConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeCreateTable {
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableCommentConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *TableCommentConventionRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *tableCommentConventionOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateTableStmt)
+	if !ok {
 		return
 	}
-	if ctx.TableName() == nil {
+	r.checkCreateTable(n)
+}
+
+func (r *tableCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
+	tableName := n.Table.Name
 
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-
-	comment, exists := r.handleCreateTableOptions(ctx.CreateTableOptions())
+	comment := omniTableOptionValue(n.Options, "COMMENT")
+	exists := comment != ""
+	// Check if any COMMENT option exists (even empty string).
+	for _, opt := range n.Options {
+		if opt != nil && opt.Name == "COMMENT" {
+			exists = true
+			break
+		}
+	}
 
 	if r.payload.Required && !exists {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.CommentEmpty.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Table `%s` requires comments", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 	if r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.CommentTooLong.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", tableName, r.payload.MaxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
-}
-
-func (*TableCommentConventionRule) handleCreateTableOptions(ctx mysql.ICreateTableOptionsContext) (string, bool) {
-	if ctx == nil {
-		return "", false
-	}
-	for _, option := range ctx.AllCreateTableOption() {
-		if option.COMMENT_SYMBOL() == nil || option.TextStringLiteral() == nil {
-			continue
-		}
-
-		comment := mysqlparser.NormalizeMySQLTextStringLiteral(option.TextStringLiteral())
-		return comment, true
-	}
-	return "", false
 }

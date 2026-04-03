@@ -2,11 +2,11 @@ package mysql
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/mysql"
+	mysqlomniparser "github.com/bytebase/omni/mysql/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -36,36 +36,24 @@ func parseMySQLStatement(statement string) *base.SyntaxError {
 		// for the last statement in the script.
 		statement += ";"
 	}
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewMySQLLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	p := parser.NewMySQLParser(stream)
-	startPosition := &storepb.Position{Line: 1}
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = false
-
-	_ = p.Script()
-
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
+	_, err := ParseMySQLOmni(statement)
+	if err == nil {
+		return nil
 	}
 
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
+	var parseErr *mysqlomniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return &base.SyntaxError{
+			Position: &storepb.Position{Line: 1, Column: 1},
+			Message:  err.Error(),
+		}
 	}
-	return nil
+
+	pos := ByteOffsetToRunePosition(statement, parseErr.Position)
+	return &base.SyntaxError{
+		Position:   pos,
+		Message:    parseErr.Message,
+		RawMessage: parseErr.Message,
+	}
 }

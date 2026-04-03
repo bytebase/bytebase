@@ -95,7 +95,10 @@ import {
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect } from "@/connect";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -250,15 +253,23 @@ const doCreateIssue = async () => {
     resetDraft();
     showPopover.value = false;
 
-    nextTick(() => {
-      router.push({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(plan.value.name),
-          issueId: extractIssueUID(createdIssue.name),
-        },
+    // On Plan Detail Page, stay in-place — the Review section will auto-expand.
+    // On other pages, navigate to the issue (backward compat).
+    const currentRoute = router.currentRoute.value;
+    const isPlanDetailPage =
+      typeof currentRoute.name === "string" &&
+      currentRoute.name.startsWith(PROJECT_V1_ROUTE_PLAN_DETAIL);
+    if (!isPlanDetailPage) {
+      nextTick(() => {
+        router.push({
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          params: {
+            projectId: extractProjectResourceName(plan.value.name),
+            issueId: extractIssueUID(createdIssue.name),
+          },
+        });
       });
-    });
+    }
   } catch (error) {
     pushNotification({
       module: "bytebase",
