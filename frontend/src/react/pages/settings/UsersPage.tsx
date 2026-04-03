@@ -1718,17 +1718,9 @@ function CreateGroupDrawer({
       if (!isValidEmail(memberEmail)) {
         return `Invalid member: ${raw}`;
       }
-      // In self-hosted mode, verify the user exists
-      if (!isSaaSMode) {
-        const normalized = raw.startsWith("users/") ? raw : `users/${raw}`;
-        const existingUser = userStore.getUserByIdentifier(normalized);
-        if (!existingUser) {
-          return `User not found: ${memberEmail}`;
-        }
-      }
     }
     return "";
-  }, [title, fullEmail, members, isSaaSMode, userStore, t]);
+  }, [title, fullEmail, members, t]);
 
   const hasChanged = useMemo(() => {
     if (!isEditMode) return true;
@@ -1780,6 +1772,23 @@ function CreateGroupDrawer({
             member: normalizeMemberIdentifier(m.member),
           })
         );
+
+      // In self-hosted mode, verify all members exist via backend lookup
+      if (!isSaaSMode) {
+        const memberNames = normalizedMembers.map((m) => m.member);
+        const resolved = await userStore.batchGetOrFetchUsers(memberNames);
+        const notFound = memberNames.filter((name, i) => !resolved[i]);
+        if (notFound.length > 0) {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: `User not found: ${notFound.map((n) => n.replace("users/", "")).join(", ")}`,
+          });
+          setIsRequesting(false);
+          return;
+        }
+      }
+
       const dedupedMembers = deduplicateMembers(normalizedMembers);
       if (isEditMode && group) {
         const validGroup = create(GroupSchema, {
@@ -2100,12 +2109,32 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
       : "";
 
   const copyToClipboard = async (value: string) => {
-    await navigator.clipboard.writeText(value);
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        // Fallback for non-secure contexts (e.g. self-hosted HTTP)
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.copied"),
+      });
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: t("common.copy-failed"),
+      });
+    }
   };
 
   const handleResetToken = async () => {

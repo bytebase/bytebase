@@ -145,7 +145,8 @@
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
-    "you": "tu"
+    "you": "tu",
+    "copy-failed": "Copy failed"
   },
   "create-db": {
     "cluster": "Clúster",

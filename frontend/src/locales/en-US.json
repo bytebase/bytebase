@@ -281,7 +281,8 @@
     "unknown": "Unknown",
     "classification-level": "Classification Level",
     "is-required": "is required",
-    "scope": "Scope"
+    "scope": "Scope",
+    "copy-failed": "Copy failed"
   },
   "error-page": {
     "forbidden": "Forbidden",

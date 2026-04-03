@@ -145,7 +145,8 @@
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "you": "あなた"
+    "you": "あなた",
+    "copy-failed": "Copy failed"
   },
   "create-db": {
     "cluster": "集まる",

@@ -145,7 +145,8 @@
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
-    "you": "bạn"
+    "you": "bạn",
+    "copy-failed": "Copy failed"
   },
   "create-db": {
     "cluster": "Cụm",

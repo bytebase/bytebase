@@ -282,7 +282,8 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "Alcance",
     "classification-level": "Nivel de clasificación",
-    "is-required": "is required"
+    "is-required": "is required",
+    "copy-failed": "Copy failed"
   },
   "error-page": {
     "forbidden": "Prohibido",

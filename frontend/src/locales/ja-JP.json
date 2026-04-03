@@ -282,7 +282,8 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "スコープ",
     "classification-level": "分類レベル",
-    "is-required": "is required"
+    "is-required": "is required",
+    "copy-failed": "Copy failed"
   },
   "error-page": {
     "forbidden": "アクセス禁止",

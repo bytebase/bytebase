@@ -145,7 +145,8 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您"
+    "you": "您",
+    "copy-failed": "Copy failed"
   },
   "create-db": {
     "cluster": "集群",
