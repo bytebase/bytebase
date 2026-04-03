@@ -57,6 +57,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -2901,7 +2902,7 @@ export function UsersPage() {
 
   const inactiveUsers = usePagedData<User>({
     sessionKey: "bb.users.inactive.page-size",
-    enabled: !isSaaSMode && hasUserListPermission,
+    enabled: !isSaaSMode && hasUserListPermission && showInactiveUsers,
     fetchList: fetchInactiveUsers,
   });
 
@@ -3111,7 +3112,12 @@ export function UsersPage() {
                       <span>
                         {t("settings.members.groups.workspace-domain-required")}{" "}
                         <a
-                          href="/setting/general#domain-restriction"
+                          href={
+                            router.resolve({
+                              name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                              hash: "#domain-restriction",
+                            }).href
+                          }
                           className="underline text-accent"
                         >
                           {t("common.configure")}
