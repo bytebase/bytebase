@@ -253,9 +253,9 @@ In `frontend/src/router/dashboard/workspaceRoutes.ts`, add after line 28 (`WORKS
 export const WORKSPACE_ROUTE_GROUPS = "workspace.groups";
 ```
 
-- [ ] **Step 2: Update Users route with SaaS guard**
+- [ ] **Step 2: Update Users route**
 
-In `frontend/src/router/dashboard/workspace.ts`, update the Users route (lines 310-318) to add permission, title, and a `beforeEnter` guard that redirects SaaS users to Members:
+In `frontend/src/router/dashboard/workspace.ts`, update the Users route (lines 310-318) to add permission and title:
 
 ```typescript
 {
@@ -265,20 +265,10 @@ In `frontend/src/router/dashboard/workspace.ts`, update the Users route (lines 3
     title: () => t("common.users"),
     requiredPermissionList: () => ["bb.users.list"],
   },
-  beforeEnter: (_to, _from, next) => {
-    const actuatorStore = useActuatorV1Store();
-    if (actuatorStore.isSaaSMode) {
-      next({ name: WORKSPACE_ROUTE_MEMBERS, replace: true });
-    } else {
-      next();
-    }
-  },
   component: () => import("@/react/ReactPageMount.vue"),
   props: () => ({ page: "UsersPage" }),
 },
 ```
-
-Import `useActuatorV1Store` at the top of the file if not already imported.
 
 - [ ] **Step 3: Update Members route**
 
@@ -495,7 +485,6 @@ No automated tests exist for this page. Verify manually:
   - Sidebar shows "Members" and "Groups"
   - `/settings/members` — works same as non-SaaS
   - `/settings/groups` — works same as non-SaaS
-  - `/settings/users` (direct URL) — redirects to `/settings/members`
 
 - [ ] **Cross-page navigation:**
   - On Users page, clicking a group badge in the user table navigates to `/settings/groups` and opens the group
