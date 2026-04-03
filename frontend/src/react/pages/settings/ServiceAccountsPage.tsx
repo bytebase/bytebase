@@ -92,6 +92,7 @@ function ServiceAccountTable({
   };
 
   const [resetConfirmUser, setResetConfirmUser] = useState<User | undefined>();
+  const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
   const handleResetKey = async (user: User) => {
     setResetConfirmUser(undefined);
@@ -104,6 +105,7 @@ function ServiceAccountTable({
       onUserUpdated(updated);
       if (updated.serviceKey) {
         await navigator.clipboard.writeText(updated.serviceKey);
+        setCopiedKeys((prev) => new Set(prev).add(updated.name));
         pushNotification({
           module: "bytebase",
           style: "INFO",
@@ -115,8 +117,9 @@ function ServiceAccountTable({
     }
   };
 
-  const handleCopyKey = async (key: string) => {
-    await navigator.clipboard.writeText(key);
+  const handleCopyKey = async (user: User) => {
+    await navigator.clipboard.writeText(user.serviceKey);
+    setCopiedKeys((prev) => new Set(prev).add(user.name));
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -158,7 +161,7 @@ function ServiceAccountTable({
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-x-3">
                     <UserAvatar title={user.title || user.email} />
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-x-1.5">
                         <span
                           className={
@@ -176,72 +179,66 @@ function ServiceAccountTable({
                       <span className="textinfolabel text-xs">
                         {user.email}
                       </span>
-                      {!isDeleted && (
-                        <div className="flex items-center gap-x-1 mt-1">
-                          {user.serviceKey ? (
+                    </div>
+                    {!isDeleted && (
+                      <div className="ml-auto text-xs shrink-0">
+                        {user.serviceKey && !copiedKeys.has(user.name) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyKey(user);
+                            }}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            {t("settings.members.copy-service-key")}
+                          </Button>
+                        ) : resetConfirmUser?.name === user.name ? (
+                          <div className="flex items-center gap-x-1">
+                            <span className="text-xs text-error">
+                              {t("settings.members.reset-service-key-alert")}
+                            </span>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="h-6 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleResetKey(user);
+                              }}
+                            >
+                              {t("common.confirm")}
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-6 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleCopyKey(user.serviceKey);
+                                setResetConfirmUser(undefined);
                               }}
                             >
-                              <Copy className="h-3 w-3 mr-1" />
-                              {t("settings.members.copy-service-key")}
+                              {t("common.cancel")}
                             </Button>
-                          ) : (
-                            <>
-                              {resetConfirmUser?.name === user.name ? (
-                                <div className="flex items-center gap-x-1">
-                                  <span className="text-xs text-error">
-                                    {t(
-                                      "settings.members.reset-service-key-alert"
-                                    )}
-                                  </span>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-6 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleResetKey(user);
-                                    }}
-                                  >
-                                    {t("common.confirm")}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setResetConfirmUser(undefined);
-                                    }}
-                                  >
-                                    {t("common.cancel")}
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setResetConfirmUser(user);
-                                  }}
-                                >
-                                  <KeyRound className="h-3 w-3 mr-1" />
-                                  {t("settings.members.reset-service-key")}
-                                </Button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setResetConfirmUser(user);
+                            }}
+                          >
+                            <KeyRound className="h-3 w-3 mr-1" />
+                            {t("settings.members.reset-service-key")}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </td>
 
