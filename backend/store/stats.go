@@ -38,12 +38,12 @@ func (s *Store) CountAllActivePrincipals(ctx context.Context) (int, error) {
 // CountActiveEndUsersPerWorkspace counts active end users who are members of the given workspace
 // by joining principal with workspace IAM policy bindings.
 func (s *Store) CountActiveEndUsersPerWorkspace(ctx context.Context, workspaceID string) (int, error) {
-	if v, ok := s.userCountCache.Get(workspaceID); ok {
+	if v, ok := s.userCountCache.Get(workspaceID); ok && s.enableCache {
 		return v, nil
 	}
 
 	// Count distinct active users who are members of the workspace, either
-	// directly (users/email) or via group expansion (groups/email -> group members).
+	// directly (users/email) or via group expansion (groups/{email|id} -> group members).
 	q := qb.Q().Space(`
 		WITH iam_members AS (
 			SELECT DISTINCT jsonb_array_elements_text(binding->'members') AS member
@@ -61,7 +61,8 @@ func (s *Store) CountActiveEndUsersPerWorkspace(ctx context.Context, workspaceID
 		group_users AS (
 			SELECT SUBSTRING(gm.value->>'member' FROM 7) AS email
 			FROM iam_members im
-			JOIN user_group ug ON ug.workspace = ? AND ug.email = SUBSTRING(im.member FROM 8)
+			JOIN user_group ug ON ug.workspace = ?
+			  AND (ug.email = SUBSTRING(im.member FROM 8) OR ug.id = SUBSTRING(im.member FROM 8))
 			, jsonb_array_elements(ug.payload->'members') AS gm
 			WHERE im.member LIKE 'groups/%'
 			  AND gm.value->>'member' LIKE 'users/%'
