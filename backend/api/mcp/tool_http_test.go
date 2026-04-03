@@ -86,6 +86,11 @@ func TestApiRequest_RawMessage(t *testing.T) {
 	require.Equal(t, int64(9999999999), r.Count)
 }
 
+// testContext returns a context with a test workspace ID.
+func testContext() context.Context {
+	return withWorkspaceID(context.Background(), "wk-test")
+}
+
 func TestWorkspaceIDContext(t *testing.T) {
 	ctx := context.Background()
 

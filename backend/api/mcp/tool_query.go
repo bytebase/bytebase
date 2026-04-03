@@ -133,7 +133,8 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 
 // listDatabasesResponse is the typed response from ListDatabases API.
 type listDatabasesResponse struct {
-	Databases []databaseEntry `json:"databases"`
+	Databases     []databaseEntry `json:"databases"`
+	NextPageToken string          `json:"nextPageToken,omitempty"`
 }
 
 // databaseEntry represents a database in the ListDatabases response.
@@ -169,106 +170,54 @@ func buildDatabaseFilter(input QueryInput) string {
 	return filter
 }
 
-// listProjectsResponse is the typed response from ListProjects API.
-type listProjectsResponse struct {
-	Projects      []projectEntry `json:"projects"`
-	NextPageToken string         `json:"nextPageToken,omitempty"`
-}
+// listDatabases lists databases matching the filter in the user's workspace.
+// Uses the workspace ID from the JWT token stored in context.
+func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEntry, error) {
+	workspaceID := getWorkspaceID(ctx)
+	if workspaceID == "" {
+		return nil, &toolError{
+			Code:       "AUTH_ERROR",
+			Message:    "workspace ID not found in token",
+			Suggestion: "re-authenticate with Bytebase",
+		}
+	}
 
-// projectEntry represents a project in the ListProjects response.
-type projectEntry struct {
-	Name string `json:"name"`
-}
-
-// listProjects returns the resource names of projects accessible to the current user.
-// Uses SearchProjects (CUSTOM auth) instead of ListProjects (requires bb.projects.list)
-// so that WorkspaceMember users can discover projects they have project-level access to.
-func (s *Server) listProjects(ctx context.Context) ([]string, error) {
-	var names []string
+	var databases []databaseEntry
 	pageToken := ""
 	for {
-		body := map[string]any{"pageSize": 1000}
+		body := map[string]any{
+			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
+			"filter":   filter,
+			"pageSize": 1000,
+		}
 		if pageToken != "" {
 			body["pageToken"] = pageToken
 		}
-		resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/SearchProjects", body)
+		resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to search projects")
+			return nil, errors.Wrap(err, "failed to list databases")
+		}
+		if resp.Status == http.StatusForbidden {
+			return nil, &toolError{
+				Code:       "PERMISSION_DENIED",
+				Message:    "you don't have permission to list databases in this workspace",
+				Suggestion: "ask your workspace admin to grant you the bb.databases.list permission",
+			}
 		}
 		if resp.Status >= 400 {
-			return nil, errors.Errorf("failed to search projects: HTTP %d: %s", resp.Status, parseError(resp.Body))
+			return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
 		}
-		var listResp listProjectsResponse
+
+		var listResp listDatabasesResponse
 		if err := json.Unmarshal(resp.Body, &listResp); err != nil {
-			return nil, errors.Wrap(err, "failed to parse project list")
+			return nil, errors.Wrap(err, "failed to parse database list")
 		}
-		for _, p := range listResp.Projects {
-			names = append(names, p.Name)
-		}
+		databases = append(databases, listResp.Databases...)
+
 		if listResp.NextPageToken == "" {
 			break
 		}
 		pageToken = listResp.NextPageToken
-	}
-	return names, nil
-}
-
-// listDatabasesInProject lists databases in a single project matching the given filter.
-// Returns (nil, nil) on permission-denied (403/404) so callers can skip inaccessible projects.
-// Returns a real error for other failures (500, timeouts, parse errors).
-func (s *Server) listDatabasesInProject(ctx context.Context, project, filter string) ([]databaseEntry, error) {
-	body := map[string]any{
-		"parent":   project,
-		"filter":   filter,
-		"pageSize": 1000,
-	}
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases in %s", project)
-	}
-	if resp.Status == 403 || resp.Status == 404 {
-		return nil, nil
-	}
-	if resp.Status >= 400 {
-		return nil, errors.Errorf("failed to list databases in %s: HTTP %d: %s", project, resp.Status, parseError(resp.Body))
-	}
-
-	var listResp listDatabasesResponse
-	if err := json.Unmarshal(resp.Body, &listResp); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse database list for %s", project)
-	}
-	return listResp.Databases, nil
-}
-
-// fetchDatabases retrieves databases matching the filter across accessible projects.
-func (s *Server) fetchDatabases(ctx context.Context, input QueryInput, filter string) ([]databaseEntry, error) {
-	if input.Project != "" {
-		project := "projects/" + input.Project
-		dbs, err := s.listDatabasesInProject(ctx, project, filter)
-		if err != nil {
-			return nil, err
-		}
-		if dbs == nil {
-			return nil, &toolError{
-				Code:       "PROJECT_ACCESS_DENIED",
-				Message:    fmt.Sprintf("cannot access project %q", input.Project),
-				Suggestion: "check the project name and your permissions",
-			}
-		}
-		return dbs, nil
-	}
-
-	projects, err := s.listProjects(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var databases []databaseEntry
-	for _, proj := range projects {
-		dbs, err := s.listDatabasesInProject(ctx, proj, filter)
-		if err != nil {
-			return nil, err
-		}
-		databases = append(databases, dbs...)
 	}
 	return databases, nil
 }
@@ -325,7 +274,7 @@ func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
-	databases, err := s.fetchDatabases(ctx, input, buildDatabaseFilter(input))
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(input))
 	if err != nil {
 		return nil, err
 	}
