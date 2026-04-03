@@ -132,11 +132,20 @@ function PortaledDropdown({
     updatePosition();
     window.addEventListener("scroll", updatePosition, true);
     window.addEventListener("resize", updatePosition);
+
+    const anchor = anchorRef.current;
+    let ro: ResizeObserver | undefined;
+    if (anchor) {
+      ro = new ResizeObserver(updatePosition);
+      ro.observe(anchor);
+    }
+
     return () => {
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
+      ro?.disconnect();
     };
-  }, [updatePosition]);
+  }, [updatePosition, anchorRef]);
 
   return createPortal(
     <div ref={dropdownRef} style={style} className={className}>
@@ -173,7 +182,6 @@ function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<SearchableSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,8 +240,8 @@ function SearchableSelect({
     setSearch("");
   };
 
-  const closeSearchable = useCallback(() => setOpen(false), []);
-  useClickOutside([containerRef, dropdownRef], open, closeSearchable);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   if (!optionConfig.search) {
     return (
@@ -265,7 +273,7 @@ function SearchableSelect({
   }
 
   return (
-    <div ref={containerRef} className="min-w-28">
+    <div className="min-w-28">
       <button
         ref={triggerRef}
         type="button"
@@ -345,7 +353,6 @@ function MultiSearchableSelect({
     []
   );
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -425,8 +432,8 @@ function MultiSearchableSelect({
     onChange(value.filter((x) => x !== v));
   };
 
-  const closeMultiSearchable = useCallback(() => setOpen(false), []);
-  useClickOutside([containerRef, dropdownRef], open, closeMultiSearchable);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   if (!optionConfig.search) {
     return (
@@ -441,7 +448,7 @@ function MultiSearchableSelect({
   }
 
   return (
-    <div ref={containerRef} className="min-w-32 max-w-xs">
+    <div className="min-w-32 max-w-xs">
       <div
         ref={triggerRef}
         className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white flex flex-wrap gap-1 cursor-pointer"
@@ -621,7 +628,6 @@ function MultiCheckSelect({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -641,11 +647,11 @@ function MultiCheckSelect({
     }
   };
 
-  const closeMultiCheck = useCallback(() => setOpen(false), []);
-  useClickOutside([containerRef, dropdownRef], open, closeMultiCheck);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside([triggerRef, dropdownRef], open, close);
 
   return (
-    <div ref={containerRef} className="min-w-32">
+    <div className="min-w-32">
       <button
         ref={triggerRef}
         type="button"
