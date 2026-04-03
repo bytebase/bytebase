@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/mysql"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -28,28 +28,52 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	parseResult, err := ParseMySQL(originalSQL)
+	// Find the matching DML statement node at the backup position.
+	matchingNode, err := findStatementAtPosition(originalSQL, backupItem)
 	if err != nil {
 		return "", err
 	}
-
-	if len(parseResult) == 0 {
-		return "", errors.Errorf("no parse result")
+	if matchingNode == nil {
+		return "", errors.Errorf("could not find statement at position (line %d:%d - %d:%d)",
+			backupItem.StartPosition.Line, backupItem.StartPosition.Column,
+			backupItem.EndPosition.Line, backupItem.EndPosition.Column)
 	}
 
-	// We only need the first parse result.
-	// There are two cases:
-	// 1. The statement is a single SQL statement.
-	// 2. The statement is a multi SQL statement, but all SQL statements' backup is in the same table.
-	//    So we only need to restore the first SQL statement.
 	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
 	if truncated {
 		sqlForComment += "..."
 	}
-	return doGenerate(ctx, rCtx, sqlForComment, parseResult[0], backupItem)
+	return doGenerate(ctx, rCtx, sqlForComment, matchingNode, backupItem)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, ast *base.ANTLRAST, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func findStatementAtPosition(statement string, backupItem *storepb.PriorBackupDetail_Item) (ast.Node, error) {
+	stmtList, err := ParseMySQLOmni(statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse statement")
+	}
+
+	for _, item := range stmtList.Items {
+		switch n := item.(type) {
+		case *ast.UpdateStmt:
+			startPos := ByteOffsetToRunePosition(statement, n.Loc.Start)
+			startPos.Column-- // 0-based to match backup convention
+			endPos := ByteOffsetToRunePosition(statement, n.Loc.End)
+			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
+				return n, nil
+			}
+		case *ast.DeleteStmt:
+			startPos := ByteOffsetToRunePosition(statement, n.Loc.Start)
+			startPos.Column-- // 0-based to match backup convention
+			endPos := ByteOffsetToRunePosition(statement, n.Loc.End)
+			if inRange(startPos, endPos, backupItem.StartPosition, backupItem.EndPosition) {
+				return n, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -66,25 +90,203 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
 	}
 
-	g := &generator{
-		ctx:              ctx,
-		rCtx:             rCtx,
-		backupDatabase:   targetDatabase,
-		backupTable:      backupItem.TargetTable.Table,
-		originalDatabase: sourceDatabase,
-		originalTable:    backupItem.SourceTable.Table,
-		generatedColumns: generatedColumns,
-		normalColumns:    normalColumns,
+	var result string
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		result = generateDeleteRestore(sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
+	case *ast.UpdateStmt:
+		r, err := generateUpdateRestore(ctx, rCtx, n, sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
+		if err != nil {
+			return "", err
+		}
+		result = r
+	default:
+		return "", errors.Errorf("unexpected statement type: %T", node)
 	}
+
+	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, result), nil
+}
+
+func generateDeleteRestore(originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) string {
+	if len(generatedColumns) == 0 {
+		return fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s`;", originalDatabase, originalTable, backupDatabase, backupTable)
+	}
+	var quotedColumns []string
+	for _, column := range normalColumns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
+	}
+	quotedColumnList := strings.Join(quotedColumns, ", ")
+	return fmt.Sprintf("INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s`;", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable)
+}
+
+func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmt *ast.UpdateStmt, originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) (string, error) {
+	// Extract single tables from the UPDATE table references.
+	singleTables := extractSingleTablesFromTableExprs(originalDatabase, stmt.Tables)
+
+	// Find the table matching the original table.
+	var matchedTable *TableReference
+	for _, table := range singleTables {
+		if strings.EqualFold(table.Table, originalTable) {
+			matchedTable = table
+			break
+		}
+	}
+
+	// Extract update column names that belong to the original table.
+	updateColumns := extractUpdateColumns(stmt.SetList, originalDatabase, originalTable, matchedTable, normalColumns)
+
+	has, err := hasDisjointUniqueKey(ctx, rCtx, originalDatabase, originalTable, updateColumns)
+	if err != nil {
+		return "", err
+	}
+	if !has {
+		return "", errors.Errorf("no disjoint unique key found for %s.%s", originalDatabase, originalTable)
+	}
+
 	var buf strings.Builder
-	antlr.ParseTreeWalkerDefault.Walk(g, ast.Tree)
-	if g.err != nil {
-		return "", g.err
+	if len(generatedColumns) == 0 {
+		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", originalDatabase, originalTable, backupDatabase, backupTable); err != nil {
+			return "", err
+		}
+	} else {
+		var quotedColumns []string
+		for _, column := range normalColumns {
+			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
+		}
+		quotedColumnList := strings.Join(quotedColumns, ", ")
+		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable); err != nil {
+			return "", err
+		}
 	}
-	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result); err != nil {
+
+	for i, field := range updateColumns {
+		if i > 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return "", err
+			}
+		}
+		if _, err := fmt.Fprintf(&buf, "`%s` = VALUES(`%s`)", field, field); err != nil {
+			return "", err
+		}
+	}
+	if _, err := buf.WriteString(";"); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// extractSingleTablesFromTableExprs walks omni TableExpr nodes and returns
+// a map of alias-or-name to TableReference for simple table references.
+func extractSingleTablesFromTableExprs(databaseName string, exprs []ast.TableExpr) map[string]*TableReference {
+	result := make(map[string]*TableReference)
+	for _, expr := range exprs {
+		collectTableRefs(databaseName, expr, result)
+	}
+	return result
+}
+
+func collectTableRefs(databaseName string, expr ast.TableExpr, result map[string]*TableReference) {
+	switch n := expr.(type) {
+	case *ast.TableRef:
+		database := n.Schema
+		if database == "" {
+			database = databaseName
+		}
+		table := &TableReference{
+			Database: database,
+			Table:    n.Name,
+			Alias:    n.Alias,
+		}
+		if n.Alias != "" {
+			result[n.Alias] = table
+		} else {
+			result[n.Name] = table
+		}
+	case *ast.JoinClause:
+		collectTableRefs(databaseName, n.Left, result)
+		collectTableRefs(databaseName, n.Right, result)
+	}
+}
+
+// extractUpdateColumns extracts column names from SET assignments that belong
+// to the original table.
+func extractUpdateColumns(setList []*ast.Assignment, database, originalTable string, matchedTable *TableReference, normalColumns []string) []string {
+	var result []string
+	for _, assignment := range setList {
+		col := assignment.Column
+		if col == nil {
+			continue
+		}
+
+		if col.Schema != "" && !strings.EqualFold(col.Schema, database) {
+			continue
+		}
+
+		if col.Table == "" {
+			// Unqualified column: check if it belongs to the normalColumns set.
+			for _, c := range normalColumns {
+				if strings.EqualFold(c, col.Column) {
+					result = append(result, col.Column)
+					break
+				}
+			}
+			continue
+		}
+
+		if matchedTable != nil && (col.Table == matchedTable.Alias || strings.EqualFold(col.Table, matchedTable.Table)) {
+			result = append(result, col.Column)
+		}
+	}
+	return result
+}
+
+func hasDisjointUniqueKey(ctx context.Context, rCtx base.RestoreContext, originalDatabase, originalTable string, updateColumns []string) (bool, error) {
+	columnMap := make(map[string]bool)
+	for _, column := range updateColumns {
+		columnMap[strings.ToLower(column)] = true
+	}
+
+	if rCtx.GetDatabaseMetadataFunc == nil {
+		return false, errors.Errorf("GetDatabaseMetadataFunc is nil")
+	}
+
+	_, metadata, err := rCtx.GetDatabaseMetadataFunc(ctx, rCtx.InstanceID, originalDatabase)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get database metadata for %s", originalDatabase)
+	}
+	if metadata == nil {
+		return false, errors.Errorf("database metadata is nil for %s", originalDatabase)
+	}
+
+	schema := metadata.GetSchemaMetadata("")
+	if schema == nil {
+		return false, errors.Errorf("schema is nil for %s", originalDatabase)
+	}
+
+	tableMetadata := schema.GetTable(originalTable)
+	if tableMetadata == nil {
+		return false, errors.Errorf("table metadata is nil for %s.%s", originalDatabase, originalTable)
+	}
+
+	for _, index := range tableMetadata.GetProto().Indexes {
+		if !index.Primary && !index.Unique {
+			continue
+		}
+		if disjoint(index.Expressions, columnMap) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func disjoint(a []string, b map[string]bool) bool {
+	for _, item := range a {
+		if _, ok := b[strings.ToLower(item)]; ok {
+			return false
+		}
+	}
+	return true
 }
 
 func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
@@ -117,25 +319,15 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 	}
 
 	var result []string
-	// We only need statements that contain the source table.
 	for i := start; i <= end; i++ {
-		parseResult, err := ParseMySQL(list[i].Text)
+		stmtList, err := ParseMySQLOmni(list[i].Text)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to parse sql")
 		}
 		containsSourceTable := false
-		for _, sql := range parseResult {
-			tables, err := ExtractTables(sourceDatabase, sql, i, nil)
-			if err != nil {
-				return "", errors.Wrap(err, "failed to extract tables")
-			}
-			for _, table := range tables {
-				if table.Table.Database == sourceDatabase && table.Table.Table == backupItem.SourceTable.Table {
-					containsSourceTable = true
-					break
-				}
-			}
-			if containsSourceTable {
+		for _, node := range stmtList.Items {
+			if containsTable(node, sourceDatabase, backupItem.SourceTable.Table) {
+				containsSourceTable = true
 				break
 			}
 		}
@@ -144,6 +336,54 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 	}
 	return strings.Join(result, ""), nil
+}
+
+// containsTable checks whether the given AST node references the specified table.
+func containsTable(node ast.Node, database, table string) bool {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		for _, expr := range n.Tables {
+			if tableExprReferences(expr, database, table) {
+				return true
+			}
+		}
+	case *ast.DeleteStmt:
+		for _, expr := range n.Tables {
+			if tableExprReferences(expr, database, table) {
+				return true
+			}
+		}
+		for _, expr := range n.Using {
+			if tableExprReferences(expr, database, table) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func tableExprReferences(expr ast.TableExpr, database, table string) bool {
+	switch n := expr.(type) {
+	case *ast.TableRef:
+		db := n.Schema
+		if db == "" {
+			db = database
+		}
+		return db == database && strings.EqualFold(n.Name, table)
+	case *ast.JoinClause:
+		return tableExprReferences(n.Left, database, table) || tableExprReferences(n.Right, database, table)
+	}
+	return false
+}
+
+func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
+	if start.Line < targetStart.Line || (start.Line == targetStart.Line && start.Column < targetStart.Column) {
+		return false
+	}
+	if end.Line > targetEnd.Line || (end.Line == targetEnd.Line && end.Column > targetEnd.Column) {
+		return false
+	}
+	return true
 }
 
 func equalOrLess(a, b *storepb.Position) bool {
@@ -164,190 +404,4 @@ func equalOrGreater(a, b *storepb.Position) bool {
 		return true
 	}
 	return false
-}
-
-type generator struct {
-	*parser.BaseMySQLParserListener
-
-	ctx  context.Context
-	rCtx base.RestoreContext
-
-	backupDatabase   string
-	backupTable      string
-	originalDatabase string
-	originalTable    string
-	generatedColumns []string
-	normalColumns    []string
-	result           string
-	err              error
-}
-
-func (g *generator) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	if len(g.generatedColumns) == 0 {
-		g.result = fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s`;", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable)
-	} else {
-		var quotedColumns []string
-		for _, column := range g.normalColumns {
-			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
-		}
-		quotedColumnList := strings.Join(quotedColumns, ", ")
-		g.result = fmt.Sprintf("INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s`;", g.originalDatabase, g.originalTable, quotedColumnList, quotedColumnList, g.backupDatabase, g.backupTable)
-	}
-}
-
-func (g *generator) hasDisjointUniqueKey(updateColumns []string) (bool, error) {
-	columnMap := make(map[string]bool)
-	for _, column := range updateColumns {
-		columnMap[strings.ToLower(column)] = true
-	}
-
-	if g.rCtx.GetDatabaseMetadataFunc == nil {
-		return false, errors.Errorf("GetDatabaseMetadataFunc is nil")
-	}
-
-	_, metadata, err := g.rCtx.GetDatabaseMetadataFunc(g.ctx, g.rCtx.InstanceID, g.originalDatabase)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get database metadata for %s", g.originalDatabase)
-	}
-
-	if metadata == nil {
-		return false, errors.Errorf("database metadata is nil for %s", g.originalDatabase)
-	}
-
-	schema := metadata.GetSchemaMetadata("")
-	if schema == nil {
-		return false, errors.Errorf("schema is nil for %s", g.originalDatabase)
-	}
-
-	tableMetadata := schema.GetTable(g.originalTable)
-	if tableMetadata == nil {
-		return false, errors.Errorf("table metadata is nil for %s.%s", g.originalDatabase, g.originalTable)
-	}
-
-	for _, index := range tableMetadata.GetProto().Indexes {
-		if !index.Primary && !index.Unique {
-			continue
-		}
-		if disjoint(index.Expressions, columnMap) {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-func disjoint(a []string, b map[string]bool) bool {
-	for _, item := range a {
-		if _, ok := b[strings.ToLower(item)]; ok {
-			return false
-		}
-	}
-	return true
-}
-
-func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	singleTables := &singleTableListener{
-		databaseName: g.originalDatabase,
-		singleTables: make(map[string]*TableReference),
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-	updateItems := &updateItemListener{
-		database:      g.originalDatabase,
-		normalColumns: g.normalColumns,
-	}
-	for _, table := range singleTables.singleTables {
-		if strings.EqualFold(table.Table, g.originalTable) {
-			updateItems.table = table
-			break
-		}
-	}
-	antlr.ParseTreeWalkerDefault.Walk(updateItems, ctx.UpdateList())
-
-	has, err := g.hasDisjointUniqueKey(updateItems.result)
-	if err != nil {
-		g.err = err
-		return
-	}
-	if !has {
-		g.err = errors.Errorf("no disjoint unique key found for %s.%s", g.originalDatabase, g.originalTable)
-		return
-	}
-
-	var buf strings.Builder
-	if len(g.generatedColumns) == 0 {
-		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
-			g.err = err
-			return
-		}
-	} else {
-		var quotedColumns []string
-		for _, column := range g.normalColumns {
-			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
-		}
-		quotedColumnList := strings.Join(quotedColumns, ", ")
-		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", g.originalDatabase, g.originalTable, quotedColumnList, quotedColumnList, g.backupDatabase, g.backupTable); err != nil {
-			g.err = err
-			return
-		}
-	}
-
-	for i, field := range updateItems.result {
-		if i > 0 {
-			if _, err := buf.WriteString(", "); err != nil {
-				g.err = err
-				return
-			}
-		}
-
-		if _, err := fmt.Fprintf(&buf, "`%s` = VALUES(`%s`)", field, field); err != nil {
-			g.err = err
-			return
-		}
-	}
-	if _, err := buf.WriteString(";"); err != nil {
-		g.err = err
-		return
-	}
-	g.result = buf.String()
-}
-
-type updateItemListener struct {
-	*parser.BaseMySQLParserListener
-	normalColumns []string
-	database      string
-	table         *TableReference
-	result        []string
-}
-
-func (l *updateItemListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	database, table, column := NormalizeMySQLColumnRef(ctx.ColumnRef())
-
-	if database != "" && !strings.EqualFold(database, l.database) {
-		return
-	}
-
-	if table == "" {
-		for _, c := range l.normalColumns {
-			if strings.EqualFold(c, column) {
-				l.result = append(l.result, column)
-				return
-			}
-		}
-		return
-	}
-
-	if l.table.Alias == table || strings.EqualFold(l.table.Table, table) {
-		l.result = append(l.result, column)
-		return
-	}
 }

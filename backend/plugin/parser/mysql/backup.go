@@ -7,10 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/generated-go/store"
@@ -62,10 +61,11 @@ type TableReference struct {
 type StatementInfo struct {
 	Offset        int
 	Statement     string
-	Tree          antlr.ParserRuleContext
+	Node          ast.Node
 	Table         *TableReference
 	StartPosition *store.Position
 	EndPosition   *store.Position
+	FullSQL       string
 }
 
 func prepareTransformation(databaseName, statement string, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
@@ -80,16 +80,13 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 		if len(item.Text) == 0 || item.Empty {
 			continue
 		}
-		parseResult, err := ParseMySQL(item.Text)
+		omniList, err := ParseMySQLOmni(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
 
-		for _, sql := range parseResult {
-			// After splitting the SQL, we should have only one statement in the list.
-			// The FOR loop is just for safety.
-			// So we can use the i as the offset.
-			tables, err := ExtractTables(databaseName, sql, i, dbMetadata)
+		for _, node := range omniList.Items {
+			tables, err := ExtractTables(databaseName, node, item.Text, i, dbMetadata)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
@@ -97,10 +94,11 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 				result = append(result, StatementInfo{
 					Offset:        i,
 					Statement:     table.Statement,
+					Node:          table.Node,
 					Table:         table.Table,
-					Tree:          table.Tree,
 					StartPosition: item.Start,
 					EndPosition:   item.End,
+					FullSQL:       item.Text,
 				})
 			}
 		}
@@ -116,7 +114,6 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 		groupByTable[key] = append(groupByTable[key], item)
 	}
 
-	// Check if the statement type is the same for all statements in one table.
 	for key, list := range groupByTable {
 		stmtType := StatementTypeUnknown
 		for _, item := range list {
@@ -202,8 +199,6 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	}
 	for i, item := range statementInfoList {
 		if i != 0 {
-			// We assume that the source table has a primary key.
-			// If we have multiple statements, we need to use UNION DISTINCT to avoid duplicate rows.
 			if _, err := buf.WriteString("\n  UNION DISTINCT\n"); err != nil {
 				return nil, errors.Wrap(err, "failed to write union all statement")
 			}
@@ -215,7 +210,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 		if _, err := buf.WriteString("  "); err != nil {
 			return nil, errors.Wrap(err, "failed to write space")
 		}
-		cteString := extractCTE(item.Tree)
+		cteString := extractCTE(item.Node, item.FullSQL)
 		if len(cteString) > 0 {
 			if _, err := fmt.Fprintf(&buf, "%s ", cteString); err != nil {
 				return nil, errors.Wrap(err, "failed to write cte")
@@ -243,7 +238,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 				return nil, errors.Wrap(err, "failed to write from")
 			}
 		}
-		if err := extractSuffixSelectStatement(item.Tree, &buf); err != nil {
+		if err := extractSuffixSelectStatement(item.Node, item.FullSQL, &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
 	}
@@ -261,20 +256,125 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	}, nil
 }
 
-func extractCTE(ctx antlr.ParserRuleContext) string {
-	switch node := ctx.(type) {
-	case *parser.UpdateStatementContext:
-		if node.WithClause() != nil {
-			return node.GetParser().GetTokenStream().GetTextFromRuleContext(node.WithClause())
-		}
-	case *parser.DeleteStatementContext:
-		if node.WithClause() != nil {
-			return node.GetParser().GetTokenStream().GetTextFromRuleContext(node.WithClause())
-		}
+func extractCTE(node ast.Node, fullSQL string) string {
+	var stmtStart int
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		stmtStart = n.Loc.Start
+	case *ast.DeleteStmt:
+		stmtStart = n.Loc.Start
 	default:
+		return ""
+	}
+	prefix := strings.TrimSpace(fullSQL[:stmtStart])
+	if prefix == "" {
+		return ""
+	}
+	return prefix
+}
+
+func extractCTENames(fullSQL string, stmtStart int) map[string]bool {
+	prefix := strings.TrimSpace(fullSQL[:stmtStart])
+	if prefix == "" {
+		return nil
+	}
+	// Parse as "WITH ... SELECT 1" to extract CTE names.
+	testSQL := prefix + " SELECT 1"
+	list, err := ParseMySQLOmni(testSQL)
+	if err != nil {
+		return nil
+	}
+	result := make(map[string]bool)
+	for _, item := range list.Items {
+		if sel, ok := item.(*ast.SelectStmt); ok {
+			for _, cte := range sel.CTEs {
+				result[cte.Name] = true
+			}
+		}
+	}
+	return result
+}
+
+func extractNodeText(loc ast.Loc, sql string) string {
+	if loc.Start < 0 || loc.End <= loc.Start || loc.End > len(sql) {
+		return ""
+	}
+	return strings.TrimSpace(sql[loc.Start:loc.End])
+}
+
+func tableExprLoc(te ast.TableExpr) ast.Loc {
+	switch t := te.(type) {
+	case *ast.TableRef:
+		return t.Loc
+	case *ast.JoinClause:
+		return t.Loc
+	default:
+		return ast.Loc{}
+	}
+}
+
+func tableExprsLoc(tables []ast.TableExpr) ast.Loc {
+	if len(tables) == 0 {
+		return ast.Loc{}
+	}
+	first := tableExprLoc(tables[0])
+	last := tableExprLoc(tables[len(tables)-1])
+	return ast.Loc{Start: first.Start, End: last.End}
+}
+
+func extractSuffixSelectStatement(node ast.Node, fullSQL string, buf *strings.Builder) error {
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		return writeDeleteSuffix(buf, n, fullSQL)
+	case *ast.UpdateStmt:
+		return writeUpdateSuffix(buf, n, fullSQL)
+	}
+	return nil
+}
+
+func writeDeleteSuffix(buf *strings.Builder, n *ast.DeleteStmt, sql string) error {
+	if len(n.Using) > 0 {
+		// Multi-table delete: suffix starts at the USING (FROM) table references.
+		usingLoc := tableExprsLoc(n.Using)
+		suffix := strings.TrimSpace(sql[usingLoc.Start:n.Loc.End])
+		_, err := buf.WriteString(suffix)
+		return err
 	}
 
-	return ""
+	// Single-table delete: suffix from table ref to end of statement.
+	if len(n.Tables) > 0 {
+		tablesLoc := tableExprsLoc(n.Tables)
+		suffix := strings.TrimSpace(sql[tablesLoc.Start:n.Loc.End])
+		_, err := buf.WriteString(suffix)
+		return err
+	}
+
+	return nil
+}
+
+func writeUpdateSuffix(buf *strings.Builder, n *ast.UpdateStmt, sql string) error {
+	// Table references text.
+	tablesLoc := tableExprsLoc(n.Tables)
+	tablesText := extractNodeText(tablesLoc, sql)
+	if _, err := buf.WriteString(tablesText); err != nil {
+		return err
+	}
+
+	// Everything after the last SET assignment (WHERE, ORDER BY, LIMIT).
+	if len(n.SetList) > 0 {
+		lastSet := n.SetList[len(n.SetList)-1]
+		rest := strings.TrimSpace(sql[lastSet.Loc.End:n.Loc.End])
+		if rest != "" {
+			if err := buf.WriteByte(' '); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(rest); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
@@ -346,219 +446,183 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	return generatedColumns, normalColumns, nil
 }
 
-func extractSuffixSelectStatement(tree antlr.Tree, buf *strings.Builder) error {
-	listener := &suffixSelectStatementListener{
-		buf: buf,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	return listener.err
-}
-
-type suffixSelectStatementListener struct {
-	*parser.BaseMySQLParserListener
-
-	buf *strings.Builder
-	err error
-}
-
-func (l *suffixSelectStatementListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	if ctx.TableRef() != nil {
-		// Single table delete statement.
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
-			ctx.TableRef().GetStart(),
-			ctx.GetStop(),
-		)); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.TableAliasRefList() != nil {
-		// Multi table delete statement.
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
-			ctx.TableReferenceList().GetStart(),
-			ctx.GetStop(),
-		)); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-}
-
-func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-	if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.TableReferenceList())); err != nil {
-		l.err = errors.Wrap(err, "failed to write suffix select statement")
-		return
-	}
-
-	if ctx.WhereClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.WhereClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.OrderClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.OrderClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-
-	if ctx.SimpleLimitClause() != nil {
-		if err := l.buf.WriteByte(' '); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.SimpleLimitClause())); err != nil {
-			l.err = errors.Wrap(err, "failed to write suffix select statement")
-			return
-		}
-	}
-}
-
-func ExtractTables(databaseName string, ast *base.ANTLRAST, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
-	listener := &tableReferenceListener{
-		databaseName: databaseName,
-		dbMetadata:   dbMetadata,
-		offset:       offset,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, ast.Tree)
-
-	return listener.tables, listener.err
-}
-
-type tableReferenceListener struct {
-	*parser.BaseMySQLParserListener
-
-	databaseName string
-	dbMetadata   *model.DatabaseMetadata
-	offset       int
-	tables       []StatementInfo
-	err          error
-}
-
-func isTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-	switch ctx := ctx.(type) {
-	case *parser.SimpleStatementContext:
-		return isTopLevel(ctx.GetParent())
-	case *parser.QueryContext, *parser.ScriptContext:
-		return true
+// ExtractTables extracts table references from a DML statement node.
+func ExtractTables(databaseName string, node ast.Node, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		return extractTablesFromDelete(databaseName, n, fullSQL, offset, dbMetadata)
+	case *ast.UpdateStmt:
+		return extractTablesFromUpdate(databaseName, n, fullSQL, offset, dbMetadata)
 	default:
-		return false
+		return nil, nil
 	}
 }
 
-func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
+func extractTablesFromDelete(databaseName string, n *ast.DeleteStmt, fullSQL string, offset int, _ *model.DatabaseMetadata) ([]StatementInfo, error) {
+	cteMap := extractCTENames(fullSQL, n.Loc.Start)
 
-	cteMap := make(map[string]bool)
-	if ctx.WithClause() != nil {
-		for _, cte := range ctx.WithClause().AllCommonTableExpression() {
-			tableName := NormalizeMySQLIdentifier(cte.Identifier())
-			cteMap[tableName] = true
+	if len(n.Using) == 0 {
+		// Single-table delete.
+		if len(n.Tables) == 0 {
+			return nil, nil
 		}
-	}
-
-	if ctx.TableRef() != nil {
-		// Single table delete statement.
-		database, table := NormalizeMySQLTableRef(ctx.TableRef())
-		if len(database) > 0 && database != l.databaseName {
-			l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-			return
+		ref, ok := n.Tables[0].(*ast.TableRef)
+		if !ok {
+			return nil, nil
 		}
 
-		alias := ""
-
-		if ctx.TableAlias() != nil {
-			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		database := ref.Schema
+		table := ref.Name
+		if database != "" && database != databaseName {
+			return nil, errors.Errorf("database is not matched: %s != %s", database, databaseName)
+		}
+		if database == "" {
+			database = databaseName
 		}
 
-		if len(database) == 0 {
-			database = l.databaseName
-		}
-
-		l.tables = append(l.tables, StatementInfo{
-			Offset:    l.offset,
-			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			Tree:      ctx,
+		return []StatementInfo{{
+			Offset:    offset,
+			Statement: fullSQL,
+			Node:      n,
 			Table: &TableReference{
 				Database:      database,
 				Table:         table,
-				Alias:         alias,
+				Alias:         ref.Alias,
 				StatementType: StatementTypeDelete,
 			},
-		})
-		return
+			FullSQL: fullSQL,
+		}}, nil
 	}
 
-	if ctx.TableAliasRefList() != nil {
-		// Multi table delete statement.
-		singleTables := &singleTableListener{
-			databaseName: l.databaseName,
-			singleTables: make(map[string]*TableReference),
+	// Multi-table delete.
+	singleTables := collectSingleTables(databaseName, n.Using)
+
+	var result []StatementInfo
+	for _, te := range n.Tables {
+		ref, ok := te.(*ast.TableRef)
+		if !ok {
+			continue
 		}
 
-		antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-		for _, tableRef := range ctx.TableAliasRefList().AllTableRefWithWildcard() {
-			database, table := NormalizeMySQLTableRefWithWildcard(tableRef)
-			if len(database) > 0 && database != l.databaseName {
-				l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-				return
-			}
-
-			if len(database) == 0 && cteMap[table] {
-				continue
-			}
-
-			singleTable, ok := singleTables.singleTables[table]
-			if !ok {
-				l.err = errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", table)
-				return
-			}
-
-			singleTable.StatementType = StatementTypeDelete
-			l.tables = append(l.tables, StatementInfo{
-				Offset:    l.offset,
-				Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-				Tree:      ctx,
-				Table:     singleTable,
-			})
+		database := ref.Schema
+		table := ref.Name
+		if database != "" && database != databaseName {
+			return nil, errors.Errorf("database is not matched: %s != %s", database, databaseName)
 		}
+
+		if database == "" && cteMap[table] {
+			continue
+		}
+
+		singleTable, ok := singleTables[table]
+		if !ok {
+			return nil, errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", table)
+		}
+
+		singleTable.StatementType = StatementTypeDelete
+		result = append(result, StatementInfo{
+			Offset:    offset,
+			Statement: fullSQL,
+			Node:      n,
+			Table:     singleTable,
+			FullSQL:   fullSQL,
+		})
+	}
+
+	return result, nil
+}
+
+func extractTablesFromUpdate(databaseName string, n *ast.UpdateStmt, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
+	cteMap := extractCTENames(fullSQL, n.Loc.Start)
+
+	// Collect tables being updated from the SET clause.
+	updatedTables := make(map[string]bool)
+	var unqualifiedColumns []string
+	for _, assignment := range n.SetList {
+		table := assignment.Column.Table
+		if _, isCTE := cteMap[table]; !isCTE {
+			updatedTables[table] = true
+			if table == "" {
+				unqualifiedColumns = append(unqualifiedColumns, assignment.Column.Column)
+			}
+		}
+	}
+
+	singleTables := collectSingleTables(databaseName, n.Tables)
+
+	// Resolve unqualified columns using metadata.
+	if _, exists := updatedTables[""]; exists {
+		delete(updatedTables, "")
+		resolved := resolveUnqualifiedColumns(unqualifiedColumns, singleTables, dbMetadata)
+		for tableName := range resolved {
+			updatedTables[tableName] = true
+		}
+	}
+
+	var result []StatementInfo
+	for table := range updatedTables {
+		singleTable, ok := singleTables[table]
+		if !ok {
+			return nil, errors.Errorf("cannot extract reference table: no matched updated table %q in referenced table list", table)
+		}
+
+		singleTable.StatementType = StatementTypeUpdate
+		result = append(result, StatementInfo{
+			Offset:    offset,
+			Statement: fullSQL,
+			Node:      n,
+			Table:     singleTable,
+			FullSQL:   fullSQL,
+		})
+	}
+
+	return result, nil
+}
+
+// collectSingleTables walks table expressions and returns a map from
+// table name (or alias) to TableReference.
+func collectSingleTables(databaseName string, tables []ast.TableExpr) map[string]*TableReference {
+	result := make(map[string]*TableReference)
+	for _, te := range tables {
+		collectSingleTablesFromExpr(databaseName, te, result)
+	}
+	return result
+}
+
+func collectSingleTablesFromExpr(databaseName string, te ast.TableExpr, result map[string]*TableReference) {
+	switch t := te.(type) {
+	case *ast.TableRef:
+		database := t.Schema
+		if database == "" {
+			database = databaseName
+		}
+		ref := &TableReference{
+			Database: database,
+			Table:    t.Name,
+		}
+		if t.Alias != "" {
+			ref.Alias = t.Alias
+			result[t.Alias] = ref
+		} else {
+			result[t.Name] = ref
+		}
+	case *ast.JoinClause:
+		collectSingleTablesFromExpr(databaseName, t.Left, result)
+		collectSingleTablesFromExpr(databaseName, t.Right, result)
 	}
 }
 
 // resolveUnqualifiedColumns resolves unqualified column names to their owning
 // table(s) using database metadata. Falls back to all tables if metadata is
 // unavailable or column cannot be resolved.
-func (l *tableReferenceListener) resolveUnqualifiedColumns(columns []string, singleTables map[string]*TableReference) map[string]bool {
+func resolveUnqualifiedColumns(columns []string, singleTables map[string]*TableReference, dbMetadata *model.DatabaseMetadata) map[string]bool {
 	result := make(map[string]bool)
 
-	schema := l.getSchemaMetadata()
+	var schema *model.SchemaMetadata
+	if dbMetadata != nil {
+		schema = dbMetadata.GetSchemaMetadata("")
+	}
 	if schema == nil {
-		// No metadata available, fall back to all tables.
 		for tableName := range singleTables {
 			result[tableName] = true
 		}
@@ -578,7 +642,6 @@ func (l *tableReferenceListener) resolveUnqualifiedColumns(columns []string, sin
 			}
 		}
 		if !resolved {
-			// Column not found in any table metadata, fall back to all tables.
 			for tableName := range singleTables {
 				result[tableName] = true
 			}
@@ -587,117 +650,4 @@ func (l *tableReferenceListener) resolveUnqualifiedColumns(columns []string, sin
 	}
 
 	return result
-}
-
-func (l *tableReferenceListener) getSchemaMetadata() *model.SchemaMetadata {
-	if l.dbMetadata == nil {
-		return nil
-	}
-	return l.dbMetadata.GetSchemaMetadata("")
-}
-
-func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	cteMap := make(map[string]bool)
-
-	if ctx.WithClause() != nil {
-		for _, cte := range ctx.WithClause().AllCommonTableExpression() {
-			tableName := NormalizeMySQLIdentifier(cte.Identifier())
-			cteMap[tableName] = true
-		}
-	}
-
-	listener := &updateTableListener{
-		tables: make(map[string]bool),
-		cteMap: cteMap,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, ctx.UpdateList())
-
-	singleTables := &singleTableListener{
-		databaseName: l.databaseName,
-		singleTables: make(map[string]*TableReference),
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-	// When SET clause columns are unqualified (no table prefix), resolve them
-	// to the owning table using database metadata. MySQL allows unqualified
-	// columns when they are unambiguous.
-	if _, exists := listener.tables[""]; exists {
-		delete(listener.tables, "")
-		resolved := l.resolveUnqualifiedColumns(listener.unqualifiedColumns, singleTables.singleTables)
-		for tableName := range resolved {
-			listener.tables[tableName] = true
-		}
-	}
-
-	for table := range listener.tables {
-		singleTable, ok := singleTables.singleTables[table]
-		if !ok {
-			l.err = errors.Errorf("cannot extract reference table: no matched updated table %q in referenced table list", table)
-			return
-		}
-
-		singleTable.StatementType = StatementTypeUpdate
-		l.tables = append(l.tables, StatementInfo{
-			Offset:    l.offset,
-			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			Tree:      ctx,
-			Table:     singleTable,
-		})
-	}
-}
-
-type singleTableListener struct {
-	*parser.BaseMySQLParserListener
-
-	databaseName string
-	singleTables map[string]*TableReference
-	err          error
-}
-
-func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
-	if l.err != nil {
-		return
-	}
-	database, tableName := NormalizeMySQLTableRef(ctx.TableRef())
-	if len(database) > 0 && database != l.databaseName {
-		l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
-	}
-	if len(database) == 0 {
-		database = l.databaseName
-	}
-	table := &TableReference{
-		Database: database,
-		Table:    tableName,
-	}
-
-	if ctx.TableAlias() != nil {
-		table.Alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
-		l.singleTables[table.Alias] = table
-	} else {
-		l.singleTables[table.Table] = table
-	}
-}
-
-type updateTableListener struct {
-	*parser.BaseMySQLParserListener
-
-	tables             map[string]bool
-	unqualifiedColumns []string
-	cteMap             map[string]bool
-}
-
-func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, table, column := NormalizeMySQLColumnRef(ctx.ColumnRef())
-	if _, exists := l.cteMap[table]; !exists {
-		l.tables[table] = true
-		if table == "" {
-			l.unqualifiedColumns = append(l.unqualifiedColumns, column)
-		}
-	}
 }
