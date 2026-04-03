@@ -266,7 +266,7 @@ func (s *Store) ListWorkspacesByEmail(ctx context.Context, find *FindWorkspaceMe
 		FROM user_group ug,
 		     jsonb_array_elements(ug.payload->'members') AS gm
 		WHERE ug.workspace = w.resource_id
-		  AND 'groups/' || ug.email = member
+		  AND ('groups/' || ug.email = member OR 'groups/' || ug.id = member)
 		  AND gm->>'member' = ?
 	)`, memberName)
 	if find.IncludeAllUser {
