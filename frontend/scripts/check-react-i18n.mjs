@@ -74,10 +74,13 @@ function isDynamic(key) {
 }
 
 // ---------------------------------------------------------------------------
-// Collect translation keys from React source (.tsx) files
+// Collect translation keys from React source (.tsx and .ts) files
 // ---------------------------------------------------------------------------
 function collectSourceKeys() {
-  const files = findFiles(REACT_DIR, ".tsx");
+  const files = [
+    ...findFiles(REACT_DIR, ".tsx"),
+    ...findFiles(REACT_DIR, ".ts"),
+  ];
   const keys = new Set();
   // Only match single/double quoted strings — template literals with ${} are dynamic keys
   const re = /\bt\(\s*["']([^"']+)["']/g;

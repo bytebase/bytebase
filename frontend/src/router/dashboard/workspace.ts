@@ -264,8 +264,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("custom-approval.self"),
           requiredPermissionList: () => ["bb.settings.get"],
         },
-        component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "CustomApprovalPage" }),
       },
       {
         path: "global-masking",
