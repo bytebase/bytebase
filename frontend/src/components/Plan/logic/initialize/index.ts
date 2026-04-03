@@ -29,14 +29,7 @@ export * from "./create";
 export * from "./util";
 
 const shouldLoadRolloutForPlan = (plan: Plan) => {
-  return (
-    plan.hasRollout &&
-    plan.specs.some(
-      (spec) =>
-        spec.config.case === "createDatabaseConfig" ||
-        spec.config.case === "exportDataConfig"
-    )
-  );
+  return plan.hasRollout;
 };
 
 export function useInitializePlan(
