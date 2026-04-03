@@ -27,10 +27,14 @@ export interface RolloutFind {
   updatedTsBefore?: number;
 }
 
+const encodeCELStringLiteral = (value: string): string => JSON.stringify(value);
+
 export const buildRolloutFilter = (find: RolloutFind): string => {
   const filter: string[] = [];
   if (find.query) {
-    filter.push(`title.matches("${find.query.trim().toLowerCase()}")`);
+    filter.push(
+      `title.matches(${encodeCELStringLiteral(find.query.trim().toLowerCase())})`
+    );
   }
   if (find.taskType && find.taskType.length > 0) {
     const types = find.taskType.map((t) => `"${Task_Type[t]}"`).join(", ");
