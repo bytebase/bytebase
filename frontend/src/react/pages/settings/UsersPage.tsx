@@ -30,7 +30,10 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_GROUPS,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -62,9 +65,6 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
-
-// Temporary — Task 4 will replace with proper import from workspaceRoutes
-const WORKSPACE_ROUTE_GROUPS = "workspace.groups";
 
 // ============================================================
 // UserTable

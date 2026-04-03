@@ -23,6 +23,7 @@ import {
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
+  WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
@@ -126,11 +127,10 @@ export const useDashboardSidebar = () => {
         type: "div",
         children: [
           {
-            title: actuatorStore.isSaaSMode
-              ? t("settings.sidebar.members-and-groups")
-              : t("settings.sidebar.users-and-groups"),
+            title: t("common.users"),
             name: WORKSPACE_ROUTE_USERS,
             type: "route",
+            hide: actuatorStore.isSaaSMode,
           },
           {
             title: t("settings.members.service-accounts"),
@@ -148,7 +148,11 @@ export const useDashboardSidebar = () => {
             title: t("settings.sidebar.members"),
             name: WORKSPACE_ROUTE_MEMBERS,
             type: "route",
-            hide: actuatorStore.isSaaSMode,
+          },
+          {
+            title: t("settings.members.groups.self"),
+            name: WORKSPACE_ROUTE_GROUPS,
+            type: "route",
           },
           {
             title: t("settings.sidebar.custom-roles"),

@@ -18,6 +18,7 @@ import {
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MCP,
+  WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
@@ -311,7 +312,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
         path: "users",
         name: WORKSPACE_ROUTE_USERS,
         meta: {
-          title: () => t("settings.sidebar.users-and-groups"),
+          title: () => t("common.users"),
+          requiredPermissionList: () => ["bb.users.list"],
         },
         component: () => import("@/react/ReactPageMount.vue"),
         props: () => ({ page: "UsersPage" }),
@@ -343,14 +345,20 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_MEMBERS,
         meta: {
           title: () => t("settings.sidebar.members"),
-          requiredPermissionList: () => [
-            "bb.workspaces.getIamPolicy",
-            "bb.users.list",
-            "bb.groups.list",
-          ],
+          requiredPermissionList: () => ["bb.workspaces.getIamPolicy"],
         },
-        component: () => import("@/views/SettingWorkspaceMembers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "MembersPage" }),
+      },
+      {
+        path: "groups",
+        name: WORKSPACE_ROUTE_GROUPS,
+        meta: {
+          title: () => t("settings.members.groups.self"),
+          requiredPermissionList: () => ["bb.groups.list"],
+        },
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GroupsPage" }),
       },
       {
         path: "roles",
