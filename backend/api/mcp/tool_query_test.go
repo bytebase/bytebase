@@ -286,6 +286,38 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	require.Contains(t, te.Suggestion, "without instance/project filters")
 }
 
+func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
+	s := newTestServerWithMock(t, http.NotFoundHandler())
+
+	// Use context.Background() — no workspace ID set.
+	_, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	require.Error(t, err)
+
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "AUTH_ERROR", te.Code)
+}
+
+func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"message": "permission denied",
+			"code":    "PERMISSION_DENIED",
+		})
+	})
+	s := newTestServerWithMock(t, handler)
+
+	_, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	require.Error(t, err)
+
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "PERMISSION_DENIED", te.Code)
+	require.Contains(t, te.Suggestion, "bb.databases.list")
+}
+
 func TestQueryDatabase_Ambiguous(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
