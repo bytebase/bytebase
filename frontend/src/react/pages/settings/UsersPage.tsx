@@ -255,13 +255,15 @@ function PagedTableFooter({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-t text-sm">
+    <div className="flex items-center justify-end gap-x-2">
       <div className="flex items-center gap-x-2">
-        <span className="text-control-light">{t("common.rows-per-page")}</span>
+        <span className="text-sm text-control-light">
+          {t("common.rows-per-page")}
+        </span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="h-8 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+          className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1 min-w-[5rem]"
         >
           {pageSizeOptions.map((opt) => (
             <option key={opt} value={opt}>
@@ -272,12 +274,14 @@ function PagedTableFooter({
       </div>
       {hasMore && (
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           disabled={isLoading}
           onClick={onLoadMore}
         >
-          {t("common.load-more")}
+          <span className="text-sm text-control-light">
+            {isLoading ? t("common.loading") : t("common.load-more")}
+          </span>
         </Button>
       )}
     </div>
