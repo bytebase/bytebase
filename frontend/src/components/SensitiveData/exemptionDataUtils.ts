@@ -1,3 +1,4 @@
+import { operatorDisplayLabel } from "@/plugins/cel/types/operator";
 import { t } from "@/plugins/i18n";
 import type {
   AccessUser,
@@ -49,15 +50,6 @@ export function extractDatabaseName(resource: string): string {
   return matches?.groups?.databaseName ?? "";
 }
 
-export const operatorDisplayMap: Record<string, string> = {
-  "<=": "≤",
-  ">=": "≥",
-  "<": "<",
-  ">": ">",
-  "==": "=",
-  "!=": "≠",
-};
-
 // Show up to 2 items + "+N more" for the rest
 function listItems(items: string[]): string {
   const shown = items.slice(0, 2).join(", ");
@@ -70,7 +62,7 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   const level = grant.classificationLevel;
 
   const levelSuffix = level
-    ? `, ${t("project.masking-exemption.level")} ${operatorDisplayMap[level.operator] ?? level.operator} ${level.value}`
+    ? `, ${t("project.masking-exemption.level")} ${operatorDisplayLabel(level.operator)} ${level.value}`
     : "";
 
   const realResources = resources.filter((r) => {
