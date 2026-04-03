@@ -22,8 +22,8 @@ import { getAvatarColor, getInitials } from "./UserAvatar";
 
 // ---- Account type detection ----
 
-const SERVICE_ACCOUNT_SUFFIX = "service.bytebase.com";
-const WORKLOAD_IDENTITY_SUFFIX = "workload.bytebase.com";
+const SERVICE_ACCOUNT_SUFFIX = "@service.bytebase.com";
+const WORKLOAD_IDENTITY_SUFFIX = "@workload.bytebase.com";
 
 type SpecialAccountType = "serviceAccount" | "workloadIdentity" | null;
 
