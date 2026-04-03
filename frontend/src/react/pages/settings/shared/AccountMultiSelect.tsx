@@ -358,6 +358,9 @@ export function AccountMultiSelect({
             {/* Users */}
             {users.length > 0 && (
               <div>
+                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50 border-b">
+                  {t("common.users")}
+                </div>
                 {users.map((user) => {
                   const fullname = `users/${user.email}`;
                   const selected = selectedFullnames.has(fullname);
@@ -408,6 +411,9 @@ export function AccountMultiSelect({
             {/* Groups */}
             {groups.length > 0 && (
               <div>
+                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50 border-b">
+                  {t("common.groups")}
+                </div>
                 {groups.map((group) => {
                   const fullname = `${groupNamePrefix}${group.email}`;
                   const selected = selectedFullnames.has(fullname);
@@ -425,11 +431,20 @@ export function AccountMultiSelect({
                         <Users className="h-4 w-4 text-control-light" />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium truncate">
-                          {group.title || group.email}
-                        </span>
-                        <span className="text-xs text-control-light">
-                          {t("common.members", { count: group.members.length })}
+                        <div className="flex items-center gap-x-1.5">
+                          <span className="text-sm font-medium truncate">
+                            {group.title || group.email}
+                          </span>
+                          <span className="text-xs text-control-light">
+                            ({group.members.length}{" "}
+                            {t("common.members", {
+                              count: group.members.length,
+                            })}
+                            )
+                          </span>
+                        </div>
+                        <span className="text-xs text-control-light truncate">
+                          {group.email}
                         </span>
                       </div>
                     </div>
