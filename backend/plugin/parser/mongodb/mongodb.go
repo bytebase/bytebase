@@ -39,6 +39,13 @@ func GetOmniNode(a base.AST) (ast.Node, bool) {
 
 // ParseMongoShell parses a MongoDB shell script and returns parsed statements
 // with their ASTs. Conforms to the standard ParseStatementsFunc interface.
+//
+// TODO(bytebase/omni): The omni parser does not support error recovery — it stops
+// at the first syntax error and returns zero statements. This means LSP-facing
+// callers (statement ranges, diagnostics) lose all results when any single
+// statement has a syntax error (e.g. user is mid-typing). Error recovery should
+// be added to omni's mongo.Parse() so partial results are returned alongside errors,
+// similar to how ANTLR's error recovery worked.
 func ParseMongoShell(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := mongo.Parse(statement)
 	if err != nil {
