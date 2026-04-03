@@ -1,321 +1,211 @@
 - input: db.|
   want:
-    - text: adminCommand()
+    - text: adminCommand
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: aggregate()
+    - text: createCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: auth()
+    - text: createRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: changeUserPassword()
+    - text: createUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: cloneDatabase()
+    - text: createView
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: commandHelp()
+    - text: currentOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: copyDatabase()
+    - text: dropAllRoles
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createCollection()
+    - text: dropAllUsers
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createRole()
+    - text: dropDatabase
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createUser()
+    - text: dropRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createView()
+    - text: dropUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: currentOp()
+    - text: fsyncLock
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropAllRoles()
+    - text: fsyncUnlock
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropAllUsers()
+    - text: getCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropDatabase()
+    - text: getCollectionInfos
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropRole()
+    - text: getCollectionNames
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropUser()
+    - text: getLogComponents
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: fsyncLock()
+    - text: getMongo
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: fsyncUnlock()
+    - text: getName
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getCollectionInfos()
+    - text: getProfilingStatus
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getCollectionNames()
+    - text: getRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getLogComponents()
+    - text: getRoles
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getMongo()
+    - text: getSiblingDB
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getName()
+    - text: getUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getProfilingLevel()
+    - text: getUsers
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getProfilingStatus()
+    - text: grantPrivilegesToRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getReplicationInfo()
+    - text: grantRolesToRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getRole()
+    - text: grantRolesToUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getRoles()
+    - text: hello
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getSiblingDB()
+    - text: hostInfo
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getUser()
+    - text: isMaster
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getUsers()
+    - text: killOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantPrivilegesToRole()
+    - text: revokePrivilegesFromRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantRolesToRole()
+    - text: revokeRolesFromRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantRolesToUser()
+    - text: revokeRolesFromUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hello()
+    - text: runCommand
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hostInfo()
+    - text: serverStatus
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isMaster()
+    - text: setLogLevel
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: killOp()
+    - text: setProfilingLevel
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: listCommands()
+    - text: updateRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: logout()
+    - text: updateUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: printCollectionStats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSecondaryReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printShardingStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSlaveReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokePrivilegesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: rotateCertificates()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: runCommand()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverBuildInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setLogLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setProfilingLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setSecondaryOk()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setWriteConcern()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: shutdownServer()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: version()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: '["my-collection"]'
+    - text: my-collection
       type: TABLE
       definition: ""
       comment: ""
@@ -332,322 +222,24 @@
       priority: 0
 - input: db.u|
   want:
-    - text: adminCommand()
+    - text: updateRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: aggregate()
+    - text: updateUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: auth()
-      type: FUNCTION
+    - text: users
+      type: TABLE
       definition: ""
       comment: ""
       priority: 0
-    - text: changeUserPassword()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: cloneDatabase()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: commandHelp()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: copyDatabase()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: createCollection()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: createRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: createUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: createView()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: currentOp()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dropAllRoles()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dropAllUsers()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dropDatabase()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dropRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: dropUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: fsyncLock()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: fsyncUnlock()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getCollectionInfos()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getCollectionNames()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getLogComponents()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getMongo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getName()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getProfilingLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getProfilingStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getRoles()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getSiblingDB()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: getUsers()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: grantPrivilegesToRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: grantRolesToRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: grantRolesToUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: hello()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: hostInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: isMaster()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: killOp()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: listCommands()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: logout()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printCollectionStats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSecondaryReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printShardingStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSlaveReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokePrivilegesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: rotateCertificates()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: runCommand()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverBuildInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setLogLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setProfilingLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setSecondaryOk()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setWriteConcern()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: shutdownServer()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: version()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: '["my-collection"]'
+- input: db[|
+  want:
+    - text: my-collection
       type: TABLE
       definition: ""
       comment: ""
@@ -662,1119 +254,862 @@
       definition: ""
       comment: ""
       priority: 0
-- input: db[|
-  want:
-    - text: '"my-collection"]'
-      type: TABLE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: '"orders"]'
-      type: TABLE
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: '"users"]'
-      type: TABLE
-      definition: ""
-      comment: ""
-      priority: 0
 - input: db.users.|
   want:
-    - text: aggregate()
+    - text: aggregate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: analyzeShardKey()
+    - text: bulkWrite
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: bulkWrite()
+    - text: count
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: compactStructuredEncryptionData()
+    - text: countDocuments
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: configureQueryAnalyzer()
+    - text: createIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: createIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: countDocuments()
+    - text: dataSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndex()
+    - text: deleteMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndexes()
+    - text: deleteOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndex()
+    - text: distinct
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndexes()
+    - text: drop
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dataSize()
+    - text: dropIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteMany()
+    - text: dropIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteOne()
+    - text: estimatedDocumentCount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: distinct()
+    - text: explain
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: drop()
+    - text: find
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndex()
+    - text: findOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndexes()
+    - text: findOneAndDelete
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropSearchIndex()
+    - text: findOneAndReplace
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: estimatedDocumentCount()
+    - text: findOneAndUpdate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: getIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: find()
+    - text: getPlanCache
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findAndModify()
+    - text: getShardDistribution
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOne()
+    - text: initializeOrderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndDelete()
+    - text: initializeUnorderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndReplace()
+    - text: insertMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndUpdate()
+    - text: insertOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getIndexes()
+    - text: latencyStats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getPlanCache()
+    - text: mapReduce
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardDistribution()
+    - text: reIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardVersion()
+    - text: renameCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hideIndex()
+    - text: replaceOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeOrderedBulkOp()
+    - text: stats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeUnorderedBulkOp()
+    - text: storageSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insert()
+    - text: totalIndexSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertMany()
+    - text: totalSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertOne()
+    - text: updateMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isCapped()
+    - text: updateOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: latencyStats()
+    - text: validate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: mapReduce()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: reIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: remove()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: renameCollection()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: replaceOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: storageSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalIndexSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: unhideIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: update()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateMany()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateSearchIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: validate()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
+    - text: watch
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
 - input: db["users"].|
   want:
-    - text: aggregate()
+    - text: aggregate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: analyzeShardKey()
+    - text: bulkWrite
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: bulkWrite()
+    - text: count
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: compactStructuredEncryptionData()
+    - text: countDocuments
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: configureQueryAnalyzer()
+    - text: createIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: createIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: countDocuments()
+    - text: dataSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndex()
+    - text: deleteMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndexes()
+    - text: deleteOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndex()
+    - text: distinct
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndexes()
+    - text: drop
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dataSize()
+    - text: dropIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteMany()
+    - text: dropIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteOne()
+    - text: estimatedDocumentCount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: distinct()
+    - text: explain
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: drop()
+    - text: find
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndex()
+    - text: findOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndexes()
+    - text: findOneAndDelete
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropSearchIndex()
+    - text: findOneAndReplace
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: estimatedDocumentCount()
+    - text: findOneAndUpdate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: getIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: find()
+    - text: getPlanCache
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findAndModify()
+    - text: getShardDistribution
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOne()
+    - text: initializeOrderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndDelete()
+    - text: initializeUnorderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndReplace()
+    - text: insertMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndUpdate()
+    - text: insertOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getIndexes()
+    - text: latencyStats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getPlanCache()
+    - text: mapReduce
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardDistribution()
+    - text: reIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardVersion()
+    - text: renameCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hideIndex()
+    - text: replaceOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeOrderedBulkOp()
+    - text: stats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeUnorderedBulkOp()
+    - text: storageSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insert()
+    - text: totalIndexSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertMany()
+    - text: totalSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertOne()
+    - text: updateMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isCapped()
+    - text: updateOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: latencyStats()
+    - text: validate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: mapReduce()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: reIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: remove()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: renameCollection()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: replaceOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: storageSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalIndexSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: unhideIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: update()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateMany()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateSearchIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: validate()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
+    - text: watch
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
 - input: db.users.find().|
   want:
-    - text: addOption()
+    - text: allowDiskUse
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: allowDiskUse()
+    - text: allowPartialResults
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: batchSize()
+    - text: batchSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: close()
+    - text: close
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: collation()
+    - text: collation
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: comment()
+    - text: comment
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: forEach
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: hasNext
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: forEach()
+    - text: hint
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hasNext()
+    - text: itcount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hint()
+    - text: limit
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isClosed()
+    - text: map
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isExhausted()
+    - text: max
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: itcount()
+    - text: maxTimeMS
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: limit()
+    - text: min
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: map()
+    - text: next
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: max()
+    - text: noCursorTimeout
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxAwaitTimeMS()
+    - text: oplogReplay
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxTimeMS()
+    - text: pretty
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: min()
+    - text: projection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: next()
+    - text: readConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: noCursorTimeout()
+    - text: readPref
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: objsLeftInBatch()
+    - text: returnKey
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: pretty()
+    - text: showRecordId
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: project()
+    - text: size
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: projection()
+    - text: skip
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readConcern()
+    - text: sort
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readPref()
+    - text: tailable
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: returnKey()
+    - text: toArray
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: showRecordId()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: size()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: skip()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: sort()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tailable()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: toArray()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tryNext()
+    - text: writeConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
 - input: db.users.find().sort().|
   want:
-    - text: addOption()
+    - text: allowDiskUse
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: allowDiskUse()
+    - text: allowPartialResults
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: batchSize()
+    - text: batchSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: close()
+    - text: close
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: collation()
+    - text: collation
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: comment()
+    - text: comment
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: forEach
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: hasNext
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: forEach()
+    - text: hint
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hasNext()
+    - text: itcount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hint()
+    - text: limit
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isClosed()
+    - text: map
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isExhausted()
+    - text: max
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: itcount()
+    - text: maxTimeMS
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: limit()
+    - text: min
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: map()
+    - text: next
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: max()
+    - text: noCursorTimeout
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxAwaitTimeMS()
+    - text: oplogReplay
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxTimeMS()
+    - text: pretty
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: min()
+    - text: projection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: next()
+    - text: readConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: noCursorTimeout()
+    - text: readPref
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: objsLeftInBatch()
+    - text: returnKey
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: pretty()
+    - text: showRecordId
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: project()
+    - text: size
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: projection()
+    - text: skip
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readConcern()
+    - text: sort
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readPref()
+    - text: tailable
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: returnKey()
+    - text: toArray
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: showRecordId()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: size()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: skip()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: sort()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tailable()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: toArray()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tryNext()
+    - text: writeConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
 - input: db["users"].find().|
   want:
-    - text: addOption()
+    - text: allowDiskUse
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: allowDiskUse()
+    - text: allowPartialResults
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: batchSize()
+    - text: batchSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: close()
+    - text: close
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: collation()
+    - text: collation
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: comment()
+    - text: comment
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: forEach
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: hasNext
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: forEach()
+    - text: hint
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hasNext()
+    - text: itcount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hint()
+    - text: limit
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isClosed()
+    - text: map
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isExhausted()
+    - text: max
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: itcount()
+    - text: maxTimeMS
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: limit()
+    - text: min
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: map()
+    - text: next
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: max()
+    - text: noCursorTimeout
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxAwaitTimeMS()
+    - text: oplogReplay
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxTimeMS()
+    - text: pretty
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: min()
+    - text: projection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: next()
+    - text: readConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: noCursorTimeout()
+    - text: readPref
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: objsLeftInBatch()
+    - text: returnKey
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: pretty()
+    - text: showRecordId
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: project()
+    - text: size
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: projection()
+    - text: skip
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readConcern()
+    - text: sort
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readPref()
+    - text: tailable
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: returnKey()
+    - text: toArray
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: showRecordId()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: size()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: skip()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: sort()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tailable()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: toArray()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tryNext()
+    - text: writeConcern
       type: FUNCTION
       definition: ""
       comment: ""
@@ -1783,277 +1118,202 @@
     db.users.find().limit(20)
     db.users.|
   want:
-    - text: aggregate()
+    - text: aggregate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: analyzeShardKey()
+    - text: bulkWrite
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: bulkWrite()
+    - text: count
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: compactStructuredEncryptionData()
+    - text: countDocuments
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: configureQueryAnalyzer()
+    - text: createIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: createIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: countDocuments()
+    - text: dataSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndex()
+    - text: deleteMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createIndexes()
+    - text: deleteOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndex()
+    - text: distinct
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createSearchIndexes()
+    - text: drop
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dataSize()
+    - text: dropIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteMany()
+    - text: dropIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: deleteOne()
+    - text: estimatedDocumentCount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: distinct()
+    - text: explain
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: drop()
+    - text: find
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndex()
+    - text: findOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropIndexes()
+    - text: findOneAndDelete
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropSearchIndex()
+    - text: findOneAndReplace
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: estimatedDocumentCount()
+    - text: findOneAndUpdate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: getIndexes
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: find()
+    - text: getPlanCache
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findAndModify()
+    - text: getShardDistribution
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOne()
+    - text: initializeOrderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndDelete()
+    - text: initializeUnorderedBulkOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndReplace()
+    - text: insertMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: findOneAndUpdate()
+    - text: insertOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getIndexes()
+    - text: latencyStats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getPlanCache()
+    - text: mapReduce
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardDistribution()
+    - text: reIndex
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getShardVersion()
+    - text: renameCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hideIndex()
+    - text: replaceOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeOrderedBulkOp()
+    - text: stats
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: initializeUnorderedBulkOp()
+    - text: storageSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insert()
+    - text: totalIndexSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertMany()
+    - text: totalSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: insertOne()
+    - text: updateMany
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isCapped()
+    - text: updateOne
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: latencyStats()
+    - text: validate
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: mapReduce()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: reIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: remove()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: renameCollection()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: replaceOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: storageSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalIndexSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: totalSize()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: unhideIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: update()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateMany()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateOne()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateSearchIndex()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: validate()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
+    - text: watch
       type: FUNCTION
       definition: ""
       comment: ""
@@ -2062,322 +1322,212 @@
     db.users.find().limit(20)
     db.|
   want:
-    - text: adminCommand()
+    - text: adminCommand
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: aggregate()
+    - text: createCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: auth()
+    - text: createRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: changeUserPassword()
+    - text: createUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: cloneDatabase()
+    - text: createView
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: commandHelp()
+    - text: currentOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: copyDatabase()
+    - text: dropAllRoles
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createCollection()
+    - text: dropAllUsers
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createRole()
+    - text: dropDatabase
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createUser()
+    - text: dropRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: createView()
+    - text: dropUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: currentOp()
+    - text: fsyncLock
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropAllRoles()
+    - text: fsyncUnlock
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropAllUsers()
+    - text: getCollection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropDatabase()
+    - text: getCollectionInfos
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropRole()
+    - text: getCollectionNames
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: dropUser()
+    - text: getLogComponents
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: fsyncLock()
+    - text: getMongo
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: fsyncUnlock()
+    - text: getName
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getCollectionInfos()
+    - text: getProfilingStatus
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getCollectionNames()
+    - text: getRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getLogComponents()
+    - text: getRoles
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getMongo()
+    - text: getSiblingDB
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getName()
+    - text: getUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getProfilingLevel()
+    - text: getUsers
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getProfilingStatus()
+    - text: grantPrivilegesToRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getReplicationInfo()
+    - text: grantRolesToRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getRole()
+    - text: grantRolesToUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getRoles()
+    - text: hello
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getSiblingDB()
+    - text: hostInfo
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getUser()
+    - text: isMaster
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: getUsers()
+    - text: killOp
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantPrivilegesToRole()
+    - text: revokePrivilegesFromRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantRolesToRole()
+    - text: revokeRolesFromRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: grantRolesToUser()
+    - text: revokeRolesFromUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hello()
+    - text: runCommand
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hostInfo()
+    - text: serverStatus
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isMaster()
+    - text: setLogLevel
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: killOp()
+    - text: setProfilingLevel
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: listCommands()
+    - text: updateRole
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: logout()
+    - text: updateUser
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: printCollectionStats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSecondaryReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printShardingStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: printSlaveReplicationInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokePrivilegesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: revokeRolesFromUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: rotateCertificates()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: runCommand()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverBuildInfo()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: serverStatus()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setLogLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setProfilingLevel()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setSecondaryOk()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: setWriteConcern()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: shutdownServer()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: stats()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateRole()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: updateUser()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: version()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: watch()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: '["my-collection"]'
+    - text: my-collection
       type: TABLE
       definition: ""
       comment: ""
@@ -2396,182 +1546,152 @@
     db.users.find().limit(20)
     db.users.find().|
   want:
-    - text: addOption()
+    - text: allowDiskUse
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: allowDiskUse()
+    - text: allowPartialResults
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: batchSize()
+    - text: batchSize
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: close()
+    - text: close
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: collation()
+    - text: collation
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: comment()
+    - text: comment
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: count()
+    - text: forEach
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: explain()
+    - text: hasNext
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: forEach()
+    - text: hint
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hasNext()
+    - text: itcount
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: hint()
+    - text: limit
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isClosed()
+    - text: map
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: isExhausted()
+    - text: max
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: itcount()
+    - text: maxTimeMS
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: limit()
+    - text: min
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: map()
+    - text: next
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: max()
+    - text: noCursorTimeout
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxAwaitTimeMS()
+    - text: oplogReplay
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: maxTimeMS()
+    - text: pretty
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: min()
+    - text: projection
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: next()
+    - text: readConcern
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: noCursorTimeout()
+    - text: readPref
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: objsLeftInBatch()
+    - text: returnKey
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: pretty()
+    - text: showRecordId
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: project()
+    - text: size
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: projection()
+    - text: skip
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readConcern()
+    - text: sort
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: readPref()
+    - text: tailable
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: returnKey()
+    - text: toArray
       type: FUNCTION
       definition: ""
       comment: ""
       priority: 0
-    - text: showRecordId()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: size()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: skip()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: sort()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tailable()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: toArray()
-      type: FUNCTION
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: tryNext()
+    - text: writeConcern
       type: FUNCTION
       definition: ""
       comment: ""
