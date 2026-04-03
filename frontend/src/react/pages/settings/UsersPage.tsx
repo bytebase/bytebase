@@ -55,6 +55,8 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/router";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -125,17 +127,14 @@ function usePagedData<T extends { name: string }>({
   const pageSizeOptions = getPageSizeOptions();
 
   const [dataList, setDataList] = useState<T[]>([]);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>(
-    undefined
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
-
-  const hasMore = !!nextPageToken;
+  const nextPageTokenRef = useRef("");
 
   const doFetch = useCallback(
     async (isRefresh: boolean) => {
@@ -151,14 +150,15 @@ function usePagedData<T extends { name: string }>({
       }
 
       try {
-        const token = isRefresh ? "" : (nextPageToken ?? "");
+        const token = isRefresh ? "" : nextPageTokenRef.current;
         const result = await fetchList({ pageSize, pageToken: token });
         if (controller.signal.aborted || currentFetchId !== fetchIdRef.current)
           return;
         setDataList((prev) =>
           isRefresh ? result.list : [...prev, ...result.list]
         );
-        setNextPageToken(result.nextPageToken || undefined);
+        nextPageTokenRef.current = result.nextPageToken ?? "";
+        setHasMore(Boolean(result.nextPageToken));
         setHasFetched(true);
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
@@ -170,7 +170,7 @@ function usePagedData<T extends { name: string }>({
         }
       }
     },
-    [fetchList, pageSize, nextPageToken]
+    [fetchList, pageSize]
   );
 
   const loadMore = useCallback(() => {
@@ -384,7 +384,10 @@ function UserTable({
     if (accountType === AccountType.USER && onUserSelected) {
       onUserSelected(user);
     } else {
-      window.location.href = `/users/${user.email}`;
+      router.push({
+        name: WORKSPACE_ROUTE_USER_PROFILE,
+        params: { principalEmail: user.email },
+      });
     }
   };
 
@@ -687,35 +690,33 @@ function GroupTable({
   const loadingRef = useRef<Set<string>>(new Set());
 
   const toggleExpand = useCallback(
-    async (group: Group) => {
+    (group: Group) => {
       setExpandedGroups((prev) => {
         const next = new Set(prev);
         if (next.has(group.name)) {
           next.delete(group.name);
         } else {
           next.add(group.name);
-          // Fetch members if not cached
-          if (
-            !memberCache.has(group.name) &&
-            !loadingRef.current.has(group.name)
-          ) {
-            loadingRef.current.add(group.name);
-            const memberNames = group.members.map((m) => m.member);
-            userStore.batchGetOrFetchUsers(memberNames).then((users) => {
-              loadingRef.current.delete(group.name);
-              setMemberCache((prev) => {
-                const next = new Map(prev);
-                next.set(
-                  group.name,
-                  users.filter((u): u is User => !!u)
-                );
-                return next;
-              });
-            });
-          }
         }
         return next;
       });
+
+      // Fetch members outside the state setter (side effects must not run inside updaters)
+      if (!memberCache.has(group.name) && !loadingRef.current.has(group.name)) {
+        loadingRef.current.add(group.name);
+        const memberNames = group.members.map((m) => m.member);
+        userStore.batchGetOrFetchUsers(memberNames).then((users) => {
+          loadingRef.current.delete(group.name);
+          setMemberCache((prev) => {
+            const next = new Map(prev);
+            next.set(
+              group.name,
+              users.filter((u): u is User => !!u)
+            );
+            return next;
+          });
+        });
+      }
     },
     [memberCache, userStore]
   );
@@ -1348,7 +1349,7 @@ function CreateUserDrawer({
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Foo"
+                placeholder={t("common.name")}
                 maxLength={200}
                 disabled={!allowUpdate}
               />
@@ -2540,9 +2541,7 @@ function EditMemberRoleDrawer({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
-            {isEditMode
-              ? t("settings.members.revoke-access")
-              : t("settings.members.grant-access")}
+            {t("settings.members.grant-access")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -2695,15 +2694,19 @@ export function UsersPage() {
       return;
     }
     if (window.confirm(t("settings.members.revoke-access-alert"))) {
-      await workspaceStore.patchIamPolicy(
-        selectedMembers.map((m) => ({ member: m, roles: [] }))
-      );
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("settings.members.revoked"),
-      });
-      setSelectedMembers([]);
+      try {
+        await workspaceStore.patchIamPolicy(
+          selectedMembers.map((m) => ({ member: m, roles: [] }))
+        );
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("settings.members.revoked"),
+        });
+        setSelectedMembers([]);
+      } catch {
+        // error already shown by store
+      }
     }
   };
 
@@ -2713,14 +2716,18 @@ export function UsersPage() {
   };
 
   const handleMemberRevokeBinding = async (binding: MemberBinding) => {
-    await workspaceStore.patchIamPolicy([
-      { member: binding.binding, roles: [] },
-    ]);
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("settings.members.revoked"),
-    });
+    try {
+      await workspaceStore.patchIamPolicy([
+        { member: binding.binding, roles: [] },
+      ]);
+      pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: t("settings.members.revoked"),
+      });
+    } catch {
+      // error already shown by store
+    }
   };
 
   const remainingUserCount = useMemo(
@@ -2796,7 +2803,7 @@ export function UsersPage() {
         }
       });
     }
-  }, []);
+  }, []); // mount-only: read query param once
   // Sync tab to URL hash
   useEffect(() => {
     window.location.hash = tab;
@@ -2807,7 +2814,13 @@ export function UsersPage() {
   };
 
   const handleActiveUserUpdated = (user: User) => {
-    activeUsers.updateCache([user]);
+    if (user.state === State.DELETED) {
+      // Deactivated: remove from active list, add to inactive list
+      activeUsers.removeCache(user);
+      inactiveUsers.updateCache([user]);
+    } else {
+      activeUsers.updateCache([user]);
+    }
   };
 
   const handleActiveUserRemoved = (user: User) => {
@@ -2815,7 +2828,13 @@ export function UsersPage() {
   };
 
   const handleInactiveUserUpdated = (user: User) => {
-    inactiveUsers.updateCache([user]);
+    if (user.state === State.ACTIVE) {
+      // Restored: remove from inactive list, add to active list
+      inactiveUsers.removeCache(user);
+      activeUsers.updateCache([user]);
+    } else {
+      inactiveUsers.updateCache([user]);
+    }
   };
 
   const handleInactiveUserRemoved = (user: User) => {
