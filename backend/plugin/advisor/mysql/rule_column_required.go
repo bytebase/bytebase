@@ -6,17 +6,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -49,150 +44,90 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		requiredColumns[column] = true
 	}
 
-	// Create the rule
-	rule := NewColumnRequiredRule(level, checkCtx.Rule.Type.String(), requiredColumns)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return rule.generateAdviceList(), nil
-}
-
-// ColumnRequiredRule checks for column requirement.
-type ColumnRequiredRule struct {
-	BaseRule
-	requiredColumns columnSet
-	tables          tableState
-	line            map[string]int
-}
-
-// NewColumnRequiredRule creates a new ColumnRequiredRule.
-func NewColumnRequiredRule(level storepb.Advice_Status, title string, requiredColumns columnSet) *ColumnRequiredRule {
-	return &ColumnRequiredRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnRequiredOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		requiredColumns: requiredColumns,
 		tables:          make(tableState),
 		line:            make(map[string]int),
 	}
+
+	adviceList := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	adviceList = append(adviceList, rule.generateAdviceList()...)
+	return adviceList, nil
 }
 
-// Name returns the rule name.
-func (*ColumnRequiredRule) Name() string {
+type columnRequiredOmniRule struct {
+	OmniBaseRule
+	requiredColumns columnSet
+	tables          tableState
+	line            map[string]int
+}
+
+func (*columnRequiredOmniRule) Name() string {
 	return "ColumnRequiredRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnRequiredRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeDropTable:
-		r.checkDropTable(ctx.(*mysql.DropTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnRequiredOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.DropTableStmt:
+		r.checkDropTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnRequiredRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
+func (r *columnRequiredOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
+		return
+	}
+	r.line[tableName] = int(r.LocToLine(n.Loc)) + r.BaseLine
+	r.initEmptyTable(tableName)
+
+	for _, col := range n.Columns {
+		r.addColumn(tableName, col.Name)
+	}
 }
 
-func (r *ColumnRequiredRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	r.createTable(ctx)
-}
-
-func (r *ColumnRequiredRule) checkDropTable(ctx *mysql.DropTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRefList() == nil {
-		return
-	}
-
-	for _, tableRef := range ctx.TableRefList().AllTableRef() {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(tableRef)
+func (r *columnRequiredOmniRule) checkDropTable(n *ast.DropTableStmt) {
+	for _, ref := range n.Tables {
+		tableName := omniTableName(ref)
 		delete(r.tables, tableName)
 	}
 }
 
-func (r *ColumnRequiredRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+func (r *columnRequiredOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
 		return
 	}
 
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		lineNumber := r.baseLine + item.GetStart().GetLine()
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.addColumn(tableName, columnName)
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.addColumn(tableName, columnName)
-				}
-			default:
+	for _, cmd := range n.Commands {
+		lineNumber := int(r.LocToLine(cmd.Loc)) + r.BaseLine
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			if cmd.Column != nil {
+				r.addColumn(tableName, cmd.Column.Name)
 			}
-		// drop column
-		case item.DROP_SYMBOL() != nil && item.ColumnInternalRef() != nil:
-			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			if r.dropColumn(tableName, columnName) {
+			for _, col := range cmd.Columns {
+				r.addColumn(tableName, col.Name)
+			}
+		case ast.ATDropColumn:
+			if r.dropColumn(tableName, cmd.Name) {
 				r.line[tableName] = lineNumber
 			}
-		// rename column
-		case item.RENAME_SYMBOL() != nil && item.COLUMN_SYMBOL() != nil:
-			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.renameColumn(tableName, oldColumnName, newColumnName)
-			r.line[tableName] = lineNumber
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			newColumnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			if r.renameColumn(tableName, oldColumnName, newColumnName) {
+		case ast.ATRenameColumn:
+			if r.renameColumn(tableName, cmd.Name, cmd.NewName) {
+				r.line[tableName] = lineNumber
+			}
+		case ast.ATChangeColumn:
+			if r.renameColumn(tableName, cmd.Name, cmd.NewName) {
 				r.line[tableName] = lineNumber
 			}
 		default:
@@ -200,8 +135,8 @@ func (r *ColumnRequiredRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 	}
 }
 
-func (r *ColumnRequiredRule) generateAdviceList() []*storepb.Advice {
-	// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
+func (r *columnRequiredOmniRule) generateAdviceList() []*storepb.Advice {
+	var adviceList []*storepb.Advice
 	tableList := r.tables.tableList()
 	for _, tableName := range tableList {
 		table := r.tables[tableName]
@@ -213,78 +148,52 @@ func (r *ColumnRequiredRule) generateAdviceList() []*storepb.Advice {
 		}
 
 		if len(missingColumns) > 0 {
-			// Order it cause the random iteration order in Go, see https://go.dev/blog/maps
 			slices.Sort(missingColumns)
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.NoRequiredColumn.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				StartPosition: common.ConvertANTLRLineToPosition(r.line[tableName]),
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  r.Level,
+				Code:    code.NoRequiredColumn.Int32(),
+				Title:   r.Title,
+				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+				StartPosition: &storepb.Position{
+					Line:   int32(r.line[tableName]),
+					Column: 0,
+				},
 			})
 		}
 	}
-
-	return r.adviceList
+	return adviceList
 }
 
-func (r *ColumnRequiredRule) createTable(ctx *mysql.CreateTableContext) {
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	r.line[tableName] = r.baseLine + ctx.GetStart().GetLine()
-	r.initEmptyTable(tableName)
-
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil {
-			continue
-		}
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		r.addColumn(tableName, columnName)
-	}
-}
-
-func (r *ColumnRequiredRule) initEmptyTable(tableName string) columnSet {
+func (r *columnRequiredOmniRule) initEmptyTable(tableName string) columnSet {
 	r.tables[tableName] = make(columnSet)
 	return r.tables[tableName]
 }
 
-// add a column.
-func (r *ColumnRequiredRule) addColumn(tableName string, columnName string) {
+func (r *columnRequiredOmniRule) addColumn(tableName string, columnName string) {
 	if _, ok := r.requiredColumns[columnName]; !ok {
 		return
 	}
 
 	if table, ok := r.tables[tableName]; !ok {
-		// We do not retrospectively check.
-		// So we assume it contains all required columns.
 		r.initFullTable(tableName)
 	} else {
 		table[columnName] = true
 	}
 }
 
-// drop a column
-// return true if the column was successfully dropped from requirement list.
-func (r *ColumnRequiredRule) dropColumn(tableName string, columnName string) bool {
+func (r *columnRequiredOmniRule) dropColumn(tableName string, columnName string) bool {
 	if _, ok := r.requiredColumns[columnName]; !ok {
 		return false
 	}
 	table, ok := r.tables[tableName]
 	if !ok {
-		// We do not retrospectively check.
-		// So we assume it contains all required columns.
 		table = r.initFullTable(tableName)
 	}
 	table[columnName] = false
 	return true
 }
 
-// rename a column
-// return if the old column was dropped from requirement list.
-func (r *ColumnRequiredRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
+func (r *columnRequiredOmniRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
 	_, oldNeed := r.requiredColumns[oldColumn]
 	_, newNeed := r.requiredColumns[newColumn]
 	if !oldNeed && !newNeed {
@@ -292,8 +201,6 @@ func (r *ColumnRequiredRule) renameColumn(tableName string, oldColumn string, ne
 	}
 	table, ok := r.tables[tableName]
 	if !ok {
-		// We do not retrospectively check.
-		// So we assume it contains all required columns.
 		table = r.initFullTable(tableName)
 	}
 	if oldNeed {
@@ -305,7 +212,7 @@ func (r *ColumnRequiredRule) renameColumn(tableName string, oldColumn string, ne
 	return oldNeed
 }
 
-func (r *ColumnRequiredRule) initFullTable(tableName string) columnSet {
+func (r *columnRequiredOmniRule) initFullTable(tableName string) columnSet {
 	table := r.initEmptyTable(tableName)
 	for column := range r.requiredColumns {
 		table[column] = true

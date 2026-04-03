@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -40,31 +37,40 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx context.Context, checkCt
 		return nil, errors.New("string_payload is required for this rule")
 	}
 
-	// Create the rule
-	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(stringPayload.Value)))
+	driver := checkCtx.Driver
+	if driver == nil {
+		return nil, nil
+	}
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	title := checkCtx.Rule.Type.String()
+	explainType := convertExplainTypeFromString(strings.ToUpper(stringPayload.Value))
 
-	if rule.driver != nil {
-		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine())
-			checker.SetBaseLine(stmt.BaseLine())
-			if stmt.AST == nil {
-				continue
-			}
-			antlrAST, ok := base.GetANTLRAST(stmt.AST)
-			if !ok {
-				continue
-			}
-			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-			if rule.GetExplainCount() >= common.MaximumLintExplainSize {
-				break
-			}
+	rule := &statementQueryMinPlanLevelOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: title,
+		},
+		driver:      driver,
+		ctx:         ctx,
+		explainType: explainType,
+	}
+
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
+		if rule.explainCount >= common.MaximumLintExplainSize {
+			break
 		}
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 type ExplainType int
@@ -112,113 +118,72 @@ func convertExplainTypeFromString(explainTypeStr string) ExplainType {
 	case "CONST":
 		return ExplainTypeConst
 	default:
-		// Default to ALL if we don't recognize the explain type.
 		return ExplainTypeAll
 	}
 }
 
-// StatementQueryMinumumPlanLevelRule checks for query minimum plan level.
-type StatementQueryMinumumPlanLevelRule struct {
-	BaseRule
-	text         string
+// statementQueryMinPlanLevelOmniRule checks for query minimum plan level using omni AST.
+type statementQueryMinPlanLevelOmniRule struct {
+	OmniBaseRule
 	driver       *sql.DB
 	ctx          context.Context
 	explainType  ExplainType
 	explainCount int
 }
 
-// NewStatementQueryMinumumPlanLevelRule creates a new StatementQueryMinumumPlanLevelRule.
-func NewStatementQueryMinumumPlanLevelRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB, explainType ExplainType) *StatementQueryMinumumPlanLevelRule {
-	return &StatementQueryMinumumPlanLevelRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		driver:      driver,
-		ctx:         ctx,
-		explainType: explainType,
-	}
-}
-
-// Name returns the rule name.
-func (*StatementQueryMinumumPlanLevelRule) Name() string {
+func (*statementQueryMinPlanLevelOmniRule) Name() string {
 	return "StatementQueryMinumumPlanLevelRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementQueryMinumumPlanLevelRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeSelectStatement:
-		r.checkSelectStatement(ctx.(*mysql.SelectStatementContext))
-	default:
-		// Other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*StatementQueryMinumumPlanLevelRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-// GetExplainCount returns the explain count.
-func (r *StatementQueryMinumumPlanLevelRule) GetExplainCount() int {
-	return r.explainCount
-}
-
-func (r *StatementQueryMinumumPlanLevelRule) checkSelectStatement(ctx *mysql.SelectStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+func (r *statementQueryMinPlanLevelOmniRule) OnStatement(node ast.Node) {
+	if _, ok := node.(*ast.SelectStmt); !ok {
 		return
 	}
 
-	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	query := r.TrimmedStmtText()
+	line := r.BaseLine + int(r.ContentStartLine())
 	r.explainCount++
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
 			Code:          code.StatementExplainQueryFailed.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf("Failed to explain query: %s, with error: %s", query, err),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
-	} else {
-		explainTypes, err := getQueryExplainTypes(res)
-		if err != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.Internal.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		return
+	}
+
+	explainTypes, err := getQueryExplainTypes(res)
+	if err != nil {
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
+			Code:          code.Internal.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Failed to check explain type column: %s, with error: %s", query, err),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
+		})
+		return
+	}
+
+	if len(explainTypes) > 0 {
+		overused, overusedType := false, ExplainTypeAll
+		for _, et := range explainTypes {
+			if et < r.explainType {
+				overused = true
+				overusedType = et
+				break
+			}
+		}
+		if overused {
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.StatementUnwantedQueryPlanLevel.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), r.explainType.String()),
+				StartPosition: common.ConvertANTLRLineToPosition(line),
 			})
-		} else if len(explainTypes) > 0 {
-			overused, overusedType := false, ExplainTypeAll
-			for _, explainType := range explainTypes {
-				if explainType < r.explainType {
-					overused = true
-					overusedType = explainType
-					break
-				}
-			}
-			if overused {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.StatementUnwantedQueryPlanLevel.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Overused query plan level detected %s, minimum plan level: %s", overusedType.String(), r.explainType.String()),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
 		}
 	}
 }
@@ -239,26 +204,6 @@ func getQueryExplainTypes(res []any) ([]ExplainType, error) {
 		return nil, errors.Errorf("not found any data")
 	}
 
-	// MySQL EXPLAIN statement result has 12 columns.
-	// 1. the column 4 is the data 'type'.
-	// 	  We check all rows of the result to see if any of them has 'ALL' or 'index' in the 'type' column.
-	// 2. the column 11 is the 'Extra' column.
-	//    If the 'Extra' column dose not contain
-	//
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
 	typeIndex, err := getColumnIndex(columns, "type")
 	if err != nil {
 		return nil, errors.Errorf("failed to find rows column")
@@ -272,7 +217,6 @@ func getQueryExplainTypes(res []any) ([]ExplainType, error) {
 		}
 		explainType, ok := row[typeIndex].(string)
 		if !ok {
-			// Skip the row if the type column is not a string.
 			continue
 		}
 		explainTypes = append(explainTypes, convertExplainTypeFromString(explainType))

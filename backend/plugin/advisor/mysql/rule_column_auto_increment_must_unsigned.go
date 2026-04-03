@@ -3,18 +3,12 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -39,172 +33,81 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnAutoIncrementMustUnsignedRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	rule := &columnAutoIncrementMustUnsignedOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
-// ColumnAutoIncrementMustUnsignedRule checks for unsigned auto-increment column.
-type ColumnAutoIncrementMustUnsignedRule struct {
-	BaseRule
+type columnAutoIncrementMustUnsignedOmniRule struct {
+	OmniBaseRule
 }
 
-// NewColumnAutoIncrementMustUnsignedRule creates a new ColumnAutoIncrementMustUnsignedRule.
-func NewColumnAutoIncrementMustUnsignedRule(level storepb.Advice_Status, title string) *ColumnAutoIncrementMustUnsignedRule {
-	return &ColumnAutoIncrementMustUnsignedRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnAutoIncrementMustUnsignedRule) Name() string {
+func (*columnAutoIncrementMustUnsignedOmniRule) Name() string {
 	return "ColumnAutoIncrementMustUnsignedRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnAutoIncrementMustUnsignedRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnAutoIncrementMustUnsignedOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnAutoIncrementMustUnsignedRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnAutoIncrementMustUnsignedRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableElementList() == nil || ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
-			continue
-		}
-		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-	}
-}
-
-func (r *ColumnAutoIncrementMustUnsignedRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+func (r *columnAutoIncrementMustUnsignedOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
 	if tableName == "" {
 		return
 	}
+	for _, col := range n.Columns {
+		r.checkColumn(tableName, col)
+	}
+}
 
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
-			continue
-		}
-
-		var columnName string
-		switch {
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().ColumnName() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					r.checkFieldDefinition(tableName, columnName, tableElement.ColumnDefinition().FieldDefinition())
-				}
-			default:
-			}
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			if item.FieldDefinition().DataType() == nil {
-				continue
-			}
-			columnName = mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			if item.FieldDefinition().DataType() == nil {
-				continue
-			}
-			columnName = mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			r.checkFieldDefinition(tableName, columnName, item.FieldDefinition())
-		default:
+func (r *columnAutoIncrementMustUnsignedOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
+		return
+	}
+	for _, cmd := range n.Commands {
+		for _, col := range omniGetColumnsFromCmd(cmd) {
+			r.checkColumn(tableName, col)
 		}
 	}
 }
 
-func (r *ColumnAutoIncrementMustUnsignedRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
-	if !r.isAutoIncrementColumnIsUnsigned(ctx) {
+func (r *columnAutoIncrementMustUnsignedOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !omniIsAutoIncrement(col) {
+		return
+	}
+	if col.TypeName == nil || (!col.TypeName.Unsigned && !col.TypeName.Zerofill) {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.AutoIncrementColumnSigned.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:  r.Level,
+			Code:    code.AutoIncrementColumnSigned.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, col.Name),
+			StartPosition: &storepb.Position{
+				Line: r.LocToLine(col.Loc),
+			},
 		})
 	}
-}
-
-func (r *ColumnAutoIncrementMustUnsignedRule) isAutoIncrementColumnIsUnsigned(ctx mysql.IFieldDefinitionContext) bool {
-	if r.isAutoIncrementColumn(ctx) && !r.isUnsigned(ctx) {
-		return false
-	}
-	return true
-}
-
-func (*ColumnAutoIncrementMustUnsignedRule) isAutoIncrementColumn(ctx mysql.IFieldDefinitionContext) bool {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr.AUTO_INCREMENT_SYMBOL() != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (*ColumnAutoIncrementMustUnsignedRule) isUnsigned(ctx mysql.IFieldDefinitionContext) bool {
-	if ctx.DataType() == nil {
-		return false
-	}
-
-	// Check if UNSIGNED is specified in the data type
-	dataTypeText := ctx.DataType().GetParser().GetTokenStream().GetTextFromRuleContext(ctx.DataType())
-	upperText := strings.ToUpper(dataTypeText)
-
-	// UNSIGNED is explicitly specified or ZEROFILL (which implies UNSIGNED)
-	return strings.Contains(upperText, "UNSIGNED") || strings.Contains(upperText, "ZEROFILL")
 }

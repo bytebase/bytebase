@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -44,74 +40,44 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	// Create the rule
-	rule := NewIndexTotalNumberLimitRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.FinalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &indexTotalNumberLimitOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		max:           int(numberPayload.Number),
+		lineForTable:  make(map[string]int),
+		finalMetadata: checkCtx.FinalMetadata,
 	}
 
+	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	return rule.generateAdvice(), nil
 }
 
-// IndexTotalNumberLimitRule checks for index total number limit.
-type IndexTotalNumberLimitRule struct {
-	BaseRule
+type indexTotalNumberLimitOmniRule struct {
+	OmniBaseRule
 	max           int
 	lineForTable  map[string]int
 	finalMetadata *model.DatabaseMetadata
 }
 
-// NewIndexTotalNumberLimitRule creates a new IndexTotalNumberLimitRule.
-func NewIndexTotalNumberLimitRule(level storepb.Advice_Status, title string, maxIndexes int, finalMetadata *model.DatabaseMetadata) *IndexTotalNumberLimitRule {
-	return &IndexTotalNumberLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		max:           maxIndexes,
-		lineForTable:  make(map[string]int),
-		finalMetadata: finalMetadata,
-	}
-}
-
-// Name returns the rule name.
-func (*IndexTotalNumberLimitRule) Name() string {
+func (*indexTotalNumberLimitOmniRule) Name() string {
 	return "IndexTotalNumberLimitRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *IndexTotalNumberLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeCreateIndex:
-		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *indexTotalNumberLimitOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
+	case *ast.CreateIndexStmt:
+		r.checkCreateIndex(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*IndexTotalNumberLimitRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
+func (r *indexTotalNumberLimitOmniRule) generateAdvice() []*storepb.Advice {
 	type tableName struct {
 		name string
 		line int
@@ -141,114 +107,73 @@ func (r *IndexTotalNumberLimitRule) generateAdvice() []*storepb.Advice {
 		}
 		tableInfo := schema.GetTable(table.name)
 		if tableInfo != nil && len(tableInfo.GetProto().Indexes) > r.max {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.IndexCountExceedsLimit.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", table.name, r.max, len(tableInfo.GetProto().Indexes)),
 				StartPosition: common.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}
 
-	return r.adviceList
+	return r.Advice
 }
 
-func (r *IndexTotalNumberLimitRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexTotalNumberLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+	tableName := n.Table.Name
+	r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
 }
 
-func (r *IndexTotalNumberLimitRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexTotalNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
-		return
-	}
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+	tableName := n.Table.Name
+	r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
 }
 
-func (r *IndexTotalNumberLimitRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *indexTotalNumberLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
+	tableName := n.Table.Name
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
-		switch {
-		// add column.
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			// add single columns.
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
-			// add multi columns.
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil || tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					r.checkFieldDefinitionContext(tableName, tableElement.ColumnDefinition().FieldDefinition())
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			for _, col := range omniGetColumnsFromCmd(cmd) {
+				if col == nil {
+					continue
 				}
-				// add constraint.
-			case item.TableConstraintDef() != nil:
-				r.checkTableConstraintDef(tableName, item.TableConstraintDef())
-			default:
+				for _, c := range col.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey || c.Type == ast.ColConstrUnique {
+						r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
+					}
+				}
 			}
-		// change column.
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
-		// modify column.
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			r.checkFieldDefinitionContext(tableName, item.FieldDefinition())
-		default:
-			continue
-		}
-	}
-}
-
-func (r *IndexTotalNumberLimitRule) checkFieldDefinitionContext(tableName string, ctx mysql.IFieldDefinitionContext) {
-	for _, attr := range ctx.AllColumnAttribute() {
-		if attr == nil || attr.GetValue() == nil {
-			continue
-		}
-		switch attr.GetValue().GetTokenType() {
-		case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL:
-			r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
+		case ast.ATModifyColumn, ast.ATChangeColumn:
+			if cmd.Column != nil {
+				for _, c := range cmd.Column.Constraints {
+					if c.Type == ast.ColConstrPrimaryKey || c.Type == ast.ColConstrUnique {
+						r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
+					}
+				}
+			}
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil {
+				switch cmd.Constraint.Type {
+				case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrFulltextIndex:
+					r.lineForTable[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
+				default:
+				}
+			}
 		default:
 		}
-	}
-}
-
-func (r *IndexTotalNumberLimitRule) checkTableConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
-	if ctx.GetType_() == nil {
-		return
-	}
-	switch ctx.GetType_().GetTokenType() {
-	case mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL:
-		r.lineForTable[tableName] = r.baseLine + ctx.GetStart().GetLine()
-	default:
 	}
 }

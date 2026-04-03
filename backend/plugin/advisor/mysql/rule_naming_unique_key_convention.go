@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -58,26 +55,18 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	// Create the rule
-	rule := NewNamingUKConventionRule(level, checkCtx.Rule.Type.String(), format, maxLength, templateList, checkCtx.OriginalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &namingUKOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		format:           format,
+		maxLength:        maxLength,
+		templateList:     templateList,
+		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 // ukIndexMetaData is the metadata for unique key.
@@ -88,123 +77,67 @@ type ukIndexMetaData struct {
 	line      int
 }
 
-// NamingUKConventionRule checks for unique key naming convention.
-type NamingUKConventionRule struct {
-	BaseRule
-	text             string
+type namingUKOmniRule struct {
+	OmniBaseRule
 	format           string
 	maxLength        int
 	templateList     []string
 	originalMetadata *model.DatabaseMetadata
 }
 
-// NewNamingUKConventionRule creates a new NamingUKConventionRule.
-func NewNamingUKConventionRule(level storepb.Advice_Status, title string, format string, maxLength int, templateList []string, originalMetadata *model.DatabaseMetadata) *NamingUKConventionRule {
-	return &NamingUKConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		format:           format,
-		maxLength:        maxLength,
-		templateList:     templateList,
-		originalMetadata: originalMetadata,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingUKConventionRule) Name() string {
+func (*namingUKOmniRule) Name() string {
 	return "NamingUKConventionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NamingUKConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
-		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case NodeTypeCreateIndex:
-		r.checkCreateIndex(ctx.(*mysql.CreateIndexContext))
+func (r *namingUKOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
+	case *ast.CreateIndexStmt:
+		r.checkCreateIndex(n)
 	default:
-		// Other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NamingUKConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NamingUKConventionRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *namingUKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableName() == nil {
-		return
-	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-
+	tableName := n.Table.Name
 	var indexDataList []*ukIndexMetaData
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
+	for _, constraint := range n.Constraints {
+		if constraint == nil {
 			continue
 		}
-		if tableElement.TableConstraintDef() == nil {
-			continue
-		}
-		if metaData := r.handleConstraintDef(tableName, tableElement.TableConstraintDef()); metaData != nil {
+		if metaData := r.handleConstraint(tableName, constraint, r.BaseLine+int(r.LocToLine(constraint.Loc))); metaData != nil {
 			indexDataList = append(indexDataList, metaData)
 		}
 	}
 	r.handleIndexList(indexDataList)
 }
 
-func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+func (r *namingUKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := ""
+	if n.Table != nil {
+		tableName = n.Table.Name
 	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	var indexDataList []*ukIndexMetaData
-	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if alterListItem == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
-		switch {
-		// add index.
-		case alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil:
-			if metaData := r.handleConstraintDef(tableName, alterListItem.TableConstraintDef()); metaData != nil {
-				indexDataList = append(indexDataList, metaData)
+		switch cmd.Type {
+		case ast.ATAddConstraint, ast.ATAddIndex:
+			if cmd.Constraint != nil {
+				if metaData := r.handleConstraint(tableName, cmd.Constraint, r.BaseLine+int(r.LocToLine(n.Loc))); metaData != nil {
+					indexDataList = append(indexDataList, metaData)
+				}
 			}
-		// rename index.
-		case alterListItem.RENAME_SYMBOL() != nil && alterListItem.KeyOrIndex() != nil && alterListItem.IndexRef() != nil && alterListItem.IndexName() != nil:
-			_, _, oldIndexName := mysqlparser.NormalizeIndexRef(alterListItem.IndexRef())
-			newIndexName := mysqlparser.NormalizeIndexName(alterListItem.IndexName())
+		case ast.ATRenameIndex:
+			oldIndexName := cmd.Name
+			newIndexName := cmd.NewName
 			indexState := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(oldIndexName)
 			if indexState == nil {
 				continue
@@ -221,76 +154,66 @@ func (r *NamingUKConventionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
 				indexName: newIndexName,
 				tableName: tableName,
 				metaData:  metaData,
-				line:      r.baseLine + ctx.GetStart().GetLine(),
+				line:      r.BaseLine + int(r.LocToLine(n.Loc)),
 			}
 			indexDataList = append(indexDataList, indexData)
 		default:
-			// Other alter operations
 		}
 	}
 	r.handleIndexList(indexDataList)
 }
 
-func (r *NamingUKConventionRule) checkCreateIndex(ctx *mysql.CreateIndexContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *namingUKOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
+	// Only focus on unique index.
+	if !n.Unique {
 		return
 	}
-	// only focus on unique index.
-	if ctx.UNIQUE_SYMBOL() == nil {
+	if n.Table == nil {
 		return
 	}
-	if ctx.IndexName() == nil || ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
-		return
-	}
-
-	indexName := mysqlparser.NormalizeIndexName(ctx.IndexName())
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-
-	if ctx.CreateIndexTarget().KeyListVariants() == nil {
-		return
-	}
-	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
+	tableName := n.Table.Name
+	columnList := omniIndexColumns(n.Columns)
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
 	}
 	indexDataList := []*ukIndexMetaData{
 		{
-			indexName: indexName,
+			indexName: n.IndexName,
 			tableName: tableName,
 			metaData:  metaData,
-			line:      r.baseLine + ctx.GetStart().GetLine(),
+			line:      r.BaseLine + int(r.LocToLine(n.Loc)),
 		},
 	}
 	r.handleIndexList(indexDataList)
 }
 
-func (r *NamingUKConventionRule) handleIndexList(indexDataList []*ukIndexMetaData) {
+func (r *namingUKOmniRule) handleIndexList(indexDataList []*ukIndexMetaData) {
 	for _, indexData := range indexDataList {
 		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
 		if err != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:  r.Level,
 				Code:    code.Internal.Int32(),
 				Title:   "Internal error for unique key naming convention rule",
-				Content: fmt.Sprintf("%q meet internal error %q", r.text, err.Error()),
+				Content: fmt.Sprintf("%q meet internal error %q", r.TrimmedStmtText(), err.Error()),
 			})
 			continue
 		}
 		if !regex.MatchString(indexData.indexName) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.NamingUKConventionMismatch.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
 			})
 		}
 		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.NamingUKConventionMismatch.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("Unique key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
 			})
@@ -298,18 +221,16 @@ func (r *NamingUKConventionRule) handleIndexList(indexDataList []*ukIndexMetaDat
 	}
 }
 
-func (r *NamingUKConventionRule) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) *ukIndexMetaData {
-	// focus on unique index.
-	if ctx.UNIQUE_SYMBOL() == nil || ctx.KeyListVariants() == nil {
+func (*namingUKOmniRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *ukIndexMetaData {
+	// Focus on unique index.
+	if constraint.Type != ast.ConstrUnique {
 		return nil
 	}
-
-	indexName := ""
-	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
-		indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	indexName := constraint.Name
+	columnList := constraint.Columns
+	if len(columnList) == 0 {
+		columnList = omniIndexColumns(constraint.IndexColumns)
 	}
-
-	columnList := mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,
@@ -318,6 +239,6 @@ func (r *NamingUKConventionRule) handleConstraintDef(tableName string, ctx mysql
 		indexName: indexName,
 		tableName: tableName,
 		metaData:  metaData,
-		line:      r.baseLine + ctx.GetStart().GetLine(),
+		line:      line,
 	}
 }

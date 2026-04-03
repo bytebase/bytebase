@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -43,191 +40,117 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		allowList[strings.ToLower(charset)] = true
 	}
 
-	// Create the rule
-	rule := NewCharsetAllowlistRule(level, checkCtx.Rule.Type.String(), allowList)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// CharsetAllowlistRule checks for charset allowlist.
-type CharsetAllowlistRule struct {
-	BaseRule
-	text      string
-	allowList map[string]bool
-}
-
-// NewCharsetAllowlistRule creates a new CharsetAllowlistRule.
-func NewCharsetAllowlistRule(level storepb.Advice_Status, title string, allowList map[string]bool) *CharsetAllowlistRule {
-	return &CharsetAllowlistRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &charsetAllowlistOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		allowList: allowList,
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*CharsetAllowlistRule) Name() string {
+type charsetAllowlistOmniRule struct {
+	OmniBaseRule
+	allowList map[string]bool
+}
+
+func (*charsetAllowlistOmniRule) Name() string {
 	return "CharsetAllowlistRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *CharsetAllowlistRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		}
-	case NodeTypeCreateDatabase:
-		r.checkCreateDatabase(ctx.(*mysql.CreateDatabaseContext))
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterDatabase:
-		r.checkAlterDatabase(ctx.(*mysql.AlterDatabaseContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *charsetAllowlistOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateDatabaseStmt:
+		r.checkCreateDatabase(n)
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterDatabaseStmt:
+		r.checkAlterDatabase(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*CharsetAllowlistRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *CharsetAllowlistRule) checkCreateDatabase(ctx *mysql.CreateDatabaseContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
+func (r *charsetAllowlistOmniRule) checkCharset(charset string, line int) {
+	charset = strings.ToLower(charset)
+	if charset != "" && !r.allowList[charset] {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.Level,
+			Code:          code.DisabledCharset.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", r.QueryText(), charset),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
+		})
 	}
-	for _, option := range ctx.AllCreateDatabaseOption() {
-		if option.DefaultCharset() != nil {
-			charset := mysqlparser.NormalizeMySQLCharsetName(option.DefaultCharset().CharsetName())
-			charset = strings.ToLower(charset)
-			r.checkCharset(charset, ctx.GetStart().GetLine())
+}
+
+func (r *charsetAllowlistOmniRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
+	for _, opt := range n.Options {
+		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
+			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
 			break
 		}
 	}
 }
 
-func (r *CharsetAllowlistRule) checkCharset(charset string, lineNumber int) {
-	if _, exists := r.allowList[charset]; charset != "" && !exists {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.DisabledCharset.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", r.text, charset),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),
-		})
-	}
-}
-
-func (r *CharsetAllowlistRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.CreateTableOptions() != nil {
-		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
-			if option.DefaultCharset() != nil {
-				charset := mysqlparser.NormalizeMySQLCharsetName(option.DefaultCharset().CharsetName())
-				charset = strings.ToLower(charset)
-				r.checkCharset(charset, ctx.GetStart().GetLine())
-				break
-			}
+func (r *charsetAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	// Check table-level charset option.
+	for _, opt := range n.Options {
+		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") {
+			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
+			break
 		}
 	}
-
-	if ctx.TableElementList() != nil {
-		for _, tableElement := range ctx.TableElementList().AllTableElement() {
-			if tableElement.ColumnDefinition() != nil {
-				if tableElement.ColumnDefinition() == nil {
-					continue
-				}
-				columnDef := tableElement.ColumnDefinition()
-				if columnDef.FieldDefinition() == nil || columnDef.FieldDefinition().DataType() == nil {
-					continue
-				}
-				if columnDef.FieldDefinition().DataType().CharsetWithOptBinary() == nil {
-					continue
-				}
-				charsetName := columnDef.FieldDefinition().DataType().CharsetWithOptBinary().CharsetName()
-				charset := mysqlparser.NormalizeMySQLCharsetName(charsetName)
-				charset = strings.ToLower(charset)
-				r.checkCharset(charset, ctx.GetStart().GetLine())
-			}
+	// Check column-level charset.
+	for _, col := range n.Columns {
+		if col == nil || col.TypeName == nil {
+			continue
+		}
+		if col.TypeName.Charset != "" {
+			r.checkCharset(col.TypeName.Charset, r.BaseLine+int(r.LocToLine(n.Loc)))
 		}
 	}
 }
 
-func (r *CharsetAllowlistRule) checkAlterDatabase(ctx *mysql.AlterDatabaseContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	for _, option := range ctx.AllAlterDatabaseOption() {
-		if option.CreateDatabaseOption() == nil || option.CreateDatabaseOption().DefaultCharset() == nil {
-			continue
+func (r *charsetAllowlistOmniRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
+	for _, opt := range n.Options {
+		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
+			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
 		}
-		charset := mysqlparser.NormalizeMySQLCharsetName(option.CreateDatabaseOption().DefaultCharset().CharsetName())
-		charset = strings.ToLower(charset)
-		r.checkCharset(charset, ctx.GetStart().GetLine())
 	}
 }
 
-func (r *CharsetAllowlistRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil || item.FieldDefinition() == nil {
+func (r *charsetAllowlistOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-		if item.FieldDefinition().DataType() == nil {
-			continue
-		}
-		if item.FieldDefinition().DataType().CharsetWithOptBinary() == nil {
-			continue
-		}
-		charset := mysqlparser.NormalizeMySQLCharsetName(item.FieldDefinition().DataType().CharsetWithOptBinary().CharsetName())
-		charset = strings.ToLower(charset)
-		r.checkCharset(charset, ctx.GetStart().GetLine())
-	}
-	// alter table option
-	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
-		if option == nil {
-			continue
-		}
-		for _, tableOption := range option.AllCreateTableOption() {
-			if tableOption == nil || tableOption.DefaultCharset() == nil {
-				continue
+		switch cmd.Type {
+		case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
+			for _, col := range omniGetColumnsFromCmd(cmd) {
+				if col == nil || col.TypeName == nil {
+					continue
+				}
+				if col.TypeName.Charset != "" {
+					r.checkCharset(col.TypeName.Charset, r.BaseLine+int(r.LocToLine(n.Loc)))
+				}
 			}
-			charset := mysqlparser.NormalizeMySQLCharsetName(tableOption.DefaultCharset().CharsetName())
-			charset = strings.ToLower(charset)
-			r.checkCharset(charset, ctx.GetStart().GetLine())
+		case ast.ATTableOption:
+			if cmd.Option != nil {
+				if strings.EqualFold(cmd.Option.Name, "CHARACTER SET") || strings.EqualFold(cmd.Option.Name, "CHARSET") || strings.EqualFold(cmd.Option.Name, "DEFAULT CHARSET") {
+					r.checkCharset(cmd.Option.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
+				}
+			}
+		case ast.ATConvertCharset:
+			if cmd.Option != nil {
+				if strings.EqualFold(cmd.Option.Name, "CHARACTER SET") || strings.EqualFold(cmd.Option.Name, "CHARSET") {
+					r.checkCharset(cmd.Option.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
+				}
+			}
+		default:
 		}
 	}
 }

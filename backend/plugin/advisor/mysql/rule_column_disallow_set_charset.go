@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -37,195 +33,103 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnDisallowSetCharsetRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnDisallowSetCharsetRule checks for disallow set column charset.
-type ColumnDisallowSetCharsetRule struct {
-	BaseRule
-	text string
-}
-
-// NewColumnDisallowSetCharsetRule creates a new ColumnDisallowSetCharsetRule.
-func NewColumnDisallowSetCharsetRule(level storepb.Advice_Status, title string) *ColumnDisallowSetCharsetRule {
-	return &ColumnDisallowSetCharsetRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnDisallowSetCharsetOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ColumnDisallowSetCharsetRule) Name() string {
+type columnDisallowSetCharsetOmniRule struct {
+	OmniBaseRule
+}
+
+func (*columnDisallowSetCharsetOmniRule) Name() string {
 	return "ColumnDisallowSetCharsetRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnDisallowSetCharsetRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		r.checkQuery(ctx.(*mysql.QueryContext))
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnDisallowSetCharsetOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Other node types
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnDisallowSetCharsetRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnDisallowSetCharsetRule) checkQuery(ctx *mysql.QueryContext) {
-	r.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-}
-
-func (r *ColumnDisallowSetCharsetRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *columnDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableElementList() == nil || ctx.TableName() == nil {
-		return
-	}
-
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement.ColumnDefinition() == nil {
+	for _, col := range n.Columns {
+		if col == nil || col.TypeName == nil {
 			continue
 		}
-		if tableElement.ColumnDefinition().FieldDefinition() == nil {
-			continue
-		}
-		if tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
-			continue
-		}
-		charset := r.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
-		if !r.checkCharset(charset) {
+		if !checkCharsetAllowed(col.TypeName.Charset) {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.SetColumnCharset.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.text),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.QueryText()),
+				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 			})
 		}
 	}
 }
 
-func (r *ColumnDisallowSetCharsetRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+func (r *columnDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
 
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	if tableName == "" {
-		return
-	}
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
 
 		var charsetList []string
-		switch {
-		// add column.
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				if item.FieldDefinition().DataType() == nil {
-					continue
-				}
-
-				charsetName := r.getCharSet(item.FieldDefinition().DataType())
-				charsetList = append(charsetList, charsetName)
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil {
-						continue
-					}
-					if tableElement.ColumnDefinition().FieldDefinition() == nil {
-						continue
-					}
-					if tableElement.ColumnDefinition().FieldDefinition().DataType() == nil {
-						continue
-					}
-
-					charsetName := r.getCharSet(tableElement.ColumnDefinition().FieldDefinition().DataType())
-					charsetList = append(charsetList, charsetName)
-				}
-			default:
-				// Other add column formats
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				charsetList = append(charsetList, cmd.Column.TypeName.Charset)
 			}
-		// change column.
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			charsetName := r.getCharSet(item.FieldDefinition().DataType())
-			charsetList = append(charsetList, charsetName)
-		// modify column.
-		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			charsetName := r.getCharSet(item.FieldDefinition().DataType())
-			charsetList = append(charsetList, charsetName)
+			for _, col := range cmd.Columns {
+				if col != nil && col.TypeName != nil {
+					charsetList = append(charsetList, col.TypeName.Charset)
+				}
+			}
+		case ast.ATChangeColumn:
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				charsetList = append(charsetList, cmd.Column.TypeName.Charset)
+			}
+		case ast.ATModifyColumn:
+			if cmd.Column != nil && cmd.Column.TypeName != nil {
+				charsetList = append(charsetList, cmd.Column.TypeName.Charset)
+			}
 		default:
 			continue
 		}
 
-		for _, charsetName := range charsetList {
-			if !r.checkCharset(charsetName) {
+		for _, charset := range charsetList {
+			if !checkCharsetAllowed(charset) {
 				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
+					Status:        r.Level,
 					Code:          code.SetColumnCharset.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.text),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.QueryText()),
+					StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 				})
 			}
 		}
 	}
 }
 
-func (*ColumnDisallowSetCharsetRule) getCharSet(ctx mysql.IDataTypeContext) string {
-	if ctx.CharsetWithOptBinary() == nil {
-		return ""
-	}
-	charset := mysqlparser.NormalizeMySQLCharsetName(ctx.CharsetWithOptBinary().CharsetName())
-	return charset
-}
-
-func (*ColumnDisallowSetCharsetRule) checkCharset(charset string) bool {
+func checkCharsetAllowed(charset string) bool {
 	switch charset {
-	// empty charset or binary for JSON.
 	case "", "binary":
 		return true
 	default:

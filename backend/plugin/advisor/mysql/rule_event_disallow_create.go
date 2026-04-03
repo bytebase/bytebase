@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -35,84 +31,36 @@ func (*EventDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewEventDisallowCreateRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// EventDisallowCreateRule checks for disallow creating event.
-type EventDisallowCreateRule struct {
-	BaseRule
-	text string
-}
-
-// NewEventDisallowCreateRule creates a new EventDisallowCreateRule.
-func NewEventDisallowCreateRule(level storepb.Advice_Status, title string) *EventDisallowCreateRule {
-	return &EventDisallowCreateRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &eventDisallowCreateOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*EventDisallowCreateRule) Name() string {
+type eventDisallowCreateOmniRule struct {
+	OmniBaseRule
+}
+
+func (*eventDisallowCreateOmniRule) Name() string {
 	return "EventDisallowCreateRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *EventDisallowCreateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-		}
-	case NodeTypeCreateEvent:
-		r.checkCreateEvent(ctx.(*mysql.CreateEventContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*EventDisallowCreateRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *EventDisallowCreateRule) checkCreateEvent(ctx *mysql.CreateEventContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+func (r *eventDisallowCreateOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.CreateEventStmt)
+	if !ok {
 		return
 	}
-	code := advisorcode.Ok
-	if ctx.EventName() != nil {
-		code = advisorcode.DisallowCreateEvent
-	}
-
-	if code != advisorcode.Ok {
+	if n.Name != "" {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Event is forbidden, but \"%s\" creates", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+			Status:        r.Level,
+			Code:          advisorcode.DisallowCreateEvent.Int32(),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("Event is forbidden, but \"%s\" creates", r.QueryText()),
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

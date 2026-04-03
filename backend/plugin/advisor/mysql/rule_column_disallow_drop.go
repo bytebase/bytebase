@@ -4,17 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -36,85 +31,41 @@ func (*ColumnDisallowDropAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnDisallowDropRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnDisallowDropRule checks for disallow DROP COLUMN statement.
-type ColumnDisallowDropRule struct {
-	BaseRule
-}
-
-// NewColumnDisallowDropRule creates a new ColumnDisallowDropRule.
-func NewColumnDisallowDropRule(level storepb.Advice_Status, title string) *ColumnDisallowDropRule {
-	return &ColumnDisallowDropRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &columnDisallowDropOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*ColumnDisallowDropRule) Name() string {
+type columnDisallowDropOmniRule struct {
+	OmniBaseRule
+}
+
+func (*columnDisallowDropOmniRule) Name() string {
 	return "ColumnDisallowDropRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnDisallowDropRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeAlterTable {
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ColumnDisallowDropRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnDisallowDropRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
+func (r *columnDisallowDropOmniRule) OnStatement(node ast.Node) {
+	n, ok := node.(*ast.AlterTableStmt)
+	if !ok || n.Table == nil {
 		return
 	}
 
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil || item.DROP_SYMBOL() == nil || item.ColumnInternalRef() == nil {
+	tableName := n.Table.Name
+	for _, cmd := range n.Commands {
+		if cmd == nil || cmd.Type != ast.ATDropColumn {
 			continue
 		}
-
-		columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.DropColumn.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", columnName, tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + item.GetStart().GetLine()),
+			Title:         r.Title,
+			Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", cmd.Name, tableName),
+			StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 		})
 	}
 }

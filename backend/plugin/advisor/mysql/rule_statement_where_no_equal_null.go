@@ -3,15 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -31,93 +30,53 @@ func (*StatementWhereNoEqualNullAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewStatementWhereNoEqualNullRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// StatementWhereNoEqualNullRule checks for equal NULL in WHERE clause.
-type StatementWhereNoEqualNullRule struct {
-	BaseRule
-	text     string
-	isSelect bool
-}
-
-// NewStatementWhereNoEqualNullRule creates a new StatementWhereNoEqualNullRule.
-func NewStatementWhereNoEqualNullRule(level storepb.Advice_Status, title string) *StatementWhereNoEqualNullRule {
-	return &StatementWhereNoEqualNullRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &whereNoEqualNullOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*StatementWhereNoEqualNullRule) Name() string {
+type whereNoEqualNullOmniRule struct {
+	OmniBaseRule
+}
+
+func (*whereNoEqualNullOmniRule) Name() string {
 	return "StatementWhereNoEqualNullRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementWhereNoEqualNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
+func (r *whereNoEqualNullOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	// Collect WHERE expressions from all SelectStmt nodes (including UNION branches).
+	ast.Inspect(node, func(n ast.Node) bool {
+		sel, ok := n.(*ast.SelectStmt)
 		if !ok {
-			return nil
+			return true
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeSelectStatement:
-		r.isSelect = true
-	case NodeTypePrimaryExprCompare:
-		r.checkPrimaryExprCompare(ctx.(*mysql.PrimaryExprCompareContext))
-	default:
-	}
-	return nil
+		if sel.Where != nil {
+			ast.Inspect(sel.Where, func(wn ast.Node) bool {
+				if bin, ok := wn.(*ast.BinaryExpr); ok {
+					if (bin.Op == ast.BinOpEq || bin.Op == ast.BinOpNe) && isNullLiteral(bin.Right) {
+						r.AddAdviceAbsolute(&storepb.Advice{
+							Status:        r.Level,
+							Code:          code.StatementWhereNoEqualNull.Int32(),
+							Title:         r.Title,
+							Content:       fmt.Sprintf("WHERE clause contains equal null: %s", text),
+							StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(bin.Loc))),
+						})
+					}
+				}
+				return true
+			})
+		}
+		return true
+	})
 }
 
-// OnExit is called when exiting a parse tree node.
-func (r *StatementWhereNoEqualNullRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeSelectStatement {
-		r.isSelect = false
-	}
-	return nil
-}
-
-func (r *StatementWhereNoEqualNullRule) checkPrimaryExprCompare(ctx *mysql.PrimaryExprCompareContext) {
-	if !r.isSelect {
-		return
-	}
-
-	compOp := ctx.CompOp()
-	// We only check for equal and not equal.
-	if compOp == nil || (compOp.EQUAL_OPERATOR() == nil && compOp.NOT_EQUAL_OPERATOR() == nil) {
-		return
-	}
-	if ctx.Predicate() != nil && ctx.Predicate().GetText() == "NULL" {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.StatementWhereNoEqualNull.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("WHERE clause contains equal null: %s", r.text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-		})
-	}
+func isNullLiteral(expr ast.ExprNode) bool {
+	_, ok := expr.(*ast.NullLit)
+	return ok
 }

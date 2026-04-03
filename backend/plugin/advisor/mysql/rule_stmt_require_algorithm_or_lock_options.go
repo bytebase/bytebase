@@ -2,16 +2,14 @@ package mysql
 
 import (
 	"context"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -26,7 +24,7 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, &RequireAlgorithmOrLockOptionAdvisor{})
 }
 
-// RequireAlgorithmOrLockOptionAdvisor is the advisor checking for the max execution time.
+// RequireAlgorithmOrLockOptionAdvisor is the advisor checking for required algorithm or lock options.
 type RequireAlgorithmOrLockOptionAdvisor struct {
 }
 
@@ -41,127 +39,74 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		requiredOption, errorCode = "LOCK", code.StatementNoLockOption
 	}
 
-	// Create the rule
-	rule := NewRequireAlgorithmOrLockOptionRule(level, checkCtx.Rule.Type.String(), requiredOption, errorCode)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// RequireAlgorithmOrLockOptionRule checks for required algorithm or lock options.
-type RequireAlgorithmOrLockOptionRule struct {
-	BaseRule
-	requiredOption        string
-	hasOption             bool
-	inAlterTableStatement bool
-	errorCode             code.Code
-	text                  string
-	line                  int
-}
-
-// NewRequireAlgorithmOrLockOptionRule creates a new RequireAlgorithmOrLockOptionRule.
-func NewRequireAlgorithmOrLockOptionRule(level storepb.Advice_Status, title string, requiredOption string, errorCode code.Code) *RequireAlgorithmOrLockOptionRule {
-	return &RequireAlgorithmOrLockOptionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &requireAlgoLockOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 		requiredOption: requiredOption,
 		errorCode:      errorCode,
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*RequireAlgorithmOrLockOptionRule) Name() string {
+type requireAlgoLockOmniRule struct {
+	OmniBaseRule
+	requiredOption string
+	errorCode      code.Code
+}
+
+func (*requireAlgoLockOmniRule) Name() string {
 	return "RequireAlgorithmOrLockOptionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *RequireAlgorithmOrLockOptionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
-	case NodeTypeAlterTableActions:
-		r.checkAlterTableActions(ctx.(*mysql.AlterTableActionsContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *RequireAlgorithmOrLockOptionRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeAlterTable {
-		if !r.hasOption {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          int32(r.errorCode),
-				Title:         r.title,
-				Content:       "ALTER TABLE statement should include " + r.requiredOption + " option",
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.line),
-			})
-		}
-		r.inAlterTableStatement = false
-		r.hasOption = false
-	}
-	return nil
-}
-
-func (r *RequireAlgorithmOrLockOptionRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	r.inAlterTableStatement = true
-	r.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-	r.line = ctx.GetStart().GetLine()
-}
-
-func (r *RequireAlgorithmOrLockOptionRule) checkAlterTableActions(ctx *mysql.AlterTableActionsContext) {
-	if !r.inAlterTableStatement {
+func (r *requireAlgoLockOmniRule) OnStatement(node ast.Node) {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok {
 		return
 	}
 
-	modifierList := []mysql.IAlterCommandsModifierContext{}
-	if ctx.AlterCommandsModifierList() != nil {
-		modifierList = append(modifierList, ctx.AlterCommandsModifierList().AllAlterCommandsModifier()...)
-	}
-	if ctx.AlterCommandList() != nil {
-		if ctx.AlterCommandList().AlterCommandsModifierList() != nil {
-			modifierList = append(modifierList, ctx.AlterCommandList().AlterCommandsModifierList().AllAlterCommandsModifier()...)
+	hasOption := false
+	for _, cmd := range alter.Commands {
+		if r.requiredOption == "ALGORITHM" && cmd.Type == ast.ATAlgorithm {
+			hasOption = true
+			break
 		}
-		if ctx.AlterCommandList().AlterList() != nil {
-			modifierList = append(modifierList, ctx.AlterCommandList().AlterList().AllAlterCommandsModifier()...)
-		}
-	}
-	for _, modifier := range modifierList {
-		if r.requiredOption == "ALGORITHM" && modifier.AlterAlgorithmOption() != nil {
-			if modifier.AlterAlgorithmOption().Identifier() != nil {
-				algorithmOptionValue := mysqlparser.NormalizeMySQLIdentifier(modifier.AlterAlgorithmOption().Identifier())
-				// Don't need to check the value of the algorithm option right now.
-				if algorithmOptionValue != "" {
-					r.hasOption = true
-				}
-			}
-		}
-		if r.requiredOption == "LOCK" && modifier.AlterLockOption() != nil {
-			if modifier.AlterLockOption().Identifier() != nil {
-				lockOptionValue := mysqlparser.NormalizeMySQLIdentifier(modifier.AlterLockOption().Identifier())
-				// Don't need to check the value of the lock option right now.
-				if lockOptionValue != "" {
-					r.hasOption = true
-				}
-			}
+		if r.requiredOption == "LOCK" && cmd.Type == ast.ATLock {
+			hasOption = true
+			break
 		}
 	}
+
+	if !hasOption {
+		r.AddAdviceAbsolute(&storepb.Advice{
+			Status:        r.Level,
+			Code:          int32(r.errorCode),
+			Title:         r.Title,
+			Content:       "ALTER TABLE statement should include " + r.requiredOption + " option",
+			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
+		})
+	}
+}
+
+// nolint:unused
+func omniAlterCmdHasOption(cmds []*ast.AlterTableCmd, optName string) bool {
+	for _, cmd := range cmds {
+		if optName == "ALGORITHM" && cmd.Type == ast.ATAlgorithm {
+			return true
+		}
+		if optName == "LOCK" && cmd.Type == ast.ATLock {
+			return true
+		}
+	}
+	return false
+}
+
+// nolint:unused
+func omniAlterCmdOptionValue(cmd *ast.AlterTableCmd) string {
+	if cmd == nil || cmd.Name == "" {
+		return ""
+	}
+	return strings.ToUpper(cmd.Name)
 }

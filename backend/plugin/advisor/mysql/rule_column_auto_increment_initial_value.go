@@ -4,19 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -45,144 +40,90 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 		return nil, errors.New("number_payload is required for column auto increment initial value rule")
 	}
 
-	// Create the rule
-	rule := NewColumnAutoIncrementInitialValueRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+	rule := &columnAutoIncrementInitialValueOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		value: int(numberPayload.Number),
+	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+		rule.SetStatement(stmt.BaseLine(), stmt.Text)
+		rule.OnStatement(node)
 	}
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
-// ColumnAutoIncrementInitialValueRule checks for auto-increment column initial value.
-type ColumnAutoIncrementInitialValueRule struct {
-	BaseRule
+type columnAutoIncrementInitialValueOmniRule struct {
+	OmniBaseRule
 	value int
 }
 
-// NewColumnAutoIncrementInitialValueRule creates a new ColumnAutoIncrementInitialValueRule.
-func NewColumnAutoIncrementInitialValueRule(level storepb.Advice_Status, title string, value int) *ColumnAutoIncrementInitialValueRule {
-	return &ColumnAutoIncrementInitialValueRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		value: value,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnAutoIncrementInitialValueRule) Name() string {
+func (*columnAutoIncrementInitialValueOmniRule) Name() string {
 	return "ColumnAutoIncrementInitialValueRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnAutoIncrementInitialValueRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnAutoIncrementInitialValueOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
-		// Other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*ColumnAutoIncrementInitialValueRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *ColumnAutoIncrementInitialValueRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.CreateTableOptions() == nil || ctx.TableName() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
-		if option.AUTO_INCREMENT_SYMBOL() == nil || option.Ulonglong_number() == nil {
-			continue
-		}
-
-		base := 10
-		bitSize := 0
-		value, err := strconv.ParseUint(option.Ulonglong_number().GetText(), base, bitSize)
-		if err != nil {
-			continue
-		}
-		if value != uint64(r.value) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, r.value),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-			})
-		}
 	}
 }
 
-// checkAlterTable is called when production alterTable is entered.
-func (r *ColumnAutoIncrementInitialValueRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.AlterTableActions() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+func (r *columnAutoIncrementInitialValueOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := omniTableName(n.Table)
 	if tableName == "" {
 		return
 	}
+	r.checkOptions(tableName, n.Options, r.LocToLine(n.Loc))
+}
 
-	// alter table option.
-	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
-		if option == nil {
-			continue
+func (r *columnAutoIncrementInitialValueOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := omniTableName(n.Table)
+	if tableName == "" {
+		return
+	}
+	for _, cmd := range n.Commands {
+		if cmd.Type == ast.ATTableOption && cmd.Option != nil && strings.EqualFold(cmd.Option.Name, "AUTO_INCREMENT") {
+			r.checkOptionValue(tableName, cmd.Option.Value, r.LocToLine(n.Loc))
 		}
-		for _, tableOption := range option.AllCreateTableOption() {
-			if tableOption == nil || tableOption.AUTO_INCREMENT_SYMBOL() == nil || tableOption.Ulonglong_number() == nil {
-				continue
-			}
+	}
+}
 
-			base := 10
-			bitSize := 0
-			value, err := strconv.ParseUint(tableOption.Ulonglong_number().GetText(), base, bitSize)
-			if err != nil {
-				continue
-			}
-			if value != uint64(r.value) {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.level,
-					Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
-					Title:         r.title,
-					Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, r.value),
-					StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-				})
-			}
+func (r *columnAutoIncrementInitialValueOmniRule) checkOptions(tableName string, opts []*ast.TableOption, line int32) {
+	for _, opt := range opts {
+		if strings.EqualFold(opt.Name, "AUTO_INCREMENT") {
+			r.checkOptionValue(tableName, opt.Value, line)
 		}
+	}
+}
+
+func (r *columnAutoIncrementInitialValueOmniRule) checkOptionValue(tableName, valueStr string, line int32) {
+	value, err := strconv.ParseUint(valueStr, 10, 0)
+	if err != nil {
+		return
+	}
+	if value != uint64(r.value) {
+		r.AddAdvice(&storepb.Advice{
+			Status:  r.Level,
+			Code:    code.AutoIncrementColumnInitialValueNotMatch.Int32(),
+			Title:   r.Title,
+			Content: fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, r.value),
+			StartPosition: &storepb.Position{
+				Line: line,
+			},
+		})
 	}
 }

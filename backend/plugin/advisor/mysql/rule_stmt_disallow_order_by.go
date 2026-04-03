@@ -3,15 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,90 +34,45 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewDisallowOrderByRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// DisallowOrderByRule checks for no ORDER BY clause in DELETE/UPDATE statements.
-type DisallowOrderByRule struct {
-	BaseRule
-	text string
-}
-
-// NewDisallowOrderByRule creates a new DisallowOrderByRule.
-func NewDisallowOrderByRule(level storepb.Advice_Status, title string) *DisallowOrderByRule {
-	return &DisallowOrderByRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &disallowOrderByOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*DisallowOrderByRule) Name() string {
+type disallowOrderByOmniRule struct {
+	OmniBaseRule
+}
+
+func (*disallowOrderByOmniRule) Name() string {
 	return "DisallowOrderByRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *DisallowOrderByRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
+func (r *disallowOrderByOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		if len(n.OrderBy) > 0 {
+			r.addOrderByAdvice(code.DeleteUseOrderBy, text, n.Loc)
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypeDeleteStatement:
-		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))
-	case NodeTypeUpdateStatement:
-		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
+	case *ast.UpdateStmt:
+		if len(n.OrderBy) > 0 {
+			r.addOrderByAdvice(code.UpdateUseOrderBy, text, n.Loc)
+		}
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*DisallowOrderByRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *DisallowOrderByRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
-	if ctx.OrderClause() != nil && ctx.OrderClause().ORDER_SYMBOL() != nil {
-		r.handleOrderByClause(code.DeleteUseOrderBy, ctx.GetStart().GetLine())
-	}
-}
-
-func (r *DisallowOrderByRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
-	if ctx.OrderClause() != nil && ctx.OrderClause().ORDER_SYMBOL() != nil {
-		r.handleOrderByClause(code.UpdateUseOrderBy, ctx.GetStart().GetLine())
-	}
-}
-
-func (r *DisallowOrderByRule) handleOrderByClause(code code.Code, lineNumber int) {
-	r.AddAdvice(&storepb.Advice{
-		Status:        r.level,
-		Code:          code.Int32(),
-		Title:         r.title,
-		Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", r.text),
-		StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + lineNumber),
+func (r *disallowOrderByOmniRule) addOrderByAdvice(c code.Code, text string, loc ast.Loc) {
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:        r.Level,
+		Code:          c.Int32(),
+		Title:         r.Title,
+		Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", text),
+		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
 	})
 }

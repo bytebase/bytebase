@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -36,84 +34,46 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// NoLeadingWildcardLikeRule checks for no leading wildcard LIKE.
-type NoLeadingWildcardLikeRule struct {
-	BaseRule
-	text string
-}
-
-// NewNoLeadingWildcardLikeRule creates a new NoLeadingWildcardLikeRule.
-func NewNoLeadingWildcardLikeRule(level storepb.Advice_Status, title string) *NoLeadingWildcardLikeRule {
-	return &NoLeadingWildcardLikeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &noLeadingWildcardLikeOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*NoLeadingWildcardLikeRule) Name() string {
+type noLeadingWildcardLikeOmniRule struct {
+	OmniBaseRule
+}
+
+func (*noLeadingWildcardLikeOmniRule) Name() string {
 	return "NoLeadingWildcardLikeRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NoLeadingWildcardLikeRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		queryCtx, ok := ctx.(*mysql.QueryContext)
-		if !ok {
-			return nil
+func (r *noLeadingWildcardLikeOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	ast.Inspect(node, func(n ast.Node) bool {
+		if like, ok := n.(*ast.LikeExpr); ok {
+			r.checkLikeExpr(like, text)
 		}
-		r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
-	case NodeTypePredicateExprLike:
-		r.checkPredicateExprLike(ctx.(*mysql.PredicateExprLikeContext))
-	default:
-	}
-	return nil
+		return true
+	})
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NoLeadingWildcardLikeRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	return nil
-}
-
-func (r *NoLeadingWildcardLikeRule) checkPredicateExprLike(ctx *mysql.PredicateExprLikeContext) {
-	if ctx.LIKE_SYMBOL() == nil {
+func (r *noLeadingWildcardLikeOmniRule) checkLikeExpr(like *ast.LikeExpr, text string) {
+	if like.Pattern == nil {
 		return
 	}
-
-	for _, expr := range ctx.AllSimpleExpr() {
-		pattern := expr.GetText()
-		if (strings.HasPrefix(pattern, "'%") && strings.HasSuffix(pattern, "'")) || (strings.HasPrefix(pattern, "\"%") && strings.HasSuffix(pattern, "\"")) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+	if str, ok := like.Pattern.(*ast.StringLit); ok {
+		if strings.HasPrefix(str.Value, "%") {
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.StatementLeadingWildcardLike.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", r.text),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", text),
+				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(like.Loc))),
 			})
 		}
 	}

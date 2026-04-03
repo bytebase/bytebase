@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -38,29 +35,22 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String(), checkCtx.FinalMetadata)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &columnNoNullOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
+		},
+		columnSet:     make(map[string]columnName),
+		finalMetadata: checkCtx.FinalMetadata,
 	}
 
-	// Generate advice after walking
+	// Walk all statements to collect columns.
+	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+
+	// Generate advice after walking all statements.
 	rule.generateAdvice()
 
-	return checker.GetAdviceList(), nil
+	return rule.GetAdviceList(), nil
 }
 
 type columnName struct {
@@ -73,49 +63,27 @@ func (c columnName) name() string {
 	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
 }
 
-// ColumnNoNullRule checks for column no NULL value.
-type ColumnNoNullRule struct {
-	BaseRule
+type columnNoNullOmniRule struct {
+	OmniBaseRule
 	columnSet     map[string]columnName
 	finalMetadata *model.DatabaseMetadata
 }
 
-// NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string, finalMetadata *model.DatabaseMetadata) *ColumnNoNullRule {
-	return &ColumnNoNullRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		columnSet:     make(map[string]columnName),
-		finalMetadata: finalMetadata,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnNoNullRule) Name() string {
+func (*columnNoNullOmniRule) Name() string {
 	return "ColumnNoNullRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.checkCreateTable(ctx.(*mysql.CreateTableContext))
-	case NodeTypeAlterTable:
-		r.checkAlterTable(ctx.(*mysql.AlterTableContext))
+func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.checkCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.checkAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnNoNullRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *ColumnNoNullRule) generateAdvice() {
+func (r *columnNoNullOmniRule) generateAdvice() {
 	var columnList []columnName
 	for _, column := range r.columnSet {
 		columnList = append(columnList, column)
@@ -147,10 +115,10 @@ func (r *ColumnNoNullRule) generateAdvice() {
 		}
 		col := table.GetColumn(column.columnName)
 		if col != nil && col.GetProto().Nullable {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+			r.AddAdviceAbsolute(&storepb.Advice{
+				Status:        r.Level,
 				Code:          code.ColumnCannotNull.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
@@ -158,90 +126,59 @@ func (r *ColumnNoNullRule) generateAdvice() {
 	}
 }
 
-func (r *ColumnNoNullRule) checkCreateTable(ctx *mysql.CreateTableContext) {
-	if ctx.TableName() == nil {
+func (r *columnNoNullOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.TableElementList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
-	for _, tableElement := range ctx.TableElementList().AllTableElement() {
-		if tableElement == nil {
+	tableName := n.Table.Name
+	for _, col := range n.Columns {
+		if col == nil {
 			continue
 		}
-		if tableElement.ColumnDefinition() == nil {
-			continue
-		}
-
-		_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		if tableElement.ColumnDefinition().FieldDefinition() == nil {
-			continue
-		}
-		col := columnName{
+		c := columnName{
 			tableName:  tableName,
-			columnName: column,
-			line:       r.baseLine + tableElement.ColumnDefinition().GetStart().GetLine(),
+			columnName: col.Name,
+			line:       r.BaseLine + int(r.LocToLine(col.Loc)),
 		}
-		if _, exists := r.columnSet[col.name()]; !exists {
-			r.columnSet[col.name()] = col
+		if _, exists := r.columnSet[c.name()]; !exists {
+			r.columnSet[c.name()] = c
 		}
 	}
 }
 
-func (r *ColumnNoNullRule) checkAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.AlterTableActions() == nil {
+func (r *columnNoNullOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+	if n.Table == nil {
 		return
 	}
-	if ctx.AlterTableActions().AlterCommandList() == nil {
-		return
-	}
-	if ctx.AlterTableActions().AlterCommandList().AlterList() == nil {
-		return
-	}
-
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	// alter table add column, change column, modify column.
-	for _, item := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
-		if item == nil {
+	tableName := n.Table.Name
+	for _, cmd := range n.Commands {
+		if cmd == nil {
 			continue
 		}
-
 		var columns []string
-		switch {
-		// add column
-		case item.ADD_SYMBOL() != nil:
-			switch {
-			case item.Identifier() != nil && item.FieldDefinition() != nil:
-				column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				columns = append(columns, column)
-			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
-				for _, tableElement := range item.TableElementList().AllTableElement() {
-					if tableElement.ColumnDefinition() == nil {
-						continue
-					}
-					_, _, column := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					columns = append(columns, column)
-				}
-			default:
+		switch cmd.Type {
+		case ast.ATAddColumn:
+			if cmd.Column != nil {
+				columns = append(columns, cmd.Column.Name)
 			}
-		// change column
-		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil:
-			// only care new column name.
-			column := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			columns = append(columns, column)
+			for _, col := range cmd.Columns {
+				columns = append(columns, col.Name)
+			}
+		case ast.ATChangeColumn:
+			// Only care about the new column name.
+			if cmd.Column != nil {
+				columns = append(columns, cmd.Column.Name)
+			}
 		default:
 		}
-
 		for _, column := range columns {
-			col := columnName{
+			c := columnName{
 				tableName:  tableName,
 				columnName: column,
-				line:       r.baseLine + item.GetStart().GetLine(),
+				line:       r.BaseLine + int(r.LocToLine(cmd.Loc)),
 			}
-			if _, exists := r.columnSet[col.name()]; !exists {
-				r.columnSet[col.name()] = col
+			if _, exists := r.columnSet[c.name()]; !exists {
+				r.columnSet[c.name()] = c
 			}
 		}
 	}

@@ -3,15 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -24,118 +23,76 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT, &StatementDisallowLimitAdvisor{})
 }
 
-// StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
+// StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE/DELETE statement.
 type StatementDisallowLimitAdvisor struct {
 }
 
-// Check checks for no LIMIT clause in INSERT/UPDATE statement.
+// Check checks for no LIMIT clause in INSERT/UPDATE/DELETE statement.
 func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewStatementDisallowLimitRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// StatementDisallowLimitRule checks for no LIMIT clause in INSERT/UPDATE statement.
-type StatementDisallowLimitRule struct {
-	BaseRule
-	isInsertStmt bool
-	text         string
-	line         int
-}
-
-// NewStatementDisallowLimitRule creates a new StatementDisallowLimitRule.
-func NewStatementDisallowLimitRule(level storepb.Advice_Status, title string) *StatementDisallowLimitRule {
-	return &StatementDisallowLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
+	rule := &disallowLimitOmniRule{
+		OmniBaseRule: OmniBaseRule{
+			Level: level,
+			Title: checkCtx.Rule.Type.String(),
 		},
 	}
+
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// Name returns the rule name.
-func (*StatementDisallowLimitRule) Name() string {
+type disallowLimitOmniRule struct {
+	OmniBaseRule
+}
+
+func (*disallowLimitOmniRule) Name() string {
 	return "StatementDisallowLimitRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *StatementDisallowLimitRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeQuery:
-		if queryCtx, ok := ctx.(*mysql.QueryContext); ok {
-			r.text = queryCtx.GetParser().GetTokenStream().GetTextFromRuleContext(queryCtx)
+func (r *disallowLimitOmniRule) OnStatement(node ast.Node) {
+	text := strings.TrimSpace(r.StmtText)
+	switch n := node.(type) {
+	case *ast.DeleteStmt:
+		if n.Limit != nil {
+			r.addLimitAdvice(code.DeleteUseLimit, text, n.Loc)
 		}
-	case NodeTypeDeleteStatement:
-		r.checkDeleteStatement(ctx.(*mysql.DeleteStatementContext))
-	case NodeTypeUpdateStatement:
-		r.checkUpdateStatement(ctx.(*mysql.UpdateStatementContext))
-	case NodeTypeInsertStatement:
-		r.isInsertStmt = true
-	case NodeTypeQueryExpression:
-		r.checkQueryExpression(ctx.(*mysql.QueryExpressionContext))
+	case *ast.UpdateStmt:
+		if n.Limit != nil {
+			r.addLimitAdvice(code.UpdateUseLimit, text, n.Loc)
+		}
+	case *ast.InsertStmt:
+		if n.Select != nil {
+			r.checkSelectLimit(n.Select, text)
+		}
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *StatementDisallowLimitRule) OnExit(_ antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeInsertStatement {
-		r.isInsertStmt = false
-	}
-	return nil
-}
-
-func (r *StatementDisallowLimitRule) checkDeleteStatement(ctx *mysql.DeleteStatementContext) {
-	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(code.DeleteUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
-func (r *StatementDisallowLimitRule) checkUpdateStatement(ctx *mysql.UpdateStatementContext) {
-	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(code.UpdateUseLimit, ctx.GetStart().GetLine())
-	}
-}
-
-func (r *StatementDisallowLimitRule) checkQueryExpression(ctx *mysql.QueryExpressionContext) {
-	if !r.isInsertStmt {
+func (r *disallowLimitOmniRule) checkSelectLimit(sel *ast.SelectStmt, text string) {
+	if sel == nil {
 		return
 	}
-	if ctx.LimitClause() != nil && ctx.LimitClause().LIMIT_SYMBOL() != nil {
-		r.handleLimitClause(code.InsertUseLimit, ctx.GetStart().GetLine())
+	if sel.SetOp != ast.SetOpNone {
+		// Check set operation top-level limit.
+		if sel.Limit != nil {
+			r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
+		}
+		return
+	}
+	if sel.Limit != nil {
+		r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
 	}
 }
 
-func (r *StatementDisallowLimitRule) handleLimitClause(code code.Code, lineNumber int) {
-	r.AddAdvice(&storepb.Advice{
-		Status:        r.level,
-		Code:          code.Int32(),
-		Title:         r.title,
-		Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", r.text),
-		StartPosition: common.ConvertANTLRLineToPosition(r.line + lineNumber),
+func (r *disallowLimitOmniRule) addLimitAdvice(c code.Code, text string, _ ast.Loc) {
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:        r.Level,
+		Code:          c.Int32(),
+		Title:         r.Title,
+		Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", text),
+		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
 	})
 }
