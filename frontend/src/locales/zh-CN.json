@@ -281,9 +281,7 @@
     "archive-description": "将「{name}」标记为已归档且只读。",
     "delete-resource-description": "删除「{name}」后将无法恢复，请确认。",
     "scope": "范围",
-    "classification-level": "分类等级",
-    "copy-failed": "Copy failed",
-    "is-required": "is required"
+    "classification-level": "分类等级"
   },
   "error-page": {
     "forbidden": "禁止访问",
@@ -503,16 +501,15 @@
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "名称",
           "description": "描述",
+          "members": "成员",
           "role": {
             "owner": "群组所有者",
             "member": "群组成员"
           }
         },
         "n-members": "{n} 位成员",
-        "workspace-domain-required": "请先设置工作空间的域名。",
-        "external-readonly": "External group is read-only."
+        "workspace-domain-required": "请先设置工作空间的域名。"
       },
-      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "确定禁用",
         "reactivate-confirm-title": "确定启用"

@@ -257,9 +257,12 @@
     "removed": "Removed",
     "submit": "Submit",
     "draft": "Draft",
+    "creating": "Creating",
     "deploying": "Deploying",
     "in-review": "In Review",
     "done": "Done",
+    "canceled": "canceled",
+    "recent": "Recent",
     "and": "and",
     "import": "Import",
     "hard-delete": {
@@ -280,9 +283,7 @@
     "unlimited": "Unlimited",
     "unknown": "Unknown",
     "scope": "Scope",
-    "classification-level": "Classification Level",
-    "copy-failed": "Copy failed",
-    "is-required": "is required"
+    "classification-level": "Classification Level"
   },
   "error-page": {
     "forbidden": "Forbidden",
@@ -502,16 +503,15 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
+          "members": "Members",
           "role": {
             "owner": "Group owner",
             "member": "Group member"
           }
         },
         "n-members": "{n} members",
-        "workspace-domain-required": "Please set a workspace domain first.",
-        "external-readonly": "External group is read-only."
+        "workspace-domain-required": "Please set a workspace domain first."
       },
-      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "Are you sure to deactivate?",
         "reactivate-confirm-title": "Are you sure to reactivate"

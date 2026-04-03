@@ -281,9 +281,7 @@
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "スコープ",
-    "classification-level": "分類レベル",
-    "copy-failed": "Copy failed",
-    "is-required": "is required"
+    "classification-level": "分類レベル"
   },
   "error-page": {
     "forbidden": "アクセス禁止",
@@ -503,16 +501,15 @@
           "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
           "title": "タイトル",
           "description": "説明",
+          "members": "メンバー",
           "role": {
             "owner": "グループオーナー",
             "member": "グループの人（仲間）たち"
           }
         },
         "n-members": "{n} 人のメンバー",
-        "workspace-domain-required": "まずワークスペースドメインを設定してください。",
-        "external-readonly": "External group is read-only."
+        "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
-      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "無効にしてもOK",
         "reactivate-confirm-title": "[OK] を有効にします"

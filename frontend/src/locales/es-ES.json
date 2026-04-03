@@ -281,9 +281,7 @@
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "Alcance",
-    "classification-level": "Nivel de clasificación",
-    "copy-failed": "Copy failed",
-    "is-required": "is required"
+    "classification-level": "Nivel de clasificación"
   },
   "error-page": {
     "forbidden": "Prohibido",
@@ -503,16 +501,15 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
+          "members": "Miembros",
           "role": {
             "owner": "Propietario del grupo",
             "member": "Miembro del grupo"
           }
         },
         "n-members": "{n} miembros",
-        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo.",
-        "external-readonly": "External group is read-only."
+        "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
-      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "¿Estás seguro de que deseas desactivar?",
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"

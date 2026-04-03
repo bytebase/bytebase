@@ -281,9 +281,7 @@
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "Phạm vi",
-    "classification-level": "Cấp phân loại",
-    "copy-failed": "Copy failed",
-    "is-required": "is required"
+    "classification-level": "Cấp phân loại"
   },
   "error-page": {
     "forbidden": "Bị cấm",
@@ -503,16 +501,15 @@
           "email-tips": "Email phải là duy nhất, và không thể thay đổi sau khi tạo.",
           "title": "Tiêu đề",
           "description": "Mô tả",
+          "members": "Thành viên",
           "role": {
             "owner": "Chủ sở hữu nhóm",
             "member": "Thành viên nhóm"
           }
         },
         "n-members": "{n} thành viên",
-        "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước.",
-        "external-readonly": "External group is read-only."
+        "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
-      "cannot-revoke-self": "You cannot revoke yourself",
       "action": {
         "deactivate-confirm-title": "Bạn có chắc muốn vô hiệu hóa?",
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
