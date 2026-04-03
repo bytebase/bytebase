@@ -132,10 +132,13 @@ export function useExemptionData(projectName: ComputedRef<string>) {
     }))
   );
 
+  let fetchGeneration = 0;
+
   const updateAccessUserList = async () => {
     if (!ready.value) {
       return;
     }
+
     if (
       !policy.value ||
       policy.value.policy?.case !== "maskingExemptionPolicy"
@@ -145,6 +148,9 @@ export function useExemptionData(projectName: ComputedRef<string>) {
       return;
     }
 
+    state.loading = true;
+
+    const generation = ++fetchGeneration;
     try {
       const memberMap = new Map<string, AccessUser>();
       const { exemptions } = policy.value.policy.value;
@@ -152,6 +158,9 @@ export function useExemptionData(projectName: ComputedRef<string>) {
         e.condition?.expression ? e.condition.expression : "true"
       );
       const conditionList = await batchConvertFromCELString(expressionList);
+
+      // A newer fetch was started — discard this stale result.
+      if (generation !== fetchGeneration) return;
 
       await composePolicyBindings(exemptions, true);
       for (let i = 0; i < exemptions.length; i++) {
@@ -163,9 +172,14 @@ export function useExemptionData(projectName: ComputedRef<string>) {
         }
       }
 
+      // Final staleness check after all async work.
+      if (generation !== fetchGeneration) return;
+
       state.rawAccessList = [...memberMap.values()];
     } finally {
-      state.loading = false;
+      if (generation === fetchGeneration) {
+        state.loading = false;
+      }
     }
   };
 

@@ -7,7 +7,7 @@ import type {
 } from "./types";
 
 const classificationLevelRegex =
-  /resource\.classification_level\s*(<=|==|!=|<|>=|>)\s*(\d+)/;
+  /resource\.classification_level\s*(\S+)\s*(\d+)/;
 
 export function parseClassificationLevel(
   conditionExpression: string
@@ -73,10 +73,9 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     ? `, ${t("project.masking-exemption.level")} ${operatorDisplayMap[level.operator] ?? level.operator} ${level.value}`
     : "";
 
-  // Filter out sentinel -1 databases
   const realResources = resources.filter((r) => {
     const dbName = extractDatabaseName(r.databaseFullName);
-    return dbName !== "-1" && dbName !== "";
+    return dbName !== "";
   });
 
   // No specific databases
@@ -186,15 +185,17 @@ export function rewriteResourceDatabase(celString: string): string {
 }
 
 export function buildMemberSummary(grants: ExemptionGrant[]): {
-  totalResources: number;
   databaseNames: string[];
   neverExpires: boolean;
   nearestExpiration: number | undefined;
 } {
-  const allResources = grants.flatMap((g) => g.databaseResources ?? []);
   const databaseNames = [
     ...new Set(
-      allResources.map((r) => extractDatabaseName(r.databaseFullName))
+      grants.flatMap((g) =>
+        (g.databaseResources ?? []).map((r) =>
+          extractDatabaseName(r.databaseFullName)
+        )
+      )
     ),
   ];
   // Grants with no databaseResources cover all databases — add empty sentinel
@@ -206,7 +207,6 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
   }
   const expiringGrants = grants.filter((g) => g.expirationTimestamp);
   return {
-    totalResources: allResources.length,
     databaseNames,
     neverExpires: grants.some((g) => !g.expirationTimestamp),
     nearestExpiration:

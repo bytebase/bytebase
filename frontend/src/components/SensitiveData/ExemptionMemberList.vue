@@ -1,6 +1,12 @@
 <template>
   <div class="overflow-y-auto">
-    <template v-if="members.length > 0">
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-12"
+    >
+      <NSpin size="small" />
+    </div>
+    <template v-else-if="members.length > 0">
       <div class="divide-y divide-gray-100">
       <div v-for="member in members" :key="member.member">
         <ExemptionMemberItem
@@ -27,12 +33,6 @@
       </div>
       </div>
     </template>
-    <div
-      v-else-if="loading"
-      class="flex items-center justify-center py-12"
-    >
-      <NSpin size="small" />
-    </div>
     <div
       v-else
       class="flex items-center justify-center py-12 text-control-placeholder text-sm"

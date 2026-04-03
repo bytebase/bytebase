@@ -292,42 +292,7 @@ describe("groupByMember", () => {
     expect(result[0].nearestExpiration).toBeUndefined();
   });
 
-  test("counts totalResources from databaseResources across grants", () => {
-    const users: AccessUser[] = [
-      makeAccessUser({
-        member: "user:admin@bytebase.com",
-        key: "a:1",
-        databaseResources: [
-          {
-            databaseFullName: "instances/prod/databases/hr_prod",
-            schema: "public",
-            table: "employee",
-          },
-          {
-            databaseFullName: "instances/prod/databases/hr_prod",
-            schema: "public",
-            table: "audit",
-          },
-        ],
-      }),
-      makeAccessUser({
-        member: "user:admin@bytebase.com",
-        key: "a:2",
-        databaseResources: [
-          {
-            databaseFullName: "instances/prod/databases/test",
-            schema: "",
-            table: "test",
-          },
-        ],
-      }),
-    ];
-
-    const result = groupByMember(users);
-    expect(result[0].totalResources).toBe(3);
-  });
-
-  test("totalResources is 0 when no grants have databaseResources", () => {
+  test("databaseNames has empty sentinel when no grants have databaseResources", () => {
     const users: AccessUser[] = [
       makeAccessUser({
         member: "user:admin@bytebase.com",
@@ -337,7 +302,6 @@ describe("groupByMember", () => {
     ];
 
     const result = groupByMember(users);
-    expect(result[0].totalResources).toBe(0);
     // Empty sentinel indicates "all databases" (grant has no specific resources)
     expect(result[0].databaseNames).toEqual([""]);
   });
@@ -456,7 +420,6 @@ describe("groupByMember", () => {
     expect(result).toHaveLength(1);
     // No merging — each exemption is its own grant card
     expect(result[0].grants).toHaveLength(3);
-    expect(result[0].totalResources).toBe(3);
   });
 
   test("keeps overlapping resources as separate grants", () => {
@@ -649,22 +612,6 @@ describe("generateGrantTitle", () => {
         makeGrant({ classificationLevel: { operator: "<=", value: 3 } })
       )
     ).toBe("All databases, level ≤ 3");
-  });
-
-  test("sentinel -1 treated as All databases", () => {
-    expect(
-      generateGrantTitle(
-        makeGrant({
-          databaseResources: [
-            {
-              databaseFullName: "instances/-1/databases/-1",
-              schema: "",
-              table: "",
-            },
-          ],
-        })
-      )
-    ).toBe("All databases");
   });
 
   // --- Multiple databases ---

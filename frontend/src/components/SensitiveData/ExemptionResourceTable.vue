@@ -133,9 +133,8 @@ const props = withDefaults(
   }
 );
 
-// Sentinel value "-1" means "all" (used when no specific instance/database is specified)
 function isSentinel(value: string): boolean {
-  return value === "-1" || value === "";
+  return value === "";
 }
 
 function displayInstance(resource: DatabaseResource): string {

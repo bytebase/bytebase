@@ -112,12 +112,8 @@ const scopeSummary = computed(() => {
   const n = props.member.grants.length;
   const exemptionWord = $t("project.masking-exemption.n-exemptions", { n }, n);
 
-  const realDbs = props.member.databaseNames.filter(
-    (name) => name !== "-1" && name !== ""
-  );
-  const hasAllDbs = props.member.databaseNames.some(
-    (name) => name === "-1" || name === ""
-  );
+  const realDbs = props.member.databaseNames.filter((name) => name !== "");
+  const hasAllDbs = props.member.databaseNames.includes("");
 
   const parts: string[] = [];
   if (realDbs.length > 0) {

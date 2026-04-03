@@ -62,7 +62,7 @@
         />
         <div class="flex-1 min-w-0 overflow-y-auto">
           <ExemptionDetailPanel
-            v-if="selectedMemberData"
+            v-if="!exemptionsLoading && selectedMemberData"
             :member="selectedMemberData"
             :disabled="!hasPermission"
             :show-database-link="showDatabaseLink"
@@ -70,7 +70,7 @@
             @revoke="(grant) => handleRevoke(selectedMemberData!, grant)"
           />
           <div
-            v-else
+            v-else-if="!exemptionsLoading"
             class="flex items-center justify-center h-full text-control-placeholder text-sm"
           >
             {{ $t("project.masking-exemption.no-exemptions") }}

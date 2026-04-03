@@ -60,7 +60,6 @@ export interface ExemptionMember {
   type: "user" | "group";
   member: string;
   grants: ExemptionGrant[];
-  totalResources: number;
   databaseNames: string[];
   neverExpires: boolean;
   nearestExpiration?: number;
