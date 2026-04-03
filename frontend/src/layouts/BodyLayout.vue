@@ -74,7 +74,7 @@
     <Quickstart />
   </div>
 
-  <AgentWindow />
+  <AgentWindowMount />
 
   <ReleaseRemindModal
     v-if="state.showReleaseModal && route.name !== WORKSPACE_ROOT_MODULE"
@@ -87,9 +87,9 @@ import { useWindowSize } from "@vueuse/core";
 import { NDrawer, NDrawerContent } from "naive-ui";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import AgentWindowMount from "@/components/AgentWindowMount.vue";
 import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
-import { AgentWindow, useAgentShortcut } from "@/plugins/agent";
 import { t } from "@/plugins/i18n";
 import environmentV1Routes from "@/router/dashboard/environmentV1";
 import instanceRoutes from "@/router/dashboard/instance";
@@ -191,7 +191,16 @@ onUnmounted(() => {
   }
 });
 
-useAgentShortcut();
+// Agent keyboard shortcut (Ctrl/Cmd+Shift+A) — calls Zustand store directly
+const agentShortcutHandler = async (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "A") {
+    e.preventDefault();
+    const { useAgentStore } = await import("@/react/plugins/agent/store/agent");
+    useAgentStore.getState().toggle();
+  }
+};
+onMounted(() => window.addEventListener("keydown", agentShortcutHandler));
+onUnmounted(() => window.removeEventListener("keydown", agentShortcutHandler));
 
 provideBodyLayoutContext({
   mainContainerRef,

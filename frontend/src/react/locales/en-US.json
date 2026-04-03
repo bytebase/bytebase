@@ -60,144 +60,81 @@
       "self": "Condition"
     }
   },
-  "changelog": {
-    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
-  },
   "common": {
-    "activated": "Activated",
-    "active": "Active",
     "add": "Add",
     "add-permissions": "Add permissions",
     "added": "Added",
     "address": "Address",
     "all": "All",
     "archive": "Archive",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "archive-resource": "Archive {{type}}",
     "archived": "Archived",
     "back": "Back",
     "cancel": "Cancel",
     "cannot-undo-this-action": "You cannot undo this action",
-    "changelog": "Changelog",
-    "classification-level": "Classification Level",
     "clear": "Clear",
     "close": "Close",
-    "columns": "Columns",
     "configure": "Configure",
     "configure-now": "Configure now",
     "confirm": "Confirm",
-    "confirm-and-add": "Confirm and add",
     "confirm-and-update": "Confirm and update",
-    "confirm-archive": "Archive Resource?",
-    "confirm-delete": "Delete Resource?",
-    "confirm-to-revert": "Confirm to revert your editing?",
     "copied": "Copied",
     "copy": "Copy",
-    "copy-failed": "Copy failed",
     "create": "Create",
     "created": "Created",
-    "created-at": "Created",
-    "creator": "Creator",
-    "danger-zone": "Danger Zone",
-    "database": "Database",
-    "database-group": "Database Group",
-    "databases": "Databases",
-    "default": "Default",
     "delete": "Delete",
     "delete-resource": "Delete {{type}}",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
     "description": "Description",
-    "deselect-all": "Deselect all",
-    "disable": "Disable",
     "discard-changes": "Discard changes",
-    "download": "Download",
     "edit": "Edit",
     "email": "Email",
-    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
-    "empty": "Empty",
-    "enable": "Enable",
-    "enabled": "Enabled",
     "environment": "Environment",
     "environment-name": "Environment Name",
-    "environments": "Environments",
-    "expiration": "Expiration",
     "export": "Export",
     "failed": "Failed",
     "file-selector": {
       "size-limit": "File size should less than {{size}} MiB",
       "type-limit": "Only support {{extension}} file"
     },
-    "filter": "Filter",
     "filter-by-name": "Filter by name",
     "from": "From",
     "general": "General",
     "groups": "Groups",
-    "home": "Home",
     "id": "ID",
     "instance": "Instance",
-    "instances": "Instances",
     "is-required": "is required",
-    "issues": "Issues",
-    "items": "items",
-    "key": "Key",
     "labels": "Labels",
     "learn-more": "Learn more",
     "leave-without-saving": "Leave without saving?",
     "load-more": "Load more",
     "loading": "Loading",
-    "manage": "Manage",
-    "manually-select": "Manually select",
     "members_one": "Member",
     "members_other": "Members",
     "missing-required-permission": "Missing required permissions {{permissions}}",
     "n-items-selected": "{{n}} items selected",
-    "n-more": "+{{n}} more",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
     "ok": "OK",
     "operations": "Operations",
-    "optional": "Optional",
-    "pending": "Pending",
     "permissions": "Permissions",
-    "previous": "Previous",
     "project": "Project",
-    "projects": "Projects",
-    "reason": "Reason",
-    "regenerate": "Regenerate",
-    "release": "Release",
     "reorder": "Reorder",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
-    "resource": "Resource",
-    "resources": "Resources",
     "restore": "Restore",
     "restored": "Restored",
     "revert": "Revert",
-    "revoke": "Revoke",
-    "revoked": "Revoked",
     "rows-per-page": "Rows per page",
     "save": "Save",
-    "schema": "Schema",
-    "scope": "Scope",
     "search": "Search",
-    "search-for-more": "Search for more",
     "select": "Please Select",
     "select-all": "Select all",
-    "selected": "selected",
     "sensitive-placeholder": "Sensitive - write only",
-    "setting": "Setting",
-    "settings": "Settings",
     "state": "State",
-    "statement": "Statement",
-    "status": "Status",
     "system": "System",
-    "table": "Table",
     "title": "Title",
     "to": "To",
-    "total": "Total",
     "total-n-items": "Total {{n}} items",
     "type": "Type",
     "unassigned": "Unassigned",
@@ -206,7 +143,6 @@
     "updated": "Updated",
     "upload": "Upload",
     "users": "Users",
-    "value": "Value",
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
@@ -216,7 +152,68 @@
     "rejected": "Rejected",
     "sql": "SQL",
     "untitled": "Untitled",
-    "you": "you"
+    "you": "you",
+    "copy-failed": "Copy failed",
+    "dismiss": "Dismiss",
+    "activated": "Activated",
+    "active": "Active",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
+    "changelog": "Changelog",
+    "classification-level": "Classification Level",
+    "columns": "Columns",
+    "confirm-and-add": "Confirm and add",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
+    "created-at": "Created",
+    "creator": "Creator",
+    "danger-zone": "Danger Zone",
+    "database": "Database",
+    "database-group": "Database Group",
+    "databases": "Databases",
+    "default": "Default",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
+    "deselect-all": "Deselect all",
+    "disable": "Disable",
+    "download": "Download",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
+    "empty": "Empty",
+    "enable": "Enable",
+    "enabled": "Enabled",
+    "environments": "Environments",
+    "expiration": "Expiration",
+    "filter": "Filter",
+    "home": "Home",
+    "instances": "Instances",
+    "issues": "Issues",
+    "items": "items",
+    "key": "Key",
+    "manage": "Manage",
+    "manually-select": "Manually select",
+    "n-more": "+{{n}} more",
+    "optional": "Optional",
+    "pending": "Pending",
+    "previous": "Previous",
+    "projects": "Projects",
+    "reason": "Reason",
+    "regenerate": "Regenerate",
+    "release": "Release",
+    "resource": "Resource",
+    "resources": "Resources",
+    "revoke": "Revoke",
+    "revoked": "Revoked",
+    "schema": "Schema",
+    "scope": "Scope",
+    "search-for-more": "Search for more",
+    "selected": "selected",
+    "setting": "Setting",
+    "settings": "Settings",
+    "statement": "Statement",
+    "status": "Status",
+    "table": "Table",
+    "total": "Total",
+    "value": "Value"
   },
   "common.add": "Add",
   "common.admin": "Admin",
@@ -365,21 +362,25 @@
   "data-source.ssl.verify-certificate": "Verify TLS certificate",
   "data-source.ssl.verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure",
   "database": {
-    "all": "All databases",
-    "change-database": "Change Database",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
     "engine": "Engine",
-    "expression": "Expression",
     "filter-database": "Filter database",
+    "selected-n-databases": "{{n}} database(s) selected",
+    "successfully-transferred-databases": "Successfully transferred databases",
+    "sync-schema-button": "Sync Schema",
+    "sync-status-failed": "Sync failed",
+    "transfer-project": "Transfer Project",
+    "unassign": "Unassign",
+    "all": "All databases",
+    "change-database": "Change Database",
+    "expression": "Expression",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "select": "Select database",
-    "selected-n-databases": "{{n}} database(s) selected",
-    "successfully-transferred-databases": "Successfully transferred databases",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -402,10 +403,6 @@
       "title": "Sync Schema",
       "with-diff": "With diff"
     },
-    "sync-schema-button": "Sync Schema",
-    "sync-status-failed": "Sync failed",
-    "transfer-project": "Transfer Project",
-    "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases"
   },
@@ -441,8 +438,8 @@
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "reorder": "Reorder Environments",
-    "select": "Select environment",
-    "successfully-updated-environment": "Successfully updated environment '{{name}}'."
+    "successfully-updated-environment": "Successfully updated environment '{{name}}'.",
+    "select": "Select environment"
   },
   "error-page": {
     "not-found": "Not Found"
@@ -655,6 +652,7 @@
   "instance.users": "Users",
   "instance.your-snowflake-account-locator": "Your Snowflake account locator",
   "issue": {
+    "labels": "Issue Labels",
     "advanced-search": {
       "filter": "Filter"
     },
@@ -663,7 +661,6 @@
       "limits": "Limits",
       "options": "Options"
     },
-    "labels": "Issue Labels",
     "risk-level": {
       "high": "High",
       "moderate": "Moderate",
@@ -753,6 +750,9 @@
       "success-prompt": "Successfully created project {{name}}."
     },
     "filter-projects": "Filter projects",
+    "table": {
+      "name": "Name"
+    },
     "masking-exemption": {
       "all-levels": "All levels",
       "expires-in-days_one": "Expires in {{days}} day",
@@ -849,9 +849,6 @@
       "success-updated": "Project settings updated successfully.",
       "update-failed": "Failed to update the project setting."
     },
-    "table": {
-      "name": "Name"
-    },
     "webhook": {
       "activity-support-direct-message": "Support send direct messages to related users",
       "add-a-webhook": "Add a webhook",
@@ -897,9 +894,9 @@
     }
   },
   "resource": {
-    "delete-warning": "The \"{{name}}\" will be deleted. This action cannot be undone.",
+    "delete-warning-with-resources": "The \"{{name}}\" is used by following resources:",
     "delete-warning-retry": "Please remove it from these resources then retry again.",
-    "delete-warning-with-resources": "The \"{{name}}\" is used by following resources:"
+    "delete-warning": "The \"{{name}}\" will be deleted. This action cannot be undone."
   },
   "resource-id": {
     "cannot-be-changed-later": "It cannot be changed later.",
@@ -940,9 +937,6 @@
     "workspace-roles": {
       "self": "Workspace roles"
     }
-  },
-  "schema-editor": {
-    "raw-sql": "Raw SQL"
   },
   "schema-template": {
     "classification": {
@@ -1169,13 +1163,8 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
-      "add-service-account": "Add Service Account",
       "add-user": "Add user",
-      "add-workload-identity": "Add Workload Identity",
-      "all-users": "All users",
-      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
-      "copy-service-key": "Copy Service Key",
       "entra-sync": {
         "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
         "endpoint": "Endpoint",
@@ -1205,11 +1194,7 @@
         "update-group": "Update Group",
         "workspace-domain-required": "Please set a workspace domain first."
       },
-      "inactive-service-accounts": "Inactive service accounts",
       "inactive-users": "Inactive users",
-      "inactive-workload-identities": "Inactive workload identities",
-      "reset-service-key": "Reset Service Key",
-      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",
       "revoke-access-alert": "Are you sure to revoke access?",
       "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
@@ -1221,21 +1206,30 @@
       "select-role_one": "Select role",
       "select-role_other": "Select roles",
       "service-account": "Service Account",
-      "service-accounts": "Service Accounts",
-      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "show-inactive": "Show inactive accounts",
       "table": {
         "account": "Account",
         "groups": "Groups",
         "roles": "Roles"
       },
-      "update-service-account": "Update Service Account",
       "update-user": "Update User",
-      "update-workload-identity": "Update Workload Identity",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
-      "workload-identities": "Workload Identities",
       "workload-identity": "Workload Identity",
+      "add-service-account": "Add Service Account",
+      "add-workload-identity": "Add Workload Identity",
+      "all-users": "All users",
+      "assign-role": "Assign role",
+      "copy-service-key": "Copy Service Key",
+      "inactive-service-accounts": "Inactive service accounts",
+      "inactive-workload-identities": "Inactive workload identities",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
+      "service-accounts": "Service Accounts",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "update-service-account": "Update Service Account",
+      "update-workload-identity": "Update Workload Identity",
+      "workload-identities": "Workload Identities",
       "workload-identity-advanced": "Advanced Settings",
       "workload-identity-all-branches-tags": "All branches and tags",
       "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
@@ -1259,7 +1253,6 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
-      "email": "Email",
       "password": "Password",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
@@ -1267,6 +1260,7 @@
       "password-mismatch": "New password mismatch",
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx",
+      "email": "Email",
       "role": "Role",
       "subscription": "(Upgrade to enable role management)"
     },
@@ -1333,12 +1327,10 @@
         },
         "re-order": "Re-order"
       },
-      "never-expires": "Never expires",
       "semantic-types": {
         "add-from-template": "Add from template",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",
-        "self": "Semantic Types",
         "table": {
           "delete": "Delete this semantic type?",
           "description": "Description",
@@ -1350,27 +1342,29 @@
           "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed.",
           "duplicate-warning": "Semantic type \"{{title}}\" already exists"
         },
-        "use-predefined-type": "Use Predefined Type"
-      }
+        "use-predefined-type": "Use Predefined Type",
+        "self": "Semantic Types"
+      },
+      "never-expires": "Never expires"
     },
     "sidebar": {
       "audit-log": "Audit Logs",
       "custom-roles": "Custom Roles",
-      "data-access": "Data Access",
       "data-classification": "Data Classification",
       "general": "General",
       "global-masking": "Global Masking",
-      "iam-and-admin": "IAM & Admin",
       "im-integration": "IM",
-      "integration": "Integration",
       "mcp": "MCP",
       "members": "Members",
       "members-and-groups": "Members & Groups",
-      "profile": "Profile",
-      "security-and-policy": "Security & Policy",
       "sso": "SSO",
       "subscription": "Subscription",
-      "users-and-groups": "Users & Groups"
+      "users-and-groups": "Users & Groups",
+      "data-access": "Data Access",
+      "iam-and-admin": "IAM & Admin",
+      "integration": "Integration",
+      "profile": "Profile",
+      "security-and-policy": "Security & Policy"
     },
     "sso": {
       "create": "Create SSO",
@@ -1459,6 +1453,7 @@
     }
   },
   "sql-editor": {
+    "self": "SQL Editor",
     "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
@@ -1467,10 +1462,11 @@
     "grant-type-unmask": "Unmask",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
-    "self": "SQL Editor",
     "view-issue": "View Issue"
   },
   "sql-review": {
+    "configure-policy": "Configure policy",
+    "title": "SQL Review",
     "add-or-remove-rules": "Add or remove rules",
     "add-rules": "Add rules",
     "attach-resource": {
@@ -1479,7 +1475,6 @@
       "no-linked-resources": "No attached resources",
       "self": "Attach to resources"
     },
-    "configure-policy": "Configure policy",
     "create": {
       "basic-info": {
         "display-name": "Display name",
@@ -1504,14 +1499,12 @@
     "policy-removed": "Successfully removed the review policy.",
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
-    "review-policy": "Review policy",
-    "title": "SQL Review"
+    "review-policy": "Review policy"
   },
   "subscription": {
     "contact-us": "Contact us",
     "current": "Current plan",
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
-    "disabled-feature": "Disabled Feature",
     "enterprise-free-trial": "{{days}}-day free Enterprise trial",
     "expired": "expired",
     "expires-at": "Expires at",
@@ -1602,19 +1595,20 @@
         "title": "User count limit",
         "upgrade": "Upgrade to get more user quota."
       }
-    }
+    },
+    "disabled-feature": "Disabled Feature"
   },
   "subscription.instance-assignment.assign-license": "Assign License",
   "subscription.instance-assignment.n-license-remain": "{{n}} remaining",
   "subscription.usage.instance-count.runoutof": "You have run out of your {{total}} instance quota.",
   "subscription.usage.instance-count.title": "Instance count limit",
   "two-factor": {
+    "enabled": "2FA Enabled",
     "description": "Two-factor authentication provides an extra layer of security for member accounts. When signing in, you will be required to enter the security code generated by your Authenticator App.",
     "disable": {
       "description": "You are about to disable two-factor authentication for your account. You will no longer be required to enter the security code generated by your Authenticator App when signing in.",
       "self": "Disable Two-factor authentication"
     },
-    "enabled": "2FA Enabled",
     "messages": {
       "2fa-disabled": "Two-factor authentication is disabled.",
       "2fa-enabled": "Two-factor authentication is enabled.",
@@ -1655,5 +1649,68 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
+  },
+  "agent": {
+    "assistant-title": "Bytebase Assistant",
+    "resize": "Resize",
+    "minimize": "Minimize",
+    "close": "Close",
+    "input-placeholder": "Ask anything...",
+    "send": "Send",
+    "args": "Args:",
+    "result": "Result:",
+    "stop": "Stop",
+    "interrupted": "Interrupted",
+    "retry-last-chat-turn": "Retry last turn",
+    "interrupted-retry-hint": "Retry reruns the interrupted turn with the current page state.",
+    "new-chat": "New chat",
+    "rename-chat-placeholder": "Enter a chat name",
+    "archive-chat": "Archive",
+    "unarchive-chat": "Unarchive",
+    "delete-chat": "Delete",
+    "active-only-chats": "Active only",
+    "archived-only-chats": "Archived only",
+    "archive-chat-confirmation": "Archive this chat?",
+    "delete-chat-confirmation": "Delete this chat?",
+    "chat-list-label": "Chats",
+    "chat-default-title": "New chat",
+    "chat-archived-label": "Archived",
+    "chat-status-idle": "Idle",
+    "chat-status-running": "Running",
+    "chat-status-awaiting-user": "Awaiting input",
+    "chat-status-error": "Error",
+    "chat-status-interrupted": "Interrupted",
+    "chat-total-tokens": "Tokens used: {{count}}",
+    "reply": "Reply",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "pending-input-hint": "Reply below to continue this chat.",
+    "pending-confirm-hint": "Choose confirm or cancel to continue this chat.",
+    "pending-choose-hint": "Choose an option to continue this chat.",
+    "tool-ask-user": "Awaiting your response",
+    "tool-ask-user-input": "Input requested",
+    "tool-ask-user-confirm": "Confirmation requested",
+    "tool-ask-user-choose": "Choice requested",
+    "tool-response-submitted": "Response submitted",
+    "tool-prompt": "Prompt:",
+    "tool-default-value": "Default:",
+    "tool-options": "Options:",
+    "tool-answer": "Answer:",
+    "tool-value": "Value:",
+    "tool-completed": "Completed",
+    "tool-failed": "Completed with issues",
+    "ai-not-configured": {
+      "title": "AI Assistant isn’t configured for this workspace",
+      "description": "To continue with the page agent, enable AI Assistant in workspace settings.",
+      "configure": "Configure AI",
+      "contact-admin": "Please contact your org administrator to configure AI Assistant."
+    }
+  },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
   }
 }

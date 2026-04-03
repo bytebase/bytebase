@@ -13,7 +13,7 @@ const YAML_FILE = path.join(
 );
 const OUTPUT_FILE = path.join(
   __dirname,
-  "../src/plugins/agent/logic/tools/gen/openapi-index.ts"
+  "../src/react/plugins/agent/logic/tools/gen/openapi-index.ts"
 );
 
 // --- Helpers ---
@@ -235,7 +235,7 @@ console.log(
 );
 
 // Validate service directory coverage in the prompt
-const PROMPT_FILE = path.join(__dirname, "../src/plugins/agent/logic/prompt.ts");
+const PROMPT_FILE = path.join(__dirname, "../src/react/plugins/agent/logic/prompt.ts");
 if (fs.existsSync(PROMPT_FILE)) {
   const promptContent = fs.readFileSync(PROMPT_FILE, "utf8");
   const specServices = new Set(endpoints.map((ep) => ep.service));
@@ -250,13 +250,13 @@ if (fs.existsSync(PROMPT_FILE)) {
       `  ⚠ Services not reflected in prompt.ts serviceDirectory: ${missing.join(", ")}`
     );
     console.warn(
-      "    Review frontend/src/plugins/agent/AGENT.md and manually update the serviceDirectory block in prompt.ts"
+      "    Review frontend/src/react/plugins/agent/AGENT.md and manually update the serviceDirectory block in prompt.ts"
     );
   } else {
     console.log(`  ✓ Prompt service directory covers all ${specServices.size} services`);
   }
 } else {
   console.warn(
-    "  ⚠ No prompt.ts found. Review frontend/src/plugins/agent/AGENT.md and restore or recreate the serviceDirectory block"
+    "  ⚠ No prompt.ts found. Review frontend/src/react/plugins/agent/AGENT.md and restore or recreate the serviceDirectory block"
   );
 }

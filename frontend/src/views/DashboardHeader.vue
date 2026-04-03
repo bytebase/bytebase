@@ -82,7 +82,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
-import { useAgentStore } from "@/plugins/agent";
+import { useAgentStore } from "@/react/plugins/agent/store/agent";
 import {
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MY_ISSUES,
@@ -124,7 +124,7 @@ defineEmits<{
   "toggle-mobile-sidebar": [];
 }>();
 
-const agentStore = useAgentStore();
+const agentStore = { toggle: () => useAgentStore.getState().toggle() };
 const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();

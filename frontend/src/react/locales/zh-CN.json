@@ -60,13 +60,7 @@
       "self": "条件"
     }
   },
-  "changelog": {
-    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
-    "self": "变更历史"
-  },
   "common": {
-    "activated": "已激活",
-    "active": "开启",
     "add": "添加",
     "add-permissions": "添加权限",
     "added": "已创建",
@@ -74,14 +68,10 @@
     "all": "全部",
     "approved": "已批准",
     "archive": "归档",
-    "archive-description": "将「{{name}}」标记为已归档且只读。",
-    "archive-resource": "归档{{type}}",
     "archived": "已归档",
     "back": "返回",
     "cancel": "取消",
     "cannot-undo-this-action": "这个操作无法撤销",
-    "changelog": "变更历史",
-    "classification-level": "分类等级",
     "clear": "清除",
     "close": "关闭",
     "closed": "已关闭",
@@ -89,82 +79,48 @@
     "configure": "配置",
     "configure-now": "现在配置",
     "confirm": "确认",
-    "confirm-and-add": "确认并添加",
     "confirm-and-update": "确认并更新",
-    "confirm-archive": "确定归档资源？",
-    "confirm-delete": "确定删除资源？",
-    "confirm-to-revert": "确定撤销编辑？",
     "copied": "已拷贝",
     "copy": "拷贝",
-    "copy-failed": "Copy failed",
     "create": "创建",
     "created": "已创建",
-    "created-at": "创建于",
-    "creator": "创建人",
-    "danger-zone": "危险区域",
-    "database": "数据库",
-    "database-group": "数据库分组",
-    "databases": "数据库",
-    "default": "默认",
     "delete": "删除",
     "delete-resource": "删除{{type}}",
-    "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
     "deleted": "已删除",
     "description": "描述",
-    "deselect-all": "Deselect all",
-    "disable": "禁用",
     "discard-changes": "取消修改",
-    "download": "下载",
     "edit": "编辑",
     "email": "邮箱",
-    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
-    "empty": "Empty",
-    "enable": "开启",
-    "enabled": "开启",
     "environment": "环境",
     "environment-name": "环境名",
-    "environments": "环境",
-    "expiration": "Expiration",
     "export": "导出",
     "failed": "失败",
     "file-selector": {
       "size-limit": "文件大小需小于 {{size}} MiB",
       "type-limit": "仅支持 {{extension}} 类型的文件"
     },
-    "filter": "Filter",
     "filter-by-name": "按名称过滤",
     "from": "从",
     "general": "通用",
     "groups": "分组",
-    "home": "主页",
     "id": "ID",
     "instance": "实例",
-    "instances": "实例",
     "is-required": "is required",
-    "issues": "工单",
-    "items": "items",
-    "key": "键",
     "labels": "标签",
     "learn-more": "了解更多",
     "leave-without-saving": "不保存变动？",
     "load-more": "加载更多",
     "loading": "加载中",
-    "manage": "管理",
-    "manually-select": "Manually select",
     "members_one": "成员",
     "members_other": "成员",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
     "n-items-selected": "已选 {{n}} 项",
-    "n-more": "+{{n}} 更多",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",
     "ok": "OK",
     "operations": "操作",
-    "optional": "Optional",
-    "pending": "待审批",
     "permissions": "权限",
-    "previous": "上一步",
     "project": "项目",
     "projects": "项目",
     "reason": "Reason",
@@ -174,34 +130,22 @@
     "reorder": "排序",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
-    "resource": "资源",
-    "resources": "资源",
     "restore": "恢复",
     "restored": "已恢复",
     "revert": "恢复",
-    "revoke": "撤销",
-    "revoked": "已撤销",
     "rows-per-page": "每页行数",
     "save": "保存",
-    "schema": "模式",
-    "scope": "范围",
     "search": "搜索",
-    "search-for-more": "搜索更多",
     "select": "请选择",
     "select-all": "全选",
-    "selected": "selected",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "setting": "设置",
     "settings": "设置",
     "sql": "SQL",
     "state": "状态",
-    "statement": "语句",
-    "status": "状态",
     "system": "系统",
-    "table": "表",
     "title": "标题",
     "to": "到",
-    "total": "Total",
     "total-n-items": "共 {{n}} 项",
     "type": "类型",
     "unassigned": "未分配",
@@ -211,12 +155,65 @@
     "updated": "已更新",
     "upload": "上传",
     "users": "用户",
-    "value": "值",
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "webhooks": "Webhook",
-    "you": "您"
+    "you": "您",
+    "copy-failed": "Copy failed",
+    "dismiss": "关闭",
+    "activated": "已激活",
+    "active": "开启",
+    "archive-description": "将「{{name}}」标记为已归档且只读。",
+    "archive-resource": "归档{{type}}",
+    "changelog": "变更历史",
+    "classification-level": "分类等级",
+    "confirm-and-add": "确认并添加",
+    "confirm-archive": "确定归档资源？",
+    "confirm-delete": "确定删除资源？",
+    "confirm-to-revert": "确定撤销编辑？",
+    "created-at": "创建于",
+    "creator": "创建人",
+    "danger-zone": "危险区域",
+    "database": "数据库",
+    "database-group": "数据库分组",
+    "databases": "数据库",
+    "default": "默认",
+    "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
+    "deselect-all": "Deselect all",
+    "disable": "禁用",
+    "download": "下载",
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
+    "empty": "Empty",
+    "enable": "开启",
+    "enabled": "开启",
+    "environments": "环境",
+    "expiration": "Expiration",
+    "filter": "Filter",
+    "home": "主页",
+    "instances": "实例",
+    "issues": "工单",
+    "items": "items",
+    "key": "键",
+    "manage": "管理",
+    "manually-select": "Manually select",
+    "n-more": "+{{n}} 更多",
+    "optional": "Optional",
+    "pending": "待审批",
+    "previous": "上一步",
+    "resource": "资源",
+    "resources": "资源",
+    "revoke": "撤销",
+    "revoked": "已撤销",
+    "schema": "模式",
+    "scope": "范围",
+    "search-for-more": "搜索更多",
+    "selected": "selected",
+    "statement": "语句",
+    "status": "状态",
+    "table": "表",
+    "total": "Total",
+    "value": "值",
+    "webhooks": "Webhook"
   },
   "common.add": "添加",
   "common.admin": "管理员",
@@ -365,21 +362,25 @@
   "data-source.ssl.verify-certificate": "验证 TLS 证书",
   "data-source.ssl.verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的",
   "database": {
-    "all": "所有数据库",
-    "change-database": "变更数据库",
     "classification": {
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
     "engine": "引擎",
-    "expression": "Expression",
     "filter-database": "筛选数据库",
+    "selected-n-databases": "已选择 {{n}} 个数据库",
+    "successfully-transferred-databases": "成功转移数据库",
+    "sync-schema-button": "同步 Schema",
+    "sync-status-failed": "同步失败",
+    "transfer-project": "转移项目",
+    "unassign": "取消分配",
+    "all": "所有数据库",
+    "change-database": "变更数据库",
+    "expression": "Expression",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "select": "选择数据库",
-    "selected-n-databases": "已选择 {{n}} 个数据库",
-    "successfully-transferred-databases": "成功转移数据库",
     "sync-schema": {
       "copy-schema": "粘贴 Schema 文本",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
@@ -402,10 +403,6 @@
       "title": "库表同步",
       "with-diff": "有差异"
     },
-    "sync-schema-button": "同步 Schema",
-    "sync-status-failed": "同步失败",
-    "transfer-project": "转移项目",
-    "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "unassign-alert-title": "取消分配数据库"
   },
@@ -441,8 +438,8 @@
     "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "reorder": "重新排序环境",
-    "select": "选择环境",
-    "successfully-updated-environment": "环境'{{name}}'更新成功"
+    "successfully-updated-environment": "环境'{{name}}'更新成功",
+    "select": "选择环境"
   },
   "error-page": {
     "not-found": "页面未找到"
@@ -655,6 +652,7 @@
   "instance.users": "用户",
   "instance.your-snowflake-account-locator": "您的 Snowflake 账户定位符",
   "issue": {
+    "labels": "工单标签",
     "advanced-search": {
       "filter": "过滤"
     },
@@ -663,7 +661,6 @@
       "limits": "限制",
       "options": "配置项"
     },
-    "labels": "工单标签",
     "risk-level": {
       "high": "高风险",
       "moderate": "中风险",
@@ -753,6 +750,9 @@
       "success-prompt": "成功创建 {{name}}."
     },
     "filter-projects": "过滤项目",
+    "table": {
+      "name": "名称"
+    },
     "masking-exemption": {
       "all-levels": "所有等级",
       "expires-in-days_one": "{{days}} 天后到期",
@@ -849,9 +849,6 @@
       "success-updated": "项目设置更新成功",
       "update-failed": "无法更新项目设置。"
     },
-    "table": {
-      "name": "名称"
-    },
     "webhook": {
       "activity-support-direct-message": "支持向相关用户发送私信通知",
       "add-a-webhook": "添加 webhook",
@@ -897,9 +894,9 @@
     }
   },
   "resource": {
-    "delete-warning": "“{{name}}”将被删除。此操作无法撤消。",
+    "delete-warning-with-resources": "以下资源使用了“{{name}}”：",
     "delete-warning-retry": "请将其从这些资源中删除，然后重试。",
-    "delete-warning-with-resources": "以下资源使用了“{{name}}”："
+    "delete-warning": "“{{name}}”将被删除。此操作无法撤消。"
   },
   "resource-id": {
     "cannot-be-changed-later": "创建之后无法修改。",
@@ -940,9 +937,6 @@
     "workspace-roles": {
       "self": "工作空间角色"
     }
-  },
-  "schema-editor": {
-    "raw-sql": "SQL 语句"
   },
   "schema-template": {
     "classification": {
@@ -1169,13 +1163,8 @@
         "reactivate-confirm-title": "确定启用"
       },
       "add-member": "添加成员",
-      "add-service-account": "添加服务账号",
       "add-user": "添加用户",
-      "add-workload-identity": "添加工作负载身份",
-      "all-users": "全部用户",
-      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
-      "copy-service-key": "复制 Service Key",
       "entra-sync": {
         "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "Endpoint",
@@ -1205,11 +1194,7 @@
         "update-group": "更新组",
         "workspace-domain-required": "请先设置工作空间的域名。"
       },
-      "inactive-service-accounts": "未激活服务账号",
       "inactive-users": "未激活用户",
-      "inactive-workload-identities": "未激活工作负载身份",
-      "reset-service-key": "重置 Service Key",
-      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "revoke-access": "撤销访问权限",
       "revoke-access-alert": "您确定要撤销访问权限吗？",
       "revoke-allusers-alert": "撤销“全部用户”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
@@ -1221,21 +1206,30 @@
       "select-role_one": "选择角色",
       "select-role_other": "选择角色",
       "service-account": "服务账号",
-      "service-accounts": "服务账号",
-      "service-key-copied": "Service Key 已复制，请勿泄漏",
       "show-inactive": "显示已停用账户",
       "table": {
         "account": "账户",
         "groups": "群组",
         "roles": "角色"
       },
-      "update-service-account": "更新服务账号",
       "update-user": "更新用户",
-      "update-workload-identity": "更新工作负载身份",
       "view-by-members": "按成员查看",
       "view-by-roles": "按角色查看",
-      "workload-identities": "工作负载身份",
       "workload-identity": "工作负载标识",
+      "add-service-account": "添加服务账号",
+      "add-workload-identity": "添加工作负载身份",
+      "all-users": "全部用户",
+      "assign-role": "Assign role",
+      "copy-service-key": "复制 Service Key",
+      "inactive-service-accounts": "未激活服务账号",
+      "inactive-workload-identities": "未激活工作负载身份",
+      "reset-service-key": "重置 Service Key",
+      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
+      "service-accounts": "服务账号",
+      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "update-service-account": "更新服务账号",
+      "update-workload-identity": "更新工作负载身份",
+      "workload-identities": "工作负载身份",
       "workload-identity-advanced": "高级设置",
       "workload-identity-all-branches-tags": "所有分支和标签",
       "workload-identity-allowed-branches-tags": "允许的分支/标签",
@@ -1259,7 +1253,6 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
-      "email": "邮箱",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
@@ -1267,6 +1260,7 @@
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
+      "email": "邮箱",
       "role": "角色",
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
@@ -1333,12 +1327,10 @@
         },
         "re-order": "排序"
       },
-      "never-expires": "无过期时间",
       "semantic-types": {
         "add-from-template": "从模板添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
-        "self": "语义类型",
         "table": {
           "delete": "删除这个语义类型？",
           "description": "描述",
@@ -1350,27 +1342,29 @@
           "description": "您可以从模板中应用内置语义类型。内置模板无法更改。",
           "duplicate-warning": "语义类型“{{title}}”已存在"
         },
-        "use-predefined-type": "使用预定义类型"
-      }
+        "use-predefined-type": "使用预定义类型",
+        "self": "语义类型"
+      },
+      "never-expires": "无过期时间"
     },
     "sidebar": {
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
-      "data-access": "数据访问",
       "data-classification": "数据分类",
       "general": "通用",
       "global-masking": "全局数据脱敏",
-      "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
-      "integration": "集成",
       "mcp": "MCP",
       "members": "成员",
       "members-and-groups": "成员和群组",
-      "profile": "个人信息",
-      "security-and-policy": "安全 & 策略",
       "sso": "SSO",
       "subscription": "订阅",
-      "users-and-groups": "用户和群组"
+      "users-and-groups": "用户和群组",
+      "data-access": "数据访问",
+      "iam-and-admin": "IAM & 管理",
+      "integration": "集成",
+      "profile": "个人信息",
+      "security-and-policy": "安全 & 策略"
     },
     "sso": {
       "create": "创建 SSO",
@@ -1459,6 +1453,7 @@
     }
   },
   "sql-editor": {
+    "self": "SQL 编辑器",
     "access-grants": "访问授权",
     "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
     "activate-access": "激活",
@@ -1467,10 +1462,11 @@
     "grant-type-unmask": "脱敏豁免",
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
-    "self": "SQL 编辑器",
     "view-issue": "查看工单"
   },
   "sql-review": {
+    "configure-policy": "配置审核策略",
+    "title": "SQL 审核策略",
     "add-or-remove-rules": "添加或删除规则",
     "add-rules": "添加规则",
     "attach-resource": {
@@ -1479,7 +1475,6 @@
       "no-linked-resources": "没有绑定的资源",
       "self": "绑定到资源"
     },
-    "configure-policy": "配置审核策略",
     "create": {
       "basic-info": {
         "display-name": "名称",
@@ -1504,14 +1499,12 @@
     "policy-removed": "审核策略已删除",
     "policy-update-failed": "审核策略更新失败",
     "policy-updated": "审核策略已更新",
-    "review-policy": "审核策略",
-    "title": "SQL 审核策略"
+    "review-policy": "审核策略"
   },
   "subscription": {
     "contact-us": "联系我们",
     "current": "当前版本",
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
-    "disabled-feature": "禁用功能",
     "enterprise-free-trial": "企业版 {{days}} 天免费试用",
     "expired": "已过期",
     "expires-at": "过期时间",
@@ -1602,19 +1595,20 @@
         "title": "用户数量限制",
         "upgrade": "升级来获取更多用户额度。"
       }
-    }
+    },
+    "disabled-feature": "禁用功能"
   },
   "subscription.instance-assignment.assign-license": "分配证书",
   "subscription.instance-assignment.n-license-remain": "剩余 {{n}} 个",
   "subscription.usage.instance-count.runoutof": "已用尽全部 {{total}} 个实例额度。",
   "subscription.usage.instance-count.title": "实例数量限制",
   "two-factor": {
+    "enabled": "双重认证已开启",
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
     "disable": {
       "description": "您即将禁用您账户的双重认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。",
       "self": "禁用双重认证"
     },
-    "enabled": "双重认证已开启",
     "messages": {
       "2fa-disabled": "双重认证禁用成功",
       "2fa-enabled": "双重认证开启成功",
@@ -1655,5 +1649,68 @@
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
     }
+  },
+  "agent": {
+    "assistant-title": "Bytebase 助手",
+    "resize": "调整大小",
+    "minimize": "最小化",
+    "close": "关闭",
+    "input-placeholder": "输入任何问题...",
+    "send": "发送",
+    "args": "参数：",
+    "result": "结果：",
+    "stop": "停止",
+    "interrupted": "已中断",
+    "retry-last-chat-turn": "重试上一轮",
+    "interrupted-retry-hint": "重试会基于当前页面状态重新运行已中断的这一轮。",
+    "new-chat": "新聊天",
+    "rename-chat-placeholder": "输入聊天名称",
+    "archive-chat": "归档",
+    "unarchive-chat": "取消归档",
+    "delete-chat": "删除",
+    "active-only-chats": "仅显示活跃",
+    "archived-only-chats": "仅显示已归档",
+    "archive-chat-confirmation": "要归档这个聊天吗？",
+    "delete-chat-confirmation": "要删除这个聊天吗？",
+    "chat-list-label": "聊天",
+    "chat-default-title": "新聊天",
+    "chat-archived-label": "已归档",
+    "chat-status-idle": "空闲",
+    "chat-status-running": "运行中",
+    "chat-status-awaiting-user": "等待输入",
+    "chat-status-error": "错误",
+    "chat-status-interrupted": "已中断",
+    "chat-total-tokens": "已用令牌：{{count}}",
+    "reply": "回复",
+    "confirm": "确认",
+    "cancel": "取消",
+    "pending-input-hint": "请在下方回复以继续当前聊天。",
+    "pending-confirm-hint": "请选择确认或取消以继续当前聊天。",
+    "pending-choose-hint": "请选择一个选项以继续当前聊天。",
+    "tool-ask-user": "等待你的回复",
+    "tool-ask-user-input": "需要输入",
+    "tool-ask-user-confirm": "需要确认",
+    "tool-ask-user-choose": "需要选择",
+    "tool-response-submitted": "已提交回复",
+    "tool-prompt": "提示：",
+    "tool-default-value": "默认值：",
+    "tool-options": "选项：",
+    "tool-answer": "回答：",
+    "tool-value": "值：",
+    "tool-completed": "已完成",
+    "tool-failed": "已完成，但存在问题",
+    "ai-not-configured": {
+      "title": "此工作空间尚未配置 AI 助手",
+      "description": "要继续使用页面助手，请先在工作空间设置中启用 AI 助手。",
+      "configure": "配置 AI",
+      "contact-admin": "请联系你的组织管理员来配置 AI 助手。"
+    }
+  },
+  "changelog": {
+    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
+    "self": "变更历史"
+  },
+  "schema-editor": {
+    "raw-sql": "SQL 语句"
   }
 }
