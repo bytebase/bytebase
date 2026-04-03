@@ -77,14 +77,3 @@ func isKeyword(suspect string) bool {
 	}
 	return false
 }
-
-// isCharsetDataType checks if the data type supports charset.
-func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
-	return dataType != nil && (dataType.CHAR_SYMBOL() != nil ||
-		dataType.VARCHAR_SYMBOL() != nil ||
-		dataType.VARYING_SYMBOL() != nil ||
-		dataType.TINYTEXT_SYMBOL() != nil ||
-		dataType.TEXT_SYMBOL() != nil ||
-		dataType.MEDIUMTEXT_SYMBOL() != nil ||
-		dataType.LONGTEXT_SYMBOL() != nil)
-}
