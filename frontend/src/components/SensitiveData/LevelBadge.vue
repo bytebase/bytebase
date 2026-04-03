@@ -7,8 +7,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { operatorDisplayLabel } from "@/plugins/cel/types/operator";
 import { useSettingV1Store } from "@/store";
+import { operatorDisplayMap } from "./exemptionDataUtils";
 
 const { t } = useI18n(); // NOSONAR: Vue composable, not React hook
 
@@ -46,7 +46,7 @@ const label = computed(() => {
   if (props.noLimit) return t("project.masking-exemption.all-levels");
   if (props.level === undefined)
     return t("project.masking-exemption.all-levels");
-  const op = operatorDisplayLabel(props.operator);
+  const op = operatorDisplayMap[props.operator] ?? props.operator;
   const title = levelTitle.value;
   return title ? `${op} ${props.level} (${title})` : `${op} ${props.level}`;
 });

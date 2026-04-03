@@ -75,31 +75,6 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
   return StringOperatorList.includes(op as StringOperator);
 };
 
-// Human-readable display labels for operators.
-// Accepts both CEL AST names ("_<=_") and plain symbols ("<=").
-const OPERATOR_DISPLAY: Record<string, string> = {
-  // CEL AST names
-  "_==_": "=",
-  "_!=_": "≠",
-  "_<_": "<",
-  "_<=_": "≤",
-  "_>=_": "≥",
-  "_>_": ">",
-  "@not_in": "not in",
-  "@not_contains": "not contains",
-  // Plain symbols (from parsed CEL text)
-  "==": "=",
-  "!=": "≠",
-  "<=": "≤",
-  ">=": "≥",
-  "<": "<",
-  ">": ">",
-};
-
-export function operatorDisplayLabel(op: string): string {
-  return OPERATOR_DISPLAY[op] ?? op.replace(/^@/, "");
-}
-
 /// Define supported operators for each factor
 const OperatorList: Record<Factor, Operator[]> = {
   [CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS]: uniq([

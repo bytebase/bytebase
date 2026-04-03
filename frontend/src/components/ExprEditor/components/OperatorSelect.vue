@@ -18,7 +18,6 @@ import {
   type ConditionExpr,
   type ConditionOperator,
   type Operator,
-  operatorDisplayLabel,
 } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { getOperatorListByFactor } from "./common";
@@ -43,6 +42,17 @@ const factor = computed(() => {
   return props.expr.args[0];
 });
 
+const OPERATOR_DICT = new Map([
+  ["_==_", "=="],
+  ["_!=_", "!="],
+  ["_<_", "<"],
+  ["_<=_", "≤"],
+  ["_>=_", "≥"],
+  ["_>_", ">"],
+  ["@not_in", "not in"],
+  ["@not_contains", "not contains"],
+]);
+
 const options = computed(() => {
   const operators = getOperatorListByFactor(
     factor.value,
@@ -50,8 +60,9 @@ const options = computed(() => {
   );
 
   const mapOption = (op: Operator): SelectOption => {
+    const label = OPERATOR_DICT.get(op) ?? op.replace(/^@/g, "");
     return {
-      label: operatorDisplayLabel(op),
+      label,
       value: op,
     };
   };
