@@ -2,6 +2,9 @@ package mongodb
 
 import (
 	"context"
+	"errors"
+
+	omniparser "github.com/bytebase/omni/mongo/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -13,18 +16,30 @@ func init() {
 
 // Diagnose performs syntax checking on a MongoDB shell script.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := []base.Diagnostic{}
-
-	raw := parseMongoShellRaw(statement)
-	if raw == nil {
-		return diagnostics, nil
+	_, err := ParseMongoShell(statement)
+	if err == nil {
+		return []base.Diagnostic{}, nil
 	}
 
-	for _, err := range raw.Errors {
-		if err != nil {
-			diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(err, statement))
+	var parseErr *omniparser.ParseError
+	if errors.As(err, &parseErr) {
+		syntaxErr := &base.SyntaxError{
+			Position: &storepb.Position{
+				Line:   int32(parseErr.Line),
+				Column: int32(parseErr.Column),
+			},
+			RawMessage: parseErr.Message,
+			Message:    parseErr.Message,
 		}
+		return []base.Diagnostic{
+			base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement),
+		}, nil
 	}
 
-	return diagnostics, nil
+	// Non-parse error — return as a generic diagnostic.
+	return []base.Diagnostic{
+		{
+			Message: err.Error(),
+		},
+	}, nil
 }
