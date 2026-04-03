@@ -84,6 +84,8 @@ func buildCatalog(ctx context.Context, cCtx base.CompletionContext) *catalog.Cat
 }
 
 // caretToByteOffset converts a 1-based line and 0-based column offset to a byte offset.
+// Note: caretOffset is treated as a rune (code point) offset, not UTF-16 code units.
+// This matches the existing behavior of the completion callers in this codebase.
 func caretToByteOffset(statement string, caretLine int, caretOffset int) int {
 	line := 1
 	col := 0
