@@ -501,7 +501,6 @@
           "email-tips": "Email phải là duy nhất, và không thể thay đổi sau khi tạo.",
           "title": "Tiêu đề",
           "description": "Mô tả",
-          "members": "Thành viên",
           "role": {
             "owner": "Chủ sở hữu nhóm",
             "member": "Thành viên nhóm"

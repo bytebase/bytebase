@@ -261,8 +261,6 @@
     "deploying": "Deploying",
     "in-review": "In Review",
     "done": "Done",
-    "canceled": "canceled",
-    "recent": "Recent",
     "and": "and",
     "import": "Import",
     "hard-delete": {
@@ -503,7 +501,6 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
-          "members": "Members",
           "role": {
             "owner": "Group owner",
             "member": "Group member"
