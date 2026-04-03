@@ -1,11 +1,13 @@
 package store
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -91,6 +93,25 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil
 				}
 				return qb.Q().Space(updatedAtSubquery+" <= ?", t), nil
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				strValue = strings.ToLower(strValue)
+
+				switch variable {
+				case "title":
+					return qb.Q().Space("LOWER(plan.name) LIKE ?", "%"+strValue+"%"), nil
+				default:
+					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Matches, variable)
+				}
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}

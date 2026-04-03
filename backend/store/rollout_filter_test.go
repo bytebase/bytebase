@@ -64,10 +64,17 @@ func TestGetListRolloutFilter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "AND condition with task_type and update_time",
-			filter:  `task_type in ["DATABASE_MIGRATE"] && update_time >= "2024-01-01T00:00:00Z"`,
-			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.project = plan.project AND task.plan_id = plan.id AND task.type = ANY($1)) AND " + updatedAtSubquery + " >= $2))",
-			wantArgs: []any{[]string{"DATABASE_MIGRATE"}, func() time.Time {
+			name:     "title matches",
+			filter:   `title.matches("Migration")`,
+			wantSQL:  "(LOWER(plan.name) LIKE $1)",
+			wantArgs: []any{"%migration%"},
+			wantErr:  false,
+		},
+		{
+			name:    "AND condition with title, task_type and update_time",
+			filter:  `title.matches("Migration") && task_type in ["DATABASE_MIGRATE"] && update_time >= "2024-01-01T00:00:00Z"`,
+			wantSQL: "(((LOWER(plan.name) LIKE $1 AND EXISTS (SELECT 1 FROM task WHERE task.project = plan.project AND task.plan_id = plan.id AND task.type = ANY($2))) AND " + updatedAtSubquery + " >= $3))",
+			wantArgs: []any{"%migration%", []string{"DATABASE_MIGRATE"}, func() time.Time {
 				ts, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 				return ts
 			}()},
@@ -114,6 +121,12 @@ func TestGetListRolloutFilter(t *testing.T) {
 			filter:      `task_type in []`,
 			wantErr:     true,
 			errContains: "empty list value for filter",
+		},
+		{
+			name:        "matches on unsupported field",
+			filter:      `creator.matches("alice")`,
+			wantErr:     true,
+			errContains: `only "title" supports`,
 		},
 	}
 
