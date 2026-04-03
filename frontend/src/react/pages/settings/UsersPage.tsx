@@ -687,6 +687,8 @@ function GroupTable({
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
     new Map()
   );
+  const memberCacheRef = useRef(memberCache);
+  memberCacheRef.current = memberCache;
   const loadingRef = useRef<Set<string>>(new Set());
 
   const toggleExpand = useCallback(
@@ -701,8 +703,11 @@ function GroupTable({
         return next;
       });
 
-      // Fetch members outside the state setter (side effects must not run inside updaters)
-      if (!memberCache.has(group.name) && !loadingRef.current.has(group.name)) {
+      // Fetch members if not cached (use ref to avoid recreating callback on cache updates)
+      if (
+        !memberCacheRef.current.has(group.name) &&
+        !loadingRef.current.has(group.name)
+      ) {
         loadingRef.current.add(group.name);
         const memberNames = group.members.map((m) => m.member);
         userStore.batchGetOrFetchUsers(memberNames).then((users) => {
@@ -718,7 +723,7 @@ function GroupTable({
         });
       }
     },
-    [memberCache, userStore]
+    [userStore]
   );
 
   const isGroupOwner = useCallback(
@@ -1225,7 +1230,11 @@ function CreateUserDrawer({
     password.length > 0 && passwordChecks.some((c) => !c.matched);
   const passwordMismatch = password.length > 0 && password !== passwordConfirm;
 
-  const allowConfirm = email.length > 0 && !passwordHint && !passwordMismatch;
+  const allowConfirm =
+    email.length > 0 &&
+    !passwordHint &&
+    !passwordMismatch &&
+    (isEditMode || password.length > 0);
 
   const hasPermission = hasWorkspacePermissionV2(
     isEditMode ? "bb.users.update" : "bb.users.create"
@@ -1951,8 +1960,8 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
       ? `${externalUrl}/hook/scim/${workspaceResourceName}`
       : "";
 
-  const copyToClipboard = (value: string) => {
-    navigator.clipboard.writeText(value);
+  const copyToClipboard = async (value: string) => {
+    await navigator.clipboard.writeText(value);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -1966,17 +1975,21 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
     );
     if (!confirmed) return;
 
-    await settingV1Store.updateWorkspaceProfile({
-      payload: { directorySyncToken: "" },
-      updateMask: create(FieldMaskSchema, {
-        paths: ["value.workspace_profile.directory_sync_token"],
-      }),
-    });
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
+    try {
+      await settingV1Store.updateWorkspaceProfile({
+        payload: { directorySyncToken: "" },
+        updateMask: create(FieldMaskSchema, {
+          paths: ["value.workspace_profile.directory_sync_token"],
+        }),
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } catch {
+      // error already shown by store
+    }
   };
 
   return (
