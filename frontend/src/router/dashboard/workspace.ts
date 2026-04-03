@@ -325,9 +325,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/ServiceAccountPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ServiceAccountsPage" }),
       },
       {
         path: "workload-identities",
