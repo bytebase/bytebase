@@ -41,19 +41,19 @@ import {
   useWorkloadIdentityStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { extractUserEmail, getUserFullNameByType } from "@/store/modules/v1/common";
+import { extractUserEmail, getUserFullNameByType, groupNamePrefix } from "@/store/modules/v1/common";
 import { AccountType, getAccountTypeByEmail, getUserEmailInBinding } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { Group } from "@/types/proto-es/v1/group_service_pb";
-import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
+import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
+import { GroupMember_Role, GroupMemberSchema, GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UpdateUserRequestSchema,
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
-import { displayRoleTitle, hasWorkspacePermissionV2 } from "@/utils";
+import { displayRoleTitle, hasWorkspacePermissionV2, isValidEmail } from "@/utils";
 import { getDefaultPagination } from "@/utils/pagination";
 
 // ============================================================
@@ -255,11 +255,13 @@ function UserTable({
   onUserUpdated,
   onUserRemoved,
   onUserSelected,
+  onGroupSelected,
 }: {
   users: User[];
   onUserUpdated: (user: User) => void;
   onUserRemoved: (user: User) => void;
   onUserSelected?: (user: User) => void;
+  onGroupSelected?: (group: Group) => void;
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
@@ -463,7 +465,7 @@ function UserTable({
 
                 {/* Groups column */}
                 <td className="px-4 py-2">
-                  <UserGroupsCell user={user} />
+                  <UserGroupsCell user={user} onGroupSelected={onGroupSelected} />
                 </td>
 
                 {/* Operations column */}
@@ -542,7 +544,7 @@ function UserTable({
 // UserGroupsCell
 // ============================================================
 
-function UserGroupsCell({ user }: { user: User }) {
+function UserGroupsCell({ user, onGroupSelected }: { user: User; onGroupSelected?: (group: Group) => void }) {
   const groupStore = useGroupStore();
 
   if (!user.groups || user.groups.length === 0) {
@@ -554,7 +556,16 @@ function UserGroupsCell({ user }: { user: User }) {
       {user.groups.map((groupName) => {
         const group = groupStore.getGroupByIdentifier(groupName);
         return (
-          <Badge key={groupName} variant="secondary" className="text-xs px-1.5 py-0 cursor-pointer">
+          <Badge
+            key={groupName}
+            variant="secondary"
+            className="text-xs px-1.5 py-0 cursor-pointer"
+            onClick={() => {
+              if (group && onGroupSelected) {
+                onGroupSelected(group);
+              }
+            }}
+          >
             {group?.title || groupName}
           </Badge>
         );
@@ -1267,6 +1278,369 @@ function CreateUserDrawer({
 }
 
 // ============================================================
+// CreateGroupDrawer
+// ============================================================
+
+function deduplicateMembers(members: GroupMember[]): GroupMember[] {
+  const map = new Map<string, GroupMember>();
+  for (const m of members) {
+    const key = m.member;
+    const existing = map.get(key);
+    if (existing) {
+      // Keep the one with OWNER role
+      if (m.role === GroupMember_Role.OWNER) {
+        map.set(key, m);
+      }
+    } else {
+      map.set(key, m);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function CreateGroupDrawer({
+  group,
+  onClose,
+  onUpdated,
+  onRemoved,
+}: {
+  group: Group | undefined;
+  onClose: () => void;
+  onUpdated: (group: Group) => void;
+  onRemoved: (group: Group) => void;
+}) {
+  const { t } = useTranslation();
+  const groupStore = useGroupStore();
+  const settingV1Store = useSettingV1Store();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
+
+  const isEditMode = !!group;
+  const workspaceDomains = useVueState(() => settingV1Store.workspaceProfile.domains);
+  const domainSuffix = workspaceDomains.length > 0 ? `@${workspaceDomains[0]}` : "";
+
+  const [email, setEmail] = useState(group?.email ?? "");
+  const [title, setTitle] = useState(group?.title ?? "");
+  const [description, setDescription] = useState(group?.description ?? "");
+  const [members, setMembers] = useState<GroupMember[]>(() => {
+    if (group) {
+      return group.members.map((m) => create(GroupMemberSchema, { member: m.member, role: m.role }));
+    }
+    return [create(GroupMemberSchema, { role: GroupMember_Role.OWNER, member: currentUser.name })];
+  });
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEscapeKey(onClose);
+
+  const isExternalGroup = !!group?.source;
+
+  const allowEdit = isExternalGroup
+    ? false
+    : isEditMode
+      ? (group.members.some(
+          (m) => extractUserEmail(m.member) === currentUser.email && m.role === GroupMember_Role.OWNER
+        ) || hasWorkspacePermissionV2("bb.groups.update"))
+      : hasWorkspacePermissionV2("bb.groups.create");
+
+  const fullEmail = useMemo(() => {
+    if (isEditMode) return email;
+    if (!email) return "";
+    if (email.includes("@")) return email;
+    return domainSuffix ? `${email}${domainSuffix}` : email;
+  }, [email, isEditMode, domainSuffix]);
+
+  const errorMessage = useMemo(() => {
+    if (!title.trim()) return t("common.required");
+    if (!fullEmail || !isValidEmail(fullEmail)) return t("settings.members.groups.form.email-tips");
+    return "";
+  }, [title, fullEmail, t]);
+
+  const hasChanged = useMemo(() => {
+    if (!isEditMode) return true;
+    if (!group) return true;
+    if (title !== group.title) return true;
+    if (description !== group.description) return true;
+    if (!isEqual(members, group.members)) return true;
+    return false;
+  }, [isEditMode, group, title, description, members]);
+
+  const allowConfirm = !errorMessage && hasChanged;
+
+  const handleAddMember = () => {
+    setMembers((prev) => [
+      ...prev,
+      create(GroupMemberSchema, { role: GroupMember_Role.MEMBER, member: "" }),
+    ]);
+  };
+
+  const handleRemoveMember = (index: number) => {
+    setMembers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMemberChange = (index: number, field: "member" | "role", value: string | GroupMember_Role) => {
+    setMembers((prev) =>
+      prev.map((m, i) => {
+        if (i !== index) return m;
+        return create(GroupMemberSchema, {
+          ...m,
+          [field]: value,
+        });
+      })
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!allowConfirm || !allowEdit) return;
+    setIsRequesting(true);
+    try {
+      const dedupedMembers = deduplicateMembers(members.filter((m) => m.member));
+      if (isEditMode && group) {
+        const validGroup = create(GroupSchema, {
+          name: group.name,
+          title,
+          description,
+          members: dedupedMembers,
+        });
+        const updated = await groupStore.updateGroup(validGroup);
+        onUpdated(updated);
+        pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.updated") });
+      } else {
+        const validGroup = create(GroupSchema, {
+          name: `${groupNamePrefix}${fullEmail}`,
+          title,
+          description,
+          members: dedupedMembers,
+        });
+        const created = await groupStore.createGroup(validGroup);
+        onUpdated(created);
+        pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.created") });
+      }
+      onClose();
+    } catch {
+      // error shown by store
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!group) return;
+    setIsRequesting(true);
+    try {
+      await groupStore.deleteGroup(group.name);
+      onRemoved(group);
+      pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.deleted") });
+      onClose();
+    } catch {
+      // error shown by store
+    } finally {
+      setIsRequesting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const canDelete = isEditMode && !isExternalGroup && (
+    group.members.some(
+      (m) => extractUserEmail(m.member) === currentUser.email && m.role === GroupMember_Role.OWNER
+    ) || hasWorkspacePermissionV2("bb.groups.delete")
+  );
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-lg font-medium">
+            {isEditMode
+              ? t("settings.members.groups.update-group")
+              : t("settings.members.groups.add-group")}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto px-6 py-6">
+          <div className="flex flex-col gap-y-6">
+            {isExternalGroup && (
+              <Alert variant="info">
+                <AlertDescription>
+                  {t("settings.members.groups.external-group-readonly")}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Email */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("settings.members.groups.form.email")}
+                <span className="ml-0.5 text-error">*</span>
+              </label>
+              <span className="textinfolabel text-sm">
+                {t("settings.members.groups.form.email-tips")}
+              </span>
+              <div className="flex items-center gap-x-1">
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isEditMode || !allowEdit}
+                />
+                {!isEditMode && domainSuffix && (
+                  <span className="text-sm text-control-light whitespace-nowrap">
+                    {domainSuffix}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("settings.members.groups.form.title")}
+                <span className="ml-0.5 text-error">*</span>
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
+                disabled={!allowEdit}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("settings.members.groups.form.description")}
+              </label>
+              <Input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={1000}
+                disabled={!allowEdit}
+              />
+            </div>
+
+            {/* Members */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("common.members", { count: 2 })}
+              </label>
+              <div className="flex flex-col gap-y-2">
+                {members.map((member, index) => (
+                  <div key={index} className="flex items-center gap-x-2">
+                    <Input
+                      className="flex-1"
+                      value={member.member}
+                      onChange={(e) => handleMemberChange(index, "member", e.target.value)}
+                      placeholder="users/hello@example.com"
+                      disabled={!allowEdit}
+                    />
+                    <select
+                      value={member.role}
+                      onChange={(e) => handleMemberChange(index, "role", Number(e.target.value) as GroupMember_Role)}
+                      className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                      disabled={!allowEdit}
+                    >
+                      <option value={GroupMember_Role.OWNER}>
+                        {t("settings.members.groups.form.role.owner")}
+                      </option>
+                      <option value={GroupMember_Role.MEMBER}>
+                        {t("settings.members.groups.form.role.member")}
+                      </option>
+                    </select>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-error hover:text-error"
+                      onClick={() => handleRemoveMember(index)}
+                      disabled={!allowEdit}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {allowEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={handleAddMember}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t("settings.members.groups.form.add-member")}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {errorMessage && (
+              <p className="text-error text-sm">{errorMessage}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t">
+          <div>
+            {canDelete && (
+              <>
+                {showDeleteConfirm ? (
+                  <div className="flex items-center gap-x-2">
+                    <span className="text-sm text-error">
+                      {t("settings.members.action.deactivate-confirm-title")}
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDelete}
+                      disabled={isRequesting}
+                    >
+                      {t("common.confirm")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(false)}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="text-error hover:text-error"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    {t("common.delete")}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-x-2">
+            <Button variant="outline" onClick={onClose}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={!allowEdit || !allowConfirm || isRequesting}
+              onClick={handleSubmit}
+            >
+              {isEditMode ? t("common.update") : t("common.confirm")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ============================================================
 // UsersPage (main)
 // ============================================================
 
@@ -1309,10 +1683,6 @@ export function UsersPage() {
   const [_showAadSyncDrawer, _setShowAadSyncDrawer] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
-
-  // Suppress unused warnings for drawers not yet implemented
-  void showCreateGroupDrawer;
-  void editingGroup;
 
   const remainingUserCount = useMemo(
     () => Math.max(0, userCountLimit - activeUserCount),
@@ -1595,6 +1965,10 @@ export function UsersPage() {
                       setEditingUser(user);
                       setShowCreateUserDrawer(true);
                     }}
+                    onGroupSelected={(group) => {
+                      setTab("GROUPS");
+                      handleGroupSelected(group);
+                    }}
                   />
                   <PagedTableFooter
                     pageSize={activeUsers.pageSize}
@@ -1650,6 +2024,10 @@ export function UsersPage() {
                         onUserSelected={(user) => {
                           setEditingUser(user);
                           setShowCreateUserDrawer(true);
+                        }}
+                        onGroupSelected={(group) => {
+                          setTab("GROUPS");
+                          handleGroupSelected(group);
                         }}
                       />
                       <PagedTableFooter
@@ -1720,6 +2098,24 @@ export function UsersPage() {
               activeUsers.removeCache(user);
               inactiveUsers.updateCache([user]);
             }
+          }}
+        />
+      )}
+
+      {showCreateGroupDrawer && (
+        <CreateGroupDrawer
+          group={editingGroup}
+          onClose={() => {
+            setShowCreateGroupDrawer(false);
+            setEditingGroup(undefined);
+          }}
+          onUpdated={(group) => {
+            groupPaged.updateCache([group]);
+          }}
+          onRemoved={(group) => {
+            groupPaged.removeCache(group);
+            setShowCreateGroupDrawer(false);
+            setEditingGroup(undefined);
           }}
         />
       )}
