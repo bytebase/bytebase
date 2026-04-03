@@ -105,18 +105,18 @@ export declare type ListGroupsRequest = Message<"bytebase.v1.ListGroupsRequest">
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
-   * - title: the group title, support "==" and ".matches()" operator.
-   * - email: the group email, support "==" and ".matches()" operator.
+   * - title: the group title, support "==" and ".contains()" operator.
+   * - email: the group email, support "==" and ".contains()" operator.
    * - project: the project full name in "projects/{id}" format, support "==" operator.
    *
    * For example:
    * title == "dba"
    * email == "dba@bytebase.com"
-   * title.matches("dba")
-   * email.matches("dba")
+   * title.contains("dba")
+   * email.contains("dba")
    * project == "projects/sample-project"
    * You can combine filter conditions like:
-   * title.matches("dba") || email.matches("dba")
+   * title.contains("dba") || email.contains("dba")
    *
    * @generated from field: string filter = 3;
    */

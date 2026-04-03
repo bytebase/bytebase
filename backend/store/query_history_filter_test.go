@@ -58,8 +58,8 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "statement matches operator",
-			filter:   `statement.matches("SELECT")`,
+			name:     "statement contains operator",
+			filter:   `statement.contains("SELECT")`,
 			wantSQL:  "(query_history.statement LIKE $1)",
 			wantArgs: []any{"%SELECT%"},
 			wantErr:  false,
@@ -100,8 +100,8 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "complex nested with statement matches",
-			filter:   `project == "projects/test" && statement.matches("SELECT") && type == "QUERY"`,
+			name:     "complex nested with statement contains",
+			filter:   `project == "projects/test" && statement.contains("SELECT") && type == "QUERY"`,
 			wantSQL:  "(((query_history.project = $1 AND query_history.statement LIKE $2) AND query_history.type = $3))",
 			wantArgs: []any{"test", "%SELECT%", QueryHistoryType("QUERY")},
 			wantErr:  false,
@@ -119,8 +119,8 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			errContains: "unsupport variable",
 		},
 		{
-			name:        "matches on non-statement variable",
-			filter:      `project.matches("test")`,
+			name:        "contains on non-statement variable",
+			filter:      `project.contains("test")`,
 			wantErr:     true,
 			errContains: `only "statement" support`,
 		},
@@ -131,10 +131,16 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			errContains: "invalid project filter",
 		},
 		{
-			name:        "matches with non-string value",
-			filter:      `statement.matches(123)`,
+			name:        "contains with non-string value",
+			filter:      `statement.contains(123)`,
 			wantErr:     true,
 			errContains: "expect string",
+		},
+		{
+			name:        "matches is unsupported",
+			filter:      `statement.matches("SELECT")`,
+			wantErr:     true,
+			errContains: "unexpected function matches",
 		},
 	}
 
@@ -186,9 +192,9 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "statement matches with wildcard pattern",
-			filter:      `statement.matches("SELECT.*FROM")`,
-			description: "regex pattern in matches should be wrapped with %",
+			name:        "statement contains punctuation literally",
+			filter:      `statement.contains("SELECT.*FROM")`,
+			description: "contains should treat punctuation as plain substring content",
 			wantSQL:     "(query_history.statement LIKE $1)",
 			wantArgs:    []any{"%SELECT.*FROM%"},
 			wantErr:     false,
@@ -219,7 +225,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 		},
 		{
 			name:        "complex filter with all supported fields",
-			filter:      `project == "projects/test" && database == "instances/i1/databases/db1" && type == "EXPORT" && statement.matches("INSERT")`,
+			filter:      `project == "projects/test" && database == "instances/i1/databases/db1" && type == "EXPORT" && statement.contains("INSERT")`,
 			description: "combination of all supported filter types",
 			wantSQL:     "(((query_history.project = $1 AND query_history.database = $2) AND (query_history.type = $3 AND query_history.statement LIKE $4)))",
 			wantArgs:    []any{"test", "instances/i1/databases/db1", QueryHistoryType("EXPORT"), "%INSERT%"},

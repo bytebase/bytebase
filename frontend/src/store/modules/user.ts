@@ -41,7 +41,7 @@ const getListUserFilter = (params: UserFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(name.matches("${search}") || email.matches("${search}"))`);
+    filter.push(`(name.contains("${search}") || email.contains("${search}"))`);
   }
   if (isValidProjectName(params.project)) {
     filter.push(`project == "${params.project}"`);

@@ -116,7 +116,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     skipCache?: boolean;
     silent?: boolean;
     limit?: number; // limit the number of returned tables per schema
-    filter?: string; // used to filter schema and table, e.g. schema == "public" && table.matches("user*")
+    filter?: string; // used to filter schema and table, e.g. schema == "public" && table.contains("user")
   }) => {
     const {
       limit = 0,

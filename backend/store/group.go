@@ -422,7 +422,7 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				variable := expr.AsCall().Target().AsIdent()
 				args := expr.AsCall().Args()
 				if len(args) != 1 {

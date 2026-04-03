@@ -65,15 +65,15 @@ func TestGetListProjectFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "name matches",
-			filter:   `name.matches("test")`,
+			name:     "name contains",
+			filter:   `name.contains("test")`,
 			wantSQL:  "(LOWER(project.name) LIKE $1)",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
 		{
-			name:     "resource_id matches",
-			filter:   `resource_id.matches("prod")`,
+			name:     "resource_id contains",
+			filter:   `resource_id.contains("prod")`,
 			wantSQL:  "(LOWER(project.resource_id) LIKE $1)",
 			wantArgs: []any{"%prod%"},
 			wantErr:  false,
@@ -130,6 +130,12 @@ func TestGetListProjectFilter(t *testing.T) {
 			filter:      `state == "INVALID_STATE"`,
 			wantErr:     true,
 			errContains: "invalid state filter",
+		},
+		{
+			name:        "matches is unsupported",
+			filter:      `name.matches("test")`,
+			wantErr:     true,
+			errContains: "unexpected function matches",
 		},
 	}
 

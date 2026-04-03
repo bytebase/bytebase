@@ -159,20 +159,20 @@ message ListUsersRequest {
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
   //
   // Supported filter:
-  // - name: the user name, support "==" and ".matches()" operator.
-  // - email: the user email, support "==" and ".matches()" operator.
+  // - name: the user name, support "==" and ".contains()" operator.
+  // - email: the user email, support "==" and ".contains()" operator.
   // - state: check State enum for values, support "==" operator.
   // - project: the project full name in "projects/{id}" format, support "==" operator.
   //
   // For example:
   // name == "ed"
-  // name.matches("ed")
+  // name.contains("ed")
   // email == "ed@bytebase.com"
-  // email.matches("ed")
+  // email.contains("ed")
   // state == "DELETED"
   // project == "projects/sample-project"
   // You can combine filter conditions like:
-  // name.matches("ed") && project == "projects/sample-project"
+  // name.contains("ed") && project == "projects/sample-project"
   // (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
   string filter = 4;
 }

@@ -27,7 +27,7 @@ const getListGroupFilter = (params: GroupFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(title.matches("${search}") || email.matches("${search}"))`);
+    filter.push(`(title.contains("${search}") || email.contains("${search}"))`);
   }
   if (isValidProjectName(params.project)) {
     filter.push(`project == "${params.project}"`);

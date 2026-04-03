@@ -137,7 +137,7 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
-    params.push(`name.matches("${keyword}")`);
+    params.push(`name.contains("${keyword}")`);
   }
 
   if (filter.labels) {
@@ -145,7 +145,7 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   }
 
   if (filter.table) {
-    params.push(`table.matches("${filter.table}")`);
+    params.push(`table.contains("${filter.table}")`);
   }
 
   return params.join(" && ");

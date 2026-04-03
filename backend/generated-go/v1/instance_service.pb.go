@@ -415,21 +415,21 @@ type ListInstancesRequest struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Supported filters:
-	// - name: the instance name, support "==" and ".matches()" operator.
-	// - resource_id: the instance id, support "==" and ".matches()" operator.
+	// - name: the instance name, support "==" and ".contains()" operator.
+	// - resource_id: the instance id, support "==" and ".contains()" operator.
 	// - environment: the environment full name in "environments/{id}" format, support "==" operator.
 	// - state: the instance state, check State enum for values, support "==" operator.
 	// - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-	// - host: the instance host, support "==" and ".matches()" operator.
-	// - port: the instance port, support "==" and ".matches()" operator.
+	// - host: the instance host, support "==" and ".contains()" operator.
+	// - port: the instance port, support "==" and ".contains()" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
 	// - labels.{key}: the instance label, support "==" and "in" operators.
 	//
 	// For example:
 	// name == "sample instance"
-	// name.matches("sample")
+	// name.contains("sample")
 	// resource_id == "sample-instance"
-	// resource_id.matches("sample")
+	// resource_id.contains("sample")
 	// state == "DELETED"
 	// environment == "environments/test"
 	// environment == "" (find instances which environment is not set)
@@ -437,14 +437,14 @@ type ListInstancesRequest struct {
 	// engine in ["MYSQL", "POSTGRES"]
 	// !(engine in ["MYSQL", "POSTGRES"])
 	// host == "127.0.0.1"
-	// host.matches("127.0")
+	// host.contains("127.0")
 	// port == "54321"
-	// port.matches("543")
+	// port.contains("543")
 	// labels.org_group == "infrastructure"
 	// labels.environment in ["prod", "production"]
 	// project == "projects/sample-project"
 	// You can combine filter conditions like:
-	// name.matches("sample") && environment == "environments/test"
+	// name.contains("sample") && environment == "environments/test"
 	// host == "127.0.0.1" && port == "54321"
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of instances.

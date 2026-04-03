@@ -243,16 +243,16 @@ export declare type ListWorkloadIdentitiesRequest = Message<"bytebase.v1.ListWor
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
-   * - name: the workload identity name, support "==" and ".matches()" operator.
-   * - email: the workload identity email, support "==" and ".matches()" operator.
+   * - name: the workload identity name, support "==" and ".contains()" operator.
+   * - email: the workload identity email, support "==" and ".contains()" operator.
    * - state: check State enum for values, support "==" operator.
    *
    * For example:
    * name == "ed"
-   * name.matches("ed")
+   * name.contains("ed")
    * state == "DELETED"
    * email == "ed@workload.bytebase.com"
-   * email.matches("ed")
+   * email.contains("ed")
    *
    * @generated from field: string filter = 5;
    */

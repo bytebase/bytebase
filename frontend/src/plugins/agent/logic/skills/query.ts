@@ -24,16 +24,16 @@ Run SQL queries against databases managed by Bytebase.
    \`\`\`
    call_api(operationId="DatabaseService/ListDatabases", body={
      "parent": "workspaces/{id}",
-     "filter": "name.matches(\\"db_name\\")"
+     "filter": "name.contains(\\"db_name\\")"
    })
    \`\`\`
 
    Filter examples:
-   - \`name.matches("employee")\` - database name contains "employee"
+   - \`name.contains("employee")\` - database name contains "employee"
    - \`project == "projects/{project-id}"\` - databases in a project
    - \`instance == "instances/{instance-id}"\` - databases in an instance
    - \`engine == "MYSQL"\` - MySQL databases only
-   - \`environment == "environments/prod" && name.matches("user")\` - combine filters
+   - \`environment == "environments/prod" && name.contains("user")\` - combine filters
 
    **Optionally inspect \`instanceResource.dataSources\`** if you need to target a specific data source. Prefer \`type: "READ_ONLY"\` over \`type: "ADMIN"\` when choosing explicitly.
 

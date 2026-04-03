@@ -386,7 +386,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
-			case celoverloads.Matches:
+			case celoverloads.Contains:
 				call := expr.AsCall()
 				target := call.Target()
 				if target.Kind() != celast.IdentKind {
