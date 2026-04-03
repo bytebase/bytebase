@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import {
   Building2,
+  Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -47,6 +48,7 @@ import {
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -72,7 +74,12 @@ import {
   getUserEmailInBinding,
   userBindingPrefix,
 } from "@/types";
-import { PresetRoleType } from "@/types/iam";
+import {
+  PRESET_PROJECT_ROLES,
+  PRESET_ROLES,
+  PRESET_WORKSPACE_ROLES,
+  PresetRoleType,
+} from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
 import {
@@ -87,6 +94,7 @@ import {
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import {
+  displayRoleDescription,
   displayRoleTitle,
   hasWorkspacePermissionV2,
   isValidEmail,
@@ -969,6 +977,191 @@ function useEscapeKey(onEscape: () => void) {
 }
 
 // ============================================================
+// RoleMultiSelect
+// ============================================================
+
+function RoleMultiSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string[];
+  onChange: (roles: string[]) => void;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const roleStore = useRoleStore();
+  const roleList = useVueState(() => [...roleStore.roleList]);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const groups = useMemo(() => {
+    const kw = search.toLowerCase();
+    const matchRole = (name: string) =>
+      !kw || displayRoleTitle(name).toLowerCase().includes(kw);
+
+    const workspace = PRESET_WORKSPACE_ROLES.filter(matchRole);
+    const project = PRESET_PROJECT_ROLES.filter(matchRole);
+    const custom = roleList
+      .filter((r) => !PRESET_ROLES.includes(r.name))
+      .map((r) => r.name)
+      .filter(matchRole);
+
+    const result: { label: string; roles: string[] }[] = [];
+    if (workspace.length > 0)
+      result.push({
+        label: t("role.workspace-roles.self"),
+        roles: workspace,
+      });
+    if (project.length > 0)
+      result.push({ label: t("role.project-roles.self"), roles: project });
+    if (custom.length > 0)
+      result.push({ label: t("role.custom-roles.self"), roles: custom });
+    return result;
+  }, [roleList, search, t]);
+
+  const toggle = (roleName: string) => {
+    if (disabled) return;
+    if (value.includes(roleName)) {
+      onChange(value.filter((r) => r !== roleName));
+    } else {
+      onChange([...value, roleName]);
+    }
+  };
+
+  const remove = (roleName: string) => {
+    if (disabled) return;
+    onChange(value.filter((r) => r !== roleName));
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
+          disabled && "opacity-50 cursor-not-allowed",
+          open && "ring-2 ring-accent border-accent"
+        )}
+        onClick={() => {
+          if (!disabled) {
+            setOpen(!open);
+            requestAnimationFrame(() => inputRef.current?.focus());
+          }
+        }}
+      >
+        {value.map((roleName) => (
+          <span
+            key={roleName}
+            className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs"
+          >
+            {displayRoleTitle(roleName)}
+            {!disabled && (
+              <button
+                type="button"
+                className="hover:text-error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(roleName);
+                }}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        ))}
+        {open && (
+          <input
+            ref={inputRef}
+            className="flex-1 min-w-[4rem] outline-hidden text-sm bg-transparent"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={
+              value.length === 0
+                ? t("settings.members.select-role", { count: 2 })
+                : ""
+            }
+          />
+        )}
+        {!open && value.length === 0 && (
+          <span className="text-control-placeholder">
+            {t("settings.members.select-role", { count: 2 })}
+          </span>
+        )}
+        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
+          {groups.length === 0 && (
+            <div className="px-3 py-2 text-sm text-control-light">
+              {t("common.no-data")}
+            </div>
+          )}
+          {groups.map((group) => (
+            <div key={group.label}>
+              <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50">
+                {group.label}
+              </div>
+              {group.roles.map((roleName) => {
+                const selected = value.includes(roleName);
+                return (
+                  <div
+                    key={roleName}
+                    className={cn(
+                      "flex items-center gap-x-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50",
+                      selected && "bg-accent/5"
+                    )}
+                    onClick={() => toggle(roleName)}
+                  >
+                    <div
+                      className={cn(
+                        "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+                        selected
+                          ? "bg-accent border-accent text-white"
+                          : "border-control-border"
+                      )}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span>{displayRoleTitle(roleName)}</span>
+                      {displayRoleDescription(roleName) && (
+                        <span className="text-xs text-control-light">
+                          {displayRoleDescription(roleName)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // CreateUserDrawer
 // ============================================================
 
@@ -991,10 +1184,8 @@ function CreateUserDrawer({
   const { t } = useTranslation();
   const userStore = useUserStore();
   const workspaceStore = useWorkspaceV1Store();
-  const roleStore = useRoleStore();
   const settingV1Store = useSettingV1Store();
 
-  const roleList = useVueState(() => roleStore.roleList);
   const userMapToRoles = useVueState(() => workspaceStore.userMapToRoles);
   const passwordRestriction = useVueState(
     () => settingV1Store.workspaceProfile.passwordRestriction
@@ -1079,14 +1270,6 @@ function CreateUserDrawer({
   const hasPermission = hasWorkspacePermissionV2(
     isEditMode ? "bb.users.update" : "bb.users.create"
   );
-
-  const handleRoleToggle = (roleName: string) => {
-    setRoles((prev) =>
-      prev.includes(roleName)
-        ? prev.filter((r) => r !== roleName)
-        : [...prev, roleName]
-    );
-  };
 
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
@@ -1228,21 +1411,11 @@ function CreateUserDrawer({
                 <label className="block text-sm font-medium text-control">
                   {t("settings.members.table.roles")}
                 </label>
-                <div className="border rounded-sm max-h-48 overflow-auto p-2 flex flex-col gap-y-1">
-                  {roleList.map((role) => (
-                    <label
-                      key={role.name}
-                      className="flex items-center gap-x-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={roles.includes(role.name)}
-                        onChange={() => handleRoleToggle(role.name)}
-                      />
-                      {displayRoleTitle(role.name)}
-                    </label>
-                  ))}
-                </div>
+                <RoleMultiSelect
+                  value={roles}
+                  onChange={setRoles}
+                  disabled={false}
+                />
               </div>
             )}
 
@@ -2301,8 +2474,6 @@ function EditMemberRoleDrawer({
 }) {
   const { t } = useTranslation();
   const workspaceStore = useWorkspaceV1Store();
-  const roleStore = useRoleStore();
-  const roleList = useVueState(() => roleStore.roleList);
 
   const isEditMode = !!member;
 
@@ -2313,14 +2484,6 @@ function EditMemberRoleDrawer({
   const [isRequesting, setIsRequesting] = useState(false);
 
   useEscapeKey(onClose);
-
-  const handleRoleToggle = (roleName: string) => {
-    setSelectedRoles((prev) =>
-      prev.includes(roleName)
-        ? prev.filter((r) => r !== roleName)
-        : [...prev, roleName]
-    );
-  };
 
   const handleSubmit = async () => {
     setIsRequesting(true);
@@ -2436,21 +2599,10 @@ function EditMemberRoleDrawer({
               <label className="block text-sm font-medium text-control">
                 {t("settings.members.select-role", { count: 2 })}
               </label>
-              <div className="border rounded-sm max-h-48 overflow-auto p-2 flex flex-col gap-y-1">
-                {roleList.map((role) => (
-                  <label
-                    key={role.name}
-                    className="flex items-center gap-x-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedRoles.includes(role.name)}
-                      onChange={() => handleRoleToggle(role.name)}
-                    />
-                    {displayRoleTitle(role.name)}
-                  </label>
-                ))}
-              </div>
+              <RoleMultiSelect
+                value={selectedRoles}
+                onChange={setSelectedRoles}
+              />
             </div>
           </div>
         </div>
