@@ -251,16 +251,15 @@ func TestGetQueryType(t *testing.T) {
 
 		// Explain. The omni parser only recognizes explain as a prefix
 		// (db.coll.explain().find()), not as a cursor suffix, so
-		// db.coll.find({}).explain() is classified by the primary method.
 		{
 			description: "find with explain suffix",
 			statement:   `db.users.find({}).explain()`,
-			want:        base.Select,
+			want:        base.Explain,
 		},
 		{
 			description: "find with sort and explain suffix",
 			statement:   `db.users.find({}).sort({a: 1}).explain()`,
-			want:        base.Select,
+			want:        base.Explain,
 		},
 		{
 			description: "explain prefix with find",

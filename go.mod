@@ -34,7 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260403033636-f6c50d4ab888
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260403101418-27fef3fdb039
+	github.com/bytebase/omni v0.0.0-20260403104830-b57a2edb14b0
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
