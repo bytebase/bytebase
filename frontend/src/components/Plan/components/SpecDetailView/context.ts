@@ -9,11 +9,29 @@ import { usePlanContext } from "../../logic";
 
 export const DEFAULT_VISIBLE_TARGETS = 20;
 
+// When provided as `true`, children should hide edit controls
+export const FORCE_READONLY_KEY: InjectionKey<boolean> =
+  Symbol("force-readonly");
+
+export const useForceReadonly = (): boolean => {
+  return inject(FORCE_READONLY_KEY, false);
+};
+
 export const SELECTED_SPEC_INJECTION_KEY: InjectionKey<Ref<Plan_Spec>> =
   Symbol("selected-spec");
 
-export const provideSelectedSpec = (spec: Ref<Plan_Spec>) => {
+export const SELECTED_SPEC_ID_SETTER_KEY: InjectionKey<
+  (specId: string) => void
+> = Symbol("selected-spec-id-setter");
+
+export const provideSelectedSpec = (
+  spec: Ref<Plan_Spec>,
+  setSpecId?: (specId: string) => void
+) => {
   provide(SELECTED_SPEC_INJECTION_KEY, spec);
+  if (setSpecId) {
+    provide(SELECTED_SPEC_ID_SETTER_KEY, setSpecId);
+  }
 };
 
 export const useSelectedSpec = () => {

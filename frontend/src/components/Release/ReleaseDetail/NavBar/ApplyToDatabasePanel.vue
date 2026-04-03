@@ -63,7 +63,7 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/connect";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRoute } from "@/router/dashboard/projectV1RouteHelpers";
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import {
   CreatePlanRequestSchema,
@@ -145,12 +145,11 @@ const handleCreate = async () => {
   const planId = createdPlan.name.split("/").pop();
 
   // Redirect to rollout view
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-    params: {
+  router.push(
+    buildPlanDeployRoute({
       projectId: getProjectNameReleaseId(release.value.name)[0],
-      planId,
-    },
-  });
+      planId: planId || "_",
+    })
+  );
 };
 </script>

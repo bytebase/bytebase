@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      v-if="!readonly && hasActions"
+      v-if="hasActions"
       class="flex flex-row justify-end items-center gap-x-2"
     >
       <NButton v-if="primaryAction" :size="size" @click="handlePrimaryAction">
@@ -38,7 +38,6 @@ import { EllipsisVerticalIcon } from "lucide-vue-next";
 import { NButton, NDropdown } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
@@ -60,7 +59,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { readonly } = usePlanContextWithRollout();
 
 const {
   canRun,

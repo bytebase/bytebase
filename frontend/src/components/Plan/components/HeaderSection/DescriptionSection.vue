@@ -13,17 +13,34 @@
         </template>
         {{ $t("plan.description.placeholder") }}
       </NButton>
-      <div
-        v-else
-        class="mt-1 cursor-pointer px-2 py-1 rounded-md border border-transparent hover:border-gray-200 transition-all duration-200"
-        @click="handleExpand($event)"
-      >
-        <MarkdownEditor
-          mode="preview"
-          class="pointer-events-none"
-          :content="state.description"
-          :project="project"
-        />
+      <div v-else class="mt-1">
+        <div
+          class="relative px-2 py-1 rounded-md border border-transparent transition-all duration-200"
+          :class="[
+            allowEdit ? 'cursor-pointer hover:border-gray-200' : '',
+            !state.showFullDescription ? 'max-h-[4.5rem] overflow-hidden' : '',
+          ]"
+          @click="allowEdit && handleExpand($event)"
+        >
+          <MarkdownEditor
+            mode="preview"
+            class="pointer-events-none"
+            :content="state.description"
+            :project="project"
+          />
+          <!-- Fade overlay when truncated -->
+          <div
+            v-if="!state.showFullDescription && isDescriptionLong"
+            class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none"
+          />
+        </div>
+        <button
+          v-if="isDescriptionLong"
+          class="text-xs text-control-placeholder hover:text-control mt-1 px-2"
+          @click.stop="state.showFullDescription = !state.showFullDescription"
+        >
+          {{ state.showFullDescription ? $t("common.show-less") : $t("common.show-more") }}
+        </button>
       </div>
     </template>
     <div v-else class="py-2">
@@ -99,6 +116,15 @@ const state = reactive({
   isExpanded: false,
   shouldAutoFocus: false,
   justExpanded: false,
+  showFullDescription: false,
+});
+
+// Description longer than ~3 lines of text
+const isDescriptionLong = computed(() => {
+  return (
+    (state.description?.length ?? 0) > 150 ||
+    (state.description?.split("\n").length ?? 0) > 3
+  );
 });
 
 const allowEdit = computed(() => {

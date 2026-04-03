@@ -1,9 +1,6 @@
 <template>
   <div
-    class="collapsible-task-item relative bg-white border border-gray-300 rounded-lg transition-all group"
-    :class="[
-      isExpanded ? 'shadow-sm' : 'hover:shadow-sm',
-    ]"
+    class="collapsible-task-item relative bg-white border rounded-lg transition-all group"
   >
     <!-- Task content -->
     <div class="w-full" :class="isExpanded ? 'py-4 pl-3 pr-4 space-y-3' : 'py-2.5 pl-3 pr-4'">
@@ -15,8 +12,8 @@
         <div class="flex items-center gap-x-2 flex-1 min-w-0">
           <!-- Inline checkbox - always visible like Gmail/GitHub -->
           <NCheckbox
-            v-if="isSelectable"
             :checked="isSelected"
+            :disabled="!isSelectable"
             class="shrink-0"
             @click.stop
             @update:checked="emit('toggle-select')"
@@ -25,6 +22,8 @@
           <RouterLink
             v-if="!readonly"
             :to="taskDetailRoute"
+            active-class=""
+            exact-active-class=""
             class="shrink-0 hover:opacity-80 transition-opacity"
           >
             <DatabaseDisplay
@@ -154,6 +153,8 @@
             <RouterLink
               v-if="!readonly"
               :to="taskDetailRoute"
+              active-class=""
+              exact-active-class=""
             >
             <NButton text icon-placement="right" size="tiny" type="info">
               <template #icon>
@@ -236,18 +237,10 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { emitPlanStatusChanged } from "@/components/Plan/logic";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
+import { buildTaskDetailRoute } from "@/router/dashboard/projectV1RouteHelpers";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-  extractStageNameFromTaskName,
-  extractStageUID,
-  extractTaskUID,
-  isReleaseBasedTask,
-  releaseNameOfTaskV1,
-} from "@/utils";
+import { isReleaseBasedTask, releaseNameOfTaskV1 } from "@/utils";
 import ReleaseInfoCard from "../Rollout/ReleaseInfoCard.vue";
 import { useTaskRunsForTask } from "../shared/useTaskRunsForTask";
 import { useTaskRunLogSummary } from "../TaskRun/useTaskRunLogSummary";
@@ -306,23 +299,7 @@ const handleActionConfirm = () => {
   emitPlanStatusChanged(events, { refreshMode: "fast-follow" });
 };
 
-const taskDetailRoute = computed(() => {
-  const projectName = extractProjectResourceName(props.task.name);
-  const planId = extractPlanUIDFromRolloutName(props.task.name);
-  const stageName = extractStageNameFromTaskName(props.task.name);
-  const stageId = extractStageUID(stageName);
-  const taskId = extractTaskUID(props.task.name);
-
-  return {
-    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-    params: {
-      projectId: projectName,
-      planId: planId || "-",
-      stageId: stageId || "-",
-      taskId: taskId || "-",
-    },
-  };
-});
+const taskDetailRoute = computed(() => buildTaskDetailRoute(props.task.name));
 
 const isReleaseTask = computed(() => isReleaseBasedTask(props.task));
 

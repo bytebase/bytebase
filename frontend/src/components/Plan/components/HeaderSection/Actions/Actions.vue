@@ -51,13 +51,6 @@
       @confirm="handleRolloutActionConfirm"
     />
 
-    <!-- Rollout Create Panel -->
-    <RolloutCreatePanel
-      :show="showRolloutCreatePanel"
-      :context="context"
-      @close="showRolloutCreatePanel = false"
-      @confirm="showRolloutCreatePanel = false"
-    />
   </div>
 </template>
 
@@ -74,7 +67,7 @@ import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/connect";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRouteFromRolloutName } from "@/router/dashboard/projectV1RouteHelpers";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -87,11 +80,7 @@ import {
   BatchRunTasksRequestSchema,
   CreateRolloutRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-} from "@/utils";
-import { CreateButton, CreateIssueButton, RolloutCreatePanel } from "./create";
+import { CreateButton, CreateIssueButton } from "./create";
 import { ExportArchiveDownloadAction } from "./export";
 import RolloutReadyLink from "./RolloutReadyLink.vue";
 import {
@@ -138,8 +127,6 @@ const globalDisabledReason = computed(() => {
 
 // Panel visibility state
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
-const showRolloutCreatePanel = ref(false);
-
 // Get the first stage for database creation/export rollouts
 // (the panel handles all stages internally for these task types)
 const rolloutStage = computed(() => rollout.value?.stages[0]);
@@ -155,9 +142,6 @@ const handlePerformAction = async (action: UnifiedAction) => {
       break;
     case "PLAN_REOPEN":
       await handlePlanStateChange("PLAN_REOPEN");
-      break;
-    case "ROLLOUT_CREATE":
-      showRolloutCreatePanel.value = true;
       break;
     case "ROLLOUT_START":
       // For deferred rollout plans without rollout, create and run all tasks
@@ -281,13 +265,7 @@ const handleCreateRollout = async (options?: { runAllTasks?: boolean }) => {
         style: "SUCCESS",
         title: t("common.created"),
       });
-      router.push({
-        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-        params: {
-          projectId: extractProjectResourceName(project.value.name),
-          planId: extractPlanUIDFromRolloutName(createdRollout.name),
-        },
-      });
+      router.push(buildPlanDeployRouteFromRolloutName(createdRollout.name));
     }
   } catch (error) {
     pushNotification({

@@ -288,7 +288,14 @@
     },
     {
       "includes": ["*.json", "**/*.json", "*.json5", "**/*.json5"],
-      "javascript": { "globals": [] }
+      "javascript": { "globals": [] },
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noDuplicateObjectKeys": "error"
+          }
+        }
+      }
     },
     {
       "includes": ["*.yaml", "**/*.yaml", "*.yml", "**/*.yml"],

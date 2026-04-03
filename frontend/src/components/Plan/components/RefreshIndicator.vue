@@ -11,6 +11,7 @@
       <span>{{ lastRefreshAbsolute }}</span>
     </NTooltip>
     <NButton
+      class="opacity-60"
       size="tiny"
       quaternary
       :loading="isRefreshing"
@@ -18,7 +19,7 @@
       @click="handleRefresh"
     >
       <template #icon>
-        <RefreshCcwIcon class="w-4 h-4" />
+        <RefreshCcwIcon class="w-3 h-3" />
       </template>
       <span>{{ $t("common.refresh") }}</span>
     </NButton>

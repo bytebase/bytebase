@@ -2,14 +2,14 @@
   <div class="flex flex-col gap-y-1">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-1">
-        <span class="text-base">{{ $t("plan.targets.title") }}</span>
-        <span class="text-sm text-control-light" v-if="targets.length > 1"
+        <span class="textlabel uppercase">{{ $t("plan.targets.title") }}</span>
+        <span class="textlabel text-control-light" v-if="targets.length > 1"
           >({{ targets.length }})</span
         >
       </div>
       <NButton
         v-if="allowEdit"
-        size="small"
+        size="tiny"
         @click="showTargetsSelector = true"
       >
         {{ $t("common.edit") }}
@@ -29,19 +29,19 @@
     <div v-if="isLoadingTargets" class="flex items-center justify-center py-2">
       <BBSpin />
     </div>
-    <div v-else-if="targets.length > 0" class="flex flex-wrap gap-1.5">
+    <div v-else-if="targets.length > 0" class="flex flex-wrap items-center gap-2">
       <div
         v-for="target in visibleTargets"
         :key="target"
-        class="inline-flex items-center px-3 py-2 border rounded text-sm"
+        class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg cursor-default"
       >
-        <DatabaseDisplay v-if="isValidDatabaseName(target)" :database="target" show-environment />
-        <DatabaseGroupTargetDisplay v-else-if="isValidDatabaseGroupName(target)" :target="target" />
-        <span v-else>{{ target }}</span>
+        <DatabaseDisplay v-if="isValidDatabaseName(target)" :database="target" size="small" show-environment />
+        <DatabaseGroupTargetDisplay v-else-if="isValidDatabaseGroupName(target)" :target="target" class="py-1" />
+        <span v-else class="text-sm text-control-placeholder">{{ target }}</span>
       </div>
       <NButton
         v-if="targets.length > DEFAULT_VISIBLE_TARGETS"
-        size="small"
+        size="tiny"
         quaternary
         @click="showAllTargetsDrawer = true"
       >
@@ -85,7 +85,11 @@ import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
-import { DEFAULT_VISIBLE_TARGETS, useSelectedSpec } from "./context";
+import {
+  DEFAULT_VISIBLE_TARGETS,
+  useForceReadonly,
+  useSelectedSpec,
+} from "./context";
 import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 
@@ -114,8 +118,10 @@ const project = computed(() => {
 // Only allow editing in creation mode or if the plan is editable and not readonly.
 // An empty string for `plan.value.hasRollout` indicates that the plan is in a draft or uninitialized state,
 // which allows edits to be made.
+const forceReadonly = useForceReadonly();
+
 const allowEdit = computed(() => {
-  if (readonly.value) {
+  if (forceReadonly || readonly.value) {
     return false;
   }
   if (!hasPermission.value) {

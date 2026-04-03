@@ -41,31 +41,21 @@
             </template>
             {{ $t("rollout.stage.confirm-create") }}
           </NPopconfirm>
-          <!-- Mobile: Timeline drawer trigger (rightmost) -->
-          <StageContentSidebar
-            v-if="!isWideScreen && isStageCreated(selectedStage)"
-            :stage="selectedStage"
-            :task-runs="taskRuns"
-          />
         </div>
       </div>
     </div>
 
-    <!-- Main content area: responsive layout -->
-    <div class="flex flex-row">
-      <!-- Task list content -->
-      <div class="flex-1 min-w-0">
-        <TaskList
-          :stage="selectedStage"
-          :rollout="rollout"
-          :filter-statuses="filterStatuses"
-          :readonly="!isStageCreated(selectedStage)"
-        />
-      </div>
+    <!-- Main content area -->
+    <div class="flex flex-col">
+      <TaskList
+        :stage="selectedStage"
+        :rollout="rollout"
+        :filter-statuses="filterStatuses"
+        :readonly="!isStageCreated(selectedStage)"
+      />
 
-      <!-- Desktop: Timeline sidebar -->
       <StageContentSidebar
-        v-if="isWideScreen && isStageCreated(selectedStage)"
+        v-if="isStageCreated(selectedStage)"
         :stage="selectedStage"
         :task-runs="taskRuns"
       />
@@ -80,16 +70,19 @@
 </template>
 
 <script lang="ts" setup>
-import { useWindowSize } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import { RUNNABLE_TASK_STATUSES } from "@/components/RolloutV1/constants/task";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import TaskFilter from "../Task/TaskFilter.vue";
 import TaskList from "../Task/TaskList.vue";
+import {
+  canRolloutTasks,
+  preloadRolloutPermissionContext,
+} from "../Task/taskPermissions";
 import StageContentSidebar from "./StageContentSidebar.vue";
 
 const props = defineProps<{
@@ -104,19 +97,44 @@ defineEmits<{
 }>();
 
 const filterStatuses = ref<Task_Status[]>([]);
+const rolloutPermissionReady = ref(false);
 
-// Responsive layout: sidebar on wide screen (>= 768px), drawer on narrow
-const { width: windowWidth } = useWindowSize();
-const isWideScreen = computed(() => windowWidth.value >= 768);
+const { issue, taskRuns } = usePlanContextWithRollout();
 
-const { taskRuns } = usePlanContextWithRollout();
+watch(
+  () => props.selectedStage?.tasks.map((task) => task.name) ?? [],
+  async () => {
+    if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {
+      rolloutPermissionReady.value = true;
+      return;
+    }
+    rolloutPermissionReady.value = false;
+    await preloadRolloutPermissionContext(
+      props.selectedStage.tasks,
+      props.selectedStage.environment
+    );
+    rolloutPermissionReady.value = true;
+  },
+  { immediate: true }
+);
 
 const canRunStage = computed(() => {
-  if (!props.selectedStage || !props.isStageCreated(props.selectedStage)) {
+  if (
+    !rolloutPermissionReady.value ||
+    !props.selectedStage ||
+    !props.isStageCreated(props.selectedStage)
+  ) {
     return false;
   }
-  return props.selectedStage.tasks.some((task) =>
-    RUNNABLE_TASK_STATUSES.includes(task.status)
+  return (
+    props.selectedStage.tasks.some((task) =>
+      RUNNABLE_TASK_STATUSES.includes(task.status)
+    ) &&
+    canRolloutTasks(
+      props.selectedStage.tasks,
+      issue.value,
+      props.selectedStage.environment
+    )
   );
 });
 

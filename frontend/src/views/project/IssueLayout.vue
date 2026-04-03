@@ -5,7 +5,7 @@
         <div class="h-full flex flex-col">
           <HeaderSection />
 
-          <div class="flex-1 flex">
+          <div class="flex-1 flex border-t border-gray-100">
             <router-view v-slot="{ Component }">
               <keep-alive :max="3">
                 <component :is="Component" />
@@ -24,7 +24,6 @@
 <script lang="tsx" setup>
 import { NSpin } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import {
   providePlanContext,
@@ -41,11 +40,9 @@ import { setDocumentTitle } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
-  planId?: string;
   issueId?: string;
 }>();
 
-const { t } = useI18n();
 const {
   isCreating,
   plan,
@@ -56,7 +53,7 @@ const {
   isInitializing,
 } = useInitializePlan(
   toRef(props, "projectId"),
-  toRef(props, "planId"),
+  undefined,
   toRef(props, "issueId")
 );
 const planBaseContext = useBasePlanContext({
@@ -67,7 +64,6 @@ const planBaseContext = useBasePlanContext({
 const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
-  // Ready when we have either an issue or a valid plan, and initialization is complete
   return (!!issue.value || !!plan.value) && !isInitializing.value;
 });
 
@@ -97,9 +93,7 @@ watch(
     () => project.value.title,
   ],
   () => {
-    if (isCreating.value) {
-      setDocumentTitle(t("plan.new-plan"), project.value.title);
-    } else if (ready.value) {
+    if (ready.value) {
       const entityTitle = issue.value?.title || plan.value?.title;
       if (entityTitle) {
         setDocumentTitle(entityTitle, project.value.title);
@@ -109,7 +103,6 @@ watch(
   { immediate: true }
 );
 
-// Set up navigation guards to check for unsaved changes
 const handleRouteNavigation = async (
   _to: unknown,
   _from: unknown,

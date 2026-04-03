@@ -101,7 +101,7 @@
 <script lang="ts" setup>
 import { PlayIcon, SkipForwardIcon, XIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NTooltip } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePlanContext } from "@/components/Plan/logic";
 import {
@@ -114,7 +114,10 @@ import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskAction } from "../../types";
 import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
-import { canRolloutTasks } from "./taskPermissions";
+import {
+  canRolloutTasks,
+  preloadRolloutPermissionContext,
+} from "./taskPermissions";
 
 const props = defineProps<{
   selectedTasks: Task[];
@@ -135,6 +138,20 @@ const currentUser = useCurrentUserV1();
 
 const showActionPanel = ref(false);
 const pendingAction = ref<TaskAction | null>(null);
+const rolloutPermissionReady = ref(false);
+
+watch(
+  () => props.allTasks.map((task) => task.name),
+  async () => {
+    rolloutPermissionReady.value = false;
+    await preloadRolloutPermissionContext(
+      props.allTasks,
+      props.stage.environment
+    );
+    rolloutPermissionReady.value = true;
+  },
+  { immediate: true }
+);
 
 const selectableTasks = computed(() => {
   return props.allTasks.filter(props.isTaskSelectable);
@@ -174,7 +191,12 @@ const getSelectAllTooltip = () => {
 };
 
 const canPerformTaskActions = computed(() => {
-  return canRolloutTasks(props.selectedTasks, issue.value);
+  if (!rolloutPermissionReady.value) return false;
+  return canRolloutTasks(
+    props.selectedTasks,
+    issue.value,
+    props.stage.environment
+  );
 });
 
 const hasRunnableTasks = computed(() => {
@@ -201,6 +223,9 @@ const hasCancellableTasks = computed(() => {
 const getBaseDisabledTooltip = (): string => {
   if (props.selectedTasks.length === 0) {
     return t("task.no-tasks-selected");
+  }
+  if (!rolloutPermissionReady.value) {
+    return "";
   }
   if (!canPerformTaskActions.value) {
     // Special message for data export issues when user is not the creator
@@ -245,6 +270,7 @@ const getCancelTooltip = () =>
 const isRunDisabled = computed(() => {
   return (
     props.selectedTasks.length === 0 ||
+    !rolloutPermissionReady.value ||
     !hasRunnableTasks.value ||
     !canPerformTaskActions.value
   );
@@ -253,6 +279,7 @@ const isRunDisabled = computed(() => {
 const isSkipDisabled = computed(() => {
   return (
     props.selectedTasks.length === 0 ||
+    !rolloutPermissionReady.value ||
     !hasSkippableTasks.value ||
     !canPerformTaskActions.value
   );
@@ -261,6 +288,7 @@ const isSkipDisabled = computed(() => {
 const isCancelDisabled = computed(() => {
   return (
     props.selectedTasks.length === 0 ||
+    !rolloutPermissionReady.value ||
     !hasCancellableTasks.value ||
     !canPerformTaskActions.value
   );

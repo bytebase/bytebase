@@ -253,8 +253,8 @@ github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35 h1:SjcZSrUMNj6GZq
 github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35/go.mod h1:jHdAD+tN3bO2Hazme0crgkNiHqkDR/3Igesy1chhjLA=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20260403030128-870fdbdfbf2e h1:Yj4aqHR9cyrC1K7FpTMrfIoIYoyvV+LJu00HrmZFWqE=
-github.com/bytebase/omni v0.0.0-20260403030128-870fdbdfbf2e/go.mod h1:7kUVQrivlkckALafCX5j4W3M95Cg9+Kw69ZukIHKXhQ=
+github.com/bytebase/omni v0.0.0-20260403085552-f9d38cd66ef2 h1:RB/wcXhT4xSY1lLAdTpGttsYnzDPAHnJEII65AIXht0=
+github.com/bytebase/omni v0.0.0-20260403085552-f9d38cd66ef2/go.mod h1:SBAYEmMjJhA9WujfrIVIq76UFmsvNDOa5CekPhFXIis=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50 h1:Kq5wlhZ586Rch39y/IQV9MnrEzHob4iiXBG6zrbvSMU=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
@@ -425,8 +425,8 @@ github.com/go-faster/errors v0.7.1 h1:MkJTnDoEdi9pDabt1dpWf7AA8/BaSYZqibYyhZ20AY
 github.com/go-faster/errors v0.7.1/go.mod h1:5ySTjWFiphBs07IKuiL69nxdfd5+fzh1u7FPGZP2quo=
 github.com/go-ini/ini v1.67.0 h1:z6ZrTEZqSWOTyH2FlglNbNgARyHG8oLW9gMELqKr06A=
 github.com/go-ini/ini v1.67.0/go.mod h1:ByCAeIL28uOIIG0E3PJtZPDL8WnHpFKFOtgjp+3Ies8=
-github.com/go-jose/go-jose/v4 v4.1.3 h1:CVLmWDhDVRa6Mi/IgCgaopNosCaHz7zrMeF9MlZRkrs=
-github.com/go-jose/go-jose/v4 v4.1.3/go.mod h1:x4oUasVrzR7071A4TnHLGSPpNOm2a21K9Kf04k1rs08=
+github.com/go-jose/go-jose/v4 v4.1.4 h1:moDMcTHmvE6Groj34emNPLs/qtYXRVcd6S7NHbHz3kA=
+github.com/go-jose/go-jose/v4 v4.1.4/go.mod h1:x4oUasVrzR7071A4TnHLGSPpNOm2a21K9Kf04k1rs08=
 github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vbaY=
 github.com/go-ldap/ldap/v3 v3.4.12 h1:1b81mv7MagXZ7+1r7cLTWmyuTqVqdwbtJSjC0DAp9s4=
 github.com/go-ldap/ldap/v3 v3.4.12/go.mod h1:+SPAGcTtOfmGsCb3h1RFiq4xpp4N636G75OEace8lNo=
@@ -999,6 +999,8 @@ github.com/testcontainers/testcontainers-go v0.41.0 h1:mfpsD0D36YgkxGj2LrIyxuwQ9
 github.com/testcontainers/testcontainers-go v0.41.0/go.mod h1:pdFrEIfaPl24zmBjerWTTYaY0M6UHsqA1YSvsoU40MI=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0 h1:z/1qHeliTLDKNaJ7uOHOx1FjwghbcbYfga4dTFkF0hU=
 github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0/go.mod h1:GaunAWwMXLtsMKG3xn2HYIBDbKddGArfcGsF2Aog81E=
+github.com/testcontainers/testcontainers-go/modules/mssql v0.41.0 h1:YAuSa+IMTn0nA6iNvSAFgJEeJsQWSghFWu0ubebWXJI=
+github.com/testcontainers/testcontainers-go/modules/mssql v0.41.0/go.mod h1:3leIIvry5kLZr8uxMIDX0iL2TRwVx2UDDSkGJGlpsvQ=
 github.com/testcontainers/testcontainers-go/modules/mysql v0.41.0 h1:5rwejaJr5nIfw8NK99eKPX7O6k27lnSMklTj5DbYybM=
 github.com/testcontainers/testcontainers-go/modules/mysql v0.41.0/go.mod h1:iMO/aFWnbjYkqHw8VPsJB3rVTOD9hKDsUtV0PvzD0DA=
 github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0 h1:AOtFXssrDlLm84A2sTTR/AhvJiYbrIuCO59d+Ro9Tb0=

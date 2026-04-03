@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-1">
-    <div class="flex items-center gap-x-1 textlabel">
+    <div class="flex items-center gap-x-1 textinfolabel">
       <span>{{ $t("issue.labels") }}</span>
       <RequiredStar v-if="project.forceIssueLabels" />
     </div>

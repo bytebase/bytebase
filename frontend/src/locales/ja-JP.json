@@ -53,22 +53,29 @@
     "canceled": "キャンセル",
     "rejected": "却下",
     "under-review": "レビュー中",
+    "in-review": "レビュー中",
     "approve": "承認する",
     "approved": "承認済み",
+    "done": "完了",
     "create": "作成する",
     "run": "実行",
     "retry": "リトライ",
     "skip": "飛び越える",
     "skipped": "スキップ",
+    "bypassed": "スキップ済み",
     "dismiss": "閉じる",
     "allow": "許可",
     "deny": "拒否",
+    "and": "と",
     "go-back": "戻る",
     "back": "戻る",
     "next": "次のステップ",
     "edit": "編集",
     "update": "更新する",
     "updated": "更新しました",
+    "deploying": "デプロイ中",
+    "in-progress": "進行中",
+    "not-started": "未開始",
     "visit": "アクセス",
     "role": {
       "self": "ロール"
@@ -258,6 +265,7 @@
     },
     "collapse": "閉じる",
     "show-more": "もっと見る",
+    "show-less": "表示を減らす",
     "n-more": "+{n} もっと",
     "remaining": "残り",
     "line": "行",
@@ -271,7 +279,9 @@
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
-    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain."
+    "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
+    "scope": "スコープ",
+    "classification-level": "分類レベル"
   },
   "error-page": {
     "forbidden": "アクセス禁止",
@@ -1112,8 +1122,6 @@
     "approval-flow": {
       "self": "承認の流れ"
     },
-    "force-rollout-hint": "手動でロールアウトを作成して、失敗したチェックをオーバーライドしてください。",
-    "checks-block-rollout-hint": "チェックの失敗によりロールアウトを作成できません。エラーを修正してから続行してください。",
     "checks-warning-hint": "このプランにはチェックエラーがあります。承認後、手動でロールアウトを作成する必要があります。",
     "risk-level": {
       "self": "リスクレベル",
@@ -1203,8 +1211,33 @@
     "run": "チェックを実行",
     "navigator": {
       "changes": "変更点",
+      "review": "レビュー",
+      "deploy": "デプロイ",
       "checks": "チェック",
       "statement-empty": "ステートメントが空です"
+    },
+    "phase": {
+      "review-description": "続行するにはレビューに提出してください",
+      "deploy-description": "レビューが承認され、チェックが通過すると利用可能になります",
+      "deploy-description-with-action": "レビューが承認され、チェックが通過すると利用可能になります。手動で進めるには{action}できます。",
+      "create-rollout-action": "ロールアウトを作成",
+      "show-details": "詳細を表示 ↓",
+      "hide-details": "詳細を非表示 ↑"
+    },
+    "summary": {
+      "n-changes": "{n} 件の変更",
+      "n-databases": "{n} 個のデータベース",
+      "n-database-groups": "{n} 個のデータベースグループ",
+      "n-passed": "{n} 件合格",
+      "n-warning": "{n} 件の警告",
+      "n-error": "{n} 件のエラー",
+      "n-of-m-approved": "{m} 件中 {n} 件承認済み",
+      "last-approved-by": "{name} が最後に承認",
+      "n-of-m-tasks": "{n}/{m} タスク"
+    },
+    "sidebar": {
+      "created-by-at": "{user} が作成 · {time}",
+      "future-sections-hint": "レビュー、ラベル、Issue リンクは送信後に表示されます"
     },
     "checks": {
       "self": "チェック",
@@ -1274,10 +1307,11 @@
     },
     "description": {
       "placeholder": "説明を追加"
-    }
+    },
+    "view-discussion": "ディスカッションを表示",
+    "go-to-plan-page": "プランページへ移動"
   },
   "rollout": {
-    "rollouts": "ロールアウト",
     "bypass-stage-requirements": "バイパス警告",
     "task-execution-errors": "タスク実行エラー",
     "stage": {
@@ -1971,7 +2005,14 @@
     "masking-exemption": {
       "self": "マスキング免除",
       "grant-exemption": "免除を付与",
-      "revoke-exemption-title": "{member} のエクスポートおよびクエリのマスキング免除を両方削除しますか？"
+      "revoke-exemption-title": "{member} のマスキング免除を削除しますか？",
+      "no-reason": "理由が提供されていません",
+      "no-exemptions": "マスキング免除はまだ付与されていません",
+      "expires-today": "本日期限切れ",
+      "expires-in-days": "{days} 日後に期限切れ",
+      "all-levels": "全レベル",
+      "n-exemptions": "{n} 件の免除",
+      "level": "レベル"
     },
     "batch": {
       "selected": "{count} 件のプロジェクトが選択されました | {count} 件のプロジェクトが選択されました",

@@ -203,7 +203,7 @@ type ListPlansRequest struct {
 	// - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
 	// - has_rollout: whether the plan has rollout, support "==" operator, the value should be "true" or "false".
 	// - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
-	// - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
+	// - title: the plan title, support "==" operator for exact match and ".contains()" operator for case-insensitive substring match.
 	// - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
 	// - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
 	//
@@ -211,7 +211,7 @@ type ListPlansRequest struct {
 	// creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
 	// has_rollout == false && has_issue == true
 	// title == "My Plan"
-	// title.matches("database migration")
+	// title.contains("database migration")
 	// spec_type == "change_database_config"
 	// state == "ACTIVE"
 	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`

@@ -8,8 +8,8 @@
             class="relative px-4 py-2 transition-all border rounded-t-lg cursor-pointer"
             :class="[
               selectedStageId === stage.name
-                ? 'bg-gray-50 border-gray-200 border-b-transparent'
-                : 'bg-white hover:bg-gray-50 border-transparent border-b-gray-200',
+                ? 'bg-white border-gray-200 border-b-transparent'
+                : 'hover:bg-gray-50 border-transparent border-b-gray-200',
             ]"
             @click="$emit('select-stage', stage)"
           >

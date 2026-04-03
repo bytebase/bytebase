@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col gap-y-3 py-3">
-    <h3 class="text-base">{{ $t("plan.options.self") }}</h3>
-    <div v-if="shouldShow" class="flex flex-col gap-y-3">
-      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
+  <div class="flex flex-col gap-y-2">
+    <h3 class="textlabel uppercase">{{ $t("plan.options.self") }}</h3>
+    <div v-if="shouldShow" class="flex flex-wrap gap-x-6 gap-y-2">
       <TransactionModeSection v-if="shouldShowTransactionModeSection" />
-      <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
-      <GhostSection v-if="shouldShowGhostSection" />
       <PreBackupSection v-if="shouldShowPreBackupSection" />
+      <GhostSection v-if="shouldShowGhostSection" />
+      <IsolationLevelSection v-if="shouldShowIsolationLevelSection" />
+      <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
     </div>
     <div v-else class="text-sm text-control-light">
       {{ $t("plan.options.no-options-available") }}

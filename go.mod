@@ -34,7 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260324061529-f15b9a5add35
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260403030128-870fdbdfbf2e
+	github.com/bytebase/omni v0.0.0-20260403085552-f9d38cd66ef2
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -45,7 +45,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/github/gh-ost v1.1.7
 	github.com/go-ego/gse v1.0.1
-	github.com/go-jose/go-jose/v4 v4.1.3
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-ldap/ldap/v3 v3.4.12
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
