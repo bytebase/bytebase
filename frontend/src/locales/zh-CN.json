@@ -280,7 +280,7 @@
     "confirm-delete": "确定删除资源？",
     "archive-description": "将「{name}」标记为已归档且只读。",
     "delete-resource-description": "删除「{name}」后将无法恢复，请确认。",
-"scope": "范围",
+    "scope": "范围",
     "classification-level": "分类等级",
     "is-required": "is required"
   },

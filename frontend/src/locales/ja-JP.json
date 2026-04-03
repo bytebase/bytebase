@@ -280,7 +280,7 @@
     "confirm-delete": "Delete Resource?",
     "archive-description": "Mark \"{name}\" as archived and read-only.",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
-"scope": "スコープ",
+    "scope": "スコープ",
     "classification-level": "分類レベル",
     "is-required": "is required"
   },
