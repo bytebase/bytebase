@@ -67,7 +67,7 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.matches("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.contains("x"), instance == "instances/x", project == "projects/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -89,9 +89,9 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 		}
 
 		match := true
-		// Check name.matches("x") — substring match
-		if idx := strings.Index(filter, `name.matches(`); idx >= 0 {
-			start := idx + len(`name.matches("`)
+		// Check name.contains("x") — substring match
+		if idx := strings.Index(filter, `name.contains(`); idx >= 0 {
+			start := idx + len(`name.contains("`)
 			end := strings.Index(filter[start:], `"`)
 			if end > 0 {
 				substr := filter[start : start+end]

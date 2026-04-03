@@ -158,8 +158,8 @@ type dataSource struct {
 
 // buildDatabaseFilter builds a CEL filter expression for ListDatabases.
 func buildDatabaseFilter(input QueryInput) string {
-	// name.matches does substring matching server-side.
-	filter := fmt.Sprintf("name.matches(%q)", input.Database)
+	// name.contains does substring matching server-side.
+	filter := fmt.Sprintf("name.contains(%q)", input.Database)
 	if input.Instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", "instances/"+input.Instance)
 	}

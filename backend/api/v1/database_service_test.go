@@ -39,12 +39,8 @@ func TestListDatabaseFilter(t *testing.T) {
 			wantArgs: []any{"%employee%"},
 		},
 		{
-			input: `table.contains("user")`,
-			wantSQL: `(EXISTS (
-						SELECT 1
-						FROM json_array_elements(ds.metadata->'schemas') AS s,
-							json_array_elements(s->'tables') AS t
-						WHERE t->>'name' LIKE $1))`,
+			input:    `table.contains("user")`,
+			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1))",
 			wantArgs: []any{"%user%"},
 		},
 		{
