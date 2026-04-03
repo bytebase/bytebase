@@ -692,15 +692,50 @@ function GroupTable({
   memberCacheRef.current = memberCache;
   const loadingRef = useRef<Set<string>>(new Set());
 
+  const fetchGroupMembers = useCallback(
+    (group: Group) => {
+      if (loadingRef.current.has(group.name)) return;
+      loadingRef.current.add(group.name);
+      const memberNames = group.members.map((m) => m.member);
+      userStore
+        .batchGetOrFetchUsers(memberNames)
+        .then((users) => {
+          setMemberCache((prev) => {
+            const next = new Map(prev);
+            next.set(
+              group.name,
+              users.filter((u): u is User => !!u)
+            );
+            return next;
+          });
+        })
+        .catch(() => {
+          // Allow retry on next expand
+        })
+        .finally(() => {
+          loadingRef.current.delete(group.name);
+        });
+    },
+    [userStore]
+  );
+
   // Invalidate member cache when groups data changes (e.g. after editing membership)
+  // and refetch members for currently expanded groups
   const prevGroupsRef = useRef(groups);
   useEffect(() => {
     if (prevGroupsRef.current !== groups) {
       prevGroupsRef.current = groups;
       setMemberCache(new Map());
       loadingRef.current = new Set();
+      // Refetch members for currently expanded groups
+      for (const groupName of expandedGroups) {
+        const group = groups.find((g) => g.name === groupName);
+        if (group) {
+          fetchGroupMembers(group);
+        }
+      }
     }
-  }, [groups]);
+  }, [groups, expandedGroups, fetchGroupMembers]);
 
   const toggleExpand = useCallback(
     (group: Group) => {
@@ -714,27 +749,12 @@ function GroupTable({
         return next;
       });
 
-      // Fetch members if not cached (use ref to avoid recreating callback on cache updates)
-      if (
-        !memberCacheRef.current.has(group.name) &&
-        !loadingRef.current.has(group.name)
-      ) {
-        loadingRef.current.add(group.name);
-        const memberNames = group.members.map((m) => m.member);
-        userStore.batchGetOrFetchUsers(memberNames).then((users) => {
-          loadingRef.current.delete(group.name);
-          setMemberCache((prev) => {
-            const next = new Map(prev);
-            next.set(
-              group.name,
-              users.filter((u): u is User => !!u)
-            );
-            return next;
-          });
-        });
+      // Fetch members if not cached
+      if (!memberCacheRef.current.has(group.name)) {
+        fetchGroupMembers(group);
       }
     },
-    [userStore]
+    [fetchGroupMembers]
   );
 
   const isGroupOwner = useCallback(
@@ -1621,8 +1641,13 @@ function CreateGroupDrawer({
   const fullEmail = useMemo(() => {
     if (isEditMode) return email;
     if (!email) return "";
-    if (email.includes("@")) return email;
-    return domainSuffix ? `${email}${domainSuffix}` : email;
+    // When workspace domain is configured, enforce it by stripping any
+    // user-entered domain and appending the workspace domain suffix.
+    if (domainSuffix) {
+      const localPart = email.split("@")[0];
+      return `${localPart}${domainSuffix}`;
+    }
+    return email;
   }, [email, isEditMode, domainSuffix]);
 
   const errorMessage = useMemo(() => {
@@ -2856,12 +2881,17 @@ export function UsersPage() {
     const name = params.get("name");
     if (name && name.startsWith("groups/")) {
       setTab("GROUPS");
-      groupStore.getOrFetchGroupByIdentifier(name).then((group) => {
-        if (group) {
-          setEditingGroup(group);
-          setShowCreateGroupDrawer(true);
-        }
-      });
+      groupStore
+        .getOrFetchGroupByIdentifier(name)
+        .then((group) => {
+          if (group) {
+            setEditingGroup(group);
+            setShowCreateGroupDrawer(true);
+          }
+        })
+        .catch(() => {
+          // Group not found or fetch failed — silently ignore
+        });
     }
   }, []); // mount-only: read query param once
   // Sync tab ↔ URL hash (bidirectional)
