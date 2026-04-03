@@ -167,15 +167,15 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector/";
 import IssueLabelSelector from "@/components/IssueV1/components/IssueLabelSelector.vue";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { MonacoEditor } from "@/components/MonacoEditor";
-import { createEmptyLocalSheet } from "@/components/Plan/logic";
-import DatabaseGroupTargetDisplay from "@/components/Plan/components/SpecDetailView/DatabaseGroupTargetDisplay.vue";
+import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import ExportFormatSelector from "@/components/Plan/components/ExportOption/ExportFormatSelector.vue";
 import ExportPasswordInputer from "@/components/Plan/components/ExportOption/ExportPasswordInputer.vue";
 import LimitsSection from "@/components/Plan/components/IssueReviewView/DatabaseExportView/LimitsSection.vue";
-import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import DatabaseGroupTargetDisplay from "@/components/Plan/components/SpecDetailView/DatabaseGroupTargetDisplay.vue";
+import { createEmptyLocalSheet } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
-import MarkdownEditor from "@/components/MarkdownEditor";
 import { DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -187,10 +187,7 @@ import {
   useProjectByName,
   useSheetV1Store,
 } from "@/store";
-import {
-  isValidDatabaseGroupName,
-  isValidDatabaseName,
-} from "@/types";
+import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import { Issue_Type, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -207,10 +204,7 @@ import {
   generatePlanTitle,
   setSheetStatement,
 } from "@/utils";
-import {
-  normalizeDataExportPrepSeed,
-  type DataExportPrepSeed,
-} from "./types";
+import { type DataExportPrepSeed, normalizeDataExportPrepSeed } from "./types";
 
 type LocalState = {
   step: 1 | 2;
@@ -310,7 +304,10 @@ watch(
   (signature) => {
     if (!signature) return;
     if (state.titleEdited && state.title.trim()) return;
-    state.title = generatePlanTitle("bb.plan.export-data", targetTitleNames.value);
+    state.title = generatePlanTitle(
+      "bb.plan.export-data",
+      targetTitleNames.value
+    );
   },
   { immediate: true }
 );
@@ -356,7 +353,10 @@ const handleCreate = async () => {
   try {
     const sheet = createEmptyLocalSheet();
     setSheetStatement(sheet, state.statement);
-    const createdSheet = await sheetStore.createSheet(project.value.name, sheet);
+    const createdSheet = await sheetStore.createSheet(
+      project.value.name,
+      sheet
+    );
 
     const spec = create(Plan_SpecSchema, {
       id: crypto.randomUUID(),

@@ -36,11 +36,7 @@
 import { NSpin } from "naive-ui";
 import { computed, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  onBeforeRouteLeave,
-  onBeforeRouteUpdate,
-  useRouter,
-} from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from "vue-router";
 import {
   providePlanContext,
   useBasePlanContext,

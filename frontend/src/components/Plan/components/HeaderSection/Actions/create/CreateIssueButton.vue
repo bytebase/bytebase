@@ -92,10 +92,7 @@ import {
   ErrorList,
   useSpecsValidation,
 } from "@/components/Plan/components/common";
-import {
-  usePlanCheckStatus,
-  usePlanContext,
-} from "@/components/Plan/logic";
+import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { issueServiceClientConnect } from "@/connect";
 import {

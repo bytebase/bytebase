@@ -92,10 +92,7 @@ import {
   useCurrentUserV1,
   useSheetV1Store,
 } from "@/store";
-import {
-  Issue_Type,
-  IssueSchema,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   CreatePlanRequestSchema,
   type Plan_ChangeDatabaseConfig,
@@ -135,9 +132,7 @@ const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 const isDataExportPlan = computed(() => {
   return (
     plan.value.specs.length > 0 &&
-    plan.value.specs.every(
-      (spec) => spec.config?.case === "exportDataConfig"
-    )
+    plan.value.specs.every((spec) => spec.config?.case === "exportDataConfig")
   );
 });
 
