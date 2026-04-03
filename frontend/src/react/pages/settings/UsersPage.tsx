@@ -1,4 +1,7 @@
-import { ChevronDown, ChevronRight, Eye, Pencil, Plus, Search, Settings, Trash2, Undo2, Users } from "lucide-react";
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { isEqual } from "lodash-es";
+import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, EyeOff, Pencil, Plus, Search, Settings, Trash2, Undo2, Users, X } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -30,21 +33,28 @@ import {
   useActuatorV1Store,
   useCurrentUserV1,
   useGroupStore,
+  useRoleStore,
   useServiceAccountStore,
   useSettingV1Store,
   useSubscriptionV1Store,
   useUserStore,
   useWorkloadIdentityStore,
+  useWorkspaceV1Store,
 } from "@/store";
 import { extractUserEmail, getUserFullNameByType } from "@/store/modules/v1/common";
-import { AccountType, getAccountTypeByEmail } from "@/types";
+import { AccountType, getAccountTypeByEmail, getUserEmailInBinding } from "@/types";
+import { PresetRoleType } from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
+import {
+  UpdateUserRequestSchema,
+  UserSchema,
+} from "@/types/proto-es/v1/user_service_pb";
+import { displayRoleTitle, hasWorkspacePermissionV2 } from "@/utils";
 import { getDefaultPagination } from "@/utils/pagination";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 // ============================================================
 // usePagedData hook
@@ -244,10 +254,12 @@ function UserTable({
   users,
   onUserUpdated,
   onUserRemoved,
+  onUserSelected,
 }: {
   users: User[];
   onUserUpdated: (user: User) => void;
   onUserRemoved: (user: User) => void;
+  onUserSelected?: (user: User) => void;
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
@@ -322,7 +334,12 @@ function UserTable({
   };
 
   const handleView = (user: User) => {
-    window.location.href = `/users/${user.email}`;
+    const accountType = getAccountTypeByEmail(user.email);
+    if (accountType === AccountType.USER && onUserSelected) {
+      onUserSelected(user);
+    } else {
+      window.location.href = `/users/${user.email}`;
+    }
   };
 
   const getDeletePermission = (accountType: AccountType) => {
@@ -816,6 +833,440 @@ function GroupRow({
 }
 
 // ============================================================
+// Escape key stack
+// ============================================================
+
+const escapeStack: (() => void)[] = [];
+
+function useEscapeKey(onEscape: () => void) {
+  useEffect(() => {
+    escapeStack.push(onEscape);
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.key === "Escape" &&
+        escapeStack[escapeStack.length - 1] === onEscape
+      ) {
+        onEscape();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      const idx = escapeStack.lastIndexOf(onEscape);
+      if (idx >= 0) escapeStack.splice(idx, 1);
+    };
+  }, [onEscape]);
+}
+
+// ============================================================
+// CreateUserDrawer
+// ============================================================
+
+function extractUserTitle(email: string): string {
+  const atIndex = email.indexOf("@");
+  return atIndex !== -1 ? email.substring(0, atIndex) : email;
+}
+
+function CreateUserDrawer({
+  user,
+  onClose,
+  onCreated,
+  onUpdated,
+}: {
+  user: User | undefined;
+  onClose: () => void;
+  onCreated: (user: User) => void;
+  onUpdated: (user: User) => void;
+}) {
+  const { t } = useTranslation();
+  const userStore = useUserStore();
+  const workspaceStore = useWorkspaceV1Store();
+  const roleStore = useRoleStore();
+  const settingV1Store = useSettingV1Store();
+
+  const roleList = useVueState(() => roleStore.roleList);
+  const userMapToRoles = useVueState(() => workspaceStore.userMapToRoles);
+  const passwordRestriction = useVueState(
+    () => settingV1Store.workspaceProfile.passwordRestriction
+  );
+
+  const isEditMode =
+    !!user && user.name !== "" && !user.name.endsWith("/unknown");
+
+  const allowUpdate = !isEditMode || hasWorkspacePermissionV2("bb.users.update");
+
+  const initialRoles = useMemo(() => {
+    if (!user || !isEditMode) {
+      return [PresetRoleType.WORKSPACE_MEMBER];
+    }
+    const roles = userMapToRoles.get(getUserFullNameByType(user));
+    return roles ? [...roles] : [];
+  }, [user, isEditMode, userMapToRoles]);
+
+  const [title, setTitle] = useState(user?.title ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [roles, setRoles] = useState<string[]>(initialRoles);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEscapeKey(onClose);
+
+  // Password validation
+  const passwordChecks = useMemo(() => {
+    const minLength = passwordRestriction?.minLength ?? 8;
+    const checks: { text: string; matched: boolean }[] = [
+      {
+        text: t(
+          "settings.general.workspace.password-restriction.min-length",
+          { min: minLength }
+        ),
+        matched: password.length >= minLength,
+      },
+    ];
+    if (passwordRestriction?.requireNumber) {
+      checks.push({
+        text: t(
+          "settings.general.workspace.password-restriction.require-number"
+        ),
+        matched: /[0-9]+/.test(password),
+      });
+    }
+    if (passwordRestriction?.requireUppercaseLetter) {
+      checks.push({
+        text: t(
+          "settings.general.workspace.password-restriction.require-uppercase-letter"
+        ),
+        matched: /[A-Z]+/.test(password),
+      });
+    } else if (passwordRestriction?.requireLetter) {
+      checks.push({
+        text: t(
+          "settings.general.workspace.password-restriction.require-letter"
+        ),
+        matched: /[a-zA-Z]+/.test(password),
+      });
+    }
+    if (passwordRestriction?.requireSpecialCharacter) {
+      checks.push({
+        text: t(
+          "settings.general.workspace.password-restriction.require-special-character"
+        ),
+        matched: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(password),
+      });
+    }
+    return checks;
+  }, [password, passwordRestriction, t]);
+
+  const passwordHint = password.length > 0 && passwordChecks.some((c) => !c.matched);
+  const passwordMismatch =
+    password.length > 0 && password !== passwordConfirm;
+
+  const allowConfirm =
+    email.length > 0 && !passwordHint && !passwordMismatch;
+
+  const hasPermission = hasWorkspacePermissionV2(
+    isEditMode ? "bb.users.update" : "bb.users.create"
+  );
+
+  const handleRoleToggle = (roleName: string) => {
+    setRoles((prev) =>
+      prev.includes(roleName)
+        ? prev.filter((r) => r !== roleName)
+        : [...prev, roleName]
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (!allowConfirm || !hasPermission) return;
+    setIsRequesting(true);
+    try {
+      if (isEditMode) {
+        await handleUpdate();
+      } else {
+        await handleCreate();
+      }
+    } catch {
+      // error shown by store
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    const createdUser = await userStore.createUser({
+      ...create(UserSchema, {}),
+      title: title || extractUserTitle(email),
+      email,
+      phone,
+      password,
+    });
+    if (roles.length > 0) {
+      await workspaceStore.patchIamPolicy([
+        {
+          member: getUserEmailInBinding(createdUser.email),
+          roles,
+        },
+      ]);
+    }
+    onCreated(createdUser);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.created"),
+    });
+    onClose();
+  };
+
+  const handleUpdate = async () => {
+    if (!user) return;
+
+    const updateMask: string[] = [];
+    const payload = create(UserSchema, {
+      ...user,
+      title,
+      phone,
+      password,
+    });
+    if (title !== user.title) updateMask.push("title");
+    if (phone !== user.phone) updateMask.push("phone");
+    if (password) updateMask.push("password");
+
+    let updatedUser: User = user;
+
+    if (updateMask.length > 0) {
+      updatedUser = await userStore.updateUser(
+        create(UpdateUserRequestSchema, {
+          user: payload,
+          updateMask: create(FieldMaskSchema, { paths: updateMask }),
+        })
+      );
+    }
+
+    if (!isEqual([...initialRoles].sort(), [...roles].sort())) {
+      await workspaceStore.patchIamPolicy([
+        {
+          member: getUserEmailInBinding(updatedUser.email),
+          roles,
+        },
+      ]);
+    }
+
+    onUpdated(updatedUser);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-lg font-medium">
+            {isEditMode
+              ? t("settings.members.update-user")
+              : t("settings.members.add-user")}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto px-6 py-6">
+          <div className="flex flex-col gap-y-6">
+            {/* Name */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("common.name")}
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Foo"
+                maxLength={200}
+                disabled={!allowUpdate}
+              />
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col gap-y-2">
+              <label className="block text-sm font-medium text-control">
+                {t("common.email")}
+                <span className="ml-0.5 text-error">*</span>
+              </label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isEditMode}
+              />
+            </div>
+
+            {/* Roles */}
+            {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
+              <div className="flex flex-col gap-y-2">
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.members.table.roles")}
+                </label>
+                <div className="border rounded-sm max-h-48 overflow-auto p-2 flex flex-col gap-y-1">
+                  {roleList.map((role) => (
+                    <label
+                      key={role.name}
+                      className="flex items-center gap-x-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={roles.includes(role.name)}
+                        onChange={() => handleRoleToggle(role.name)}
+                      />
+                      {displayRoleTitle(role.name)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Phone */}
+            <div className="flex flex-col gap-y-2">
+              <div>
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.profile.phone")}
+                </label>
+                <span className="textinfolabel text-sm">
+                  {t("settings.profile.phone-tips")}
+                </span>
+              </div>
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="new-password"
+                disabled={!allowUpdate}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="flex flex-col gap-y-6">
+              <div>
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.profile.password")}
+                  <span className="ml-0.5 text-error">*</span>
+                </label>
+                <span
+                  className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+                >
+                  {t("settings.profile.password-hint")}
+                  <Tooltip
+                    content={
+                      <ul className="list-none text-sm">
+                        {passwordChecks.map((check, i) => (
+                          <li key={i} className="flex gap-x-1 items-center">
+                            {check.matched ? (
+                              <CircleCheck className="w-4 text-green-400" />
+                            ) : (
+                              <CircleAlert className="w-4 text-red-400" />
+                            )}
+                            {check.text}
+                          </li>
+                        ))}
+                      </ul>
+                    }
+                  >
+                    <CircleAlert className="w-4 cursor-help" />
+                  </Tooltip>
+                </span>
+                <div className="mt-1 relative flex items-center">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder={t("common.sensitive-placeholder")}
+                    disabled={!allowUpdate}
+                    className={passwordHint ? "border-error" : ""}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <EyeOff className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.profile.password-confirm")}
+                  <span className="ml-0.5 text-error">*</span>
+                </label>
+                <div className="mt-1 relative flex items-center">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder={t(
+                      "settings.profile.password-confirm-placeholder"
+                    )}
+                    disabled={!allowUpdate}
+                    className={passwordMismatch ? "border-error" : ""}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <Eye className="w-4 h-4" />
+                    ) : (
+                      <EyeOff className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                {passwordMismatch && (
+                  <span className="text-error text-sm mt-1 pl-1">
+                    {t("settings.profile.password-mismatch")}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!allowConfirm || !hasPermission || isRequesting}
+            onClick={handleSubmit}
+          >
+            {isEditMode ? t("common.update") : t("common.confirm")}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ============================================================
 // UsersPage (main)
 // ============================================================
 
@@ -857,9 +1308,9 @@ export function UsersPage() {
   const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false);
   const [_showAadSyncDrawer, _setShowAadSyncDrawer] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
+  const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
   // Suppress unused warnings for drawers not yet implemented
-  void showCreateUserDrawer;
   void showCreateGroupDrawer;
   void editingGroup;
 
@@ -1050,7 +1501,12 @@ export function UsersPage() {
                   />
                   {t("settings.members.entra-sync.self")}
                 </Button>
-                <Button onClick={() => setShowCreateUserDrawer(true)}>
+                <Button
+                  onClick={() => {
+                    setEditingUser(create(UserSchema, { title: "" }));
+                    setShowCreateUserDrawer(true);
+                  }}
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   {t("settings.members.add-user")}
                 </Button>
@@ -1135,6 +1591,10 @@ export function UsersPage() {
                     users={activeUsers.dataList}
                     onUserUpdated={handleActiveUserUpdated}
                     onUserRemoved={handleActiveUserRemoved}
+                    onUserSelected={(user) => {
+                      setEditingUser(user);
+                      setShowCreateUserDrawer(true);
+                    }}
                   />
                   <PagedTableFooter
                     pageSize={activeUsers.pageSize}
@@ -1187,6 +1647,10 @@ export function UsersPage() {
                         users={inactiveUsers.dataList}
                         onUserUpdated={handleInactiveUserUpdated}
                         onUserRemoved={handleInactiveUserRemoved}
+                        onUserSelected={(user) => {
+                          setEditingUser(user);
+                          setShowCreateUserDrawer(true);
+                        }}
                       />
                       <PagedTableFooter
                         pageSize={inactiveUsers.pageSize}
@@ -1239,6 +1703,26 @@ export function UsersPage() {
           </div>
         </TabsPanel>
       </Tabs>
+
+      {showCreateUserDrawer && (
+        <CreateUserDrawer
+          user={editingUser}
+          onClose={() => {
+            setShowCreateUserDrawer(false);
+            setEditingUser(undefined);
+          }}
+          onCreated={(user) => {
+            activeUsers.updateCache([user]);
+          }}
+          onUpdated={(user) => {
+            activeUsers.updateCache([user]);
+            if (user.state === State.DELETED) {
+              activeUsers.removeCache(user);
+              inactiveUsers.updateCache([user]);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
