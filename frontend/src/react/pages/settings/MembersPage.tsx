@@ -31,7 +31,6 @@ import {
   useWorkspaceV1Store,
 } from "@/store";
 import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
-import { PresetRoleType } from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
@@ -393,7 +392,7 @@ function EditMemberRoleDrawer({
 
   const [memberInput, setMemberInput] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>(() =>
-    member ? [...member.workspaceLevelRoles] : [PresetRoleType.WORKSPACE_MEMBER]
+    member ? [...member.workspaceLevelRoles] : []
   );
   const [isRequesting, setIsRequesting] = useState(false);
 
