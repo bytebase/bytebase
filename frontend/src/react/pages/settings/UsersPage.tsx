@@ -2520,11 +2520,17 @@ function EditMemberRoleDrawer({
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
-        const memberList = emails.map((email) => {
-          if (email.startsWith("group:") || email.startsWith("user:")) {
-            return email;
+        const KNOWN_PREFIXES = [
+          "user:",
+          "group:",
+          "serviceAccount:",
+          "workloadIdentity:",
+        ];
+        const memberList = emails.map((input) => {
+          if (KNOWN_PREFIXES.some((p) => input.startsWith(p))) {
+            return input;
           }
-          return `${userBindingPrefix}${email}`;
+          return `${userBindingPrefix}${input}`;
         });
         const batchPatch = memberList.map((m) => {
           const existedRoles = workspaceStore.findRolesByMember(m);
@@ -2975,6 +2981,7 @@ export function UsersPage() {
                   {t("settings.members.entra-sync.self")}
                 </Button>
                 <Button
+                  disabled={!hasWorkspacePermissionV2("bb.users.create")}
                   onClick={() => {
                     setEditingUser(create(UserSchema, { title: "" }));
                     setShowCreateUserDrawer(true);
@@ -3033,7 +3040,10 @@ export function UsersPage() {
                   </Tooltip>
                 ) : (
                   <Button
-                    disabled={!hasUserGroupFeature}
+                    disabled={
+                      !hasUserGroupFeature ||
+                      !hasWorkspacePermissionV2("bb.groups.create")
+                    }
                     onClick={() => {
                       setEditingGroup(undefined);
                       setShowCreateGroupDrawer(true);
