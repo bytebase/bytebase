@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
+import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
@@ -91,6 +91,39 @@ function ServiceAccountTable({
     }
   };
 
+  const [resetConfirmUser, setResetConfirmUser] = useState<User | undefined>();
+
+  const handleResetKey = async (user: User) => {
+    setResetConfirmUser(undefined);
+    try {
+      const sa = await serviceAccountStore.updateServiceAccount(
+        { name: ensureServiceAccountFullName(user.email) },
+        create(FieldMaskSchema, { paths: ["service_key"] })
+      );
+      const updated = serviceAccountToUser(sa);
+      onUserUpdated(updated);
+      if (updated.serviceKey) {
+        await navigator.clipboard.writeText(updated.serviceKey);
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("settings.members.service-key-copied"),
+        });
+      }
+    } catch {
+      // error shown by store
+    }
+  };
+
+  const handleCopyKey = async (key: string) => {
+    await navigator.clipboard.writeText(key);
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("settings.members.service-key-copied"),
+    });
+  };
+
   if (users.length === 0) {
     return (
       <div className="py-8 text-center text-control-light text-sm">
@@ -143,6 +176,71 @@ function ServiceAccountTable({
                       <span className="textinfolabel text-xs">
                         {user.email}
                       </span>
+                      {!isDeleted && (
+                        <div className="flex items-center gap-x-1 mt-1">
+                          {user.serviceKey ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyKey(user.serviceKey);
+                              }}
+                            >
+                              <Copy className="h-3 w-3 mr-1" />
+                              {t("settings.members.copy-service-key")}
+                            </Button>
+                          ) : (
+                            <>
+                              {resetConfirmUser?.name === user.name ? (
+                                <div className="flex items-center gap-x-1">
+                                  <span className="text-xs text-error">
+                                    {t(
+                                      "settings.members.reset-service-key-alert"
+                                    )}
+                                  </span>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="h-6 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleResetKey(user);
+                                    }}
+                                  >
+                                    {t("common.confirm")}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setResetConfirmUser(undefined);
+                                    }}
+                                  >
+                                    {t("common.cancel")}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setResetConfirmUser(user);
+                                  }}
+                                >
+                                  <KeyRound className="h-3 w-3 mr-1" />
+                                  {t("settings.members.reset-service-key")}
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>
