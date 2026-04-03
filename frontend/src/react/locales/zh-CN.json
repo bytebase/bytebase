@@ -653,7 +653,6 @@
           "title": "名称"
         },
         "n-members": "{{n}} 位成员",
-        "self": "群组",
         "update-group": "更新组",
         "workspace-domain-required": "请先设置工作空间的域名。"
       },

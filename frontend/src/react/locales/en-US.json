@@ -653,7 +653,6 @@
           "title": "Title"
         },
         "n-members": "{{n}} members",
-        "self": "Groups",
         "update-group": "Update Group",
         "workspace-domain-required": "Please set a workspace domain first."
       },

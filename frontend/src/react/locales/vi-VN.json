@@ -653,7 +653,6 @@
           "title": "Tiêu đề"
         },
         "n-members": "{{n}} thành viên",
-        "self": "Nhóm",
         "update-group": "Cập nhật nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },

@@ -653,7 +653,6 @@
           "title": "Título"
         },
         "n-members": "{{n}} miembros",
-        "self": "Grupos",
         "update-group": "Grupo de actualización",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },

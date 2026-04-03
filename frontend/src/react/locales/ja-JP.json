@@ -653,7 +653,6 @@
           "title": "タイトル"
         },
         "n-members": "{{n}} 人のメンバー",
-        "self": "グループ",
         "update-group": "更新グループ",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
