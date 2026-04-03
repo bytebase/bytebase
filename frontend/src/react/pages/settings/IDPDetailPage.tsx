@@ -1493,9 +1493,7 @@ export function IDPDetailPage() {
         {/* General Section */}
         <div className="pb-6 lg:flex">
           <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("common.general")}
-            </h1>
+            <h1 className="text-2xl font-bold">{t("common.general")}</h1>
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
             <div>
