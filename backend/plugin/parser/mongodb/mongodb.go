@@ -3,7 +3,7 @@ package mongodb
 import (
 	"unicode/utf8"
 
-	mongo "github.com/bytebase/omni/mongo"
+	"github.com/bytebase/omni/mongo"
 	"github.com/bytebase/omni/mongo/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

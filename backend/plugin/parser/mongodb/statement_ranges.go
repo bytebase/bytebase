@@ -19,7 +19,7 @@ func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, stateme
 	stmts, err := ParseMongoShell(statement)
 	if err != nil {
 		// Return empty ranges on parse error (same behavior as before).
-		return []base.Range{}, nil
+		return nil, nil //nolint:nilerr
 	}
 
 	// Build byte offset to LSP position mapping.
