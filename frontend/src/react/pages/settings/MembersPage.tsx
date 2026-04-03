@@ -34,7 +34,7 @@ import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
-import { RoleMultiSelect } from "./UsersPage";
+import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 
 // ============================================================
 // MemberTable (view by members)
