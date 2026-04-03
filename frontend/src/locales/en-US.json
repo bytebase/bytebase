@@ -279,10 +279,10 @@
     "apply-to-database": "Apply to database",
     "unlimited": "Unlimited",
     "unknown": "Unknown",
-    "classification-level": "Classification Level",
-    "is-required": "is required",
     "scope": "Scope",
-    "copy-failed": "Copy failed"
+    "classification-level": "Classification Level",
+    "copy-failed": "Copy failed",
+    "is-required": "is required"
   },
   "error-page": {
     "forbidden": "Forbidden",

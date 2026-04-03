@@ -282,8 +282,8 @@
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "scope": "Phạm vi",
     "classification-level": "Cấp phân loại",
-    "is-required": "is required",
-    "copy-failed": "Copy failed"
+    "copy-failed": "Copy failed",
+    "is-required": "is required"
   },
   "error-page": {
     "forbidden": "Bị cấm",
