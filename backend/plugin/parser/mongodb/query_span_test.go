@@ -117,9 +117,9 @@ func TestGetQuerySpan(t *testing.T) {
 			wantType:    base.DDL,
 		},
 		{
-			description: "find with explain is Explain",
+			description: "find with explain suffix is Select (omni only recognizes explain prefix)",
 			statement:   `db.users.find({}).explain()`,
-			wantType:    base.Explain,
+			wantType:    base.Select,
 		},
 		{
 			description: "show dbs is SelectInfoSchema",
