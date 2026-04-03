@@ -81,6 +81,7 @@ import {
   ALL_USERS_USER_EMAIL,
   getAccountTypeByEmail,
   getUserEmailInBinding,
+  UNKNOWN_USER_NAME,
   userBindingPrefix,
 } from "@/types";
 import {
@@ -1775,14 +1776,22 @@ function CreateGroupDrawer({
 
       // In self-hosted mode, verify all members exist via backend lookup
       if (!isSaaSMode) {
-        const memberNames = normalizedMembers.map((m) => m.member);
-        const resolved = await userStore.batchGetOrFetchUsers(memberNames);
-        const notFound = memberNames.filter((name, i) => !resolved[i]);
+        const notFound: string[] = [];
+        for (const m of normalizedMembers) {
+          const user = await userStore.getOrFetchUserByIdentifier({
+            identifier: m.member,
+            silent: true,
+            fallback: false,
+          });
+          if (!user || user.name === UNKNOWN_USER_NAME) {
+            notFound.push(m.member.replace("users/", ""));
+          }
+        }
         if (notFound.length > 0) {
           pushNotification({
             module: "bytebase",
             style: "WARN",
-            title: `User not found: ${notFound.map((n) => n.replace("users/", "")).join(", ")}`,
+            title: `User not found: ${notFound.join(", ")}`,
           });
           setIsRequesting(false);
           return;
@@ -3286,15 +3295,17 @@ export function UsersPage() {
                 )}
               </ComponentPermissionGuard>
 
-              {/* Inactive users toggle */}
-              <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showInactiveUsers}
-                  onChange={(e) => setShowInactiveUsers(e.target.checked)}
-                />
-                {t("settings.members.show-inactive")}
-              </label>
+              {/* Inactive users toggle (only shown with list permission) */}
+              {hasUserListPermission && (
+                <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showInactiveUsers}
+                    onChange={(e) => setShowInactiveUsers(e.target.checked)}
+                  />
+                  {t("settings.members.show-inactive")}
+                </label>
+              )}
 
               {showInactiveUsers && (
                 <div className="flex flex-col gap-y-3">
