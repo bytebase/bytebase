@@ -16,17 +16,17 @@
 </template>
 
 <script lang="tsx" setup>
-import type { TagProps, DataTableColumn } from "naive-ui";
+import type { DataTableColumn, TagProps } from "naive-ui";
 import { NDataTable, NPerformantEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
+import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
+import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import { EnvironmentV1Name } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import { useEnvironmentV1Store, useUserStore } from "@/store";
 import { formatEnvironmentName, unknownUser } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -36,10 +36,7 @@ import type {
   Plan_RolloutStageSummary,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUID,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractPlanUID, extractProjectResourceName } from "@/utils";
 import { extractStageUID } from "@/utils/v1/issue/rollout";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 
