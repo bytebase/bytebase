@@ -137,11 +137,10 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			errContains: "expect string",
 		},
 		{
-			name:     "statement matches operator compatibility",
-			filter:   `statement.matches("SELECT")`,
-			wantSQL:  "(query_history.statement LIKE $1)",
-			wantArgs: []any{"%SELECT%"},
-			wantErr:  false,
+			name:        "statement matches operator unsupported",
+			filter:      `statement.matches("SELECT")`,
+			wantErr:     true,
+			errContains: "unexpected function matches",
 		},
 	}
 
@@ -281,8 +280,8 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 			expectedConditions: []string{"query_history.type = $1", "AND", "query_history.project = $2"},
 		},
 		{
-			name:               "statement matches",
-			filter:             `statement.matches("SELECT")`,
+			name:               "statement contains",
+			filter:             `statement.contains("SELECT")`,
 			expectedConditions: []string{"query_history.statement LIKE $1"},
 		},
 		{
