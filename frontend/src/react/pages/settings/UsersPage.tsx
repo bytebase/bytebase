@@ -1526,6 +1526,15 @@ function CreateUserDrawer({
 // CreateGroupDrawer
 // ============================================================
 
+// Normalize member identifier to users/{email} format.
+// Accepts: "users/foo@bar.com", "foo@bar.com" → "users/foo@bar.com"
+function normalizeMemberIdentifier(member: string): string {
+  const trimmed = member.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("users/")) return trimmed;
+  return `users/${trimmed}`;
+}
+
 function deduplicateMembers(members: GroupMember[]): GroupMember[] {
   const map = new Map<string, GroupMember>();
   for (const m of members) {
@@ -1613,8 +1622,17 @@ function CreateGroupDrawer({
       );
     if (!fullEmail || !isValidEmail(fullEmail))
       return t("settings.members.groups.form.email-tips");
+    // Validate member identifiers — extract email part and check format
+    for (const m of members) {
+      const raw = m.member.trim();
+      if (!raw) continue;
+      const email = raw.startsWith("users/") ? raw.slice(6) : raw;
+      if (!isValidEmail(email)) {
+        return `Invalid member: ${raw}`;
+      }
+    }
     return "";
-  }, [title, fullEmail, t]);
+  }, [title, fullEmail, members, t]);
 
   const hasChanged = useMemo(() => {
     if (!isEditMode) return true;
@@ -1658,9 +1676,15 @@ function CreateGroupDrawer({
     if (!allowConfirm || !allowEdit) return;
     setIsRequesting(true);
     try {
-      const dedupedMembers = deduplicateMembers(
-        members.filter((m) => m.member)
-      );
+      const normalizedMembers = members
+        .filter((m) => m.member.trim())
+        .map((m) =>
+          create(GroupMemberSchema, {
+            ...m,
+            member: normalizeMemberIdentifier(m.member),
+          })
+        );
+      const dedupedMembers = deduplicateMembers(normalizedMembers);
       if (isEditMode && group) {
         const validGroup = create(GroupSchema, {
           name: group.name,
@@ -1826,7 +1850,7 @@ function CreateGroupDrawer({
                       onChange={(e) =>
                         handleMemberChange(index, "member", e.target.value)
                       }
-                      placeholder="users/hello@example.com"
+                      placeholder="hello@example.com"
                       disabled={!allowEdit}
                     />
                     <select
@@ -2763,10 +2787,11 @@ export function UsersPage() {
     [userStore, userSearchText]
   );
 
+  const hasUserListPermission = hasWorkspacePermissionV2("bb.users.list");
   const activeUsers = usePagedData<User>({
     sessionKey: "bb.users.active.page-size",
     fetchList: fetchActiveUsers,
-    enabled: !isSaaSMode,
+    enabled: !isSaaSMode && hasUserListPermission,
   });
 
   // Inactive users paged data
@@ -2785,7 +2810,7 @@ export function UsersPage() {
 
   const inactiveUsers = usePagedData<User>({
     sessionKey: "bb.users.inactive.page-size",
-    enabled: !isSaaSMode,
+    enabled: !isSaaSMode && hasUserListPermission,
     fetchList: fetchInactiveUsers,
   });
 
@@ -2802,9 +2827,11 @@ export function UsersPage() {
     [groupStore, groupSearchText]
   );
 
+  const hasGroupListPermission = hasWorkspacePermissionV2("bb.groups.list");
   const groupPaged = usePagedData<Group>({
     sessionKey: "bb.paged-group-table",
     fetchList: fetchGroups,
+    enabled: hasGroupListPermission,
   });
 
   // Handle query param for group opening
