@@ -74,4 +74,12 @@ export default [
       },
     },
   },
+  // React .tsx files use their own locale files (src/react/locales/),
+  // so disable vue-i18n missing-keys checks for them.
+  {
+    files: ["src/react/**/*.tsx"],
+    rules: {
+      "@intlify/vue-i18n/no-missing-keys": "off",
+    },
+  },
 ];

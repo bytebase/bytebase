@@ -313,8 +313,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
         meta: {
           title: () => t("settings.sidebar.users-and-groups"),
         },
-        component: () => import("@/views/SettingWorkspaceUsers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "UsersPage" }),
       },
       {
         path: "service-accounts",
