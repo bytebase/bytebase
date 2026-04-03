@@ -115,7 +115,6 @@
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
-    "creating": "Creating...",
     "address": "Address",
     "created": "Created",
     "labels": "Labels",
@@ -262,8 +261,6 @@
     "deploying": "Deploying",
     "in-review": "In Review",
     "done": "Done",
-    "canceled": "canceled",
-    "recent": "Recent",
     "and": "and",
     "import": "Import",
     "hard-delete": {

@@ -60,8 +60,14 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "title matches",
-			filter:   `title.matches("test")`,
+			name:        "title matches is unsupported",
+			filter:      `title.matches("test")`,
+			wantErr:     true,
+			errContains: "unsupported function matches",
+		},
+		{
+			name:     "title contains",
+			filter:   `title.contains("test")`,
 			wantSQL:  "(LOWER(plan.name) LIKE $1)",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,

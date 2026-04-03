@@ -31,7 +31,7 @@ export interface PlanFind {
 export const buildPlanFilter = (find: PlanFind): string => {
   const filter: string[] = [];
   if (find.query) {
-    filter.push(`title.matches("${find.query.trim().toLowerCase()}")`);
+    filter.push(`title.contains("${find.query.trim().toLowerCase()}")`);
   }
   if (find.creator) {
     filter.push(`creator == "${find.creator}"`);
