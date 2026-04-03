@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import {
-  Building2,
   Check,
   ChevronDown,
   ChevronRight,
@@ -19,16 +18,8 @@ import {
   Users,
   X,
 } from "lucide-react";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { MemberBinding } from "@/components/Member/types";
-import { getMemberBindings } from "@/components/Member/utils";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
@@ -73,11 +64,9 @@ import {
 } from "@/store/modules/v1/common";
 import {
   AccountType,
-  ALL_USERS_USER_EMAIL,
   getAccountTypeByEmail,
   getUserEmailInBinding,
   UNKNOWN_USER_NAME,
-  userBindingPrefix,
 } from "@/types";
 import {
   PRESET_PROJECT_ROLES,
@@ -103,7 +92,6 @@ import {
   displayRoleTitle,
   hasWorkspacePermissionV2,
   isValidEmail,
-  sortRoles,
 } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
@@ -800,7 +788,7 @@ function GroupRow({
 // RoleMultiSelect
 // ============================================================
 
-function RoleMultiSelect({
+export function RoleMultiSelect({
   value,
   onChange,
   disabled,
@@ -1908,531 +1896,13 @@ function CreateGroupDrawer({
 // UsersPage (main)
 // ============================================================
 
-type TabValue = "USERS" | "MEMBERS" | "GROUPS";
+type TabValue = "USERS" | "GROUPS";
 
-function getInitialTab(isSaaSMode: boolean): TabValue {
+function getInitialTab(): TabValue {
   const hash = window.location.hash.replace("#", "").toUpperCase();
-  if (hash === "USERS" && !isSaaSMode) return "USERS";
-  if (hash === "MEMBERS" && isSaaSMode) return "MEMBERS";
+  if (hash === "USERS") return "USERS";
   if (hash === "GROUPS") return "GROUPS";
-  return isSaaSMode ? "MEMBERS" : "USERS";
-}
-
-// ============================================================
-// MemberTable (view by members)
-// ============================================================
-
-function MemberTable({
-  bindings,
-  allowEdit,
-  selectedBindings,
-  onSelectionChange,
-  onUpdateBinding,
-  onRevokeBinding,
-}: {
-  bindings: MemberBinding[];
-  allowEdit: boolean;
-  selectedBindings: string[];
-  onSelectionChange: (selected: string[]) => void;
-  onUpdateBinding: (binding: MemberBinding) => void;
-  onRevokeBinding: (binding: MemberBinding) => void;
-}) {
-  const { t } = useTranslation();
-
-  const allSelected =
-    bindings.length > 0 &&
-    bindings.every((b) => selectedBindings.includes(b.binding));
-
-  const toggleAll = () => {
-    if (allSelected) {
-      onSelectionChange([]);
-    } else {
-      onSelectionChange(bindings.map((b) => b.binding));
-    }
-  };
-
-  const toggleOne = (binding: string) => {
-    onSelectionChange(
-      selectedBindings.includes(binding)
-        ? selectedBindings.filter((b) => b !== binding)
-        : [...selectedBindings, binding]
-    );
-  };
-
-  const canEdit = (mb: MemberBinding) => {
-    if (mb.type === "users") return mb.user?.state !== State.DELETED;
-    if (mb.type === "groups") return !mb.group?.deleted;
-    return true;
-  };
-
-  return (
-    <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b">
-            {allowEdit && (
-              <th className="w-10 px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                />
-              </th>
-            )}
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.roles")}
-            </th>
-            <th className="w-24 px-4 py-2 text-left font-medium text-control-light">
-              {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {bindings.map((mb) => (
-            <tr
-              key={mb.binding}
-              className="border-b last:border-b-0 hover:bg-gray-50"
-            >
-              {allowEdit && (
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedBindings.includes(mb.binding)}
-                    onChange={() => toggleOne(mb.binding)}
-                  />
-                </td>
-              )}
-              <td className="px-4 py-2">
-                {mb.type === "users" ? (
-                  <div className="flex flex-col">
-                    <span className="font-medium">{mb.title}</span>
-                    <span className="text-control-light text-xs">
-                      {mb.user?.email}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-x-2">
-                    <Users className="h-4 w-4 text-control-light" />
-                    <span className="font-medium">{mb.title}</span>
-                    {mb.group && (
-                      <span className="text-control-light text-xs">
-                        ({mb.group.members.length}{" "}
-                        {t("common.members", {
-                          count: mb.group.members.length,
-                        })}
-                        )
-                      </span>
-                    )}
-                    {mb.group?.deleted && (
-                      <Badge variant="destructive" className="text-xs">
-                        {t("common.deleted")}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex flex-wrap gap-1">
-                  {sortRoles([...mb.workspaceLevelRoles]).map((role) => (
-                    <Badge key={role} className="text-xs gap-x-1">
-                      <Building2 className="h-3 w-3" />
-                      {displayRoleTitle(role)}
-                    </Badge>
-                  ))}
-                </div>
-              </td>
-              <td className="px-4 py-2">
-                <div className="flex items-center gap-x-1">
-                  {allowEdit && canEdit(mb) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onUpdateBinding(mb)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {allowEdit && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            t("settings.members.revoke-access-alert")
-                          )
-                        ) {
-                          onRevokeBinding(mb);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-          {bindings.length === 0 && (
-            <tr>
-              <td
-                colSpan={allowEdit ? 4 : 3}
-                className="px-4 py-8 text-center text-control-light"
-              >
-                {t("common.no-data")}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ============================================================
-// MemberTableByRole (view by roles)
-// ============================================================
-
-function MemberTableByRole({
-  bindings,
-  allowEdit,
-  onUpdateBinding,
-  onRevokeBinding,
-}: {
-  bindings: MemberBinding[];
-  allowEdit: boolean;
-  onUpdateBinding: (binding: MemberBinding) => void;
-  onRevokeBinding: (binding: MemberBinding) => void;
-}) {
-  const { t } = useTranslation();
-  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
-
-  const roleToBindings = useMemo(() => {
-    const map = new Map<string, MemberBinding[]>();
-    for (const mb of bindings) {
-      for (const role of mb.workspaceLevelRoles) {
-        if (!map.has(role)) map.set(role, []);
-        map.get(role)!.push(mb);
-      }
-    }
-    const sortedRoles = sortRoles([...map.keys()]);
-    return sortedRoles.map((role) => ({
-      role,
-      members: map.get(role) ?? [],
-    }));
-  }, [bindings]);
-
-  const toggleRole = (role: string) => {
-    setExpandedRoles((prev) => {
-      const next = new Set(prev);
-      if (next.has(role)) next.delete(role);
-      else next.add(role);
-      return next;
-    });
-  };
-
-  const canEdit = (mb: MemberBinding) => {
-    if (mb.type === "users") return mb.user?.state !== State.DELETED;
-    if (mb.type === "groups") return !mb.group?.deleted;
-    return true;
-  };
-
-  return (
-    <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <tbody>
-          {roleToBindings.map(({ role, members }) => {
-            const expanded = expandedRoles.has(role);
-            return (
-              <React.Fragment key={role}>
-                <tr
-                  className="bg-gray-50 border-b cursor-pointer hover:bg-gray-100"
-                  onClick={() => toggleRole(role)}
-                >
-                  <td colSpan={3} className="px-4 py-2">
-                    <div className="flex items-center gap-x-2">
-                      {expanded ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                      <Building2 className="h-4 w-4 text-control-light" />
-                      <span className="font-medium">
-                        {displayRoleTitle(role)}
-                      </span>
-                      <span className="text-control-light text-xs">
-                        ({members.length})
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-                {expanded &&
-                  members.map((mb) => (
-                    <tr
-                      key={`${role}-${mb.binding}`}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-2 pl-10">
-                        {mb.type === "users" ? (
-                          <div className="flex flex-col">
-                            <span className="font-medium">{mb.title}</span>
-                            <span className="text-control-light text-xs">
-                              {mb.user?.email}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-x-2">
-                            <Users className="h-4 w-4 text-control-light" />
-                            <span className="font-medium">{mb.title}</span>
-                            {mb.group?.deleted && (
-                              <Badge variant="destructive" className="text-xs">
-                                {t("common.deleted")}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-2" />
-                      <td className="w-24 px-4 py-2">
-                        <div className="flex items-center gap-x-1">
-                          {allowEdit && canEdit(mb) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onUpdateBinding(mb)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {allowEdit && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    t("settings.members.revoke-access-alert")
-                                  )
-                                ) {
-                                  onRevokeBinding(mb);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </React.Fragment>
-            );
-          })}
-          {roleToBindings.length === 0 && (
-            <tr>
-              <td
-                colSpan={3}
-                className="px-4 py-8 text-center text-control-light"
-              >
-                {t("common.no-data")}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ============================================================
-// EditMemberRoleDrawer
-// ============================================================
-
-function EditMemberRoleDrawer({
-  member,
-  onClose,
-}: {
-  member?: MemberBinding;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-
-  const isEditMode = !!member;
-
-  const [memberInput, setMemberInput] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(() =>
-    member ? [...member.workspaceLevelRoles] : [PresetRoleType.WORKSPACE_MEMBER]
-  );
-  const [isRequesting, setIsRequesting] = useState(false);
-
-  useEscapeKey(true, onClose);
-
-  const handleSubmit = async () => {
-    setIsRequesting(true);
-    try {
-      if (isEditMode) {
-        await workspaceStore.patchIamPolicy([
-          { member: member.binding, roles: selectedRoles },
-        ]);
-      } else {
-        const emails = memberInput
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const KNOWN_PREFIXES = [
-          "user:",
-          "group:",
-          "serviceAccount:",
-          "workloadIdentity:",
-        ];
-        const memberList = emails.map((input) => {
-          // Preserve the special allUsers principal (self-hosted only)
-          if (input === ALL_USERS_USER_EMAIL && !isSaaSMode) {
-            return input;
-          }
-          if (KNOWN_PREFIXES.some((p) => input.startsWith(p))) {
-            return input;
-          }
-          return `${userBindingPrefix}${input}`;
-        });
-        const batchPatch = memberList.map((m) => {
-          const existedRoles = workspaceStore.findRolesByMember(m);
-          return {
-            member: m,
-            roles: [...new Set([...selectedRoles, ...existedRoles])],
-          };
-        });
-        await workspaceStore.patchIamPolicy(batchPatch);
-      }
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: isEditMode ? t("common.updated") : t("common.created"),
-      });
-      onClose();
-    } catch {
-      // error shown by store
-    } finally {
-      setIsRequesting(false);
-    }
-  };
-
-  const handleRevoke = async () => {
-    if (!member) return;
-    const isAllUsers =
-      member.binding === `${userBindingPrefix}${ALL_USERS_USER_EMAIL}`;
-    const message = isAllUsers
-      ? t("settings.members.revoke-allusers-alert")
-      : t("settings.members.revoke-access-alert");
-    if (!window.confirm(message)) return;
-
-    setIsRequesting(true);
-    try {
-      await workspaceStore.patchIamPolicy([
-        { member: member.binding, roles: [] },
-      ]);
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("settings.members.revoked"),
-      });
-      onClose();
-    } catch {
-      // error shown by store
-    } finally {
-      setIsRequesting(false);
-    }
-  };
-
-  const allowConfirm = isEditMode
-    ? selectedRoles.length > 0
-    : memberInput.trim().length > 0 && selectedRoles.length > 0;
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("settings.members.grant-access")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <div className="flex flex-col gap-y-6">
-            {/* Member input */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.select-account", { count: 1 })}
-              </label>
-              {isEditMode ? (
-                <Input value={member.binding} disabled />
-              ) : (
-                <>
-                  <Input
-                    value={memberInput}
-                    onChange={(e) => setMemberInput(e.target.value)}
-                    placeholder="user:foo@example.com, group:bar@example.com"
-                  />
-                  <span className="text-xs text-control-light">
-                    {t("settings.members.select-account-hint")}
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Roles */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.select-role", { count: 2 })}
-              </label>
-              <RoleMultiSelect
-                value={selectedRoles}
-                onChange={setSelectedRoles}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between px-6 py-4 border-t">
-          <div>
-            {isEditMode && (
-              <Button
-                variant="destructive"
-                disabled={isRequesting}
-                onClick={handleRevoke}
-              >
-                {t("settings.members.revoke-access")}
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-x-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={!allowConfirm || isRequesting}
-              onClick={handleSubmit}
-            >
-              {t("common.confirm")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+  return "USERS";
 }
 
 export function UsersPage() {
@@ -2447,7 +1917,7 @@ export function UsersPage() {
   const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
   const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
 
-  const [tab, setTab] = useState<TabValue>(() => getInitialTab(isSaaSMode));
+  const [tab, setTab] = useState<TabValue>(() => getInitialTab());
   const [userSearchText, setUserSearchText] = useState("");
   const [groupSearchText, setGroupSearchText] = useState("");
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
@@ -2472,86 +1942,6 @@ export function UsersPage() {
     undefined
   );
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
-
-  // Members tab (SaaS mode)
-  const workspaceStore = useWorkspaceV1Store();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
-  const [memberSearchText, setMemberSearchText] = useState("");
-  const [memberViewTab, setMemberViewTab] = useState<"MEMBERS" | "ROLES">(
-    "MEMBERS"
-  );
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [showEditMemberDrawer, setShowEditMemberDrawer] = useState(false);
-  const [editingMember, setEditingMember] = useState<
-    MemberBinding | undefined
-  >();
-
-  const memberBindings = useVueState(() =>
-    getMemberBindings({
-      policies: [
-        {
-          level: "WORKSPACE" as const,
-          policy: workspaceStore.workspaceIamPolicy,
-        },
-      ],
-      searchText: memberSearchText,
-      ignoreRoles: new Set([]),
-    })
-  );
-
-  const canSetIamPolicy = hasWorkspacePermissionV2(
-    "bb.workspaces.setIamPolicy"
-  );
-
-  const handleRevokeSelected = async () => {
-    if (
-      selectedMembers.some(
-        (m) => m === `${userBindingPrefix}${currentUser.email}`
-      )
-    ) {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: t("settings.members.cannot-revoke-self"),
-      });
-      return;
-    }
-    if (window.confirm(t("settings.members.revoke-access-alert"))) {
-      try {
-        await workspaceStore.patchIamPolicy(
-          selectedMembers.map((m) => ({ member: m, roles: [] }))
-        );
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t("settings.members.revoked"),
-        });
-        setSelectedMembers([]);
-      } catch {
-        // error already shown by store
-      }
-    }
-  };
-
-  const handleMemberUpdateBinding = (binding: MemberBinding) => {
-    setEditingMember(binding);
-    setShowEditMemberDrawer(true);
-  };
-
-  const handleMemberRevokeBinding = async (binding: MemberBinding) => {
-    try {
-      await workspaceStore.patchIamPolicy([
-        { member: binding.binding, roles: [] },
-      ]);
-      pushNotification({
-        module: "bytebase",
-        style: "INFO",
-        title: t("settings.members.revoked"),
-      });
-    } catch {
-      // error already shown by store
-    }
-  };
 
   const remainingUserCount = useMemo(
     () => Math.max(0, userCountLimit - activeUserCount),
@@ -2655,13 +2045,12 @@ export function UsersPage() {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace("#", "").toUpperCase();
-      if (hash === "USERS" && !isSaaSMode) setTab("USERS");
-      else if (hash === "MEMBERS" && isSaaSMode) setTab("MEMBERS");
+      if (hash === "USERS") setTab("USERS");
       else if (hash === "GROUPS") setTab("GROUPS");
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [isSaaSMode]);
+  }, []);
 
   const handleTabChange = (value: TabValue) => {
     if (value) setTab(value);
@@ -2721,19 +2110,12 @@ export function UsersPage() {
       >
         <div className="flex items-center justify-between">
           <TabsList>
-            {!isSaaSMode && (
-              <TabsTrigger value="USERS">
-                {t("common.users")}
-                <span className="ml-1 font-normal text-control-light">
-                  ({activeUserCount})
-                </span>
-              </TabsTrigger>
-            )}
-            {isSaaSMode && (
-              <TabsTrigger value="MEMBERS">
-                {t("common.members", { count: 2 })}
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="USERS">
+              {t("common.users")}
+              <span className="ml-1 font-normal text-control-light">
+                ({activeUserCount})
+              </span>
+            </TabsTrigger>
             <TabsTrigger value="GROUPS">
               {t("settings.members.groups.self")}
             </TabsTrigger>
@@ -2847,54 +2229,83 @@ export function UsersPage() {
                 )}
               </>
             )}
-            {tab === "MEMBERS" && (
-              <>
-                <div className="relative">
-                  <Input
-                    placeholder={t("settings.members.search-member")}
-                    value={memberSearchText}
-                    onChange={(e) => setMemberSearchText(e.target.value)}
-                    className="h-8 text-sm pr-8"
-                  />
-                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-                </div>
-                {memberViewTab === "MEMBERS" && (
-                  <Button
-                    variant="outline"
-                    disabled={!canSetIamPolicy || selectedMembers.length === 0}
-                    onClick={handleRevokeSelected}
-                  >
-                    {t("settings.members.revoke-access")}
-                  </Button>
-                )}
-                <Button
-                  disabled={!canSetIamPolicy}
-                  onClick={() => {
-                    setEditingMember(undefined);
-                    setShowEditMemberDrawer(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("settings.members.grant-access")}
-                </Button>
-              </>
-            )}
           </div>
         </div>
 
-        {!isSaaSMode && (
-          <TabsPanel value="USERS">
-            <div className="py-4 flex flex-col gap-y-4">
-              <ComponentPermissionGuard permissions={["bb.users.list"]}>
-                {activeUsers.isLoading && activeUsers.dataList.length === 0 ? (
+        <TabsPanel value="USERS">
+          <div className="py-4 flex flex-col gap-y-4">
+            <ComponentPermissionGuard permissions={["bb.users.list"]}>
+              {activeUsers.isLoading && activeUsers.dataList.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <>
+                  <UserTable
+                    users={activeUsers.dataList}
+                    onUserUpdated={handleActiveUserUpdated}
+                    onUserSelected={(user) => {
+                      setEditingUser(user);
+                      setShowCreateUserDrawer(true);
+                    }}
+                    onGroupSelected={(group) => {
+                      setTab("GROUPS");
+                      handleGroupSelected(group);
+                    }}
+                  />
+                  <PagedTableFooter
+                    pageSize={activeUsers.pageSize}
+                    pageSizeOptions={activeUsers.pageSizeOptions}
+                    onPageSizeChange={activeUsers.onPageSizeChange}
+                    hasMore={activeUsers.hasMore}
+                    isFetchingMore={activeUsers.isFetchingMore}
+                    onLoadMore={activeUsers.loadMore}
+                  />
+                </>
+              )}
+            </ComponentPermissionGuard>
+
+            {/* Inactive users toggle (only shown with list permission) */}
+            {hasUserListPermission && (
+              <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showInactiveUsers}
+                  onChange={(e) => setShowInactiveUsers(e.target.checked)}
+                />
+                {t("settings.members.show-inactive")}
+              </label>
+            )}
+
+            {showInactiveUsers && (
+              <div className="flex flex-col gap-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-medium">
+                    {t("settings.members.inactive-users")}
+                  </h3>
+                  <div className="relative">
+                    <Input
+                      placeholder={t("common.filter-by-name")}
+                      value={inactiveUserSearchText}
+                      onChange={(e) =>
+                        setInactiveUserSearchText(e.target.value)
+                      }
+                      className="h-8 text-sm pr-8"
+                    />
+                    <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
+                  </div>
+                </div>
+
+                {inactiveUsers.isLoading &&
+                inactiveUsers.dataList.length === 0 ? (
                   <div className="flex items-center justify-center h-32">
                     <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
                   </div>
                 ) : (
                   <>
                     <UserTable
-                      users={activeUsers.dataList}
-                      onUserUpdated={handleActiveUserUpdated}
+                      users={inactiveUsers.dataList}
+                      onUserUpdated={handleInactiveUserUpdated}
                       onUserSelected={(user) => {
                         setEditingUser(user);
                         setShowCreateUserDrawer(true);
@@ -2905,125 +2316,19 @@ export function UsersPage() {
                       }}
                     />
                     <PagedTableFooter
-                      pageSize={activeUsers.pageSize}
-                      pageSizeOptions={activeUsers.pageSizeOptions}
-                      onPageSizeChange={activeUsers.onPageSizeChange}
-                      hasMore={activeUsers.hasMore}
-                      isFetchingMore={activeUsers.isFetchingMore}
-                      onLoadMore={activeUsers.loadMore}
+                      pageSize={inactiveUsers.pageSize}
+                      pageSizeOptions={inactiveUsers.pageSizeOptions}
+                      onPageSizeChange={inactiveUsers.onPageSizeChange}
+                      hasMore={inactiveUsers.hasMore}
+                      isFetchingMore={inactiveUsers.isFetchingMore}
+                      onLoadMore={inactiveUsers.loadMore}
                     />
                   </>
                 )}
-              </ComponentPermissionGuard>
-
-              {/* Inactive users toggle (only shown with list permission) */}
-              {hasUserListPermission && (
-                <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showInactiveUsers}
-                    onChange={(e) => setShowInactiveUsers(e.target.checked)}
-                  />
-                  {t("settings.members.show-inactive")}
-                </label>
-              )}
-
-              {showInactiveUsers && (
-                <div className="flex flex-col gap-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-medium">
-                      {t("settings.members.inactive-users")}
-                    </h3>
-                    <div className="relative">
-                      <Input
-                        placeholder={t("common.filter-by-name")}
-                        value={inactiveUserSearchText}
-                        onChange={(e) =>
-                          setInactiveUserSearchText(e.target.value)
-                        }
-                        className="h-8 text-sm pr-8"
-                      />
-                      <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {inactiveUsers.isLoading &&
-                  inactiveUsers.dataList.length === 0 ? (
-                    <div className="flex items-center justify-center h-32">
-                      <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
-                    </div>
-                  ) : (
-                    <>
-                      <UserTable
-                        users={inactiveUsers.dataList}
-                        onUserUpdated={handleInactiveUserUpdated}
-                        onUserSelected={(user) => {
-                          setEditingUser(user);
-                          setShowCreateUserDrawer(true);
-                        }}
-                        onGroupSelected={(group) => {
-                          setTab("GROUPS");
-                          handleGroupSelected(group);
-                        }}
-                      />
-                      <PagedTableFooter
-                        pageSize={inactiveUsers.pageSize}
-                        pageSizeOptions={inactiveUsers.pageSizeOptions}
-                        onPageSizeChange={inactiveUsers.onPageSizeChange}
-                        hasMore={inactiveUsers.hasMore}
-                        isFetchingMore={inactiveUsers.isFetchingMore}
-                        onLoadMore={inactiveUsers.loadMore}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </TabsPanel>
-        )}
-        {isSaaSMode && (
-          <TabsPanel value="MEMBERS">
-            <div className="py-4">
-              <Tabs
-                value={memberViewTab}
-                onValueChange={(v) =>
-                  setMemberViewTab(v as "MEMBERS" | "ROLES")
-                }
-              >
-                <TabsList>
-                  <TabsTrigger value="MEMBERS">
-                    {t("settings.members.view-by-members")}
-                  </TabsTrigger>
-                  <TabsTrigger value="ROLES">
-                    {t("settings.members.view-by-roles")}
-                  </TabsTrigger>
-                </TabsList>
-                <TabsPanel value="MEMBERS">
-                  <div className="py-4">
-                    <MemberTable
-                      bindings={memberBindings}
-                      allowEdit={canSetIamPolicy}
-                      selectedBindings={selectedMembers}
-                      onSelectionChange={setSelectedMembers}
-                      onUpdateBinding={handleMemberUpdateBinding}
-                      onRevokeBinding={handleMemberRevokeBinding}
-                    />
-                  </div>
-                </TabsPanel>
-                <TabsPanel value="ROLES">
-                  <div className="py-4">
-                    <MemberTableByRole
-                      bindings={memberBindings}
-                      allowEdit={canSetIamPolicy}
-                      onUpdateBinding={handleMemberUpdateBinding}
-                      onRevokeBinding={handleMemberRevokeBinding}
-                    />
-                  </div>
-                </TabsPanel>
-              </Tabs>
-            </div>
-          </TabsPanel>
-        )}
+              </div>
+            )}
+          </div>
+        </TabsPanel>
         <TabsPanel value="GROUPS">
           <div className="py-4 flex flex-col gap-y-4">
             <ComponentPermissionGuard permissions={["bb.groups.list"]}>
@@ -3094,16 +2399,6 @@ export function UsersPage() {
 
       {showAadSyncDrawer && (
         <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
-      )}
-
-      {showEditMemberDrawer && (
-        <EditMemberRoleDrawer
-          member={editingMember}
-          onClose={() => {
-            setShowEditMemberDrawer(false);
-            setEditingMember(undefined);
-          }}
-        />
       )}
     </div>
   );
