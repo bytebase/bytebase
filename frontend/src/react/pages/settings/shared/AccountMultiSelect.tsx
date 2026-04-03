@@ -80,6 +80,71 @@ function fullnameToBinding(fullname: string): string {
   return fullname;
 }
 
+// ---- Sub-components ----
+
+function SelectionCheckbox({ selected }: { selected: boolean }) {
+  return (
+    <div
+      className={cn(
+        "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+        selected
+          ? "bg-accent border-accent text-white"
+          : "border-control-border"
+      )}
+    >
+      {selected && <Check className="h-3 w-3" />}
+    </div>
+  );
+}
+
+function SpecialAccountOption({
+  match,
+  selected,
+  onToggle,
+}: {
+  match: { type: SpecialAccountType; email: string };
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslation();
+  const isServiceAccount = match.type === "serviceAccount";
+  const Icon = isServiceAccount ? KeyRound : Shield;
+  const label = isServiceAccount
+    ? t("settings.members.service-account")
+    : t("settings.members.workload-identity");
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+        selected && "bg-accent/5"
+      )}
+      onClick={onToggle}
+    >
+      <SelectionCheckbox selected={selected} />
+      <div
+        className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+        style={{ backgroundColor: getAvatarColor(match.email) }}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <div className="flex flex-col min-w-0">
+        <div className="flex items-center gap-x-1">
+          <span className="text-sm font-medium truncate">
+            {match.email.split("@")[0]}
+          </span>
+          <span className="text-xs text-control-light bg-gray-100 rounded px-1">
+            {label}
+          </span>
+        </div>
+        <span className="text-xs text-control-light truncate">
+          {match.email}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ---- Component ----
 
 export function AccountMultiSelect({
@@ -260,18 +325,9 @@ export function AccountMultiSelect({
                 )}
                 onClick={() => toggle(ALL_USERS_USER_EMAIL)}
               >
-                <div
-                  className={cn(
-                    "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
-                    selectedFullnames.has(ALL_USERS_USER_EMAIL)
-                      ? "bg-accent border-accent text-white"
-                      : "border-control-border"
-                  )}
-                >
-                  {selectedFullnames.has(ALL_USERS_USER_EMAIL) && (
-                    <Check className="h-3 w-3" />
-                  )}
-                </div>
+                <SelectionCheckbox
+                  selected={selectedFullnames.has(ALL_USERS_USER_EMAIL)}
+                />
                 {/* Blue avatar circle */}
                 <div
                   className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
@@ -304,16 +360,7 @@ export function AccountMultiSelect({
                       )}
                       onClick={() => toggle(fullname)}
                     >
-                      <div
-                        className={cn(
-                          "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
-                          selected
-                            ? "bg-accent border-accent text-white"
-                            : "border-control-border"
-                        )}
-                      >
-                        {selected && <Check className="h-3 w-3" />}
-                      </div>
+                      <SelectionCheckbox selected={selected} />
                       {/* Avatar */}
                       <div
                         className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
@@ -359,16 +406,7 @@ export function AccountMultiSelect({
                       )}
                       onClick={() => toggle(fullname)}
                     >
-                      <div
-                        className={cn(
-                          "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
-                          selected
-                            ? "bg-accent border-accent text-white"
-                            : "border-control-border"
-                        )}
-                      >
-                        {selected && <Check className="h-3 w-3" />}
-                      </div>
+                      <SelectionCheckbox selected={selected} />
                       <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
                         <Users className="h-4 w-4 text-control-light" />
                       </div>
@@ -388,56 +426,11 @@ export function AccountMultiSelect({
 
             {/* Service account / workload identity match */}
             {specialAccountMatch && (
-              <div>
-                {(() => {
-                  const { type, email, fullname } = specialAccountMatch;
-                  const selected = selectedFullnames.has(fullname);
-                  const isServiceAccount = type === "serviceAccount";
-                  const Icon = isServiceAccount ? KeyRound : Shield;
-                  const label = isServiceAccount
-                    ? t("settings.members.service-account")
-                    : t("settings.members.workload-identity");
-                  return (
-                    <div
-                      className={cn(
-                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
-                        selected && "bg-accent/5"
-                      )}
-                      onClick={() => toggle(fullname)}
-                    >
-                      <div
-                        className={cn(
-                          "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
-                          selected
-                            ? "bg-accent border-accent text-white"
-                            : "border-control-border"
-                        )}
-                      >
-                        {selected && <Check className="h-3 w-3" />}
-                      </div>
-                      <div
-                        className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
-                        style={{ backgroundColor: getAvatarColor(email) }}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-x-1">
-                          <span className="text-sm font-medium truncate">
-                            {email.split("@")[0]}
-                          </span>
-                          <span className="text-xs text-control-light bg-gray-100 rounded px-1">
-                            {label}
-                          </span>
-                        </div>
-                        <span className="text-xs text-control-light truncate">
-                          {email}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
+              <SpecialAccountOption
+                match={specialAccountMatch}
+                selected={selectedFullnames.has(specialAccountMatch.fullname)}
+                onToggle={() => toggle(specialAccountMatch.fullname)}
+              />
             )}
 
             {/* Empty state */}
