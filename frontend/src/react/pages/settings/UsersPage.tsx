@@ -1,9 +1,25 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
-import React from "react";
-import { Building2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Copy, Eye, EyeOff, Pencil, Plus, Search, Settings, Trash2, Undo2, Users, X } from "lucide-react";
 import {
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  Copy,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  Undo2,
+  Users,
+  X,
+} from "lucide-react";
+import React, {
   useCallback,
   useEffect,
   useMemo,
@@ -11,6 +27,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import type { MemberBinding } from "@/components/Member/types";
+import { getMemberBindings } from "@/components/Member/utils";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import {
@@ -42,21 +60,38 @@ import {
   useWorkloadIdentityStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { extractUserEmail, getUserFullNameByType, groupNamePrefix } from "@/store/modules/v1/common";
-import { getMemberBindings } from "@/components/Member/utils";
-import type { MemberBinding } from "@/components/Member/types";
-import { AccountType, ALL_USERS_USER_EMAIL, getAccountTypeByEmail, getUserEmailInBinding, userBindingPrefix } from "@/types";
+import {
+  extractUserEmail,
+  getUserFullNameByType,
+  groupNamePrefix,
+} from "@/store/modules/v1/common";
+import {
+  AccountType,
+  ALL_USERS_USER_EMAIL,
+  getAccountTypeByEmail,
+  getUserEmailInBinding,
+  userBindingPrefix,
+} from "@/types";
 import { PresetRoleType } from "@/types/iam";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Group, GroupMember } from "@/types/proto-es/v1/group_service_pb";
-import { GroupMember_Role, GroupMemberSchema, GroupSchema } from "@/types/proto-es/v1/group_service_pb";
+import {
+  GroupMember_Role,
+  GroupMemberSchema,
+  GroupSchema,
+} from "@/types/proto-es/v1/group_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UpdateUserRequestSchema,
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
-import { displayRoleTitle, hasWorkspacePermissionV2, isValidEmail, sortRoles } from "@/utils";
+import {
+  displayRoleTitle,
+  hasWorkspacePermissionV2,
+  isValidEmail,
+  sortRoles,
+} from "@/utils";
 import { getDefaultPagination } from "@/utils/pagination";
 
 // ============================================================
@@ -115,7 +150,9 @@ function usePagedData<T extends { name: string }>({
       try {
         const result = await fetchList({ pageSize, pageToken: token });
         if (controller.signal.aborted) return;
-        setDataList((prev) => (append ? [...prev, ...result.list] : result.list));
+        setDataList((prev) =>
+          append ? [...prev, ...result.list] : result.list
+        );
         setNextPageToken(result.nextPageToken || undefined);
         setHasFetched(true);
       } finally {
@@ -220,9 +257,7 @@ function PagedTableFooter({
   return (
     <div className="flex items-center justify-between px-4 py-2 border-t text-sm">
       <div className="flex items-center gap-x-2">
-        <span className="text-control-light">
-          {t("common.rows-per-page")}
-        </span>
+        <span className="text-control-light">{t("common.rows-per-page")}</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -286,7 +321,7 @@ function UserTable({
     const fullName = getUserFullNameByType(user);
 
     const confirmed = window.confirm(
-      t("settings.members.deactivate-confirm", { name: user.title })
+      t("settings.members.action.deactivate-confirm-title")
     );
     if (!confirmed) return;
 
@@ -305,7 +340,7 @@ function UserTable({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("settings.members.deactivated"),
+        title: t("common.updated"),
       });
     } catch {
       // error already shown by store
@@ -331,7 +366,7 @@ function UserTable({
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("settings.members.restored"),
+        title: t("common.updated"),
       });
     } catch {
       // error already shown by store
@@ -439,7 +474,10 @@ function UserTable({
                           {user.title}
                         </span>
                         {isSelf && (
-                          <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs px-1.5 py-0"
+                          >
                             {t("common.you")}
                           </Badge>
                         )}
@@ -449,7 +487,10 @@ function UserTable({
                           </Badge>
                         )}
                         {user.mfaEnabled && (
-                          <Badge variant="success" className="text-xs px-1.5 py-0">
+                          <Badge
+                            variant="success"
+                            className="text-xs px-1.5 py-0"
+                          >
                             MFA
                           </Badge>
                         )}
@@ -468,7 +509,10 @@ function UserTable({
 
                 {/* Groups column */}
                 <td className="px-4 py-2">
-                  <UserGroupsCell user={user} onGroupSelected={onGroupSelected} />
+                  <UserGroupsCell
+                    user={user}
+                    onGroupSelected={onGroupSelected}
+                  />
                 </td>
 
                 {/* Operations column */}
@@ -480,7 +524,11 @@ function UserTable({
                           getDeletePermission(accountType)
                         ) &&
                           !isSelf && (
-                            <Tooltip content={t("settings.members.deactivate")}>
+                            <Tooltip
+                              content={t(
+                                "settings.members.action.deactivate-confirm-title"
+                              )}
+                            >
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -521,7 +569,11 @@ function UserTable({
                       hasWorkspacePermissionV2(
                         getUndeletePermission(accountType)
                       ) && (
-                        <Tooltip content={t("settings.members.restore")}>
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.reactivate-confirm-title"
+                          )}
+                        >
                           <Button
                             variant="ghost"
                             size="icon"
@@ -547,7 +599,13 @@ function UserTable({
 // UserGroupsCell
 // ============================================================
 
-function UserGroupsCell({ user, onGroupSelected }: { user: User; onGroupSelected?: (group: Group) => void }) {
+function UserGroupsCell({
+  user,
+  onGroupSelected,
+}: {
+  user: User;
+  onGroupSelected?: (group: Group) => void;
+}) {
   const groupStore = useGroupStore();
 
   if (!user.groups || user.groups.length === 0) {
@@ -588,7 +646,9 @@ function HighlightText({ text, keyword }: { text: string; keyword: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span className="bg-yellow-100">{text.slice(idx, idx + keyword.length)}</span>
+      <span className="bg-yellow-100">
+        {text.slice(idx, idx + keyword.length)}
+      </span>
       {text.slice(idx + keyword.length)}
     </>
   );
@@ -615,58 +675,77 @@ function GroupTable({
   const userStore = useUserStore();
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [memberCache, setMemberCache] = useState<Map<string, User[]>>(new Map());
+  const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
+    new Map()
+  );
   const loadingRef = useRef<Set<string>>(new Set());
 
-  const toggleExpand = useCallback(async (group: Group) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(group.name)) {
-        next.delete(group.name);
-      } else {
-        next.add(group.name);
-        // Fetch members if not cached
-        if (!memberCache.has(group.name) && !loadingRef.current.has(group.name)) {
-          loadingRef.current.add(group.name);
-          const memberNames = group.members.map((m) => m.member);
-          userStore.batchGetOrFetchUsers(memberNames).then((users) => {
-            loadingRef.current.delete(group.name);
-            setMemberCache((prev) => {
-              const next = new Map(prev);
-              next.set(group.name, users.filter((u): u is User => !!u));
-              return next;
+  const toggleExpand = useCallback(
+    async (group: Group) => {
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(group.name)) {
+          next.delete(group.name);
+        } else {
+          next.add(group.name);
+          // Fetch members if not cached
+          if (
+            !memberCache.has(group.name) &&
+            !loadingRef.current.has(group.name)
+          ) {
+            loadingRef.current.add(group.name);
+            const memberNames = group.members.map((m) => m.member);
+            userStore.batchGetOrFetchUsers(memberNames).then((users) => {
+              loadingRef.current.delete(group.name);
+              setMemberCache((prev) => {
+                const next = new Map(prev);
+                next.set(
+                  group.name,
+                  users.filter((u): u is User => !!u)
+                );
+                return next;
+              });
             });
-          });
+          }
         }
-      }
-      return next;
-    });
-  }, [memberCache, userStore]);
-
-  const isGroupOwner = useCallback((group: Group) => {
-    return group.members.find(
-      (m) => extractUserEmail(m.member) === currentUser.email
-    )?.role === GroupMember_Role.OWNER;
-  }, [currentUser.email]);
-
-  const handleDelete = useCallback(async (group: Group) => {
-    const confirmed = window.confirm(
-      t("settings.members.action.deactivate-confirm-title")
-    );
-    if (!confirmed) return;
-
-    try {
-      await groupStore.deleteGroup(group.name);
-      onGroupDeleted(group);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.deleted"),
+        return next;
       });
-    } catch {
-      // error shown by store
-    }
-  }, [groupStore, onGroupDeleted, t]);
+    },
+    [memberCache, userStore]
+  );
+
+  const isGroupOwner = useCallback(
+    (group: Group) => {
+      return (
+        group.members.find(
+          (m) => extractUserEmail(m.member) === currentUser.email
+        )?.role === GroupMember_Role.OWNER
+      );
+    },
+    [currentUser.email]
+  );
+
+  const handleDelete = useCallback(
+    async (group: Group) => {
+      const confirmed = window.confirm(
+        t("settings.members.action.deactivate-confirm-title")
+      );
+      if (!confirmed) return;
+
+      try {
+        await groupStore.deleteGroup(group.name);
+        onGroupDeleted(group);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.deleted"),
+        });
+      } catch {
+        // error shown by store
+      }
+    },
+    [groupStore, onGroupDeleted, t]
+  );
 
   if (groups.length === 0) {
     return (
@@ -691,8 +770,12 @@ function GroupTable({
           {groups.map((group, i) => {
             const isExpanded = expandedGroups.has(group.name);
             const members = memberCache.get(group.name);
-            const canEdit = isGroupOwner(group) || hasWorkspacePermissionV2("bb.groups.update");
-            const canDelete = isGroupOwner(group) || hasWorkspacePermissionV2("bb.groups.delete");
+            const canEdit =
+              isGroupOwner(group) ||
+              hasWorkspacePermissionV2("bb.groups.update");
+            const canDelete =
+              isGroupOwner(group) ||
+              hasWorkspacePermissionV2("bb.groups.delete");
 
             return (
               <GroupRow
@@ -764,7 +847,11 @@ function GroupRow({
                   <HighlightText text={group.title} keyword={searchText} />
                 </span>
                 <span className="text-control-light text-xs">
-                  ({t("settings.members.groups.n-members", { n: group.members.length })})
+                  (
+                  {t("settings.members.groups.n-members", {
+                    n: group.members.length,
+                  })}
+                  )
                 </span>
                 {group.source && (
                   <Badge className="text-xs px-1.5 py-0">{group.source}</Badge>
@@ -805,33 +892,38 @@ function GroupRow({
           </div>
         </td>
       </tr>
-      {isExpanded && members && members.map((user) => {
-        const memberInfo = group.members.find(
-          (m) => extractUserEmail(m.member) === user.email
-        );
-        const isOwner = memberInfo?.role === GroupMember_Role.OWNER;
+      {isExpanded &&
+        members &&
+        members.map((user) => {
+          const memberInfo = group.members.find(
+            (m) => extractUserEmail(m.member) === user.email
+          );
+          const isOwner = memberInfo?.role === GroupMember_Role.OWNER;
 
-        return (
-          <tr key={user.name} className={`border-b last:border-b-0 ${stripeBg}`}>
-            <td className="px-4 py-2 pl-14">
-              <div className="flex items-center gap-x-2">
-                <span>{user.title}</span>
-                <span className="textinfolabel text-xs">{user.email}</span>
-                {isOwner ? (
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                    {t("settings.members.groups.form.role.owner")}
-                  </Badge>
-                ) : (
-                  <Badge variant="default" className="text-xs px-1.5 py-0">
-                    {t("settings.members.groups.form.role.member")}
-                  </Badge>
-                )}
-              </div>
-            </td>
-            <td />
-          </tr>
-        );
-      })}
+          return (
+            <tr
+              key={user.name}
+              className={`border-b last:border-b-0 ${stripeBg}`}
+            >
+              <td className="px-4 py-2 pl-14">
+                <div className="flex items-center gap-x-2">
+                  <span>{user.title}</span>
+                  <span className="textinfolabel text-xs">{user.email}</span>
+                  {isOwner ? (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                      {t("settings.members.groups.form.role.owner")}
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="text-xs px-1.5 py-0">
+                      {t("settings.members.groups.form.role.member")}
+                    </Badge>
+                  )}
+                </div>
+              </td>
+              <td />
+            </tr>
+          );
+        })}
       {isExpanded && !members && (
         <tr className={stripeBg}>
           <td colSpan={2} className="px-4 py-2 pl-14">
@@ -907,7 +999,8 @@ function CreateUserDrawer({
   const isEditMode =
     !!user && user.name !== "" && !user.name.endsWith("/unknown");
 
-  const allowUpdate = !isEditMode || hasWorkspacePermissionV2("bb.users.update");
+  const allowUpdate =
+    !isEditMode || hasWorkspacePermissionV2("bb.users.update");
 
   const initialRoles = useMemo(() => {
     if (!user || !isEditMode) {
@@ -933,10 +1026,9 @@ function CreateUserDrawer({
     const minLength = passwordRestriction?.minLength ?? 8;
     const checks: { text: string; matched: boolean }[] = [
       {
-        text: t(
-          "settings.general.workspace.password-restriction.min-length",
-          { min: minLength }
-        ),
+        text: t("settings.general.workspace.password-restriction.min-length", {
+          min: minLength,
+        }),
         matched: password.length >= minLength,
       },
     ];
@@ -974,12 +1066,11 @@ function CreateUserDrawer({
     return checks;
   }, [password, passwordRestriction, t]);
 
-  const passwordHint = password.length > 0 && passwordChecks.some((c) => !c.matched);
-  const passwordMismatch =
-    password.length > 0 && password !== passwordConfirm;
+  const passwordHint =
+    password.length > 0 && passwordChecks.some((c) => !c.matched);
+  const passwordMismatch = password.length > 0 && password !== passwordConfirm;
 
-  const allowConfirm =
-    email.length > 0 && !passwordHint && !passwordMismatch;
+  const allowConfirm = email.length > 0 && !passwordHint && !passwordMismatch;
 
   const hasPermission = hasWorkspacePermissionV2(
     isEditMode ? "bb.users.update" : "bb.users.create"
@@ -1318,17 +1409,27 @@ function CreateGroupDrawer({
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const isEditMode = !!group;
-  const workspaceDomains = useVueState(() => settingV1Store.workspaceProfile.domains);
-  const domainSuffix = workspaceDomains.length > 0 ? `@${workspaceDomains[0]}` : "";
+  const workspaceDomains = useVueState(
+    () => settingV1Store.workspaceProfile.domains
+  );
+  const domainSuffix =
+    workspaceDomains.length > 0 ? `@${workspaceDomains[0]}` : "";
 
   const [email, setEmail] = useState(group?.email ?? "");
   const [title, setTitle] = useState(group?.title ?? "");
   const [description, setDescription] = useState(group?.description ?? "");
   const [members, setMembers] = useState<GroupMember[]>(() => {
     if (group) {
-      return group.members.map((m) => create(GroupMemberSchema, { member: m.member, role: m.role }));
+      return group.members.map((m) =>
+        create(GroupMemberSchema, { member: m.member, role: m.role })
+      );
     }
-    return [create(GroupMemberSchema, { role: GroupMember_Role.OWNER, member: currentUser.name })];
+    return [
+      create(GroupMemberSchema, {
+        role: GroupMember_Role.OWNER,
+        member: currentUser.name,
+      }),
+    ];
   });
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1340,9 +1441,11 @@ function CreateGroupDrawer({
   const allowEdit = isExternalGroup
     ? false
     : isEditMode
-      ? (group.members.some(
-          (m) => extractUserEmail(m.member) === currentUser.email && m.role === GroupMember_Role.OWNER
-        ) || hasWorkspacePermissionV2("bb.groups.update"))
+      ? group.members.some(
+          (m) =>
+            extractUserEmail(m.member) === currentUser.email &&
+            m.role === GroupMember_Role.OWNER
+        ) || hasWorkspacePermissionV2("bb.groups.update")
       : hasWorkspacePermissionV2("bb.groups.create");
 
   const fullEmail = useMemo(() => {
@@ -1353,8 +1456,9 @@ function CreateGroupDrawer({
   }, [email, isEditMode, domainSuffix]);
 
   const errorMessage = useMemo(() => {
-    if (!title.trim()) return t("common.required");
-    if (!fullEmail || !isValidEmail(fullEmail)) return t("settings.members.groups.form.email-tips");
+    if (!title.trim()) return "Title is required";
+    if (!fullEmail || !isValidEmail(fullEmail))
+      return t("settings.members.groups.form.email-tips");
     return "";
   }, [title, fullEmail, t]);
 
@@ -1380,7 +1484,11 @@ function CreateGroupDrawer({
     setMembers((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleMemberChange = (index: number, field: "member" | "role", value: string | GroupMember_Role) => {
+  const handleMemberChange = (
+    index: number,
+    field: "member" | "role",
+    value: string | GroupMember_Role
+  ) => {
     setMembers((prev) =>
       prev.map((m, i) => {
         if (i !== index) return m;
@@ -1396,7 +1504,9 @@ function CreateGroupDrawer({
     if (!allowConfirm || !allowEdit) return;
     setIsRequesting(true);
     try {
-      const dedupedMembers = deduplicateMembers(members.filter((m) => m.member));
+      const dedupedMembers = deduplicateMembers(
+        members.filter((m) => m.member)
+      );
       if (isEditMode && group) {
         const validGroup = create(GroupSchema, {
           name: group.name,
@@ -1406,7 +1516,11 @@ function CreateGroupDrawer({
         });
         const updated = await groupStore.updateGroup(validGroup);
         onUpdated(updated);
-        pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.updated") });
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
       } else {
         const validGroup = create(GroupSchema, {
           name: `${groupNamePrefix}${fullEmail}`,
@@ -1416,7 +1530,11 @@ function CreateGroupDrawer({
         });
         const created = await groupStore.createGroup(validGroup);
         onUpdated(created);
-        pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.created") });
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.created"),
+        });
       }
       onClose();
     } catch {
@@ -1432,7 +1550,11 @@ function CreateGroupDrawer({
     try {
       await groupStore.deleteGroup(group.name);
       onRemoved(group);
-      pushNotification({ module: "bytebase", style: "SUCCESS", title: t("common.deleted") });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
       onClose();
     } catch {
       // error shown by store
@@ -1442,11 +1564,15 @@ function CreateGroupDrawer({
     }
   };
 
-  const canDelete = isEditMode && !isExternalGroup && (
-    group.members.some(
-      (m) => extractUserEmail(m.member) === currentUser.email && m.role === GroupMember_Role.OWNER
-    ) || hasWorkspacePermissionV2("bb.groups.delete")
-  );
+  const canDelete =
+    isEditMode &&
+    !isExternalGroup &&
+    (group.members.some(
+      (m) =>
+        extractUserEmail(m.member) === currentUser.email &&
+        m.role === GroupMember_Role.OWNER
+    ) ||
+      hasWorkspacePermissionV2("bb.groups.delete"));
 
   return (
     <>
@@ -1473,7 +1599,7 @@ function CreateGroupDrawer({
             {isExternalGroup && (
               <Alert variant="info">
                 <AlertDescription>
-                  {t("settings.members.groups.external-group-readonly")}
+                  External group is read-only.
                 </AlertDescription>
               </Alert>
             )}
@@ -1539,13 +1665,21 @@ function CreateGroupDrawer({
                     <Input
                       className="flex-1"
                       value={member.member}
-                      onChange={(e) => handleMemberChange(index, "member", e.target.value)}
+                      onChange={(e) =>
+                        handleMemberChange(index, "member", e.target.value)
+                      }
                       placeholder="users/hello@example.com"
                       disabled={!allowEdit}
                     />
                     <select
                       value={member.role}
-                      onChange={(e) => handleMemberChange(index, "role", Number(e.target.value) as GroupMember_Role)}
+                      onChange={(e) =>
+                        handleMemberChange(
+                          index,
+                          "role",
+                          Number(e.target.value) as GroupMember_Role
+                        )
+                      }
                       className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
                       disabled={!allowEdit}
                     >
@@ -1575,7 +1709,7 @@ function CreateGroupDrawer({
                     onClick={handleAddMember}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    {t("settings.members.groups.form.add-member")}
+                    {t("settings.members.add-member")}
                   </Button>
                 )}
               </div>
@@ -1652,8 +1786,12 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
   const actuatorStore = useActuatorV1Store();
   const settingV1Store = useSettingV1Store();
 
-  const externalUrl = useVueState(() => actuatorStore.serverInfo?.externalUrl ?? "");
-  const workspaceResourceName = useVueState(() => actuatorStore.workspaceResourceName);
+  const externalUrl = useVueState(
+    () => actuatorStore.serverInfo?.externalUrl ?? ""
+  );
+  const workspaceResourceName = useVueState(
+    () => actuatorStore.workspaceResourceName
+  );
   const directorySyncToken = useVueState(
     () => settingV1Store.workspaceProfile.directorySyncToken
   );
@@ -1729,9 +1867,7 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
             {/* Missing external URL warning */}
             {!externalUrl && (
               <Alert variant="warning">
-                <AlertDescription>
-                  {t("banner.external-url")}
-                </AlertDescription>
+                <AlertDescription>{t("banner.external-url")}</AlertDescription>
               </Alert>
             )}
 
@@ -1744,11 +1880,7 @@ function AADSyncDrawer({ onClose }: { onClose: () => void }) {
                 {t("settings.members.entra-sync.endpoint-tip")}
               </span>
               <div className="flex items-center gap-x-2">
-                <Input
-                  readOnly
-                  value={scimUrl}
-                  className="flex-1 text-sm"
-                />
+                <Input readOnly value={scimUrl} className="flex-1 text-sm" />
                 <Button
                   variant="outline"
                   size="sm"
@@ -1897,7 +2029,10 @@ function MemberTable({
         </thead>
         <tbody>
           {bindings.map((mb) => (
-            <tr key={mb.binding} className="border-b last:border-b-0 hover:bg-gray-50">
+            <tr
+              key={mb.binding}
+              className="border-b last:border-b-0 hover:bg-gray-50"
+            >
               {allowEdit && (
                 <td className="px-3 py-2">
                   <input
@@ -1921,7 +2056,11 @@ function MemberTable({
                     <span className="font-medium">{mb.title}</span>
                     {mb.group && (
                       <span className="text-control-light text-xs">
-                        ({mb.group.members.length} {t("common.members", { count: mb.group.members.length })})
+                        ({mb.group.members.length}{" "}
+                        {t("common.members", {
+                          count: mb.group.members.length,
+                        })}
+                        )
                       </span>
                     )}
                     {mb.group?.deleted && (
@@ -1958,7 +2097,11 @@ function MemberTable({
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        if (window.confirm(t("settings.members.revoke-access-alert"))) {
+                        if (
+                          window.confirm(
+                            t("settings.members.revoke-access-alert")
+                          )
+                        ) {
                           onRevokeBinding(mb);
                         }
                       }}
@@ -2127,7 +2270,10 @@ function MemberTableByRole({
           })}
           {roleToBindings.length === 0 && (
             <tr>
-              <td colSpan={3} className="px-4 py-8 text-center text-control-light">
+              <td
+                colSpan={3}
+                className="px-4 py-8 text-center text-control-light"
+              >
                 {t("common.no-data")}
               </td>
             </tr>
@@ -2214,7 +2360,8 @@ function EditMemberRoleDrawer({
 
   const handleRevoke = async () => {
     if (!member) return;
-    const isAllUsers = member.binding === `${userBindingPrefix}${ALL_USERS_USER_EMAIL}`;
+    const isAllUsers =
+      member.binding === `${userBindingPrefix}${ALL_USERS_USER_EMAIL}`;
     const message = isAllUsers
       ? t("settings.members.revoke-allusers-alert")
       : t("settings.members.revoke-access-alert");
@@ -2354,7 +2501,9 @@ export function UsersPage() {
   const hasUserGroupFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
   );
-  const workspaceDomains = useVueState(() => settingV1Store.workspaceProfile.domains);
+  const workspaceDomains = useVueState(
+    () => settingV1Store.workspaceProfile.domains
+  );
   const hasDirectorySyncFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
@@ -2363,36 +2512,63 @@ export function UsersPage() {
   const [showCreateUserDrawer, setShowCreateUserDrawer] = useState(false);
   const [showCreateGroupDrawer, setShowCreateGroupDrawer] = useState(false);
   const [showAadSyncDrawer, setShowAadSyncDrawer] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
+  const [editingGroup, setEditingGroup] = useState<Group | undefined>(
+    undefined
+  );
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
 
   // Members tab (SaaS mode)
   const workspaceStore = useWorkspaceV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const [memberSearchText, setMemberSearchText] = useState("");
-  const [memberViewTab, setMemberViewTab] = useState<"MEMBERS" | "ROLES">("MEMBERS");
+  const [memberViewTab, setMemberViewTab] = useState<"MEMBERS" | "ROLES">(
+    "MEMBERS"
+  );
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [showEditMemberDrawer, setShowEditMemberDrawer] = useState(false);
-  const [editingMember, setEditingMember] = useState<MemberBinding | undefined>();
+  const [editingMember, setEditingMember] = useState<
+    MemberBinding | undefined
+  >();
 
   const memberBindings = useVueState(() =>
     getMemberBindings({
-      policies: [{ level: "WORKSPACE" as const, policy: workspaceStore.workspaceIamPolicy }],
+      policies: [
+        {
+          level: "WORKSPACE" as const,
+          policy: workspaceStore.workspaceIamPolicy,
+        },
+      ],
       searchText: memberSearchText,
       ignoreRoles: new Set([]),
     })
   );
 
-  const canSetIamPolicy = hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
+  const canSetIamPolicy = hasWorkspacePermissionV2(
+    "bb.workspaces.setIamPolicy"
+  );
 
   const handleRevokeSelected = () => {
-    if (selectedMembers.some((m) => m === `${userBindingPrefix}${currentUser.email}`)) {
-      pushNotification({ module: "bytebase", style: "WARN", title: "You cannot revoke yourself" });
+    if (
+      selectedMembers.some(
+        (m) => m === `${userBindingPrefix}${currentUser.email}`
+      )
+    ) {
+      pushNotification({
+        module: "bytebase",
+        style: "WARN",
+        title: "You cannot revoke yourself",
+      });
       return;
     }
     if (window.confirm(t("settings.members.revoke-access-alert"))) {
-      workspaceStore.patchIamPolicy(selectedMembers.map((m) => ({ member: m, roles: [] })));
-      pushNotification({ module: "bytebase", style: "INFO", title: t("settings.members.revoked") });
+      workspaceStore.patchIamPolicy(
+        selectedMembers.map((m) => ({ member: m, roles: [] }))
+      );
+      pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: t("settings.members.revoked"),
+      });
       setSelectedMembers([]);
     }
   };
@@ -2404,7 +2580,11 @@ export function UsersPage() {
 
   const handleMemberRevokeBinding = (binding: MemberBinding) => {
     workspaceStore.patchIamPolicy([{ member: binding.binding, roles: [] }]);
-    pushNotification({ module: "bytebase", style: "INFO", title: t("settings.members.revoked") });
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("settings.members.revoked"),
+    });
   };
 
   const remainingUserCount = useMemo(
@@ -2433,8 +2613,7 @@ export function UsersPage() {
   // Refresh active users when search text changes
   useEffect(() => {
     activeUsers.refresh();
-  }, [userSearchText]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [userSearchText]);
   // Inactive users paged data
   const fetchInactiveUsers = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
@@ -2459,8 +2638,7 @@ export function UsersPage() {
     if (showInactiveUsers) {
       inactiveUsers.refresh();
     }
-  }, [inactiveUserSearchText, showInactiveUsers]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [inactiveUserSearchText, showInactiveUsers]);
   // Groups paged data
   const fetchGroups = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
@@ -2482,8 +2660,7 @@ export function UsersPage() {
   // Refresh groups when search text changes
   useEffect(() => {
     groupPaged.refresh();
-  }, [groupSearchText]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [groupSearchText]);
   // Handle query param for group opening
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2497,8 +2674,7 @@ export function UsersPage() {
         }
       });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, []);
   // Sync tab to URL hash
   useEffect(() => {
     window.location.hash = tab;
@@ -2537,15 +2713,17 @@ export function UsersPage() {
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {!isSaaSMode && remainingUserCount <= 3 && (
         <Alert variant="warning" className="mb-2">
-          <AlertTitle>
-            {t("subscription.usage.user-count.title")}
-          </AlertTitle>
+          <AlertTitle>{t("subscription.usage.user-count.title")}</AlertTitle>
           <AlertDescription>
-            {t("subscription.usage.user-count.description", {
-              total: userCountLimit,
-              remaining: remainingUserCount,
-            })}{" "}
-            {t("subscription.usage.upgrade-prompt")}
+            {remainingUserCount > 0
+              ? t("subscription.usage.user-count.remaining", {
+                  total: userCountLimit,
+                  count: remainingUserCount,
+                })
+              : t("subscription.usage.user-count.runoutof", {
+                  total: userCountLimit,
+                })}{" "}
+            {t("subscription.usage.user-count.upgrade")}
           </AlertDescription>
         </Alert>
       )}
@@ -2755,7 +2933,7 @@ export function UsersPage() {
                 <div className="flex flex-col gap-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-base font-medium">
-                      {t("settings.members.inactive")}
+                      {t("settings.members.inactive-users")}
                     </h3>
                     <div className="relative">
                       <Input
@@ -2810,7 +2988,9 @@ export function UsersPage() {
             <div className="py-4">
               <Tabs
                 value={memberViewTab}
-                onValueChange={(v) => setMemberViewTab(v as "MEMBERS" | "ROLES")}
+                onValueChange={(v) =>
+                  setMemberViewTab(v as "MEMBERS" | "ROLES")
+                }
               >
                 <TabsList>
                   <TabsTrigger value="MEMBERS">
