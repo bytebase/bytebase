@@ -117,7 +117,7 @@ func TestGetQuerySpan(t *testing.T) {
 			wantType:    base.DDL,
 		},
 		{
-			description: "find with explain is Explain",
+			description: "find with explain suffix is Explain",
 			statement:   `db.users.find({}).explain()`,
 			wantType:    base.Explain,
 		},
