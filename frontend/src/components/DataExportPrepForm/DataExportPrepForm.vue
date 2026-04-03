@@ -299,15 +299,19 @@ const effectiveTitle = computed(() => {
   return generatePlanTitle("bb.plan.export-data", targetTitleNames.value);
 });
 
+const syncGeneratedTitle = () => {
+  if (targetTitleNames.value.length === 0) return;
+  if (state.titleEdited && state.title.trim()) return;
+  state.title = generatePlanTitle(
+    "bb.plan.export-data",
+    targetTitleNames.value
+  );
+};
+
 watch(
   () => targetTitleNames.value.join(","),
-  (signature) => {
-    if (!signature) return;
-    if (state.titleEdited && state.title.trim()) return;
-    state.title = generatePlanTitle(
-      "bb.plan.export-data",
-      targetTitleNames.value
-    );
+  () => {
+    syncGeneratedTitle();
   },
   { immediate: true }
 );
@@ -317,6 +321,7 @@ watch(
   (show) => {
     if (show) {
       resetState();
+      syncGeneratedTitle();
     }
   },
   { immediate: true }
