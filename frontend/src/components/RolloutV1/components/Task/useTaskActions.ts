@@ -1,12 +1,16 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref, watch } from "vue";
+import { usePlanContext } from "@/components/Plan/logic";
 import {
   CANCELABLE_TASK_STATUSES,
   RUNNABLE_TASK_STATUSES,
 } from "@/components/RolloutV1/constants/task";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { TaskAction } from "../../types";
-import { canRolloutTasks } from "./taskPermissions";
+import {
+  canRolloutTasks,
+  preloadRolloutPermissionContext,
+} from "./taskPermissions";
 
 export interface TaskActionTarget {
   type: "tasks";
@@ -34,14 +38,22 @@ export const useTaskActions = (
 ): UseTaskActionsReturn => {
   const showActionPanel = ref(false);
   const selectedAction = ref<TaskAction>();
+  const { issue } = usePlanContext();
 
   // Cache permission check - only re-evaluate when task name changes
   // This prevents flickering during poller refetches
   const canPerformActions = ref(false);
   watch(
     () => task().name,
-    () => {
-      canPerformActions.value = canRolloutTasks([task()]);
+    async () => {
+      canPerformActions.value = false;
+      const environment = stage()?.environment;
+      await preloadRolloutPermissionContext([task()], environment);
+      canPerformActions.value = canRolloutTasks(
+        [task()],
+        issue.value,
+        environment
+      );
     },
     { immediate: true }
   );

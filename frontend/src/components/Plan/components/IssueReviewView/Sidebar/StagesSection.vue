@@ -35,39 +35,20 @@
 import { useRouter } from "vue-router";
 import TaskStatus from "@/components/RolloutV1/components/Task/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-  getStageStatus,
-} from "@/utils";
+import { buildStageRoute } from "@/router/dashboard/projectV1RouteHelpers";
+import { useEnvironmentV1Store } from "@/store";
+import { getStageStatus } from "@/utils";
 import { usePlanContext } from "../../../logic";
 
 const { rollout } = usePlanContext();
 const environmentStore = useEnvironmentV1Store();
 const router = useRouter();
-const { project } = useCurrentProjectV1();
 
 const getEnvironmentEntity = (environmentName: string) => {
   return environmentStore.getEnvironmentByName(environmentName);
 };
 
 const navigateToStage = (stageName: string) => {
-  if (!rollout?.value) return;
-
-  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
-  const stageId = stageName.split("/").pop();
-
-  if (!planId || !stageId) return;
-
-  router.push({
-    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-    params: {
-      projectId: extractProjectResourceName(project.value.name),
-      planId,
-      stageId,
-    },
-  });
+  router.push(buildStageRoute(stageName));
 };
 </script>

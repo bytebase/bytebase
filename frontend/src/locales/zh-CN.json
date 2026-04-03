@@ -60,6 +60,7 @@
     "retry": "重试",
     "skip": "跳过",
     "skipped": "已跳过",
+    "bypassed": "已绕过",
     "dismiss": "关闭",
     "allow": "允许",
     "deny": "拒绝",
@@ -69,6 +70,7 @@
     "edit": "编辑",
     "update": "更新",
     "updated": "已更新",
+    "done": "完成",
     "visit": "访问",
     "role": {
       "self": "角色"
@@ -248,6 +250,11 @@
     "removed": "已移除",
     "submit": "提交",
     "draft": "草稿",
+    "deploying": "部署中",
+    "in-review": "审批中",
+    "in-progress": "进行中",
+    "not-started": "未开始",
+    "and": "和",
     "import": "导入",
     "hard-delete": {
       "self": "彻底删除",
@@ -258,6 +265,7 @@
     },
     "collapse": "收起",
     "show-more": "显示更多",
+    "show-less": "显示更少",
     "n-more": "+{n} 更多",
     "remaining": "剩余",
     "line": "行",
@@ -1112,8 +1120,6 @@
     "approval-flow": {
       "self": "审批流"
     },
-    "force-rollout-hint": "手动创建发布以跳过失败的 SQL 检查。",
-    "checks-block-rollout-hint": "SQL 检查失败导致无法创建发布。请修复错误后再继续。",
     "checks-warning-hint": "此变更计划存在未通过的检查。审批通过后将需要手动创建发布。",
     "risk-level": {
       "self": "风险等级",
@@ -1203,6 +1209,8 @@
     "run": "运行检查",
     "navigator": {
       "changes": "变更项",
+      "review": "审批",
+      "deploy": "部署",
       "checks": "SQL 检查",
       "statement-empty": "变更语句为空"
     },
@@ -1274,10 +1282,34 @@
     },
     "description": {
       "placeholder": "添加描述"
+    },
+    "view-discussion": "查看讨论",
+    "go-to-plan-page": "前往变更计划页",
+    "phase": {
+      "show-details": "展开详情 ↓",
+      "hide-details": "收起详情 ↑",
+      "review-description": "提交审批以继续",
+      "deploy-description": "审批通过且检查通过后可用",
+      "deploy-description-with-action": "审批通过且检查通过后可用。你可以{action}手动推进。",
+      "create-rollout-action": "创建发布"
+    },
+    "summary": {
+      "n-changes": "{n} 个变更",
+      "n-databases": "{n} 个数据库",
+      "n-database-groups": "{n} 个数据库组",
+      "n-passed": "{n} 通过",
+      "n-warning": "{n} 警告",
+      "n-error": "{n} 错误",
+      "n-of-m-approved": "{n}/{m} 已审批",
+      "last-approved-by": "最后由 {name} 审批",
+      "n-of-m-tasks": "{n}/{m} 任务"
+    },
+    "sidebar": {
+      "created-by-at": "由 {user} 创建 · {time}",
+      "future-sections-hint": "审批、标签、工单链接将在提交后显示"
     }
   },
   "rollout": {
-    "rollouts": "发布任务",
     "bypass-stage-requirements": "绕过提醒",
     "task-execution-errors": "任务执行错误",
     "stage": {

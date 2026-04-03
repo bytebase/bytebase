@@ -28,17 +28,12 @@ import { useRouter } from "vue-router";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
-import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
+import { buildTaskDetailRoute } from "@/router/dashboard/projectV1RouteHelpers";
 import { useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractPlanUIDFromRolloutName,
-  extractProjectResourceName,
-  extractStageNameFromTaskName,
-  humanizeTs,
-} from "@/utils";
+import { humanizeTs } from "@/utils";
 import TaskStatus from "./TaskStatus.vue";
 
 const semanticTaskType = (type: Task_Type) => {
@@ -76,7 +71,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const { rollout, taskRuns } = usePlanContextWithRollout();
+const { taskRuns } = usePlanContextWithRollout();
 
 const taskList = computed(() => {
   if (props.taskStatusFilter.length === 0) {
@@ -99,21 +94,8 @@ const handleSelectionChange = (selectedKeys: Array<string | number>) => {
   emit("update:selected-tasks", selectedTasks);
 };
 
-const stages = computed(() => rollout.value.stages);
-
 // Virtual scroll configuration
 const virtualScrollEnabled = computed(() => taskList.value.length > 100);
-
-// Memoized stage lookup for better performance
-const stageMap = computed(() => {
-  const map = new Map<string, (typeof stages.value)[0]>();
-  stages.value.forEach((stage) => {
-    stage.tasks.forEach((task) => {
-      map.set(task.name, stage);
-    });
-  });
-  return map;
-});
 
 const prepareDatabases = async () => {
   if (taskList.value.length > 0) {
@@ -136,32 +118,9 @@ watch(
   { immediate: true }
 );
 
-// Helper function to extract IDs from task and stage names
-const getTaskRouteParams = (task: Task) => {
-  const stage = stageMap.value.get(task.name);
-  if (!stage) return null;
-
-  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
-  const stageId = stage.name.split("/").pop();
-  const taskId = task.name.split("/").pop();
-
-  return { planId, stageId, taskId };
-};
-
 // Row click handler
 const handleRowClick = (task: Task) => {
-  const params = getTaskRouteParams(task);
-  if (params) {
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-      params: {
-        projectId: extractProjectResourceName(task.name),
-        planId: extractPlanUIDFromRolloutName(task.name),
-        stageId: extractStageNameFromTaskName(task.name),
-        taskId: params.taskId,
-      },
-    });
-  }
+  router.push(buildTaskDetailRoute(task.name));
 };
 
 // Row props for click handling

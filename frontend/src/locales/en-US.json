@@ -60,6 +60,7 @@
     "retry": "Retry",
     "skip": "Skip",
     "skipped": "Skipped",
+    "bypassed": "Bypassed",
     "dismiss": "Dismiss",
     "allow": "Allow",
     "deny": "Deny",
@@ -160,6 +161,8 @@
     "succeed": "Succeed",
     "success": "Success",
     "failed": "Failed",
+    "in-progress": "In Progress",
+    "not-started": "Not Started",
     "load-more": "Load more",
     "rows-per-page": "Rows per page",
     "access-denied": "Access denied",
@@ -255,6 +258,13 @@
     "removed": "Removed",
     "submit": "Submit",
     "draft": "Draft",
+    "creating": "Creating",
+    "deploying": "Deploying",
+    "in-review": "In Review",
+    "done": "Done",
+    "canceled": "canceled",
+    "recent": "Recent",
+    "and": "and",
     "import": "Import",
     "hard-delete": {
       "self": "Hard-delete",
@@ -265,6 +275,7 @@
     },
     "collapse": "Collapse",
     "show-more": "Show more",
+    "show-less": "Show less",
     "n-more": "+{n} more",
     "remaining": "remaining",
     "line": "Line",
@@ -1112,8 +1123,6 @@
     "approval-flow": {
       "self": "Approval flow"
     },
-    "force-rollout-hint": "Proceed with manual rollout to override failed checks.",
-    "checks-block-rollout-hint": "Failed checks are preventing rollout creation. Fix the errors to proceed.",
     "checks-warning-hint": "This plan has failed checks. A manual rollout will be required upon approval.",
     "risk-level": {
       "self": "Risk level",
@@ -1203,8 +1212,33 @@
     "run": "Run check",
     "navigator": {
       "changes": "Changes",
+      "review": "Review",
+      "deploy": "Deploy",
       "checks": "Checks",
       "statement-empty": "Statement is empty"
+    },
+    "phase": {
+      "review-description": "Submit for review to proceed",
+      "deploy-description": "Available when review is approved and checks pass",
+      "deploy-description-with-action": "Available when review is approved and checks pass. You can {action} to proceed manually.",
+      "create-rollout-action": "create rollout",
+      "show-details": "Show details ↓",
+      "hide-details": "Hide details ↑"
+    },
+    "summary": {
+      "n-changes": "{n} changes",
+      "n-databases": "{n} databases",
+      "n-database-groups": "{n} database groups",
+      "n-passed": "{n} passed",
+      "n-warning": "{n} warning",
+      "n-error": "{n} error",
+      "n-of-m-approved": "{n} of {m} approved",
+      "last-approved-by": "Last approved by {name}",
+      "n-of-m-tasks": "{n}/{m} tasks"
+    },
+    "sidebar": {
+      "created-by-at": "Created by {user} · {time}",
+      "future-sections-hint": "Review, Labels, Issue link appear after submission"
     },
     "checks": {
       "self": "Checks",
@@ -1274,10 +1308,11 @@
     },
     "description": {
       "placeholder": "Add a description"
-    }
+    },
+    "view-discussion": "View discussion",
+    "go-to-plan-page": "Go to Plan page"
   },
   "rollout": {
-    "rollouts": "Rollouts",
     "bypass-stage-requirements": "Bypass warnings",
     "task-execution-errors": "Task execution errors",
     "stage": {

@@ -1,9 +1,9 @@
 <template>
-  <div v-if="show" class="py-3 flex flex-col gap-y-2 overflow-hidden">
+  <div v-if="show" class="flex flex-col gap-y-2 overflow-hidden">
     <!-- Row 1: Title + Run button -->
     <div class="flex items-center justify-between gap-2">
       <div class="flex flex-row items-center gap-2">
-        <h3 class="text-base">{{ $t("plan.checks.self") }}</h3>
+        <h3 class="textlabel uppercase">{{ $t("plan.checks.self") }}</h3>
       </div>
       <NButton
         size="tiny"

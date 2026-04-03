@@ -39,8 +39,15 @@
         </button>
       </div>
 
+      <RouterLink
+        v-if="forceReadonly"
+        :to="planRoute"
+        class="text-sm text-accent hover:underline px-3"
+      >
+        {{ $t("plan.go-to-plan-page") }} →
+      </RouterLink>
       <NButton
-        v-if="canModifySpecs"
+        v-else-if="canModifySpecs"
         type="default"
         size="small"
         @click="showAddSpecDrawer = true"
@@ -65,7 +72,10 @@ import type { DropdownOption } from "naive-ui";
 import { NButton, NDropdown, NTooltip, useDialog } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import { planServiceClientConnect } from "@/connect";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -74,11 +84,16 @@ import {
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
-import { extractSheetUID } from "@/utils";
+import {
+  extractPlanUID,
+  extractProjectResourceName,
+  extractSheetUID,
+} from "@/utils";
 import { getLocalSheetByName, usePlanContext } from "../../../logic";
 import { getSpecTitle } from "../../../logic/utils";
 import AddSpecDrawer from "../../AddSpecDrawer.vue";
 import { useSpecsValidation } from "../../common";
+import { useForceReadonly } from "../../SpecDetailView/context";
 
 const props = defineProps<{ selectedSpecId: string }>();
 const emit = defineEmits<{ "update:selectedSpecId": [specId: string] }>();
@@ -89,11 +104,26 @@ const { plan, issue, isCreating } = usePlanContext();
 const sheetStore = useSheetV1Store();
 const { project } = useCurrentProjectV1();
 
+const forceReadonly = useForceReadonly();
+const planRoute = computed(() => {
+  if (plan.value.hasRollout) {
+    return buildPlanDeployRouteFromPlanName(plan.value.name);
+  }
+
+  return {
+    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
+    params: {
+      projectId: extractProjectResourceName(project.value.name),
+      planId: extractPlanUID(plan.value.name),
+    },
+  };
+});
 const specs = computed(() => plan.value.specs);
 const { isSpecEmpty } = useSpecsValidation(specs);
 const showAddSpecDrawer = ref(false);
 const canModifySpecs = computed(
   () =>
+    !forceReadonly &&
     (isCreating.value || !plan.value.hasRollout) &&
     issue.value?.status !== IssueStatus.CANCELED &&
     issue.value?.status !== IssueStatus.DONE

@@ -53,22 +53,29 @@
     "canceled": "Đã hủy",
     "rejected": "Đã từ chối",
     "under-review": "Đang xem xét",
+    "in-review": "Đang xem xét",
     "approve": "Phê duyệt",
     "approved": "Đã phê duyệt",
+    "done": "Hoàn tất",
     "create": "Tạo",
     "run": "Chạy",
     "retry": "Thử lại",
     "skip": "Bỏ qua",
     "skipped": "Đã bỏ qua",
+    "bypassed": "Đã vượt qua",
     "dismiss": "Loại bỏ",
     "allow": "Cho phép",
     "deny": "Từ chối",
+    "and": "và",
     "go-back": "Quay lại",
     "back": "Quay lại",
     "next": "Tiếp theo",
     "edit": "Chỉnh sửa",
     "update": "Cập nhật",
     "updated": "Đã cập nhật",
+    "deploying": "Đang triển khai",
+    "in-progress": "Đang tiến hành",
+    "not-started": "Chưa bắt đầu",
     "visit": "Truy cập",
     "role": {
       "self": "Vai trò"
@@ -258,6 +265,7 @@
     },
     "collapse": "Thu gọn",
     "show-more": "Hiển thị thêm",
+    "show-less": "Hiển thị ít hơn",
     "n-more": "+{n} nữa",
     "remaining": "còn lại",
     "line": "Dòng",
@@ -1112,8 +1120,6 @@
     "approval-flow": {
       "self": "Quy trình phê duyệt"
     },
-    "force-rollout-hint": "Tiến hành triển khai thủ công để bỏ qua các kiểm tra thất bại.",
-    "checks-block-rollout-hint": "Kiểm tra thất bại đang ngăn việc tạo triển khai. Hãy sửa lỗi để tiếp tục.",
     "checks-warning-hint": "Kế hoạch này có kiểm tra thất bại. Sẽ cần triển khai thủ công sau khi phê duyệt.",
     "risk-level": {
       "self": "Mức độ rủi ro",
@@ -1203,8 +1209,33 @@
     "run": "Chạy kiểm tra",
     "navigator": {
       "changes": "Thay đổi",
+      "review": "Xem xét",
+      "deploy": "Triển khai",
       "checks": "Kiểm tra",
       "statement-empty": "Câu lệnh trống rỗng"
+    },
+    "phase": {
+      "review-description": "Gửi để xem xét để tiếp tục",
+      "deploy-description": "Có sẵn khi việc xem xét được phê duyệt và kiểm tra đã đạt",
+      "deploy-description-with-action": "Có sẵn khi việc xem xét được phê duyệt và kiểm tra đã đạt. Bạn có thể {action} để tiếp tục thủ công.",
+      "create-rollout-action": "tạo rollout",
+      "show-details": "Hiển thị chi tiết ↓",
+      "hide-details": "Ẩn chi tiết ↑"
+    },
+    "summary": {
+      "n-changes": "{n} thay đổi",
+      "n-databases": "{n} cơ sở dữ liệu",
+      "n-database-groups": "{n} nhóm cơ sở dữ liệu",
+      "n-passed": "{n} đã vượt qua",
+      "n-warning": "{n} cảnh báo",
+      "n-error": "{n} lỗi",
+      "n-of-m-approved": "{n} trên {m} đã được phê duyệt",
+      "last-approved-by": "Phê duyệt gần nhất bởi {name}",
+      "n-of-m-tasks": "{n}/{m} tác vụ"
+    },
+    "sidebar": {
+      "created-by-at": "Tạo bởi {user} · {time}",
+      "future-sections-hint": "Xem xét, nhãn và liên kết issue sẽ xuất hiện sau khi gửi"
     },
     "checks": {
       "self": "Kiểm tra",
@@ -1274,10 +1305,11 @@
     },
     "description": {
       "placeholder": "Thêm mô tả"
-    }
+    },
+    "view-discussion": "Xem thảo luận",
+    "go-to-plan-page": "Đi tới trang kế hoạch"
   },
   "rollout": {
-    "rollouts": "Triển khai",
     "bypass-stage-requirements": "Bỏ qua cảnh báo",
     "task-execution-errors": "Lỗi thực hiện tác vụ",
     "stage": {

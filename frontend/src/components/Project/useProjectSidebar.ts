@@ -22,7 +22,6 @@ import {
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_PLANS,
   PROJECT_V1_ROUTE_RELEASES,
-  PROJECT_V1_ROUTE_ROLLOUTS,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
@@ -58,11 +57,6 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
           {
             title: t("plan.plans"),
             path: PROJECT_V1_ROUTE_PLANS,
-            type: "div",
-          },
-          {
-            title: t("rollout.rollouts"),
-            path: PROJECT_V1_ROUTE_ROLLOUTS,
             type: "div",
           },
           {

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="w-full flex flex-row items-center gap-2 flex-wrap">
-      <h3 class="textlabel">{{ $t("issue.approval-flow.self") }}</h3>
+      <h3 class="textinfolabel">{{ $t("issue.approval-flow.self") }}</h3>
       <FeatureBadge :feature="PlanFeature.FEATURE_APPROVAL_WORKFLOW" />
       <RiskLevelIcon
         :risk-level="issue.riskLevel"

@@ -6,6 +6,7 @@ export type SidebarMode = "NONE" | "DESKTOP" | "MOBILE";
 
 export type SidebarContext = {
   mode: Ref<SidebarMode>;
+  containerWidth: Ref<number>;
   desktopSidebarWidth: Ref<number>;
   mobileSidebarOpen: Ref<boolean>;
 };
@@ -40,6 +41,7 @@ export const provideSidebarContext = (
   const mobileSidebarOpen = ref(false);
   const context: SidebarContext = {
     mode,
+    containerWidth,
     desktopSidebarWidth,
     mobileSidebarOpen,
   };
