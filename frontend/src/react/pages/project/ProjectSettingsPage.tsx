@@ -121,13 +121,14 @@ function ApprovalFlowIndicator({
 // ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
-export function ProjectSettingsPage({ projectId }: { projectId: string }) {
+export function ProjectSettingsPage() {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
   const policyStore = usePolicyV1Store();
   const reviewStore = useSQLReviewStore();
   const subscriptionStore = useSubscriptionV1Store();
 
+  const projectId = router.currentRoute.value.params.projectId as string;
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const isDefault = isDefaultProject(projectName);
