@@ -158,7 +158,9 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您"
+    "you": "您",
+    "database-group": "数据库分组",
+    "databases": "数据库"
   },
   "create-db": {
     "cluster": "集群",
@@ -248,7 +250,8 @@
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库"
+    "unassign-alert-title": "取消分配数据库",
+    "select": "选择数据库"
   },
   "db": {
     "character-set": "字符集",
@@ -1056,5 +1059,43 @@
   },
   "two-factor": {
     "enabled": "双重认证已开启"
+  },
+  "database-group": {
+    "select": "选择数据库分组"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
+      "external-url": "外部访问地址",
+      "target-databases": "目标数据库",
+      "title": "开始前检查",
+      "wif-notice-suffix": "以使用服务账号配置 GitOps。",
+      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
+      "workload-identity": "工作负载身份"
+    },
+    "documentation": "查看文档",
+    "overview": {
+      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
+      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
+      "title": "什么是 GitOps"
+    },
+    "test-setup": {
+      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
+      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
+      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
+      "title": "测试您的首次 GitOps 迁移"
+    },
+    "workflow": {
+      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
+      "file-hint": "保存为仓库中的 {filePath}",
+      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
+      "self-hosted-runner": "自托管 runner",
+      "title": "工作流文件生成"
+    },
+    "workload-identity": {
+      "select-placeholder": "选择工作负载身份"
+    }
   }
 }

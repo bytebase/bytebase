@@ -158,7 +158,9 @@
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "you": "あなた"
+    "you": "あなた",
+    "database-group": "データベースグループ | データベースグループ",
+    "databases": "データベース"
   },
   "create-db": {
     "cluster": "集まる",
@@ -248,7 +250,8 @@
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する"
+    "unassign-alert-title": "データベースの割り当てを解除する",
+    "select": "データベースの選択"
   },
   "db": {
     "character-set": "文字セット",
@@ -1056,5 +1059,43 @@
   },
   "two-factor": {
     "enabled": "二要素認証がオンになっています"
+  },
+  "database-group": {
+    "select": "データベースグループを選択"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
+      "external-url": "外部URL",
+      "target-databases": "ターゲットデータベース",
+      "title": "開始前の確認",
+      "wif-notice-suffix": "サービスアカウントを使用して GitOps を設定できます。",
+      "wif-notice-text": "Workload Identity Federation は現在 GitHub と GitLab のみサポートしています。他の VCS については、チュートリアルを参照してください：",
+      "workload-identity": "ワークロードアイデンティティ"
+    },
+    "documentation": "ドキュメントを見る",
+    "overview": {
+      "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
+      "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
+      "title": "GitOps とは"
+    },
+    "test-setup": {
+      "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
+      "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
+      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
+      "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
+      "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
+      "title": "最初の GitOps マイグレーションをテスト"
+    },
+    "workflow": {
+      "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
+      "file-hint": "リポジトリ内に {filePath} として保存",
+      "provider-not-match": "選択された ワークロード アイデンティティ は {provider} 専用です。",
+      "self-hosted-runner": "セルフホスト runner",
+      "title": "ワークフローファイル生成"
+    },
+    "workload-identity": {
+      "select-placeholder": "ワークロードアイデンティティを選択"
+    }
   }
 }

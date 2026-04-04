@@ -158,7 +158,9 @@
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
-    "you": "you"
+    "you": "you",
+    "database-group": "Database Group | Database Groups",
+    "databases": "Databases"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -248,7 +250,8 @@
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases"
+    "unassign-alert-title": "Unassign databases",
+    "select": "Select database"
   },
   "db": {
     "character-set": "Character set",
@@ -1056,5 +1059,43 @@
   },
   "two-factor": {
     "enabled": "2FA Enabled"
+  },
+  "database-group": {
+    "select": "Select database group"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
+      "external-url": "External URL",
+      "target-databases": "Target Databases",
+      "title": "Checks before we start",
+      "wif-notice-suffix": "to set up GitOps using a service account.",
+      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
+      "workload-identity": "Workload Identity"
+    },
+    "documentation": "View Documentation",
+    "overview": {
+      "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
+      "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
+      "title": "What is GitOps"
+    },
+    "test-setup": {
+      "description": "Verify the workflow is working end-to-end with a sample migration file.",
+      "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
+      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
+      "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
+      "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
+      "title": "Test your first GitOps migration"
+    },
+    "workflow": {
+      "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
+      "file-hint": "Save as {filePath} in your repository {repository}",
+      "provider-not-match": "The selected workload identity only works for {provider}.",
+      "self-hosted-runner": "Self-hosted runner",
+      "title": "Workflow file generation"
+    },
+    "workload-identity": {
+      "select-placeholder": "Select a workload identity"
+    }
   }
 }
