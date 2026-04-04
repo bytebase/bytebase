@@ -12,22 +12,27 @@ import {
   ensureServiceAccountFullName,
   pushNotification,
   useActuatorV1Store,
+  useProjectV1Store,
   useWorkspaceV1Store,
 } from "@/store";
 import {
   serviceAccountToUser,
   useServiceAccountStore,
 } from "@/store/modules/serviceAccount";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
 import {
   getServiceAccountNameInBinding,
   getServiceAccountSuffix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 import { UserAvatar } from "./shared/UserAvatar";
+import { updateProjectIamPolicyForMember } from "./shared/updateProjectIamPolicyForMember";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
@@ -36,10 +41,12 @@ import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 function ServiceAccountTable({
   users,
+  project,
   onUserUpdated,
   onUserSelected,
 }: {
   users: User[];
+  project?: Project;
   onUserUpdated: (user: User) => void;
   onUserSelected?: (user: User) => void;
 }) {
@@ -247,9 +254,14 @@ function ServiceAccountTable({
                   <div className="flex justify-end gap-x-1">
                     {!isDeleted && (
                       <>
-                        {hasWorkspacePermissionV2(
-                          "bb.serviceAccounts.delete"
-                        ) && (
+                        {(project
+                          ? hasProjectPermissionV2(
+                              project,
+                              "bb.serviceAccounts.delete"
+                            )
+                          : hasWorkspacePermissionV2(
+                              "bb.serviceAccounts.delete"
+                            )) && (
                           <Tooltip
                             content={t(
                               "settings.members.action.deactivate-confirm-title"
@@ -265,7 +277,14 @@ function ServiceAccountTable({
                             </Button>
                           </Tooltip>
                         )}
-                        {hasWorkspacePermissionV2("bb.serviceAccounts.get") && (
+                        {(project
+                          ? hasProjectPermissionV2(
+                              project,
+                              "bb.serviceAccounts.get"
+                            )
+                          : hasWorkspacePermissionV2(
+                              "bb.serviceAccounts.get"
+                            )) && (
                           <Tooltip content={t("common.edit")}>
                             <Button
                               variant="ghost"
@@ -280,9 +299,14 @@ function ServiceAccountTable({
                       </>
                     )}
                     {isDeleted &&
-                      hasWorkspacePermissionV2(
-                        "bb.serviceAccounts.undelete"
-                      ) && (
+                      (project
+                        ? hasProjectPermissionV2(
+                            project,
+                            "bb.serviceAccounts.undelete"
+                          )
+                        : hasWorkspacePermissionV2(
+                            "bb.serviceAccounts.undelete"
+                          )) && (
                         <Tooltip
                           content={t(
                             "settings.members.action.reactivate-confirm-title"
@@ -315,11 +339,13 @@ function ServiceAccountTable({
 
 function CreateServiceAccountDrawer({
   serviceAccount,
+  project,
   onClose,
   onCreated,
   onUpdated,
 }: {
   serviceAccount: ServiceAccount | undefined;
+  project?: string;
   onClose: () => void;
   onCreated: (sa: ServiceAccount) => void;
   onUpdated: (sa: ServiceAccount) => void;
@@ -328,8 +354,16 @@ function CreateServiceAccountDrawer({
   const serviceAccountStore = useServiceAccountStore();
   const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
+  const projectStore = useProjectV1Store();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
 
-  const parent = useVueState(() => actuatorStore.workspaceResourceName);
+  const projectEntity = useVueState(() =>
+    project ? projectStore.getProjectByName(project) : undefined
+  );
+
+  const parent = useVueState(
+    () => project ?? actuatorStore.workspaceResourceName
+  );
 
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
   const emailSuffix = getServiceAccountSuffix();
@@ -345,9 +379,12 @@ function CreateServiceAccountDrawer({
 
   const allowConfirm = isEditMode ? true : emailPrefix.trim().length > 0;
 
-  const hasPermission = hasWorkspacePermissionV2(
-    isEditMode ? "bb.serviceAccounts.update" : "bb.serviceAccounts.create"
-  );
+  const requiredPermission = isEditMode
+    ? "bb.serviceAccounts.update"
+    : "bb.serviceAccounts.create";
+  const hasPermission = projectEntity
+    ? hasProjectPermissionV2(projectEntity, requiredPermission)
+    : hasWorkspacePermissionV2(requiredPermission);
 
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
@@ -373,12 +410,17 @@ function CreateServiceAccountDrawer({
     );
 
     if (roles.length > 0) {
-      await workspaceStore.patchIamPolicy([
-        {
-          member: getServiceAccountNameInBinding(sa.email),
-          roles,
-        },
-      ]);
+      const member = getServiceAccountNameInBinding(sa.email);
+      if (projectEntity) {
+        await updateProjectIamPolicyForMember(
+          projectIamPolicyStore,
+          projectEntity.name,
+          member,
+          roles
+        );
+      } else {
+        await workspaceStore.patchIamPolicy([{ member, roles }]);
+      }
     }
 
     onCreated(sa);
@@ -491,7 +533,12 @@ function CreateServiceAccountDrawer({
 
             {/* Roles (create mode only) */}
             {!isEditMode &&
-              hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
+              (projectEntity
+                ? hasProjectPermissionV2(
+                    projectEntity,
+                    "bb.projects.setIamPolicy"
+                  )
+                : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
                 <div className="flex flex-col gap-y-2">
                   <label className="block text-sm font-medium text-control">
                     {t("settings.members.table.roles")}
@@ -500,6 +547,7 @@ function CreateServiceAccountDrawer({
                     value={roles}
                     onChange={setRoles}
                     disabled={false}
+                    scope={project ? "project" : undefined}
                   />
                 </div>
               )}
@@ -527,12 +575,22 @@ function CreateServiceAccountDrawer({
 // ServiceAccountsPage (main)
 // ============================================================
 
-export function ServiceAccountsPage() {
+export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const serviceAccountStore = useServiceAccountStore();
+  const projectStore = useProjectV1Store();
 
-  const parent = useVueState(() => actuatorStore.workspaceResourceName);
+  const projectName = projectId
+    ? `${projectNamePrefix}${projectId}`
+    : undefined;
+  const project = useVueState(() =>
+    projectName ? projectStore.getProjectByName(projectName) : undefined
+  );
+
+  const parent = useVueState(
+    () => projectName ?? actuatorStore.workspaceResourceName
+  );
 
   const [showInactive, setShowInactive] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -556,7 +614,7 @@ export function ServiceAccountsPage() {
   );
 
   const activeData = usePagedData<User>({
-    sessionKey: "bb.service-accounts.active.page-size",
+    sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.active.page-size`,
     fetchList: fetchActive,
   });
 
@@ -577,7 +635,7 @@ export function ServiceAccountsPage() {
   );
 
   const inactiveData = usePagedData<User>({
-    sessionKey: "bb.service-accounts.inactive.page-size",
+    sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.inactive.page-size`,
     enabled: showInactive,
     fetchList: fetchInactive,
   });
@@ -622,7 +680,11 @@ export function ServiceAccountsPage() {
           {t("settings.members.service-accounts")}
         </h2>
         <Button
-          disabled={!hasWorkspacePermissionV2("bb.serviceAccounts.create")}
+          disabled={
+            project
+              ? !hasProjectPermissionV2(project, "bb.serviceAccounts.create")
+              : !hasWorkspacePermissionV2("bb.serviceAccounts.create")
+          }
           onClick={() => {
             setEditingSa(undefined);
             setShowDrawer(true);
@@ -643,6 +705,7 @@ export function ServiceAccountsPage() {
           <>
             <ServiceAccountTable
               users={activeData.dataList}
+              project={project}
               onUserUpdated={handleActiveUserUpdated}
               onUserSelected={handleOpenEdit}
             />
@@ -684,6 +747,7 @@ export function ServiceAccountsPage() {
               <>
                 <ServiceAccountTable
                   users={inactiveData.dataList}
+                  project={project}
                   onUserUpdated={handleInactiveUserUpdated}
                 />
                 <PagedTableFooter
@@ -703,6 +767,7 @@ export function ServiceAccountsPage() {
       {showDrawer && (
         <CreateServiceAccountDrawer
           serviceAccount={editingSa}
+          project={projectName}
           onClose={() => {
             setShowDrawer(false);
             setEditingSa(undefined);

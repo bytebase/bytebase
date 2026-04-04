@@ -360,9 +360,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/ServiceAccountPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ServiceAccountsPage",
+          ...route.params,
+        }),
       },
       {
         path: "workload-identities",
@@ -371,9 +373,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.members.workload-identities"),
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "WorkloadIdentitiesPage",
+          ...route.params,
+        }),
       },
       {
         path: "settings",

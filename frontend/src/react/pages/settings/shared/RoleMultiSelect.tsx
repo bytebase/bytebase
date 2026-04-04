@@ -18,10 +18,12 @@ export function RoleMultiSelect({
   value,
   onChange,
   disabled,
+  scope,
 }: {
   value: string[];
   onChange: (roles: string[]) => void;
   disabled?: boolean;
+  scope?: "project";
 }) {
   const { t } = useTranslation();
   const roleStore = useRoleStore();
@@ -54,7 +56,7 @@ export function RoleMultiSelect({
       .filter(matchRole);
 
     const result: { label: string; roles: string[] }[] = [];
-    if (workspace.length > 0)
+    if (scope !== "project" && workspace.length > 0)
       result.push({
         label: t("role.workspace-roles.self"),
         roles: workspace,
@@ -64,7 +66,7 @@ export function RoleMultiSelect({
     if (custom.length > 0)
       result.push({ label: t("role.custom-roles.self"), roles: custom });
     return result;
-  }, [roleList, search, t]);
+  }, [roleList, search, scope, t]);
 
   const isCustomRole = (name: string) => !PRESET_ROLES.includes(name);
 
