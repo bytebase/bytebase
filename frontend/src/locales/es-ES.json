@@ -2525,7 +2525,6 @@
       "configure-rule": {
         "name": "Configurar regla",
         "change-template": "Cambiar plantilla",
-        "confirm-override-title": "Confirmar cambio",
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },

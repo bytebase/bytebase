@@ -2525,7 +2525,6 @@
       "configure-rule": {
         "name": "Configure rule",
         "change-template": "Change the template",
-        "confirm-override-title": "Confirm change",
         "confirm-override-description": "Your rules will be overridden"
       }
     },

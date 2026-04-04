@@ -75,6 +75,7 @@
     "configure": "設定",
     "configure-now": "今すぐ設定する",
     "confirm": "確認する",
+    "confirm-and-add": "Confirm and add",
     "confirm-and-update": "確認して更新する",
     "copied": "コピーされました",
     "copy": "コピー",
@@ -86,9 +87,12 @@
     "delete-resource": "Delete {{type}}",
     "deleted": "削除されました",
     "description": "説明",
+    "disable": "Disable",
     "discard-changes": "変更をキャンセルする",
     "edit": "編集",
     "email": "メールアドレス",
+    "enable": "Enable",
+    "enabled": "Enabled",
     "environment": "環境",
     "environment-name": "環境名",
     "export": "エクスポート",
@@ -120,9 +124,11 @@
     "ok": "わかりました",
     "operations": "操作",
     "permissions": "権限",
+    "previous": "Previous",
     "project": "プロジェクト",
     "release": "リリース",
     "reorder": "並び替え",
+    "resource": "Resource",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
     "restore": "復元する",
@@ -916,8 +922,41 @@
     "self": "SQLエディタ"
   },
   "sql-review": {
-    "configure-policy": "SQL レビューポリシーを設定する",
-    "title": "SQL レビューポリシー"
+    "add-or-remove-rules": "Add or remove rules",
+    "add-rules": "Add rules",
+    "attach-resource": {
+      "change-resources": "Change attached resources",
+      "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
+      "no-linked-resources": "No attached resources",
+      "self": "Attach to resources"
+    },
+    "configure-policy": "Configure policy",
+    "create": {
+      "basic-info": {
+        "display-name": "Display name",
+        "display-name-default": "SQL review policy",
+        "display-name-label": "A display name to help identifying among different review policies.",
+        "name": "Basic info"
+      },
+      "configure-rule": {
+        "change-template": "Change the template",
+        "confirm-override-description": "Your rules will be overridden",
+        "name": "Configure rule"
+      }
+    },
+    "create-policy": "Create SQL review",
+    "delete": "Delete SQL review policy",
+    "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+    "disabled": "SQL review is disabled",
+    "enabled-rules": "Enabled rules",
+    "no-permission": "Only DBA or Admin has permission to create or update review policy.",
+    "policy-create-failed": "Failed to create the review policy.",
+    "policy-created": "Successfully created the review policy.",
+    "policy-removed": "Successfully removed the review policy.",
+    "policy-update-failed": "Failed to update the review policy.",
+    "policy-updated": "Successfully updated the review policy.",
+    "review-policy": "Review policy",
+    "title": "SQL Review"
   },
   "subscription": {
     "contact-us": "お問い合わせ",

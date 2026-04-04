@@ -2525,7 +2525,6 @@
       "configure-rule": {
         "name": "ルールを設定する",
         "change-template": "テンプレートの変更",
-        "confirm-override-title": "ルール変更",
         "confirm-override-description": "以前のルールは上書きされます"
       }
     },
