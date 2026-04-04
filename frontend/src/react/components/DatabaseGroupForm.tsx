@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FactorList,
@@ -20,12 +20,19 @@ import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { pushNotification, useDBGroupStore } from "@/store";
-import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
+import {
+  databaseGroupNamePrefix,
+  getProjectNameAndDatabaseGroupName,
+} from "@/store/modules/v1/common";
+import type { ValidatedMessage } from "@/types";
 import { isValidDatabaseGroupName } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
-import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
+import {
+  DatabaseGroupSchema,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
@@ -90,9 +97,31 @@ export function DatabaseGroupForm({
     }
   }, [databaseGroup]);
 
+  // In edit mode, ResourceIdField is readonly and never fires onValidationChange,
+  // so skip the resourceIdValid gate when editing.
   const allowConfirm = useMemo(() => {
-    return resourceIdValid && title.trim() !== "" && validateSimpleExpr(expr);
-  }, [resourceIdValid, title, expr]);
+    const idOk = isCreating ? resourceIdValid : true;
+    return idOk && title.trim() !== "" && validateSimpleExpr(expr);
+  }, [isCreating, resourceIdValid, title, expr]);
+
+  // Duplicate-ID validation for creation: try to fetch the group and fail if it exists.
+  const validateResourceId = useCallback(
+    async (id: string): Promise<ValidatedMessage[]> => {
+      try {
+        const name = `${project.name}/${databaseGroupNamePrefix}${id}`;
+        await dbGroupStore.getOrFetchDBGroupByName(name, {
+          silent: true,
+          view: DatabaseGroupView.FULL,
+        });
+        // If fetch succeeded, the group already exists
+        return [{ type: "error", message: `${id} already exists` }];
+      } catch {
+        // Not found — ID is available
+        return [];
+      }
+    },
+    [project.name, dbGroupStore]
+  );
 
   const doConfirm = async () => {
     if (!allowConfirm) return;
@@ -184,6 +213,7 @@ export function DatabaseGroupForm({
               resourceName="database-group"
               resourceTitle={title}
               readonly={!isCreating}
+              validate={isCreating ? validateResourceId : undefined}
               onChange={setResourceId}
               onValidationChange={setResourceIdValid}
             />
