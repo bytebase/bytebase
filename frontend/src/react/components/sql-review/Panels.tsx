@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { t as vueT } from "@/plugins/i18n";
+import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -213,17 +214,31 @@ export function AttachResourcesPanel({
     return map;
   }, [resources, sqlReviewStore, review.id]);
 
-  const onConfirm = async () => {
+  const conflictingResources = useMemo(() => {
+    return [...resourcesBindingWithOtherPolicy.values()].flat();
+  }, [resourcesBindingWithOtherPolicy]);
+
+  const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
+
+  const onConfirm = () => {
+    if (conflictingResources.length > 0) {
+      setShowOverrideConfirm(true);
+    } else {
+      doSave();
+    }
+  };
+
+  const doSave = async () => {
     const conflictMap = new Map(resourcesBindingWithOtherPolicy);
     await sqlReviewStore.upsertReviewConfigTag({
       oldResources: review.resources,
       newResources: resources,
       review: review.id,
     });
-    // Clear reassigned resources from other policies in the cache
     if (conflictMap.size > 0) {
       sqlReviewStore.removeResourceForReview(conflictMap);
     }
+    setShowOverrideConfirm(false);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -331,13 +346,38 @@ export function AttachResourcesPanel({
           </div>
         </div>
 
+        {showOverrideConfirm && conflictingResources.length > 0 && (
+          <div className="px-4 py-3 border-t">
+            <Alert variant="warning">
+              <AlertDescription>
+                <p className="mb-2">
+                  {vueT("sql-review.attach-resource.override-warning", {
+                    button: vueT("common.confirm"),
+                  })}
+                </p>
+                <ul className="list-disc list-inside text-sm">
+                  {conflictingResources.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <div className="px-4 py-3 border-t flex justify-end gap-x-2">
           <Button variant="outline" onClick={onClose}>
             {vueT("common.cancel")}
           </Button>
-          <Button disabled={!hasPermission} onClick={onConfirm}>
-            {vueT("common.confirm")}
-          </Button>
+          {showOverrideConfirm ? (
+            <Button variant="destructive" onClick={doSave}>
+              {vueT("common.confirm")}
+            </Button>
+          ) : (
+            <Button disabled={!hasPermission} onClick={onConfirm}>
+              {vueT("common.confirm")}
+            </Button>
+          )}
         </div>
       </div>
     </div>

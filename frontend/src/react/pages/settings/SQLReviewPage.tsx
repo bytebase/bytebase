@@ -237,7 +237,13 @@ function PolicyTable({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => onDelete(policy)}
+                  onClick={() => {
+                    if (
+                      window.confirm(`${t("common.delete")} '${policy.name}'?`)
+                    ) {
+                      onDelete(policy);
+                    }
+                  }}
                 >
                   {t("common.delete")}
                 </Button>

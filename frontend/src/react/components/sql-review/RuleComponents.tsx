@@ -382,6 +382,7 @@ export function RuleEditDialog({
       payloadRef.current
     );
     onUpdateRule({ level, componentList });
+    onCancel();
   };
 
   return (

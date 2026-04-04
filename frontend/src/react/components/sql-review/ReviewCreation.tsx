@@ -174,6 +174,8 @@ export function ReviewCreation({
           )
         ) {
           applyTemplate(pendingApplyTemplate);
+        } else {
+          return; // Stay on basic info step when override is canceled
         }
       }
     }
