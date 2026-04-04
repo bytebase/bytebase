@@ -157,7 +157,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.databases"),
           requiredPermissionList: () => ["bb.databases.list"],
         },
-        component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
+        component: () => import("@/react/ProjectDatabasesPageMount.vue"),
         props: true,
       },
       {

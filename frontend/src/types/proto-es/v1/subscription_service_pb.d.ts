@@ -669,7 +669,8 @@ export enum PlanFeature {
   FEATURE_DATABASE_CHANGELOG = 12,
 
   /**
-   * @generated from enum value: FEATURE_SCHEMA_DRIFT_DETECTION = 13;
+   * @generated from enum value: FEATURE_SCHEMA_DRIFT_DETECTION = 13 [deprecated = true];
+   * @deprecated
    */
   FEATURE_SCHEMA_DRIFT_DETECTION = 13,
 
