@@ -37,6 +37,7 @@ import {
 } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
 import {
+  isDefaultProject,
   isValidDatabaseName,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
@@ -51,6 +52,7 @@ import {
   engineNameV1,
   extractDatabaseResourceName,
   generatePlanTitle,
+  hasWorkspacePermissionV2,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
@@ -64,6 +66,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const projectStore = useProjectV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
+  const isDefault = isDefaultProject(projectName);
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -370,7 +373,15 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
             ]}
           >
-            <Button onClick={() => setShowCreateDrawer(true)}>
+            <Button
+              disabled={
+                !hasWorkspacePermissionV2("bb.instances.list") ||
+                !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((p) =>
+                  hasWorkspacePermissionV2(p)
+                )
+              }
+              onClick={() => setShowCreateDrawer(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
               {t("quick-action.new-db")}
             </Button>
@@ -384,9 +395,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           onSyncSchema={handleSyncSchema}
           onEditLabels={() => setShowLabelEditor(true)}
           onEditEnvironment={() => setShowEditEnvDrawer(true)}
-          onUnassign={() => setShowUnassignConfirm(true)}
-          onChangeDatabase={handleChangeDatabase}
-          onExportData={handleExportData}
+          onUnassign={
+            isDefault ? undefined : () => setShowUnassignConfirm(true)
+          }
+          onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
+          onExportData={isDefault ? undefined : handleExportData}
         />
 
         <EditEnvironmentDrawer
