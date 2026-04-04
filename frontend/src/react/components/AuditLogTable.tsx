@@ -24,6 +24,15 @@ import {
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
+import { type ColumnDef, useColumnWidths } from "@/react/hooks/useColumnWidths";
+import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
@@ -412,17 +421,13 @@ function ExportDropdown({
 // Column definitions
 // ============================================================
 
-interface ColumnDef {
-  key: string;
+interface AuditLogColumnDef extends ColumnDef {
   title: string;
-  defaultWidth: number;
-  minWidth?: number;
-  resizable?: boolean;
   sortable?: boolean;
   render: (auditLog: AuditLog) => React.ReactNode;
 }
 
-function useColumnDefs(): ColumnDef[] {
+function useColumnDefs(): AuditLogColumnDef[] {
   const { t } = useTranslation();
   return useMemo(
     () => [
@@ -563,61 +568,6 @@ function useColumnDefs(): ColumnDef[] {
 }
 
 // ============================================================
-// useColumnWidths
-// ============================================================
-
-function useColumnWidths(columns: ColumnDef[]) {
-  const [widths, setWidths] = useState<number[]>(() =>
-    columns.map((c) => c.defaultWidth)
-  );
-  const dragRef = useRef<{
-    colIndex: number;
-    startX: number;
-    startWidth: number;
-  } | null>(null);
-
-  const onMouseDown = useCallback(
-    (colIndex: number, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current = {
-        colIndex,
-        startX: e.clientX,
-        startWidth: widths[colIndex],
-      };
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!dragRef.current) return;
-        const delta = ev.clientX - dragRef.current.startX;
-        const min = columns[dragRef.current.colIndex].minWidth ?? 40;
-        const newWidth = Math.max(min, dragRef.current.startWidth + delta);
-        setWidths((prev) => {
-          const next = [...prev];
-          next[dragRef.current!.colIndex] = newWidth;
-          return next;
-        });
-      };
-      const onMouseUp = () => {
-        dragRef.current = null;
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    },
-    [widths, columns]
-  );
-
-  const totalWidth = widths.reduce((sum, w) => sum + w, 0);
-
-  return { widths, totalWidth, onResizeStart: onMouseDown };
-}
-
-// ============================================================
 // AuditLogTable — shared component
 // ============================================================
 
@@ -641,7 +591,10 @@ export function AuditLogTable({
     subscriptionStore.hasFeature(PlanFeature.FEATURE_AUDIT_LOG)
   );
   const columns = useColumnDefs();
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+    columns,
+    "bb.audit-log-table-widths"
+  );
 
   const buildDefaultParams = useCallback((): SearchParams => {
     const to = dayjs().endOf("day");
@@ -893,8 +846,8 @@ export function AuditLogTable({
       {hasAuditLogFeature ? (
         <div>
           <div className="overflow-x-auto">
-            <table
-              className="text-sm border-t border-block-border table-fixed"
+            <Table
+              className="border-t border-block-border"
               style={{ width: `${totalWidth}px` }}
             >
               <colgroup>
@@ -902,15 +855,17 @@ export function AuditLogTable({
                   <col key={columns[i].key} style={{ width: `${w}px` }} />
                 ))}
               </colgroup>
-              <thead>
-                <tr className="border-b border-block-border">
+              <TableHeader>
+                <TableRow>
                   {columns.map((col, colIdx) => (
-                    <th
+                    <TableHead
                       key={col.key}
                       className={cn(
-                        "relative px-4 py-3 text-left text-sm font-medium text-main whitespace-nowrap",
+                        "py-3 text-sm text-main",
                         col.sortable && "cursor-pointer select-none"
                       )}
+                      resizable={col.resizable}
+                      onResizeStart={(e) => onResizeStart(colIdx, e)}
                       onClick={
                         col.sortable ? () => toggleSort(col.key) : undefined
                       }
@@ -919,57 +874,48 @@ export function AuditLogTable({
                         {col.title}
                         {col.sortable && renderSortIndicator(col.key)}
                       </div>
-                      {col.resizable && (
-                        <div
-                          className="absolute right-0 top-1/4 h-1/2 w-[3px] cursor-col-resize rounded-full bg-gray-200 hover:bg-accent/60 active:bg-accent transition-colors"
-                          onMouseDown={(e) => onResizeStart(colIdx, e)}
-                        />
-                      )}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {loading && auditLogs.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={columns.length}
                       className="text-center py-8 text-control-placeholder"
                     >
                       {t("common.loading")}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : auditLogs.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={columns.length}
                       className="text-center py-8 text-control-placeholder"
                     >
                       {t("common.no-data")}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   auditLogs.map((log, idx) => (
-                    <tr
+                    <TableRow
                       key={log.name || idx}
-                      className={cn(
-                        "border-b border-block-border",
-                        idx % 2 === 1 && "bg-gray-50/50"
-                      )}
+                      className={idx % 2 === 1 ? "bg-gray-50/50" : undefined}
                     >
                       {columns.map((col) => (
-                        <td
+                        <TableCell
                           key={col.key}
-                          className="px-4 py-3 text-sm align-top overflow-hidden"
+                          className="py-3 text-sm align-top overflow-hidden"
                         >
                           {col.render(log)}
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination footer */}

@@ -1,11 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { type ColumnDef, useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -91,6 +100,19 @@ function ServiceAccountTable({
     }
   };
 
+  const columns: ColumnDef[] = useMemo(
+    () => [
+      { key: "account", defaultWidth: 500, minWidth: 200 },
+      { key: "operations", defaultWidth: 160, minWidth: 80, resizable: false },
+    ],
+    []
+  );
+
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+    columns,
+    "bb.service-accounts-table-widths"
+  );
+
   const [resetConfirmUser, setResetConfirmUser] = useState<User | undefined>();
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
@@ -136,29 +158,34 @@ function ServiceAccountTable({
   }
 
   return (
-    <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-control-bg">
-            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+    <div className="border rounded-sm overflow-hidden overflow-x-auto">
+      <Table style={{ width: totalWidth + "px" }}>
+        <colgroup>
+          {widths.map((w, i) => (
+            <col key={columns[i].key} style={{ width: w + "px" }} />
+          ))}
+        </colgroup>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead resizable onResizeStart={(e) => onResizeStart(0, e)}>
               {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-right font-medium whitespace-nowrap">
+            </TableHead>
+            <TableHead className="text-right">
               {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.map((user, i) => {
             const isDeleted = user.state === State.DELETED;
 
             return (
-              <tr
+              <TableRow
                 key={user.name}
-                className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
+                className={i % 2 === 1 ? "bg-gray-50" : ""}
               >
                 {/* Account column */}
-                <td className="px-4 py-2">
+                <TableCell>
                   <div className="flex items-center gap-x-3">
                     <UserAvatar title={user.title || user.email} />
                     <div className="flex flex-col min-w-0">
@@ -240,10 +267,10 @@ function ServiceAccountTable({
                       </div>
                     )}
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Operations column */}
-                <td className="px-4 py-2">
+                <TableCell>
                   <div className="flex justify-end gap-x-1">
                     {!isDeleted && (
                       <>
@@ -299,12 +326,12 @@ function ServiceAccountTable({
                         </Tooltip>
                       )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

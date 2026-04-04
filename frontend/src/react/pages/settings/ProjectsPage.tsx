@@ -24,6 +24,16 @@ import {
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
+import type { ColumnDef } from "@/react/hooks/useColumnWidths";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -988,6 +998,30 @@ export function ProjectsPage() {
   const canCreate = hasWorkspacePermissionV2("bb.projects.create");
   const canDelete = hasWorkspacePermissionV2("bb.projects.delete");
 
+  const columns: ColumnDef[] = useMemo(() => {
+    const cols: ColumnDef[] = [];
+    if (canDelete) {
+      cols.push({
+        key: "checkbox",
+        defaultWidth: 48,
+        minWidth: 48,
+        resizable: false,
+      });
+    }
+    cols.push(
+      { key: "id", defaultWidth: 200, minWidth: 128 },
+      { key: "name", defaultWidth: 300, minWidth: 200 },
+      { key: "labels", defaultWidth: 300, minWidth: 240 },
+      { key: "actions", defaultWidth: 50, minWidth: 50, resizable: false }
+    );
+    return cols;
+  }, [canDelete]);
+
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+    columns,
+    "bb.projects-table-widths"
+  );
+
   const handleCreated = useCallback((project: Project) => {
     router.push({ path: `/${project.name}` });
   }, []);
@@ -1068,115 +1102,134 @@ export function ProjectsPage() {
 
       {/* Table */}
       <div className="flex flex-col gap-y-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-control-border">
-              {canDelete && (
-                <th className="w-12 px-4 py-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="rounded-xs border-control-border"
-                  />
-                </th>
-              )}
-              <th className="px-4 py-2 text-left font-medium min-w-[128px]">
-                {t("common.id")}
-              </th>
-              <th
-                className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                onClick={() => toggleSort("title")}
-              >
-                <div className="flex items-center gap-x-1">
-                  {t("project.table.name")}
-                  {renderSortIndicator("title")}
-                </div>
-              </th>
-              <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-                {t("common.labels")}
-              </th>
-              <th className="w-[50px]" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading && projects.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={canDelete ? 5 : 4}
-                  className="px-4 py-8 text-center text-control-placeholder"
+        <div className="overflow-x-auto">
+          <Table style={{ width: `${totalWidth}px` }}>
+            <colgroup>
+              {widths.map((w, i) => (
+                <col key={columns[i].key} style={{ width: `${w}px` }} />
+              ))}
+            </colgroup>
+            <TableHeader>
+              <TableRow className="bg-gray-50 border-b border-control-border">
+                {canDelete && (
+                  <TableHead>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded-xs border-control-border"
+                    />
+                  </TableHead>
+                )}
+                <TableHead
+                  resizable
+                  onResizeStart={(e) => onResizeStart(canDelete ? 1 : 0, e)}
                 >
-                  <div className="flex items-center justify-center gap-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                    {t("common.loading")}
+                  {t("common.id")}
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleSort("title")}
+                  resizable
+                  onResizeStart={(e) => onResizeStart(canDelete ? 2 : 1, e)}
+                >
+                  <div className="flex items-center gap-x-1">
+                    {t("project.table.name")}
+                    {renderSortIndicator("title")}
                   </div>
-                </td>
-              </tr>
-            ) : projects.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={canDelete ? 5 : 4}
-                  className="px-4 py-8 text-center text-control-placeholder"
+                </TableHead>
+                <TableHead
+                  className="hidden md:table-cell"
+                  resizable
+                  onResizeStart={(e) => onResizeStart(canDelete ? 3 : 2, e)}
                 >
-                  {t("common.no-data")}
-                </td>
-              </tr>
-            ) : (
-              projects.map((project, i) => {
-                const resourceName = extractProjectResourceName(project.name);
-                const isDefault = resourceName === "default";
-                const isSelected = selectedNames.has(project.name);
-
-                return (
-                  <tr
-                    key={project.name}
-                    className={cn(
-                      "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
-                      i % 2 === 1 && "bg-gray-50/50"
-                    )}
-                    onClick={(e) => handleRowClick(project, e)}
+                  {t("common.labels")}
+                </TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && projects.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="py-8 text-center text-control-placeholder"
                   >
-                    {canDelete && (
-                      <td className="w-12 px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={isDefault}
-                          onChange={() => toggleSelection(project.name)}
+                    <div className="flex items-center justify-center gap-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      {t("common.loading")}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : projects.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="py-8 text-center text-control-placeholder"
+                  >
+                    {t("common.no-data")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                projects.map((project, i) => {
+                  const resourceName = extractProjectResourceName(project.name);
+                  const isDefault = resourceName === "default";
+                  const isSelected = selectedNames.has(project.name);
+
+                  return (
+                    <TableRow
+                      key={project.name}
+                      className={cn(
+                        "cursor-pointer hover:bg-gray-50",
+                        i % 2 === 1 && "bg-gray-50/50"
+                      )}
+                      onClick={(e) => handleRowClick(project, e)}
+                    >
+                      {canDelete && (
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isDefault}
+                            onChange={() => toggleSelection(project.name)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-xs border-control-border disabled:opacity-50"
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <HighlightText
+                          text={resourceName}
+                          keyword={searchText}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <HighlightText
+                          text={project.title}
+                          keyword={searchText}
+                        />
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <LabelsDisplay labels={project.labels} />
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className="flex justify-end"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-xs border-control-border disabled:opacity-50"
-                        />
-                      </td>
-                    )}
-                    <td className="px-4 py-2">
-                      <HighlightText text={resourceName} keyword={searchText} />
-                    </td>
-                    <td className="px-4 py-2">
-                      <HighlightText
-                        text={project.title}
-                        keyword={searchText}
-                      />
-                    </td>
-                    <td className="px-4 py-2 hidden md:table-cell">
-                      <LabelsDisplay labels={project.labels} />
-                    </td>
-                    <td className="px-4 py-2">
-                      <div
-                        className="flex justify-end"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ProjectActionDropdown
-                          project={project}
-                          onAction={handleProjectAction}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        >
+                          <ProjectActionDropdown
+                            project={project}
+                            onAction={handleProjectAction}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Pagination footer */}
         <div className="flex items-center justify-end gap-x-2 mx-4">
