@@ -51,7 +51,8 @@
         },
         "or": {
           "description": "以下任一为真…"
-        }
+        },
+        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
       },
       "input-value": "输入值",
       "input-value-press-enter": "输入值，按回车确认",
@@ -91,6 +92,7 @@
     "discard-changes": "取消修改",
     "edit": "编辑",
     "email": "邮箱",
+    "empty": "Empty",
     "enable": "Enable",
     "enabled": "开启",
     "environment": "环境",
@@ -245,6 +247,7 @@
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
     "engine": "引擎",
+    "expression": "Expression",
     "filter-database": "筛选数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
@@ -1150,7 +1153,15 @@
     "enabled": "双重认证已开启"
   },
   "database-group": {
-    "select": "选择数据库分组"
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "gitops": {
     "checklist": {
