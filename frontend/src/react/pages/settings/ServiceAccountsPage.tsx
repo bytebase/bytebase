@@ -26,13 +26,13 @@ import {
   getServiceAccountSuffix,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 import { UserAvatar } from "./shared/UserAvatar";
+import { updateProjectIamPolicyForMember } from "./shared/updateProjectIamPolicyForMember";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
@@ -402,35 +402,6 @@ function CreateServiceAccountDrawer({
     }
   };
 
-  const updateProjectIamPolicyForMember = async (
-    projectName: string,
-    member: string,
-    newRoles: string[]
-  ) => {
-    const policy = structuredClone(
-      projectIamPolicyStore.getProjectIamPolicy(projectName)
-    );
-    for (const binding of policy.bindings) {
-      binding.members = binding.members.filter((m) => m !== member);
-    }
-    policy.bindings = policy.bindings.filter(
-      (binding) => binding.members.length > 0
-    );
-    for (const role of newRoles) {
-      const existing = policy.bindings.find((b) => b.role === role);
-      if (existing) {
-        if (!existing.members.includes(member)) {
-          existing.members.push(member);
-        }
-      } else {
-        policy.bindings.push(
-          create(BindingSchema, { role, members: [member] })
-        );
-      }
-    }
-    await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
-  };
-
   const handleCreate = async () => {
     const sa = await serviceAccountStore.createServiceAccount(
       emailPrefix.trim(),
@@ -442,6 +413,7 @@ function CreateServiceAccountDrawer({
       const member = getServiceAccountNameInBinding(sa.email);
       if (projectEntity) {
         await updateProjectIamPolicyForMember(
+          projectIamPolicyStore,
           projectEntity.name,
           member,
           roles
