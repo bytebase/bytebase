@@ -676,9 +676,7 @@
           "timeout": {
             "description": "Thời gian tối đa cho phép để thực hiện một truy vấn.",
             "self": "Thời gian truy vấn tối đa"
-          },
-          "environment-scope": "môi trường",
-          "project-scope": "dự án"
+          }
         },
         "refresh-token-duration": {
           "days": "Day(s)",
@@ -1050,8 +1048,7 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
-    "title": "SQL Review",
-    "tooltip-for-resource": "Bạn cũng có thể cấu hình ở cấp độ {{scope}}. Bytebase sẽ ưu tiên cấu hình ở cấp độ môi trường."
+    "title": "SQL Review"
   },
   "subscription": {
     "contact-us": "Liên hệ chúng tôi",

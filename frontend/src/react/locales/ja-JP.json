@@ -676,9 +676,7 @@
           "timeout": {
             "description": "クエリの実行に許容される最大時間。",
             "self": "最大クエリ時間"
-          },
-          "environment-scope": "環境",
-          "project-scope": "プロジェクト"
+          }
         },
         "refresh-token-duration": {
           "days": "Day(s)",
@@ -1050,8 +1048,7 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
-    "title": "SQL Review",
-    "tooltip-for-resource": "{{scope}} レベルでも設定可能です。Bytebase は環境レベルの設定を優先します。"
+    "title": "SQL Review"
   },
   "subscription": {
     "contact-us": "お問い合わせ",

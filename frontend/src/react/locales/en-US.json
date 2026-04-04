@@ -676,9 +676,7 @@
           "timeout": {
             "description": "The maximum time allowed for a query to run.",
             "self": "Maximum query time"
-          },
-          "environment-scope": "environment",
-          "project-scope": "project"
+          }
         },
         "refresh-token-duration": {
           "days": "Day(s)",
@@ -1050,8 +1048,7 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
-    "title": "SQL Review",
-    "tooltip-for-resource": "It's also configurable at the {{scope}} level. Bytebase will prioritize the environment-level configuration."
+    "title": "SQL Review"
   },
   "subscription": {
     "contact-us": "Contact us",

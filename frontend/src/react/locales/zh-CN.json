@@ -676,9 +676,7 @@
           "timeout": {
             "description": "允许运行查询的最长时间。",
             "self": "最大查询时间"
-          },
-          "environment-scope": "环境",
-          "project-scope": "项目"
+          }
         },
         "refresh-token-duration": {
           "days": "天",
@@ -1050,8 +1048,7 @@
     "policy-update-failed": "审核策略更新失败",
     "policy-updated": "审核策略已更新",
     "review-policy": "审核策略",
-    "title": "SQL 审核策略",
-    "tooltip-for-resource": "也可在 {{scope}} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
+    "title": "SQL 审核策略"
   },
   "subscription": {
     "contact-us": "联系我们",
