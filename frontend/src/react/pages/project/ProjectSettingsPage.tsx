@@ -748,105 +748,111 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
             <div className="w-full flex flex-col justify-start items-start gap-y-6">
-              {/* SQL Review */}
-              {canGetPolicies &&
-                hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
-                  <div className="flex flex-col gap-y-2">
-                    <label className="font-medium">
-                      {t("sql-review.title")}
-                    </label>
-                    <div>
-                      {pendingReviewPolicy ? (
-                        <div className="inline-flex items-center gap-x-2">
-                          <Switch
-                            checked={enforceReview}
-                            onCheckedChange={setEnforceReview}
-                            disabled={
-                              !hasWorkspacePermissionV2(
-                                "bb.reviewConfigs.update"
-                              )
-                            }
-                          />
-                          <span
-                            className="text-sm font-medium text-accent cursor-pointer hover:underline"
-                            onClick={() =>
-                              router.push({
-                                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-                                params: {
-                                  sqlReviewPolicySlug:
-                                    sqlReviewPolicySlug(pendingReviewPolicy),
-                                },
-                              })
-                            }
-                          >
-                            {pendingReviewPolicy.name}
-                          </span>
-                          {canUpdatePolicies && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setPendingReviewPolicy(undefined);
-                                setEnforceReview(false);
-                              }}
+              {/* SQL Review + Max Rows: gated on bb.policies.get */}
+              {canGetPolicies && (
+                <>
+                  {/* SQL Review */}
+                  {hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
+                    <div className="flex flex-col gap-y-2">
+                      <label className="font-medium">
+                        {t("sql-review.title")}
+                      </label>
+                      <div>
+                        {pendingReviewPolicy ? (
+                          <div className="inline-flex items-center gap-x-2">
+                            <Switch
+                              checked={enforceReview}
+                              onCheckedChange={setEnforceReview}
+                              disabled={
+                                !hasWorkspacePermissionV2(
+                                  "bb.reviewConfigs.update"
+                                )
+                              }
+                            />
+                            <span
+                              className="text-sm font-medium text-accent cursor-pointer hover:underline"
+                              onClick={() =>
+                                router.push({
+                                  name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                                  params: {
+                                    sqlReviewPolicySlug:
+                                      sqlReviewPolicySlug(pendingReviewPolicy),
+                                  },
+                                })
+                              }
                             >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          disabled={
-                            !canUpdatePolicies ||
-                            !hasWorkspacePermissionV2("bb.reviewConfigs.list")
-                          }
-                          onClick={() => setShowReviewDialog(true)}
-                        >
-                          {t("sql-review.configure-policy")}
-                        </Button>
-                      )}
+                              {pendingReviewPolicy.name}
+                            </span>
+                            {canUpdatePolicies && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setPendingReviewPolicy(undefined);
+                                  setEnforceReview(false);
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            disabled={
+                              !canUpdatePolicies ||
+                              !hasWorkspacePermissionV2("bb.reviewConfigs.list")
+                            }
+                            onClick={() => setShowReviewDialog(true)}
+                          >
+                            {t("sql-review.configure-policy")}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Maximum SQL Result Rows */}
+                  <div>
+                    <p className="font-medium flex flex-row justify-start items-center">
+                      <span className="mr-2">
+                        {t(
+                          "settings.general.workspace.maximum-sql-result.rows.self"
+                        )}
+                      </span>
+                      <FeatureBadge
+                        feature={PlanFeature.FEATURE_QUERY_POLICY}
+                      />
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {t(
+                        "settings.general.workspace.maximum-sql-result.rows.description"
+                      )}{" "}
+                      <span className="font-semibold">
+                        {t("settings.general.workspace.no-limit")}
+                      </span>
+                    </p>
+                    <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
+                      <Input
+                        type="number"
+                        className="w-60"
+                        min={0}
+                        value={String(maxRows)}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (!Number.isNaN(v) && v >= 0) setMaxRows(v);
+                        }}
+                        disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
+                      />
+                      <span className="text-sm text-control-light">
+                        {t(
+                          "settings.general.workspace.maximum-sql-result.rows.rows"
+                        )}
+                      </span>
                     </div>
                   </div>
-                )}
-
-              {/* Maximum SQL Result Rows */}
-              <div>
-                <p className="font-medium flex flex-row justify-start items-center">
-                  <span className="mr-2">
-                    {t(
-                      "settings.general.workspace.maximum-sql-result.rows.self"
-                    )}
-                  </span>
-                  <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
-                </p>
-                <p className="text-sm text-gray-400 mt-1">
-                  {t(
-                    "settings.general.workspace.maximum-sql-result.rows.description"
-                  )}{" "}
-                  <span className="font-semibold">
-                    {t("settings.general.workspace.no-limit")}
-                  </span>
-                </p>
-                <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-                  <Input
-                    type="number"
-                    className="w-60"
-                    min={0}
-                    value={String(maxRows)}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value, 10);
-                      if (!Number.isNaN(v) && v >= 0) setMaxRows(v);
-                    }}
-                    disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
-                  />
-                  <span className="text-sm text-control-light">
-                    {t(
-                      "settings.general.workspace.maximum-sql-result.rows.rows"
-                    )}
-                  </span>
-                </div>
-              </div>
+                </>
+              )}
 
               {/* Allow Request Role */}
               <div>
