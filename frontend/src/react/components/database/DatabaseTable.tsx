@@ -244,7 +244,7 @@ export function DatabaseTable({
 
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="">
         <Table style={{ minWidth: `${totalWidth}px` }}>
           <colgroup>
             {widths.map((w, i) => (

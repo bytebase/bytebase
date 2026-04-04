@@ -845,7 +845,7 @@ export function AuditLogTable({
       {/* Table */}
       {hasAuditLogFeature ? (
         <div>
-          <div className="overflow-x-auto">
+          <div className="">
             <Table
               className="border-t border-block-border"
               style={{ minWidth: `${totalWidth}px` }}

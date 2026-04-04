@@ -1203,7 +1203,7 @@ export function InstancesPage() {
 
       {/* Table */}
       <div className="flex flex-col gap-y-4">
-        <div className="overflow-x-auto">
+        <div className="">
           <Table style={{ minWidth: `${totalWidth}px` }}>
             <colgroup>
               {widths.map((w, i) => (

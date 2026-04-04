@@ -2072,7 +2072,7 @@ export function IDPsPage() {
       </div>
 
       {ready ? (
-        <div className="border rounded-sm overflow-hidden overflow-x-auto">
+        <div className="border rounded-sm">
           <Table style={{ minWidth: `${totalWidth}px` }}>
             <colgroup>
               {widths.map((w, i) => (
