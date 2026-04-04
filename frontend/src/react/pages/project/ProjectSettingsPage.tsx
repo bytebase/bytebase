@@ -29,9 +29,8 @@ import {
   useWorkspaceApprovalSettingStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { Permission } from "@/types";
+import type { Permission, SQLReviewPolicy } from "@/types";
 import { isDefaultProject } from "@/types";
-import type { SQLReviewPolicy } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   PolicyResourceType,
@@ -43,9 +42,7 @@ import {
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
 } from "@/types/proto-es/v1/project_service_pb";
-import {
-  WorkspaceApprovalSetting_Rule_Source,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   convertKVListToLabels,
@@ -124,11 +121,7 @@ function ApprovalFlowIndicator({
 // ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
-export function ProjectSettingsPage({
-  projectId,
-}: {
-  projectId: string;
-}) {
+export function ProjectSettingsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
   const policyStore = usePolicyV1Store();
@@ -147,8 +140,7 @@ export function ProjectSettingsPage({
 
   const allowEdit = useMemo(
     () =>
-      hasPermission("bb.projects.update") &&
-      project?.state === State.ACTIVE,
+      hasPermission("bb.projects.update") && project?.state === State.ACTIVE,
     [hasPermission, project]
   );
 
@@ -296,12 +288,7 @@ export function ProjectSettingsPage({
   const isDirty = useMemo(() => {
     if (!project) return false;
     if (title !== project.title) return true;
-    if (
-      !isEqual(
-        convertKVListToLabels(labelKVList, false),
-        project.labels
-      )
-    )
+    if (!isEqual(convertKVListToLabels(labelKVList, false), project.labels))
       return true;
     // SQL review
     if (!isEqual(pendingReviewPolicy, currentReviewPolicy)) return true;
@@ -506,17 +493,12 @@ export function ProjectSettingsPage({
         issuePatch.requirePlanCheckNoError = requirePlanCheckNoError;
         issueMask.push("require_plan_check_no_error");
       }
-      if (
-        postgresDatabaseTenantMode !== project.postgresDatabaseTenantMode
-      ) {
+      if (postgresDatabaseTenantMode !== project.postgresDatabaseTenantMode) {
         issuePatch.postgresDatabaseTenantMode = postgresDatabaseTenantMode;
         issueMask.push("postgres_database_tenant_mode");
       }
       const newRetries = maxRetries;
-      if (
-        newRetries !==
-        (project.executionRetryPolicy?.maximumRetries ?? 0)
-      ) {
+      if (newRetries !== (project.executionRetryPolicy?.maximumRetries ?? 0)) {
         issuePatch.executionRetryPolicy = create(
           Project_ExecutionRetryPolicySchema,
           { maximumRetries: newRetries }
@@ -527,9 +509,7 @@ export function ProjectSettingsPage({
         issuePatch.ciSamplingSize = ciSamplingSize;
         issueMask.push("ci_sampling_size");
       }
-      if (
-        parallelTasksPerRollout !== (project.parallelTasksPerRollout ?? 0)
-      ) {
+      if (parallelTasksPerRollout !== (project.parallelTasksPerRollout ?? 0)) {
         issuePatch.parallelTasksPerRollout = parallelTasksPerRollout;
         issueMask.push("parallel_tasks_per_rollout");
       }
@@ -650,9 +630,7 @@ export function ProjectSettingsPage({
       }
       keys.add(kv.key);
       if (kv.value.length > 63) {
-        errors.push(
-          `Value for "${kv.key}" exceeds 63 characters`
-        );
+        errors.push(`Value for "${kv.key}" exceeds 63 characters`);
       }
     }
     return errors;
@@ -672,29 +650,23 @@ export function ProjectSettingsPage({
     setNewLabelValue("");
   }, [newLabelValue, issueLabels]);
 
-  const removeIssueLabel = useCallback(
-    (index: number) => {
-      setIssueLabels((prev) => {
-        const next = prev.filter((_, i) => i !== index);
-        if (next.length === 0) {
-          setForceIssueLabels(false);
-        }
-        return next;
-      });
-    },
-    []
-  );
+  const removeIssueLabel = useCallback((index: number) => {
+    setIssueLabels((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        setForceIssueLabels(false);
+      }
+      return next;
+    });
+  }, []);
 
-  const updateIssueLabelColor = useCallback(
-    (index: number, color: string) => {
-      setIssueLabels((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], color };
-        return next;
-      });
-    },
-    []
-  );
+  const updateIssueLabelColor = useCallback((index: number, color: string) => {
+    setIssueLabels((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], color };
+      return next;
+    });
+  }, []);
 
   if (!project) return null;
 
@@ -721,8 +693,7 @@ export function ProjectSettingsPage({
             <form className="w-full flex flex-col gap-y-4">
               <div>
                 <div className="font-medium">
-                  {t("common.name")}{" "}
-                  <span className="text-error">*</span>
+                  {t("common.name")} <span className="text-error">*</span>
                 </div>
                 <Input
                   className="mt-1"
@@ -736,8 +707,7 @@ export function ProjectSettingsPage({
                   required
                 />
                 <div className="mt-1 text-sm text-control-light">
-                  {t("common.id")}:{" "}
-                  {extractProjectResourceName(project.name)}
+                  {t("common.id")}: {extractProjectResourceName(project.name)}
                 </div>
               </div>
 
@@ -751,10 +721,7 @@ export function ProjectSettingsPage({
                 </div>
                 <div className="flex flex-col gap-y-2">
                   {labelKVList.map((kv, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-x-2"
-                    >
+                    <div key={index} className="flex items-center gap-x-2">
                       <Input
                         className="flex-1"
                         placeholder={t("common.key")}
@@ -791,11 +758,7 @@ export function ProjectSettingsPage({
                     </div>
                   )}
                   {canUpdateProject && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={addKVLabel}
-                    >
+                    <Button variant="outline" size="sm" onClick={addKVLabel}>
                       {t("common.add")}
                     </Button>
                   )}
@@ -841,9 +804,8 @@ export function ProjectSettingsPage({
                               router.push({
                                 name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
                                 params: {
-                                  sqlReviewPolicySlug: sqlReviewPolicySlug(
-                                    pendingReviewPolicy
-                                  ),
+                                  sqlReviewPolicySlug:
+                                    sqlReviewPolicySlug(pendingReviewPolicy),
                                 },
                               })
                             }
@@ -868,9 +830,7 @@ export function ProjectSettingsPage({
                           variant="outline"
                           disabled={
                             !canUpdatePolicies ||
-                            !hasWorkspacePermissionV2(
-                              "bb.reviewConfigs.list"
-                            )
+                            !hasWorkspacePermissionV2("bb.reviewConfigs.list")
                           }
                           onClick={() => setShowReviewDialog(true)}
                         >
@@ -889,9 +849,7 @@ export function ProjectSettingsPage({
                       "settings.general.workspace.maximum-sql-result.rows.self"
                     )}
                   </span>
-                  <FeatureBadge
-                    feature={PlanFeature.FEATURE_QUERY_POLICY}
-                  />
+                  <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
                   {t(
@@ -909,7 +867,7 @@ export function ProjectSettingsPage({
                     value={String(maxRows)}
                     onChange={(e) => {
                       const v = parseInt(e.target.value, 10);
-                      if (!isNaN(v) && v >= 0) setMaxRows(v);
+                      if (!Number.isNaN(v) && v >= 0) setMaxRows(v);
                     }}
                     disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
                   />
@@ -935,9 +893,7 @@ export function ProjectSettingsPage({
                     )}
                   </span>
                   <ApprovalFlowIndicator
-                    source={
-                      WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE
-                    }
+                    source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE}
                   />
                 </div>
                 <div className="mt-1 text-sm text-gray-400">
@@ -959,15 +915,11 @@ export function ProjectSettingsPage({
                     {t("project.settings.issue-related.allow-jit.self")}
                   </span>
                   <ApprovalFlowIndicator
-                    source={
-                      WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS
-                    }
+                    source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS}
                   />
                 </div>
                 <div className="mt-1 text-sm text-gray-400">
-                  {t(
-                    "project.settings.issue-related.allow-jit.description"
-                  )}
+                  {t("project.settings.issue-related.allow-jit.description")}
                 </div>
               </div>
             </div>
@@ -990,9 +942,7 @@ export function ProjectSettingsPage({
                 <div className="font-medium">
                   {t("project.settings.issue-related.labels.self")}
                   <div className="text-sm text-gray-500 font-normal">
-                    {t(
-                      "project.settings.issue-related.labels.description"
-                    )}
+                    {t("project.settings.issue-related.labels.description")}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1055,9 +1005,7 @@ export function ProjectSettingsPage({
               <ToggleRow
                 checked={forceIssueLabels}
                 onCheckedChange={setForceIssueLabels}
-                disabled={
-                  !canUpdateProject || issueLabels.length === 0
-                }
+                disabled={!canUpdateProject || issueLabels.length === 0}
                 label={t(
                   "project.settings.issue-related.labels.force-issue-labels.self"
                 )}
@@ -1141,9 +1089,7 @@ export function ProjectSettingsPage({
 
               {/* Numeric inputs */}
               <NumericRow
-                label={t(
-                  "project.settings.issue-related.max-retries.self"
-                )}
+                label={t("project.settings.issue-related.max-retries.self")}
                 description={t(
                   "project.settings.issue-related.max-retries.description"
                 )}
@@ -1183,9 +1129,7 @@ export function ProjectSettingsPage({
         {/* ============================================================= */}
         <div className="py-6 lg:flex">
           <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("common.danger-zone")}
-            </h1>
+            <h1 className="text-2xl font-bold">{t("common.danger-zone")}</h1>
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
             <div className="border border-error-alpha bg-error-alpha rounded-lg divide-y divide-error-alpha">
@@ -1269,10 +1213,7 @@ export function ProjectSettingsPage({
               <Button variant="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={labelErrors.length > 0}
-              >
+              <Button onClick={handleSave} disabled={labelErrors.length > 0}>
                 {t("common.confirm-and-update")}
               </Button>
             </div>
@@ -1291,7 +1232,7 @@ export function ProjectSettingsPage({
           <div className="mt-4 flex flex-col gap-y-2 max-h-96 overflow-y-auto">
             {reviewPolicyList.length === 0 ? (
               <p className="text-sm text-control-light">
-{t("common.no-data")}
+                {t("common.no-data")}
               </p>
             ) : (
               reviewPolicyList.map((policy) => (
@@ -1339,8 +1280,7 @@ export function ProjectSettingsPage({
         <DialogContent className="p-6 max-w-md">
           <DialogTitle>
             {dangerAction === "archive" && t("common.confirm-archive")}
-            {dangerAction === "restore" &&
-              t("project.settings.restore.title")}
+            {dangerAction === "restore" && t("project.settings.restore.title")}
             {dangerAction === "delete" && t("common.confirm-delete")}
           </DialogTitle>
           <p className="text-sm text-control-light mt-2">
@@ -1364,9 +1304,7 @@ export function ProjectSettingsPage({
               {t("common.cancel")}
             </Button>
             <Button
-              variant={
-                dangerAction === "delete" ? "destructive" : "default"
-              }
+              variant={dangerAction === "delete" ? "destructive" : "default"}
               onClick={handleDangerConfirm}
               disabled={executing}
             >
@@ -1445,13 +1383,11 @@ function NumericRow({
           value={String(value)}
           onChange={(e) => {
             const v = parseInt(e.target.value, 10);
-            if (!isNaN(v) && v >= 0) onChange(v);
+            if (!Number.isNaN(v) && v >= 0) onChange(v);
           }}
           disabled={disabled}
         />
-        {suffix && (
-          <span className="text-sm text-control-light">{suffix}</span>
-        )}
+        {suffix && <span className="text-sm text-control-light">{suffix}</span>}
       </div>
     </div>
   );
