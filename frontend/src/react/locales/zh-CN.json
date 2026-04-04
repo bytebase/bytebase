@@ -121,6 +121,7 @@
     "operations": "操作",
     "permissions": "权限",
     "project": "项目",
+    "release": "版本",
     "reorder": "排序",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",

@@ -121,6 +121,7 @@
     "operations": "Operaciones",
     "permissions": "Permisos",
     "project": "Proyecto",
+    "release": "Versión",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",

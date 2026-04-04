@@ -121,6 +121,7 @@
     "operations": "操作",
     "permissions": "権限",
     "project": "プロジェクト",
+    "release": "リリース",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",

@@ -113,7 +113,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               : [env.id, env.title],
             render: isUnknown
               ? () => (
-                  <span className="italic text-control-light">Unassigned</span>
+                  <span className="italic text-control-light">
+                    {t("common.unassigned")}
+                  </span>
                 )
               : undefined,
             custom: isUnknown,

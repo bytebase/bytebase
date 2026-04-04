@@ -25,6 +25,7 @@ import {
   getInstanceResource,
   hostPortOfInstanceV1,
 } from "@/utils";
+import { extractReleaseUID } from "@/utils/v1/release";
 
 export type DatabaseTableMode = "ALL" | "PROJECT";
 
@@ -235,6 +236,11 @@ export function DatabaseTable({
             <th className="px-4 py-2 text-left font-medium">
               {t("common.environment")}
             </th>
+            {!showProjectColumn && (
+              <th className="px-4 py-2 text-left font-medium">
+                {t("common.release")}
+              </th>
+            )}
             {showProjectColumn && (
               <th
                 className="px-4 py-2 text-left font-medium cursor-pointer select-none"
@@ -270,7 +276,7 @@ export function DatabaseTable({
           {loading && databases.length === 0 ? (
             <tr>
               <td
-                colSpan={showProjectColumn ? 8 : 7}
+                colSpan={8}
                 className="px-4 py-8 text-center text-control-placeholder"
               >
                 <div className="flex items-center justify-center gap-x-2">
@@ -282,7 +288,7 @@ export function DatabaseTable({
           ) : databases.length === 0 ? (
             <tr>
               <td
-                colSpan={showProjectColumn ? 8 : 7}
+                colSpan={8}
                 className="px-4 py-8 text-center text-control-placeholder"
               >
                 {t("common.no-data")}
@@ -327,6 +333,13 @@ export function DatabaseTable({
                       environmentName={getDatabaseEnvironment(db).name}
                     />
                   </td>
+                  {!showProjectColumn && (
+                    <td className="px-4 py-2">
+                      <span className="truncate">
+                        {db.release ? extractReleaseUID(db.release) : "-"}
+                      </span>
+                    </td>
+                  )}
                   {showProjectColumn && (
                     <td className="px-4 py-2">
                       <span className="truncate">
