@@ -160,7 +160,13 @@
     "warning": "警告",
     "you": "您",
     "database-group": "数据库分组",
-    "databases": "数据库"
+    "databases": "数据库",
+    "danger-zone": "危险区域",
+    "archive-resource": "归档{{type}}",
+    "archive-description": "将「{{name}}」标记为已归档且只读。",
+    "confirm-archive": "确定归档资源？",
+    "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
+    "confirm-delete": "确定删除资源？"
   },
   "create-db": {
     "cluster": "集群",
@@ -370,6 +376,81 @@
     "filter-projects": "过滤项目",
     "table": {
       "name": "名称"
+    },
+    "settings": {
+      "success-updated": "项目设置更新成功",
+      "update-failed": "无法更新项目设置。",
+      "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
+      "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
+      "restore": {
+        "title": "恢复项目",
+        "btn-text": "恢复这个@:common.project"
+      },
+      "project-labels": {
+        "self": "项目标签",
+        "description": "用键值标签组织项目（最多64个）"
+      },
+      "issue-related": {
+        "self": "工单相关",
+        "labels": {
+          "self": "工单标签",
+          "description": "可以在工单中附加标签以便管理",
+          "placeholder": "按 Enter 键添加标签",
+          "force-issue-labels": {
+            "self": "要求所有工单都必须有标签",
+            "description": "创建工单时必须添加至少一个标签。",
+            "warning": "至少需要配置一个标签"
+          }
+        },
+        "enforce-issue-title": {
+          "self": "要求手动输入标题",
+          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
+        },
+        "enforce-sql-review": {
+          "self": "强制 SQL 审核",
+          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
+        },
+        "allow-self-approval": {
+          "self": "允许创建者审批",
+          "description": "允许创建者审批自己创建的工单。"
+        },
+        "allow-request-role": {
+          "self": "允许申请角色",
+          "description": "非项目所有者可以自行申请项目级角色"
+        },
+        "allow-jit": {
+          "self": "允许即时访问",
+          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
+        },
+        "postgres-database-tenant-mode": {
+          "self": "Postgres 数据库租户模式",
+          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
+        },
+        "max-retries": {
+          "self": "锁超时的最大重试数",
+          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。"
+        },
+        "ci-sampling-size": {
+          "self": "CI 数据采样大小",
+          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "每个发布的并行任务数",
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
+        },
+        "require-issue-approval": {
+          "self": "创建发布前需要工单审批",
+          "description": "工单必须在创建发布前获得批准。"
+        },
+        "require-plan-check-no-error": {
+          "self": "创建发布前要求变更检查通过",
+          "description": "所有变更检查必须无错误才能创建发布。"
+        },
+        "approval-flow-configured": "审批流程已配置",
+        "approval-flow-fallback": "使用默认审批规则",
+        "approval-flow-not-configured": "未配置审批流程",
+        "view-approval-flow": "查看审批流程"
+      }
     }
   },
   "quick-action": {
@@ -588,7 +669,9 @@
           "timeout": {
             "description": "允许运行查询的最长时间。",
             "self": "最大查询时间"
-          }
+          },
+          "environment-scope": "环境",
+          "project-scope": "项目"
         },
         "refresh-token-duration": {
           "days": "天",
@@ -833,7 +916,8 @@
       "members-and-groups": "成员和群组",
       "sso": "SSO",
       "subscription": "订阅",
-      "users-and-groups": "用户和群组"
+      "users-and-groups": "用户和群组",
+      "security-and-policy": "安全 & 策略"
     },
     "sso": {
       "create": "创建 SSO",
@@ -959,7 +1043,8 @@
     "policy-update-failed": "审核策略更新失败",
     "policy-updated": "审核策略已更新",
     "review-policy": "审核策略",
-    "title": "SQL 审核策略"
+    "title": "SQL 审核策略",
+    "tooltip-for-resource": "也可在 {{scope}} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
   },
   "subscription": {
     "contact-us": "联系我们",

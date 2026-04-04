@@ -160,7 +160,13 @@
     "warning": "警告する",
     "you": "あなた",
     "database-group": "データベースグループ",
-    "databases": "データベース"
+    "databases": "データベース",
+    "danger-zone": "Danger Zone",
+    "archive-resource": "Archive {{type}}",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "confirm-archive": "Archive Resource?",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
+    "confirm-delete": "Delete Resource?"
   },
   "create-db": {
     "cluster": "集まる",
@@ -370,6 +376,81 @@
     "filter-projects": "プロジェクトをフィルタリング",
     "table": {
       "name": "名前"
+    },
+    "settings": {
+      "success-updated": "プロジェクト設定が正常に更新されました",
+      "update-failed": "プロジェクト設定の更新に失敗しました。",
+      "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
+      "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
+      "restore": {
+        "title": "アイテムを復元する",
+        "btn-text": "この @:common.project を復元します"
+      },
+      "project-labels": {
+        "self": "プロジェクトラベル",
+        "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
+      },
+      "issue-related": {
+        "self": "イシュー関連",
+        "labels": {
+          "self": "イシューラベル",
+          "description": "イシューにラベルを貼って管理できる",
+          "placeholder": "Enterキーを押してタグを追加してください",
+          "force-issue-labels": {
+            "self": "すべてのイシューにラベルが必要",
+            "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
+            "warning": "少なくとも 1 つのラベルを設定する必要があります"
+          }
+        },
+        "enforce-issue-title": {
+          "self": "手動タイトルを要求する",
+          "description": "イシューとプランのタイトルを自動生成ではなくユーザーが作成することを要求します。"
+        },
+        "enforce-sql-review": {
+          "self": "SQL レビューを強制",
+          "description": "課題作成を許可する前に、SQL レビューチェックがエラーなしで合格することを要求します。"
+        },
+        "allow-self-approval": {
+          "self": "自己承認を許可する",
+          "description": "イシューの作成者がイシューを承認できるようにします。"
+        },
+        "allow-request-role": {
+          "self": "ロールリクエストを許可",
+          "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます"
+        },
+        "allow-jit": {
+          "self": "ジャストインタイムアクセスを許可",
+          "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。"
+        },
+        "postgres-database-tenant-mode": {
+          "self": "Postgres データベーステナントモード",
+          "description": "Postgres データベーステナントモード。有効にすると、イシューはデータベースのOWNERによって実行されます。無効にすると、イシューはインスタンス接続ユーザーによって実行されます。"
+        },
+        "max-retries": {
+          "self": "ロックタイムアウトの最大レトリカウント",
+          "description": "タスクを実行するときのロックタイムアウトの最大再試行カウント。\nデフォルト値は0です。ポストグレスにのみ適用できます。"
+        },
+        "ci-sampling-size": {
+          "self": "CIデータサンプリングサイズ",
+          "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。"
+        },
+        "parallel_tasks_per_rollout": {
+          "self": "ロールアウトごとの並列タスク",
+          "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
+        },
+        "require-issue-approval": {
+          "self": "ロールアウト作成前にイシュー承認が必要",
+          "description": "ロールアウトを作成する前にイシューの承認が必要です。"
+        },
+        "require-plan-check-no-error": {
+          "self": "ロールアウト作成前にプランチェック合格が必要",
+          "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。"
+        },
+        "approval-flow-configured": "承認フローが設定済み",
+        "approval-flow-fallback": "フォールバック承認ルールを使用中",
+        "approval-flow-not-configured": "承認フローが未設定",
+        "view-approval-flow": "承認フローを表示"
+      }
     }
   },
   "quick-action": {
@@ -588,7 +669,9 @@
           "timeout": {
             "description": "クエリの実行に許容される最大時間。",
             "self": "最大クエリ時間"
-          }
+          },
+          "environment-scope": "環境",
+          "project-scope": "プロジェクト"
         },
         "refresh-token-duration": {
           "days": "Day(s)",
@@ -833,7 +916,8 @@
       "members-and-groups": "メンバーとグループ",
       "sso": "SSO",
       "subscription": "サブスクリプション",
-      "users-and-groups": "ユーザーとグループ"
+      "users-and-groups": "ユーザーとグループ",
+      "security-and-policy": "セキュリティポリシー"
     },
     "sso": {
       "create": "SSOの作成",
@@ -959,7 +1043,8 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
-    "title": "SQL Review"
+    "title": "SQL Review",
+    "tooltip-for-resource": "{{scope}} レベルでも設定可能です。Bytebase は環境レベルの設定を優先します。"
   },
   "subscription": {
     "contact-us": "お問い合わせ",
