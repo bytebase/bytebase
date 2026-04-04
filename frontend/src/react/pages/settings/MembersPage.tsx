@@ -104,7 +104,9 @@ function MemberTable({
             <th className="px-4 py-2 text-left font-medium text-control-light">
               {t("settings.members.table.roles")}
             </th>
-            <th className="w-24 px-4 py-2 text-left font-medium text-control-light" />
+            <th className="w-24 px-4 py-2 text-left font-medium text-control-light">
+              {t("common.operations")}
+            </th>
           </tr>
         </thead>
         <tbody>

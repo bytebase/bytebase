@@ -19,16 +19,7 @@ import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { type ColumnDef, useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -124,19 +115,6 @@ function GroupTable({
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const groupStore = useGroupStore();
   const userStore = useUserStore();
-
-  const columns: ColumnDef[] = useMemo(
-    () => [
-      { key: "groups-users", defaultWidth: 500, minWidth: 200 },
-      { key: "actions", defaultWidth: 100, minWidth: 60, resizable: false },
-    ],
-    []
-  );
-
-  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
-    columns,
-    "bb.groups-table-widths"
-  );
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
@@ -257,22 +235,17 @@ function GroupTable({
   }
 
   return (
-    <div ref={containerRef} className="border rounded-sm overflow-x-auto">
-      <Table style={{ width: `${totalWidth}px` }}>
-        <colgroup>
-          {widths.map((w, i) => (
-            <col key={columns[i].key} style={{ width: `${w}px` }} />
-          ))}
-        </colgroup>
-        <TableHeader>
-          <TableRow className="bg-control-bg">
-            <TableHead resizable onResizeStart={(e) => onResizeStart(0, e)}>
+    <div className="border rounded-sm overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-control-bg">
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
               {t("common.groups")} / {t("common.users")}
-            </TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+            <th className="px-4 py-2 text-right font-medium whitespace-nowrap w-16" />
+          </tr>
+        </thead>
+        <tbody>
           {groups.map((group, i) => {
             const isExpanded = expandedGroups.has(group.name);
             const members = memberCache.get(group.name);
@@ -299,8 +272,8 @@ function GroupTable({
               />
             );
           })}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -333,8 +306,8 @@ function GroupRow({
 
   return (
     <>
-      <TableRow className={stripeBg}>
-        <TableCell>
+      <tr className={`border-b last:border-b-0 ${stripeBg}`}>
+        <td className="px-4 py-2">
           <div className="flex items-center gap-x-2">
             <button
               className="shrink-0 p-0.5 rounded hover:bg-gray-200"
@@ -368,8 +341,8 @@ function GroupRow({
               </span>
             </div>
           </div>
-        </TableCell>
-        <TableCell>
+        </td>
+        <td className="px-4 py-2">
           <div className="flex justify-end gap-x-1">
             {canEdit && (
               <Tooltip content={t("common.edit")}>
@@ -396,8 +369,8 @@ function GroupRow({
               </Tooltip>
             )}
           </div>
-        </TableCell>
-      </TableRow>
+        </td>
+      </tr>
       {isExpanded &&
         members &&
         members.map((user) => {
@@ -407,8 +380,11 @@ function GroupRow({
           const isOwner = memberInfo?.role === GroupMember_Role.OWNER;
 
           return (
-            <TableRow key={user.name} className={stripeBg}>
-              <TableCell className="pl-14">
+            <tr
+              key={user.name}
+              className={`border-b last:border-b-0 ${stripeBg}`}
+            >
+              <td className="px-4 py-2 pl-14">
                 <div className="flex items-center gap-x-2">
                   <span>{user.title}</span>
                   <span className="textinfolabel text-xs">{user.email}</span>
@@ -422,20 +398,20 @@ function GroupRow({
                     </Badge>
                   )}
                 </div>
-              </TableCell>
-              <TableCell />
-            </TableRow>
+              </td>
+              <td />
+            </tr>
           );
         })}
       {isExpanded && !members && (
-        <TableRow className={stripeBg}>
-          <TableCell colSpan={2} className="pl-14">
+        <tr className={stripeBg}>
+          <td colSpan={2} className="px-4 py-2 pl-14">
             <div className="flex items-center gap-x-2 text-control-light text-sm">
               <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
               {t("common.loading")}
             </div>
-          </TableCell>
-        </TableRow>
+          </td>
+        </tr>
       )}
     </>
   );

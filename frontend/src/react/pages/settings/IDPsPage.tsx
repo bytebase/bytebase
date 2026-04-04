@@ -25,15 +25,6 @@ import {
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
-import { type ColumnDef, useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
@@ -1987,21 +1978,6 @@ export function IDPsPage() {
   const [ready, setReady] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
-  const columns: ColumnDef[] = useMemo(
-    () => [
-      { key: "id", defaultWidth: 200, minWidth: 100 },
-      { key: "name", defaultWidth: 240, minWidth: 120 },
-      { key: "type", defaultWidth: 140, minWidth: 80 },
-      { key: "domain", defaultWidth: 200, minWidth: 100 },
-    ],
-    []
-  );
-
-  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
-    columns,
-    "bb.idps-table-widths"
-  );
-
   const hasSSOFeature = useVueState(() =>
     subscriptionStore.hasFeature(PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO)
   );
@@ -2072,61 +2048,56 @@ export function IDPsPage() {
       </div>
 
       {ready ? (
-        <div ref={containerRef} className="border rounded-sm overflow-x-auto">
-          <Table style={{ width: `${totalWidth}px` }}>
-            <colgroup>
-              {widths.map((w, i) => (
-                <col key={columns[i].key} style={{ width: `${w}px` }} />
-              ))}
-            </colgroup>
-            <TableHeader>
-              <TableRow className="bg-control-bg">
-                <TableHead resizable onResizeStart={(e) => onResizeStart(0, e)}>
+        <div className="border rounded-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-control-bg">
+                <th className="px-4 py-2 text-left font-medium w-40">
                   {t("common.id")}
-                </TableHead>
-                <TableHead resizable onResizeStart={(e) => onResizeStart(1, e)}>
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
                   {t("common.name")}
-                </TableHead>
-                <TableHead resizable onResizeStart={(e) => onResizeStart(2, e)}>
+                </th>
+                <th className="px-4 py-2 text-left font-medium w-32">
                   {t("common.type")}
-                </TableHead>
-                <TableHead resizable onResizeStart={(e) => onResizeStart(3, e)}>
+                </th>
+                <th className="px-4 py-2 text-left font-medium w-48">
                   {t("settings.sso.form.domain")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
               {identityProviderList.length === 0 ? (
-                <TableRow>
-                  <TableCell
+                <tr>
+                  <td
                     colSpan={4}
-                    className="py-8 text-center text-control-light"
+                    className="px-4 py-8 text-center text-control-light"
                   >
                     {t("common.no-data")}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
                 identityProviderList.map((idp, i) => (
-                  <TableRow
+                  <tr
                     key={idp.name}
-                    className={`cursor-pointer hover:bg-gray-50 ${
+                    className={`border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${
                       i % 2 === 1 ? "bg-gray-50/50" : ""
                     }`}
                     onClick={() => handleRowClick(idp)}
                   >
-                    <TableCell>
+                    <td className="px-4 py-2">
                       {getIdentityProviderResourceId(idp.name)}
-                    </TableCell>
-                    <TableCell>{idp.title}</TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-4 py-2">{idp.title}</td>
+                    <td className="px-4 py-2">
                       {identityProviderTypeToString(idp.type)}
-                    </TableCell>
-                    <TableCell>{idp.domain || "-"}</TableCell>
-                  </TableRow>
+                    </td>
+                    <td className="px-4 py-2">{idp.domain || "-"}</td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="flex items-center justify-center h-32">

@@ -26,16 +26,7 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { type ColumnDef, useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -219,20 +210,6 @@ function UserTable({
     }
   };
 
-  const columns: ColumnDef[] = useMemo(
-    () => [
-      { key: "account", defaultWidth: 400, minWidth: 200 },
-      { key: "groups", defaultWidth: 300, minWidth: 120 },
-      { key: "operations", defaultWidth: 120, minWidth: 80, resizable: false },
-    ],
-    []
-  );
-
-  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
-    columns,
-    "bb.users-table-widths"
-  );
-
   if (users.length === 0) {
     return (
       <div className="py-8 text-center text-control-light text-sm">
@@ -242,37 +219,34 @@ function UserTable({
   }
 
   return (
-    <div ref={containerRef} className="border rounded-sm overflow-x-auto">
-      <Table style={{ width: `${totalWidth}px` }}>
-        <colgroup>
-          {widths.map((w, i) => (
-            <col key={columns[i].key} style={{ width: `${w}px` }} />
-          ))}
-        </colgroup>
-        <TableHeader>
-          <TableRow className="bg-control-bg">
-            <TableHead resizable onResizeStart={(e) => onResizeStart(0, e)}>
+    <div className="border rounded-sm overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-control-bg">
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
               {t("settings.members.table.account")}
-            </TableHead>
-            <TableHead resizable onResizeStart={(e) => onResizeStart(1, e)}>
+            </th>
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
               {t("settings.members.table.groups")}
-            </TableHead>
-            <TableHead className="text-right" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+            <th className="px-4 py-2 text-right font-medium whitespace-nowrap">
+              {t("common.operations")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {users.map((user, i) => {
             const accountType = getAccountTypeByEmail(user.email);
             const isDeleted = user.state === State.DELETED;
             const isSelf = currentUser.name === user.name;
 
             return (
-              <TableRow
+              <tr
                 key={user.name}
-                className={i % 2 === 1 ? "bg-gray-50" : ""}
+                className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
               >
                 {/* Account column */}
-                <TableCell>
+                <td className="px-4 py-2">
                   <div className="flex items-center gap-x-3">
                     <UserAvatar title={user.title || user.email} />
                     <div className="flex flex-col">
@@ -318,18 +292,18 @@ function UserTable({
                       </span>
                     </div>
                   </div>
-                </TableCell>
+                </td>
 
                 {/* Groups column */}
-                <TableCell>
+                <td className="px-4 py-2">
                   <UserGroupsCell
                     user={user}
                     onGroupSelected={onGroupSelected}
                   />
-                </TableCell>
+                </td>
 
                 {/* Operations column */}
-                <TableCell>
+                <td className="px-4 py-2">
                   <div className="flex justify-end gap-x-1">
                     {!isDeleted && (
                       <>
@@ -398,12 +372,12 @@ function UserTable({
                         </Tooltip>
                       )}
                   </div>
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             );
           })}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
