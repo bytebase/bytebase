@@ -205,6 +205,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	}
 	find.FilterQ = filterQ
 
+	hasWorkspacePermission := true
 	switch {
 	case strings.HasPrefix(req.Msg.Parent, common.ProjectNamePrefix):
 		p, err := common.GetProjectID(req.Msg.Parent)
@@ -224,9 +225,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
-		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
-		}
+		hasWorkspacePermission = ok
 	case strings.HasPrefix(req.Msg.Parent, common.InstanceNamePrefix):
 		ok, err := s.iamManager.CheckPermission(ctx, permission.InstancesGet, user, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
@@ -256,6 +255,22 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
+	}
+
+	// Filter by project-level permission if user lacks workspace-level bb.databases.list.
+	// Follows the SearchProjects pattern (project_service.go).
+	if !hasWorkspacePermission {
+		var filtered []*store.DatabaseMessage
+		for _, db := range databaseMessages {
+			ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesList, user, common.GetWorkspaceIDFromContext(ctx), db.ProjectID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission for database %q", db.DatabaseName))
+			}
+			if ok {
+				filtered = append(filtered, db)
+			}
+		}
+		databaseMessages = filtered
 	}
 
 	response := &v1pb.ListDatabasesResponse{
