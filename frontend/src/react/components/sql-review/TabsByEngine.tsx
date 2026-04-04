@@ -21,12 +21,17 @@ export function TabsByEngine({ ruleMapByEngine, children }: TabsByEngineProps) {
     Engine.ENGINE_UNSPECIFIED
   );
 
-  // When ruleMapByEngine changes, default to the first engine
+  // Only reset to first engine on initial load or when the selected engine disappears
   useEffect(() => {
-    const firstEngine =
-      [...ruleMapByEngine.keys()][0] ?? Engine.ENGINE_UNSPECIFIED;
-    setSelectedEngine(firstEngine);
-  }, [ruleMapByEngine]);
+    if (
+      selectedEngine === Engine.ENGINE_UNSPECIFIED ||
+      !ruleMapByEngine.has(selectedEngine)
+    ) {
+      const firstEngine =
+        [...ruleMapByEngine.keys()][0] ?? Engine.ENGINE_UNSPECIFIED;
+      setSelectedEngine(firstEngine);
+    }
+  }, [ruleMapByEngine, selectedEngine]);
 
   const sortedData = useMemo(() => {
     const orderRank = new Map<Engine, number>();

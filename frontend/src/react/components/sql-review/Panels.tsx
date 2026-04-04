@@ -161,6 +161,11 @@ export function AttachResourcesPanel({
 
   const [resources, setResources] = useState<string[]>([]);
 
+  // Fetch projects on mount so the checkbox list is populated
+  useEffect(() => {
+    projStore.fetchProjectList({});
+  }, [projStore]);
+
   useEffect(() => {
     setResources([...review.resources]);
   }, [review.resources]);
@@ -193,12 +198,32 @@ export function AttachResourcesPanel({
     return null;
   };
 
+  // Track resources that are bound to other policies (for cache cleanup)
+  const resourcesBindingWithOtherPolicy = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const resource of resources) {
+      const config = sqlReviewStore.getReviewPolicyByResouce(resource);
+      if (config && config.id !== review.id) {
+        if (!map.has(config.id)) {
+          map.set(config.id, []);
+        }
+        map.get(config.id)!.push(resource);
+      }
+    }
+    return map;
+  }, [resources, sqlReviewStore, review.id]);
+
   const onConfirm = async () => {
+    const conflictMap = new Map(resourcesBindingWithOtherPolicy);
     await sqlReviewStore.upsertReviewConfigTag({
       oldResources: review.resources,
       newResources: resources,
       review: review.id,
     });
+    // Clear reassigned resources from other policies in the cache
+    if (conflictMap.size > 0) {
+      sqlReviewStore.removeResourceForReview(conflictMap);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
