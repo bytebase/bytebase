@@ -132,6 +132,7 @@
     "select-all": "Select all",
     "sensitive-placeholder": "Sensitive - write only",
     "state": "State",
+    "status": "Status",
     "system": "System",
     "title": "Title",
     "to": "To",
@@ -230,7 +231,7 @@
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-schema-button": "Sync Schema",
-    "sync-status": "Sync status",
+
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
     "change-database": "Change Database",

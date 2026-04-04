@@ -132,6 +132,7 @@
     "select-all": "Seleccionar todo",
     "sensitive-placeholder": "Sensible - solo escritura",
     "state": "Estado",
+    "status": "Estado",
     "system": "Sistema",
     "title": "Título",
     "to": "Hasta",
@@ -230,7 +231,7 @@
     "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-schema-button": "Sincronizar esquema",
-    "sync-status": "Estado de sincronización",
+
     "sync-status-failed": "Sincronización fallida",
     "transfer-project": "Transferir proyecto",
     "change-database": "Modificar base de datos",

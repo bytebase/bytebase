@@ -132,6 +132,7 @@
     "select-all": "Chọn tất cả",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "state": "Trạng thái",
+    "status": "Trạng thái",
     "system": "Hệ thống",
     "title": "Tiêu đề",
     "to": "Đến",
@@ -230,7 +231,7 @@
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-schema-button": "Đồng bộ lược đồ",
-    "sync-status": "Trạng thái đồng bộ",
+
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
     "change-database": "Thay đổi cơ sở dữ liệu",

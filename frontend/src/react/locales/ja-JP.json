@@ -132,6 +132,7 @@
     "select-all": "すべて選択",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "state": "ステート",
+    "status": "ステータス",
     "system": "システム",
     "title": "タイトル",
     "to": "終了",
@@ -230,7 +231,7 @@
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-schema-button": "スキーマを同期",
-    "sync-status": "同期ステータス",
+
     "sync-status-failed": "同期に失敗しました",
     "transfer-project": "プロジェクトの転送",
     "change-database": "データベースの変更",

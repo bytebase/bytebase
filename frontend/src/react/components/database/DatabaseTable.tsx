@@ -261,8 +261,8 @@ export function DatabaseTable({
             <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
               {t("common.labels")}
             </th>
-            <th className="px-4 py-2 text-left font-medium w-[80px]">
-              {t("database.sync-status")}
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+              {t("common.status")}
             </th>
           </tr>
         </thead>
