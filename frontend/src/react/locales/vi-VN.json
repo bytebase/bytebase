@@ -233,7 +233,12 @@
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
-    "unassign": "Hủy gán"
+    "change-database": "Thay đổi cơ sở dữ liệu",
+    "mixed-label-values": "giá trị hỗn hợp",
+    "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
+    "unassign": "Hủy gán",
+    "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
   },
   "db": {
     "character-set": "Bộ ký tự",

@@ -233,7 +233,12 @@
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
-    "unassign": "Unassign"
+    "change-database": "Change Database",
+    "mixed-label-values": "mixed values",
+    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "unassign": "Unassign",
+    "unassign-alert-description": "The selected databases will be removed from the project",
+    "unassign-alert-title": "Unassign databases"
   },
   "db": {
     "character-set": "Character set",

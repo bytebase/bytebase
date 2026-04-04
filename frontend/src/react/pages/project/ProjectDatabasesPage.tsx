@@ -1,8 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { preCreateIssue } from "@/components/Plan/logic/issue";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -14,20 +15,20 @@ import {
   DatabaseBatchOperationsBar,
   DatabaseTable,
   LabelEditorDrawer,
-  TransferProjectDrawer,
 } from "@/react/components/database";
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useEnvironmentV1Store,
-  useUIStateStore,
+  useProjectV1Store,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -48,63 +49,32 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   engineNameV1,
-  extractProjectResourceName,
+  extractDatabaseResourceName,
+  generatePlanTitle,
   hasWorkspacePermissionV2,
   supportedEngineV1List,
 } from "@/utils";
 
-export function DatabasesPage() {
+export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
   const dbSchemaStore = useDBSchemaV1Store();
   const actuatorStore = useActuatorV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const uiStateStore = useUIStateStore();
+  const projectStore = useProjectV1Store();
+
+  const projectName = `${projectNamePrefix}${projectId}`;
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showLabelEditor, setShowLabelEditor] = useState(false);
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
-  const [showTransferDrawer, setShowTransferDrawer] = useState(false);
+  const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
 
-  // Search state — default to showing unassigned databases from default project
-  const [searchParams, setSearchParams] = useState<SearchParams>(() => {
-    const currentRoute = router.currentRoute.value;
-    const queryString = currentRoute.query.q as string;
-    if (queryString) {
-      const scopes: { id: string; value: string }[] = [];
-      const queryParts: string[] = [];
-      for (const token of queryString.split(/\s+/).filter(Boolean)) {
-        const colonIdx = token.indexOf(":");
-        if (colonIdx > 0) {
-          const id = token.substring(0, colonIdx);
-          const value = token.substring(colonIdx + 1);
-          if (
-            value &&
-            ["project", "environment", "instance", "engine", "label"].includes(
-              id
-            )
-          ) {
-            scopes.push({ id, value });
-            continue;
-          }
-        }
-        queryParts.push(token);
-      }
-      return { query: queryParts.join(" "), scopes };
-    }
-    return {
-      query: "",
-      scopes: [
-        {
-          id: "project",
-          value: extractProjectResourceName(
-            actuatorStore.serverInfo?.defaultProject ?? ""
-          ),
-        },
-      ],
-    };
+  const [searchParams, setSearchParams] = useState<SearchParams>({
+    query: "",
+    scopes: [],
   });
 
   const environments = useVueState(
@@ -113,22 +83,6 @@ export function DatabasesPage() {
 
   const scopeOptions: ScopeOption[] = useMemo(() => {
     return [
-      {
-        id: "project",
-        title: t("common.project"),
-        description: t("common.project"),
-        options: [
-          {
-            value: extractProjectResourceName(
-              actuatorStore.serverInfo?.defaultProject ?? ""
-            ),
-            keywords: ["unassigned", "default"],
-            render: () => (
-              <span className="italic text-control-light">Unassigned</span>
-            ),
-          },
-        ],
-      },
       {
         id: "environment",
         title: t("common.environment"),
@@ -174,11 +128,6 @@ export function DatabasesPage() {
   }, [t, environments]);
 
   // Derived filter values
-  const projectVal = getValueFromScopes(searchParams, "project");
-  const selectedProject = projectVal
-    ? `${projectNamePrefix}${projectVal}`
-    : undefined;
-
   const envVal = getValueFromScopes(searchParams, "environment");
   const selectedEnvironment = envVal
     ? `${environmentNamePrefix}${envVal}`
@@ -206,16 +155,13 @@ export function DatabasesPage() {
 
   const filter: DatabaseFilter = useMemo(
     () => ({
-      project: selectedProject,
       instance: selectedInstance,
       environment: selectedEnvironment,
       query: searchParams.query,
       labels: selectedLabels.length > 0 ? selectedLabels : undefined,
-      excludeUnassigned: false,
       engines: selectedEngines,
     }),
     [
-      selectedProject,
       selectedInstance,
       selectedEnvironment,
       searchParams.query,
@@ -223,30 +169,6 @@ export function DatabasesPage() {
       selectedEngines,
     ]
   );
-
-  // Mark database visit on mount
-  useEffect(() => {
-    if (!uiStateStore.getIntroStateByKey("database.visit")) {
-      uiStateStore.saveIntroStateByKey({
-        key: "database.visit",
-        newState: true,
-      });
-    }
-  }, [uiStateStore]);
-
-  // Sync search state to URL
-  useEffect(() => {
-    const parts: string[] = [];
-    for (const scope of searchParams.scopes) {
-      parts.push(`${scope.id}:${scope.value}`);
-    }
-    if (searchParams.query) parts.push(searchParams.query);
-    const queryString = parts.join(" ");
-    const currentQuery = router.currentRoute.value.query.q as string;
-    if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: queryString ? { q: queryString } : {} });
-    }
-  }, [searchParams]);
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
@@ -362,63 +284,94 @@ export function DatabasesPage() {
     [selectedDatabases, databaseStore, refresh, t]
   );
 
-  const handleTransferProject = useCallback(
-    async (projectName: string) => {
-      try {
-        await databaseStore.batchUpdateDatabases(
-          create(BatchUpdateDatabasesRequestSchema, {
-            parent: "-",
-            requests: selectedDatabases.map((database) =>
-              create(UpdateDatabaseRequestSchema, {
-                database: create(DatabaseSchema$, {
-                  name: database.name,
-                  project: projectName,
-                }),
-                updateMask: create(FieldMaskSchema, { paths: ["project"] }),
-              })
-            ),
-          })
-        );
-        refresh();
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("database.successfully-transferred-databases"),
-        });
-      } catch {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("common.failed"),
-        });
-      }
-    },
-    [selectedDatabases, databaseStore, refresh, t]
-  );
+  const handleUnassign = useCallback(async () => {
+    const defaultProject = actuatorStore.serverInfo?.defaultProject ?? "";
+    try {
+      await databaseStore.batchUpdateDatabases(
+        create(BatchUpdateDatabasesRequestSchema, {
+          parent: "-",
+          requests: selectedDatabases.map((database) =>
+            create(UpdateDatabaseRequestSchema, {
+              database: create(DatabaseSchema$, {
+                name: database.name,
+                project: defaultProject,
+              }),
+              updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+            })
+          ),
+        })
+      );
+      refresh();
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("database.successfully-transferred-databases"),
+      });
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+      });
+    }
+  }, [selectedDatabases, databaseStore, actuatorStore, refresh, t]);
+
+  const handleChangeDatabase = useCallback(() => {
+    preCreateIssue(
+      projectName,
+      selectedDatabases.map((db) => db.name)
+    );
+  }, [projectName, selectedDatabases]);
+
+  const handleExportData = useCallback(async () => {
+    const project = await projectStore.getOrFetchProjectByName(projectName);
+    const query: Record<string, string> = {
+      template: "bb.plan.export-data",
+      databaseList: selectedDatabases.map((db) => db.name).join(","),
+    };
+    if (!project.enforceIssueTitle) {
+      query.name = generatePlanTitle(
+        "bb.plan.export-data",
+        selectedDatabases.map(
+          (db) => extractDatabaseResourceName(db.name).databaseName
+        )
+      );
+    }
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: {
+        projectId,
+        planId: "create",
+      },
+      query,
+    });
+  }, [projectName, projectId, selectedDatabases, projectStore]);
 
   return (
-    <div className="py-4 flex flex-col relative">
-      <div className="w-full px-4 pb-2 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2">
-        <AdvancedSearch
-          params={searchParams}
-          onParamsChange={setSearchParams}
-          placeholder={t("database.filter-database")}
-          scopeOptions={scopeOptions}
-        />
-        <PermissionGuard
-          permissions={["bb.instances.list", "bb.issues.create"]}
-        >
-          <Button
-            disabled={
-              !hasWorkspacePermissionV2("bb.instances.list") ||
-              !hasWorkspacePermissionV2("bb.issues.create")
-            }
-            onClick={() => setShowCreateDrawer(true)}
+    <div className="py-4 flex flex-col">
+      <div className="px-4 flex flex-col gap-y-2 pb-2">
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2">
+          <AdvancedSearch
+            params={searchParams}
+            onParamsChange={setSearchParams}
+            placeholder={t("database.filter-database")}
+            scopeOptions={scopeOptions}
+          />
+          <PermissionGuard
+            permissions={["bb.instances.list", "bb.issues.create"]}
           >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("quick-action.new-db")}
-          </Button>
-        </PermissionGuard>
+            <Button
+              disabled={
+                !hasWorkspacePermissionV2("bb.instances.list") ||
+                !hasWorkspacePermissionV2("bb.issues.create")
+              }
+              onClick={() => setShowCreateDrawer(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t("quick-action.new-db")}
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
 
       <div className="flex flex-col gap-y-4">
@@ -427,8 +380,11 @@ export function DatabasesPage() {
           onSyncSchema={handleSyncSchema}
           onEditLabels={() => setShowLabelEditor(true)}
           onEditEnvironment={() => setShowEditEnvDrawer(true)}
-          onTransferProject={() => setShowTransferDrawer(true)}
+          onUnassign={() => setShowUnassignConfirm(true)}
+          onChangeDatabase={handleChangeDatabase}
+          onExportData={handleExportData}
         />
+
         <EditEnvironmentDrawer
           open={showEditEnvDrawer}
           onClose={() => setShowEditEnvDrawer(false)}
@@ -440,16 +396,11 @@ export function DatabasesPage() {
           onClose={() => setShowLabelEditor(false)}
           onApply={handleLabelsApply}
         />
-        <TransferProjectDrawer
-          open={showTransferDrawer}
-          databases={selectedDatabases}
-          onClose={() => setShowTransferDrawer(false)}
-          onTransfer={handleTransferProject}
-        />
 
         <DatabaseTable
           filter={filter}
-          mode="ALL"
+          parent={projectName}
+          mode="PROJECT"
           selectedNames={selectedNames}
           onSelectedNamesChange={setSelectedNames}
           refreshToken={refreshToken}
@@ -459,7 +410,42 @@ export function DatabasesPage() {
       <CreateDatabaseDrawer
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
+        projectName={projectName}
       />
+
+      {/* Unassign confirmation dialog */}
+      {showUnassignConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setShowUnassignConfirm(false)}
+          />
+          <div className="relative bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">
+              {t("database.unassign-alert-title")}
+            </h3>
+            <p className="text-sm text-control-light mb-6">
+              {t("database.unassign-alert-description")}
+            </p>
+            <div className="flex justify-end items-center gap-x-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowUnassignConfirm(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={async () => {
+                  setShowUnassignConfirm(false);
+                  await handleUnassign();
+                }}
+              >
+                {t("common.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

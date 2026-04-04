@@ -348,32 +348,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			} else {
 				patch.EnvironmentID = new("")
 			}
-		case "drifted":
-			// Create a new base schema.
-			syncHistory, err := s.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, databaseMessage)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
-			}
-			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-				Workspace:  common.GetWorkspaceIDFromContext(ctx),
-				ResourceID: &databaseMessage.InstanceID,
-			})
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get instance for format version")
-			}
-			if instance == nil {
-				return nil, errors.Errorf("instance %q not found", databaseMessage.InstanceID)
-			}
-			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
-				InstanceID:   databaseMessage.InstanceID,
-				DatabaseName: databaseMessage.DatabaseName,
-				Status:       store.ChangelogStatusDone,
-				SyncHistory:  &syncHistory,
-				Payload: &storepb.ChangelogPayload{
-					GitCommit: s.profile.GitCommit,
-				}}); err != nil {
-				return nil, errors.Wrapf(err, "failed to create changelog")
-			}
 		default:
 		}
 	}

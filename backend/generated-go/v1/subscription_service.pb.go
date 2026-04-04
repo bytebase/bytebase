@@ -146,8 +146,9 @@ const (
 	PlanFeature_FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT   PlanFeature = 10
 	PlanFeature_FEATURE_SCHEDULED_ROLLOUT_TIME               PlanFeature = 11
 	PlanFeature_FEATURE_DATABASE_CHANGELOG                   PlanFeature = 12
-	PlanFeature_FEATURE_SCHEMA_DRIFT_DETECTION               PlanFeature = 13
-	PlanFeature_FEATURE_ROLLOUT_POLICY                       PlanFeature = 14
+	// Deprecated: Marked as deprecated in v1/subscription_service.proto.
+	PlanFeature_FEATURE_SCHEMA_DRIFT_DETECTION PlanFeature = 13
+	PlanFeature_FEATURE_ROLLOUT_POLICY         PlanFeature = 14
 	// SQL Editor & Development
 	PlanFeature_FEATURE_WEB_BASED_SQL_EDITOR          PlanFeature = 15
 	PlanFeature_FEATURE_SQL_EDITOR_ADMIN_MODE         PlanFeature = 16
@@ -1656,7 +1657,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xe1\x12\n" +
+	"ENTERPRISE\x10\x03*\xe5\x12\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -1671,8 +1672,8 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"*FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT\x10\n" +
 	"\x12\"\n" +
 	"\x1eFEATURE_SCHEDULED_ROLLOUT_TIME\x10\v\x12\x1e\n" +
-	"\x1aFEATURE_DATABASE_CHANGELOG\x10\f\x12\"\n" +
-	"\x1eFEATURE_SCHEMA_DRIFT_DETECTION\x10\r\x12\x1a\n" +
+	"\x1aFEATURE_DATABASE_CHANGELOG\x10\f\x12&\n" +
+	"\x1eFEATURE_SCHEMA_DRIFT_DETECTION\x10\r\x1a\x02\b\x01\x12\x1a\n" +
 	"\x16FEATURE_ROLLOUT_POLICY\x10\x0e\x12 \n" +
 	"\x1cFEATURE_WEB_BASED_SQL_EDITOR\x10\x0f\x12!\n" +
 	"\x1dFEATURE_SQL_EDITOR_ADMIN_MODE\x10\x10\x12#\n" +

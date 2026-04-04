@@ -233,7 +233,12 @@
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
     "transfer-project": "プロジェクトの転送",
-    "unassign": "割り当てを解除する"
+    "change-database": "データベースの変更",
+    "mixed-label-values": "混合値",
+    "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
+    "unassign": "割り当てを解除する",
+    "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
+    "unassign-alert-title": "データベースの割り当てを解除する"
   },
   "db": {
     "character-set": "文字セット",
