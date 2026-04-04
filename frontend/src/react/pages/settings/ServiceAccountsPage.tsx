@@ -103,7 +103,7 @@ function ServiceAccountTable({
   const columns: ColumnDef[] = useMemo(
     () => [
       { key: "account", defaultWidth: 500, minWidth: 200 },
-      { key: "operations", defaultWidth: 160, minWidth: 80, resizable: false },
+      { key: "operations", defaultWidth: 300, minWidth: 200, resizable: false },
     ],
     []
   );
