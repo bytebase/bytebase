@@ -38,10 +38,7 @@ import {
   PolicyType,
   QueryDataPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import type {
-  Label,
-  Project_ExecutionRetryPolicy,
-} from "@/types/proto-es/v1/project_service_pb";
+import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
@@ -646,20 +643,20 @@ export function ProjectSettingsPage({
     const keys = new Set<string>();
     for (const kv of labelKVList) {
       if (!kv.key) {
-        errors.push(t("label.error.empty-key"));
+        errors.push("Key is required");
       }
       if (keys.has(kv.key) && kv.key) {
-        errors.push(t("label.error.duplicate-key", { key: kv.key }));
+        errors.push(`Duplicated key: ${kv.key}`);
       }
       keys.add(kv.key);
       if (kv.value.length > 63) {
         errors.push(
-          t("label.error.max-value-length", { key: kv.key, max: 63 })
+          `Value for "${kv.key}" exceeds 63 characters`
         );
       }
     }
     return errors;
-  }, [labelKVList, t]);
+  }, [labelKVList]);
 
   // -----------------------------------------------------------------------
   // Issue label helpers
@@ -739,7 +736,7 @@ export function ProjectSettingsPage({
                   required
                 />
                 <div className="mt-1 text-sm text-control-light">
-                  {t("resource.resource-id")}:{" "}
+                  {t("common.id")}:{" "}
                   {extractProjectResourceName(project.name)}
                 </div>
               </div>
@@ -1153,7 +1150,7 @@ export function ProjectSettingsPage({
                 value={maxRetries}
                 onChange={setMaxRetries}
                 disabled={!canUpdateProject}
-                suffix={t("common.times")}
+                suffix="Times"
               />
               <NumericRow
                 label={t(
@@ -1294,7 +1291,7 @@ export function ProjectSettingsPage({
           <div className="mt-4 flex flex-col gap-y-2 max-h-96 overflow-y-auto">
             {reviewPolicyList.length === 0 ? (
               <p className="text-sm text-control-light">
-                {t("sql-review.no-policy")}
+{t("common.no-data")}
               </p>
             ) : (
               reviewPolicyList.map((policy) => (
