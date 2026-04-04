@@ -349,6 +349,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				patch.EnvironmentID = new("")
 			}
 		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported update mask path %q", path))
 		}
 	}
 

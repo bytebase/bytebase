@@ -87,7 +87,7 @@ export function LabelEditorDrawer({
           <div className="flex items-center gap-x-2 mb-4">
             <input
               type="text"
-              placeholder="key"
+              placeholder={t("common.key")}
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
               className="flex-1 border border-control-border rounded-md px-2 py-1 text-sm"
@@ -95,7 +95,7 @@ export function LabelEditorDrawer({
             <span className="text-control-placeholder">:</span>
             <input
               type="text"
-              placeholder="value"
+              placeholder={t("common.value")}
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
               className="flex-1 border border-control-border rounded-md px-2 py-1 text-sm"

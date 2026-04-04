@@ -546,7 +546,7 @@ export function CreateDatabaseDrawer({
                   onChange={(e) => setCollation(e.target.value)}
                   placeholder={
                     defaultCollationOfEngineV1(selectedInstance.engine) ||
-                    "default"
+                    t("common.default")
                   }
                   className="w-full border border-control-border rounded-md px-3 py-2 text-sm"
                 />

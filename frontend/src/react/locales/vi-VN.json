@@ -78,8 +78,10 @@
     "confirm-and-update": "Xác nhận và Cập nhật",
     "copied": "Đã sao chép",
     "copy": "Sao chép",
+    "copy-failed": "Copy failed",
     "create": "Tạo",
     "created": "Đã tạo",
+    "default": "Mặc định",
     "delete": "Xóa",
     "delete-resource": "Delete {{type}}",
     "deleted": "Đã xóa",
@@ -102,6 +104,7 @@
     "id": "ID",
     "instance": "Phiên bản",
     "is-required": "is required",
+    "key": "Khóa",
     "labels": "Nhãn",
     "learn-more": "Tìm hiểu thêm",
     "leave-without-saving": "Thoát mà không lưu?",
@@ -144,11 +147,11 @@
     "updated": "Đã cập nhật",
     "upload": "Tải lên",
     "users": "Người dùng",
+    "value": "Giá trị",
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
-    "you": "bạn",
-    "copy-failed": "Copy failed"
+    "you": "bạn"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -231,7 +234,6 @@
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-schema-button": "Đồng bộ lược đồ",
-
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
     "change-database": "Thay đổi cơ sở dữ liệu",

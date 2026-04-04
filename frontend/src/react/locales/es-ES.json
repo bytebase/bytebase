@@ -78,8 +78,10 @@
     "confirm-and-update": "Confirmar y actualizar",
     "copied": "Copiado",
     "copy": "Copiar",
+    "copy-failed": "Copy failed",
     "create": "Crear",
     "created": "Creado",
+    "default": "Predeterminado",
     "delete": "Eliminar",
     "delete-resource": "Delete {{type}}",
     "deleted": "Eliminado",
@@ -102,6 +104,7 @@
     "id": "ID",
     "instance": "Instancia",
     "is-required": "is required",
+    "key": "Clave",
     "labels": "Etiquetas",
     "learn-more": "Aprender más",
     "leave-without-saving": "¿Salir sin guardar?",
@@ -144,11 +147,11 @@
     "updated": "Actualizado",
     "upload": "Subir",
     "users": "Usuarios",
+    "value": "Valor",
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
-    "you": "tu",
-    "copy-failed": "Copy failed"
+    "you": "tu"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -231,7 +234,6 @@
     "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-schema-button": "Sincronizar esquema",
-
     "sync-status-failed": "Sincronización fallida",
     "transfer-project": "Transferir proyecto",
     "change-database": "Modificar base de datos",

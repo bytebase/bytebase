@@ -78,8 +78,10 @@
     "confirm-and-update": "确认并更新",
     "copied": "已拷贝",
     "copy": "拷贝",
+    "copy-failed": "Copy failed",
     "create": "创建",
     "created": "已创建",
+    "default": "默认",
     "delete": "删除",
     "delete-resource": "删除{{type}}",
     "deleted": "已删除",
@@ -102,6 +104,7 @@
     "id": "ID",
     "instance": "实例",
     "is-required": "is required",
+    "key": "键",
     "labels": "标签",
     "learn-more": "了解更多",
     "leave-without-saving": "不保存变动？",
@@ -144,11 +147,11 @@
     "updated": "已更新",
     "upload": "上传",
     "users": "用户",
+    "value": "值",
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您",
-    "copy-failed": "Copy failed"
+    "you": "您"
   },
   "create-db": {
     "cluster": "集群",
@@ -231,7 +234,6 @@
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-schema-button": "同步 Schema",
-
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
     "change-database": "变更数据库",
