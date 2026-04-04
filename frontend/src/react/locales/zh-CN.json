@@ -75,6 +75,7 @@
     "configure": "配置",
     "configure-now": "现在配置",
     "confirm": "确认",
+    "confirm-and-add": "确认并添加",
     "confirm-and-update": "确认并更新",
     "copied": "已拷贝",
     "copy": "拷贝",
@@ -86,9 +87,12 @@
     "delete-resource": "删除{{type}}",
     "deleted": "已删除",
     "description": "描述",
+    "disable": "禁用",
     "discard-changes": "取消修改",
     "edit": "编辑",
     "email": "邮箱",
+    "enable": "Enable",
+    "enabled": "开启",
     "environment": "环境",
     "environment-name": "环境名",
     "export": "导出",
@@ -120,9 +124,11 @@
     "ok": "OK",
     "operations": "操作",
     "permissions": "权限",
+    "previous": "上一步",
     "project": "项目",
     "release": "版本",
     "reorder": "排序",
+    "resource": "资源",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
     "restore": "恢复",
@@ -916,7 +922,40 @@
     "self": "SQL 编辑器"
   },
   "sql-review": {
+    "add-or-remove-rules": "添加或删除规则",
+    "add-rules": "添加规则",
+    "attach-resource": {
+      "change-resources": "更改绑定的资源",
+      "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
+      "no-linked-resources": "没有绑定的资源",
+      "self": "绑定到资源"
+    },
     "configure-policy": "配置审核策略",
+    "create": {
+      "basic-info": {
+        "display-name": "名称",
+        "display-name-default": "SQL 审核策略",
+        "display-name-label": "用以区分不同审核策略的名称。",
+        "name": "基本信息"
+      },
+      "configure-rule": {
+        "change-template": "更改模板",
+        "confirm-override-description": "之前的规则将会被覆盖",
+        "name": "配置规则"
+      }
+    },
+    "create-policy": "创建审核策略",
+    "delete": "删除审核策略",
+    "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
+    "disabled": "SQL 审核策略已禁用",
+    "enabled-rules": "开启的规则数",
+    "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
+    "policy-create-failed": "审核策略创建失败",
+    "policy-created": "审核策略已创建",
+    "policy-removed": "审核策略已删除",
+    "policy-update-failed": "审核策略更新失败",
+    "policy-updated": "审核策略已更新",
+    "review-policy": "审核策略",
     "title": "SQL 审核策略"
   },
   "subscription": {
