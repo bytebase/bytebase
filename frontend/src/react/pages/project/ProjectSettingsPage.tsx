@@ -129,7 +129,9 @@ export function ProjectSettingsPage() {
   const reviewStore = useSQLReviewStore();
   const subscriptionStore = useSubscriptionV1Store();
 
-  const projectId = router.currentRoute.value.params.projectId as string;
+  const projectId = useVueState(
+    () => router.currentRoute.value.params.projectId as string
+  );
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const isDefault = isDefaultProject(projectName);
