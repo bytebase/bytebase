@@ -130,6 +130,16 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       .catch(() => {});
   }, [projectName, dbSearch, databaseStore]);
 
+  // Fetch the selected identity into the store cache so getWorkloadIdentity
+  // returns the real object (with workloadIdentityConfig) instead of a stub.
+  useEffect(() => {
+    if (selectedIdentityName) {
+      workloadIdentityStore
+        .getOrFetchWorkloadIdentity(selectedIdentityName)
+        .catch(() => {});
+    }
+  }, [selectedIdentityName, workloadIdentityStore]);
+
   const selectedIdentity = useVueState(() => {
     if (!selectedIdentityName) return undefined;
     return workloadIdentityStore.getWorkloadIdentity(selectedIdentityName);

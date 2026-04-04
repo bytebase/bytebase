@@ -6,18 +6,22 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { useVueState } from "@/react/hooks/useVueState";
 import { RoleMultiSelect } from "@/react/pages/settings/shared/RoleMultiSelect";
 import {
   ensureWorkloadIdentityFullName,
   pushNotification,
   useActuatorV1Store,
+  useProjectV1Store,
   useWorkspaceV1Store,
 } from "@/store";
+import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
 import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
 } from "@/types";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   WorkloadIdentityConfig_ProviderType,
@@ -26,6 +30,7 @@ import {
 } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   getWorkloadIdentityProviderText,
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   parseWorkloadIdentitySubjectPattern,
 } from "@/utils";
@@ -85,6 +90,12 @@ export function CreateWorkloadIdentityDrawer({
   const workloadIdentityStore = useWorkloadIdentityStore();
   const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
+  const projectStore = useProjectV1Store();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
+
+  const projectEntity = useVueState(() =>
+    project ? projectStore.getProjectByName(project) : undefined
+  );
 
   const isEditMode = !!workloadIdentity && !!workloadIdentity.email;
 
@@ -200,9 +211,12 @@ export function CreateWorkloadIdentityDrawer({
     return true;
   }, [emailPrefix, workloadIdentity?.email, owner, issuerUrl]);
 
-  const hasPermission = hasWorkspacePermissionV2(
-    isEditMode ? "bb.workloadIdentities.update" : "bb.workloadIdentities.create"
-  );
+  const requiredPermission = isEditMode
+    ? "bb.workloadIdentities.update"
+    : "bb.workloadIdentities.create";
+  const hasPermission = projectEntity
+    ? hasProjectPermissionV2(projectEntity, requiredPermission)
+    : hasWorkspacePermissionV2(requiredPermission);
 
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
@@ -218,6 +232,35 @@ export function CreateWorkloadIdentityDrawer({
     } finally {
       setIsRequesting(false);
     }
+  };
+
+  const updateProjectIamPolicyForMember = async (
+    projectName: string,
+    member: string,
+    newRoles: string[]
+  ) => {
+    const policy = structuredClone(
+      projectIamPolicyStore.getProjectIamPolicy(projectName)
+    );
+    for (const binding of policy.bindings) {
+      binding.members = binding.members.filter((m) => m !== member);
+    }
+    policy.bindings = policy.bindings.filter(
+      (binding) => binding.members.length > 0
+    );
+    for (const role of newRoles) {
+      const existing = policy.bindings.find((b) => b.role === role);
+      if (existing) {
+        if (!existing.members.includes(member)) {
+          existing.members.push(member);
+        }
+      } else {
+        policy.bindings.push(
+          create(BindingSchema, { role, members: [member] })
+        );
+      }
+    }
+    await projectIamPolicyStore.updateProjectIamPolicy(projectName, policy);
   };
 
   const handleCreate = async () => {
@@ -236,12 +279,16 @@ export function CreateWorkloadIdentityDrawer({
     );
 
     if (roles.length > 0) {
-      await workspaceStore.patchIamPolicy([
-        {
-          member: getWorkloadIdentityNameInBinding(wi.email),
-          roles,
-        },
-      ]);
+      const member = getWorkloadIdentityNameInBinding(wi.email);
+      if (projectEntity) {
+        await updateProjectIamPolicyForMember(
+          projectEntity.name,
+          member,
+          roles
+        );
+      } else {
+        await workspaceStore.patchIamPolicy([{ member, roles }]);
+      }
     }
 
     onCreated(wi);
@@ -538,7 +585,12 @@ export function CreateWorkloadIdentityDrawer({
 
             {/* Roles (create mode only) */}
             {!isEditMode &&
-              hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
+              (projectEntity
+                ? hasProjectPermissionV2(
+                    projectEntity,
+                    "bb.projects.setIamPolicy"
+                  )
+                : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
                 <div className="flex flex-col gap-y-2">
                   <label className="block text-sm font-medium text-control">
                     {t("settings.members.table.roles")}
