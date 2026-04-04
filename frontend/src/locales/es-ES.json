@@ -251,7 +251,6 @@
     "title": "Título",
     "text-wrap": "Ajuste de texto",
     "catalog": "Catálogo",
-    "remove": "Eliminar",
     "removed": "Eliminado",
     "submit": "Enviar",
     "draft": "Borrador",
@@ -486,7 +485,6 @@
       "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
       "table": {
         "account": "Cuenta",
-        "role": "Rol",
         "groups": "Grupos",
         "roles": "Roles"
       },
@@ -1905,7 +1903,6 @@
     "settings": {
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
       "update-failed": "No se pudo actualizar la configuración del proyecto.",
-      "success-member-added-prompt": "Se agregó correctamente al proyecto.",
       "restore": {
         "title": "Restaurar proyecto",
         "btn-text": "Restaurar este @.lower:{'common.project'}"
@@ -1981,19 +1978,12 @@
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
-      "edit": "Editar miembro - {member}",
-      "view-by-members": "Ver por miembros",
-      "view-by-roles": "Ver por roles",
-      "revoke-role-from-user": "Revocar '{role}' de '{user}'",
       "never-expires": "Nunca caduca",
       "role-never-expires": "Este rol nunca expira.",
       "add-more": "Agregar más",
-      "condition-name": "Nombre de la condición",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
-      "project-level-roles": "Roles a nivel de proyecto",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
-      "disallow-ddl": "No permitir ejecutar sentencias DDL/DML en ningún entorno."
+      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados."
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
@@ -2860,7 +2850,6 @@
     },
     "title": "Título",
     "select-role": "Seleccionar rol",
-    "expired-tip": "El papel puede haber expirado.",
     "import-from-role": "Importar desde el rol",
     "workspace-roles": {
       "self": "Roles de espacio de trabajo"

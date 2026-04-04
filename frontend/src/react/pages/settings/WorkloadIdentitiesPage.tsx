@@ -320,7 +320,8 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         <Button
           disabled={
             project
-              ? !hasProjectPermissionV2(project, "bb.workloadIdentities.create")
+              ? project.state !== State.ACTIVE ||
+                !hasProjectPermissionV2(project, "bb.workloadIdentities.create")
               : !hasWorkspacePermissionV2("bb.workloadIdentities.create")
           }
           onClick={() => {

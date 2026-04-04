@@ -83,6 +83,7 @@
     "copy-failed": "Copy failed",
     "create": "创建",
     "created": "已创建",
+    "database": "数据库",
     "default": "默认",
     "delete": "删除",
     "delete-resource": "删除{{type}}",
@@ -97,6 +98,7 @@
     "enabled": "开启",
     "environment": "环境",
     "environment-name": "环境名",
+    "expiration": "Expiration",
     "export": "导出",
     "failed": "失败",
     "file-selector": {
@@ -124,10 +126,12 @@
     "next": "下一步",
     "no-data": "无数据",
     "ok": "OK",
+    "optional": "Optional",
     "operations": "操作",
     "permissions": "权限",
     "previous": "上一步",
     "project": "项目",
+    "reason": "Reason",
     "release": "版本",
     "reorder": "排序",
     "resource": "资源",
@@ -138,6 +142,7 @@
     "revert": "恢复",
     "rows-per-page": "每页行数",
     "save": "保存",
+    "schema": "模式",
     "search": "搜索",
     "search-for-more": "搜索更多",
     "select": "请选择",
@@ -146,6 +151,7 @@
     "state": "状态",
     "status": "状态",
     "system": "系统",
+    "table": "表",
     "title": "标题",
     "to": "到",
     "total-n-items": "共 {{n}} 项",
@@ -168,7 +174,14 @@
     "archive-description": "将「{{name}}」标记为已归档且只读。",
     "confirm-archive": "确定归档资源？",
     "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
-    "confirm-delete": "确定删除资源？"
+    "confirm-delete": "确定删除资源？",
+    "environments": "环境",
+    "manually-select": "Manually select",
+    "filter": "Filter",
+    "total": "Total",
+    "selected": "selected",
+    "items": "items",
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "集群",
@@ -275,7 +288,8 @@
     "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "reorder": "重新排序环境",
-    "successfully-updated-environment": "环境'{{name}}'更新成功"
+    "successfully-updated-environment": "环境'{{name}}'更新成功",
+    "select": "选择环境"
   },
   "error-page": {
     "not-found": "页面未找到"
@@ -461,6 +475,15 @@
         "approval-flow-not-configured": "未配置审批流程",
         "view-approval-flow": "查看审批流程"
       }
+    },
+    "members": {
+      "add-more": "Add more",
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
+      "never-expires": "Never",
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
+      "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
+      "edit-member": "编辑成员 - {{member}}",
+      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     }
   },
   "quick-action": {
@@ -783,6 +806,7 @@
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "select-account_one": "选择账户",
       "select-account_other": "选择账户",
+      "assign-role": "Assign role",
       "select-role_one": "选择角色",
       "select-role_other": "选择角色",
       "service-account": "服务账号",

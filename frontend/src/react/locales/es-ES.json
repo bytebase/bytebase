@@ -83,6 +83,7 @@
     "copy-failed": "Copy failed",
     "create": "Crear",
     "created": "Creado",
+    "database": "Base de datos",
     "default": "Predeterminado",
     "delete": "Eliminar",
     "delete-resource": "Delete {{type}}",
@@ -97,6 +98,7 @@
     "enabled": "Enabled",
     "environment": "Entorno",
     "environment-name": "Nombre del entorno",
+    "expiration": "Expiration",
     "export": "Exportar",
     "failed": "Error",
     "file-selector": {
@@ -124,10 +126,12 @@
     "next": "Siguiente",
     "no-data": "Sin datos",
     "ok": "OK",
+    "optional": "Optional",
     "operations": "Operaciones",
     "permissions": "Permisos",
     "previous": "Previous",
     "project": "Proyecto",
+    "reason": "Reason",
     "release": "Versión",
     "reorder": "Reordenar",
     "resource": "Resource",
@@ -138,6 +142,7 @@
     "revert": "Revertir",
     "rows-per-page": "Filas por página",
     "save": "Guardar",
+    "schema": "Esquema",
     "search": "Buscar",
     "search-for-more": "Buscar más",
     "select": "Seleccionar",
@@ -146,6 +151,7 @@
     "state": "Estado",
     "status": "Estado",
     "system": "Sistema",
+    "table": "Tabla",
     "title": "Título",
     "to": "Hasta",
     "total-n-items": "Total {{n}} elementos",
@@ -168,7 +174,14 @@
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "confirm-archive": "Archive Resource?",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?"
+    "confirm-delete": "Delete Resource?",
+    "environments": "Entornos",
+    "manually-select": "Manually select",
+    "filter": "Filter",
+    "total": "Total",
+    "selected": "selected",
+    "items": "items",
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -275,7 +288,8 @@
     "delete": "Eliminar este entorno",
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "reorder": "Reordenar entornos",
-    "successfully-updated-environment": "entorno '{{name}}' actualizado exitosamente."
+    "successfully-updated-environment": "entorno '{{name}}' actualizado exitosamente.",
+    "select": "Seleccionar entorno"
   },
   "error-page": {
     "not-found": "No encontrado"
@@ -461,6 +475,15 @@
         "approval-flow-not-configured": "Flujo de aprobación no configurado",
         "view-approval-flow": "Ver flujo de aprobación"
       }
+    },
+    "members": {
+      "add-more": "Add more",
+      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "never-expires": "Never",
+      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
+      "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
+      "edit-member": "Editar miembro - {{member}}",
+      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     }
   },
   "quick-action": {
@@ -783,6 +806,7 @@
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "select-account_one": "Seleccionar cuenta",
       "select-account_other": "Seleccionar cuentas",
+      "assign-role": "Assign role",
       "select-role_one": "Seleccionar rol",
       "select-role_other": "Seleccionar roles",
       "service-account": "Cuenta de Servicio",

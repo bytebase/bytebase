@@ -83,6 +83,7 @@
     "copy-failed": "Copy failed",
     "create": "Create",
     "created": "Created",
+    "database": "Database",
     "default": "Default",
     "delete": "Delete",
     "delete-resource": "Delete {{type}}",
@@ -97,6 +98,7 @@
     "enabled": "Enabled",
     "environment": "Environment",
     "environment-name": "Environment Name",
+    "expiration": "Expiration",
     "export": "Export",
     "failed": "Failed",
     "file-selector": {
@@ -124,10 +126,12 @@
     "next": "Next",
     "no-data": "No data",
     "ok": "OK",
+    "optional": "Optional",
     "operations": "Operations",
     "permissions": "Permissions",
     "previous": "Previous",
     "project": "Project",
+    "reason": "Reason",
     "release": "Release",
     "reorder": "Reorder",
     "resource": "Resource",
@@ -138,6 +142,7 @@
     "revert": "Revert",
     "rows-per-page": "Rows per page",
     "save": "Save",
+    "schema": "Schema",
     "search": "Search",
     "search-for-more": "Search for more",
     "select": "Please Select",
@@ -146,6 +151,7 @@
     "state": "State",
     "status": "Status",
     "system": "System",
+    "table": "Table",
     "title": "Title",
     "to": "To",
     "total-n-items": "Total {{n}} items",
@@ -168,7 +174,14 @@
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "confirm-archive": "Archive Resource?",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?"
+    "confirm-delete": "Delete Resource?",
+    "environments": "Environments",
+    "manually-select": "Manually select",
+    "filter": "Filter",
+    "total": "Total",
+    "selected": "selected",
+    "items": "items",
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -275,7 +288,8 @@
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "reorder": "Reorder Environments",
-    "successfully-updated-environment": "Successfully updated environment '{{name}}'."
+    "successfully-updated-environment": "Successfully updated environment '{{name}}'.",
+    "select": "Select environment"
   },
   "error-page": {
     "not-found": "Not Found"
@@ -358,6 +372,15 @@
     }
   },
   "project": {
+    "members": {
+      "add-more": "Add more",
+      "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
+      "never-expires": "Never",
+      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
+      "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
+      "edit-member": "Edit member - {{member}}",
+      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
+    },
     "batch": {
       "archive": {
         "description": "This will archive the selected projects. You can restore them later if needed.",
@@ -783,6 +806,7 @@
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "select-account_one": "Select account",
       "select-account_other": "Select accounts",
+      "assign-role": "Assign role",
       "select-role_one": "Select role",
       "select-role_other": "Select roles",
       "service-account": "Service Account",

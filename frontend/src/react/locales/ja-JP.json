@@ -83,6 +83,7 @@
     "copy-failed": "Copy failed",
     "create": "作成する",
     "created": "作成済",
+    "database": "データベース",
     "default": "デフォルト",
     "delete": "消去",
     "delete-resource": "Delete {{type}}",
@@ -97,6 +98,7 @@
     "enabled": "Enabled",
     "environment": "環境",
     "environment-name": "環境名",
+    "expiration": "Expiration",
     "export": "エクスポート",
     "failed": "失敗",
     "file-selector": {
@@ -124,10 +126,12 @@
     "next": "次のステップ",
     "no-data": "データなし",
     "ok": "わかりました",
+    "optional": "Optional",
     "operations": "操作",
     "permissions": "権限",
     "previous": "Previous",
     "project": "プロジェクト",
+    "reason": "Reason",
     "release": "リリース",
     "reorder": "並び替え",
     "resource": "Resource",
@@ -138,6 +142,7 @@
     "revert": "元に戻す",
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
+    "schema": "スキーマ",
     "search": "検索",
     "search-for-more": "さらに検索",
     "select": "選択してください",
@@ -146,6 +151,7 @@
     "state": "ステート",
     "status": "ステータス",
     "system": "システム",
+    "table": "テーブル",
     "title": "タイトル",
     "to": "終了",
     "total-n-items": "合計 {{n}} 件",
@@ -168,7 +174,14 @@
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "confirm-archive": "Archive Resource?",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?"
+    "confirm-delete": "Delete Resource?",
+    "environments": "環境",
+    "manually-select": "Manually select",
+    "filter": "Filter",
+    "total": "Total",
+    "selected": "selected",
+    "items": "items",
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "集まる",
@@ -275,7 +288,8 @@
     "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "reorder": "環境の並べ替え",
-    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
+    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました",
+    "select": "環境を選ぶ"
   },
   "error-page": {
     "not-found": "ページが見つかりません"
@@ -461,6 +475,15 @@
         "approval-flow-not-configured": "承認フローが未設定",
         "view-approval-flow": "承認フローを表示"
       }
+    },
+    "members": {
+      "add-more": "Add more",
+      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "never-expires": "Never",
+      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
+      "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
+      "edit-member": "メンバー編集 - {{member}}",
+      "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     }
   },
   "quick-action": {
@@ -783,6 +806,7 @@
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "select-account_one": "アカウントを選択",
       "select-account_other": "アカウントを選択",
+      "assign-role": "Assign role",
       "select-role_one": "ロールを選択",
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
