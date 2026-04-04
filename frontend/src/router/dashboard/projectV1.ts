@@ -350,8 +350,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.members", 2 /* multiply*/),
           requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
-        component: () => import("@/views/project/ProjectMemberDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "MembersPage",
+          ...route.params,
+        }),
       },
       {
         path: "service-accounts",

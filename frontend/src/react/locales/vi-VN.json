@@ -83,6 +83,7 @@
     "copy-failed": "Copy failed",
     "create": "Tạo",
     "created": "Đã tạo",
+    "database": "Cơ sở dữ liệu",
     "default": "Mặc định",
     "delete": "Xóa",
     "delete-resource": "Delete {{type}}",
@@ -97,6 +98,7 @@
     "enabled": "Enabled",
     "environment": "Môi trường",
     "environment-name": "Tên môi trường",
+    "expiration": "Expiration",
     "export": "Xuất",
     "failed": "Thất bại",
     "file-selector": {
@@ -124,10 +126,12 @@
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
     "ok": "OK",
+    "optional": "Optional",
     "operations": "Các thao tác",
     "permissions": "Quyền",
     "previous": "Previous",
     "project": "Dự án",
+    "reason": "Reason",
     "release": "Phiên bản",
     "reorder": "Sắp xếp lại",
     "resource": "Resource",
@@ -138,6 +142,7 @@
     "revert": "Hoàn tác",
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
+    "schema": "Schema",
     "search": "Tìm kiếm",
     "search-for-more": "Tìm kiếm thêm",
     "select": "Vui lòng chọn",
@@ -146,6 +151,7 @@
     "state": "Trạng thái",
     "status": "Trạng thái",
     "system": "Hệ thống",
+    "table": "Bảng",
     "title": "Tiêu đề",
     "to": "Đến",
     "total-n-items": "Tổng {{n}} mục",
@@ -168,7 +174,14 @@
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "confirm-archive": "Archive Resource?",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?"
+    "confirm-delete": "Delete Resource?",
+    "environments": "Môi trường",
+    "manually-select": "Manually select",
+    "filter": "Filter",
+    "total": "Total",
+    "selected": "selected",
+    "items": "items",
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -275,7 +288,8 @@
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",
-    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'.",
+    "select": "Chọn môi trường"
   },
   "error-page": {
     "not-found": "Không tìm thấy"
@@ -461,6 +475,15 @@
         "approval-flow-not-configured": "Chưa cấu hình quy trình phê duyệt",
         "view-approval-flow": "Xem quy trình phê duyệt"
       }
+    },
+    "members": {
+      "add-more": "Add more",
+      "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
+      "never-expires": "Never",
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
+      "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
+      "edit-member": "Chỉnh sửa thành viên - {{member}}",
+      "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     }
   },
   "quick-action": {
@@ -783,6 +806,7 @@
       "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
       "select-account_one": "Chọn tài khoản",
       "select-account_other": "Chọn tài khoản",
+      "assign-role": "Assign role",
       "select-role_one": "Chọn vai trò",
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",

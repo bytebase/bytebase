@@ -251,7 +251,6 @@
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",
     "catalog": "カタログ",
-    "remove": "削除",
     "removed": "削除されました",
     "submit": "提出する",
     "draft": "下書き",
@@ -486,7 +485,6 @@
       "inactive-workload-identities": "非アクティブワークロードID",
       "table": {
         "account": "アカウント",
-        "role": "ロール",
         "groups": "グループ",
         "roles": "ロール"
       },
@@ -1905,7 +1903,6 @@
     "settings": {
       "success-updated": "プロジェクト設定が正常に更新されました",
       "update-failed": "プロジェクト設定の更新に失敗しました。",
-      "success-member-added-prompt": "現在のプロジェクトに正常に追加されました。",
       "restore": {
         "title": "アイテムを復元する",
         "btn-text": "この @:common.project を復元します"
@@ -1981,19 +1978,12 @@
     },
     "members": {
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "edit": "メンバーの編集 - {member}",
-      "view-by-members": "メンバー別に見る",
-      "view-by-roles": "ロールごとに表示",
-      "revoke-role-from-user": "「{user}」{role} のロールを削除します",
       "never-expires": "有効期限が切れることはありません",
       "role-never-expires": "このロールには有効期限はありません。",
       "add-more": "さらに追加",
-      "condition-name": "条件名",
       "workspace-level-roles": "ワークスペースレベルのロール",
-      "project-level-roles": "プロジェクトレベルのロール",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
-      "disallow-ddl": "すべての環境で DDL/DML ステートメントの実行を禁止する。"
+      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。"
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",
@@ -2860,7 +2850,6 @@
     },
     "title": "タイトル",
     "select-role": "ロールの選択",
-    "expired-tip": "ロールの有効期限が切れている可能性があります。",
     "import-from-role": "ロールからインポート",
     "workspace-roles": {
       "self": "ワークスペースのロール"

@@ -251,7 +251,6 @@
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",
     "catalog": "Danh mục",
-    "remove": "Xóa",
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
     "draft": "Bản nháp",
@@ -486,7 +485,6 @@
       "inactive-workload-identities": "Danh tính Workload không hoạt động",
       "table": {
         "account": "Tài khoản",
-        "role": "Vai trò",
         "groups": "Nhóm",
         "roles": "Vai trò"
       },
@@ -1905,7 +1903,6 @@
     "settings": {
       "success-updated": "Đã cập nhật thành công cài đặt dự án.",
       "update-failed": "Không cập nhật được cài đặt dự án.",
-      "success-member-added-prompt": "Đã thêm thành công vào dự án.",
       "restore": {
         "title": "Khôi phục dự án",
         "btn-text": "Khôi phục @.lower:{'common.project'} này"
@@ -1981,19 +1978,12 @@
     },
     "members": {
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
-      "edit": "Chỉnh sửa thành viên - {member}",
-      "view-by-members": "Xem theo thành viên",
-      "view-by-roles": "Xem theo vai trò",
-      "revoke-role-from-user": "Thu hồi '{role}' từ '{user}'",
       "never-expires": "Không bao giờ",
       "role-never-expires": "Vai trò này không bao giờ hết hạn.",
       "add-more": "Thêm",
-      "condition-name": "Tên điều kiện",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
-      "project-level-roles": "Vai trò cấp độ dự án",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
-      "disallow-ddl": "Không cho phép chạy câu lệnh DDL/DML trong tất cả các môi trường."
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn."
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
@@ -2860,7 +2850,6 @@
     },
     "title": "Tiêu đề",
     "select-role": "Chọn vai trò",
-    "expired-tip": "Vai trò có thể đã hết hạn.",
     "import-from-role": "Nhập từ vai trò",
     "workspace-roles": {
       "self": "Vai trò không gian làm việc"

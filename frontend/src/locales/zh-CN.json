@@ -246,7 +246,6 @@
     "title": "标题",
     "text-wrap": "文本折行",
     "catalog": "Catalog",
-    "remove": "移除",
     "removed": "已移除",
     "submit": "提交",
     "draft": "草稿",
@@ -486,7 +485,6 @@
       "inactive-workload-identities": "未激活工作负载身份",
       "table": {
         "account": "账户",
-        "role": "角色",
         "groups": "群组",
         "roles": "角色"
       },
@@ -1905,7 +1903,6 @@
     "settings": {
       "success-updated": "项目设置更新成功",
       "update-failed": "无法更新项目设置。",
-      "success-member-added-prompt": "成功添加到当前项目中.",
       "restore": {
         "title": "恢复项目",
         "btn-text": "恢复这个@:common.project"
@@ -1981,19 +1978,12 @@
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "edit": "编辑成员 - {member}",
-      "view-by-members": "按成员查看",
-      "view-by-roles": "按角色查看",
-      "revoke-role-from-user": "删除'{user}'{role}的角色",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
       "add-more": "增加更多",
-      "condition-name": "条件名称",
       "workspace-level-roles": "工作空间级别角色",
-      "project-level-roles": "项目级别角色",
       "roles-are-filtered-by-permissions": "角色已按权限筛选",
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
-      "disallow-ddl": "禁止在所有环境中执行 DDL/DML 语句。"
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。"
     },
     "select": "选择项目",
     "all": "所有项目",
@@ -2803,7 +2793,6 @@
     },
     "title": "称谓",
     "select-role": "选择角色",
-    "expired-tip": "该角色可能已经过期。",
     "import-from-role": "从角色导入",
     "workspace-roles": {
       "self": "工作空间角色"
