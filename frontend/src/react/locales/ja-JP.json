@@ -51,7 +51,8 @@
         },
         "or": {
           "description": "次のいずれかが当てはまります…"
-        }
+        },
+        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
       },
       "input-value": "入力値",
       "input-value-press-enter": "値を入力し、Enter キーを押して確定します",
@@ -91,6 +92,7 @@
     "discard-changes": "変更をキャンセルする",
     "edit": "編集",
     "email": "メールアドレス",
+    "empty": "Empty",
     "enable": "Enable",
     "enabled": "Enabled",
     "environment": "環境",
@@ -245,6 +247,7 @@
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
     "engine": "エンジン",
+    "expression": "Expression",
     "filter-database": "データベースをフィルター",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
@@ -1150,7 +1153,15 @@
     "enabled": "二要素認証がオンになっています"
   },
   "database-group": {
-    "select": "データベースグループを選択"
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "gitops": {
     "checklist": {

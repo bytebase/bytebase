@@ -51,7 +51,8 @@
         },
         "or": {
           "description": "Any of the following are true..."
-        }
+        },
+        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
       },
       "input-value": "Input value",
       "input-value-press-enter": "Input value, press Enter to confirm",
@@ -91,6 +92,7 @@
     "discard-changes": "Discard changes",
     "edit": "Edit",
     "email": "Email",
+    "empty": "Empty",
     "enable": "Enable",
     "enabled": "Enabled",
     "environment": "Environment",
@@ -245,6 +247,7 @@
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
     "engine": "Engine",
+    "expression": "Expression",
     "filter-database": "Filter database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -1150,7 +1153,15 @@
     "enabled": "2FA Enabled"
   },
   "database-group": {
-    "select": "Select database group"
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "gitops": {
     "checklist": {

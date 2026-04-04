@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
 import {
@@ -203,8 +203,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
             "bb.policies.get",
           ],
         },
-        component: () => import("@/react/SQLReviewDetailPageMount.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "SQLReviewDetailPage",
+          ...route.params,
+        }),
       },
     ],
   },

@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
@@ -157,8 +157,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.databases"),
           requiredPermissionList: () => ["bb.databases.list"],
         },
-        component: () => import("@/react/ProjectDatabasesPageMount.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectDatabasesPage",
+          ...route.params,
+        }),
       },
       {
         path: "access-grants",
@@ -217,9 +220,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupDashboard.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupsPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => ["bb.databaseGroups.list"],
             },
@@ -233,16 +238,20 @@ const projectV1Routes: RouteRecordRaw[] = [
                 "bb.databases.list",
               ],
             },
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupCreatePage",
+              ...route.params,
+            }),
           },
           {
             path: ":databaseGroupName",
             name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupDetail.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupDetailPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.databaseGroups.get",
@@ -296,8 +305,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.audit-log"),
           requiredPermissionList: () => ["bb.auditLogs.search"],
         },
-        component: () => import("@/react/ProjectAuditLogPageMount.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectAuditLogPage",
+          ...route.params,
+        }),
       },
       {
         path: "webhooks",
@@ -472,8 +484,11 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.databases.list",
           ],
         },
-        component: () => import("@/react/ProjectGitOpsPageMount.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectGitOpsPage",
+          ...route.params,
+        }),
       },
       ...planRoutes,
       ...issueRoutes,

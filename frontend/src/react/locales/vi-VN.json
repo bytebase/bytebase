@@ -51,7 +51,8 @@
         },
         "or": {
           "description": "Bất kỳ điều nào sau đây là đúng..."
-        }
+        },
+        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
       },
       "input-value": "Nhập giá trị",
       "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
@@ -91,6 +92,7 @@
     "discard-changes": "Hủy thay đổi",
     "edit": "Chỉnh sửa",
     "email": "Email",
+    "empty": "Empty",
     "enable": "Enable",
     "enabled": "Enabled",
     "environment": "Môi trường",
@@ -245,6 +247,7 @@
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
     "engine": "Engine",
+    "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
@@ -1150,7 +1153,15 @@
     "enabled": "Đã bật 2FA"
   },
   "database-group": {
-    "select": "Chọn nhóm cơ sở dữ liệu"
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "gitops": {
     "checklist": {

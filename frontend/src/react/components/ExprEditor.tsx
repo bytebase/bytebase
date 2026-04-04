@@ -1,4 +1,5 @@
-import { Plus, X } from "lucide-react";
+import type { TFunction } from "i18next";
+import { HelpCircle, Plus, Trash2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -12,20 +13,18 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import {
-  factorText,
-  getOperatorListByFactor,
-} from "@/components/ExprEditor/components/common";
-import type { OptionConfig } from "@/components/ExprEditor/context";
 import type {
   ConditionExpr,
   ConditionGroupExpr,
+  ConditionOperator,
   Factor,
+  LogicalOperator,
   Operator,
   RawStringExpr,
 } from "@/plugins/cel";
 import {
   ExprType,
+  getOperatorListByFactor as getRawOperatorListByFactor,
   isBooleanFactor,
   isCollectionOperator,
   isConditionExpr,
@@ -50,8 +49,58 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
 
-// Re-export OptionConfig so consumers can import from one place.
-export type { OptionConfig } from "@/components/ExprEditor/context";
+// ============================================================
+// OptionConfig type
+// ============================================================
+
+export type OptionConfig = {
+  search?: (params: {
+    search: string;
+    pageToken: string;
+    pageSize: number;
+  }) => Promise<{
+    nextPageToken: string;
+    options: { value: string; label: string }[];
+  }>;
+  fetch?: (names: string[]) => Promise<{ value: string; label: string }[]>;
+  fallback?: (value: string) => { value: string; label: string };
+  options: { value: string; label: string }[];
+};
+
+// ============================================================
+// Helpers
+// ============================================================
+
+function factorText(factor: Factor, t: TFunction): string {
+  const key = `cel.factor.${factor.replace(/\./g, "_")}`;
+  const translated = t(key);
+  return translated === key ? factor : translated;
+}
+
+function getOperatorListByFactor(
+  factor: Factor,
+  overrideMap?: Map<Factor, Operator[]>
+): Operator[] {
+  return overrideMap?.get(factor) ?? getRawOperatorListByFactor(factor);
+}
+
+function getDefaultValue(factor: Factor): string | number | boolean | Date {
+  if (isNumberFactor(factor)) return 0;
+  if (isBooleanFactor(factor)) return true;
+  if (isStringFactor(factor)) return "";
+  if (isTimestampFactor(factor)) return new Date();
+  return "";
+}
+
+// Clone root, apply a mutation to the clone, return the clone.
+function updateExpr(
+  root: ConditionGroupExpr,
+  mutate: (clone: ConditionGroupExpr) => void
+): ConditionGroupExpr {
+  const clone = structuredClone(root);
+  mutate(clone);
+  return clone;
+}
 
 // ============================================================
 // Context
@@ -63,6 +112,8 @@ interface ExprEditorContextValue {
   factorList: Factor[];
   optionConfigMap: Map<Factor, OptionConfig>;
   factorOperatorOverrideMap: Map<Factor, Operator[]> | undefined;
+  root: ConditionGroupExpr;
+  onUpdate: (expr: ConditionGroupExpr) => void;
 }
 
 const ExprEditorContext = createContext<ExprEditorContextValue>({
@@ -71,6 +122,8 @@ const ExprEditorContext = createContext<ExprEditorContextValue>({
   factorList: [],
   optionConfigMap: new Map(),
   factorOperatorOverrideMap: undefined,
+  root: { type: ExprType.ConditionGroup, operator: "_&&_", args: [] },
+  onUpdate: () => {},
 });
 
 function useExprEditorCtx() {
@@ -78,8 +131,47 @@ function useExprEditorCtx() {
 }
 
 // ============================================================
-// PortaledDropdown — renders dropdown via portal to avoid
-// overflow clipping and z-index issues inside dialogs
+// Path-based immutable update helpers
+// ============================================================
+
+// A "path" is a list of indices into the tree, used to locate an operand.
+// e.g. [0, 2] means root.args[0].args[2] (where root.args[0] is a ConditionGroup).
+
+type Path = number[];
+
+function getGroupAtPath(
+  root: ConditionGroupExpr,
+  path: Path
+): ConditionGroupExpr {
+  let node: ConditionGroupExpr = root;
+  for (const idx of path) {
+    const child = node.args[idx];
+    if (!child || child.type !== ExprType.ConditionGroup) {
+      throw new Error("Invalid path");
+    }
+    node = child;
+  }
+  return node;
+}
+
+function useImmutableUpdate(groupPath: Path) {
+  const { root, onUpdate } = useExprEditorCtx();
+
+  return useCallback(
+    (mutate: (group: ConditionGroupExpr) => void) => {
+      onUpdate(
+        updateExpr(root, (clone) => {
+          const group = getGroupAtPath(clone, groupPath);
+          mutate(group);
+        })
+      );
+    },
+    [root, onUpdate, groupPath]
+  );
+}
+
+// ============================================================
+// PortaledDropdown
 // ============================================================
 
 function useClickOutside(
@@ -133,14 +225,12 @@ function PortaledDropdown({
     updatePosition();
     window.addEventListener("scroll", updatePosition, true);
     window.addEventListener("resize", updatePosition);
-
     const anchor = anchorRef.current;
     let ro: ResizeObserver | undefined;
     if (anchor) {
       ro = new ResizeObserver(updatePosition);
       ro.observe(anchor);
     }
-
     return () => {
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
@@ -157,7 +247,7 @@ function PortaledDropdown({
 }
 
 // ============================================================
-// SearchableSelect — async searchable dropdown
+// SearchableSelect
 // ============================================================
 
 interface SearchableSelectOption {
@@ -213,7 +303,10 @@ function SearchableSelect({
     [optionConfig]
   );
 
+  const initializedRef = useRef(false);
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     if (!value) return;
     if (optionConfig.fetch) {
       optionConfig.fetch([value]).then((opts) => {
@@ -222,7 +315,7 @@ function SearchableSelect({
     } else if (optionConfig.search) {
       doSearch(value);
     }
-  }, []);
+  }, [value, optionConfig, doSearch]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -264,7 +357,7 @@ function SearchableSelect({
         </SelectTrigger>
         <SelectContent>
           {optionConfig.options.map((o) => (
-            <SelectItem key={o.value as string} value={o.value as string}>
+            <SelectItem key={o.value} value={o.value}>
               {o.label}
             </SelectItem>
           ))}
@@ -331,7 +424,7 @@ function SearchableSelect({
 }
 
 // ============================================================
-// MultiSearchableSelect — async searchable multi-select
+// MultiSearchableSelect
 // ============================================================
 
 function MultiSearchableSelect({
@@ -399,7 +492,10 @@ function MultiSearchableSelect({
     [optionConfig]
   );
 
+  const multiInitRef = useRef(false);
   useEffect(() => {
+    if (multiInitRef.current) return;
+    multiInitRef.current = true;
     if (value.length === 0) return;
     if (optionConfig.fetch) {
       optionConfig.fetch(value).then((opts) => {
@@ -408,7 +504,7 @@ function MultiSearchableSelect({
     } else if (optionConfig.search) {
       doSearch("");
     }
-  }, []);
+  }, [value, optionConfig, doSearch]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -475,7 +571,7 @@ function MultiSearchableSelect({
                   removeValue(v);
                 }}
               >
-                ×
+                <X className="w-3 h-3" />
               </button>
             )}
           </span>
@@ -532,7 +628,7 @@ function MultiSearchableSelect({
 }
 
 // ============================================================
-// TagInput — multi-value tag input (no dropdown)
+// TagInput
 // ============================================================
 
 function TagInput({
@@ -586,7 +682,7 @@ function TagInput({
               className="text-gray-400 hover:text-gray-600"
               onClick={() => removeTag(tag)}
             >
-              ×
+              <X className="w-3 h-3" />
             </button>
           )}
         </span>
@@ -609,7 +705,7 @@ function TagInput({
 }
 
 // ============================================================
-// MultiCheckSelect — dropdown with checkboxes + "All" toggle
+// MultiCheckSelect
 // ============================================================
 
 function MultiCheckSelect({
@@ -681,7 +777,7 @@ function MultiCheckSelect({
                   onChange(value.filter((x) => x !== v));
                 }}
               >
-                ×
+                <X className="w-3 h-3" />
               </span>
             )}
           </span>
@@ -736,19 +832,29 @@ function MultiCheckSelect({
 
 function FactorSelect({
   expr,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: ConditionExpr;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex: number;
 }) {
-  const { readonly, factorList } = useExprEditorCtx();
+  const { t } = useTranslation();
+  const {
+    readonly,
+    factorList,
+    factorOperatorOverrideMap: overrideMap,
+  } = useExprEditorCtx();
+  const doUpdate = useImmutableUpdate(groupPath);
   const factor = expr.args[0] as Factor;
 
   useEffect(() => {
     if (factorList.length === 0) return;
     if (!factorList.includes(factor)) {
-      (expr.args as unknown[])[0] = factorList[0];
-      onUpdate();
+      doUpdate((group) => {
+        const cond = group.args[operandIndex] as ConditionExpr;
+        (cond.args as unknown[])[0] = factorList[0];
+      });
     }
   }, [factor, factorList]);
 
@@ -757,21 +863,29 @@ function FactorSelect({
       value={factor}
       disabled={readonly}
       onValueChange={(val) => {
-        (expr.args as unknown[])[0] = val as Factor;
-        onUpdate();
+        doUpdate((group) => {
+          const cond = group.args[operandIndex] as ConditionExpr;
+          (cond.args as unknown[])[0] = val as Factor;
+          // Reset operator when factor changes
+          const newFactor = val as Factor;
+          const operators = getOperatorListByFactor(newFactor, overrideMap);
+          if (operators.length > 0 && !operators.includes(cond.operator)) {
+            cond.operator = operators[0] as ConditionOperator;
+          }
+        });
       }}
     >
       <SelectTrigger className="shrink-0">
         <SelectValue>
           {(value: string | null) =>
-            value ? factorText(value as Factor) : null
+            value ? factorText(value as Factor, t) : null
           }
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {factorList.map((f) => (
           <SelectItem key={f} value={f}>
-            {factorText(f)}
+            {factorText(f, t)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -783,19 +897,18 @@ function FactorSelect({
 // OperatorSelect
 // ============================================================
 
-function operatorLabel(op: string): string {
-  return operatorDisplayLabel(op);
-}
-
 function OperatorSelect({
   expr,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: ConditionExpr;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex: number;
 }) {
   const { readonly, factorOperatorOverrideMap: overrideMap } =
     useExprEditorCtx();
+  const doUpdate = useImmutableUpdate(groupPath);
   const factor = expr.args[0] as Factor;
 
   const operators = useMemo(
@@ -806,8 +919,10 @@ function OperatorSelect({
   useEffect(() => {
     if (operators.length === 0) return;
     if (!operators.includes(expr.operator)) {
-      expr.operator = operators[0] as typeof expr.operator;
-      onUpdate();
+      doUpdate((group) => {
+        const cond = group.args[operandIndex] as ConditionExpr;
+        cond.operator = operators[0] as ConditionOperator;
+      });
     }
   }, [operators, expr.operator]);
 
@@ -816,19 +931,23 @@ function OperatorSelect({
       value={expr.operator}
       disabled={readonly}
       onValueChange={(val) => {
-        expr.operator = val as typeof expr.operator;
-        onUpdate();
+        doUpdate((group) => {
+          const cond = group.args[operandIndex] as ConditionExpr;
+          cond.operator = val as ConditionOperator;
+        });
       }}
     >
       <SelectTrigger className="shrink-0">
         <SelectValue>
-          {(value: string | null) => (value ? operatorLabel(value) : null)}
+          {(value: string | null) =>
+            value ? operatorDisplayLabel(value) : null
+          }
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {operators.map((op) => (
           <SelectItem key={op} value={op}>
-            {operatorLabel(op)}
+            {operatorDisplayLabel(op)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -842,13 +961,16 @@ function OperatorSelect({
 
 function ValueInput({
   expr,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: ConditionExpr;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex: number;
 }) {
   const { t } = useTranslation();
   const { readonly, optionConfigMap } = useExprEditorCtx();
+  const doUpdate = useImmutableUpdate(groupPath);
   const factor = expr.args[0] as Factor;
   const operator = expr.operator;
 
@@ -879,7 +1001,6 @@ function ValueInput({
   if (isArrayValue) {
     inputType = hasOption ? "MULTI-SELECT" : "MULTI-INPUT";
   } else if (isStringOperator(operator)) {
-    // String operators (startsWith, contains, etc.) always use text input
     inputType = "INPUT";
   } else if (hasOption) {
     inputType = "SINGLE-SELECT";
@@ -889,7 +1010,7 @@ function ValueInput({
 
   const isNumberValue = isNumberFactor(factor);
 
-  // Reset value when factor or operator changes, matching Vue's watch([factor, operator]) behavior.
+  // Reset value when factor or operator changes
   const prevRef = useRef({ factor, operator });
   useEffect(() => {
     const prev = prevRef.current;
@@ -897,22 +1018,20 @@ function ValueInput({
     prevRef.current = { factor, operator };
     if (!changed) return;
 
-    if (isNumberFactor(factor)) {
-      if (isCollectionOperator(operator)) {
-        (expr.args as unknown[])[1] = [];
-      } else {
-        (expr.args as unknown[])[1] = 0;
+    doUpdate((group) => {
+      const cond = group.args[operandIndex] as ConditionExpr;
+      if (isNumberFactor(cond.args[0] as Factor)) {
+        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
+          ? []
+          : 0;
+      } else if (isBooleanFactor(cond.args[0] as Factor)) {
+        (cond.args as unknown[])[1] = true;
+      } else if (isStringFactor(cond.args[0] as Factor)) {
+        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
+          ? []
+          : "";
       }
-    } else if (isBooleanFactor(factor)) {
-      (expr.args as unknown[])[1] = true;
-    } else if (isStringFactor(factor)) {
-      if (isCollectionOperator(operator)) {
-        (expr.args as unknown[])[1] = [];
-      } else {
-        (expr.args as unknown[])[1] = "";
-      }
-    }
-    onUpdate();
+    });
   }, [factor, operator]);
 
   const getStringValue = () => {
@@ -929,21 +1048,28 @@ function ValueInput({
   };
 
   const setStringValue = (v: string) => {
-    // For number factors, store as number even when selected from a string-valued dropdown
-    (expr.args as unknown[])[1] = isNumberFactor(factor) ? Number(v) : v;
-    onUpdate();
+    doUpdate((group) => {
+      const cond = group.args[operandIndex] as ConditionExpr;
+      (cond.args as unknown[])[1] = isNumberFactor(cond.args[0] as Factor)
+        ? Number(v)
+        : v;
+    });
   };
   const setNumberValue = (v: number) => {
-    (expr.args as unknown[])[1] = v;
-    onUpdate();
+    doUpdate((group) => {
+      const cond = group.args[operandIndex] as ConditionExpr;
+      (cond.args as unknown[])[1] = v;
+    });
   };
   const setArrayValue = (v: string[]) => {
-    if (isNumberFactor(factor)) {
-      (expr.args as unknown[])[1] = v.map(Number);
-    } else {
-      (expr.args as unknown[])[1] = v;
-    }
-    onUpdate();
+    doUpdate((group) => {
+      const cond = group.args[operandIndex] as ConditionExpr;
+      if (isNumberFactor(cond.args[0] as Factor)) {
+        (cond.args as unknown[])[1] = v.map(Number);
+      } else {
+        (cond.args as unknown[])[1] = v;
+      }
+    });
   };
 
   if (inputType === "INPUT") {
@@ -1001,8 +1127,8 @@ function ValueInput({
         </SelectTrigger>
         <SelectContent>
           {optionConfig.options.map((o) => (
-            <SelectItem key={o.value as string} value={o.value as string}>
-              {renderOptionValue(o.value as string, o.label)}
+            <SelectItem key={o.value} value={o.value}>
+              {renderOptionValue(o.value, o.label)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -1050,29 +1176,46 @@ function ValueInput({
 
 function ConditionRow({
   expr,
-  onRemove,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: ConditionExpr;
-  onRemove: () => void;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex: number;
 }) {
   const { readonly } = useExprEditorCtx();
+  const doUpdate = useImmutableUpdate(groupPath);
 
   return (
     <div className="w-full flex items-center gap-x-1">
-      <FactorSelect expr={expr} onUpdate={onUpdate} />
-      <OperatorSelect expr={expr} onUpdate={onUpdate} />
+      <FactorSelect
+        expr={expr}
+        groupPath={groupPath}
+        operandIndex={operandIndex}
+      />
+      <OperatorSelect
+        expr={expr}
+        groupPath={groupPath}
+        operandIndex={operandIndex}
+      />
       <div className="flex-1 min-w-0">
-        <ValueInput expr={expr} onUpdate={onUpdate} />
+        <ValueInput
+          expr={expr}
+          groupPath={groupPath}
+          operandIndex={operandIndex}
+        />
       </div>
       {!readonly && (
         <button
           type="button"
           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
-          onClick={onRemove}
+          onClick={() =>
+            doUpdate((group) => {
+              group.args.splice(operandIndex, 1);
+            })
+          }
         >
-          <X className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
@@ -1085,14 +1228,15 @@ function ConditionRow({
 
 function RawStringEditor({
   expr,
-  onRemove,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: RawStringExpr;
-  onRemove: () => void;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex: number;
 }) {
   const { readonly } = useExprEditorCtx();
+  const doUpdate = useImmutableUpdate(groupPath);
 
   return (
     <div className="w-full flex items-start gap-x-1">
@@ -1103,17 +1247,24 @@ function RawStringEditor({
         disabled={readonly}
         rows={2}
         onChange={(e) => {
-          expr.content = e.target.value;
-          onUpdate();
+          const newContent = e.target.value;
+          doUpdate((group) => {
+            const raw = group.args[operandIndex] as RawStringExpr;
+            raw.content = newContent;
+          });
         }}
       />
       {!readonly && (
         <button
           type="button"
           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
-          onClick={onRemove}
+          onClick={() =>
+            doUpdate((group) => {
+              group.args.splice(operandIndex, 1);
+            })
+          }
         >
-          <X className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
@@ -1127,13 +1278,13 @@ function RawStringEditor({
 function ConditionGroup({
   expr,
   root = false,
-  onRemove,
-  onUpdate,
+  groupPath,
+  operandIndex,
 }: {
   expr: ConditionGroupExpr;
   root?: boolean;
-  onRemove?: () => void;
-  onUpdate: () => void;
+  groupPath: Path;
+  operandIndex?: number;
 }) {
   const { t } = useTranslation();
   const {
@@ -1142,6 +1293,11 @@ function ConditionGroup({
     enableRawExpression,
     factorOperatorOverrideMap: overrideMap,
   } = useExprEditorCtx();
+
+  // For root, groupPath is []; for nested groups, it includes the operandIndex
+  const selfPath = root ? groupPath : [...groupPath, operandIndex!];
+  const doUpdate = useImmutableUpdate(selfPath);
+  const parentDoUpdate = useImmutableUpdate(groupPath);
 
   const operator = expr.operator;
   const args = expr.args;
@@ -1152,50 +1308,38 @@ function ConditionGroup({
     return op;
   };
 
-  const getDefaultValue = (
-    factor: Factor
-  ): string | number | boolean | Date => {
-    if (isNumberFactor(factor)) return 0;
-    if (isBooleanFactor(factor)) return true;
-    if (isStringFactor(factor)) return "";
-    if (isTimestampFactor(factor)) return new Date();
-    return "";
-  };
-
   const addCondition = () => {
     const factor = factorList[0];
     if (!factor) return;
     const operators = getOperatorListByFactor(factor, overrideMap);
     const op = operators[0];
     if (!op) return;
-    args.push({
-      type: ExprType.Condition,
-      operator: op,
-      args: [factor, getDefaultValue(factor)],
-    } as ConditionExpr);
-    onUpdate();
+    doUpdate((group) => {
+      group.args.push({
+        type: ExprType.Condition,
+        operator: op,
+        args: [factor, getDefaultValue(factor)],
+      } as ConditionExpr);
+    });
   };
 
   const addConditionGroup = () => {
-    args.push({
-      type: ExprType.ConditionGroup,
-      operator: LogicalOperatorList[0],
-      args: [],
+    doUpdate((group) => {
+      group.args.push({
+        type: ExprType.ConditionGroup,
+        operator: LogicalOperatorList[0],
+        args: [],
+      });
     });
-    onUpdate();
   };
 
   const addRawString = () => {
-    args.push({
-      type: ExprType.RawString,
-      content: "",
+    doUpdate((group) => {
+      group.args.push({
+        type: ExprType.RawString,
+        content: "",
+      });
     });
-    onUpdate();
-  };
-
-  const removeOperand = (index: number) => {
-    args.splice(index, 1);
-    onUpdate();
   };
 
   return (
@@ -1229,9 +1373,13 @@ function ConditionGroup({
               <button
                 type="button"
                 className="w-[22px] h-[22px] flex items-center justify-center rounded-xs hover:bg-gray-100"
-                onClick={onRemove}
+                onClick={() =>
+                  parentDoUpdate((group) => {
+                    group.args.splice(operandIndex!, 1);
+                  })
+                }
               >
-                <X className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -1257,8 +1405,9 @@ function ConditionGroup({
                 value={operator}
                 disabled={readonly}
                 onValueChange={(val) => {
-                  expr.operator = val as typeof expr.operator;
-                  onUpdate();
+                  doUpdate((group) => {
+                    group.operator = val as LogicalOperator;
+                  });
                 }}
               >
                 <SelectTrigger className="h-7 px-1.5">
@@ -1284,22 +1433,22 @@ function ConditionGroup({
               <ConditionGroup
                 key={i}
                 expr={operand}
-                onRemove={() => removeOperand(i)}
-                onUpdate={onUpdate}
+                groupPath={selfPath}
+                operandIndex={i}
               />
             )}
             {isConditionExpr(operand) && (
               <ConditionRow
                 expr={operand}
-                onRemove={() => removeOperand(i)}
-                onUpdate={onUpdate}
+                groupPath={selfPath}
+                operandIndex={i}
               />
             )}
             {isRawStringExpr(operand) && (
               <RawStringEditor
                 expr={operand}
-                onRemove={() => removeOperand(i)}
-                onUpdate={onUpdate}
+                groupPath={selfPath}
+                operandIndex={i}
               />
             )}
           </div>
@@ -1342,12 +1491,18 @@ function ConditionGroup({
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50 group relative"
             disabled={readonly}
             onClick={addConditionGroup}
           >
             <Plus className="w-4 h-4" />
             {t("cel.condition.add-group")}
+            <span className="relative">
+              <HelpCircle className="ml-1 w-3 h-3 text-gray-400" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-gray-800 text-white rounded shadow-lg z-50">
+                {t("cel.condition.group.tooltip")}
+              </span>
+            </span>
           </button>
           {enableRawExpression && (
             <button
@@ -1377,7 +1532,7 @@ export interface ExprEditorProps {
   factorList: Factor[];
   optionConfigMap?: Map<Factor, OptionConfig>;
   factorOperatorOverrideMap?: Map<Factor, Operator[]>;
-  onUpdate: () => void;
+  onUpdate: (expr: ConditionGroupExpr) => void;
 }
 
 export function ExprEditor({
@@ -1396,14 +1551,24 @@ export function ExprEditor({
       factorList,
       optionConfigMap,
       factorOperatorOverrideMap: overrideMap,
+      root: expr,
+      onUpdate,
     }),
-    [readonly, enableRawExpression, factorList, optionConfigMap, overrideMap]
+    [
+      readonly,
+      enableRawExpression,
+      factorList,
+      optionConfigMap,
+      overrideMap,
+      expr,
+      onUpdate,
+    ]
   );
 
   return (
     <ExprEditorContext.Provider value={ctxValue}>
       <div className="bb-risk-expr-editor text-sm w-full">
-        <ConditionGroup expr={expr} root onUpdate={onUpdate} />
+        <ConditionGroup expr={expr} root groupPath={[]} />
       </div>
     </ExprEditorContext.Provider>
   );
