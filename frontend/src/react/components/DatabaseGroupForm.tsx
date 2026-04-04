@@ -197,7 +197,7 @@ export function DatabaseGroupForm({
 
   return (
     <div className={`flex-1 flex flex-col ${className ?? ""}`}>
-      <div className="flex-1 mb-6">
+      <div className="flex-1 mb-6 px-4">
         <div className="w-full">
           <p className="font-medium text-main mb-2">{t("common.name")}</p>
           <Input
@@ -220,7 +220,7 @@ export function DatabaseGroupForm({
           </div>
         </div>
 
-        <hr className="my-4" />
+        <hr className="my-6" />
 
         <div className="w-full grid grid-cols-5 gap-x-6">
           <div className="col-span-3">
