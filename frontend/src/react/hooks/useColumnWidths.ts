@@ -56,8 +56,22 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
     }
     const containerWidth = container.clientWidth;
     if (containerWidth > defaultTotal) {
-      const scale = containerWidth / defaultTotal;
-      setWidths(columns.map((c) => Math.round(c.defaultWidth * scale)));
+      // Only scale resizable columns; fixed columns keep their default width
+      const fixedWidth = columns.reduce(
+        (s, c) => s + (c.resizable === false ? c.defaultWidth : 0),
+        0
+      );
+      const resizableDefault = defaultTotal - fixedWidth;
+      const resizableTarget = containerWidth - fixedWidth;
+      const scale =
+        resizableDefault > 0 ? resizableTarget / resizableDefault : 1;
+      setWidths(
+        columns.map((c) =>
+          c.resizable === false
+            ? c.defaultWidth
+            : Math.round(c.defaultWidth * scale)
+        )
+      );
     }
   }, [columns, defaultTotal, storageKey]);
 
