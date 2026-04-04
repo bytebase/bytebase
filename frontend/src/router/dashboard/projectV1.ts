@@ -369,8 +369,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("common.settings"),
         },
-        component: () => import("@/views/project/ProjectSettingPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ProjectSettingsPage" }),
       },
       {
         path: "instances/:instanceId/databases/:databaseName",

@@ -775,9 +775,7 @@
             "self": "最大クエリ時間",
             "description": "クエリの実行に許容される最大時間。"
           },
-          "seconds": "秒",
-          "project-scope": "プロジェクト",
-          "environment-scope": "環境"
+          "seconds": "秒"
         },
         "domain-restriction": {
           "self": "ワークスペースドメイン",
@@ -2488,10 +2486,8 @@
     "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
     "disabled": "SQL レビューポリシーが無効になっています",
     "create-policy": "SQL レビューポリシーを作成する",
-    "select-review": "SQL レビューを選択",
     "select-review-rules": "SQL レビュールールを選択",
     "select-all": "すべて選択",
-    "select-review-label": "既存の SQL レビューポリシーをリソースまたは {create} に添付できます。",
     "configure-policy": "SQL レビューポリシーを設定する",
     "policy-removed": "SQL レビューポリシーが削除されました",
     "policy-created": "SQL レビューポリシーが作成されました",
@@ -2539,8 +2535,7 @@
       "name": "レベル",
       "error": "エラー",
       "warning": "警告"
-    },
-    "tooltip-for-resource": "{scope} レベルでも設定可能です。Bytebase は環境レベルの設定を優先します。"
+    }
   },
   "agent": {
     "assistant-title": "Bytebase アシスタント",

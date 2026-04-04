@@ -775,9 +775,7 @@
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run."
           },
-          "seconds": "Seconds",
-          "project-scope": "project",
-          "environment-scope": "environment"
+          "seconds": "Seconds"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -2488,10 +2486,8 @@
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
     "create-policy": "Create SQL review",
-    "select-review": "Select SQL review",
     "select-review-rules": "Select SQL review rules",
     "select-all": "Select all",
-    "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
@@ -2539,8 +2535,7 @@
       "name": "Level",
       "error": "Error",
       "warning": "Warning"
-    },
-    "tooltip-for-resource": "It's also configurable at the {scope} level. Bytebase will prioritize the environment-level configuration."
+    }
   },
   "audit-log": {
     "export-finished": "Export finished",

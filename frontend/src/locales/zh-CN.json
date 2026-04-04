@@ -775,9 +775,7 @@
             "self": "最大查询时间",
             "description": "允许运行查询的最长时间。"
           },
-          "seconds": "秒",
-          "project-scope": "项目",
-          "environment-scope": "环境"
+          "seconds": "秒"
         },
         "domain-restriction": {
           "self": "工作空间域名",
@@ -2488,10 +2486,8 @@
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "SQL 审核策略已禁用",
     "create-policy": "创建审核策略",
-    "select-review": "选择 SQL 审核",
     "select-review-rules": "选择 SQL 审核规则",
     "select-all": "选择全部",
-    "select-review-label": "您可以将现有的 SQL 审核策略附加到资源，或者 {create}。",
     "configure-policy": "配置审核策略",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
@@ -2539,8 +2535,7 @@
       "name": "级别",
       "error": "错误",
       "warning": "警告"
-    },
-    "tooltip-for-resource": "也可在 {scope} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
+    }
   },
   "audit-log": {
     "export-finished": "导出完成",
