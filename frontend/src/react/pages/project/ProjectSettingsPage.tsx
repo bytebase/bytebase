@@ -156,6 +156,12 @@ export function ProjectSettingsPage() {
     { key: string; value: string }[]
   >(() => convertLabelsToKVList(project?.labels ?? {}, true));
 
+  // Sync label state when project labels change externally
+  const projectLabels = project?.labels;
+  useEffect(() => {
+    setLabelKVList(convertLabelsToKVList(projectLabels ?? {}, true));
+  }, [projectLabels]);
+
   // -----------------------------------------------------------------------
   // Security state
   // -----------------------------------------------------------------------
@@ -431,8 +437,8 @@ export function ProjectSettingsPage() {
       // 3. All project fields in a single updateProject call
       const updateMask: string[] = [];
       const projectPatch = cloneDeep(project);
-      if (title !== project.title) {
-        projectPatch.title = title;
+      if (title !== project.title && title.trim()) {
+        projectPatch.title = title.trim();
         updateMask.push("title");
       }
       const currentLabels = convertKVListToLabels(labelKVList, false);
@@ -1205,7 +1211,7 @@ export function ProjectSettingsPage() {
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={labelErrors.length > 0 || saving}
+                disabled={labelErrors.length > 0 || saving || !title.trim()}
               >
                 {t("common.confirm-and-update")}
               </Button>
