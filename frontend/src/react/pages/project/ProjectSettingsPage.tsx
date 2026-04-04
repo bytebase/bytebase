@@ -332,6 +332,7 @@ export function ProjectSettingsPage() {
   useEffect(() => {
     if (!isDirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.returnValue = t("common.leave-without-saving");
       e.preventDefault();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
