@@ -775,9 +775,7 @@
             "self": "Thời gian truy vấn tối đa",
             "description": "Thời gian tối đa cho phép để thực hiện một truy vấn."
           },
-          "seconds": "Giây",
-          "project-scope": "dự án",
-          "environment-scope": "môi trường"
+          "seconds": "Giây"
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
@@ -2488,10 +2486,8 @@
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
     "create-policy": "Tạo chính sách đánh giá SQL",
-    "select-review": "Chọn đánh giá SQL",
     "select-review-rules": "Chọn quy tắc đánh giá SQL",
     "select-all": "Chọn tất cả",
-    "select-review-label": "Bạn có thể đính kèm chính sách đánh giá SQL hiện có vào tài nguyên hoặc {create}.",
     "configure-policy": "Định cấu hình chính sách",
     "policy-removed": "Đã xóa thành công chính sách đánh giá.",
     "policy-created": "Đã tạo thành công chính sách đánh giá.",
@@ -2539,8 +2535,7 @@
       "name": "Cấp độ",
       "error": "Lỗi",
       "warning": "Cảnh báo"
-    },
-    "tooltip-for-resource": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ ưu tiên cấu hình ở cấp độ môi trường."
+    }
   },
   "agent": {
     "assistant-title": "Trợ lý Bytebase",

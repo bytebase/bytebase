@@ -775,9 +775,7 @@
             "self": "Tiempo máximo de consulta",
             "description": "El tiempo máximo permitido para la ejecución de una consulta."
           },
-          "seconds": "Segundos",
-          "project-scope": "proyecto",
-          "environment-scope": "ambiente"
+          "seconds": "Segundos"
         },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
@@ -2488,10 +2486,8 @@
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
     "disabled": "La revisión de SQL está deshabilitada",
     "create-policy": "Crear política",
-    "select-review": "Seleccione revisión SQL",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
     "select-all": "Seleccionar todo",
-    "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
@@ -2539,8 +2535,7 @@
       "name": "Nivel",
       "error": "Error",
       "warning": "Advertencia"
-    },
-    "tooltip-for-resource": "También es configurable a nivel {scope}. Bytebase dará prioridad a la configuración a nivel de entorno."
+    }
   },
   "agent": {
     "assistant-title": "Asistente de Bytebase",

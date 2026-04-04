@@ -18,6 +18,7 @@ import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -325,15 +326,25 @@ export function ProjectSettingsPage() {
     parallelTasksPerRollout,
   ]);
 
-  // beforeunload protection
+  // Unsaved-changes protection: browser close + in-app navigation
   useEffect(() => {
     if (!isDirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    const removeGuard = router.beforeEach((_to, _from, next) => {
+      if (window.confirm(t("common.leave-without-saving"))) {
+        next();
+      } else {
+        next(false);
+      }
+    });
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      removeGuard();
+    };
+  }, [isDirty, t]);
 
   // -----------------------------------------------------------------------
   // Revert
@@ -1210,9 +1221,25 @@ export function ProjectSettingsPage() {
           <DialogTitle>{t("sql-review.configure-policy")}</DialogTitle>
           <div className="mt-4 flex flex-col gap-y-2 max-h-96 overflow-y-auto">
             {reviewPolicyList.length === 0 ? (
-              <p className="text-sm text-control-light">
-                {t("common.no-data")}
-              </p>
+              <div className="flex flex-col items-center gap-y-3 py-4">
+                <p className="text-sm text-control-light">
+                  {t("common.no-data")}
+                </p>
+                {hasWorkspacePermissionV2("bb.reviewConfigs.create") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowReviewDialog(false);
+                      router.push({
+                        name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+                        query: { attachedResource: projectName },
+                      });
+                    }}
+                  >
+                    {t("sql-review.create-policy")}
+                  </Button>
+                )}
+              </div>
             ) : (
               reviewPolicyList.map((policy) => (
                 <button
