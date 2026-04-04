@@ -848,7 +848,7 @@ export function AuditLogTable({
           <div className="overflow-x-auto">
             <Table
               className="border-t border-block-border"
-              style={{ width: `${totalWidth}px` }}
+              style={{ minWidth: `${totalWidth}px` }}
             >
               <colgroup>
                 {widths.map((w, i) => (

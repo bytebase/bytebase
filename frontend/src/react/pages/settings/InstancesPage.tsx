@@ -1204,7 +1204,7 @@ export function InstancesPage() {
       {/* Table */}
       <div className="flex flex-col gap-y-4">
         <div className="overflow-x-auto">
-          <Table style={{ width: totalWidth + "px" }}>
+          <Table style={{ minWidth: `${totalWidth}px` }}>
             <colgroup>
               {widths.map((w, i) => (
                 <col key={columns[i].key} style={{ width: w + "px" }} />

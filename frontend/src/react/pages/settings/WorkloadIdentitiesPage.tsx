@@ -133,7 +133,7 @@ function WorkloadIdentityTable({
 
   return (
     <div className="border rounded-sm overflow-hidden overflow-x-auto">
-      <Table style={{ width: totalWidth + "px" }}>
+      <Table style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, i) => (
             <col key={columns[i].key} style={{ width: w + "px" }} />
