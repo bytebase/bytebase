@@ -2509,7 +2509,8 @@
       "self": "Đính kèm vào tài nguyên",
       "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
       "label-environment": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc môi trường đã chọn.",
-      "label-project": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc dự án đã chọn. Điều này sẽ thay thế chính sách cấp môi trường của cơ sở dữ liệu."
+      "label-project": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc dự án đã chọn. Điều này sẽ thay thế chính sách cấp môi trường của cơ sở dữ liệu.",
+      "override-warning": "Các tài nguyên sau đã được liên kết với các chính sách đánh giá SQL khác. Nhấp vào \"{button}\" sẽ ghi đè cấu hình."
     },
     "create": {
       "breadcrumb": "Tạo chính sách đánh giá SQL",

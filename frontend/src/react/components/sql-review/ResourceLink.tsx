@@ -8,6 +8,7 @@ import {
   environmentNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function ResourceLink({ resource }: { resource: string }) {
   if (resource.startsWith(environmentNamePrefix)) {
@@ -43,7 +44,9 @@ function ProjectResourceLink({ resource }: { resource: string }) {
   const projectStore = useProjectV1Store();
 
   useEffect(() => {
-    projectStore.getOrFetchProjectByName(resource, true);
+    if (hasWorkspacePermissionV2("bb.projects.get")) {
+      projectStore.getOrFetchProjectByName(resource, true);
+    }
   }, [projectStore, resource]);
 
   const project = useVueState(() => projectStore.getProjectByName(resource));

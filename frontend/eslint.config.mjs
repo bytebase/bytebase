@@ -44,6 +44,7 @@ export default [
             "sql-review.select-all",
             "sql-review.attach-resource.label-environment",
             "sql-review.attach-resource.label-project",
+            "sql-review.attach-resource.override-warning",
             "sql-review.create.basic-info.display-name-placeholder",
             "sql-review.create.basic-info.choose-template",
           ],
