@@ -144,9 +144,7 @@ function WorkloadIdentityTable({
             <TableHead resizable onResizeStart={(e) => onResizeStart(0, e)}>
               {t("settings.members.table.account")}
             </TableHead>
-            <TableHead className="text-right">
-              {t("common.operations")}
-            </TableHead>
+            <TableHead className="text-right" />
           </TableRow>
         </TableHeader>
         <TableBody>

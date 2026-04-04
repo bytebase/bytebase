@@ -257,9 +257,7 @@ function UserTable({
             <TableHead resizable onResizeStart={(e) => onResizeStart(1, e)}>
               {t("settings.members.table.groups")}
             </TableHead>
-            <TableHead className="text-right">
-              {t("common.operations")}
-            </TableHead>
+            <TableHead className="text-right" />
           </TableRow>
         </TableHeader>
         <TableBody>
