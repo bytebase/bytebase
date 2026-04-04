@@ -13,10 +13,11 @@ export interface ColumnDef {
 
 /**
  * Manages column widths with drag-to-resize support.
+ * Returns percentage-based widths for use with table-fixed layout
+ * so columns fill the container proportionally.
  *
- * @param storageKey - Optional key prefix for persisting widths to sessionStorage.
- *   When provided, widths are saved and restored across navigations.
  * @param columns - Column definitions with default/min widths.
+ * @param storageKey - Optional key for persisting widths to sessionStorage.
  */
 export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
   const [widths, setWidths] = useState<number[]>(() => {
@@ -67,7 +68,6 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
         document.removeEventListener("mouseup", onMouseUp);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
-        // Persist to sessionStorage
         if (storageKey) {
           setWidths((current) => {
             const record: Record<string, number> = {};
@@ -91,7 +91,11 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
     [widths, columns, storageKey]
   );
 
+  // Compute percentage widths so table-fixed distributes space proportionally
   const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+  const colStyles = widths.map((w) => ({
+    width: `${((w / totalWidth) * 100).toFixed(2)}%`,
+  }));
 
-  return { widths, totalWidth, onResizeStart };
+  return { widths, totalWidth, colStyles, onResizeStart };
 }

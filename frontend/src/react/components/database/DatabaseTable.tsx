@@ -91,7 +91,7 @@ export function DatabaseTable({
     return cols;
   }, [showProjectColumn]);
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { colStyles, onResizeStart } = useColumnWidths(
     columns,
     `bb.database-table-widths.${mode}`
   );
@@ -245,10 +245,10 @@ export function DatabaseTable({
   return (
     <>
       <div className="">
-        <Table style={{ minWidth: `${totalWidth}px` }}>
+        <Table>
           <colgroup>
-            {widths.map((w, i) => (
-              <col key={columns[i].key} style={{ width: `${w}px` }} />
+            {columns.map((_col, i) => (
+              <col key={columns[i].key} style={colStyles[i]} />
             ))}
           </colgroup>
           <TableHeader>

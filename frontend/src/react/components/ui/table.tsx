@@ -3,7 +3,11 @@ import { cn } from "@/react/lib/utils";
 
 function Table({ className, ref, ...props }: ComponentProps<"table">) {
   return (
-    <table ref={ref} className={cn("w-full text-sm", className)} {...props} />
+    <table
+      ref={ref}
+      className={cn("w-full text-sm table-fixed", className)}
+      {...props}
+    />
   );
 }
 

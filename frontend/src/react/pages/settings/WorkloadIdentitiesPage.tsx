@@ -81,7 +81,7 @@ function WorkloadIdentityTable({
     []
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { colStyles, onResizeStart } = useColumnWidths(
     columns,
     "bb.workload-identities-table-widths"
   );
@@ -133,10 +133,10 @@ function WorkloadIdentityTable({
 
   return (
     <div className="border rounded-sm">
-      <Table style={{ minWidth: `${totalWidth}px` }}>
+      <Table>
         <colgroup>
-          {widths.map((w, i) => (
-            <col key={columns[i].key} style={{ width: w + "px" }} />
+          {columns.map((_col, i) => (
+            <col key={columns[i].key} style={colStyles[i]} />
           ))}
         </colgroup>
         <TableHeader>

@@ -108,7 +108,7 @@ function ServiceAccountTable({
     []
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { colStyles, onResizeStart } = useColumnWidths(
     columns,
     "bb.service-accounts-table-widths"
   );
@@ -159,10 +159,10 @@ function ServiceAccountTable({
 
   return (
     <div className="border rounded-sm">
-      <Table style={{ minWidth: `${totalWidth}px` }}>
+      <Table>
         <colgroup>
-          {widths.map((w, i) => (
-            <col key={columns[i].key} style={{ width: w + "px" }} />
+          {columns.map((_col, i) => (
+            <col key={columns[i].key} style={colStyles[i]} />
           ))}
         </colgroup>
         <TableHeader>
