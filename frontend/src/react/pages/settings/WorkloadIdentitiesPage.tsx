@@ -1,7 +1,6 @@
 import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -10,15 +9,18 @@ import {
   ensureWorkloadIdentityFullName,
   pushNotification,
   useActuatorV1Store,
+  useProjectV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   useWorkloadIdentityStore,
   workloadIdentityToUser,
 } from "@/store/modules/workloadIdentity";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { UserAvatar } from "./shared/UserAvatar";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
@@ -28,10 +30,12 @@ import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 function WorkloadIdentityTable({
   users,
+  project,
   onUserUpdated,
   onUserSelected,
 }: {
   users: User[];
+  project?: Project;
   onUserUpdated: (user: User) => void;
   onUserSelected?: (user: User) => void;
 }) {
@@ -131,9 +135,14 @@ function WorkloadIdentityTable({
                   <div className="flex justify-end gap-x-1">
                     {!isDeleted && (
                       <>
-                        {hasWorkspacePermissionV2(
-                          "bb.workloadIdentities.delete"
-                        ) && (
+                        {(project
+                          ? hasProjectPermissionV2(
+                              project,
+                              "bb.workloadIdentities.delete"
+                            )
+                          : hasWorkspacePermissionV2(
+                              "bb.workloadIdentities.delete"
+                            )) && (
                           <Tooltip
                             content={t(
                               "settings.members.action.deactivate-confirm-title"
@@ -149,9 +158,14 @@ function WorkloadIdentityTable({
                             </Button>
                           </Tooltip>
                         )}
-                        {hasWorkspacePermissionV2(
-                          "bb.workloadIdentities.get"
-                        ) &&
+                        {(project
+                          ? hasProjectPermissionV2(
+                              project,
+                              "bb.workloadIdentities.get"
+                            )
+                          : hasWorkspacePermissionV2(
+                              "bb.workloadIdentities.get"
+                            )) &&
                           onUserSelected && (
                             <Tooltip content={t("common.edit")}>
                               <Button
@@ -167,9 +181,14 @@ function WorkloadIdentityTable({
                       </>
                     )}
                     {isDeleted &&
-                      hasWorkspacePermissionV2(
-                        "bb.workloadIdentities.undelete"
-                      ) && (
+                      (project
+                        ? hasProjectPermissionV2(
+                            project,
+                            "bb.workloadIdentities.undelete"
+                          )
+                        : hasWorkspacePermissionV2(
+                            "bb.workloadIdentities.undelete"
+                          )) && (
                         <Tooltip
                           content={t(
                             "settings.members.action.reactivate-confirm-title"
@@ -200,13 +219,21 @@ function WorkloadIdentityTable({
 // WorkloadIdentitiesPage (main)
 // ============================================================
 
-export function WorkloadIdentitiesPage() {
+export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
   const workloadIdentityStore = useWorkloadIdentityStore();
   const actuatorStore = useActuatorV1Store();
+  const projectStore = useProjectV1Store();
 
-  const workspaceResourceName = useVueState(
-    () => actuatorStore.workspaceResourceName
+  const projectName = projectId
+    ? `${projectNamePrefix}${projectId}`
+    : undefined;
+  const project = useVueState(() =>
+    projectName ? projectStore.getProjectByName(projectName) : undefined
+  );
+
+  const parent = useVueState(
+    () => projectName ?? actuatorStore.workspaceResourceName
   );
 
   const [showInactive, setShowInactive] = useState(false);
@@ -218,7 +245,7 @@ export function WorkloadIdentitiesPage() {
   const fetchActive = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const response = await workloadIdentityStore.listWorkloadIdentities({
-        parent: workspaceResourceName,
+        parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         showDeleted: false,
@@ -228,13 +255,13 @@ export function WorkloadIdentitiesPage() {
         nextPageToken: response.nextPageToken,
       };
     },
-    [workloadIdentityStore, workspaceResourceName]
+    [workloadIdentityStore, parent]
   );
 
   const fetchInactive = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const response = await workloadIdentityStore.listWorkloadIdentities({
-        parent: workspaceResourceName,
+        parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         showDeleted: true,
@@ -245,16 +272,16 @@ export function WorkloadIdentitiesPage() {
         nextPageToken: response.nextPageToken,
       };
     },
-    [workloadIdentityStore, workspaceResourceName]
+    [workloadIdentityStore, parent]
   );
 
   const activeData = usePagedData<User>({
-    sessionKey: "bb.paged-workload-identity-table.active",
+    sessionKey: `bb.paged-workload-identity-table${projectName ? `.${projectName}` : ""}.active`,
     fetchList: fetchActive,
   });
 
   const inactiveData = usePagedData<User>({
-    sessionKey: "bb.paged-workload-identity-table.deleted",
+    sessionKey: `bb.paged-workload-identity-table${projectName ? `.${projectName}` : ""}.deleted`,
     fetchList: fetchInactive,
     enabled: showInactive,
   });
@@ -291,7 +318,11 @@ export function WorkloadIdentitiesPage() {
           {t("settings.members.workload-identities")}
         </p>
         <Button
-          disabled={!hasWorkspacePermissionV2("bb.workloadIdentities.create")}
+          disabled={
+            project
+              ? !hasProjectPermissionV2(project, "bb.workloadIdentities.create")
+              : !hasWorkspacePermissionV2("bb.workloadIdentities.create")
+          }
           onClick={() => {
             setEditingWI(undefined);
             setShowDrawer(true);
@@ -303,29 +334,28 @@ export function WorkloadIdentitiesPage() {
       </div>
 
       <div className="flex flex-col gap-y-4 px-4">
-        <ComponentPermissionGuard permissions={["bb.workloadIdentities.list"]}>
-          {activeData.isLoading && activeData.dataList.length === 0 ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
-            </div>
-          ) : (
-            <>
-              <WorkloadIdentityTable
-                users={activeData.dataList}
-                onUserUpdated={handleActiveUpdated}
-                onUserSelected={handleUserSelected}
-              />
-              <PagedTableFooter
-                pageSize={activeData.pageSize}
-                pageSizeOptions={activeData.pageSizeOptions}
-                onPageSizeChange={activeData.onPageSizeChange}
-                hasMore={activeData.hasMore}
-                isFetchingMore={activeData.isFetchingMore}
-                onLoadMore={activeData.loadMore}
-              />
-            </>
-          )}
-        </ComponentPermissionGuard>
+        {activeData.isLoading && activeData.dataList.length === 0 ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <>
+            <WorkloadIdentityTable
+              users={activeData.dataList}
+              project={project}
+              onUserUpdated={handleActiveUpdated}
+              onUserSelected={handleUserSelected}
+            />
+            <PagedTableFooter
+              pageSize={activeData.pageSize}
+              pageSizeOptions={activeData.pageSizeOptions}
+              onPageSizeChange={activeData.onPageSizeChange}
+              hasMore={activeData.hasMore}
+              isFetchingMore={activeData.isFetchingMore}
+              onLoadMore={activeData.loadMore}
+            />
+          </>
+        )}
 
         {/* Show inactive toggle */}
         <label className="flex items-center gap-x-2 text-sm cursor-pointer">
@@ -353,6 +383,7 @@ export function WorkloadIdentitiesPage() {
               <>
                 <WorkloadIdentityTable
                   users={inactiveData.dataList}
+                  project={project}
                   onUserUpdated={handleInactiveUpdated}
                 />
                 <PagedTableFooter
@@ -372,6 +403,7 @@ export function WorkloadIdentitiesPage() {
       {showDrawer && (
         <CreateWorkloadIdentityDrawer
           workloadIdentity={editingWI}
+          project={projectName}
           onClose={() => {
             setShowDrawer(false);
             setEditingWI(undefined);
