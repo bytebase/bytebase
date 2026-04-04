@@ -2509,8 +2509,7 @@
       "self": "Adjuntar a recursos",
       "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
       "label-environment": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al entorno seleccionado.",
-      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno.",
-      "override-warning": "Siguiendo los recursos ya vinculados con otras políticas de revisión de SQL. Haga clic en \"{button}\" para anular la configuración."
+      "label-project": "La política de revisión de SQL afectará a todas las bases de datos que pertenecen al proyecto seleccionado. Se ignorará la política de revisión de SQL para el entorno."
     },
     "create": {
       "breadcrumb": "Crear política de revisión SQL",
@@ -2525,7 +2524,6 @@
       "configure-rule": {
         "name": "Configurar regla",
         "change-template": "Cambiar plantilla",
-        "confirm-override-title": "Confirmar cambio",
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },

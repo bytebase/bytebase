@@ -2509,8 +2509,7 @@
       "self": "Attach to resources",
       "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
       "label-environment": "The SQL review policy will affect all databases belonging to the selected environment.",
-      "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy.",
-      "override-warning": "Following resources already bound with other SQL review policies. Click \"{button}\" will override the config."
+      "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy."
     },
     "create": {
       "breadcrumb": "Create SQL review policy",
@@ -2525,7 +2524,6 @@
       "configure-rule": {
         "name": "Configure rule",
         "change-template": "Change the template",
-        "confirm-override-title": "Confirm change",
         "confirm-override-description": "Your rules will be overridden"
       }
     },
