@@ -323,6 +323,13 @@
   "issue": {
     "labels": "Etiquetas de problema"
   },
+  "label": {
+    "error": {
+      "key-necessary": "Se requiere una clave",
+      "key-duplicated": "Claves duplicadas",
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {{length}} caracteres"
+    }
+  },
   "landing": {
     "changelog-for-version": "Registro de cambios para {{version}}",
     "last-visit": "Última visita",

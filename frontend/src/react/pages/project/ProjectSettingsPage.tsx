@@ -236,12 +236,12 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
   const [executing, setExecuting] = useState(false);
 
   // -----------------------------------------------------------------------
-  // Fetch on mount
+  // Fetch on mount and when projectName changes
   // -----------------------------------------------------------------------
-  const fetchedRef = useRef(false);
+  const lastFetchedProject = useRef("");
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
+    if (lastFetchedProject.current === projectName) return;
+    lastFetchedProject.current = projectName;
     reviewStore.fetchReviewPolicyList();
     policyStore.getOrFetchPolicyByParentAndType({
       parentPath: projectName,
@@ -249,29 +249,7 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
     });
   }, [reviewStore, policyStore, projectName]);
 
-  // -----------------------------------------------------------------------
-  // Sync state when project changes externally
-  // -----------------------------------------------------------------------
-  useEffect(() => {
-    if (!project) return;
-    setTitle(project.title);
-    setLabelKVList(convertLabelsToKVList(project.labels, true));
-    setAllowRequestRole(project.allowRequestRole);
-    setAllowJustInTimeAccess(project.allowJustInTimeAccess);
-    setIssueLabels(cloneDeep(project.issueLabels));
-    setForceIssueLabels(project.forceIssueLabels);
-    setEnforceIssueTitle(project.enforceIssueTitle);
-    setEnforceSqlReview(project.enforceSqlReview);
-    setAllowSelfApproval(project.allowSelfApproval);
-    setRequireIssueApproval(project.requireIssueApproval);
-    setRequirePlanCheckNoError(project.requirePlanCheckNoError);
-    setPostgresDatabaseTenantMode(project.postgresDatabaseTenantMode);
-    setMaxRetries(project.executionRetryPolicy?.maximumRetries ?? 0);
-    setCiSamplingSize(project.ciSamplingSize);
-    setParallelTasksPerRollout(project.parallelTasksPerRollout);
-  }, [project]);
-
-  // Sync review policy state
+  // Sync review policy state when it loads or changes externally
   useEffect(() => {
     setPendingReviewPolicy(currentReviewPolicy);
     setEnforceReview(currentReviewPolicy?.enforce ?? false);
@@ -281,6 +259,9 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
   useEffect(() => {
     setMaxRows(getInitialMaxRows());
   }, [getInitialMaxRows]);
+
+  // Saving state
+  const [saving, setSaving] = useState(false);
 
   // -----------------------------------------------------------------------
   // Dirty tracking
@@ -383,24 +364,9 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
   // -----------------------------------------------------------------------
   const handleSave = useCallback(async () => {
     if (!project) return;
+    setSaving(true);
     try {
-      // 1. General settings
-      const generalMask: string[] = [];
-      const generalPatch = cloneDeep(project);
-      if (title !== project.title) {
-        generalPatch.title = title;
-        generalMask.push("title");
-      }
-      const currentLabels = convertKVListToLabels(labelKVList, false);
-      if (!isEqual(currentLabels, project.labels)) {
-        generalPatch.labels = currentLabels;
-        generalMask.push("labels");
-      }
-      if (generalMask.length > 0) {
-        await projectStore.updateProject(generalPatch, generalMask);
-      }
-
-      // 2. Security: SQL review
+      // 1. SQL review policy (separate API, not part of project update)
       if (!isEqual(pendingReviewPolicy, currentReviewPolicy)) {
         if (currentReviewPolicy) {
           await reviewStore.upsertReviewConfigTag({
@@ -429,7 +395,7 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
         });
       }
 
-      // 3. Security: max rows
+      // 2. Max rows policy (separate API)
       if (maxRows !== getInitialMaxRows()) {
         await policyStore.upsertPolicy({
           parentPath: projectName,
@@ -447,74 +413,75 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
         });
       }
 
-      // 4. Security: project toggles (request role, JIT)
-      const securityMask: string[] = [];
-      const securityPatch = cloneDeep(project);
+      // 3. All project fields in a single updateProject call
+      const updateMask: string[] = [];
+      const projectPatch = cloneDeep(project);
+      if (title !== project.title) {
+        projectPatch.title = title;
+        updateMask.push("title");
+      }
+      const currentLabels = convertKVListToLabels(labelKVList, false);
+      if (!isEqual(currentLabels, project.labels)) {
+        projectPatch.labels = currentLabels;
+        updateMask.push("labels");
+      }
       if (allowRequestRole !== project.allowRequestRole) {
-        securityPatch.allowRequestRole = allowRequestRole;
-        securityMask.push("allow_request_role");
+        projectPatch.allowRequestRole = allowRequestRole;
+        updateMask.push("allow_request_role");
       }
       if (allowJustInTimeAccess !== project.allowJustInTimeAccess) {
-        securityPatch.allowJustInTimeAccess = allowJustInTimeAccess;
-        securityMask.push("allow_just_in_time_access");
+        projectPatch.allowJustInTimeAccess = allowJustInTimeAccess;
+        updateMask.push("allow_just_in_time_access");
       }
-      if (securityMask.length > 0) {
-        await projectStore.updateProject(securityPatch, securityMask);
-      }
-
-      // 5. Issue-related settings
-      const issueMask: string[] = [];
-      const issuePatch = cloneDeep(project);
       if (!isEqual(issueLabels, project.issueLabels)) {
-        issuePatch.issueLabels = issueLabels;
-        issueMask.push("issue_labels");
+        projectPatch.issueLabels = issueLabels;
+        updateMask.push("issue_labels");
       }
       if (forceIssueLabels !== project.forceIssueLabels) {
-        issuePatch.forceIssueLabels = forceIssueLabels;
-        issueMask.push("force_issue_labels");
+        projectPatch.forceIssueLabels = forceIssueLabels;
+        updateMask.push("force_issue_labels");
       }
       if (enforceIssueTitle !== project.enforceIssueTitle) {
-        issuePatch.enforceIssueTitle = enforceIssueTitle;
-        issueMask.push("enforce_issue_title");
+        projectPatch.enforceIssueTitle = enforceIssueTitle;
+        updateMask.push("enforce_issue_title");
       }
       if (enforceSqlReview !== project.enforceSqlReview) {
-        issuePatch.enforceSqlReview = enforceSqlReview;
-        issueMask.push("enforce_sql_review");
+        projectPatch.enforceSqlReview = enforceSqlReview;
+        updateMask.push("enforce_sql_review");
       }
       if (allowSelfApproval !== project.allowSelfApproval) {
-        issuePatch.allowSelfApproval = allowSelfApproval;
-        issueMask.push("allow_self_approval");
+        projectPatch.allowSelfApproval = allowSelfApproval;
+        updateMask.push("allow_self_approval");
       }
       if (requireIssueApproval !== project.requireIssueApproval) {
-        issuePatch.requireIssueApproval = requireIssueApproval;
-        issueMask.push("require_issue_approval");
+        projectPatch.requireIssueApproval = requireIssueApproval;
+        updateMask.push("require_issue_approval");
       }
       if (requirePlanCheckNoError !== project.requirePlanCheckNoError) {
-        issuePatch.requirePlanCheckNoError = requirePlanCheckNoError;
-        issueMask.push("require_plan_check_no_error");
+        projectPatch.requirePlanCheckNoError = requirePlanCheckNoError;
+        updateMask.push("require_plan_check_no_error");
       }
       if (postgresDatabaseTenantMode !== project.postgresDatabaseTenantMode) {
-        issuePatch.postgresDatabaseTenantMode = postgresDatabaseTenantMode;
-        issueMask.push("postgres_database_tenant_mode");
+        projectPatch.postgresDatabaseTenantMode = postgresDatabaseTenantMode;
+        updateMask.push("postgres_database_tenant_mode");
       }
-      const newRetries = maxRetries;
-      if (newRetries !== (project.executionRetryPolicy?.maximumRetries ?? 0)) {
-        issuePatch.executionRetryPolicy = create(
+      if (maxRetries !== (project.executionRetryPolicy?.maximumRetries ?? 0)) {
+        projectPatch.executionRetryPolicy = create(
           Project_ExecutionRetryPolicySchema,
-          { maximumRetries: newRetries }
+          { maximumRetries: maxRetries }
         );
-        issueMask.push("execution_retry_policy");
+        updateMask.push("execution_retry_policy");
       }
       if (ciSamplingSize !== (project.ciSamplingSize ?? 0)) {
-        issuePatch.ciSamplingSize = ciSamplingSize;
-        issueMask.push("ci_sampling_size");
+        projectPatch.ciSamplingSize = ciSamplingSize;
+        updateMask.push("ci_sampling_size");
       }
       if (parallelTasksPerRollout !== (project.parallelTasksPerRollout ?? 0)) {
-        issuePatch.parallelTasksPerRollout = parallelTasksPerRollout;
-        issueMask.push("parallel_tasks_per_rollout");
+        projectPatch.parallelTasksPerRollout = parallelTasksPerRollout;
+        updateMask.push("parallel_tasks_per_rollout");
       }
-      if (issueMask.length > 0) {
-        await projectStore.updateProject(issuePatch, issueMask);
+      if (updateMask.length > 0) {
+        await projectStore.updateProject(projectPatch, updateMask);
       }
 
       pushNotification({
@@ -528,6 +495,8 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
         style: "CRITICAL",
         title: t("project.settings.update-failed"),
       });
+    } finally {
+      setSaving(false);
     }
   }, [
     project,
@@ -623,18 +592,18 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
     const keys = new Set<string>();
     for (const kv of labelKVList) {
       if (!kv.key) {
-        errors.push("Key is required");
+        errors.push(t("label.error.key-necessary"));
       }
       if (keys.has(kv.key) && kv.key) {
-        errors.push(`Duplicated key: ${kv.key}`);
+        errors.push(t("label.error.key-duplicated"));
       }
       keys.add(kv.key);
       if (kv.value.length > 63) {
-        errors.push(`Value for "${kv.key}" exceeds 63 characters`);
+        errors.push(t("label.error.max-value-length-exceeded", { length: 63 }));
       }
     }
     return errors;
-  }, [labelKVList]);
+  }, [labelKVList, t]);
 
   // -----------------------------------------------------------------------
   // Issue label helpers
@@ -1213,7 +1182,10 @@ export function ProjectSettingsPage({ projectId }: { projectId: string }) {
               <Button variant="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleSave} disabled={labelErrors.length > 0}>
+              <Button
+                onClick={handleSave}
+                disabled={labelErrors.length > 0 || saving}
+              >
                 {t("common.confirm-and-update")}
               </Button>
             </div>

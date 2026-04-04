@@ -323,6 +323,13 @@
   "issue": {
     "labels": "イシューラベル"
   },
+  "label": {
+    "error": {
+      "key-necessary": "キーを指定する必要があります",
+      "key-duplicated": "キーが繰り返されました",
+      "max-value-length-exceeded": "値は {{length}} 文字を超えることはできません"
+    }
+  },
   "landing": {
     "changelog-for-version": "{{version}} の変更履歴",
     "last-visit": "最終訪問",

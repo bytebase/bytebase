@@ -323,6 +323,13 @@
   "issue": {
     "labels": "Issue Labels"
   },
+  "label": {
+    "error": {
+      "key-necessary": "Key is required",
+      "key-duplicated": "Duplicated keys",
+      "max-value-length-exceeded": "Value's length cannot exceed {{length}} characters"
+    }
+  },
   "landing": {
     "changelog-for-version": "Changelog for {{version}}",
     "last-visit": "Last visit",

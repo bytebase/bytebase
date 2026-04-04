@@ -323,6 +323,13 @@
   "issue": {
     "labels": "工单标签"
   },
+  "label": {
+    "error": {
+      "key-necessary": "需要指定 Key",
+      "key-duplicated": "Key 重复了",
+      "max-value-length-exceeded": "值的长度不能超过 {{length}} 字符"
+    }
+  },
   "landing": {
     "changelog-for-version": "{{version}} 的更新日志",
     "last-visit": "上次访问",

@@ -323,6 +323,13 @@
   "issue": {
     "labels": "Nhãn vấn đề"
   },
+  "label": {
+    "error": {
+      "key-necessary": "Khóa là bắt buộc",
+      "key-duplicated": "Khóa trùng lặp",
+      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {{length}} ký tự"
+    }
+  },
   "landing": {
     "changelog-for-version": "Nhật ký thay đổi cho phiên bản {{version}}",
     "last-visit": "Lần truy cập cuối",
