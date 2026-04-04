@@ -69,21 +69,27 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
 
   const fetchWorkloadIdentities = useCallback(
     async (search: string) => {
-      const { workloadIdentities } =
-        await workloadIdentityStore.listWorkloadIdentities({
+      const all: ComboboxOption[] = [];
+      let pageToken: string | undefined;
+      // Fetch all pages so every identity is discoverable.
+      do {
+        const resp = await workloadIdentityStore.listWorkloadIdentities({
           parent: projectName,
           filter: { query: search },
-          pageToken: undefined,
-          pageSize: 50,
+          pageToken,
+          pageSize: 1000,
           showDeleted: false,
         });
-      setWiOptions(
-        workloadIdentities.map((wi) => ({
-          value: wi.name,
-          label: wi.title || wi.email,
-          description: wi.email,
-        }))
-      );
+        for (const wi of resp.workloadIdentities) {
+          all.push({
+            value: wi.name,
+            label: wi.title || wi.email,
+            description: wi.email,
+          });
+        }
+        pageToken = resp.nextPageToken || undefined;
+      } while (pageToken);
+      setWiOptions(all);
     },
     [projectName, workloadIdentityStore]
   );
@@ -112,22 +118,28 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const [dbOptions, setDbOptions] = useState<ComboboxOption[]>([]);
   const [dbSearch, setDbSearch] = useState("");
   useEffect(() => {
-    databaseStore
-      .fetchDatabases({
-        parent: projectName,
-        filter: dbSearch ? { query: dbSearch } : {},
-        pageSize: 50,
-      })
-      .then(({ databases }) => {
-        setDbOptions(
-          databases.map((db) => ({
+    const fetchAllDatabases = async () => {
+      const all: ComboboxOption[] = [];
+      let pageToken: string | undefined;
+      do {
+        const resp = await databaseStore.fetchDatabases({
+          parent: projectName,
+          filter: dbSearch ? { query: dbSearch } : {},
+          pageSize: 1000,
+          pageToken,
+        });
+        for (const db of resp.databases) {
+          all.push({
             value: db.name,
             label: extractDatabaseResourceName(db.name).databaseName,
             description: db.name,
-          }))
-        );
-      })
-      .catch(() => {});
+          });
+        }
+        pageToken = resp.nextPageToken || undefined;
+      } while (pageToken);
+      setDbOptions(all);
+    };
+    fetchAllDatabases().catch(() => {});
   }, [projectName, dbSearch, databaseStore]);
 
   // Fetch the selected identity into the store cache so getWorkloadIdentity
@@ -679,16 +691,35 @@ function MissingExternalURLAttention() {
   );
 }
 
+function copyToClipboard(text: string): boolean {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return true;
+  }
+  // Fallback for insecure origins (HTTP) / restricted contexts
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 function CopyButton({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
+  const handleCopy = () => {
+    if (copyToClipboard(content)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API not available
     }
   };
 
