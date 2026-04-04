@@ -691,12 +691,7 @@ function MissingExternalURLAttention() {
   );
 }
 
-function copyToClipboard(text: string): boolean {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(() => {});
-    return true;
-  }
-  // Fallback for insecure origins (HTTP) / restricted contexts
+function execCommandCopy(text: string): boolean {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.style.position = "fixed";
@@ -704,8 +699,7 @@ function copyToClipboard(text: string): boolean {
   document.body.appendChild(textarea);
   textarea.select();
   try {
-    document.execCommand("copy");
-    return true;
+    return document.execCommand("copy");
   } catch {
     return false;
   } finally {
@@ -713,11 +707,23 @@ function copyToClipboard(text: string): boolean {
   }
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to execCommand fallback
+    }
+  }
+  return execCommandCopy(text);
+}
+
 function CopyButton({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    if (copyToClipboard(content)) {
+  const handleCopy = async () => {
+    if (await copyToClipboard(content)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
