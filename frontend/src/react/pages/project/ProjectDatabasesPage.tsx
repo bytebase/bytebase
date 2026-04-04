@@ -17,7 +17,6 @@ import {
   LabelEditorDrawer,
 } from "@/react/components/database";
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
-import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -36,6 +35,7 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
+import type { Permission } from "@/types";
 import {
   isDefaultProject,
   isValidDatabaseName,
@@ -52,7 +52,7 @@ import {
   engineNameV1,
   extractDatabaseResourceName,
   generatePlanTitle,
-  hasWorkspacePermissionV2,
+  hasProjectPermissionV2,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
@@ -66,7 +66,14 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const projectStore = useProjectV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
+  const project = useVueState(() => projectStore.getProjectByName(projectName));
   const isDefault = isDefaultProject(projectName);
+
+  const hasProjectPermission = useCallback(
+    (permission: Permission) =>
+      project ? hasProjectPermissionV2(project, permission) : false,
+    [project]
+  );
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -367,31 +374,23 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             placeholder={t("database.filter-database")}
             scopeOptions={scopeOptions}
           />
-          <PermissionGuard
-            permissions={[
-              "bb.instances.list",
-              ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
-            ]}
+          <Button
+            disabled={
+              !hasProjectPermission("bb.instances.list") ||
+              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(hasProjectPermission)
+            }
+            onClick={() => setShowCreateDrawer(true)}
           >
-            <Button
-              disabled={
-                !hasWorkspacePermissionV2("bb.instances.list") ||
-                !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every((p) =>
-                  hasWorkspacePermissionV2(p)
-                )
-              }
-              onClick={() => setShowCreateDrawer(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              {t("quick-action.new-db")}
-            </Button>
-          </PermissionGuard>
+            <Plus className="h-4 w-4 mr-1" />
+            {t("quick-action.new-db")}
+          </Button>
         </div>
       </div>
 
       <div className="flex flex-col gap-y-4">
         <DatabaseBatchOperationsBar
           databases={selectedDatabases}
+          project={project}
           onSyncSchema={handleSyncSchema}
           onEditLabels={() => setShowLabelEditor(true)}
           onEditEnvironment={() => setShowEditEnvDrawer(true)}

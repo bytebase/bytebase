@@ -9,8 +9,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
@@ -18,6 +21,8 @@ import {
 
 export interface DatabaseBatchOperationsBarProps {
   databases: Database[];
+  /** When provided, permission checks use project-level IAM. */
+  project?: Project;
   onSyncSchema: () => void;
   onEditLabels: () => void;
   onEditEnvironment: () => void;
@@ -33,6 +38,7 @@ export interface DatabaseBatchOperationsBarProps {
 
 export function DatabaseBatchOperationsBar({
   databases,
+  project,
   onSyncSchema,
   onEditLabels,
   onEditEnvironment,
@@ -42,17 +48,20 @@ export function DatabaseBatchOperationsBar({
   onExportData,
 }: DatabaseBatchOperationsBarProps) {
   const { t } = useTranslation();
-  const canSync = hasWorkspacePermissionV2("bb.databases.sync");
-  const canUpdate = hasWorkspacePermissionV2("bb.databases.update");
-  const canGetEnvironment = hasWorkspacePermissionV2(
-    "bb.settings.getEnvironment"
-  );
-  const canChangeDatabase = PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every((p) =>
-    hasWorkspacePermissionV2(p)
-  );
-  const canExportData = PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.every((p) =>
-    hasWorkspacePermissionV2(p)
-  );
+
+  const hasPermission = (permission: Permission) =>
+    project
+      ? hasProjectPermissionV2(project, permission)
+      : hasWorkspacePermissionV2(permission);
+
+  const canSync = hasPermission("bb.databases.sync");
+  const canUpdate = hasPermission("bb.databases.update");
+  const canGetEnvironment = hasPermission("bb.settings.getEnvironment");
+  const canChangeDatabase =
+    PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every(hasPermission);
+  const canExportData =
+    PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.every(hasPermission);
+
   if (databases.length === 0) return null;
   return (
     <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4">
