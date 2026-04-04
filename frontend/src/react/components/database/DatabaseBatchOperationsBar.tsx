@@ -10,7 +10,11 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
+  PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
+} from "@/utils";
 
 export interface DatabaseBatchOperationsBarProps {
   databases: Database[];
@@ -43,6 +47,12 @@ export function DatabaseBatchOperationsBar({
   const canGetEnvironment = hasWorkspacePermissionV2(
     "bb.settings.getEnvironment"
   );
+  const canChangeDatabase = PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every((p) =>
+    hasWorkspacePermissionV2(p)
+  );
+  const canExportData = PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.every((p) =>
+    hasWorkspacePermissionV2(p)
+  );
   if (databases.length === 0) return null;
   return (
     <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4">
@@ -51,13 +61,23 @@ export function DatabaseBatchOperationsBar({
       </span>
       <div className="flex items-center gap-x-2 flex-wrap">
         {onChangeDatabase && (
-          <Button variant="ghost" size="sm" onClick={onChangeDatabase}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={!canChangeDatabase}
+            onClick={onChangeDatabase}
+          >
             <Pencil className="h-4 w-4 mr-1" />
             {t("database.change-database")}
           </Button>
         )}
         {onExportData && (
-          <Button variant="ghost" size="sm" onClick={onExportData}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={!canExportData}
+            onClick={onExportData}
+          >
             <Download className="h-4 w-4 mr-1" />
             {t("custom-approval.risk-rule.risk.namespace.data_export")}
           </Button>

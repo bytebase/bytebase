@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import {
@@ -51,7 +51,7 @@ import {
   engineNameV1,
   extractDatabaseResourceName,
   generatePlanTitle,
-  hasWorkspacePermissionV2,
+  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
 
@@ -76,6 +76,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     query: "",
     scopes: [],
   });
+
+  // Reset state when navigating between projects
+  useEffect(() => {
+    setSelectedNames(new Set());
+    setSearchParams({ query: "", scopes: [] });
+    setRefreshToken((prev) => prev + 1);
+  }, [projectId]);
 
   const environments = useVueState(
     () => environmentStore.environmentList ?? []
@@ -358,15 +365,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             scopeOptions={scopeOptions}
           />
           <PermissionGuard
-            permissions={["bb.instances.list", "bb.issues.create"]}
+            permissions={[
+              "bb.instances.list",
+              ...PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+            ]}
           >
-            <Button
-              disabled={
-                !hasWorkspacePermissionV2("bb.instances.list") ||
-                !hasWorkspacePermissionV2("bb.issues.create")
-              }
-              onClick={() => setShowCreateDrawer(true)}
-            >
+            <Button onClick={() => setShowCreateDrawer(true)}>
               <Plus className="h-4 w-4 mr-1" />
               {t("quick-action.new-db")}
             </Button>
