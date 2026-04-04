@@ -133,7 +133,7 @@ function GroupTable({
     []
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.groups-table-widths"
   );
@@ -257,7 +257,7 @@ function GroupTable({
   }
 
   return (
-    <div className="border rounded-sm overflow-x-auto">
+    <div ref={containerRef} className="border rounded-sm overflow-x-auto">
       <Table style={{ width: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, i) => (

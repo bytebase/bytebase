@@ -108,7 +108,7 @@ function ServiceAccountTable({
     []
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.service-accounts-table-widths"
   );
@@ -158,7 +158,7 @@ function ServiceAccountTable({
   }
 
   return (
-    <div className="border rounded-sm overflow-x-auto">
+    <div ref={containerRef} className="border rounded-sm overflow-x-auto">
       <Table style={{ width: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, i) => (

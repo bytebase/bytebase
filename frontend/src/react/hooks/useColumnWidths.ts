@@ -1,9 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface ColumnDef {
   /** Unique column identifier, also used as sessionStorage key suffix. */
   key: string;
-  /** Default width in pixels. */
+  /** Default width in pixels — used as the proportional weight when fitting to container. */
   defaultWidth: number;
   /** Minimum width in pixels. Defaults to 40. */
   minWidth?: number;
@@ -13,13 +13,17 @@ export interface ColumnDef {
 
 /**
  * Manages column widths with drag-to-resize support.
- * Use with table-fixed layout: set the table width to totalWidth
- * and each col to its pixel width. Wrap in overflow-x-auto for scrolling.
+ *
+ * On mount, measures the container (via containerRef) and scales default widths
+ * proportionally to fill it. Returns a ref to attach to the scrollable wrapper.
  *
  * @param columns - Column definitions with default/min widths.
  * @param storageKey - Optional key for persisting widths to sessionStorage.
  */
 export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const defaultTotal = columns.reduce((s, c) => s + c.defaultWidth, 0);
+
   const [widths, setWidths] = useState<number[]>(() => {
     if (storageKey) {
       try {
@@ -34,6 +38,28 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
     }
     return columns.map((c) => c.defaultWidth);
   });
+
+  // On mount, scale widths to fill container if no saved widths exist
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    const container = containerRef.current;
+    if (!container) return;
+    // Skip if widths were restored from storage
+    if (storageKey) {
+      try {
+        if (sessionStorage.getItem(storageKey)) return;
+      } catch {
+        // ignore
+      }
+    }
+    const containerWidth = container.clientWidth;
+    if (containerWidth > defaultTotal) {
+      const scale = containerWidth / defaultTotal;
+      setWidths(columns.map((c) => Math.round(c.defaultWidth * scale)));
+    }
+  }, [columns, defaultTotal, storageKey]);
 
   const dragRef = useRef<{
     colIndex: number;
@@ -93,5 +119,5 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
 
   const totalWidth = widths.reduce((sum, w) => sum + w, 0);
 
-  return { widths, totalWidth, onResizeStart };
+  return { containerRef, widths, totalWidth, onResizeStart };
 }

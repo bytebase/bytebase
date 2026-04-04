@@ -1017,7 +1017,7 @@ export function ProjectsPage() {
     return cols;
   }, [canDelete]);
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.projects-table-widths"
   );
@@ -1102,7 +1102,7 @@ export function ProjectsPage() {
 
       {/* Table */}
       <div className="flex flex-col gap-y-4">
-        <div className="overflow-x-auto">
+        <div ref={containerRef} className="overflow-x-auto">
           <Table style={{ width: `${totalWidth}px` }}>
             <colgroup>
               {widths.map((w, i) => (

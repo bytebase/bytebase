@@ -1149,7 +1149,7 @@ export function InstancesPage() {
     []
   );
 
-  const { widths, totalWidth, onResizeStart } = useColumnWidths(
+  const { containerRef, widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.instances-table-widths"
   );
@@ -1203,7 +1203,7 @@ export function InstancesPage() {
 
       {/* Table */}
       <div className="flex flex-col gap-y-4">
-        <div className="overflow-x-auto">
+        <div ref={containerRef} className="overflow-x-auto">
           <Table style={{ width: `${totalWidth}px` }}>
             <colgroup>
               {widths.map((w, i) => (
