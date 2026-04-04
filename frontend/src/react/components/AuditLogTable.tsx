@@ -591,7 +591,7 @@ export function AuditLogTable({
     subscriptionStore.hasFeature(PlanFeature.FEATURE_AUDIT_LOG)
   );
   const columns = useColumnDefs();
-  const { colStyles, onResizeStart } = useColumnWidths(
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.audit-log-table-widths"
   );
@@ -845,11 +845,14 @@ export function AuditLogTable({
       {/* Table */}
       {hasAuditLogFeature ? (
         <div>
-          <div className="">
-            <Table className="border-t border-block-border">
+          <div className="overflow-x-auto">
+            <Table
+              className="border-t border-block-border"
+              style={{ width: `${totalWidth}px` }}
+            >
               <colgroup>
-                {columns.map((_col, i) => (
-                  <col key={columns[i].key} style={colStyles[i]} />
+                {widths.map((w, i) => (
+                  <col key={columns[i].key} style={{ width: `${w}px` }} />
                 ))}
               </colgroup>
               <TableHeader>

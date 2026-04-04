@@ -13,8 +13,8 @@ export interface ColumnDef {
 
 /**
  * Manages column widths with drag-to-resize support.
- * Returns percentage-based widths for use with table-fixed layout
- * so columns fill the container proportionally.
+ * Use with table-fixed layout: set the table width to totalWidth
+ * and each col to its pixel width. Wrap in overflow-x-auto for scrolling.
  *
  * @param columns - Column definitions with default/min widths.
  * @param storageKey - Optional key for persisting widths to sessionStorage.
@@ -91,11 +91,7 @@ export function useColumnWidths(columns: ColumnDef[], storageKey?: string) {
     [widths, columns, storageKey]
   );
 
-  // Compute percentage widths so table-fixed distributes space proportionally
   const totalWidth = widths.reduce((sum, w) => sum + w, 0);
-  const colStyles = widths.map((w) => ({
-    width: `${((w / totalWidth) * 100).toFixed(2)}%`,
-  }));
 
-  return { widths, totalWidth, colStyles, onResizeStart };
+  return { widths, totalWidth, onResizeStart };
 }

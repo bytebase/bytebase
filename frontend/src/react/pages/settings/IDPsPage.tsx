@@ -1997,7 +1997,7 @@ export function IDPsPage() {
     []
   );
 
-  const { colStyles, onResizeStart } = useColumnWidths(
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(
     columns,
     "bb.idps-table-widths"
   );
@@ -2072,11 +2072,11 @@ export function IDPsPage() {
       </div>
 
       {ready ? (
-        <div className="border rounded-sm">
-          <Table>
+        <div className="border rounded-sm overflow-x-auto">
+          <Table style={{ width: `${totalWidth}px` }}>
             <colgroup>
-              {columns.map((_col, i) => (
-                <col key={columns[i].key} style={colStyles[i]} />
+              {widths.map((w, i) => (
+                <col key={columns[i].key} style={{ width: `${w}px` }} />
               ))}
             </colgroup>
             <TableHeader>
