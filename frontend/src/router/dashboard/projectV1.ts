@@ -472,7 +472,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.databases.list",
           ],
         },
-        component: () => import("@/views/project/ProjectGitOpsDashboard.vue"),
+        component: () => import("@/react/ProjectGitOpsPageMount.vue"),
         props: true,
       },
       ...planRoutes,

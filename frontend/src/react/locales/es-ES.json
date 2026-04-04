@@ -158,7 +158,9 @@
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
-    "you": "tu"
+    "you": "tu",
+    "database-group": "Grupo de bases de datos",
+    "databases": "Bases de datos"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -248,7 +250,8 @@
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
-    "unassign-alert-title": "Desasignar bases de datos"
+    "unassign-alert-title": "Desasignar bases de datos",
+    "select": "Seleccionar base de datos"
   },
   "db": {
     "character-set": "Juego de caracteres",
@@ -1056,5 +1059,43 @@
   },
   "two-factor": {
     "enabled": "2FA habilitado"
+  },
+  "database-group": {
+    "select": "Seleccionar grupo de bases de datos"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
+      "external-url": "URL externa",
+      "target-databases": "Bases de datos de destino",
+      "title": "Verificaciones antes de comenzar",
+      "wif-notice-suffix": "para configurar GitOps con una cuenta de servicio.",
+      "wif-notice-text": "Workload Identity Federation actualmente solo es compatible con GitHub y GitLab. Para otros VCS, consulte los tutoriales de",
+      "workload-identity": "Identidad de carga de trabajo"
+    },
+    "documentation": "Ver documentación",
+    "overview": {
+      "description": "Bytebase GitOps le permite gestionar Database as Code integrando los cambios de esquema de base de datos en su pipeline de CI/CD.",
+      "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
+      "title": "Qué es GitOps"
+    },
+    "test-setup": {
+      "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
+      "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
+      "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {branch}.",
+      "step-merge": "Una vez que la revisión pase, fusione el PR. Bytebase creará automáticamente un despliegue y lo implementará en los entornos de destino.",
+      "step-sql-review": "SQL Review se ejecuta automáticamente en la pull request y publica comentarios de revisión.",
+      "title": "Pruebe su primera migración GitOps"
+    },
+    "workflow": {
+      "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
+      "file-hint": "Guardar como {filePath} en su repositorio",
+      "provider-not-match": "La workload identity seleccionada solo funciona para {provider}.",
+      "self-hosted-runner": "Runner self-hosted",
+      "title": "Generación de archivo de flujo de trabajo"
+    },
+    "workload-identity": {
+      "select-placeholder": "Seleccionar una identidad de carga de trabajo"
+    }
   }
 }
