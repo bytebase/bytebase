@@ -369,7 +369,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("common.settings"),
         },
-        component: () => import("@/views/project/ProjectSettingPanel.vue"),
+        component: () => import("@/react/ProjectSettingsPageMount.vue"),
         props: true,
       },
       {
