@@ -154,9 +154,10 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     grant: AccessGrant;
   } | null>(null);
 
-  // Paginated fetch for all project databases
+  // Paginated fetch for all project databases (gated on canList)
   const [databaseOptions, setDatabaseOptions] = useState<DatabaseOption[]>([]);
   useEffect(() => {
+    if (!canList) return;
     let cancelled = false;
     const fetchAll = async () => {
       const all: Database[] = [];
@@ -178,13 +179,14 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [projectName, databaseStore]);
+  }, [projectName, databaseStore, canList]);
 
-  // Paginated fetch for all users
+  // Paginated fetch for all users (gated on canList)
   const [userOptions, setUserOptions] = useState<
     { value: string; title: string; name: string }[]
   >([]);
   useEffect(() => {
+    if (!canList) return;
     let cancelled = false;
     const fetchAll = async () => {
       const all: User[] = [];
@@ -207,7 +209,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [userStore]);
+  }, [userStore, canList]);
 
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
@@ -336,11 +338,13 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         filter.statement = query;
       }
       if (createdAfter) {
-        filter.createdTsAfter = new Date(createdAfter).getTime();
+        const [y, m, d] = createdAfter.split("-").map(Number);
+        filter.createdTsAfter = new Date(y, m - 1, d).getTime();
       }
       if (createdBefore) {
-        filter.createdTsBefore =
-          new Date(createdBefore).getTime() + 24 * 60 * 60 * 1000;
+        const [y, m, d] = createdBefore.split("-").map(Number);
+        // End of the selected day (start of next day)
+        filter.createdTsBefore = new Date(y, m - 1, d + 1).getTime();
       }
       const response = await accessGrantStore.listAccessGrants({
         parent: projectName,

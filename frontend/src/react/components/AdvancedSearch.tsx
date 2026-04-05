@@ -355,7 +355,13 @@ export function AdvancedSearch({
           ) {
             selectValue(visibleValueOptions[menuIndex].value);
           } else if (currentScope && inputText.trim()) {
-            selectValue(inputText.trim());
+            // Strip the "scope:" prefix if present
+            const prefix = `${currentScope}:`;
+            const raw = inputText.trim();
+            const value = raw.startsWith(prefix)
+              ? raw.substring(prefix.length).trim()
+              : raw;
+            if (value) selectValue(value);
           }
         }
       }
