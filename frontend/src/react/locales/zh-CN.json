@@ -61,12 +61,16 @@
     }
   },
   "common": {
+    "activated": "已激活",
+    "active": "开启",
     "add": "添加",
     "add-permissions": "添加权限",
     "added": "已创建",
     "address": "地址",
     "all": "全部",
     "archive": "归档",
+    "archive-description": "将「{{name}}」标记为已归档且只读。",
+    "archive-resource": "归档{{type}}",
     "archived": "已归档",
     "back": "返回",
     "cancel": "取消",
@@ -78,17 +82,26 @@
     "confirm": "确认",
     "confirm-and-add": "确认并添加",
     "confirm-and-update": "确认并更新",
+    "confirm-archive": "确定归档资源？",
+    "confirm-delete": "确定删除资源？",
     "copied": "已拷贝",
     "copy": "拷贝",
     "copy-failed": "Copy failed",
     "create": "创建",
     "created": "已创建",
+    "created-at": "创建于",
+    "creator": "创建人",
+    "danger-zone": "危险区域",
     "database": "数据库",
+    "database-group": "数据库分组",
+    "databases": "数据库",
     "default": "默认",
     "delete": "删除",
     "delete-resource": "删除{{type}}",
+    "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
     "deleted": "已删除",
     "description": "描述",
+    "deselect-all": "Deselect all",
     "disable": "禁用",
     "discard-changes": "取消修改",
     "edit": "编辑",
@@ -98,6 +111,7 @@
     "enabled": "开启",
     "environment": "环境",
     "environment-name": "环境名",
+    "environments": "环境",
     "expiration": "Expiration",
     "export": "导出",
     "failed": "失败",
@@ -105,6 +119,7 @@
       "size-limit": "文件大小需小于 {{size}} MiB",
       "type-limit": "仅支持 {{extension}} 类型的文件"
     },
+    "filter": "Filter",
     "filter-by-name": "按名称过滤",
     "from": "从",
     "general": "通用",
@@ -112,12 +127,14 @@
     "id": "ID",
     "instance": "实例",
     "is-required": "is required",
+    "items": "items",
     "key": "键",
     "labels": "标签",
     "learn-more": "了解更多",
     "leave-without-saving": "不保存变动？",
     "load-more": "加载更多",
     "loading": "加载中",
+    "manually-select": "Manually select",
     "members_one": "成员",
     "members_other": "成员",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
@@ -126,20 +143,22 @@
     "next": "下一步",
     "no-data": "无数据",
     "ok": "OK",
-    "optional": "Optional",
     "operations": "操作",
+    "optional": "Optional",
+    "pending": "待审批",
     "permissions": "权限",
     "previous": "上一步",
     "project": "项目",
     "reason": "Reason",
     "release": "版本",
     "reorder": "排序",
-    "resource": "资源",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
+    "resource": "资源",
     "restore": "恢复",
     "restored": "已恢复",
     "revert": "恢复",
+    "revoked": "已撤销",
     "rows-per-page": "每页行数",
     "save": "保存",
     "schema": "模式",
@@ -147,13 +166,16 @@
     "search-for-more": "搜索更多",
     "select": "请选择",
     "select-all": "全选",
+    "selected": "selected",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "state": "状态",
+    "statement": "语句",
     "status": "状态",
     "system": "系统",
     "table": "表",
     "title": "标题",
     "to": "到",
+    "total": "Total",
     "total-n-items": "共 {{n}} 项",
     "type": "类型",
     "unassigned": "未分配",
@@ -166,22 +188,7 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您",
-    "database-group": "数据库分组",
-    "databases": "数据库",
-    "danger-zone": "危险区域",
-    "archive-resource": "归档{{type}}",
-    "archive-description": "将「{{name}}」标记为已归档且只读。",
-    "confirm-archive": "确定归档资源？",
-    "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
-    "confirm-delete": "确定删除资源？",
-    "environments": "环境",
-    "manually-select": "Manually select",
-    "filter": "Filter",
-    "total": "Total",
-    "selected": "selected",
-    "items": "items",
-    "deselect-all": "Deselect all"
+    "you": "您"
   },
   "create-db": {
     "cluster": "集群",
@@ -254,6 +261,7 @@
     }
   },
   "database": {
+    "change-database": "变更数据库",
     "classification": {
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
@@ -262,18 +270,28 @@
     "engine": "引擎",
     "expression": "Expression",
     "filter-database": "筛选数据库",
+    "mixed-label-values": "混合值",
+    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
+    "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-schema-button": "同步 Schema",
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
-    "change-database": "变更数据库",
-    "mixed-label-values": "混合值",
-    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库",
-    "select": "选择数据库"
+    "unassign-alert-title": "取消分配数据库"
+  },
+  "database-group": {
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "db": {
     "character-set": "字符集",
@@ -288,11 +306,46 @@
     "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "reorder": "重新排序环境",
-    "successfully-updated-environment": "环境'{{name}}'更新成功",
-    "select": "选择环境"
+    "select": "选择环境",
+    "successfully-updated-environment": "环境'{{name}}'更新成功"
   },
   "error-page": {
     "not-found": "页面未找到"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
+      "external-url": "外部访问地址",
+      "target-databases": "目标数据库",
+      "title": "开始前检查",
+      "wif-notice-suffix": "以使用服务账号配置 GitOps。",
+      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
+      "workload-identity": "工作负载身份"
+    },
+    "documentation": "查看文档",
+    "overview": {
+      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
+      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
+      "title": "什么是 GitOps"
+    },
+    "test-setup": {
+      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
+      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
+      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
+      "title": "测试您的首次 GitOps 迁移"
+    },
+    "workflow": {
+      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
+      "file-hint": "保存为仓库中的 {filePath}",
+      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
+      "self-hosted-runner": "自托管 runner",
+      "title": "工作流文件生成"
+    },
+    "workload-identity": {
+      "select-placeholder": "选择工作负载身份"
+    }
   },
   "identity-provider": {
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
@@ -338,12 +391,15 @@
     "syncing": "同步中 ..."
   },
   "issue": {
+    "advanced-search": {
+      "filter": "过滤"
+    },
     "labels": "工单标签"
   },
   "label": {
     "error": {
-      "key-necessary": "需要指定 Key",
       "key-duplicated": "Key 重复了",
+      "key-necessary": "需要指定 Key",
       "max-value-length-exceeded": "值的长度不能超过 {{length}} 字符"
     }
   },
@@ -398,118 +454,127 @@
       "success-prompt": "成功创建 {{name}}."
     },
     "filter-projects": "过滤项目",
-    "table": {
-      "name": "名称"
+    "members": {
+      "add-more": "Add more",
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
+      "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
+      "edit-member": "编辑成员 - {{member}}",
+      "never-expires": "Never",
+      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
     "settings": {
-      "success-updated": "项目设置更新成功",
-      "update-failed": "无法更新项目设置。",
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
-      "restore": {
-        "title": "恢复项目",
-        "btn-text": "恢复这个@:common.project"
-      },
-      "project-labels": {
-        "self": "项目标签",
-        "description": "用键值标签组织项目（最多64个）"
-      },
       "issue-related": {
-        "self": "工单相关",
-        "labels": {
-          "self": "工单标签",
-          "description": "可以在工单中附加标签以便管理",
-          "placeholder": "按 Enter 键添加标签",
-          "force-issue-labels": {
-            "self": "要求所有工单都必须有标签",
-            "description": "创建工单时必须添加至少一个标签。",
-            "warning": "至少需要配置一个标签"
-          }
-        },
-        "enforce-issue-title": {
-          "self": "要求手动输入标题",
-          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
-        },
-        "enforce-sql-review": {
-          "self": "强制 SQL 审核",
-          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。"
-        },
-        "allow-self-approval": {
-          "self": "允许创建者审批",
-          "description": "允许创建者审批自己创建的工单。"
+        "allow-jit": {
+          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。",
+          "self": "允许即时访问"
         },
         "allow-request-role": {
-          "self": "允许申请角色",
-          "description": "非项目所有者可以自行申请项目级角色"
+          "description": "非项目所有者可以自行申请项目级角色",
+          "self": "允许申请角色"
         },
-        "allow-jit": {
-          "self": "允许即时访问",
-          "description": "启用后，用户可以在 SQL 编辑器中请求并使用即时数据访问权限。"
-        },
-        "postgres-database-tenant-mode": {
-          "self": "Postgres 数据库租户模式",
-          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。"
-        },
-        "max-retries": {
-          "self": "锁超时的最大重试数",
-          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。"
-        },
-        "ci-sampling-size": {
-          "self": "CI 数据采样大小",
-          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。"
-        },
-        "parallel_tasks_per_rollout": {
-          "self": "每个发布的并行任务数",
-          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
-        },
-        "require-issue-approval": {
-          "self": "创建发布前需要工单审批",
-          "description": "工单必须在创建发布前获得批准。"
-        },
-        "require-plan-check-no-error": {
-          "self": "创建发布前要求变更检查通过",
-          "description": "所有变更检查必须无错误才能创建发布。"
+        "allow-self-approval": {
+          "description": "允许创建者审批自己创建的工单。",
+          "self": "允许创建者审批"
         },
         "approval-flow-configured": "审批流程已配置",
         "approval-flow-fallback": "使用默认审批规则",
         "approval-flow-not-configured": "未配置审批流程",
+        "ci-sampling-size": {
+          "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。",
+          "self": "CI 数据采样大小"
+        },
+        "enforce-issue-title": {
+          "description": "工单和计划的标题必须由用户输入，而不是自动生成。",
+          "self": "要求手动输入标题"
+        },
+        "enforce-sql-review": {
+          "description": "在允许创建工单之前，要求 SQL 审核检查通过且无错误。",
+          "self": "强制 SQL 审核"
+        },
+        "labels": {
+          "description": "可以在工单中附加标签以便管理",
+          "force-issue-labels": {
+            "description": "创建工单时必须添加至少一个标签。",
+            "self": "要求所有工单都必须有标签",
+            "warning": "至少需要配置一个标签"
+          },
+          "placeholder": "按 Enter 键添加标签",
+          "self": "工单标签"
+        },
+        "max-retries": {
+          "description": "运行任务时锁超时的最大重试数。默认值为0。只对 PostgreSQL 有效。",
+          "self": "锁超时的最大重试数"
+        },
+        "parallel_tasks_per_rollout": {
+          "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。",
+          "self": "每个发布的并行任务数"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库 OWNER 运行。否则，该工单将由实例连接用户运行。",
+          "self": "Postgres 数据库租户模式"
+        },
+        "require-issue-approval": {
+          "description": "工单必须在创建发布前获得批准。",
+          "self": "创建发布前需要工单审批"
+        },
+        "require-plan-check-no-error": {
+          "description": "所有变更检查必须无错误才能创建发布。",
+          "self": "创建发布前要求变更检查通过"
+        },
+        "self": "工单相关",
         "view-approval-flow": "查看审批流程"
-      }
+      },
+      "project-labels": {
+        "description": "用键值标签组织项目（最多64个）",
+        "self": "项目标签"
+      },
+      "restore": {
+        "btn-text": "恢复这个@:common.project",
+        "title": "恢复项目"
+      },
+      "success-updated": "项目设置更新成功",
+      "update-failed": "无法更新项目设置。"
     },
     "members": {
       "add-more": "Add more",
-      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "never-expires": "Never",
       "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
+      "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
       "edit-member": "编辑成员 - {{member}}",
+      "never-expires": "Never",
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
+    "table": {
+      "name": "名称"
+    },
     "webhook": {
-      "success-created-prompt": "成功创建 {{name}} webhook.",
-      "success-updated-prompt": "成功更新 {{name}} webhook.",
-      "success-deleted-prompt": "成功删除 {{name}} webhook.",
-      "success-tested-prompt": "测试 webhook 事件成功.",
-      "fail-tested-title": "测试 webhook 事件失败.",
+      "activity-support-direct-message": "支持向相关用户发送私信通知",
       "add-a-webhook": "添加 webhook",
-      "destination": "外部应用",
-      "webhook-url": "Webhook URL",
-      "triggering-activity": "触发事件",
-      "test-webhook": "测试 Webhook",
       "creation": {
-        "title": "创建 webhook",
         "desc": "为 {{destination}} 创建一个 webhook",
+        "title": "创建 webhook",
         "view-doc": "{{destination}} 的官方文档"
       },
       "deletion": {
         "confirm-title": "删除 webhook '{{title}}'?"
       },
+      "destination": "外部应用",
       "direct-messages": "私信通知",
-      "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
-      "enable-direct-messages": "启用私信通知",
       "direct-messages-description": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：",
+      "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
       "direct-messages-warning": "您需要配置 IM 集成才能使其正常工作。",
-      "activity-support-direct-message": "支持向相关用户发送私信通知"
+      "enable-direct-messages": "启用私信通知",
+      "fail-tested-title": "测试 webhook 事件失败.",
+      "success-created-prompt": "成功创建 {{name}} webhook.",
+      "success-deleted-prompt": "成功删除 {{name}} webhook.",
+      "success-tested-prompt": "测试 webhook 事件成功.",
+      "success-updated-prompt": "成功更新 {{name}} webhook.",
+      "test-webhook": "测试 Webhook",
+      "triggering-activity": "触发事件",
+      "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
@@ -789,6 +854,7 @@
       "add-user": "添加用户",
       "add-workload-identity": "添加工作负载身份",
       "all-users": "全部用户",
+      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
       "copy-service-key": "复制 Service Key",
       "entra-sync": {
@@ -822,21 +888,20 @@
       "inactive-service-accounts": "未激活服务账号",
       "inactive-users": "未激活用户",
       "inactive-workload-identities": "未激活工作负载身份",
+      "reset-service-key": "重置 Service Key",
+      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "revoke-access": "撤销访问权限",
       "revoke-access-alert": "您确定要撤销访问权限吗？",
       "revoke-allusers-alert": "撤销“全部用户”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
-      "reset-service-key": "重置 Service Key",
-      "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "revoked": "已撤销",
       "search-member": "搜索成员",
-      "service-key-copied": "Service Key 已复制，请勿泄漏",
       "select-account_one": "选择账户",
       "select-account_other": "选择账户",
-      "assign-role": "Assign role",
       "select-role_one": "选择角色",
       "select-role_other": "选择角色",
       "service-account": "服务账号",
       "service-accounts": "服务账号",
+      "service-key-copied": "Service Key 已复制，请勿泄漏",
       "show-inactive": "显示已停用账户",
       "table": {
         "account": "账户",
@@ -972,10 +1037,10 @@
       "mcp": "MCP",
       "members": "成员",
       "members-and-groups": "成员和群组",
+      "security-and-policy": "安全 & 策略",
       "sso": "SSO",
       "subscription": "订阅",
-      "users-and-groups": "用户和群组",
-      "security-and-policy": "安全 & 策略"
+      "users-and-groups": "用户和群组"
     },
     "sso": {
       "create": "创建 SSO",
@@ -1064,7 +1129,15 @@
     }
   },
   "sql-editor": {
-    "self": "SQL 编辑器"
+    "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
+    "activate-access": "激活",
+    "activate-confirm": "确定要激活此访问授权吗？",
+    "expired": "已过期",
+    "grant-type-unmask": "脱敏豁免",
+    "revoke-access": "撤销",
+    "revoke-confirm": "确定要撤销此访问授权吗？",
+    "self": "SQL 编辑器",
+    "view-issue": "查看工单"
   },
   "sql-review": {
     "add-or-remove-rules": "添加或删除规则",
@@ -1201,51 +1274,5 @@
   },
   "two-factor": {
     "enabled": "双重认证已开启"
-  },
-  "database-group": {
-    "condition": {
-      "self": "Condition"
-    },
-    "create": "New database group",
-    "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
-    "no-matched-databases": "No matched databases",
-    "select": "Select database group",
-    "unmatched-database": "Unmatched database"
-  },
-  "gitops": {
-    "checklist": {
-      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
-      "external-url": "外部访问地址",
-      "target-databases": "目标数据库",
-      "title": "开始前检查",
-      "wif-notice-suffix": "以使用服务账号配置 GitOps。",
-      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
-      "workload-identity": "工作负载身份"
-    },
-    "documentation": "查看文档",
-    "overview": {
-      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
-      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
-      "title": "什么是 GitOps"
-    },
-    "test-setup": {
-      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
-      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
-      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
-      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
-      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
-      "title": "测试您的首次 GitOps 迁移"
-    },
-    "workflow": {
-      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库中的 {filePath}",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
-      "self-hosted-runner": "自托管 runner",
-      "title": "工作流文件生成"
-    },
-    "workload-identity": {
-      "select-placeholder": "选择工作负载身份"
-    }
   }
 }

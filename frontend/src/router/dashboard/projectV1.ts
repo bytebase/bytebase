@@ -169,9 +169,11 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("sql-editor.access-grants"),
         },
-        component: () =>
-          import("@/views/project/ProjectAccessGrantDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectAccessGrantsPage",
+          ...route.params,
+        }),
       },
       {
         path: "masking-exemption",

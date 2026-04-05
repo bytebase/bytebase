@@ -61,12 +61,16 @@
     }
   },
   "common": {
+    "activated": "有効化しました",
+    "active": "アクティブ",
     "add": "追加",
     "add-permissions": "権限を追加",
     "added": "作成した",
     "address": "接続先",
     "all": "全て",
     "archive": "アーカイブ",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
     "archived": "アーカイブ済み",
     "back": "戻る",
     "cancel": "キャンセル",
@@ -78,17 +82,26 @@
     "confirm": "確認する",
     "confirm-and-add": "Confirm and add",
     "confirm-and-update": "確認して更新する",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
     "copied": "コピーされました",
     "copy": "コピー",
     "copy-failed": "Copy failed",
     "create": "作成する",
     "created": "作成済",
+    "created-at": "作成日時",
+    "creator": "作成者",
+    "danger-zone": "Danger Zone",
     "database": "データベース",
+    "database-group": "データベースグループ",
+    "databases": "データベース",
     "default": "デフォルト",
     "delete": "消去",
     "delete-resource": "Delete {{type}}",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "削除されました",
     "description": "説明",
+    "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "変更をキャンセルする",
     "edit": "編集",
@@ -98,6 +111,7 @@
     "enabled": "Enabled",
     "environment": "環境",
     "environment-name": "環境名",
+    "environments": "環境",
     "expiration": "Expiration",
     "export": "エクスポート",
     "failed": "失敗",
@@ -105,6 +119,7 @@
       "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります",
       "type-limit": "タイプ {{extension}} のファイルのみがサポートされます"
     },
+    "filter": "Filter",
     "filter-by-name": "名前でフィルタリングする",
     "from": "開始",
     "general": "全般",
@@ -112,12 +127,14 @@
     "id": "ID",
     "instance": "インスタンス",
     "is-required": "is required",
+    "items": "items",
     "key": "キー",
     "labels": "ラベル",
     "learn-more": "もっと詳しく知る",
     "leave-without-saving": "変更を保存していませんか?",
     "load-more": "もっと読み込む",
     "loading": "読み込み中",
+    "manually-select": "Manually select",
     "members_one": "メンバー",
     "members_other": "メンバー",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
@@ -126,20 +143,22 @@
     "next": "次のステップ",
     "no-data": "データなし",
     "ok": "わかりました",
-    "optional": "Optional",
     "operations": "操作",
+    "optional": "Optional",
+    "pending": "保留中",
     "permissions": "権限",
     "previous": "Previous",
     "project": "プロジェクト",
     "reason": "Reason",
     "release": "リリース",
     "reorder": "並び替え",
-    "resource": "Resource",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
+    "resource": "Resource",
     "restore": "復元する",
     "restored": "Restored",
     "revert": "元に戻す",
+    "revoked": "取り消し済み",
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
     "schema": "スキーマ",
@@ -147,13 +166,16 @@
     "search-for-more": "さらに検索",
     "select": "選択してください",
     "select-all": "すべて選択",
+    "selected": "selected",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "state": "ステート",
+    "statement": "ステートメント",
     "status": "ステータス",
     "system": "システム",
     "table": "テーブル",
     "title": "タイトル",
     "to": "終了",
+    "total": "Total",
     "total-n-items": "合計 {{n}} 件",
     "type": "タイプ",
     "unassigned": "割り当てられていない",
@@ -166,22 +188,7 @@
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "you": "あなた",
-    "database-group": "データベースグループ",
-    "databases": "データベース",
-    "danger-zone": "Danger Zone",
-    "archive-resource": "Archive {{type}}",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "confirm-archive": "Archive Resource?",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?",
-    "environments": "環境",
-    "manually-select": "Manually select",
-    "filter": "Filter",
-    "total": "Total",
-    "selected": "selected",
-    "items": "items",
-    "deselect-all": "Deselect all"
+    "you": "あなた"
   },
   "create-db": {
     "cluster": "集まる",
@@ -254,6 +261,7 @@
     }
   },
   "database": {
+    "change-database": "データベースの変更",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
@@ -262,18 +270,28 @@
     "engine": "エンジン",
     "expression": "Expression",
     "filter-database": "データベースをフィルター",
+    "mixed-label-values": "混合値",
+    "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
+    "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-schema-button": "スキーマを同期",
     "sync-status-failed": "同期に失敗しました",
     "transfer-project": "プロジェクトの転送",
-    "change-database": "データベースの変更",
-    "mixed-label-values": "混合値",
-    "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する",
-    "select": "データベースの選択"
+    "unassign-alert-title": "データベースの割り当てを解除する"
+  },
+  "database-group": {
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "db": {
     "character-set": "文字セット",
@@ -288,11 +306,46 @@
     "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "reorder": "環境の並べ替え",
-    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました",
-    "select": "環境を選ぶ"
+    "select": "環境を選ぶ",
+    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
   },
   "error-page": {
     "not-found": "ページが見つかりません"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
+      "external-url": "外部URL",
+      "target-databases": "ターゲットデータベース",
+      "title": "開始前の確認",
+      "wif-notice-suffix": "サービスアカウントを使用して GitOps を設定できます。",
+      "wif-notice-text": "Workload Identity Federation は現在 GitHub と GitLab のみサポートしています。他の VCS については、チュートリアルを参照してください：",
+      "workload-identity": "ワークロードアイデンティティ"
+    },
+    "documentation": "ドキュメントを見る",
+    "overview": {
+      "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
+      "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
+      "title": "GitOps とは"
+    },
+    "test-setup": {
+      "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
+      "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
+      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
+      "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
+      "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
+      "title": "最初の GitOps マイグレーションをテスト"
+    },
+    "workflow": {
+      "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
+      "file-hint": "リポジトリ内に {filePath} として保存",
+      "provider-not-match": "選択された ワークロード アイデンティティ は {provider} 専用です。",
+      "self-hosted-runner": "セルフホスト runner",
+      "title": "ワークフローファイル生成"
+    },
+    "workload-identity": {
+      "select-placeholder": "ワークロードアイデンティティを選択"
+    }
   },
   "identity-provider": {
     "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
@@ -338,12 +391,15 @@
     "syncing": "同期中 ..."
   },
   "issue": {
+    "advanced-search": {
+      "filter": "フィルター"
+    },
     "labels": "イシューラベル"
   },
   "label": {
     "error": {
-      "key-necessary": "キーを指定する必要があります",
       "key-duplicated": "キーが繰り返されました",
+      "key-necessary": "キーを指定する必要があります",
       "max-value-length-exceeded": "値は {{length}} 文字を超えることはできません"
     }
   },
@@ -398,118 +454,127 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
-    "table": {
-      "name": "名前"
+    "members": {
+      "add-more": "Add more",
+      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
+      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
+      "edit-member": "メンバー編集 - {{member}}",
+      "never-expires": "Never",
+      "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
     "settings": {
-      "success-updated": "プロジェクト設定が正常に更新されました",
-      "update-failed": "プロジェクト設定の更新に失敗しました。",
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
-      "restore": {
-        "title": "アイテムを復元する",
-        "btn-text": "この @:common.project を復元します"
-      },
-      "project-labels": {
-        "self": "プロジェクトラベル",
-        "description": "キーバリューラベルでプロジェクトを整理（最大64個）"
-      },
       "issue-related": {
-        "self": "イシュー関連",
-        "labels": {
-          "self": "イシューラベル",
-          "description": "イシューにラベルを貼って管理できる",
-          "placeholder": "Enterキーを押してタグを追加してください",
-          "force-issue-labels": {
-            "self": "すべてのイシューにラベルが必要",
-            "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
-            "warning": "少なくとも 1 つのラベルを設定する必要があります"
-          }
-        },
-        "enforce-issue-title": {
-          "self": "手動タイトルを要求する",
-          "description": "イシューとプランのタイトルを自動生成ではなくユーザーが作成することを要求します。"
-        },
-        "enforce-sql-review": {
-          "self": "SQL レビューを強制",
-          "description": "課題作成を許可する前に、SQL レビューチェックがエラーなしで合格することを要求します。"
-        },
-        "allow-self-approval": {
-          "self": "自己承認を許可する",
-          "description": "イシューの作成者がイシューを承認できるようにします。"
+        "allow-jit": {
+          "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。",
+          "self": "ジャストインタイムアクセスを許可"
         },
         "allow-request-role": {
-          "self": "ロールリクエストを許可",
-          "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます"
+          "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます",
+          "self": "ロールリクエストを許可"
         },
-        "allow-jit": {
-          "self": "ジャストインタイムアクセスを許可",
-          "description": "有効にすると、ユーザーは SQL エディタでジャストインタイムアクセスをリクエストして使用できます。"
-        },
-        "postgres-database-tenant-mode": {
-          "self": "Postgres データベーステナントモード",
-          "description": "Postgres データベーステナントモード。有効にすると、イシューはデータベースのOWNERによって実行されます。無効にすると、イシューはインスタンス接続ユーザーによって実行されます。"
-        },
-        "max-retries": {
-          "self": "ロックタイムアウトの最大レトリカウント",
-          "description": "タスクを実行するときのロックタイムアウトの最大再試行カウント。\nデフォルト値は0です。ポストグレスにのみ適用できます。"
-        },
-        "ci-sampling-size": {
-          "self": "CIデータサンプリングサイズ",
-          "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。"
-        },
-        "parallel_tasks_per_rollout": {
-          "self": "ロールアウトごとの並列タスク",
-          "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
-        },
-        "require-issue-approval": {
-          "self": "ロールアウト作成前にイシュー承認が必要",
-          "description": "ロールアウトを作成する前にイシューの承認が必要です。"
-        },
-        "require-plan-check-no-error": {
-          "self": "ロールアウト作成前にプランチェック合格が必要",
-          "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。"
+        "allow-self-approval": {
+          "description": "イシューの作成者がイシューを承認できるようにします。",
+          "self": "自己承認を許可する"
         },
         "approval-flow-configured": "承認フローが設定済み",
         "approval-flow-fallback": "フォールバック承認ルールを使用中",
         "approval-flow-not-configured": "承認フローが未設定",
+        "ci-sampling-size": {
+          "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。",
+          "self": "CIデータサンプリングサイズ"
+        },
+        "enforce-issue-title": {
+          "description": "イシューとプランのタイトルを自動生成ではなくユーザーが作成することを要求します。",
+          "self": "手動タイトルを要求する"
+        },
+        "enforce-sql-review": {
+          "description": "課題作成を許可する前に、SQL レビューチェックがエラーなしで合格することを要求します。",
+          "self": "SQL レビューを強制"
+        },
+        "labels": {
+          "description": "イシューにラベルを貼って管理できる",
+          "force-issue-labels": {
+            "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
+            "self": "すべてのイシューにラベルが必要",
+            "warning": "少なくとも 1 つのラベルを設定する必要があります"
+          },
+          "placeholder": "Enterキーを押してタグを追加してください",
+          "self": "イシューラベル"
+        },
+        "max-retries": {
+          "description": "タスクを実行するときのロックタイムアウトの最大再試行カウント。\nデフォルト値は0です。ポストグレスにのみ適用できます。",
+          "self": "ロックタイムアウトの最大レトリカウント"
+        },
+        "parallel_tasks_per_rollout": {
+          "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。",
+          "self": "ロールアウトごとの並列タスク"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "Postgres データベーステナントモード。有効にすると、イシューはデータベースのOWNERによって実行されます。無効にすると、イシューはインスタンス接続ユーザーによって実行されます。",
+          "self": "Postgres データベーステナントモード"
+        },
+        "require-issue-approval": {
+          "description": "ロールアウトを作成する前にイシューの承認が必要です。",
+          "self": "ロールアウト作成前にイシュー承認が必要"
+        },
+        "require-plan-check-no-error": {
+          "description": "ロールアウトを作成する前にすべてのプランチェックがエラーなしで合格する必要があります。",
+          "self": "ロールアウト作成前にプランチェック合格が必要"
+        },
+        "self": "イシュー関連",
         "view-approval-flow": "承認フローを表示"
-      }
+      },
+      "project-labels": {
+        "description": "キーバリューラベルでプロジェクトを整理（最大64個）",
+        "self": "プロジェクトラベル"
+      },
+      "restore": {
+        "btn-text": "この @:common.project を復元します",
+        "title": "アイテムを復元する"
+      },
+      "success-updated": "プロジェクト設定が正常に更新されました",
+      "update-failed": "プロジェクト設定の更新に失敗しました。"
     },
     "members": {
       "add-more": "Add more",
-      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "never-expires": "Never",
       "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
+      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
+      "never-expires": "Never",
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
+    "table": {
+      "name": "名前"
+    },
     "webhook": {
-      "success-created-prompt": "{{name}} Webhook が正常に作成されました。",
-      "success-updated-prompt": "{{name}} Webhook が正常に更新されました。",
-      "success-deleted-prompt": "{{name}} Webhook が正常に削除されました。",
-      "success-tested-prompt": "Webhook イベントのテストが成功しました。",
-      "fail-tested-title": "Webhook イベントのテストに失敗しました。",
+      "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート",
       "add-a-webhook": "Webhook を追加する",
-      "destination": "外部アプリケーション",
-      "webhook-url": "Webhook URL",
-      "triggering-activity": "トリガーイベント",
-      "test-webhook": "Webhook のテスト",
       "creation": {
-        "title": "Webhook の作成",
         "desc": "{{destination}} の Webhook を作成します",
+        "title": "Webhook の作成",
         "view-doc": "{{destination}} の公式ドキュメント"
       },
       "deletion": {
         "confirm-title": "Webhook '{{title}}' を削除しますか?"
       },
+      "destination": "外部アプリケーション",
       "direct-messages": "プライベートメッセージ通知",
-      "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
-      "enable-direct-messages": "プライベートメッセージ通知を有効にする",
       "direct-messages-description": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクトメッセージを送信します。サポートのみ：",
+      "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
       "direct-messages-warning": "これを機能させるには、IM 統合を設定する必要があります。",
-      "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート"
+      "enable-direct-messages": "プライベートメッセージ通知を有効にする",
+      "fail-tested-title": "Webhook イベントのテストに失敗しました。",
+      "success-created-prompt": "{{name}} Webhook が正常に作成されました。",
+      "success-deleted-prompt": "{{name}} Webhook が正常に削除されました。",
+      "success-tested-prompt": "Webhook イベントのテストが成功しました。",
+      "success-updated-prompt": "{{name}} Webhook が正常に更新されました。",
+      "test-webhook": "Webhook のテスト",
+      "triggering-activity": "トリガーイベント",
+      "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
@@ -789,6 +854,7 @@
       "add-user": "ユーザーを追加",
       "add-workload-identity": "ワークロードIDを追加",
       "all-users": "すべてのユーザー",
+      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
       "copy-service-key": "サービスキーをコピーする",
       "entra-sync": {
@@ -822,21 +888,20 @@
       "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-users": "非アクティブユーザー",
       "inactive-workload-identities": "非アクティブワークロードID",
+      "reset-service-key": "サービスキーのリセット",
+      "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoke-access": "アクセスを取り消す",
       "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
       "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
-      "reset-service-key": "サービスキーのリセット",
-      "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoked": "取り消されました",
       "search-member": "メンバーを検索",
-      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "select-account_one": "アカウントを選択",
       "select-account_other": "アカウントを選択",
-      "assign-role": "Assign role",
       "select-role_one": "ロールを選択",
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
       "service-accounts": "サービスアカウント",
+      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "show-inactive": "非アクティブなアカウントを表示",
       "table": {
         "account": "アカウント",
@@ -972,10 +1037,10 @@
       "mcp": "MCP",
       "members": "メンバー",
       "members-and-groups": "メンバーとグループ",
+      "security-and-policy": "セキュリティポリシー",
       "sso": "SSO",
       "subscription": "サブスクリプション",
-      "users-and-groups": "ユーザーとグループ",
-      "security-and-policy": "セキュリティポリシー"
+      "users-and-groups": "ユーザーとグループ"
     },
     "sso": {
       "create": "SSOの作成",
@@ -1064,7 +1129,15 @@
     }
   },
   "sql-editor": {
-    "self": "SQLエディタ"
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "self": "SQLエディタ",
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1201,51 +1274,5 @@
   },
   "two-factor": {
     "enabled": "二要素認証がオンになっています"
-  },
-  "database-group": {
-    "condition": {
-      "self": "Condition"
-    },
-    "create": "New database group",
-    "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
-    "no-matched-databases": "No matched databases",
-    "select": "Select database group",
-    "unmatched-database": "Unmatched database"
-  },
-  "gitops": {
-    "checklist": {
-      "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
-      "external-url": "外部URL",
-      "target-databases": "ターゲットデータベース",
-      "title": "開始前の確認",
-      "wif-notice-suffix": "サービスアカウントを使用して GitOps を設定できます。",
-      "wif-notice-text": "Workload Identity Federation は現在 GitHub と GitLab のみサポートしています。他の VCS については、チュートリアルを参照してください：",
-      "workload-identity": "ワークロードアイデンティティ"
-    },
-    "documentation": "ドキュメントを見る",
-    "overview": {
-      "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
-      "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
-      "title": "GitOps とは"
-    },
-    "test-setup": {
-      "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
-      "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
-      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
-      "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
-      "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
-      "title": "最初の GitOps マイグレーションをテスト"
-    },
-    "workflow": {
-      "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
-      "file-hint": "リポジトリ内に {filePath} として保存",
-      "provider-not-match": "選択された ワークロード アイデンティティ は {provider} 専用です。",
-      "self-hosted-runner": "セルフホスト runner",
-      "title": "ワークフローファイル生成"
-    },
-    "workload-identity": {
-      "select-placeholder": "ワークロードアイデンティティを選択"
-    }
   }
 }

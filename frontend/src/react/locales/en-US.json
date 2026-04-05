@@ -61,12 +61,16 @@
     }
   },
   "common": {
+    "activated": "Activated",
+    "active": "Active",
     "add": "Add",
     "add-permissions": "Add permissions",
     "added": "Added",
     "address": "Address",
     "all": "All",
     "archive": "Archive",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
     "archived": "Archived",
     "back": "Back",
     "cancel": "Cancel",
@@ -78,17 +82,26 @@
     "confirm": "Confirm",
     "confirm-and-add": "Confirm and add",
     "confirm-and-update": "Confirm and update",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
     "copied": "Copied",
     "copy": "Copy",
     "copy-failed": "Copy failed",
     "create": "Create",
     "created": "Created",
+    "created-at": "Created",
+    "creator": "Creator",
+    "danger-zone": "Danger Zone",
     "database": "Database",
+    "database-group": "Database Group",
+    "databases": "Databases",
     "default": "Default",
     "delete": "Delete",
     "delete-resource": "Delete {{type}}",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
     "description": "Description",
+    "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "Discard changes",
     "edit": "Edit",
@@ -98,6 +111,7 @@
     "enabled": "Enabled",
     "environment": "Environment",
     "environment-name": "Environment Name",
+    "environments": "Environments",
     "expiration": "Expiration",
     "export": "Export",
     "failed": "Failed",
@@ -105,6 +119,7 @@
       "size-limit": "File size should less than {{size}} MiB",
       "type-limit": "Only support {{extension}} file"
     },
+    "filter": "Filter",
     "filter-by-name": "Filter by name",
     "from": "From",
     "general": "General",
@@ -112,12 +127,14 @@
     "id": "ID",
     "instance": "Instance",
     "is-required": "is required",
+    "items": "items",
     "key": "Key",
     "labels": "Labels",
     "learn-more": "Learn more",
     "leave-without-saving": "Leave without saving?",
     "load-more": "Load more",
     "loading": "Loading",
+    "manually-select": "Manually select",
     "members_one": "Member",
     "members_other": "Members",
     "missing-required-permission": "Missing required permissions {{permissions}}",
@@ -126,20 +143,22 @@
     "next": "Next",
     "no-data": "No data",
     "ok": "OK",
-    "optional": "Optional",
     "operations": "Operations",
+    "optional": "Optional",
+    "pending": "Pending",
     "permissions": "Permissions",
     "previous": "Previous",
     "project": "Project",
     "reason": "Reason",
     "release": "Release",
     "reorder": "Reorder",
-    "resource": "Resource",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "resource": "Resource",
     "restore": "Restore",
     "restored": "Restored",
     "revert": "Revert",
+    "revoked": "Revoked",
     "rows-per-page": "Rows per page",
     "save": "Save",
     "schema": "Schema",
@@ -147,13 +166,16 @@
     "search-for-more": "Search for more",
     "select": "Please Select",
     "select-all": "Select all",
+    "selected": "selected",
     "sensitive-placeholder": "Sensitive - write only",
     "state": "State",
+    "statement": "Statement",
     "status": "Status",
     "system": "System",
     "table": "Table",
     "title": "Title",
     "to": "To",
+    "total": "Total",
     "total-n-items": "Total {{n}} items",
     "type": "Type",
     "unassigned": "Unassigned",
@@ -166,22 +188,7 @@
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
-    "you": "you",
-    "database-group": "Database Group",
-    "databases": "Databases",
-    "danger-zone": "Danger Zone",
-    "archive-resource": "Archive {{type}}",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "confirm-archive": "Archive Resource?",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?",
-    "environments": "Environments",
-    "manually-select": "Manually select",
-    "filter": "Filter",
-    "total": "Total",
-    "selected": "selected",
-    "items": "items",
-    "deselect-all": "Deselect all"
+    "you": "you"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -254,6 +261,7 @@
     }
   },
   "database": {
+    "change-database": "Change Database",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
@@ -262,18 +270,28 @@
     "engine": "Engine",
     "expression": "Expression",
     "filter-database": "Filter database",
+    "mixed-label-values": "mixed values",
+    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-schema-button": "Sync Schema",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
-    "change-database": "Change Database",
-    "mixed-label-values": "mixed values",
-    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases",
-    "select": "Select database"
+    "unassign-alert-title": "Unassign databases"
+  },
+  "database-group": {
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "db": {
     "character-set": "Character set",
@@ -288,11 +306,46 @@
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "reorder": "Reorder Environments",
-    "successfully-updated-environment": "Successfully updated environment '{{name}}'.",
-    "select": "Select environment"
+    "select": "Select environment",
+    "successfully-updated-environment": "Successfully updated environment '{{name}}'."
   },
   "error-page": {
     "not-found": "Not Found"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
+      "external-url": "External URL",
+      "target-databases": "Target Databases",
+      "title": "Checks before we start",
+      "wif-notice-suffix": "to set up GitOps using a service account.",
+      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
+      "workload-identity": "Workload Identity"
+    },
+    "documentation": "View Documentation",
+    "overview": {
+      "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
+      "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
+      "title": "What is GitOps"
+    },
+    "test-setup": {
+      "description": "Verify the workflow is working end-to-end with a sample migration file.",
+      "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
+      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
+      "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
+      "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
+      "title": "Test your first GitOps migration"
+    },
+    "workflow": {
+      "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
+      "file-hint": "Save as {filePath} in your repository {repository}",
+      "provider-not-match": "The selected workload identity only works for {provider}.",
+      "self-hosted-runner": "Self-hosted runner",
+      "title": "Workflow file generation"
+    },
+    "workload-identity": {
+      "select-placeholder": "Select a workload identity"
+    }
   },
   "identity-provider": {
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
@@ -338,12 +391,15 @@
     "syncing": "Syncing ..."
   },
   "issue": {
+    "advanced-search": {
+      "filter": "Filter"
+    },
     "labels": "Issue Labels"
   },
   "label": {
     "error": {
-      "key-necessary": "Key is required",
       "key-duplicated": "Duplicated keys",
+      "key-necessary": "Key is required",
       "max-value-length-exceeded": "Value's length cannot exceed {{length}} characters"
     }
   },
@@ -372,15 +428,6 @@
     }
   },
   "project": {
-    "members": {
-      "add-more": "Add more",
-      "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
-      "never-expires": "Never",
-      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
-      "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
-      "edit-member": "Edit member - {{member}}",
-      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
-    },
     "batch": {
       "archive": {
         "description": "This will archive the selected projects. You can restore them later if needed.",
@@ -407,109 +454,118 @@
       "success-prompt": "Successfully created project {{name}}."
     },
     "filter-projects": "Filter projects",
-    "table": {
-      "name": "Name"
+    "members": {
+      "add-more": "Add more",
+      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
+      "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
+      "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
+      "edit-member": "Edit member - {{member}}",
+      "never-expires": "Never",
+      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
     "settings": {
-      "success-updated": "Project settings updated successfully.",
-      "update-failed": "Failed to update the project setting.",
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
-      "restore": {
-        "title": "Restore project",
-        "btn-text": "Restore this project"
-      },
-      "project-labels": {
-        "self": "Project Labels",
-        "description": "Organize projects with key-value labels (max 64)"
-      },
       "issue-related": {
-        "self": "Issue Related",
-        "labels": {
-          "self": "Issue Labels",
-          "description": "Labels can be attached in the issues for management",
-          "placeholder": "Press Enter to add tag",
-          "force-issue-labels": {
-            "self": "Require labels for all issues",
-            "description": "Require at least one label when creating issues.",
-            "warning": "Require at least configured one label"
-          }
-        },
-        "enforce-issue-title": {
-          "self": "Require manual title",
-          "description": "Require titles for issues and plans to be created by user instead of auto-generated."
-        },
-        "enforce-sql-review": {
-          "self": "Enforce SQL review",
-          "description": "Require SQL review checks to pass without errors before allowing issue creation."
-        },
-        "allow-self-approval": {
-          "self": "Allow self approval",
-          "description": "Allow the issue creator to approve the issue."
+        "allow-jit": {
+          "description": "Allow project members to request just-in-time (JIT) access.",
+          "self": "Just-In-Time access"
         },
         "allow-request-role": {
-          "self": "Allow request role",
-          "description": "Allow project members to request roles."
+          "description": "Allow project members to request roles.",
+          "self": "Allow request role"
         },
-        "allow-jit": {
-          "self": "Just-In-Time access",
-          "description": "Allow project members to request just-in-time (JIT) access."
-        },
-        "postgres-database-tenant-mode": {
-          "self": "Postgres database tenant mode",
-          "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user."
-        },
-        "max-retries": {
-          "self": "Maximum retries count for lock timeout",
-          "description": "The maximum retries count for lock timeout when running the task. The default value is 0. Only applicable to Postgres."
-        },
-        "ci-sampling-size": {
-          "self": "CI Data Sampling Size",
-          "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed."
-        },
-        "parallel_tasks_per_rollout": {
-          "self": "Parallel tasks per rollout",
-          "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
-        },
-        "require-issue-approval": {
-          "self": "Require issue approval before creating rollout",
-          "description": "Issue must be approved before creating rollout."
-        },
-        "require-plan-check-no-error": {
-          "self": "Require plan checks to pass before creating rollout",
-          "description": "Plan checks must pass without error before creating rollout."
+        "allow-self-approval": {
+          "description": "Allow the issue creator to approve the issue.",
+          "self": "Allow self approval"
         },
         "approval-flow-configured": "Approval flow configured",
         "approval-flow-fallback": "Using fallback approval flow",
         "approval-flow-not-configured": "No approval flow configured",
+        "ci-sampling-size": {
+          "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed.",
+          "self": "CI Data Sampling Size"
+        },
+        "enforce-issue-title": {
+          "description": "Require titles for issues and plans to be created by user instead of auto-generated.",
+          "self": "Require manual title"
+        },
+        "enforce-sql-review": {
+          "description": "Require SQL review checks to pass without errors before allowing issue creation.",
+          "self": "Enforce SQL review"
+        },
+        "labels": {
+          "description": "Labels can be attached in the issues for management",
+          "force-issue-labels": {
+            "description": "Require at least one label when creating issues.",
+            "self": "Require labels for all issues",
+            "warning": "Require at least configured one label"
+          },
+          "placeholder": "Press Enter to add tag",
+          "self": "Issue Labels"
+        },
+        "max-retries": {
+          "description": "The maximum retries count for lock timeout when running the task. The default value is 0. Only applicable to Postgres.",
+          "self": "Maximum retries count for lock timeout"
+        },
+        "parallel_tasks_per_rollout": {
+          "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling.",
+          "self": "Parallel tasks per rollout"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database OWNER. Otherwise, the issue will be run by the instance connection user.",
+          "self": "Postgres database tenant mode"
+        },
+        "require-issue-approval": {
+          "description": "Issue must be approved before creating rollout.",
+          "self": "Require issue approval before creating rollout"
+        },
+        "require-plan-check-no-error": {
+          "description": "Plan checks must pass without error before creating rollout.",
+          "self": "Require plan checks to pass before creating rollout"
+        },
+        "self": "Issue Related",
         "view-approval-flow": "View approval flow"
-      }
+      },
+      "project-labels": {
+        "description": "Organize projects with key-value labels (max 64)",
+        "self": "Project Labels"
+      },
+      "restore": {
+        "btn-text": "Restore this project",
+        "title": "Restore project"
+      },
+      "success-updated": "Project settings updated successfully.",
+      "update-failed": "Failed to update the project setting."
+    },
+    "table": {
+      "name": "Name"
     },
     "webhook": {
-      "success-created-prompt": "Successfully created webhook {{name}}.",
-      "success-updated-prompt": "Successfully updated webhook {{name}}.",
-      "success-deleted-prompt": "Successfully deleted webhook {{name}}.",
-      "success-tested-prompt": "Test webhook event OK.",
-      "fail-tested-title": "Test webhook event failed.",
+      "activity-support-direct-message": "Support send direct messages to related users",
       "add-a-webhook": "Add a webhook",
-      "destination": "Destination",
-      "webhook-url": "Webhook URL",
-      "triggering-activity": "Triggering activities",
-      "test-webhook": "Test Webhook",
       "creation": {
-        "title": "Create webhook",
         "desc": "Create the corresponding webhook for the {{destination}} channel receiving the message.",
+        "title": "Create webhook",
         "view-doc": "View {{destination}}'s doc"
       },
       "deletion": {
         "confirm-title": "Delete webhook '{{title}}'?"
       },
+      "destination": "Destination",
       "direct-messages": "Direct messages",
-      "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
-      "enable-direct-messages": "Enable direct messages",
       "direct-messages-description": "Once enabled, Bytebase will send following events as direct messages to the related users (matched by email):",
+      "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
       "direct-messages-warning": "You need to configure IM integration to make it work.",
-      "activity-support-direct-message": "Support send direct messages to related users"
+      "enable-direct-messages": "Enable direct messages",
+      "fail-tested-title": "Test webhook event failed.",
+      "success-created-prompt": "Successfully created webhook {{name}}.",
+      "success-deleted-prompt": "Successfully deleted webhook {{name}}.",
+      "success-tested-prompt": "Test webhook event OK.",
+      "success-updated-prompt": "Successfully updated webhook {{name}}.",
+      "test-webhook": "Test Webhook",
+      "triggering-activity": "Triggering activities",
+      "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
@@ -789,6 +845,7 @@
       "add-user": "Add user",
       "add-workload-identity": "Add Workload Identity",
       "all-users": "All users",
+      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
       "copy-service-key": "Copy Service Key",
       "entra-sync": {
@@ -822,21 +879,20 @@
       "inactive-service-accounts": "Inactive service accounts",
       "inactive-users": "Inactive users",
       "inactive-workload-identities": "Inactive workload identities",
+      "reset-service-key": "Reset Service Key",
+      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",
       "revoke-access-alert": "Are you sure to revoke access?",
       "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
-      "reset-service-key": "Reset Service Key",
-      "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoked": "Revoked",
       "search-member": "Search member",
-      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "select-account_one": "Select account",
       "select-account_other": "Select accounts",
-      "assign-role": "Assign role",
       "select-role_one": "Select role",
       "select-role_other": "Select roles",
       "service-account": "Service Account",
       "service-accounts": "Service Accounts",
+      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "show-inactive": "Show inactive accounts",
       "table": {
         "account": "Account",
@@ -972,10 +1028,10 @@
       "mcp": "MCP",
       "members": "Members",
       "members-and-groups": "Members & Groups",
+      "security-and-policy": "Security & Policy",
       "sso": "SSO",
       "subscription": "Subscription",
-      "users-and-groups": "Users & Groups",
-      "security-and-policy": "Security & Policy"
+      "users-and-groups": "Users & Groups"
     },
     "sso": {
       "create": "Create SSO",
@@ -1064,7 +1120,15 @@
     }
   },
   "sql-editor": {
-    "self": "SQL Editor"
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "self": "SQL Editor",
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1201,51 +1265,5 @@
   },
   "two-factor": {
     "enabled": "2FA Enabled"
-  },
-  "database-group": {
-    "condition": {
-      "self": "Condition"
-    },
-    "create": "New database group",
-    "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
-    "no-matched-databases": "No matched databases",
-    "select": "Select database group",
-    "unmatched-database": "Unmatched database"
-  },
-  "gitops": {
-    "checklist": {
-      "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
-      "external-url": "External URL",
-      "target-databases": "Target Databases",
-      "title": "Checks before we start",
-      "wif-notice-suffix": "to set up GitOps using a service account.",
-      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
-      "workload-identity": "Workload Identity"
-    },
-    "documentation": "View Documentation",
-    "overview": {
-      "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
-      "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
-      "title": "What is GitOps"
-    },
-    "test-setup": {
-      "description": "Verify the workflow is working end-to-end with a sample migration file.",
-      "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
-      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
-      "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
-      "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
-      "title": "Test your first GitOps migration"
-    },
-    "workflow": {
-      "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
-      "file-hint": "Save as {filePath} in your repository {repository}",
-      "provider-not-match": "The selected workload identity only works for {provider}.",
-      "self-hosted-runner": "Self-hosted runner",
-      "title": "Workflow file generation"
-    },
-    "workload-identity": {
-      "select-placeholder": "Select a workload identity"
-    }
   }
 }
