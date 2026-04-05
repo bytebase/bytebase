@@ -1980,7 +1980,6 @@
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多",
       "workspace-level-roles": "工作空间级别角色",
       "roles-are-filtered-by-permissions": "角色已按权限筛选",
       "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。"
