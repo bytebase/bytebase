@@ -104,10 +104,11 @@
     "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "Hủy thay đổi",
+    "download": "Tải xuống",
     "edit": "Chỉnh sửa",
     "email": "Email",
     "empty": "Empty",
-    "enable": "Enable",
+    "enable": "Bật",
     "enabled": "Enabled",
     "environment": "Môi trường",
     "environment-name": "Tên môi trường",
@@ -124,8 +125,10 @@
     "from": "Từ",
     "general": "Chung",
     "groups": "Nhóm",
+    "home": "Trang chủ",
     "id": "ID",
     "instance": "Phiên bản",
+    "instances": "Phiên bản",
     "is-required": "is required",
     "items": "items",
     "key": "Khóa",
@@ -149,7 +152,9 @@
     "permissions": "Quyền",
     "previous": "Previous",
     "project": "Dự án",
+    "projects": "Dự án",
     "reason": "Reason",
+    "regenerate": "Tạo lại",
     "release": "Phiên bản",
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
@@ -168,6 +173,7 @@
     "select-all": "Chọn tất cả",
     "selected": "selected",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
+    "settings": "Cài đặt",
     "state": "Trạng thái",
     "statement": "Câu lệnh",
     "status": "Trạng thái",
@@ -237,7 +243,8 @@
       "risk-level-high": "Các thao tác rủi ro cao bao gồm các thay đổi phá hủy như DROP TABLE, TRUNCATE hoặc sửa đổi dữ liệu quy mô lớn.",
       "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
       "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
-      "risk-levels": "Các Mức độ Rủi ro"
+      "risk-levels": "Các Mức độ Rủi ro",
+      "self": "Trung tâm Rủi ro"
     },
     "risk-rule": {
       "risk": {
@@ -258,7 +265,8 @@
     },
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
-    }
+    },
+    "self": "Phê duyệt tùy chỉnh"
   },
   "database": {
     "change-database": "Thay đổi cơ sở dữ liệu",
@@ -391,10 +399,10 @@
     "syncing": "Đang đồng bộ hóa ..."
   },
   "issue": {
-    "labels": "Nhãn vấn đề",
     "advanced-search": {
       "filter": "Bộ lọc"
-    }
+    },
+    "labels": "Nhãn vấn đề"
   },
   "label": {
     "error": {
@@ -873,6 +881,7 @@
           "title": "Tiêu đề"
         },
         "n-members": "{{n}} thành viên",
+        "self": "Nhóm",
         "update-group": "Cập nhật nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
@@ -929,13 +938,16 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "email": "Email",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
       "password-hint": "Mật khẩu phải theo quy định hạn chế",
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
-      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx"
+      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
+      "role": "Vai trò",
+      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "sensitive-data": {
       "algorithms": {
@@ -1004,6 +1016,7 @@
         "add-from-template": "Thêm từ mẫu",
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
+        "self": "Loại ngữ nghĩa",
         "table": {
           "delete": "Xóa loại ngữ nghĩa này?",
           "description": "Mô tả",
@@ -1021,13 +1034,17 @@
     "sidebar": {
       "audit-log": "Nhật ký kiểm tra",
       "custom-roles": "Vai trò tùy chỉnh",
+      "data-access": "Truy cập dữ liệu",
       "data-classification": "Phân loại dữ liệu",
       "general": "Chung",
       "global-masking": "Che giấu toàn cục",
+      "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
+      "integration": "Tích hợp",
       "mcp": "MCP",
       "members": "Thành viên",
       "members-and-groups": "Thành viên & Nhóm",
+      "profile": "Hồ sơ",
       "security-and-policy": "Bảo mật & Chính sách",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
@@ -1261,9 +1278,56 @@
         "title": "Giới hạn số lượng người dùng",
         "upgrade": "Nâng cấp để có thêm hạn ngạch người dùng."
       }
-    }
+    },
+    "disabled-feature": "Tính năng bị vô hiệu hóa"
   },
   "two-factor": {
-    "enabled": "Đã bật 2FA"
+    "description": "Xác thực hai yếu tố cung cấp một lớp bảo mật bổ sung cho các tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng xác thực của bạn tạo.",
+    "disable": {
+      "description": "Bạn sắp tắt xác thực hai yếu tố cho tài khoản của mình. Bạn sẽ không còn phải nhập mã bảo mật do Ứng dụng xác thực của bạn tạo khi đăng nhập.",
+      "self": "Tắt xác thực hai yếu tố"
+    },
+    "enabled": "Đã bật 2FA",
+    "messages": {
+      "2fa-disabled": "Xác thực hai yếu tố bị tắt.",
+      "2fa-enabled": "Xác thực hai yếu tố được bật.",
+      "2fa-required": "Xác thực hai yếu tố là bắt buộc trong không gian làm việc của bạn. Vui lòng bật nó trước khi bạn có thể tiếp tục.",
+      "cannot-disable": "Bạn không thể tắt xác thực hai yếu tố vì quản trị viên của bạn yêu cầu nó trong không gian làm việc.",
+      "recovery-codes-regenerated": "Mã khôi phục được tạo lại."
+    },
+    "recovery-codes": {
+      "description": "Mã khôi phục có thể được sử dụng để truy cập tài khoản của bạn trong trường hợp bạn không thể nhận mã xác thực hai yếu tố.",
+      "self": "Mã khôi phục"
+    },
+    "self": "Xác thực hai yếu tố",
+    "setup-steps": {
+      "download-recovery-codes": {
+        "keep-safe": {
+          "description": "Các mã này là phương sách cuối cùng để truy cập tài khoản của bạn trong trường hợp bạn mất mã xác thực hai yếu tố. Nếu bạn không thể tìm thấy các mã này, bạn sẽ mất quyền truy cập vào tài khoản của mình.",
+          "self": "Giữ mã khôi phục của bạn ở một nơi an toàn."
+        },
+        "self": "Tải xuống mã khôi phục của bạn",
+        "tips": "Giữ mã khôi phục của bạn an toàn như mật khẩu của bạn. Chúng tôi khuyên bạn nên lưu chúng bằng trình quản lý mật khẩu như Lastpass, 1Password hoặc Keeper."
+      },
+      "recovery-codes-saved": "Tôi đã lưu mã khôi phục của mình",
+      "setup-auth-app": {
+        "description": "Sử dụng một ứng dụng điện thoại như Google Authenticator, Microsoft Authenticator hoặc Authy để nhận mã 2FA khi được nhắc trong quá trình đăng nhập.",
+        "expired-notice": "Phiên thiết lập này đã hết hạn. Vui lòng tạo lại để tiếp tục.",
+        "regenerate": "Tạo lại",
+        "scan-qr-code": {
+          "description": "Sử dụng ứng dụng xác thực từ điện thoại của bạn để quét. Nếu bạn không thể quét, {{action}} thay thế.",
+          "enter-the-text": "nhập văn bản",
+          "self": "Quét mã QR"
+        },
+        "self": "Thiết lập ứng dụng xác thực",
+        "time-remaining": "Thời gian còn lại: {{time}}",
+        "verify-code": "Xác minh mã từ ứng dụng"
+      }
+    },
+    "your-two-factor-secret": {
+      "copy-succeed": "Bí mật đã được sao chép vào khay nhớ tạm. Dán nó vào ứng dụng của bạn.",
+      "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
+      "self": "Bí mật hai yếu tố của bạn"
+    }
   }
 }

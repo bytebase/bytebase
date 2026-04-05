@@ -104,10 +104,11 @@
     "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "Descartar cambios",
+    "download": "Descargar",
     "edit": "Editar",
     "email": "Correo electrónico",
     "empty": "Empty",
-    "enable": "Enable",
+    "enable": "Habilitar",
     "enabled": "Enabled",
     "environment": "Entorno",
     "environment-name": "Nombre del entorno",
@@ -124,8 +125,10 @@
     "from": "Desde",
     "general": "General",
     "groups": "Grupos",
+    "home": "Inicio",
     "id": "ID",
     "instance": "Instancia",
+    "instances": "Instancias",
     "is-required": "is required",
     "items": "items",
     "key": "Clave",
@@ -149,7 +152,9 @@
     "permissions": "Permisos",
     "previous": "Previous",
     "project": "Proyecto",
+    "projects": "Proyectos",
     "reason": "Reason",
+    "regenerate": "Regenerar",
     "release": "Versión",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
@@ -168,6 +173,7 @@
     "select-all": "Seleccionar todo",
     "selected": "selected",
     "sensitive-placeholder": "Sensible - solo escritura",
+    "settings": "Configuraciones",
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
@@ -237,7 +243,8 @@
       "risk-level-high": "Las operaciones de alto riesgo incluyen cambios destructivos como DROP TABLE, TRUNCATE o modificaciones de datos a gran escala.",
       "risk-level-low": "Las operaciones de bajo riesgo incluyen consultas SELECT y cambios menores en el esquema que es poco probable que causen problemas.",
       "risk-level-moderate": "Las operaciones de riesgo moderado incluyen cambios DDL estándar como agregar columnas o índices.",
-      "risk-levels": "Niveles de Riesgo"
+      "risk-levels": "Niveles de Riesgo",
+      "self": "Centro de Riesgos"
     },
     "risk-rule": {
       "risk": {
@@ -258,7 +265,8 @@
     },
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
-    }
+    },
+    "self": "Aprobación personalizada"
   },
   "database": {
     "change-database": "Modificar base de datos",
@@ -391,10 +399,10 @@
     "syncing": "Sincronizando..."
   },
   "issue": {
-    "labels": "Etiquetas de problema",
     "advanced-search": {
       "filter": "Filtrar"
-    }
+    },
+    "labels": "Etiquetas de problema"
   },
   "label": {
     "error": {
@@ -873,6 +881,7 @@
           "title": "Título"
         },
         "n-members": "{{n}} miembros",
+        "self": "Grupos",
         "update-group": "Grupo de actualización",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
@@ -929,13 +938,16 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "email": "Correo electrónico",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-hint": "La contraseña debe seguir la configuración de restricción",
       "password-mismatch": "Nueva contraseña no coincide",
       "phone": "Número de móvil",
-      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx"
+      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
+      "role": "Rol",
+      "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "sensitive-data": {
       "algorithms": {
@@ -1004,6 +1016,7 @@
         "add-from-template": "Agregar desde plantilla",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",
+        "self": "Tipos Semánticos",
         "table": {
           "delete": "¿Eliminar este tipo semántico?",
           "description": "Descripción",
@@ -1021,13 +1034,17 @@
     "sidebar": {
       "audit-log": "Registros de auditoría",
       "custom-roles": "Roles personalizados",
+      "data-access": "Acceso a datos",
       "data-classification": "Clasificación de datos",
       "general": "General",
       "global-masking": "Enmascaramiento Global",
+      "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
+      "integration": "Integración",
       "mcp": "MCP",
       "members": "Miembros",
       "members-and-groups": "Miembros y grupos",
+      "profile": "Perfil",
       "security-and-policy": "Seguridad y Política",
       "sso": "SSO",
       "subscription": "Suscripción",
@@ -1261,9 +1278,56 @@
         "title": "Límite de conteo de usuarios",
         "upgrade": "Actualizar para obtener más cuota de usuario."
       }
-    }
+    },
+    "disabled-feature": "Función deshabilitada"
   },
   "two-factor": {
-    "enabled": "2FA habilitado"
+    "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
+    "disable": {
+      "description": "Está a punto de desactivar la autenticación de dos factores para su cuenta. Ya no se le pedirá que ingrese el código de seguridad generado por su aplicación de autenticación cuando inicie sesión.",
+      "self": "Desactivar la autenticación de dos factores"
+    },
+    "enabled": "2FA habilitado",
+    "messages": {
+      "2fa-disabled": "La autenticación de dos factores está desactivada.",
+      "2fa-enabled": "La autenticación de dos factores está activada.",
+      "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
+      "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo.",
+      "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado."
+    },
+    "recovery-codes": {
+      "description": "Los códigos de recuperación se pueden utilizar para acceder a su cuenta en caso de que no pueda recibir códigos de autenticación de dos factores.",
+      "self": "Códigos de recuperación"
+    },
+    "self": "Autenticación de dos factores",
+    "setup-steps": {
+      "download-recovery-codes": {
+        "keep-safe": {
+          "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta.",
+          "self": "Mantenga sus códigos de recuperación en un lugar seguro."
+        },
+        "self": "Descarga tus códigos de recuperación",
+        "tips": "Mantenga sus códigos de recuperación tan seguros como su contraseña. Recomendamos guardarlos con un administrador de contraseñas como Lastpass, 1Password o Keeper."
+      },
+      "recovery-codes-saved": "He guardado mis códigos de recuperación",
+      "setup-auth-app": {
+        "description": "Usa una aplicación de teléfono como Google Authenticator, Microsoft Authenticator o Authy para obtener códigos 2FA cuando se te solicite durante el inicio de sesión.",
+        "expired-notice": "Esta sesión de configuración ha expirado. Por favor, regenera para continuar.",
+        "regenerate": "Regenerar",
+        "scan-qr-code": {
+          "description": "Usa una aplicación de autenticación de tu teléfono para escanear. Si no puedes escanear, {{action}} en su lugar.",
+          "enter-the-text": "ingresa el texto",
+          "self": "Escanear el código QR"
+        },
+        "self": "Configurar la aplicación de autenticación",
+        "time-remaining": "Tiempo restante: {{time}}",
+        "verify-code": "Verifica el código de la aplicación"
+      }
+    },
+    "your-two-factor-secret": {
+      "copy-succeed": "Secreto copiado al portapapeles. Péguelo en su aplicación.",
+      "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
+      "self": "Su secreto de dos factores"
+    }
   }
 }

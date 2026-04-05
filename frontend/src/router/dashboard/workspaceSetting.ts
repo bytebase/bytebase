@@ -15,7 +15,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
     meta: { title: () => t("common.settings") },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -26,15 +26,15 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         path: "profile",
         name: SETTING_ROUTE_PROFILE,
         meta: { title: () => t("settings.sidebar.profile") },
-        component: () => import("@/views/ProfileDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ProfilePage" }),
       },
       {
         path: "profile/two-factor",
         name: SETTING_ROUTE_PROFILE_TWO_FACTOR,
         meta: { title: () => t("two-factor.self") },
-        component: () => import("@/views/TwoFactorSetup.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "TwoFactorSetupPage" }),
       },
       {
         path: "general",
