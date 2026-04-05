@@ -656,22 +656,33 @@ function useExemptionDataReact(projectName: string) {
     fetchData();
   }, [fetchData]);
 
-  // Subscribe to policy changes in the store to re-fetch
-  const policy = useVueState(() =>
-    policyStore.getPolicyByParentAndType({
+  // Subscribe to policy changes in the store to re-fetch.
+  // Track the number of exemptions so we detect content changes,
+  // not just the policy case discriminator which is always the same.
+  const policyExemptionCount = useVueState(() => {
+    const pol = policyStore.getPolicyByParentAndType({
       parentPath: projectName,
       policyType: PolicyType.MASKING_EXEMPTION,
-    })
-  );
+    });
+    if (pol?.policy?.case === "maskingExemptionPolicy") {
+      return pol.policy.value.exemptions.length;
+    }
+    return -1;
+  });
 
-  // Re-fetch when policy changes (e.g. after revoke)
-  const policyVersion = policy?.policy?.case;
+  // Re-fetch when policy changes (e.g. after revoke from another tab/action)
+  const policyCountRef = useRef(policyExemptionCount);
   useEffect(() => {
-    // Skip initial mount — fetchData already runs from the effect above
-    if (fetchGenRef.current > 0) {
+    // Skip initial mount — fetchData already runs from the effect above.
+    // Only re-fetch when the store's exemption count actually changes.
+    if (
+      fetchGenRef.current > 0 &&
+      policyCountRef.current !== policyExemptionCount
+    ) {
+      policyCountRef.current = policyExemptionCount;
       fetchData();
     }
-  }, [policyVersion]); // fetchData intentionally excluded to avoid re-fetch loop
+  }, [policyExemptionCount, fetchData]);
 
   const members = useMemo<ExemptionMember[]>(
     () => groupByMember(rawAccessList),

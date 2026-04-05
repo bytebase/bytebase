@@ -608,8 +608,7 @@
       "expires-in-days_other": "{{days}} 天后到期",
       "all-levels": "所有等级",
       "n-exemptions_one": "{{n}} 项豁免",
-      "n-exemptions_other": "{{n}} 项豁免",
-      "level": "等级"
+      "n-exemptions_other": "{{n}} 项豁免"
     }
   },
   "quick-action": {

@@ -608,8 +608,7 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "all-levels": "全レベル",
       "n-exemptions_one": "{{n}} 件の免除",
-      "n-exemptions_other": "{{n}} 件の免除",
-      "level": "レベル"
+      "n-exemptions_other": "{{n}} 件の免除"
     }
   },
   "quick-action": {

@@ -608,8 +608,7 @@
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",
       "all-levels": "Tất cả các cấp",
       "n-exemptions_one": "{{n}} miễn trừ",
-      "n-exemptions_other": "{{n}} miễn trừ",
-      "level": "cấp"
+      "n-exemptions_other": "{{n}} miễn trừ"
     }
   },
   "quick-action": {

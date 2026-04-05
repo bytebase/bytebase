@@ -608,8 +608,7 @@
       "expires-in-days_other": "Expira en {{days}} días",
       "all-levels": "Todos los niveles",
       "n-exemptions_one": "{{n}} exención",
-      "n-exemptions_other": "{{n}} exenciones",
-      "level": "nivel"
+      "n-exemptions_other": "{{n}} exenciones"
     }
   },
   "quick-action": {
