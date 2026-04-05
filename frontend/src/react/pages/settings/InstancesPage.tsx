@@ -20,6 +20,7 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -746,12 +747,8 @@ export function InstancesPage() {
             keywords: isUnknown
               ? ["unassigned", "none", env.id]
               : [env.id, env.title],
-            render: isUnknown
-              ? () => (
-                  <span className="italic text-control-light">Unassigned</span>
-                )
-              : undefined,
-            custom: isUnknown,
+            custom: true,
+            render: () => <EnvironmentLabel environment={env} />,
           };
         }),
       },
@@ -762,6 +759,17 @@ export function InstancesPage() {
         options: supportedEngineV1List().map((engine) => ({
           value: Engine[engine],
           keywords: [Engine[engine].toLowerCase(), engineNameV1(engine)],
+          custom: true,
+          render: () => (
+            <span className="inline-flex items-center gap-x-1.5">
+              <img
+                className="h-4 w-4 shrink-0"
+                src={EngineIconPath[engine]}
+                alt=""
+              />
+              <span>{engineNameV1(engine)}</span>
+            </span>
+          ),
         })),
         allowMultiple: true,
       },
