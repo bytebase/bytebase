@@ -169,8 +169,8 @@ export function AdvancedSearch({
     if (id) {
       setMenuView("value");
       setMenuIndex(0);
-      // Clear the input so the value menu is unobstructed
-      setInputText("");
+      // Show "scope:" prefix in the input to match Vue behavior
+      setInputText(`${id}:`);
     } else {
       setMenuView("scope");
     }
