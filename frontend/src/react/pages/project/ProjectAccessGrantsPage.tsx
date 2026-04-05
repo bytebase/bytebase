@@ -26,8 +26,10 @@ import {
   featureToRef,
   pushNotification,
   useAccessGrantStore,
+  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
+  useUserStore,
 } from "@/store";
 import type { AccessFilter } from "@/store/modules/accessGrant";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
@@ -49,6 +51,15 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
+
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
 
 function getDatabaseName(target: string) {
   const match = target.match(/databases\/(.+)$/);
@@ -76,6 +87,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const accessGrantStore = useAccessGrantStore();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
+  const userStore = useUserStore();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -122,24 +135,42 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   >([]);
   useEffect(() => {
     let cancelled = false;
-    const fetchAll = async () => {
-      const result = await databaseStore.fetchDatabases({
-        parent: projectName,
-        pageSize: 1000,
+    databaseStore
+      .fetchDatabases({ parent: projectName, pageSize: 1000 })
+      .then((result) => {
+        if (cancelled) return;
+        setDatabaseOptions(
+          result.databases.map((db) => {
+            const { database: dbName } = extractDatabaseResourceName(db.name);
+            return { value: db.name, label: dbName };
+          })
+        );
       });
-      if (cancelled) return;
-      setDatabaseOptions(
-        result.databases.map((db) => {
-          const { database: dbName } = extractDatabaseResourceName(db.name);
-          return { value: db.name, label: dbName };
-        })
-      );
-    };
-    fetchAll();
     return () => {
       cancelled = true;
     };
   }, [projectName, databaseStore]);
+
+  // Pre-fetch users to populate creator scope options
+  const [userOptions, setUserOptions] = useState<
+    { value: string; title: string; name: string }[]
+  >([]);
+  useEffect(() => {
+    let cancelled = false;
+    userStore.fetchUserList({ pageSize: 1000 }).then((result) => {
+      if (cancelled) return;
+      setUserOptions(
+        result.users.map((u) => ({
+          value: u.email,
+          title: u.title,
+          name: u.name,
+        }))
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userStore]);
 
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
@@ -183,10 +214,33 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       {
         id: "creator",
         title: t("common.creator"),
-        description: t("common.creator"),
+        options: userOptions.map((u) => ({
+          value: u.value,
+          keywords: [u.value, u.title],
+          custom: true,
+          render: () => (
+            <span className="inline-flex items-center gap-x-1.5">
+              <span
+                className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: `hsl(${hashCode(u.title) % 360}, 55%, 55%)`,
+                }}
+              >
+                {u.title.charAt(0).toUpperCase()}
+              </span>
+              <span>{u.title}</span>
+              {currentUser && u.name === currentUser.name && (
+                <span className="text-xs bg-green-100 text-green-700 rounded-full px-1.5">
+                  {t("common.you")}
+                </span>
+              )}
+              <span className="text-control-light">{u.value}</span>
+            </span>
+          ),
+        })),
       },
     ],
-    [t, databaseOptions]
+    [t, databaseOptions, userOptions, currentUser]
   );
 
   const orderBy = useMemo(() => {
