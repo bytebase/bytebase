@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, ShieldAlert } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
@@ -7,6 +7,7 @@ import {
   emptySearchParams,
   type ScopeOption,
   type SearchParams,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Badge } from "@/react/components/ui/badge";
@@ -100,8 +101,6 @@ function mapDatabase(db: Database) {
   };
 }
 
-type DatabaseOption = ReturnType<typeof mapDatabase>;
-
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const accessGrantStore = useAccessGrantStore();
@@ -153,45 +152,81 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     grant: AccessGrant;
   } | null>(null);
 
-  // Fetch first page of databases for filter options (gated on canList)
-  const [databaseOptions, setDatabaseOptions] = useState<DatabaseOption[]>([]);
-  useEffect(() => {
-    if (!canList) return;
-    let cancelled = false;
-    databaseStore
-      .fetchDatabases({ parent: projectName, pageSize: 1000 })
-      .then((result) => {
-        if (!cancelled) {
-          setDatabaseOptions(result.databases.map(mapDatabase));
-        }
+  // Server-side search for database filter options
+  const searchDatabases = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const result = await databaseStore.fetchDatabases({
+        parent: projectName,
+        pageSize: 50,
+        filter: keyword ? { query: keyword } : undefined,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectName, databaseStore, canList]);
+      return result.databases.map((db) => {
+        const mapped = mapDatabase(db);
+        return {
+          value: mapped.value,
+          keywords: [
+            mapped.dbName,
+            mapped.instanceTitle,
+            mapped.envId,
+            mapped.value,
+          ],
+          custom: true,
+          render: () => (
+            <span className="inline-flex items-center gap-x-1">
+              {mapped.engineIcon && (
+                <img
+                  className="h-4 w-4 shrink-0"
+                  src={mapped.engineIcon}
+                  alt=""
+                />
+              )}
+              <span>{mapped.instanceTitle}</span>
+              <span className="text-control-placeholder">&gt;</span>
+              <span>{mapped.envId}</span>
+              <span className="text-control-placeholder">&gt;</span>
+              <span>{mapped.dbName}</span>
+            </span>
+          ),
+        };
+      });
+    },
+    [databaseStore, projectName]
+  );
 
-  // Fetch first page of users for filter options (gated on canList)
-  const [userOptions, setUserOptions] = useState<
-    { value: string; title: string; name: string }[]
-  >([]);
-  useEffect(() => {
-    if (!canList) return;
-    let cancelled = false;
-    userStore.fetchUserList({ pageSize: 1000 }).then((result) => {
-      if (!cancelled) {
-        setUserOptions(
-          result.users.map((u) => ({
-            value: u.email,
-            title: u.title,
-            name: u.name,
-          }))
-        );
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userStore, canList]);
+  // Server-side search for creator filter options
+  const searchUsers = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const result = await userStore.fetchUserList({
+        pageSize: 50,
+        filter: keyword ? { query: keyword } : undefined,
+      });
+      return result.users.map((u) => ({
+        value: u.email,
+        keywords: [u.email, u.title],
+        custom: true,
+        render: () => (
+          <span className="inline-flex items-center gap-x-1.5">
+            <span
+              className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: `hsl(${hashCode(u.title) % 360}, 55%, 55%)`,
+              }}
+            >
+              {u.title.charAt(0).toUpperCase()}
+            </span>
+            <span>{u.title}</span>
+            {currentUser && u.name === currentUser.name && (
+              <span className="text-xs bg-green-100 text-green-700 rounded-full px-1.5">
+                {t("common.you")}
+              </span>
+            )}
+            <span className="text-control-light">{u.email}</span>
+          </span>
+        ),
+      }));
+    },
+    [userStore, currentUser, t]
+  );
 
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
@@ -225,54 +260,15 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       {
         id: "database",
         title: t("common.database"),
-        options: databaseOptions.map((db) => ({
-          value: db.value,
-          keywords: [db.dbName, db.instanceTitle, db.envId, db.value],
-          custom: true,
-          render: () => (
-            <span className="inline-flex items-center gap-x-1">
-              {db.engineIcon && (
-                <img className="h-4 w-4 shrink-0" src={db.engineIcon} alt="" />
-              )}
-              <span>{db.instanceTitle}</span>
-              <span className="text-control-placeholder">&gt;</span>
-              <span>{db.envId}</span>
-              <span className="text-control-placeholder">&gt;</span>
-              <span>{db.dbName}</span>
-            </span>
-          ),
-        })),
+        onSearch: searchDatabases,
       },
       {
         id: "creator",
         title: t("common.creator"),
-        options: userOptions.map((u) => ({
-          value: u.value,
-          keywords: [u.value, u.title],
-          custom: true,
-          render: () => (
-            <span className="inline-flex items-center gap-x-1.5">
-              <span
-                className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: `hsl(${hashCode(u.title) % 360}, 55%, 55%)`,
-                }}
-              >
-                {u.title.charAt(0).toUpperCase()}
-              </span>
-              <span>{u.title}</span>
-              {currentUser && u.name === currentUser.name && (
-                <span className="text-xs bg-green-100 text-green-700 rounded-full px-1.5">
-                  {t("common.you")}
-                </span>
-              )}
-              <span className="text-control-light">{u.value}</span>
-            </span>
-          ),
-        })),
+        onSearch: searchUsers,
       },
     ],
-    [t, databaseOptions, userOptions, currentUser]
+    [t, searchDatabases, searchUsers]
   );
 
   const orderBy = useMemo(() => {
