@@ -114,8 +114,14 @@ export function ProjectMaskingExemptionPage({
   const hasCreatePermission = useMemo(
     () =>
       project
-        ? hasProjectPermissionV2(project, "bb.policies.createMaskingExemptionPolicy") &&
-          hasProjectPermissionV2(project, "bb.policies.updateMaskingExemptionPolicy") &&
+        ? hasProjectPermissionV2(
+            project,
+            "bb.policies.createMaskingExemptionPolicy"
+          ) &&
+          hasProjectPermissionV2(
+            project,
+            "bb.policies.updateMaskingExemptionPolicy"
+          ) &&
           hasProjectPermissionV2(project, "bb.databases.list") &&
           hasProjectPermissionV2(project, "bb.databaseCatalogs.get")
         : false,
