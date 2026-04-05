@@ -391,9 +391,6 @@
     "syncing": "同期中 ..."
   },
   "issue": {
-    "advanced-search": {
-      "filter": "フィルター"
-    },
     "labels": "イシューラベル"
   },
   "label": {
@@ -537,15 +534,6 @@
       },
       "success-updated": "プロジェクト設定が正常に更新されました",
       "update-failed": "プロジェクト設定の更新に失敗しました。"
-    },
-    "members": {
-      "add-more": "Add more",
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
-      "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
-      "edit-member": "メンバー編集 - {{member}}",
-      "never-expires": "Never",
-      "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
     "table": {
       "name": "名前"

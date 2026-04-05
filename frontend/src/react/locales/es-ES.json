@@ -391,9 +391,6 @@
     "syncing": "Sincronizando..."
   },
   "issue": {
-    "advanced-search": {
-      "filter": "Filtrar"
-    },
     "labels": "Etiquetas de problema"
   },
   "label": {
@@ -537,15 +534,6 @@
       },
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
       "update-failed": "No se pudo actualizar la configuración del proyecto."
-    },
-    "members": {
-      "add-more": "Add more",
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
-      "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
-      "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
-      "edit-member": "Editar miembro - {{member}}",
-      "never-expires": "Never",
-      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
     "table": {
       "name": "Nombre"

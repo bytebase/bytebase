@@ -391,9 +391,6 @@
     "syncing": "Syncing ..."
   },
   "issue": {
-    "advanced-search": {
-      "filter": "Filter"
-    },
     "labels": "Issue Labels"
   },
   "label": {

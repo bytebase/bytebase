@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
@@ -45,6 +46,9 @@ const STATUS_OPTIONS: AccessGrantFilterStatus[] = [
   "EXPIRED",
 ];
 
+type SortKey = "creator" | "create_time" | "expire_time";
+type SortDir = "asc" | "desc";
+
 function getDatabaseName(target: string) {
   const match = target.match(/databases\/(.+)$/);
   return match ? match[1] : target;
@@ -56,6 +60,19 @@ function statusTagVariant(
   const tagType = getAccessGrantStatusTagType(status);
   if (tagType === "error") return "destructive";
   return tagType;
+}
+
+function statusLabel(t: (key: string) => string, s: AccessGrantFilterStatus) {
+  switch (s) {
+    case "ACTIVE":
+      return t("common.active");
+    case "PENDING":
+      return t("common.pending");
+    case "REVOKED":
+      return t("common.revoked");
+    case "EXPIRED":
+      return t("sql-editor.expired");
+  }
 }
 
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
@@ -89,37 +106,93 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     [project]
   );
 
+  // --- Filter state ---
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    AccessGrantFilterStatus | ""
-  >("");
+  const [statusFilters, setStatusFilters] = useState<AccessGrantFilterStatus[]>(
+    []
+  );
+  const [creatorFilter, setCreatorFilter] = useState("");
+  const [databaseFilter, setDatabaseFilter] = useState("");
+
+  // --- Sort state ---
+  const [sortKey, setSortKey] = useState<SortKey | "">("");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
   const [confirmAction, setConfirmAction] = useState<{
     type: "activate" | "revoke";
     grant: AccessGrant;
   } | null>(null);
 
+  const orderBy = useMemo(() => {
+    if (!sortKey) return "";
+    return `${sortKey} ${sortDir}`;
+  }, [sortKey, sortDir]);
+
+  const handleSort = useCallback(
+    (key: SortKey) => {
+      if (sortKey === key) {
+        if (sortDir === "desc") {
+          setSortDir("asc");
+        } else {
+          // Third click clears sort
+          setSortKey("");
+          setSortDir("desc");
+        }
+      } else {
+        setSortKey(key);
+        setSortDir("desc");
+      }
+    },
+    [sortKey, sortDir]
+  );
+
+  const toggleStatus = useCallback((status: AccessGrantFilterStatus) => {
+    setStatusFilters((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  }, []);
+
   const fetchList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const filter: AccessFilter = {};
-      if (statusFilter) {
-        filter.status = [statusFilter];
+      if (statusFilters.length > 0) {
+        filter.status = statusFilters;
       }
       const query = searchText.trim();
       if (query) {
         filter.statement = query;
+      }
+      const creator = creatorFilter.trim();
+      if (creator) {
+        filter.creator = `users/${creator}`;
+      }
+      const database = databaseFilter.trim();
+      if (database) {
+        filter.target = database;
       }
       const response = await accessGrantStore.listAccessGrants({
         parent: projectName,
         filter,
         pageSize: params.pageSize,
         pageToken: params.pageToken || undefined,
+        orderBy,
       });
       return {
         list: response.accessGrants,
         nextPageToken: response.nextPageToken,
       };
     },
-    [projectName, accessGrantStore, searchText, statusFilter]
+    [
+      projectName,
+      accessGrantStore,
+      searchText,
+      statusFilters,
+      creatorFilter,
+      databaseFilter,
+      orderBy,
+    ]
   );
 
   const paged = usePagedData<AccessGrant>({
@@ -158,33 +231,56 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
       {canList ? (
         <>
-          <div className="px-4 pb-2 flex items-center gap-x-2">
-            <Input
-              className="flex-1"
-              placeholder={t("issue.advanced-search.filter")}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as AccessGrantFilterStatus | "")
-              }
-              className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1.5 min-w-[8rem]"
-            >
-              <option value="">{t("common.all")}</option>
+          {/* Filters */}
+          <div className="px-4 pb-2 flex flex-col gap-y-2">
+            <div className="flex items-center gap-x-2">
+              <Input
+                className="flex-1"
+                placeholder={t("common.statement")}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              <Input
+                className="w-48"
+                placeholder={t("common.creator")}
+                value={creatorFilter}
+                onChange={(e) => setCreatorFilter(e.target.value)}
+              />
+              <Input
+                className="w-48"
+                placeholder={t("common.database")}
+                value={databaseFilter}
+                onChange={(e) => setDatabaseFilter(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-x-2">
+              <span className="text-sm text-control-light">
+                {t("common.status")}:
+              </span>
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s === "ACTIVE"
-                    ? t("common.active")
-                    : s === "PENDING"
-                      ? t("common.pending")
-                      : s === "REVOKED"
-                        ? t("common.revoked")
-                        : t("sql-editor.expired")}
-                </option>
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleStatus(s)}
+                  className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
+                    statusFilters.includes(s)
+                      ? "bg-accent/10 text-accent border-accent/30"
+                      : "bg-white text-control-light border-control-border hover:border-accent/30"
+                  }`}
+                >
+                  {statusLabel(t, s)}
+                </button>
               ))}
-            </select>
+              {statusFilters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStatusFilters([])}
+                  className="text-xs text-control-light hover:text-control underline"
+                >
+                  {t("common.clear")}
+                </button>
+              )}
+            </div>
           </div>
 
           {!hasJITFeature ? (
@@ -207,15 +303,30 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                     <th className="py-2 pr-4 font-medium w-24">
                       {t("common.status")}
                     </th>
-                    <th className="py-2 pr-4 font-medium w-44">
-                      {t("common.creator")}
-                    </th>
-                    <th className="py-2 pr-4 font-medium w-44 hidden xl:table-cell">
-                      {t("common.created-at")}
-                    </th>
-                    <th className="py-2 pr-4 font-medium w-44 hidden xl:table-cell">
-                      {t("common.expiration")}
-                    </th>
+                    <SortableHeader
+                      label={t("common.creator")}
+                      sortKey="creator"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      className="w-44"
+                    />
+                    <SortableHeader
+                      label={t("common.created-at")}
+                      sortKey="create_time"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      className="w-44 hidden xl:table-cell"
+                    />
+                    <SortableHeader
+                      label={t("common.expiration")}
+                      sortKey="expire_time"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      className="w-44 hidden xl:table-cell"
+                    />
                     <th className="py-2 pr-4 font-medium">
                       {t("common.statement")}
                     </th>
@@ -324,6 +435,47 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SortableHeader
+// ---------------------------------------------------------------------------
+
+function SortableHeader({
+  label,
+  sortKey,
+  activeSortKey,
+  sortDir,
+  onSort,
+  className,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeSortKey: SortKey | "";
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+  className?: string;
+}) {
+  const isActive = activeSortKey === sortKey;
+  const Icon = isActive
+    ? sortDir === "asc"
+      ? ArrowUp
+      : ArrowDown
+    : ArrowUpDown;
+
+  return (
+    <th
+      className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-control ${className ?? ""}`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-x-1">
+        {label}
+        <Icon
+          className={`w-3.5 h-3.5 ${isActive ? "text-accent" : "text-control-placeholder"}`}
+        />
+      </span>
+    </th>
   );
 }
 
