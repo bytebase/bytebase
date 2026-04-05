@@ -78,6 +78,18 @@ watchEffect(async () => {
       projectName.value,
       false
     );
+    // If the project resolves to the unknown sentinel (e.g. projectId is "-1"),
+    // it will never initialize. Redirect to the landing page instead of
+    // spinning forever.
+    if (project.name === UNKNOWN_PROJECT_NAME) {
+      const projectRoute = router.resolve({
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId: props.projectId },
+      });
+      removeVisit(projectRoute.fullPath);
+      router.replace({ name: WORKSPACE_ROUTE_LANDING });
+      return;
+    }
     recentProjects.setRecentProject(project.name);
   } catch (err) {
     console.error(err);

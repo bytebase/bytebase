@@ -199,7 +199,13 @@
     "issues": "Issues",
     "manage": "Manage",
     "setting": "Setting",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "revoke": "Revoke",
+    "n-more": "+{{n}} more",
+    "scope": "Scope",
+    "classification-level": "Classification Level",
+    "columns": "Columns",
+    "resources": "Resources"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -274,6 +280,7 @@
     "self": "Custom Approval"
   },
   "database": {
+    "all": "All databases",
     "change-database": "Change Database",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
@@ -411,7 +418,13 @@
     "advanced-search": {
       "filter": "Filter"
     },
-    "labels": "Issue Labels"
+    "labels": "Issue Labels",
+    "role-grant": {
+      "all-databases": "All",
+      "all-databases-tip": "All current and future databases in this project.",
+      "manually-select": "Manually select",
+      "use-cel": "Use CEL Expression"
+    }
   },
   "label": {
     "error": {
@@ -585,7 +598,18 @@
       "webhook-url": "Webhook URL"
     },
     "masking-exemption": {
-      "self": "Masking Exemptions"
+      "self": "Masking Exemptions",
+      "grant-exemption": "Grant Exemption",
+      "revoke-exemption-title": "Remove masking exemption for {{member}}?",
+      "no-reason": "No reason provided",
+      "no-exemptions": "No masking exemptions granted yet",
+      "expires-today": "Expires today",
+      "expires-in-days_one": "Expires in {{days}} day",
+      "expires-in-days_other": "Expires in {{days}} days",
+      "all-levels": "All levels",
+      "n-exemptions_one": "{{n}} exemption",
+      "n-exemptions_other": "{{n}} exemptions",
+      "level": "level"
     }
   },
   "quick-action": {
@@ -909,6 +933,7 @@
       "search-member": "Search member",
       "select-account_one": "Select account",
       "select-account_other": "Select accounts",
+      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-role_one": "Select role",
       "select-role_other": "Select roles",
       "service-account": "Service Account",
@@ -962,6 +987,7 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "sensitive-data": {
+      "never-expires": "Never expires",
       "algorithms": {
         "add": "Add algorithm",
         "edit": "Edit algorithm",

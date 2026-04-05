@@ -199,7 +199,13 @@
     "issues": "Incidencias",
     "manage": "Administrar",
     "setting": "Configuración",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "revoke": "Revocar",
+    "n-more": "+{{n}} más",
+    "scope": "Alcance",
+    "classification-level": "Nivel de clasificación",
+    "columns": "Columnas",
+    "resources": "Recursos"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -274,6 +280,7 @@
     "self": "Aprobación personalizada"
   },
   "database": {
+    "all": "Todas las bases de datos",
     "change-database": "Modificar base de datos",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
@@ -411,7 +418,13 @@
     "advanced-search": {
       "filter": "Filtrar"
     },
-    "labels": "Etiquetas de problema"
+    "labels": "Etiquetas de problema",
+    "role-grant": {
+      "all-databases": "todas las bases de datos",
+      "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
+      "manually-select": "selección manual",
+      "use-cel": "Usar expresión CEL"
+    }
   },
   "label": {
     "error": {
@@ -585,7 +598,18 @@
       "webhook-url": "URL del webhook"
     },
     "masking-exemption": {
-      "self": "Exenciones de Enmascaramiento"
+      "self": "Exenciones de Enmascaramiento",
+      "grant-exemption": "Conceder Exención",
+      "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {{member}}?",
+      "no-reason": "No se proporcionó motivo",
+      "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
+      "expires-today": "Expira hoy",
+      "expires-in-days_one": "Expira en {{days}} día",
+      "expires-in-days_other": "Expira en {{days}} días",
+      "all-levels": "Todos los niveles",
+      "n-exemptions_one": "{{n}} exención",
+      "n-exemptions_other": "{{n}} exenciones",
+      "level": "nivel"
     }
   },
   "quick-action": {
@@ -909,6 +933,7 @@
       "search-member": "Buscar miembro",
       "select-account_one": "Seleccionar cuenta",
       "select-account_other": "Seleccionar cuentas",
+      "select-account-hint": "Puede buscar usuarios y grupos, o introducir el correo electrónico completo para seleccionar la cuenta de servicio o identidad de carga de trabajo.",
       "select-role_one": "Seleccionar rol",
       "select-role_other": "Seleccionar roles",
       "service-account": "Cuenta de Servicio",
@@ -962,6 +987,7 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "sensitive-data": {
+      "never-expires": "Nunca expira",
       "algorithms": {
         "add": "Agregar algoritmo",
         "edit": "Editar algoritmo",

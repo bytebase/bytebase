@@ -199,7 +199,13 @@
     "issues": "工单",
     "manage": "管理",
     "setting": "设置",
-    "webhooks": "Webhook"
+    "webhooks": "Webhook",
+    "revoke": "撤销",
+    "n-more": "+{{n}} 更多",
+    "scope": "范围",
+    "classification-level": "分类等级",
+    "columns": "列",
+    "resources": "资源"
   },
   "create-db": {
     "cluster": "集群",
@@ -274,6 +280,7 @@
     "self": "自定义审批"
   },
   "database": {
+    "all": "所有数据库",
     "change-database": "变更数据库",
     "classification": {
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
@@ -411,7 +418,13 @@
     "advanced-search": {
       "filter": "过滤"
     },
-    "labels": "工单标签"
+    "labels": "工单标签",
+    "role-grant": {
+      "all-databases": "所有数据库",
+      "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
+      "manually-select": "手动选择",
+      "use-cel": "使用 CEL 表达式"
+    }
   },
   "label": {
     "error": {
@@ -585,7 +598,18 @@
       "webhook-url": "Webhook URL"
     },
     "masking-exemption": {
-      "self": "脱敏豁免"
+      "self": "脱敏豁免",
+      "grant-exemption": "授予豁免",
+      "revoke-exemption-title": "是否撤销 {{member}} 的脱敏豁免？",
+      "no-reason": "未提供原因",
+      "no-exemptions": "尚未授予脱敏豁免",
+      "expires-today": "今天到期",
+      "expires-in-days_one": "{{days}} 天后到期",
+      "expires-in-days_other": "{{days}} 天后到期",
+      "all-levels": "所有等级",
+      "n-exemptions_one": "{{n}} 项豁免",
+      "n-exemptions_other": "{{n}} 项豁免",
+      "level": "等级"
     }
   },
   "quick-action": {
@@ -909,6 +933,7 @@
       "search-member": "搜索成员",
       "select-account_one": "选择账户",
       "select-account_other": "选择账户",
+      "select-account-hint": "您可以搜索用户和组，或输入完整的电子邮件地址来选择服务账号或工作负载身份。",
       "select-role_one": "选择角色",
       "select-role_other": "选择角色",
       "service-account": "服务账号",
@@ -962,6 +987,7 @@
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "sensitive-data": {
+      "never-expires": "无过期时间",
       "algorithms": {
         "add": "添加算法",
         "edit": "编辑算法",

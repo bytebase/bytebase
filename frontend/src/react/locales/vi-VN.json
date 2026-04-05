@@ -199,7 +199,13 @@
     "issues": "Vấn đề",
     "manage": "Quản lý",
     "setting": "Cài đặt",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "revoke": "Thu hồi",
+    "n-more": "+{{n}} nữa",
+    "scope": "Phạm vi",
+    "classification-level": "Cấp phân loại",
+    "columns": "Cột",
+    "resources": "Tài nguyên"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -274,6 +280,7 @@
     "self": "Phê duyệt tùy chỉnh"
   },
   "database": {
+    "all": "Tất cả cơ sở dữ liệu",
     "change-database": "Thay đổi cơ sở dữ liệu",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
@@ -411,7 +418,13 @@
     "advanced-search": {
       "filter": "Bộ lọc"
     },
-    "labels": "Nhãn vấn đề"
+    "labels": "Nhãn vấn đề",
+    "role-grant": {
+      "all-databases": "Tất cả",
+      "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "manually-select": "Chọn thủ công",
+      "use-cel": "Sử dụng biểu thức CEL"
+    }
   },
   "label": {
     "error": {
@@ -585,7 +598,18 @@
       "webhook-url": "URL Webhook"
     },
     "masking-exemption": {
-      "self": "Miễn trừ Che giấu"
+      "self": "Miễn trừ Che giấu",
+      "grant-exemption": "Cấp Miễn trừ",
+      "revoke-exemption-title": "Xóa miễn trừ che giấu cho {{member}}?",
+      "no-reason": "Không có lý do được cung cấp",
+      "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",
+      "expires-today": "Hết hạn hôm nay",
+      "expires-in-days_one": "Hết hạn sau {{days}} ngày",
+      "expires-in-days_other": "Hết hạn sau {{days}} ngày",
+      "all-levels": "Tất cả các cấp",
+      "n-exemptions_one": "{{n}} miễn trừ",
+      "n-exemptions_other": "{{n}} miễn trừ",
+      "level": "cấp"
     }
   },
   "quick-action": {
@@ -909,6 +933,7 @@
       "search-member": "Tìm kiếm thành viên",
       "select-account_one": "Chọn tài khoản",
       "select-account_other": "Chọn tài khoản",
+      "select-account-hint": "Bạn có thể tìm kiếm người dùng và nhóm, hoặc nhập toàn bộ email để chọn tài khoản dịch vụ hoặc danh tính khối lượng công việc.",
       "select-role_one": "Chọn vai trò",
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
@@ -962,6 +987,7 @@
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
     "sensitive-data": {
+      "never-expires": "Không bao giờ hết hạn",
       "algorithms": {
         "add": "Thêm thuật toán",
         "edit": "Chỉnh sửa thuật toán",

@@ -23,6 +23,8 @@ const pageProps = computed(() => {
   return Object.keys(a).length > 0 ? { ...a } : undefined;
 });
 
+let currentPage = "";
+
 async function render() {
   if (!container.value) return;
   const [{ mountReactPage, updateReactPage }, i18nModule] = await Promise.all([
@@ -32,11 +34,18 @@ async function render() {
   if (i18nModule.default.language !== locale.value) {
     await i18nModule.default.changeLanguage(locale.value);
   }
+  // When the page component changes, unmount old root and create a fresh one
+  // to avoid stale React state from the previous page.
+  if (root && currentPage !== props.page) {
+    root.unmount();
+    root = null;
+  }
   if (!root) {
     root = await mountReactPage(container.value, props.page, pageProps.value);
   } else {
     await updateReactPage(root, props.page, pageProps.value);
   }
+  currentPage = props.page;
 }
 
 onMounted(() => render());
