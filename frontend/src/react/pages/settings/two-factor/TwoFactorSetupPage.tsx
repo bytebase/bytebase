@@ -42,28 +42,33 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Keep a ref to currentUser so the interval callback always reads fresh state
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+
+  const stopCountdown = useCallback(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  }, []);
 
   const updateCountdown = useCallback(() => {
-    if (!currentUser.tempOtpSecretCreatedTime) {
+    const cu = currentUserRef.current;
+    if (!cu.tempOtpSecretCreatedTime) {
       setIsExpired(true);
       setTimeRemaining("0:00");
       return;
     }
 
-    const createdAt =
-      Number(currentUser.tempOtpSecretCreatedTime.seconds) * 1000;
-    const now = Date.now();
-    const elapsed = now - createdAt;
-    const remaining = MFA_TEMP_SECRET_EXPIRATION - elapsed;
+    const createdAt = Number(cu.tempOtpSecretCreatedTime.seconds) * 1000;
+    const remaining = MFA_TEMP_SECRET_EXPIRATION - (Date.now() - createdAt);
 
     if (remaining <= 0) {
       setIsExpired(true);
       setTimeRemaining("0:00");
       setIsExpiringSoon(false);
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-        countdownRef.current = null;
-      }
+      stopCountdown();
     } else {
       setIsExpired(false);
       const minutes = Math.floor(remaining / 60000);
@@ -71,15 +76,13 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, "0")}`);
       setIsExpiringSoon(remaining < 60000);
     }
-  }, [currentUser.tempOtpSecretCreatedTime]);
+  }, [stopCountdown]);
 
   const startCountdown = useCallback(() => {
     updateCountdown();
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-    }
+    stopCountdown();
     countdownRef.current = setInterval(updateCountdown, 1000);
-  }, [updateCountdown]);
+  }, [updateCountdown, stopCountdown]);
 
   const regenerateTempMfaSecret = useCallback(async () => {
     await userStore.updateUser(
@@ -100,13 +103,8 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     regenerateTempMfaSecret().then(() => {
       startCountdown();
     });
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-        countdownRef.current = null;
-      }
-    };
-  }, []);
+    return stopCountdown;
+  }, [regenerateTempMfaSecret, startCountdown, stopCountdown]);
 
   const otpauthUrl = `otpauth://totp/${ISSUER_NAME}:${currentUser.email}?algorithm=SHA1&digits=${DIGITS}&issuer=${ISSUER_NAME}&period=30&secret=${currentUser.tempOtpSecret}`;
 

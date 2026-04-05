@@ -184,23 +184,9 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     }
   }, [principalEmail]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.isComposing) return;
-      if (editing) {
-        if (e.code === "Escape") {
-          cancelEdit();
-        } else if (e.code === "Enter" && e.metaKey) {
-          if (allowSaveEdit) {
-            saveEdit();
-          }
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [editing, allowSaveEdit]);
+  // Keyboard shortcuts — refs are assigned after callbacks are defined below
+  const saveEditRef = useRef<() => void>(() => {});
+  const cancelEditRef = useRef<() => void>(() => {});
 
   // Route change guard
   useEffect(() => {
@@ -328,6 +314,27 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
       });
     }
   }, [editingUser, user, isSelf, principalEmail, t]);
+
+  // Assign refs for keyboard shortcuts now that callbacks are defined
+  saveEditRef.current = saveEdit;
+  cancelEditRef.current = cancelEdit;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.isComposing) return;
+      if (editing) {
+        if (e.code === "Escape") {
+          cancelEditRef.current();
+        } else if (e.code === "Enter" && e.metaKey) {
+          if (allowSaveEdit) {
+            saveEditRef.current();
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [editing, allowSaveEdit]);
 
   const enable2FA = useCallback(() => {
     if (!has2FAFeature) {

@@ -194,7 +194,8 @@
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
-    "you": "bạn"
+    "you": "bạn",
+    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +)."
   },
   "create-db": {
     "cluster": "Cụm",
@@ -1291,7 +1292,6 @@
     "messages": {
       "2fa-disabled": "Xác thực hai yếu tố bị tắt.",
       "2fa-enabled": "Xác thực hai yếu tố được bật.",
-      "2fa-required": "Xác thực hai yếu tố là bắt buộc trong không gian làm việc của bạn. Vui lòng bật nó trước khi bạn có thể tiếp tục.",
       "cannot-disable": "Bạn không thể tắt xác thực hai yếu tố vì quản trị viên của bạn yêu cầu nó trong không gian làm việc.",
       "recovery-codes-regenerated": "Mã khôi phục được tạo lại."
     },

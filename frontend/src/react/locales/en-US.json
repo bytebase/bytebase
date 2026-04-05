@@ -194,7 +194,8 @@
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
-    "you": "you"
+    "you": "you",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +)."
   },
   "create-db": {
     "cluster": "Cluster",
@@ -1291,7 +1292,6 @@
     "messages": {
       "2fa-disabled": "Two-factor authentication is disabled.",
       "2fa-enabled": "Two-factor authentication is enabled.",
-      "2fa-required": "Two-factor authentication is required in your workspace. Please enable it before you can continue.",
       "cannot-disable": "You cannot disable two-factor authentication because your admin requires it in the workspace.",
       "recovery-codes-regenerated": "Recovery codes are regenerated."
     },

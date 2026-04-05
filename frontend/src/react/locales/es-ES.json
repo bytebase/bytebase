@@ -194,7 +194,8 @@
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
-    "you": "tu"
+    "you": "tu",
+    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +)."
   },
   "create-db": {
     "cluster": "Clúster",
@@ -1291,7 +1292,6 @@
     "messages": {
       "2fa-disabled": "La autenticación de dos factores está desactivada.",
       "2fa-enabled": "La autenticación de dos factores está activada.",
-      "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
       "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo.",
       "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado."
     },

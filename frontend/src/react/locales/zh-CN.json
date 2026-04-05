@@ -194,7 +194,8 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您"
+    "you": "您",
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。"
   },
   "create-db": {
     "cluster": "集群",
@@ -1291,7 +1292,6 @@
     "messages": {
       "2fa-disabled": "双重认证禁用成功",
       "2fa-enabled": "双重认证开启成功",
-      "2fa-required": "您的管理员要求所有用户配置双重认证。请先配置双重认证，才能继续使用。",
       "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。",
       "recovery-codes-regenerated": "恢复码已经重新生成"
     },
