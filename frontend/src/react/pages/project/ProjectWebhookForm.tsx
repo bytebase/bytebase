@@ -106,10 +106,17 @@ export function ProjectWebhookForm({
   }, [imSetting, selectedWebhook]);
 
   const isPowerAutomateURL = useMemo(() => {
-    const url = state.url.toLowerCase();
-    return (
-      url.includes(".powerplatform.com") || url.includes(".logic.azure.com")
-    );
+    try {
+      const hostname = new URL(state.url).hostname.toLowerCase();
+      return (
+        hostname.endsWith(".powerplatform.com") ||
+        hostname === "powerplatform.com" ||
+        hostname.endsWith(".logic.azure.com") ||
+        hostname === "logic.azure.com"
+      );
+    } catch {
+      return false;
+    }
   }, [state.url]);
 
   const webhookSupportDirectMessage = useMemo(

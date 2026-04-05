@@ -181,15 +181,7 @@
     "total": "Total",
     "selected": "selected",
     "items": "items",
-    "deselect-all": "Deselect all",
-    "webhooks": "Webhooks",
-    "slack": "Slack",
-    "discord": "Discord",
-    "teams": "Teams",
-    "dingtalk": "DingTalk",
-    "feishu": "Feishu",
-    "lark": "Lark",
-    "wecom": "WeCom"
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -500,7 +492,6 @@
       "success-tested-prompt": "Test webhook event OK.",
       "fail-tested-title": "Test webhook event failed.",
       "add-a-webhook": "Add a webhook",
-      "create-webhook": "Create webhook",
       "destination": "Destination",
       "webhook-url": "Webhook URL",
       "triggering-activity": "Triggering activities",
@@ -518,33 +509,7 @@
       "enable-direct-messages": "Enable direct messages",
       "direct-messages-description": "Once enabled, Bytebase will send following events as direct messages to the related users (matched by email):",
       "direct-messages-warning": "You need to configure IM integration to make it work.",
-      "activity-support-direct-message": "Support send direct messages to related users",
-      "activity-item": {
-        "issue-creation": {
-          "title": "Issue creation",
-          "label": "When new issue has been created"
-        },
-        "issue-approval-notify": {
-          "title": "Issue approval needed",
-          "label": "When issue is pending approval"
-        },
-        "issue-sent-back": {
-          "title": "Issue sent back",
-          "label": "When issue is sent back by an approver"
-        },
-        "issue-approved": {
-          "title": "Issue approved",
-          "label": "Notify when all approval steps are completed"
-        },
-        "pipeline-failed": {
-          "title": "Pipeline failed",
-          "label": "When pipeline tasks fail"
-        },
-        "pipeline-completed": {
-          "title": "Pipeline completed",
-          "label": "When pipeline completes successfully"
-        }
-      }
+      "activity-support-direct-message": "Support send direct messages to related users"
     }
   },
   "quick-action": {

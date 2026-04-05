@@ -181,15 +181,7 @@
     "total": "Total",
     "selected": "selected",
     "items": "items",
-    "deselect-all": "Deselect all",
-    "webhooks": "Webhooks",
-    "slack": "Slack",
-    "discord": "Discord",
-    "teams": "Teams",
-    "dingtalk": "DingTalk",
-    "feishu": "Feishu",
-    "lark": "Lark",
-    "wecom": "WeCom"
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "集まる",
@@ -500,7 +492,6 @@
       "success-tested-prompt": "Webhook イベントのテストが成功しました。",
       "fail-tested-title": "Webhook イベントのテストに失敗しました。",
       "add-a-webhook": "Webhook を追加する",
-      "create-webhook": "Webhook の作成",
       "destination": "外部アプリケーション",
       "webhook-url": "Webhook URL",
       "triggering-activity": "トリガーイベント",
@@ -518,33 +509,7 @@
       "enable-direct-messages": "プライベートメッセージ通知を有効にする",
       "direct-messages-description": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクトメッセージを送信します。サポートのみ：",
       "direct-messages-warning": "これを機能させるには、IM 統合を設定する必要があります。",
-      "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート",
-      "activity-item": {
-        "issue-creation": {
-          "title": "イシューの作成",
-          "label": "新しいイシューが作成されたとき"
-        },
-        "issue-approval-notify": {
-          "title": "イシューは承認待ちです",
-          "label": "イシューに承認が必要な場合"
-        },
-        "issue-sent-back": {
-          "title": "イシューが差し戻されました",
-          "label": "承認者がイシューを差し戻したとき"
-        },
-        "issue-approved": {
-          "title": "イシューが承認されました",
-          "label": "すべての承認ステップが完了したとき"
-        },
-        "pipeline-failed": {
-          "title": "パイプラインが失敗しました",
-          "label": "パイプラインタスクが失敗したとき"
-        },
-        "pipeline-completed": {
-          "title": "パイプラインが完了しました",
-          "label": "パイプラインが正常に完了したとき"
-        }
-      }
+      "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート"
     }
   },
   "quick-action": {

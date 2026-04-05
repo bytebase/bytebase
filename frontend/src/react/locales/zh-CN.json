@@ -181,15 +181,7 @@
     "total": "Total",
     "selected": "selected",
     "items": "items",
-    "deselect-all": "Deselect all",
-    "webhooks": "Webhooks",
-    "slack": "Slack",
-    "discord": "Discord",
-    "teams": "Teams",
-    "dingtalk": "DingTalk",
-    "feishu": "飞书",
-    "lark": "Lark",
-    "wecom": "企业微信"
+    "deselect-all": "Deselect all"
   },
   "create-db": {
     "cluster": "集群",
@@ -500,7 +492,6 @@
       "success-tested-prompt": "测试 webhook 事件成功.",
       "fail-tested-title": "测试 webhook 事件失败.",
       "add-a-webhook": "添加 webhook",
-      "create-webhook": "创建 webhook",
       "destination": "外部应用",
       "webhook-url": "Webhook URL",
       "triggering-activity": "触发事件",
@@ -518,33 +509,7 @@
       "enable-direct-messages": "启用私信通知",
       "direct-messages-description": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：",
       "direct-messages-warning": "您需要配置 IM 集成才能使其正常工作。",
-      "activity-support-direct-message": "支持向相关用户发送私信通知",
-      "activity-item": {
-        "issue-creation": {
-          "title": "创建工单",
-          "label": "当一个新的工单被创建"
-        },
-        "issue-approval-notify": {
-          "title": "工单待审批",
-          "label": "当工单需要审批"
-        },
-        "issue-sent-back": {
-          "title": "工单被退回",
-          "label": "当工单被审批人退回"
-        },
-        "issue-approved": {
-          "title": "工单审批通过",
-          "label": "当所有审批步骤完成时通知"
-        },
-        "pipeline-failed": {
-          "title": "流水线失败",
-          "label": "当流水线任务失败"
-        },
-        "pipeline-completed": {
-          "title": "流水线完成",
-          "label": "当流水线成功完成"
-        }
-      }
+      "activity-support-direct-message": "支持向相关用户发送私信通知"
     }
   },
   "quick-action": {

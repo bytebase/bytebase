@@ -21,6 +21,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Webhook } from "@/types/proto-es/v1/project_service_pb";
 import { Activity_Type } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectWebhookID, hasProjectPermissionV2 } from "@/utils";
@@ -35,11 +36,11 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
 
   const [deleteTarget, setDeleteTarget] = useState<Webhook | null>(null);
 
-  const allowEdit = useMemo(
-    () =>
-      project ? hasProjectPermissionV2(project, "bb.projects.update") : false,
-    [project]
-  );
+  const allowEdit = useMemo(() => {
+    if (!project) return false;
+    if (project.state === State.DELETED) return false;
+    return hasProjectPermissionV2(project, "bb.projects.update");
+  }, [project]);
 
   const webhooks = useMemo(() => project?.webhooks ?? [], [project]);
 
@@ -248,7 +249,13 @@ function ActionDropdown({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div
+            className="fixed inset-0 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+          />
           <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded shadow-md min-w-[100px]">
             <button
               type="button"
