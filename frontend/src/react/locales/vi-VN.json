@@ -485,7 +485,6 @@
     },
     "filter-projects": "Lọc dự án",
     "members": {
-      "add-more": "Add more",
       "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
