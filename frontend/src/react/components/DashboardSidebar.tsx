@@ -317,33 +317,35 @@ export function DashboardSidebar() {
 
   const expandForActiveRoute = useCallback(
     (items: SidebarItem[]) => {
-      const next = new Set(expandedSet);
+      setExpandedSet((prev) => {
+        const next = new Set(prev);
 
-      // Remove previous auto-expansions
-      for (const key of autoExpandedRef.current) {
-        next.delete(key);
-      }
-      autoExpandedRef.current.clear();
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const key = `${i}`;
-        if (!item.children || item.children.length === 0) continue;
-        if (manualToggledRef.current.has(key)) continue;
-        if (item.expand) {
-          next.add(key);
-          continue;
+        // Remove previous auto-expansions
+        for (const key of autoExpandedRef.current) {
+          next.delete(key);
         }
-        const hasActiveChild = item.children.some(
-          (child) => getItemClass(child, currentRouteName).length > 0
-        );
-        if (hasActiveChild && !next.has(key)) {
-          next.add(key);
-          autoExpandedRef.current.add(key);
-        }
-      }
+        autoExpandedRef.current.clear();
 
-      setExpandedSet(next);
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const key = `${i}`;
+          if (!item.children || item.children.length === 0) continue;
+          if (manualToggledRef.current.has(key)) continue;
+          if (item.expand) {
+            next.add(key);
+            continue;
+          }
+          const hasActiveChild = item.children.some(
+            (child) => getItemClass(child, currentRouteName).length > 0
+          );
+          if (hasActiveChild && !next.has(key)) {
+            next.add(key);
+            autoExpandedRef.current.add(key);
+          }
+        }
+
+        return next;
+      });
     },
     [currentRouteName]
   );

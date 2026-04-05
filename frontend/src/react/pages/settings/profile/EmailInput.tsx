@@ -64,15 +64,6 @@ export function EmailInput({
   );
   const [fullValue, setFullValue] = useState(value);
 
-  // Ensure selectedDomain is valid when options change
-  useEffect(() => {
-    if (domainSelectOptions.length > 0) {
-      if (!domainSelectOptions.find((o) => o.value === selectedDomain)) {
-        setSelectedDomain(domainSelectOptions[0].value);
-      }
-    }
-  }, [domainSelectOptions, selectedDomain]);
-
   // Emit the composed email whenever parts change
   const emitEmail = useCallback(
     (lp: string, dom: string, full: string) => {
@@ -84,6 +75,17 @@ export function EmailInput({
     },
     [enforceDomain, onChange]
   );
+
+  // Ensure selectedDomain is valid when options change, and sync parent
+  useEffect(() => {
+    if (domainSelectOptions.length > 0) {
+      if (!domainSelectOptions.find((o) => o.value === selectedDomain)) {
+        const newDomain = domainSelectOptions[0].value;
+        setSelectedDomain(newDomain);
+        emitEmail(localPart, newDomain, fullValue);
+      }
+    }
+  }, [domainSelectOptions, selectedDomain, localPart, fullValue, emitEmail]);
 
   const handleLocalPartChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

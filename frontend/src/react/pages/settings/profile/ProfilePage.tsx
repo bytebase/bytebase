@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   getAvatarColor,
@@ -142,6 +143,10 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
 
   const editNameRef = useRef<HTMLInputElement>(null);
+  const ellipsisMenuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(ellipsisMenuRef, showEllipsisMenu, () =>
+    setShowEllipsisMenu(false)
+  );
 
   // --- Password validity ---
   const passwordErrors = useMemo(() => {
@@ -195,6 +200,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (shouldGuard) {
         e.preventDefault();
+        e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -603,7 +609,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                     {t("two-factor.recovery-codes.self")}
                   </span>
                   {!showRegenerateView && (
-                    <div className="relative">
+                    <div className="relative" ref={ellipsisMenuRef}>
                       <button
                         type="button"
                         className="p-1 rounded hover:bg-control-bg"
