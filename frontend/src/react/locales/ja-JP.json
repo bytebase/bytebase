@@ -195,7 +195,11 @@
     "view-details": "詳細を表示",
     "warning": "警告する",
     "you": "あなた",
-    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。"
+    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
+    "issues": "イシュー",
+    "manage": "管理",
+    "setting": "設定",
+    "webhooks": "Webhook"
   },
   "create-db": {
     "cluster": "集まる",
@@ -289,7 +293,10 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する"
+    "unassign-alert-title": "データベースの割り当てを解除する",
+    "sync-schema": {
+      "title": "データベーステーブルの同期"
+    }
   },
   "database-group": {
     "condition": {
@@ -354,7 +361,8 @@
     },
     "workload-identity": {
       "select-placeholder": "ワークロードアイデンティティを選択"
-    }
+    },
+    "self": "GitOps"
   },
   "identity-provider": {
     "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
@@ -575,6 +583,9 @@
       "test-webhook": "Webhook のテスト",
       "triggering-activity": "トリガーイベント",
       "webhook-url": "Webhook URL"
+    },
+    "masking-exemption": {
+      "self": "マスキング免除"
     }
   },
   "quick-action": {
@@ -1146,7 +1157,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQLエディタ",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "access-grants": "Access Grants"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1329,5 +1341,14 @@
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
     }
+  },
+  "export-center": {
+    "data-export": "データエクスポート"
+  },
+  "plan": {
+    "plans": "プラン"
+  },
+  "release": {
+    "releases": "リリース"
   }
 }
