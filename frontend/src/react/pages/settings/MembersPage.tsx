@@ -58,7 +58,6 @@ import {
   ALL_USERS_USER_EMAIL,
   type DatabaseResource,
   isDefaultProject,
-  PRESET_WORKSPACE_ROLES,
   userBindingPrefix,
 } from "@/types";
 import {
@@ -86,6 +85,8 @@ import {
 import { AccountMultiSelect } from "./shared/AccountMultiSelect";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 import { UserAvatar } from "./shared/UserAvatar";
+
+const EMPTY_ROLE_SET = new Set<string>();
 
 // ============================================================
 // MemberTable (view by members)
@@ -1098,45 +1099,17 @@ function EditMemberRoleDrawer({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
 
-  // Project create mode: manage multiple role binding forms
-  const [forms, setForms] = useState<RoleBindingFormState[]>(() => [
-    {
-      id: crypto.randomUUID(),
-      role: PresetRoleType.PROJECT_VIEWER,
-      reason: "",
-      expirationDays: 7,
-      expirationTimestampInMS: computeExpirationTimestamp(7),
-      databaseMode: "ALL",
-      databaseResources: [],
-      celExpression: "",
-      environments: [],
-    },
-  ]);
-
-  const updateForm = (id: string, updated: RoleBindingFormState) => {
-    setForms((prev) => prev.map((f) => (f.id === id ? updated : f)));
-  };
-
-  const removeForm = (id: string) => {
-    setForms((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const addForm = () => {
-    setForms((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        role: "",
-        reason: "",
-        expirationDays: 7,
-        expirationTimestampInMS: computeExpirationTimestamp(7),
-        databaseMode: "ALL",
-        databaseResources: [],
-        celExpression: "",
-        environments: [],
-      },
-    ]);
-  };
+  const [form, setForm] = useState<RoleBindingFormState>(() => ({
+    id: crypto.randomUUID(),
+    role: "",
+    reason: "",
+    expirationDays: 7,
+    expirationTimestampInMS: computeExpirationTimestamp(7),
+    databaseMode: "ALL",
+    databaseResources: [],
+    celExpression: "",
+    environments: [],
+  }));
 
   useEscapeKey(true, onClose);
 
@@ -1256,9 +1229,9 @@ function EditMemberRoleDrawer({
             }
           }
         } else {
-          // Create mode with role binding forms
-          for (const form of forms) {
-            if (!form.role) continue;
+          // Create mode with role binding form
+          {
+            if (!form.role) throw new Error("role is required");
             const databaseResources =
               form.databaseMode === "SELECT" &&
               form.databaseResources.length > 0
@@ -1426,16 +1399,12 @@ function EditMemberRoleDrawer({
 
   const allowConfirm = isProjectCreateMode
     ? selectedBindings.length > 0 &&
-      forms.every((f) => {
-        if (!f.role) return false;
-        if (
-          roleHasDatabaseLimitation(f.role) &&
-          f.databaseMode === "SELECT" &&
-          f.databaseResources.length === 0
-        )
-          return false;
-        return true;
-      })
+      !!form.role &&
+      !(
+        roleHasDatabaseLimitation(form.role) &&
+        form.databaseMode === "SELECT" &&
+        form.databaseResources.length === 0
+      )
     : isEditMode
       ? selectedRoles.length > 0
       : selectedBindings.length > 0 && selectedRoles.length > 0;
@@ -1676,24 +1645,13 @@ function EditMemberRoleDrawer({
             {/* Roles — project create mode uses rich form, otherwise simple multi-select */}
             {isProjectCreateMode ? (
               <div className="flex flex-col gap-y-4">
-                {forms.map((form) => (
-                  <ProjectRoleBindingForm
-                    key={form.id}
-                    form={form}
-                    onChange={(updated) => updateForm(form.id, updated)}
-                    onRemove={() => removeForm(form.id)}
-                    canRemove={forms.length > 1}
-                    projectName={projectName}
-                  />
-                ))}
-                <Button
-                  variant="outline"
-                  className="self-start"
-                  onClick={addForm}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {t("project.members.add-more")}
-                </Button>
+                <ProjectRoleBindingForm
+                  form={form}
+                  onChange={setForm}
+                  onRemove={() => {}}
+                  canRemove={false}
+                  projectName={projectName}
+                />
               </div>
             ) : (
               <div className="flex flex-col gap-y-2">
@@ -1780,19 +1738,11 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       : undefined
   );
 
-  const workspaceRoles = useMemo(() => new Set(PRESET_WORKSPACE_ROLES), []);
-
   const memberBindings = useVueState(() =>
     getMemberBindings({
       policies:
         projectName && projectIamPolicy
-          ? [
-              {
-                level: "WORKSPACE" as const,
-                policy: workspaceStore.workspaceIamPolicy,
-              },
-              { level: "PROJECT" as const, policy: projectIamPolicy },
-            ]
+          ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
           : [
               {
                 level: "WORKSPACE" as const,
@@ -1800,7 +1750,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
               },
             ],
       searchText: memberSearchText,
-      ignoreRoles: projectName ? workspaceRoles : new Set([]),
+      ignoreRoles: EMPTY_ROLE_SET,
     })
   );
 

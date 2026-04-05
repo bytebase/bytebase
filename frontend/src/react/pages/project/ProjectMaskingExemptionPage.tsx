@@ -111,6 +111,16 @@ export function ProjectMaskingExemptionPage({
         : false,
     [project]
   );
+  const hasCreatePermission = useMemo(
+    () =>
+      project
+        ? hasProjectPermissionV2(project, "bb.policies.createMaskingExemptionPolicy") &&
+          hasProjectPermissionV2(project, "bb.policies.updateMaskingExemptionPolicy") &&
+          hasProjectPermissionV2(project, "bb.databases.list") &&
+          hasProjectPermissionV2(project, "bb.databaseCatalogs.get")
+        : false,
+    [project]
+  );
   const hasSensitiveDataFeature = useVueState(() =>
     hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
@@ -379,7 +389,7 @@ export function ProjectMaskingExemptionPage({
             scopeOptions={scopeOptions}
             placeholder={t("issue.advanced-search.filter")}
           />
-          <Button onClick={handleGrantClick} disabled={!hasPermission}>
+          <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
             <ShieldCheck className="w-4 h-4" />
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATA_MASKING}
