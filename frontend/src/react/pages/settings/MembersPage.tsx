@@ -60,11 +60,7 @@ import {
   isDefaultProject,
   userBindingPrefix,
 } from "@/types";
-import {
-  PRESET_PROJECT_ROLES,
-  PRESET_ROLES,
-  PresetRoleType,
-} from "@/types/iam";
+import { PRESET_PROJECT_ROLES, PRESET_ROLES } from "@/types/iam";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";

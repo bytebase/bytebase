@@ -1980,7 +1980,6 @@
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "never-expires": "Never",
       "role-never-expires": "This role never expires.",
-      "add-more": "Add more",
       "workspace-level-roles": "Workspace level roles",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
       "allow-ddl": "Allow running DDL/DML statements in the selected environments."

@@ -1980,7 +1980,6 @@
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "never-expires": "有効期限が切れることはありません",
       "role-never-expires": "このロールには有効期限はありません。",
-      "add-more": "さらに追加",
       "workspace-level-roles": "ワークスペースレベルのロール",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
       "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。"
