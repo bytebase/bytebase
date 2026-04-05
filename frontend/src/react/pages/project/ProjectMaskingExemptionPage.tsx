@@ -1018,6 +1018,9 @@ function ExemptionDetailPanel({
         <div className="flex items-center gap-x-2">
           {member.type === "group" ? (
             <span className="font-medium">{group?.title ?? member.member}</span>
+          ) : member.member.startsWith(serviceAccountBindingPrefix) ||
+            member.member.startsWith(workloadIdentityBindingPrefix) ? (
+            <span className="font-medium">{userEmail}</span>
           ) : (
             <a
               className="normal-link font-medium"
