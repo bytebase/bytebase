@@ -78,7 +78,11 @@ import {
   hasWorkspacePermissionV2,
   sortRoles,
 } from "@/utils";
-import { buildConditionExpr, convertFromExpr } from "@/utils/issue/cel";
+import {
+  buildConditionExpr,
+  convertFromExpr,
+  stringifyConditionExpression,
+} from "@/utils/issue/cel";
 import { AccountMultiSelect } from "./shared/AccountMultiSelect";
 import { RoleMultiSelect } from "./shared/RoleMultiSelect";
 import { UserAvatar } from "./shared/UserAvatar";
@@ -1201,7 +1205,13 @@ function EditMemberRoleDrawer({
         style: "SUCCESS",
         title: t("common.deleted"),
       });
-      onClose();
+      // Close the drawer only when the member has no remaining roles.
+      const remaining = policy.bindings.some((b) =>
+        b.members.includes(member.binding)
+      );
+      if (!remaining) {
+        onClose();
+      }
     } catch {
       // error shown by store
     } finally {
@@ -1264,8 +1274,15 @@ function EditMemberRoleDrawer({
               environments !== undefined ||
               (form.databaseMode === "EXPRESSION" && form.celExpression !== "");
             if (form.databaseMode === "EXPRESSION" && form.celExpression) {
+              const extraParts = stringifyConditionExpression({
+                expirationTimestampInMS: form.expirationTimestampInMS,
+                environments,
+              });
+              const fullExpression = extraParts
+                ? `(${form.celExpression}) && ${extraParts}`
+                : form.celExpression;
               const condition = create(ConditionExprSchema, {
-                expression: form.celExpression,
+                expression: fullExpression,
                 description: form.reason,
               });
               const existingConditioned = policy.bindings.find(
