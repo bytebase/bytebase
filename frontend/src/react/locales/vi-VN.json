@@ -61,12 +61,16 @@
     }
   },
   "common": {
+    "activated": "Đã kích hoạt",
+    "active": "Hoạt động",
     "add": "Thêm",
     "add-permissions": "Thêm quyền",
     "added": "Đã thêm",
     "address": "Địa chỉ",
     "all": "Tất cả",
     "archive": "Lưu trữ",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
     "archived": "Đã lưu trữ",
     "back": "Quay lại",
     "cancel": "Hủy",
@@ -78,17 +82,26 @@
     "confirm": "Xác nhận",
     "confirm-and-add": "Confirm and add",
     "confirm-and-update": "Xác nhận và Cập nhật",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
     "copied": "Đã sao chép",
     "copy": "Sao chép",
     "copy-failed": "Copy failed",
     "create": "Tạo",
     "created": "Đã tạo",
+    "created-at": "Thời gian tạo",
+    "creator": "Người tạo",
+    "danger-zone": "Danger Zone",
     "database": "Cơ sở dữ liệu",
+    "database-group": "Nhóm cơ sở dữ liệu",
+    "databases": "Cơ sở dữ liệu",
     "default": "Mặc định",
     "delete": "Xóa",
     "delete-resource": "Delete {{type}}",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Đã xóa",
     "description": "Mô tả",
+    "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "Hủy thay đổi",
     "edit": "Chỉnh sửa",
@@ -98,6 +111,7 @@
     "enabled": "Enabled",
     "environment": "Môi trường",
     "environment-name": "Tên môi trường",
+    "environments": "Môi trường",
     "expiration": "Expiration",
     "export": "Xuất",
     "failed": "Thất bại",
@@ -105,6 +119,7 @@
       "size-limit": "Kích thước tệp phải nhỏ hơn {{size}} MiB",
       "type-limit": "Chỉ hỗ trợ tệp {{extension}}"
     },
+    "filter": "Filter",
     "filter-by-name": "Lọc theo tên",
     "from": "Từ",
     "general": "Chung",
@@ -112,12 +127,14 @@
     "id": "ID",
     "instance": "Phiên bản",
     "is-required": "is required",
+    "items": "items",
     "key": "Khóa",
     "labels": "Nhãn",
     "learn-more": "Tìm hiểu thêm",
     "leave-without-saving": "Thoát mà không lưu?",
     "load-more": "Tải thêm",
     "loading": "Đang tải",
+    "manually-select": "Manually select",
     "members_one": "Thành viên",
     "members_other": "Thành viên",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
@@ -126,20 +143,22 @@
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
     "ok": "OK",
-    "optional": "Optional",
     "operations": "Các thao tác",
+    "optional": "Optional",
+    "pending": "Đang chờ",
     "permissions": "Quyền",
     "previous": "Previous",
     "project": "Dự án",
     "reason": "Reason",
     "release": "Phiên bản",
     "reorder": "Sắp xếp lại",
-    "resource": "Resource",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "resource": "Resource",
     "restore": "Khôi phục",
     "restored": "Restored",
     "revert": "Hoàn tác",
+    "revoked": "Đã thu hồi",
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
     "schema": "Schema",
@@ -147,13 +166,16 @@
     "search-for-more": "Tìm kiếm thêm",
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
+    "selected": "selected",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "state": "Trạng thái",
+    "statement": "Câu lệnh",
     "status": "Trạng thái",
     "system": "Hệ thống",
     "table": "Bảng",
     "title": "Tiêu đề",
     "to": "Đến",
+    "total": "Total",
     "total-n-items": "Tổng {{n}} mục",
     "type": "Loại",
     "unassigned": "Chưa gán",
@@ -166,22 +188,7 @@
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
-    "you": "bạn",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "databases": "Cơ sở dữ liệu",
-    "danger-zone": "Danger Zone",
-    "archive-resource": "Archive {{type}}",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "confirm-archive": "Archive Resource?",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "confirm-delete": "Delete Resource?",
-    "environments": "Môi trường",
-    "manually-select": "Manually select",
-    "filter": "Filter",
-    "total": "Total",
-    "selected": "selected",
-    "items": "items",
-    "deselect-all": "Deselect all"
+    "you": "bạn"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -254,6 +261,7 @@
     }
   },
   "database": {
+    "change-database": "Thay đổi cơ sở dữ liệu",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
@@ -262,18 +270,28 @@
     "engine": "Engine",
     "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
+    "mixed-label-values": "giá trị hỗn hợp",
+    "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
+    "select": "Chọn cơ sở dữ liệu",
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-schema-button": "Đồng bộ lược đồ",
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
-    "change-database": "Thay đổi cơ sở dữ liệu",
-    "mixed-label-values": "giá trị hỗn hợp",
-    "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "select": "Chọn cơ sở dữ liệu"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
+  },
+  "database-group": {
+    "condition": {
+      "self": "Condition"
+    },
+    "create": "New database group",
+    "delete-group": "Delete the database group {{name}}",
+    "matched-database": "Matched database",
+    "no-matched-databases": "No matched databases",
+    "select": "Select database group",
+    "unmatched-database": "Unmatched database"
   },
   "db": {
     "character-set": "Bộ ký tự",
@@ -288,11 +306,46 @@
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",
-    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'.",
-    "select": "Chọn môi trường"
+    "select": "Chọn môi trường",
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
   },
   "error-page": {
     "not-found": "Không tìm thấy"
+  },
+  "gitops": {
+    "checklist": {
+      "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
+      "external-url": "URL bên ngoài",
+      "target-databases": "Cơ sở dữ liệu đích",
+      "title": "Kiểm tra trước khi bắt đầu",
+      "wif-notice-suffix": "để thiết lập GitOps bằng tài khoản dịch vụ.",
+      "wif-notice-text": "Workload Identity Federation hiện chỉ hỗ trợ GitHub và GitLab. Đối với các VCS khác, vui lòng tham khảo hướng dẫn cho",
+      "workload-identity": "Workload Identity"
+    },
+    "documentation": "Xem tài liệu",
+    "overview": {
+      "description": "Bytebase GitOps cho phép bạn quản lý Database as Code bằng cách tích hợp các thay đổi schema cơ sở dữ liệu vào pipeline CI/CD.",
+      "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
+      "title": "GitOps là gì"
+    },
+    "test-setup": {
+      "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
+      "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
+      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
+      "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
+      "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
+      "title": "Thử nghiệm migration GitOps đầu tiên"
+    },
+    "workflow": {
+      "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
+      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
+      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {provider}.",
+      "self-hosted-runner": "Runner tự lưu trữ",
+      "title": "Tạo tệp workflow"
+    },
+    "workload-identity": {
+      "select-placeholder": "Chọn một workload identity"
+    }
   },
   "identity-provider": {
     "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
@@ -338,12 +391,15 @@
     "syncing": "Đang đồng bộ hóa ..."
   },
   "issue": {
-    "labels": "Nhãn vấn đề"
+    "labels": "Nhãn vấn đề",
+    "advanced-search": {
+      "filter": "Bộ lọc"
+    }
   },
   "label": {
     "error": {
-      "key-necessary": "Khóa là bắt buộc",
       "key-duplicated": "Khóa trùng lặp",
+      "key-necessary": "Khóa là bắt buộc",
       "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {{length}} ký tự"
     }
   },
@@ -398,118 +454,118 @@
       "success-prompt": "Đã tạo thành công dự án {{name}}."
     },
     "filter-projects": "Lọc dự án",
-    "table": {
-      "name": "Tên"
+    "members": {
+      "add-more": "Add more",
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
+      "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
+      "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
+      "edit-member": "Chỉnh sửa thành viên - {{member}}",
+      "never-expires": "Never",
+      "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
     "settings": {
-      "success-updated": "Đã cập nhật thành công cài đặt dự án.",
-      "update-failed": "Không cập nhật được cài đặt dự án.",
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
-      "restore": {
-        "title": "Khôi phục dự án",
-        "btn-text": "Khôi phục @.lower:{'common.project'} này"
-      },
-      "project-labels": {
-        "self": "Nhãn dự án",
-        "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)"
-      },
       "issue-related": {
-        "self": "Liên quan đến vấn đề",
-        "labels": {
-          "self": "Nhãn vấn đề",
-          "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
-          "placeholder": "Nhấn Enter để thêm thẻ",
-          "force-issue-labels": {
-            "self": "Yêu cầu nhãn cho tất cả các vấn đề",
-            "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề.",
-            "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
-          }
-        },
-        "enforce-issue-title": {
-          "self": "Yêu cầu tiêu đề thủ công",
-          "description": "Yêu cầu tiêu đề cho vấn đề và kế hoạch được tạo bởi người dùng thay vì tự động tạo."
-        },
-        "enforce-sql-review": {
-          "self": "Bắt buộc đánh giá SQL",
-          "description": "Yêu cầu kiểm tra đánh giá SQL phải vượt qua mà không có lỗi trước khi cho phép tạo vấn đề。"
-        },
-        "allow-self-approval": {
-          "self": "Cho phép tự phê duyệt",
-          "description": "Cho phép người tạo vấn đề phê duyệt vấn đề."
+        "allow-jit": {
+          "description": "Khi được bật, người dùng có thể yêu cầu và sử dụng quyền truy cập tức thời trong Trình soạn thảo SQL.",
+          "self": "Cho phép truy cập tức thời"
         },
         "allow-request-role": {
-          "self": "Cho phép yêu cầu vai trò",
-          "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án"
+          "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án",
+          "self": "Cho phép yêu cầu vai trò"
         },
-        "allow-jit": {
-          "self": "Cho phép truy cập tức thời",
-          "description": "Khi được bật, người dùng có thể yêu cầu và sử dụng quyền truy cập tức thời trong Trình soạn thảo SQL."
-        },
-        "postgres-database-tenant-mode": {
-          "self": "Chế độ đối tượng thuê cơ sở dữ liệu Postgres",
-          "description": "Chế độ đối tượng thuê cho cơ sở dữ liệu Postgres. Nếu bật, vấn đề sẽ được chạy bởi CHỦ SỞ HỮU cơ sở dữ liệu. Nếu không, vấn đề sẽ được chạy bởi người dùng kết nối phiên bản."
-        },
-        "max-retries": {
-          "self": "Số lần thử lại tối đa cho thời gian chờ khóa",
-          "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. \nGiá trị mặc định là 0. Chỉ áp dụng cho Postgres."
-        },
-        "ci-sampling-size": {
-          "self": "Kích thước lấy mẫu dữ liệu CI",
-          "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện."
-        },
-        "parallel_tasks_per_rollout": {
-          "self": "Nhiệm vụ song song cho mỗi lần triển khai",
-          "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
-        },
-        "require-issue-approval": {
-          "self": "Yêu cầu phê duyệt issue trước khi tạo triển khai",
-          "description": "Issue phải được phê duyệt trước khi tạo triển khai."
-        },
-        "require-plan-check-no-error": {
-          "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi tạo triển khai",
-          "description": "Tất cả kiểm tra kế hoạch phải đạt không có lỗi trước khi tạo triển khai."
+        "allow-self-approval": {
+          "description": "Cho phép người tạo vấn đề phê duyệt vấn đề.",
+          "self": "Cho phép tự phê duyệt"
         },
         "approval-flow-configured": "Quy trình phê duyệt đã được cấu hình",
         "approval-flow-fallback": "Đang sử dụng quy tắc phê duyệt mặc định",
         "approval-flow-not-configured": "Chưa cấu hình quy trình phê duyệt",
+        "ci-sampling-size": {
+          "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện.",
+          "self": "Kích thước lấy mẫu dữ liệu CI"
+        },
+        "enforce-issue-title": {
+          "description": "Yêu cầu tiêu đề cho vấn đề và kế hoạch được tạo bởi người dùng thay vì tự động tạo.",
+          "self": "Yêu cầu tiêu đề thủ công"
+        },
+        "enforce-sql-review": {
+          "description": "Yêu cầu kiểm tra đánh giá SQL phải vượt qua mà không có lỗi trước khi cho phép tạo vấn đề。",
+          "self": "Bắt buộc đánh giá SQL"
+        },
+        "labels": {
+          "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
+          "force-issue-labels": {
+            "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề.",
+            "self": "Yêu cầu nhãn cho tất cả các vấn đề",
+            "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
+          },
+          "placeholder": "Nhấn Enter để thêm thẻ",
+          "self": "Nhãn vấn đề"
+        },
+        "max-retries": {
+          "description": "Tối đa nhớ lại số lượng thời gian chờ khóa khi chạy tác vụ. \nGiá trị mặc định là 0. Chỉ áp dụng cho Postgres.",
+          "self": "Số lần thử lại tối đa cho thời gian chờ khóa"
+        },
+        "parallel_tasks_per_rollout": {
+          "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh.",
+          "self": "Nhiệm vụ song song cho mỗi lần triển khai"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "Chế độ đối tượng thuê cho cơ sở dữ liệu Postgres. Nếu bật, vấn đề sẽ được chạy bởi CHỦ SỞ HỮU cơ sở dữ liệu. Nếu không, vấn đề sẽ được chạy bởi người dùng kết nối phiên bản.",
+          "self": "Chế độ đối tượng thuê cơ sở dữ liệu Postgres"
+        },
+        "require-issue-approval": {
+          "description": "Issue phải được phê duyệt trước khi tạo triển khai.",
+          "self": "Yêu cầu phê duyệt issue trước khi tạo triển khai"
+        },
+        "require-plan-check-no-error": {
+          "description": "Tất cả kiểm tra kế hoạch phải đạt không có lỗi trước khi tạo triển khai.",
+          "self": "Yêu cầu kiểm tra kế hoạch phải đạt trước khi tạo triển khai"
+        },
+        "self": "Liên quan đến vấn đề",
         "view-approval-flow": "Xem quy trình phê duyệt"
-      }
+      },
+      "project-labels": {
+        "description": "Tổ chức dự án với nhãn khóa-giá trị (tối đa 64)",
+        "self": "Nhãn dự án"
+      },
+      "restore": {
+        "btn-text": "Khôi phục @.lower:{'common.project'} này",
+        "title": "Khôi phục dự án"
+      },
+      "success-updated": "Đã cập nhật thành công cài đặt dự án.",
+      "update-failed": "Không cập nhật được cài đặt dự án."
     },
-    "members": {
-      "add-more": "Add more",
-      "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
-      "never-expires": "Never",
-      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
-      "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
-      "edit-member": "Chỉnh sửa thành viên - {{member}}",
-      "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
+    "table": {
+      "name": "Tên"
     },
     "webhook": {
-      "success-created-prompt": "Đã tạo thành công webhook {{name}}.",
-      "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
-      "success-deleted-prompt": "Đã xóa thành công webhook {{name}}.",
-      "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
-      "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
       "add-a-webhook": "Thêm một webhook",
-      "destination": "Đích",
-      "webhook-url": "URL Webhook",
-      "triggering-activity": "Hoạt động kích hoạt",
-      "test-webhook": "Kiểm tra Webhook",
       "creation": {
-        "title": "Tạo webhook",
         "desc": "Tạo webhook tương ứng cho kênh {{destination}} nhận tin nhắn.",
+        "title": "Tạo webhook",
         "view-doc": "Xem tài liệu của {{destination}}"
       },
       "deletion": {
         "confirm-title": "Xóa webhook '{{title}}'?"
       },
+      "destination": "Đích",
       "direct-messages": "Tin nhắn trực tiếp",
-      "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
-      "enable-direct-messages": "Bật tin nhắn trực tiếp",
       "direct-messages-description": "Khi được bật, Bytebase sẽ gửi tin nhắn trực tiếp đến người dùng liên quan (được khớp bằng email). Chỉ hỗ trợ:",
+      "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
       "direct-messages-warning": "Bạn cần định cấu hình tích hợp IM để làm cho nó hoạt động.",
-      "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan"
+      "enable-direct-messages": "Bật tin nhắn trực tiếp",
+      "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "success-created-prompt": "Đã tạo thành công webhook {{name}}.",
+      "success-deleted-prompt": "Đã xóa thành công webhook {{name}}.",
+      "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
+      "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
+      "test-webhook": "Kiểm tra Webhook",
+      "triggering-activity": "Hoạt động kích hoạt",
+      "webhook-url": "URL Webhook"
     }
   },
   "quick-action": {
@@ -789,6 +845,7 @@
       "add-user": "Thêm người dùng",
       "add-workload-identity": "Thêm danh tính Workload",
       "all-users": "Tất cả người dùng",
+      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
       "copy-service-key": "Sao chép Khóa Dịch vụ",
       "entra-sync": {
@@ -822,21 +879,20 @@
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
       "inactive-workload-identities": "Danh tính Workload không hoạt động",
+      "reset-service-key": "Đặt lại Khóa Dịch vụ",
+      "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoke-access": "Thu hồi Quyền truy cập",
       "revoke-access-alert": "Bạn có chắc muốn thu hồi quyền truy cập?",
       "revoke-allusers-alert": "Thu hồi \"Tất cả người dùng\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
-      "reset-service-key": "Đặt lại Khóa Dịch vụ",
-      "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoked": "Đã thu hồi",
       "search-member": "Tìm kiếm thành viên",
-      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
       "select-account_one": "Chọn tài khoản",
       "select-account_other": "Chọn tài khoản",
-      "assign-role": "Assign role",
       "select-role_one": "Chọn vai trò",
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
       "service-accounts": "Tài khoản dịch vụ",
+      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
       "table": {
         "account": "Tài khoản",
@@ -972,10 +1028,10 @@
       "mcp": "MCP",
       "members": "Thành viên",
       "members-and-groups": "Thành viên & Nhóm",
+      "security-and-policy": "Bảo mật & Chính sách",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
-      "users-and-groups": "Người dùng & Nhóm",
-      "security-and-policy": "Bảo mật & Chính sách"
+      "users-and-groups": "Người dùng & Nhóm"
     },
     "sso": {
       "create": "Tạo SSO",
@@ -1064,7 +1120,15 @@
     }
   },
   "sql-editor": {
-    "self": "Trình soạn thảo SQL"
+    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
+    "activate-access": "Activate",
+    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "expired": "Expired",
+    "grant-type-unmask": "Unmask",
+    "revoke-access": "Revoke",
+    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "self": "Trình soạn thảo SQL",
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1201,51 +1265,5 @@
   },
   "two-factor": {
     "enabled": "Đã bật 2FA"
-  },
-  "database-group": {
-    "condition": {
-      "self": "Condition"
-    },
-    "create": "New database group",
-    "delete-group": "Delete the database group {{name}}",
-    "matched-database": "Matched database",
-    "no-matched-databases": "No matched databases",
-    "select": "Select database group",
-    "unmatched-database": "Unmatched database"
-  },
-  "gitops": {
-    "checklist": {
-      "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
-      "external-url": "URL bên ngoài",
-      "target-databases": "Cơ sở dữ liệu đích",
-      "title": "Kiểm tra trước khi bắt đầu",
-      "wif-notice-suffix": "để thiết lập GitOps bằng tài khoản dịch vụ.",
-      "wif-notice-text": "Workload Identity Federation hiện chỉ hỗ trợ GitHub và GitLab. Đối với các VCS khác, vui lòng tham khảo hướng dẫn cho",
-      "workload-identity": "Workload Identity"
-    },
-    "documentation": "Xem tài liệu",
-    "overview": {
-      "description": "Bytebase GitOps cho phép bạn quản lý Database as Code bằng cách tích hợp các thay đổi schema cơ sở dữ liệu vào pipeline CI/CD.",
-      "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
-      "title": "GitOps là gì"
-    },
-    "test-setup": {
-      "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
-      "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
-      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
-      "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
-      "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
-      "title": "Thử nghiệm migration GitOps đầu tiên"
-    },
-    "workflow": {
-      "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
-      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {provider}.",
-      "self-hosted-runner": "Runner tự lưu trữ",
-      "title": "Tạo tệp workflow"
-    },
-    "workload-identity": {
-      "select-placeholder": "Chọn một workload identity"
-    }
   }
 }

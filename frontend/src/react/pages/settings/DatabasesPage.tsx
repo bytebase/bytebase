@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -17,6 +18,7 @@ import {
   TransferProjectDrawer,
 } from "@/react/components/database";
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -140,12 +142,8 @@ export function DatabasesPage() {
             keywords: isUnknown
               ? ["unassigned", "none", env.id]
               : [env.id, env.title],
-            render: isUnknown
-              ? () => (
-                  <span className="italic text-control-light">Unassigned</span>
-                )
-              : undefined,
-            custom: isUnknown,
+            custom: true,
+            render: () => <EnvironmentLabel environment={env} />,
           };
         }),
       },
@@ -161,6 +159,17 @@ export function DatabasesPage() {
         options: supportedEngineV1List().map((engine) => ({
           value: Engine[engine],
           keywords: [Engine[engine].toLowerCase(), engineNameV1(engine)],
+          custom: true,
+          render: () => (
+            <span className="inline-flex items-center gap-x-1.5">
+              <img
+                className="h-4 w-4 shrink-0"
+                src={EngineIconPath[engine]}
+                alt=""
+              />
+              <span>{engineNameV1(engine)}</span>
+            </span>
+          ),
         })),
         allowMultiple: true,
       },
