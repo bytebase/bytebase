@@ -1279,7 +1279,7 @@ function EditMemberRoleDrawer({
                 environments,
               });
               const fullExpression = extraParts
-                ? `${form.celExpression} && ${extraParts}`
+                ? `(${form.celExpression}) && ${extraParts}`
                 : form.celExpression;
               const condition = create(ConditionExprSchema, {
                 expression: fullExpression,
