@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   emptySearchParams,
@@ -131,7 +132,13 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
   // Pre-fetch databases for the project to populate scope options
   const [databaseOptions, setDatabaseOptions] = useState<
-    { value: string; label: string }[]
+    {
+      value: string;
+      dbName: string;
+      instanceTitle: string;
+      envId: string;
+      engineIcon: string;
+    }[]
   >([]);
   useEffect(() => {
     let cancelled = false;
@@ -142,7 +149,17 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         setDatabaseOptions(
           result.databases.map((db) => {
             const { database: dbName } = extractDatabaseResourceName(db.name);
-            return { value: db.name, label: dbName };
+            const inst = db.instanceResource;
+            const envId = (db.effectiveEnvironment ?? db.environment ?? "")
+              .split("/")
+              .pop();
+            return {
+              value: db.name,
+              dbName,
+              instanceTitle: inst?.title ?? "",
+              envId: envId ?? "",
+              engineIcon: inst ? (EngineIconPath[inst.engine] ?? "") : "",
+            };
           })
         );
       });
@@ -206,9 +223,20 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         title: t("common.database"),
         options: databaseOptions.map((db) => ({
           value: db.value,
-          keywords: [db.label, db.value],
+          keywords: [db.dbName, db.instanceTitle, db.envId, db.value],
           custom: true,
-          render: () => <span>{db.label}</span>,
+          render: () => (
+            <span className="inline-flex items-center gap-x-1">
+              {db.engineIcon && (
+                <img className="h-4 w-4 shrink-0" src={db.engineIcon} alt="" />
+              )}
+              <span>{db.instanceTitle}</span>
+              <span className="text-control-placeholder">&gt;</span>
+              <span>{db.envId}</span>
+              <span className="text-control-placeholder">&gt;</span>
+              <span>{db.dbName}</span>
+            </span>
+          ),
         })),
       },
       {
