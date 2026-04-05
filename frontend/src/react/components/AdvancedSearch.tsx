@@ -81,6 +81,7 @@ export function AdvancedSearch({
         !containerRef.current.contains(e.target as Node)
       ) {
         setMenuView(undefined);
+        setCurrentScope(undefined);
         setFocusedTagIndex(undefined);
       }
     };
