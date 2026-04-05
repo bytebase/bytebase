@@ -11,6 +11,7 @@ import {
 import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -33,6 +34,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   useActuatorV1Store,
   useProjectV1Store,
@@ -255,6 +257,17 @@ export function ProjectSidebar() {
 
   const projectStore = useProjectV1Store();
 
+  // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
+  const recordVisitRef = useRef<((path: string) => void) | null>(null);
+  useEffect(() => {
+    const scope = effectScope();
+    scope.run(() => {
+      const { record } = useRecentVisit();
+      recordVisitRef.current = record;
+    });
+    return () => scope.stop();
+  }, []);
+
   // Ensure the project is fetched into the store cache.
   // ProjectV1Layout also fetches it, but this guards against race conditions.
   useEffect(() => {
@@ -366,8 +379,9 @@ export function ProjectSidebar() {
         name: path,
         params: { projectId: getProjectName(project.name) },
       });
+      recordVisitRef.current?.(route.fullPath);
       if (e.ctrlKey || e.metaKey) {
-        window.open(route.fullPath, "_blank");
+        // Let the browser's native <a> Ctrl/Meta-click handle new-tab opening.
         return;
       }
       e.preventDefault();
