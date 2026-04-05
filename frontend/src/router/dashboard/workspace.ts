@@ -50,7 +50,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/LandingPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
   },
   {
@@ -61,7 +61,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "ProjectsPage" }),
@@ -77,7 +77,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "InstancesPage" }),
@@ -93,7 +93,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "DatabasesPage" }),
@@ -109,7 +109,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "EnvironmentsPage" }),
@@ -120,10 +120,16 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "users/:principalEmail",
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
-      content: () => import("@/views/ProfileDashboard.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
-    props: true,
+    props: {
+      content: (route: RouteLocationNormalized) => ({
+        page: "ProfilePage",
+        principalEmail: route.params.principalEmail,
+      }),
+      leftSidebar: true,
+    },
   },
   {
     path: "403",
@@ -133,7 +139,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/Page403.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -148,7 +154,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/Page404.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -163,7 +169,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -220,7 +226,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -248,7 +254,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: true,
     children: [
@@ -381,7 +387,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,

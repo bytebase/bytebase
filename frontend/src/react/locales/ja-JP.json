@@ -104,10 +104,11 @@
     "deselect-all": "Deselect all",
     "disable": "Disable",
     "discard-changes": "変更をキャンセルする",
+    "download": "ダウンロード",
     "edit": "編集",
     "email": "メールアドレス",
     "empty": "Empty",
-    "enable": "Enable",
+    "enable": "オンにする",
     "enabled": "Enabled",
     "environment": "環境",
     "environment-name": "環境名",
@@ -124,8 +125,10 @@
     "from": "開始",
     "general": "全般",
     "groups": "グループ",
+    "home": "ホームページ",
     "id": "ID",
     "instance": "インスタンス",
+    "instances": "インスタンス",
     "is-required": "is required",
     "items": "items",
     "key": "キー",
@@ -149,7 +152,9 @@
     "permissions": "権限",
     "previous": "Previous",
     "project": "プロジェクト",
+    "projects": "プロジェクト",
     "reason": "Reason",
+    "regenerate": "再生する",
     "release": "リリース",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
@@ -168,6 +173,7 @@
     "select-all": "すべて選択",
     "selected": "selected",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
+    "settings": "設定",
     "state": "ステート",
     "statement": "ステートメント",
     "status": "ステータス",
@@ -188,7 +194,8 @@
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "you": "あなた"
+    "you": "あなた",
+    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。"
   },
   "create-db": {
     "cluster": "集まる",
@@ -237,7 +244,8 @@
       "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
       "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
       "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
-      "risk-levels": "リスクレベル"
+      "risk-levels": "リスクレベル",
+      "self": "リスクセンター"
     },
     "risk-rule": {
       "risk": {
@@ -258,7 +266,8 @@
     },
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
-    }
+    },
+    "self": "カスタム承認"
   },
   "database": {
     "change-database": "データベースの変更",
@@ -391,10 +400,10 @@
     "syncing": "同期中 ..."
   },
   "issue": {
-    "labels": "イシューラベル",
     "advanced-search": {
       "filter": "フィルター"
-    }
+    },
+    "labels": "イシューラベル"
   },
   "label": {
     "error": {
@@ -873,6 +882,7 @@
           "title": "タイトル"
         },
         "n-members": "{{n}} 人のメンバー",
+        "self": "グループ",
         "update-group": "更新グループ",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
@@ -929,13 +939,16 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "email": "メールアドレス",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-hint": "パスワードは制限設定に従う必要があります",
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください +81xxxxxx"
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
+      "role": "ロール",
+      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "sensitive-data": {
       "algorithms": {
@@ -1004,6 +1017,7 @@
         "add-from-template": "テンプレートから追加",
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",
+        "self": "セマンティックタイプ",
         "table": {
           "delete": "このセマンティック タイプを削除しますか?",
           "description": "説明",
@@ -1021,13 +1035,17 @@
     "sidebar": {
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
+      "data-access": "データアクセス",
       "data-classification": "データ分類",
       "general": "全般",
       "global-masking": "グローバルマスキング",
+      "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
+      "integration": "連携",
       "mcp": "MCP",
       "members": "メンバー",
       "members-and-groups": "メンバーとグループ",
+      "profile": "プロフィール",
       "security-and-policy": "セキュリティポリシー",
       "sso": "SSO",
       "subscription": "サブスクリプション",
@@ -1261,9 +1279,55 @@
         "title": "ユーザー制限",
         "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
-    }
+    },
+    "disabled-feature": "無効な機能"
   },
   "two-factor": {
-    "enabled": "二要素認証がオンになっています"
+    "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
+    "disable": {
+      "description": "アカウントの 2 要素認証を無効にしようとしています。ログイン時に認証アプリによって生成されたセキュリティ コードを入力する必要がなくなりました。",
+      "self": "二要素認証を無効にする"
+    },
+    "enabled": "二要素認証がオンになっています",
+    "messages": {
+      "2fa-disabled": "二要素認証が正常に無効になりました",
+      "2fa-enabled": "二要素認証が正常にオンになりました",
+      "cannot-disable": "管理者は、すべてのユーザーに 2 要素認証を設定するよう要求します。 2 要素認証を無効にすることはできません。",
+      "recovery-codes-regenerated": "リカバリコードが再生成されました"
+    },
+    "recovery-codes": {
+      "description": "2 要素認証コードを受信できない場合は、リカバリ コードを使用してアカウントにアクセスできます。",
+      "self": "リカバリーコード"
+    },
+    "self": "二要素認証",
+    "setup-steps": {
+      "download-recovery-codes": {
+        "keep-safe": {
+          "description": "これらのコードは、2 要素認証コードを受信できない場合にアカウントにアクセスするために使用されます。これらのコードが見つからない場合は、アカウントにアクセスできなくなります。",
+          "self": "リカバリ コードは安全な場所に保管してください。"
+        },
+        "self": "リカバリーコードをダウンロード",
+        "tips": "リカバリ コードもパスワードと同じくらい安全に保管してください。 Lastpass、1Password、Keeper などのパスワード マネージャーに保存することをお勧めします。"
+      },
+      "recovery-codes-saved": "リカバリーコードを保存したことを確認してください",
+      "setup-auth-app": {
+        "description": "2 要素認証には、Google Authenticator、Microsoft Authenticator、Authy などのモバイル アプリを使用します。",
+        "expired-notice": "このセットアップセッションは期限切れになりました。続行するには再生成してください。",
+        "regenerate": "再生成",
+        "scan-qr-code": {
+          "description": "携帯電話の認証アプリを使用してスキャンします。スキャンできない場合は、{{action}} を実行できます。",
+          "enter-the-text": "テキストを入力してください",
+          "self": "QRコードをスキャンします"
+        },
+        "self": "認証アプリケーションをセットアップする",
+        "time-remaining": "残り時間: {{time}}",
+        "verify-code": "アプリケーションのコードを検証する"
+      }
+    },
+    "your-two-factor-secret": {
+      "copy-succeed": "正常にコピーされました。申請書に入力してください。",
+      "description": "キーをコピーし、アプリケーションに手動で入力します。",
+      "self": "二要素認証キー"
+    }
   }
 }

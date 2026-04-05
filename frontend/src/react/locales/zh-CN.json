@@ -104,10 +104,11 @@
     "deselect-all": "Deselect all",
     "disable": "禁用",
     "discard-changes": "取消修改",
+    "download": "下载",
     "edit": "编辑",
     "email": "邮箱",
     "empty": "Empty",
-    "enable": "Enable",
+    "enable": "开启",
     "enabled": "开启",
     "environment": "环境",
     "environment-name": "环境名",
@@ -124,8 +125,10 @@
     "from": "从",
     "general": "通用",
     "groups": "分组",
+    "home": "主页",
     "id": "ID",
     "instance": "实例",
+    "instances": "实例",
     "is-required": "is required",
     "items": "items",
     "key": "键",
@@ -149,7 +152,9 @@
     "permissions": "权限",
     "previous": "上一步",
     "project": "项目",
+    "projects": "项目",
     "reason": "Reason",
+    "regenerate": "重新生成",
     "release": "版本",
     "reorder": "排序",
     "required-permission": "所需权限",
@@ -168,6 +173,7 @@
     "select-all": "全选",
     "selected": "selected",
     "sensitive-placeholder": "敏感数据 - 仅写入",
+    "settings": "设置",
     "state": "状态",
     "statement": "语句",
     "status": "状态",
@@ -188,7 +194,8 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您"
+    "you": "您",
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。"
   },
   "create-db": {
     "cluster": "集群",
@@ -237,7 +244,8 @@
       "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
       "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
       "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
-      "risk-levels": "风险等级"
+      "risk-levels": "风险等级",
+      "self": "风险中心"
     },
     "risk-rule": {
       "risk": {
@@ -258,7 +266,8 @@
     },
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
-    }
+    },
+    "self": "自定义审批"
   },
   "database": {
     "change-database": "变更数据库",
@@ -391,10 +400,10 @@
     "syncing": "同步中 ..."
   },
   "issue": {
-    "labels": "工单标签",
     "advanced-search": {
       "filter": "过滤"
-    }
+    },
+    "labels": "工单标签"
   },
   "label": {
     "error": {
@@ -873,6 +882,7 @@
           "title": "名称"
         },
         "n-members": "{{n}} 位成员",
+        "self": "群组",
         "update-group": "更新组",
         "workspace-domain-required": "请先设置工作空间的域名。"
       },
@@ -929,13 +939,16 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
+      "email": "邮箱",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-hint": "密码应遵循限制设置",
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
-      "phone-tips": "请包含国家代码前缀 +86xxxxxx"
+      "phone-tips": "请包含国家代码前缀 +86xxxxxx",
+      "role": "角色",
+      "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "sensitive-data": {
       "algorithms": {
@@ -1004,6 +1017,7 @@
         "add-from-template": "从模板添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
+        "self": "语义类型",
         "table": {
           "delete": "删除这个语义类型？",
           "description": "描述",
@@ -1021,13 +1035,17 @@
     "sidebar": {
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
+      "data-access": "数据访问",
       "data-classification": "数据分类",
       "general": "通用",
       "global-masking": "全局数据脱敏",
+      "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
+      "integration": "集成",
       "mcp": "MCP",
       "members": "成员",
       "members-and-groups": "成员和群组",
+      "profile": "个人信息",
       "security-and-policy": "安全 & 策略",
       "sso": "SSO",
       "subscription": "订阅",
@@ -1261,9 +1279,55 @@
         "title": "用户数量限制",
         "upgrade": "升级来获取更多用户额度。"
       }
-    }
+    },
+    "disabled-feature": "禁用功能"
   },
   "two-factor": {
-    "enabled": "双重认证已开启"
+    "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
+    "disable": {
+      "description": "您即将禁用您账户的双重认证。您在登录时将不再需要输入由您的 Authenticator 应用程序生成的安全代码。",
+      "self": "禁用双重认证"
+    },
+    "enabled": "双重认证已开启",
+    "messages": {
+      "2fa-disabled": "双重认证禁用成功",
+      "2fa-enabled": "双重认证开启成功",
+      "cannot-disable": "您的管理员要求所有用户配置双重认证。您无法禁用双重认证。",
+      "recovery-codes-regenerated": "恢复码已经重新生成"
+    },
+    "recovery-codes": {
+      "description": "恢复码可以在您无法收到双重认证代码的情况下用于访问您的账户。",
+      "self": "恢复码"
+    },
+    "self": "双重认证",
+    "setup-steps": {
+      "download-recovery-codes": {
+        "keep-safe": {
+          "description": "这些代码是在您无法收到双重认证代码的情况下访问您的账户。如果您找不到这些代码，您将失去对您账户的访问。",
+          "self": "把您的恢复码放在一个安全的地方。"
+        },
+        "self": "下载恢复码",
+        "tips": "保持您的恢复码和您的密码一样安全。建议将它们保存在一个密码管理器中，如 Lastpass、1Password 或 Keeper。"
+      },
+      "recovery-codes-saved": "确定已经保存了我的恢复码",
+      "setup-auth-app": {
+        "description": "使用像 Google Authenticator、Microsoft Authenticator 或 Authy 这样的手机应用程序来进行双重认证操作。",
+        "expired-notice": "此设置会话已过期。请重新生成以继续。",
+        "regenerate": "重新生成",
+        "scan-qr-code": {
+          "description": "使用您手机中的认证器应用程序进行扫描。如果您无法扫描，可以{{action}}。",
+          "enter-the-text": "输入文本",
+          "self": "扫描二维码"
+        },
+        "self": "设置认证器应用程序",
+        "time-remaining": "剩余时间：{{time}}",
+        "verify-code": "验证应用程序的代码"
+      }
+    },
+    "your-two-factor-secret": {
+      "copy-succeed": "复制成功。请输入到您的应用程序中。",
+      "description": "复制密钥并在您的应用程序中手动输入。",
+      "self": "双重认证密钥"
+    }
   }
 }
