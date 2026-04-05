@@ -195,7 +195,11 @@
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
     "you": "bạn",
-    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +)."
+    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +).",
+    "issues": "Vấn đề",
+    "manage": "Quản lý",
+    "setting": "Cài đặt",
+    "webhooks": "Webhooks"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -289,7 +293,10 @@
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
+    "sync-schema": {
+      "title": "Đồng bộ lược đồ"
+    }
   },
   "database-group": {
     "condition": {
@@ -354,7 +361,8 @@
     },
     "workload-identity": {
       "select-placeholder": "Chọn một workload identity"
-    }
+    },
+    "self": "GitOps"
   },
   "identity-provider": {
     "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
@@ -575,6 +583,9 @@
       "test-webhook": "Kiểm tra Webhook",
       "triggering-activity": "Hoạt động kích hoạt",
       "webhook-url": "URL Webhook"
+    },
+    "masking-exemption": {
+      "self": "Miễn trừ Che giấu"
     }
   },
   "quick-action": {
@@ -1146,7 +1157,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Trình soạn thảo SQL",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "access-grants": "Access Grants"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1329,5 +1341,14 @@
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
     }
+  },
+  "export-center": {
+    "data-export": "Xuất dữ liệu"
+  },
+  "plan": {
+    "plans": "Kế hoạch"
+  },
+  "release": {
+    "releases": "Bản phát hành"
   }
 }

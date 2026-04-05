@@ -195,7 +195,11 @@
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
     "you": "tu",
-    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +)."
+    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
+    "issues": "Incidencias",
+    "manage": "Administrar",
+    "setting": "Configuración",
+    "webhooks": "Webhooks"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -289,7 +293,10 @@
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
-    "unassign-alert-title": "Desasignar bases de datos"
+    "unassign-alert-title": "Desasignar bases de datos",
+    "sync-schema": {
+      "title": "Sincronizar esquema"
+    }
   },
   "database-group": {
     "condition": {
@@ -354,7 +361,8 @@
     },
     "workload-identity": {
       "select-placeholder": "Seleccionar una identidad de carga de trabajo"
-    }
+    },
+    "self": "GitOps"
   },
   "identity-provider": {
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
@@ -575,6 +583,9 @@
       "test-webhook": "Probar webhook",
       "triggering-activity": "Actividades de disparo",
       "webhook-url": "URL del webhook"
+    },
+    "masking-exemption": {
+      "self": "Exenciones de Enmascaramiento"
     }
   },
   "quick-action": {
@@ -1146,7 +1157,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Editor de SQL",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "access-grants": "Access Grants"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1329,5 +1341,14 @@
       "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
       "self": "Su secreto de dos factores"
     }
+  },
+  "export-center": {
+    "data-export": "Exportación de datos"
+  },
+  "plan": {
+    "plans": "Planes"
+  },
+  "release": {
+    "releases": "Lanzamientos"
   }
 }

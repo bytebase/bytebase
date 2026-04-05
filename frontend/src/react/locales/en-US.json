@@ -195,7 +195,11 @@
     "view-details": "View Details",
     "warning": "Warning",
     "you": "you",
-    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +)."
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
+    "issues": "Issues",
+    "manage": "Manage",
+    "setting": "Setting",
+    "webhooks": "Webhooks"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -289,7 +293,10 @@
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases"
+    "unassign-alert-title": "Unassign databases",
+    "sync-schema": {
+      "title": "Sync Schema"
+    }
   },
   "database-group": {
     "condition": {
@@ -354,7 +361,8 @@
     },
     "workload-identity": {
       "select-placeholder": "Select a workload identity"
-    }
+    },
+    "self": "GitOps"
   },
   "identity-provider": {
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
@@ -575,6 +583,9 @@
       "test-webhook": "Test Webhook",
       "triggering-activity": "Triggering activities",
       "webhook-url": "Webhook URL"
+    },
+    "masking-exemption": {
+      "self": "Masking Exemptions"
     }
   },
   "quick-action": {
@@ -1146,7 +1157,8 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "access-grants": "Access Grants"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1329,5 +1341,14 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
+  },
+  "export-center": {
+    "data-export": "Data Export"
+  },
+  "plan": {
+    "plans": "Plans"
+  },
+  "release": {
+    "releases": "Releases"
   }
 }

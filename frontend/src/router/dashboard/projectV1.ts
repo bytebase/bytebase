@@ -1,6 +1,6 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
-import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
+import ReactProjectSidebarMount from "@/react/ReactProjectSidebarMount.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
@@ -136,7 +136,7 @@ const projectV1Routes: RouteRecordRaw[] = [
     path: "projects/:projectId",
     components: {
       content: () => import("@/layouts/ProjectV1Layout.vue"),
-      leftSidebar: ProjectSidebarV1,
+      leftSidebar: ReactProjectSidebarMount,
     },
     props: { content: true, leftSidebar: true },
     meta: {

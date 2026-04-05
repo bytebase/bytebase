@@ -195,7 +195,11 @@
     "view-details": "查看详情",
     "warning": "警告",
     "you": "您",
-    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。"
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
+    "issues": "工单",
+    "manage": "管理",
+    "setting": "设置",
+    "webhooks": "Webhook"
   },
   "create-db": {
     "cluster": "集群",
@@ -289,7 +293,10 @@
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库"
+    "unassign-alert-title": "取消分配数据库",
+    "sync-schema": {
+      "title": "库表同步"
+    }
   },
   "database-group": {
     "condition": {
@@ -354,7 +361,8 @@
     },
     "workload-identity": {
       "select-placeholder": "选择工作负载身份"
-    }
+    },
+    "self": "GitOps"
   },
   "identity-provider": {
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
@@ -575,6 +583,9 @@
       "test-webhook": "测试 Webhook",
       "triggering-activity": "触发事件",
       "webhook-url": "Webhook URL"
+    },
+    "masking-exemption": {
+      "self": "脱敏豁免"
     }
   },
   "quick-action": {
@@ -1146,7 +1157,8 @@
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "self": "SQL 编辑器",
-    "view-issue": "查看工单"
+    "view-issue": "查看工单",
+    "access-grants": "访问授权"
   },
   "sql-review": {
     "add-or-remove-rules": "添加或删除规则",
@@ -1329,5 +1341,14 @@
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
     }
+  },
+  "export-center": {
+    "data-export": "数据导出"
+  },
+  "plan": {
+    "plans": "变更计划"
+  },
+  "release": {
+    "releases": "发布包"
   }
 }

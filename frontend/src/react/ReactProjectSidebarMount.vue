@@ -1,0 +1,34 @@
+<template>
+  <div ref="container" class="h-full" />
+</template>
+
+<script lang="ts" setup>
+defineOptions({ inheritAttrs: false });
+
+import { onMounted, onUnmounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+
+const container = ref<HTMLElement>();
+// biome-ignore lint/suspicious/noExplicitAny: React Root type from dynamic import
+let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+const { locale } = useI18n();
+
+async function render() {
+  if (!container.value) return;
+  const { mountProjectSidebar, updateProjectSidebarLocale } = await import(
+    "./mountProjectSidebar"
+  );
+  if (!root) {
+    root = await mountProjectSidebar(container.value, locale.value);
+  } else {
+    await updateProjectSidebarLocale(root, locale.value);
+  }
+}
+
+onMounted(() => render());
+watch(locale, () => render());
+onUnmounted(() => {
+  root?.unmount();
+  root = null;
+});
+</script>
