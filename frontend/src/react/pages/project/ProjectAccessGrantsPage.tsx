@@ -40,7 +40,6 @@ import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   type AccessGrantDisplayStatus,
   type AccessGrantFilterStatus,
@@ -154,58 +153,41 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     grant: AccessGrant;
   } | null>(null);
 
-  // Paginated fetch for all project databases (gated on canList)
+  // Fetch first page of databases for filter options (gated on canList)
   const [databaseOptions, setDatabaseOptions] = useState<DatabaseOption[]>([]);
   useEffect(() => {
     if (!canList) return;
     let cancelled = false;
-    const fetchAll = async () => {
-      const all: Database[] = [];
-      let pageToken: string | undefined;
-      do {
-        const result = await databaseStore.fetchDatabases({
-          parent: projectName,
-          pageSize: 1000,
-          pageToken,
-        });
-        all.push(...result.databases);
-        pageToken = result.nextPageToken || undefined;
-      } while (pageToken);
-      if (!cancelled) {
-        setDatabaseOptions(all.map(mapDatabase));
-      }
-    };
-    fetchAll();
+    databaseStore
+      .fetchDatabases({ parent: projectName, pageSize: 1000 })
+      .then((result) => {
+        if (!cancelled) {
+          setDatabaseOptions(result.databases.map(mapDatabase));
+        }
+      });
     return () => {
       cancelled = true;
     };
   }, [projectName, databaseStore, canList]);
 
-  // Paginated fetch for all users (gated on canList)
+  // Fetch first page of users for filter options (gated on canList)
   const [userOptions, setUserOptions] = useState<
     { value: string; title: string; name: string }[]
   >([]);
   useEffect(() => {
     if (!canList) return;
     let cancelled = false;
-    const fetchAll = async () => {
-      const all: User[] = [];
-      let pageToken: string | undefined;
-      do {
-        const result = await userStore.fetchUserList({
-          pageSize: 1000,
-          pageToken,
-        });
-        all.push(...result.users);
-        pageToken = result.nextPageToken || undefined;
-      } while (pageToken);
+    userStore.fetchUserList({ pageSize: 1000 }).then((result) => {
       if (!cancelled) {
         setUserOptions(
-          all.map((u) => ({ value: u.email, title: u.title, name: u.name }))
+          result.users.map((u) => ({
+            value: u.email,
+            title: u.title,
+            name: u.name,
+          }))
         );
       }
-    };
-    fetchAll();
+    });
     return () => {
       cancelled = true;
     };
@@ -343,8 +325,16 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       }
       if (createdBefore) {
         const [y, m, d] = createdBefore.split("-").map(Number);
-        // End of the selected day (start of next day)
-        filter.createdTsBefore = new Date(y, m - 1, d + 1).getTime();
+        // End of the selected day (23:59:59.999)
+        filter.createdTsBefore = new Date(
+          y,
+          m - 1,
+          d,
+          23,
+          59,
+          59,
+          999
+        ).getTime();
       }
       const response = await accessGrantStore.listAccessGrants({
         parent: projectName,
