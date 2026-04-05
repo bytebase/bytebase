@@ -391,7 +391,10 @@
     "syncing": "Đang đồng bộ hóa ..."
   },
   "issue": {
-    "labels": "Nhãn vấn đề"
+    "labels": "Nhãn vấn đề",
+    "advanced-search": {
+      "filter": "Bộ lọc"
+    }
   },
   "label": {
     "error": {

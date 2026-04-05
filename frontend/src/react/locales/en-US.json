@@ -391,7 +391,10 @@
     "syncing": "Syncing ..."
   },
   "issue": {
-    "labels": "Issue Labels"
+    "labels": "Issue Labels",
+    "advanced-search": {
+      "filter": "Filter"
+    }
   },
   "label": {
     "error": {

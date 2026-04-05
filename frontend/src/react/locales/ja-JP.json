@@ -391,7 +391,10 @@
     "syncing": "同期中 ..."
   },
   "issue": {
-    "labels": "イシューラベル"
+    "labels": "イシューラベル",
+    "advanced-search": {
+      "filter": "フィルター"
+    }
   },
   "label": {
     "error": {

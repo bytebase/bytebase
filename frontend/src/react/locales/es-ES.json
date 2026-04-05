@@ -391,7 +391,10 @@
     "syncing": "Sincronizando..."
   },
   "issue": {
-    "labels": "Etiquetas de problema"
+    "labels": "Etiquetas de problema",
+    "advanced-search": {
+      "filter": "Filtrar"
+    }
   },
   "label": {
     "error": {

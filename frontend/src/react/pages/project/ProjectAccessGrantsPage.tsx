@@ -1,6 +1,12 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  AdvancedSearch,
+  emptySearchParams,
+  type ScopeOption,
+  type SearchParams,
+} from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -9,7 +15,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -21,12 +26,14 @@ import {
   featureToRef,
   pushNotification,
   useAccessGrantStore,
+  useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
 import type { AccessFilter } from "@/store/modules/accessGrant";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantDisplayStatus,
@@ -38,13 +45,7 @@ import {
   getAccessGrantStatusTagType,
   hasProjectPermissionV2,
 } from "@/utils";
-
-const STATUS_OPTIONS: AccessGrantFilterStatus[] = [
-  "ACTIVE",
-  "PENDING",
-  "REVOKED",
-  "EXPIRED",
-];
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
@@ -62,23 +63,19 @@ function statusTagVariant(
   return tagType;
 }
 
-function statusLabel(t: (key: string) => string, s: AccessGrantFilterStatus) {
-  switch (s) {
-    case "ACTIVE":
-      return t("common.active");
-    case "PENDING":
-      return t("common.pending");
-    case "REVOKED":
-      return t("common.revoked");
-    case "EXPIRED":
-      return t("sql-editor.expired");
-  }
+function getValuesFromScopes(params: SearchParams, id: string): string[] {
+  return params.scopes.filter((s) => s.id === id).map((s) => s.value);
+}
+
+function getValueFromScopes(params: SearchParams, id: string): string {
+  return params.scopes.find((s) => s.id === id)?.value ?? "";
 }
 
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const accessGrantStore = useAccessGrantStore();
   const projectStore = useProjectV1Store();
+  const databaseStore = useDatabaseV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -106,13 +103,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     [project]
   );
 
-  // --- Filter state ---
-  const [searchText, setSearchText] = useState("");
-  const [statusFilters, setStatusFilters] = useState<AccessGrantFilterStatus[]>(
-    []
-  );
-  const [creatorFilter, setCreatorFilter] = useState("");
-  const [databaseFilter, setDatabaseFilter] = useState("");
+  // --- Search state ---
+  const [searchParams, setSearchParams] =
+    useState<SearchParams>(emptySearchParams);
 
   // --- Sort state ---
   const [sortKey, setSortKey] = useState<SortKey | "">("");
@@ -122,6 +115,79 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     type: "activate" | "revoke";
     grant: AccessGrant;
   } | null>(null);
+
+  // Pre-fetch databases for the project to populate scope options
+  const [databaseOptions, setDatabaseOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      const result = await databaseStore.fetchDatabases({
+        parent: projectName,
+        pageSize: 1000,
+      });
+      if (cancelled) return;
+      setDatabaseOptions(
+        result.databases.map((db) => {
+          const { database: dbName } = extractDatabaseResourceName(db.name);
+          return { value: db.name, label: dbName };
+        })
+      );
+    };
+    fetchAll();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectName, databaseStore]);
+
+  const scopeOptions: ScopeOption[] = useMemo(
+    () => [
+      {
+        id: "status",
+        title: t("common.status"),
+        allowMultiple: true,
+        options: [
+          {
+            value: AccessGrant_Status[AccessGrant_Status.ACTIVE],
+            keywords: ["active"],
+            render: () => <span>{t("common.active")}</span>,
+          },
+          {
+            value: AccessGrant_Status[AccessGrant_Status.PENDING],
+            keywords: ["pending"],
+            render: () => <span>{t("common.pending")}</span>,
+          },
+          {
+            value: "EXPIRED",
+            keywords: ["expired"],
+            render: () => <span>{t("sql-editor.expired")}</span>,
+          },
+          {
+            value: AccessGrant_Status[AccessGrant_Status.REVOKED],
+            keywords: ["revoked"],
+            render: () => <span>{t("common.revoked")}</span>,
+          },
+        ],
+      },
+      {
+        id: "database",
+        title: t("common.database"),
+        options: databaseOptions.map((db) => ({
+          value: db.value,
+          keywords: [db.label, db.value],
+          custom: true,
+          render: () => <span>{db.label}</span>,
+        })),
+      },
+      {
+        id: "creator",
+        title: t("common.creator"),
+        description: t("common.creator"),
+      },
+    ],
+    [t, databaseOptions]
+  );
 
   const orderBy = useMemo(() => {
     if (!sortKey) return "";
@@ -134,7 +200,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         if (sortDir === "desc") {
           setSortDir("asc");
         } else {
-          // Third click clears sort
           setSortKey("");
           setSortDir("desc");
         }
@@ -146,31 +211,27 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     [sortKey, sortDir]
   );
 
-  const toggleStatus = useCallback((status: AccessGrantFilterStatus) => {
-    setStatusFilters((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status]
-    );
-  }, []);
-
   const fetchList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const filter: AccessFilter = {};
-      if (statusFilters.length > 0) {
-        filter.status = statusFilters;
+      const statuses = getValuesFromScopes(
+        searchParams,
+        "status"
+      ) as AccessGrantFilterStatus[];
+      if (statuses.length > 0) {
+        filter.status = statuses;
       }
-      const query = searchText.trim();
-      if (query) {
-        filter.statement = query;
-      }
-      const creator = creatorFilter.trim();
+      const creator = getValueFromScopes(searchParams, "creator");
       if (creator) {
         filter.creator = `users/${creator}`;
       }
-      const database = databaseFilter.trim();
+      const database = getValueFromScopes(searchParams, "database");
       if (database) {
         filter.target = database;
+      }
+      const query = searchParams.query.trim();
+      if (query) {
+        filter.statement = query;
       }
       const response = await accessGrantStore.listAccessGrants({
         parent: projectName,
@@ -184,15 +245,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         nextPageToken: response.nextPageToken,
       };
     },
-    [
-      projectName,
-      accessGrantStore,
-      searchText,
-      statusFilters,
-      creatorFilter,
-      databaseFilter,
-      orderBy,
-    ]
+    [projectName, accessGrantStore, searchParams, orderBy]
   );
 
   const paged = usePagedData<AccessGrant>({
@@ -231,56 +284,13 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 
       {canList ? (
         <>
-          {/* Filters */}
-          <div className="px-4 pb-2 flex flex-col gap-y-2">
-            <div className="flex items-center gap-x-2">
-              <Input
-                className="flex-1"
-                placeholder={t("common.statement")}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              <Input
-                className="w-48"
-                placeholder={t("common.creator")}
-                value={creatorFilter}
-                onChange={(e) => setCreatorFilter(e.target.value)}
-              />
-              <Input
-                className="w-48"
-                placeholder={t("common.database")}
-                value={databaseFilter}
-                onChange={(e) => setDatabaseFilter(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-x-2">
-              <span className="text-sm text-control-light">
-                {t("common.status")}:
-              </span>
-              {STATUS_OPTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => toggleStatus(s)}
-                  className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-                    statusFilters.includes(s)
-                      ? "bg-accent/10 text-accent border-accent/30"
-                      : "bg-white text-control-light border-control-border hover:border-accent/30"
-                  }`}
-                >
-                  {statusLabel(t, s)}
-                </button>
-              ))}
-              {statusFilters.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStatusFilters([])}
-                  className="text-xs text-control-light hover:text-control underline"
-                >
-                  {t("common.clear")}
-                </button>
-              )}
-            </div>
+          <div className="px-4 pb-2">
+            <AdvancedSearch
+              params={searchParams}
+              onParamsChange={setSearchParams}
+              scopeOptions={scopeOptions}
+              placeholder={t("issue.advanced-search.filter")}
+            />
           </div>
 
           {!hasJITFeature ? (

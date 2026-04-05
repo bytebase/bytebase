@@ -391,7 +391,10 @@
     "syncing": "同步中 ..."
   },
   "issue": {
-    "labels": "工单标签"
+    "labels": "工单标签",
+    "advanced-search": {
+      "filter": "过滤"
+    }
   },
   "label": {
     "error": {
