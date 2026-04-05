@@ -484,6 +484,32 @@
         "approval-flow-not-configured": "No approval flow configured",
         "view-approval-flow": "View approval flow"
       }
+    },
+    "webhook": {
+      "success-created-prompt": "Successfully created webhook {{name}}.",
+      "success-updated-prompt": "Successfully updated webhook {{name}}.",
+      "success-deleted-prompt": "Successfully deleted webhook {{name}}.",
+      "success-tested-prompt": "Test webhook event OK.",
+      "fail-tested-title": "Test webhook event failed.",
+      "add-a-webhook": "Add a webhook",
+      "destination": "Destination",
+      "webhook-url": "Webhook URL",
+      "triggering-activity": "Triggering activities",
+      "test-webhook": "Test Webhook",
+      "creation": {
+        "title": "Create webhook",
+        "desc": "Create the corresponding webhook for the {{destination}} channel receiving the message.",
+        "view-doc": "View {{destination}}'s doc"
+      },
+      "deletion": {
+        "confirm-title": "Delete webhook '{{title}}'?"
+      },
+      "direct-messages": "Direct messages",
+      "direct-messages-tip": "Bytebase will fall back to posting webhook messages if no users are matched or the delivery of the message fails.",
+      "enable-direct-messages": "Enable direct messages",
+      "direct-messages-description": "Once enabled, Bytebase will send following events as direct messages to the related users (matched by email):",
+      "direct-messages-warning": "You need to configure IM integration to make it work.",
+      "activity-support-direct-message": "Support send direct messages to related users"
     }
   },
   "quick-action": {

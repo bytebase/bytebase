@@ -484,6 +484,32 @@
       "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
+    },
+    "webhook": {
+      "success-created-prompt": "Webhook {{name}} creado exitosamente.",
+      "success-updated-prompt": "Webhook {{name}} actualizado exitosamente.",
+      "success-deleted-prompt": "Webhook {{name}} eliminado exitosamente.",
+      "success-tested-prompt": "Prueba de evento de webhook OK.",
+      "fail-tested-title": "La prueba de evento de webhook falló.",
+      "add-a-webhook": "Agregar un webhook",
+      "destination": "Destino",
+      "webhook-url": "URL del webhook",
+      "triggering-activity": "Actividades de disparo",
+      "test-webhook": "Probar webhook",
+      "creation": {
+        "title": "Crear webhook",
+        "desc": "Cree el webhook correspondiente para el canal {{destination}} que reciba el mensaje.",
+        "view-doc": "Ver documentación de {{destination}}"
+      },
+      "deletion": {
+        "confirm-title": "¿Eliminar el webhook '{{title}}'?"
+      },
+      "direct-messages": "Mensajes directos",
+      "direct-messages-tip": "Bytebase recurrirá a la publicación de mensajes de webhook si no hay usuarios coincidentes o si falla la entrega del mensaje.",
+      "enable-direct-messages": "Habilitar mensajes directos",
+      "direct-messages-description": "Una vez habilitado, Bytebase enviará mensajes directos a los usuarios relacionados (emparejados por correo electrónico). Solo soporte:",
+      "direct-messages-warning": "Debes configurar la integración IM para que funcione.",
+      "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados."
     }
   },
   "quick-action": {

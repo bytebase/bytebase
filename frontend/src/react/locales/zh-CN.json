@@ -484,6 +484,32 @@
       "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
       "edit-member": "编辑成员 - {{member}}",
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
+    },
+    "webhook": {
+      "success-created-prompt": "成功创建 {{name}} webhook.",
+      "success-updated-prompt": "成功更新 {{name}} webhook.",
+      "success-deleted-prompt": "成功删除 {{name}} webhook.",
+      "success-tested-prompt": "测试 webhook 事件成功.",
+      "fail-tested-title": "测试 webhook 事件失败.",
+      "add-a-webhook": "添加 webhook",
+      "destination": "外部应用",
+      "webhook-url": "Webhook URL",
+      "triggering-activity": "触发事件",
+      "test-webhook": "测试 Webhook",
+      "creation": {
+        "title": "创建 webhook",
+        "desc": "为 {{destination}} 创建一个 webhook",
+        "view-doc": "{{destination}} 的官方文档"
+      },
+      "deletion": {
+        "confirm-title": "删除 webhook '{{title}}'?"
+      },
+      "direct-messages": "私信通知",
+      "direct-messages-tip": "如果没有匹配的用户或者消息发送失败，Bytebase 将回退发布 webhook 消息。",
+      "enable-direct-messages": "启用私信通知",
+      "direct-messages-description": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：",
+      "direct-messages-warning": "您需要配置 IM 集成才能使其正常工作。",
+      "activity-support-direct-message": "支持向相关用户发送私信通知"
     }
   },
   "quick-action": {

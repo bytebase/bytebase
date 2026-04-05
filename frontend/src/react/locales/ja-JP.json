@@ -484,6 +484,32 @@
       "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
+    },
+    "webhook": {
+      "success-created-prompt": "{{name}} Webhook が正常に作成されました。",
+      "success-updated-prompt": "{{name}} Webhook が正常に更新されました。",
+      "success-deleted-prompt": "{{name}} Webhook が正常に削除されました。",
+      "success-tested-prompt": "Webhook イベントのテストが成功しました。",
+      "fail-tested-title": "Webhook イベントのテストに失敗しました。",
+      "add-a-webhook": "Webhook を追加する",
+      "destination": "外部アプリケーション",
+      "webhook-url": "Webhook URL",
+      "triggering-activity": "トリガーイベント",
+      "test-webhook": "Webhook のテスト",
+      "creation": {
+        "title": "Webhook の作成",
+        "desc": "{{destination}} の Webhook を作成します",
+        "view-doc": "{{destination}} の公式ドキュメント"
+      },
+      "deletion": {
+        "confirm-title": "Webhook '{{title}}' を削除しますか?"
+      },
+      "direct-messages": "プライベートメッセージ通知",
+      "direct-messages-tip": "一致するユーザーがいない場合、またはメッセージの配信が失敗した場合、Bytebase は webhook メッセージの投稿にフォールバックします。",
+      "enable-direct-messages": "プライベートメッセージ通知を有効にする",
+      "direct-messages-description": "有効にすると、Bytebase は関連ユーザー (電子メールで一致) にダイレクトメッセージを送信します。サポートのみ：",
+      "direct-messages-warning": "これを機能させるには、IM 統合を設定する必要があります。",
+      "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート"
     }
   },
   "quick-action": {

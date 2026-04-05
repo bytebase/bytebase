@@ -316,14 +316,15 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("common.webhooks"),
         },
-        props: true,
         children: [
           {
             path: "",
             name: PROJECT_V1_ROUTE_WEBHOOKS,
-            component: () =>
-              import("@/views/project/ProjectWebhookDashboard.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhooksPage",
+              ...route.params,
+            }),
           },
           {
             path: "new",
@@ -332,14 +333,20 @@ const projectV1Routes: RouteRecordRaw[] = [
               title: () => t("project.webhook.create-webhook"),
               requiredPermissionList: () => ["bb.projects.update"],
             },
-            component: () => import("@/views/project/ProjectWebhookCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhookCreatePage",
+              ...route.params,
+            }),
           },
           {
             path: ":webhookResourceId",
             name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-            component: () => import("@/views/project/ProjectWebhookDetail.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhookDetailPage",
+              ...route.params,
+            }),
           },
         ],
       },

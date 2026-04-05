@@ -484,6 +484,32 @@
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
+    },
+    "webhook": {
+      "success-created-prompt": "Đã tạo thành công webhook {{name}}.",
+      "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
+      "success-deleted-prompt": "Đã xóa thành công webhook {{name}}.",
+      "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
+      "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "add-a-webhook": "Thêm một webhook",
+      "destination": "Đích",
+      "webhook-url": "URL Webhook",
+      "triggering-activity": "Hoạt động kích hoạt",
+      "test-webhook": "Kiểm tra Webhook",
+      "creation": {
+        "title": "Tạo webhook",
+        "desc": "Tạo webhook tương ứng cho kênh {{destination}} nhận tin nhắn.",
+        "view-doc": "Xem tài liệu của {{destination}}"
+      },
+      "deletion": {
+        "confirm-title": "Xóa webhook '{{title}}'?"
+      },
+      "direct-messages": "Tin nhắn trực tiếp",
+      "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
+      "enable-direct-messages": "Bật tin nhắn trực tiếp",
+      "direct-messages-description": "Khi được bật, Bytebase sẽ gửi tin nhắn trực tiếp đến người dùng liên quan (được khớp bằng email). Chỉ hỗ trợ:",
+      "direct-messages-warning": "Bạn cần định cấu hình tích hợp IM để làm cho nó hoạt động.",
+      "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan"
     }
   },
   "quick-action": {
