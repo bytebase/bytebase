@@ -73,13 +73,32 @@ const { remove: removeVisit } = useRecentVisit();
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 
 watchEffect(async () => {
+  // Capture the current project name before the async gap so we can
+  // detect stale responses if projectId changes while the fetch is
+  // in flight.
+  const currentName = projectName.value;
   try {
     const project = await projectStore.getOrFetchProjectByName(
-      projectName.value,
+      currentName,
       false
     );
+    // If projectId changed during the fetch, ignore this stale result.
+    if (currentName !== projectName.value) return;
+    // If the project resolves to the unknown sentinel (e.g. projectId is "-1"),
+    // it will never initialize. Redirect to the landing page instead of
+    // spinning forever.
+    if (project.name === UNKNOWN_PROJECT_NAME) {
+      const projectRoute = router.resolve({
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId: props.projectId },
+      });
+      removeVisit(projectRoute.fullPath);
+      router.replace({ name: WORKSPACE_ROUTE_LANDING });
+      return;
+    }
     recentProjects.setRecentProject(project.name);
   } catch (err) {
+    if (currentName !== projectName.value) return;
     console.error(err);
     pushNotification({
       module: "bytebase",

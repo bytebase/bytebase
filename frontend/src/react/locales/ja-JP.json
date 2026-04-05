@@ -199,7 +199,13 @@
     "issues": "イシュー",
     "manage": "管理",
     "setting": "設定",
-    "webhooks": "Webhook"
+    "webhooks": "Webhook",
+    "revoke": "キャンセル",
+    "n-more": "+{{n}} もっと",
+    "scope": "スコープ",
+    "classification-level": "分類レベル",
+    "columns": "カラム",
+    "resources": "リソース"
   },
   "create-db": {
     "cluster": "集まる",
@@ -274,6 +280,7 @@
     "self": "カスタム承認"
   },
   "database": {
+    "all": "すべてのデータベース",
     "change-database": "データベースの変更",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
@@ -411,7 +418,13 @@
     "advanced-search": {
       "filter": "フィルター"
     },
-    "labels": "イシューラベル"
+    "labels": "イシューラベル",
+    "role-grant": {
+      "all-databases": "すべてのデータベース",
+      "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
+      "manually-select": "手動選択",
+      "use-cel": "CEL式を使用"
+    }
   },
   "label": {
     "error": {
@@ -585,7 +598,17 @@
       "webhook-url": "Webhook URL"
     },
     "masking-exemption": {
-      "self": "マスキング免除"
+      "self": "マスキング免除",
+      "grant-exemption": "免除を付与",
+      "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
+      "no-reason": "理由が提供されていません",
+      "no-exemptions": "マスキング免除はまだ付与されていません",
+      "expires-today": "本日期限切れ",
+      "expires-in-days_one": "{{days}} 日後に期限切れ",
+      "expires-in-days_other": "{{days}} 日後に期限切れ",
+      "all-levels": "全レベル",
+      "n-exemptions_one": "{{n}} 件の免除",
+      "n-exemptions_other": "{{n}} 件の免除"
     }
   },
   "quick-action": {
@@ -909,6 +932,7 @@
       "search-member": "メンバーを検索",
       "select-account_one": "アカウントを選択",
       "select-account_other": "アカウントを選択",
+      "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
       "select-role_one": "ロールを選択",
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
@@ -962,6 +986,7 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "sensitive-data": {
+      "never-expires": "有効期限なし",
       "algorithms": {
         "add": "アルゴリズムを追加",
         "edit": "アルゴリズムを編集",

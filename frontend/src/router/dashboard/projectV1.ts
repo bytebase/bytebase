@@ -185,9 +185,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
-            component: () =>
-              import("@/views/project/ProjectMaskingExemption.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectMaskingExemptionPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.databases.get",
@@ -198,9 +200,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "create",
             name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
-            component: () =>
-              import("@/views/project/ProjectMaskingExemptionCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectMaskingExemptionCreatePage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.policies.createMaskingExemptionPolicy",
