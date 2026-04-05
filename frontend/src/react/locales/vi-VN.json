@@ -181,7 +181,15 @@
     "total": "Total",
     "selected": "selected",
     "items": "items",
-    "deselect-all": "Deselect all"
+    "deselect-all": "Deselect all",
+    "webhooks": "Webhooks",
+    "slack": "Slack",
+    "discord": "Discord",
+    "teams": "Teams",
+    "dingtalk": "DingTalk",
+    "feishu": "Feishu",
+    "lark": "Lark",
+    "wecom": "WeCom"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -484,6 +492,59 @@
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
+    },
+    "webhook": {
+      "success-created-prompt": "Đã tạo thành công webhook {{name}}.",
+      "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
+      "success-deleted-prompt": "Đã xóa thành công webhook {{name}}.",
+      "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
+      "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "add-a-webhook": "Thêm một webhook",
+      "create-webhook": "Tạo webhook",
+      "destination": "Đích",
+      "webhook-url": "URL Webhook",
+      "triggering-activity": "Hoạt động kích hoạt",
+      "test-webhook": "Kiểm tra Webhook",
+      "creation": {
+        "title": "Tạo webhook",
+        "desc": "Tạo webhook tương ứng cho kênh {{destination}} nhận tin nhắn.",
+        "view-doc": "Xem tài liệu của {{destination}}"
+      },
+      "deletion": {
+        "confirm-title": "Xóa webhook '{{title}}'?"
+      },
+      "direct-messages": "Tin nhắn trực tiếp",
+      "direct-messages-tip": "Bytebase sẽ quay lại đăng tin nhắn webhook nếu không có người dùng nào khớp hoặc việc gửi tin nhắn không thành công.",
+      "enable-direct-messages": "Bật tin nhắn trực tiếp",
+      "direct-messages-description": "Khi được bật, Bytebase sẽ gửi tin nhắn trực tiếp đến người dùng liên quan (được khớp bằng email). Chỉ hỗ trợ:",
+      "direct-messages-warning": "Bạn cần định cấu hình tích hợp IM để làm cho nó hoạt động.",
+      "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
+      "activity-item": {
+        "issue-creation": {
+          "title": "Tạo vấn đề",
+          "label": "Khi vấn đề mới được tạo"
+        },
+        "issue-approval-notify": {
+          "title": "Cần phê duyệt vấn đề",
+          "label": "Khi vấn đề đang chờ phê duyệt"
+        },
+        "issue-sent-back": {
+          "title": "Vấn đề bị trả lại",
+          "label": "Khi người phê duyệt trả lại vấn đề"
+        },
+        "issue-approved": {
+          "title": "Vấn đề đã được phê duyệt",
+          "label": "Khi tất cả các bước phê duyệt hoàn tất"
+        },
+        "pipeline-failed": {
+          "title": "Pipeline thất bại",
+          "label": "Khi các tác vụ pipeline thất bại"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline hoàn thành",
+          "label": "Khi pipeline hoàn thành thành công"
+        }
+      }
     }
   },
   "quick-action": {
