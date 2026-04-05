@@ -109,3 +109,19 @@ func getAccessToken(ctx context.Context) string {
 	}
 	return ""
 }
+
+// Context key for storing the workspace ID.
+type workspaceIDKey struct{}
+
+// withWorkspaceID adds the workspace ID to the context.
+func withWorkspaceID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, workspaceIDKey{}, id)
+}
+
+// getWorkspaceID retrieves the workspace ID from the context.
+func getWorkspaceID(ctx context.Context) string {
+	if id, ok := ctx.Value(workspaceIDKey{}).(string); ok {
+		return id
+	}
+	return ""
+}
