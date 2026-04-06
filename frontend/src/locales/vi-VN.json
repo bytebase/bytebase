@@ -1335,7 +1335,6 @@
     "add-instance": "@:common.add @:common.instance",
     "new-project": "@:common.new @:common.project",
     "create-project": "@:common.create @:common.project",
-    "transfer-in-db": "Chuyển vào",
     "from-unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "from-projects": "Từ các dự án khác",
     "transfer-in-db-title": "Chuyển vào cơ sở dữ liệu",
@@ -1398,7 +1397,6 @@
   },
   "instance": {
     "select-database-user": "Chọn người dùng cơ sở dữ liệu",
-    "new-database": "Cơ sở dữ liệu mới",
     "syncing": "Đang đồng bộ hóa ...",
     "sync": {
       "self": "Đồng bộ phiên bản",
@@ -1723,8 +1721,6 @@
     "mixed-values-for-label": "Nhãn đã chọn này có các giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "table-detail": "Chi tiết bảng",
-    "batch-action-disabled": "Không thể {action} đối với các cơ sở dữ liệu từ các dự án khác nhau",
-    "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được gán",
     "successfully-transferred-databases": "Đã chuyển thành công cơ sở dữ liệu",
     "nullable": "Có thể null",
     "expression": "Biểu thức",
@@ -1743,7 +1739,6 @@
     "go-to-transfer": "Đi tới chuyển",
     "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "selected-n-databases": "Đã chọn {n} cơ sở dữ liệu | Đã chọn {n} cơ sở dữ liệu",
-    "n-databases": "{n} cơ sở dữ liệu | {n} cơ sở dữ liệu",
     "sync-schema": {
       "title": "Đồng bộ lược đồ",
       "description": "Bytebase hỗ trợ đồng bộ hóa một lược đồ với một hoặc nhiều cơ sở dữ liệu đích. (Chỉ MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",

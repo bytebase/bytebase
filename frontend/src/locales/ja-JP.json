@@ -1335,7 +1335,6 @@
     "add-instance": "@:common.instance@:common.add",
     "new-project": "@:common.new@:common.project",
     "create-project": "@:common.create@:common.project",
-    "transfer-in-db": "転入",
     "from-unassigned-databases": "割り当てられていないデータベース",
     "from-projects": "他のプロジェクトから",
     "transfer-in-db-title": "データベースへの転送",
@@ -1398,7 +1397,6 @@
   },
   "instance": {
     "select-database-user": "データベースユーザーの選択",
-    "new-database": "@:common.new@:common.database",
     "syncing": "同期中 ...",
     "sync": {
       "self": "インスタンスの同期",
@@ -1723,8 +1721,6 @@
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "table-detail": "テーブルの詳細",
-    "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",
-    "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "successfully-transferred-databases": "データベースの移行が完了しました",
     "nullable": "null も可能",
     "expression": "式",
@@ -1743,7 +1739,6 @@
     "go-to-transfer": "転送に行く",
     "unassigned-databases": "未割り当てのデータベース",
     "selected-n-databases": "{n} 個のデータベースが選択されました",
-    "n-databases": "{n} データベース",
     "sync-schema": {
       "title": "データベーステーブルの同期",
       "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",

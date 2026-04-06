@@ -1335,7 +1335,6 @@
     "add-instance": "@:common.add@:common.instance",
     "new-project": "@:common.new@:common.project",
     "create-project": "@:common.create@:common.project",
-    "transfer-in-db": "转入",
     "from-unassigned-databases": "未分配的数据库",
     "from-projects": "从其他项目",
     "transfer-in-db-title": "转进数据库",
@@ -1398,7 +1397,6 @@
   },
   "instance": {
     "select-database-user": "选择数据库用户",
-    "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",
     "sync": {
       "self": "同步实例",
@@ -1723,8 +1721,6 @@
     "mixed-values-for-label": "该标签拥有不同的值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "table-detail": "表详情",
-    "batch-action-disabled": "无法对来自不同项目的数据库{action}",
-    "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-databases": "数据库转移完成",
     "nullable": "可为空",
     "expression": "表达式",
@@ -1743,7 +1739,6 @@
     "go-to-transfer": "前去转移",
     "unassigned-databases": "未分配的数据库",
     "selected-n-databases": "已选择 {n} 个数据库",
-    "n-databases": "{n} 个数据库",
     "sync-schema": {
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
