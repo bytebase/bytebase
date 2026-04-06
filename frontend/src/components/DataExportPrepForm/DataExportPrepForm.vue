@@ -163,6 +163,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { NButton, NInput, NStep, NSteps } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -365,7 +366,7 @@ const handleCreate = async () => {
     );
 
     const spec = create(Plan_SpecSchema, {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       config: {
         case: "exportDataConfig",
         value: create(Plan_ExportDataConfigSchema, {
