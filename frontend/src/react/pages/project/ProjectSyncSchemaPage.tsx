@@ -142,6 +142,19 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     statement: "",
   });
 
+  // Reset all state when projectId changes (e.g. navigating between projects)
+  useEffect(() => {
+    setIsLoading(true);
+    setCurrentStep(Step.SELECT_SOURCE_SCHEMA);
+    setSourceSchemaType(SourceSchemaType.SCHEMA_HISTORY_VERSION);
+    setChangelogSource({});
+    setRawSQLState({ engine: Engine.MYSQL, statement: "" });
+    setSelectedDatabaseNameList([]);
+    setSchemaDiffCache({});
+    setSelectedDatabaseName(undefined);
+    setSourceSchemaString("");
+  }, [projectId]);
+
   // Route change guard: warn when leaving with unsaved raw SQL
   useEffect(() => {
     const shouldGuard =
@@ -272,7 +285,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       }
       setIsLoading(false);
     })();
-  }, []);
+  }, [projectId]);
 
   const stepList = useMemo(
     () => [
@@ -765,6 +778,8 @@ function ChangelogSelector({
       return;
     }
 
+    let cancelled = false;
+
     (async () => {
       const { changelogs: fetchedChangelogs, nextPageToken: token } =
         await changelogStore.fetchChangelogList({
@@ -772,6 +787,8 @@ function ChangelogSelector({
           pageSize: 50,
           filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
         });
+
+      if (cancelled) return;
 
       let items = fetchedChangelogs.map(toEntry);
 
@@ -789,6 +806,10 @@ function ChangelogSelector({
         onChangeRef.current(items[0].name);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [database]);
 
   const loadMore = useCallback(async () => {
