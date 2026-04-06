@@ -165,6 +165,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     // Guard browser/tab unload
     const beforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
     window.addEventListener("beforeunload", beforeUnload);
 
@@ -246,8 +247,10 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     return rawSQLState.engine;
   }, [sourceSchemaType, changelogSource.databaseName, rawSQLState.engine]);
 
-  // On mount: check query params for changelog
+  // On mount / projectId change: check query params for changelog
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       const currentRoute = router.currentRoute.value;
       const changelogName = currentRoute.query.changelog as string;
@@ -258,6 +261,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
           changelogName,
           ChangelogView.FULL
         );
+        if (cancelled) return;
 
         const sourceChangelogName = changelogName;
         let targetChangelogName: string | undefined = undefined;
@@ -265,6 +269,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         if (isRollback) {
           const previousChangelog =
             await changelogStore.fetchPreviousChangelog(changelogName);
+          if (cancelled) return;
           if (previousChangelog) {
             targetChangelogName = previousChangelog.name;
           }
@@ -272,19 +277,25 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
 
         const { databaseName } =
           extractDatabaseNameAndChangelogUID(changelogName);
-        const database =
-          await databaseStore.getOrFetchDatabaseByName(databaseName);
+        await databaseStore.getOrFetchDatabaseByName(databaseName);
+        if (cancelled) return;
+        const database = databaseStore.getDatabaseByName(databaseName);
         setChangelogSource({
           environmentName: database.effectiveEnvironment,
           databaseName: databaseName,
           changelogName: sourceChangelogName,
           targetChangelogName: targetChangelogName,
         });
-        // Move to step 2 after a tick
-        setTimeout(() => setCurrentStep(Step.SELECT_TARGET_DATABASE_LIST), 0);
+        setTimeout(() => {
+          if (!cancelled) setCurrentStep(Step.SELECT_TARGET_DATABASE_LIST);
+        }, 0);
       }
-      setIsLoading(false);
+      if (!cancelled) setIsLoading(false);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   const stepList = useMemo(
