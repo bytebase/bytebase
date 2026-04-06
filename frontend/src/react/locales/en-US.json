@@ -60,6 +60,10 @@
       "self": "Condition"
     }
   },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
   "common": {
     "activated": "Activated",
     "active": "Active",
@@ -75,8 +79,11 @@
     "back": "Back",
     "cancel": "Cancel",
     "cannot-undo-this-action": "You cannot undo this action",
+    "changelog": "Changelog",
+    "classification-level": "Classification Level",
     "clear": "Clear",
     "close": "Close",
+    "columns": "Columns",
     "configure": "Configure",
     "configure-now": "Configure now",
     "confirm": "Confirm",
@@ -84,6 +91,7 @@
     "confirm-and-update": "Confirm and update",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
     "copied": "Copied",
     "copy": "Copy",
     "copy-failed": "Copy failed",
@@ -107,6 +115,7 @@
     "download": "Download",
     "edit": "Edit",
     "email": "Email",
+    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
     "empty": "Empty",
     "enable": "Enable",
     "enabled": "Enabled",
@@ -130,6 +139,7 @@
     "instance": "Instance",
     "instances": "Instances",
     "is-required": "is required",
+    "issues": "Issues",
     "items": "items",
     "key": "Key",
     "labels": "Labels",
@@ -137,11 +147,13 @@
     "leave-without-saving": "Leave without saving?",
     "load-more": "Load more",
     "loading": "Loading",
+    "manage": "Manage",
     "manually-select": "Manually select",
     "members_one": "Member",
     "members_other": "Members",
     "missing-required-permission": "Missing required permissions {{permissions}}",
     "n-items-selected": "{{n}} items selected",
+    "n-more": "+{{n}} more",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
@@ -160,19 +172,23 @@
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
     "resource": "Resource",
+    "resources": "Resources",
     "restore": "Restore",
     "restored": "Restored",
     "revert": "Revert",
+    "revoke": "Revoke",
     "revoked": "Revoked",
     "rows-per-page": "Rows per page",
     "save": "Save",
     "schema": "Schema",
+    "scope": "Scope",
     "search": "Search",
     "search-for-more": "Search for more",
     "select": "Please Select",
     "select-all": "Select all",
     "selected": "selected",
     "sensitive-placeholder": "Sensitive - write only",
+    "setting": "Setting",
     "settings": "Settings",
     "state": "State",
     "statement": "Statement",
@@ -194,18 +210,8 @@
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
-    "you": "you",
-    "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
-    "issues": "Issues",
-    "manage": "Manage",
-    "setting": "Setting",
     "webhooks": "Webhooks",
-    "revoke": "Revoke",
-    "n-more": "+{{n}} more",
-    "scope": "Scope",
-    "classification-level": "Classification Level",
-    "columns": "Columns",
-    "resources": "Resources"
+    "you": "you"
   },
   "create-db": {
     "cluster": "Cluster",
@@ -295,15 +301,34 @@
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
+    "sync-schema": {
+      "copy-schema": "Copy schema",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
+      "generated-ddl-statement": "Generated DDL statement",
+      "message": {
+        "no-diff-found": "No diff found.",
+        "no-target-databases": "No target databases",
+        "select-a-target-database-first": "Please select a target database first."
+      },
+      "no-diff": "No diff",
+      "preview-issue": "Preview issue",
+      "schema-change": "Schema change",
+      "schema-change-preview": "Preview Schema change for '{{database}}'",
+      "select-source-schema": "Select source schema",
+      "select-target-databases": "Select target databases",
+      "source-schema": "Source schema",
+      "synchronize-statements": "Corresponding generated DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements",
+      "target-databases": "Target databases",
+      "title": "Sync Schema",
+      "with-diff": "With diff"
+    },
     "sync-schema-button": "Sync Schema",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases",
-    "sync-schema": {
-      "title": "Sync Schema"
-    }
+    "unassign-alert-title": "Unassign databases"
   },
   "database-group": {
     "condition": {
@@ -335,6 +360,9 @@
   "error-page": {
     "not-found": "Not Found"
   },
+  "export-center": {
+    "data-export": "Data Export"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
@@ -351,6 +379,7 @@
       "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
       "title": "What is GitOps"
     },
+    "self": "GitOps",
     "test-setup": {
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
@@ -368,8 +397,7 @@
     },
     "workload-identity": {
       "select-placeholder": "Select a workload identity"
-    },
-    "self": "GitOps"
+    }
   },
   "identity-provider": {
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",
@@ -424,7 +452,8 @@
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
       "use-cel": "Use CEL Expression"
-    }
+    },
+    "upload-sql": "Upload SQL"
   },
   "label": {
     "error": {
@@ -442,6 +471,9 @@
       "visit-issues": "Visit Issues",
       "visit-prjects": "Visit Projects"
     }
+  },
+  "plan": {
+    "plans": "Plans"
   },
   "policy": {
     "environment-tier": {
@@ -484,6 +516,19 @@
       "success-prompt": "Successfully created project {{name}}."
     },
     "filter-projects": "Filter projects",
+    "masking-exemption": {
+      "all-levels": "All levels",
+      "expires-in-days_one": "Expires in {{days}} day",
+      "expires-in-days_other": "Expires in {{days}} days",
+      "expires-today": "Expires today",
+      "grant-exemption": "Grant Exemption",
+      "n-exemptions_one": "{{n}} exemption",
+      "n-exemptions_other": "{{n}} exemptions",
+      "no-exemptions": "No masking exemptions granted yet",
+      "no-reason": "No reason provided",
+      "revoke-exemption-title": "Remove masking exemption for {{member}}?",
+      "self": "Masking Exemptions"
+    },
     "members": {
       "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
@@ -595,19 +640,6 @@
       "test-webhook": "Test Webhook",
       "triggering-activity": "Triggering activities",
       "webhook-url": "Webhook URL"
-    },
-    "masking-exemption": {
-      "self": "Masking Exemptions",
-      "grant-exemption": "Grant Exemption",
-      "revoke-exemption-title": "Remove masking exemption for {{member}}?",
-      "no-reason": "No reason provided",
-      "no-exemptions": "No masking exemptions granted yet",
-      "expires-today": "Expires today",
-      "expires-in-days_one": "Expires in {{days}} day",
-      "expires-in-days_other": "Expires in {{days}} days",
-      "all-levels": "All levels",
-      "n-exemptions_one": "{{n}} exemption",
-      "n-exemptions_other": "{{n}} exemptions"
     }
   },
   "quick-action": {
@@ -616,6 +648,9 @@
     "create-project": "Create Project",
     "new-db": "New DB",
     "new-project": "New Project"
+  },
+  "release": {
+    "releases": "Releases"
   },
   "remind": {
     "release": {
@@ -659,6 +694,9 @@
     "workspace-roles": {
       "self": "Workspace roles"
     }
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
   },
   "schema-template": {
     "classification": {
@@ -929,9 +967,9 @@
       "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "revoked": "Revoked",
       "search-member": "Search member",
+      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-account_one": "Select account",
       "select-account_other": "Select accounts",
-      "select-account-hint": "You can search for users and groups, or input the entire email to select the service account or workload identity.",
       "select-role_one": "Select role",
       "select-role_other": "Select roles",
       "service-account": "Service Account",
@@ -985,7 +1023,6 @@
       "subscription": "(Upgrade to enable role management)"
     },
     "sensitive-data": {
-      "never-expires": "Never expires",
       "algorithms": {
         "add": "Add algorithm",
         "edit": "Edit algorithm",
@@ -1048,6 +1085,7 @@
         },
         "re-order": "Re-order"
       },
+      "never-expires": "Never expires",
       "semantic-types": {
         "add-from-template": "Add from template",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
@@ -1173,6 +1211,7 @@
     }
   },
   "sql-editor": {
+    "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -1181,8 +1220,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
-    "view-issue": "View Issue",
-    "access-grants": "Access Grants"
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1225,6 +1263,7 @@
     "contact-us": "Contact us",
     "current": "Current plan",
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
+    "disabled-feature": "Disabled Feature",
     "enterprise-free-trial": "{{days}}-day free Enterprise trial",
     "expired": "expired",
     "expires-at": "Expires at",
@@ -1315,8 +1354,7 @@
         "title": "User count limit",
         "upgrade": "Upgrade to get more user quota."
       }
-    },
-    "disabled-feature": "Disabled Feature"
+    }
   },
   "two-factor": {
     "description": "Two-factor authentication provides an extra layer of security for member accounts. When signing in, you will be required to enter the security code generated by your Authenticator App.",
@@ -1365,14 +1403,5 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
-  },
-  "export-center": {
-    "data-export": "Data Export"
-  },
-  "plan": {
-    "plans": "Plans"
-  },
-  "release": {
-    "releases": "Releases"
   }
 }
