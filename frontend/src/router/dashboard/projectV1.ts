@@ -300,9 +300,11 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.changelogs.get",
           ],
         },
-        component: () =>
-          import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectSyncSchemaPage",
+          ...route.params,
+        }),
       },
       {
         path: "audit-logs",
