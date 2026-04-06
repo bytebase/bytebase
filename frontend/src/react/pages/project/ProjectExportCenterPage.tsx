@@ -1,5 +1,5 @@
 import { Download, Loader2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -77,6 +77,11 @@ export function ProjectExportCenterPage({ projectId }: { projectId: string }) {
 
   const [searchParams, setSearchParams] =
     useState<SearchParams>(defaultSearchParams);
+
+  // Reset search params when projectId changes (e.g. navigating between projects)
+  useEffect(() => {
+    setSearchParams(defaultSearchParams());
+  }, [projectId]);
 
   // Scope options for the search bar
   const scopeOptions: ScopeOption[] = useMemo(
