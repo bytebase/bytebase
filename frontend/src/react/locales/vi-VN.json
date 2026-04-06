@@ -72,6 +72,7 @@
     "added": "Đã thêm",
     "address": "Địa chỉ",
     "all": "Tất cả",
+    "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "archive-resource": "Archive {{type}}",
@@ -83,6 +84,7 @@
     "classification-level": "Cấp phân loại",
     "clear": "Xóa",
     "close": "Đóng",
+    "closed": "Đã đóng",
     "columns": "Cột",
     "configure": "Cấu hình",
     "configure-now": "Cấu hình ngay",
@@ -167,6 +169,7 @@
     "projects": "Dự án",
     "reason": "Reason",
     "regenerate": "Tạo lại",
+    "rejected": "Đã từ chối",
     "release": "Phiên bản",
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
@@ -190,6 +193,7 @@
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "setting": "Cài đặt",
     "settings": "Cài đặt",
+    "sql": "SQL",
     "state": "Trạng thái",
     "statement": "Câu lệnh",
     "status": "Trạng thái",
@@ -202,6 +206,7 @@
     "type": "Loại",
     "unassigned": "Chưa gán",
     "unlimited": "Không giới hạn",
+    "untitled": "Không tiêu đề",
     "update": "Cập nhật",
     "updated": "Đã cập nhật",
     "upload": "Tải lên",
@@ -250,6 +255,9 @@
         },
         "presets-title": "Mẫu có sẵn"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "Đang tạo quy trình phê duyệt"
     },
     "risk": {
       "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
@@ -363,6 +371,9 @@
   "export-center": {
     "data-export": "Xuất dữ liệu"
   },
+  "export-data": {
+    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
@@ -446,12 +457,28 @@
     "advanced-search": {
       "filter": "Bộ lọc"
     },
+    "data-export": {
+      "format": "Định dạng",
+      "limits": "Giới hạn",
+      "options": "Tùy chọn"
+    },
     "labels": "Nhãn vấn đề",
+    "risk-level": {
+      "high": "Cao",
+      "moderate": "Trung bình",
+      "self": "Mức độ rủi ro"
+    },
     "role-grant": {
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "manually-select": "Chọn thủ công",
       "use-cel": "Sử dụng biểu thức CEL"
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "Mở",
+      "waiting-role": "Waiting: {{role}}"
     },
     "upload-sql": "Upload SQL"
   },
@@ -473,7 +500,10 @@
     }
   },
   "plan": {
-    "plans": "Kế hoạch"
+    "plans": "Kế hoạch",
+    "targets": {
+      "title": "Mục tiêu"
+    }
   },
   "policy": {
     "environment-tier": {
@@ -647,7 +677,8 @@
     "create-db": "Tạo cơ sở dữ liệu",
     "create-project": "Tạo Dự án",
     "new-db": "Cơ sở dữ liệu mới",
-    "new-project": "Mới Dự án"
+    "new-project": "Mới Dự án",
+    "request-export-data": "Yêu cầu Xuất"
   },
   "release": {
     "releases": "Bản phát hành"

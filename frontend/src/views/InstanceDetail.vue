@@ -40,23 +40,13 @@
             :placeholder="$t('database.filter-database')"
             :scope-options="scopeOptions"
           />
-          <DatabaseOperations
-            :databases="selectedDatabases"
-            :instance-name="instance.name"
-            :on-create-database="allowCreateDatabase && instance.state === State.ACTIVE ? createDatabase : undefined"
-            @refresh="() => pagedDatabaseTableRef?.refresh()"
-            @update="
-              (databases) => pagedDatabaseTableRef?.updateCache(databases)
-            "
-          />
           <PagedDatabaseTable
             ref="pagedDatabaseTableRef"
             mode="INSTANCE"
             :footer-class="'pb-4'"
-            :show-selection="true"
+            :show-selection="false"
             :filter="filter"
             :parent="instance.name"
-            v-model:selected-database-names="state.selectedDatabaseNameList"
           />
         </div>
       </NTabPane>
@@ -66,16 +56,6 @@
     </NTabs>
   </div>
 
-  <Drawer
-    v-model:show="state.showCreateDatabaseModal"
-    :title="$t('quick-action.create-db')"
-  >
-    <CreateDatabasePrepPanel
-      :environment-name="formatEnvironmentName(environment.id)"
-      :instance-name="instance.name"
-      @dismiss="state.showCreateDatabaseModal = false"
-    />
-  </Drawer>
 </template>
 
 <script lang="tsx" setup>
@@ -88,7 +68,6 @@ import { BBAttention } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
-import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
 import InstanceActionDropdown from "@/components/Instance/InstanceActionDropdown.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
@@ -97,31 +76,21 @@ import {
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import { Drawer, InstanceRoleTable } from "@/components/v2";
-import {
-  DatabaseOperations,
-  PagedDatabaseTable,
-} from "@/components/v2/Model/DatabaseV1Table";
+import { InstanceRoleTable } from "@/components/v2";
+import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { formatEnvironmentName, isValidDatabaseName } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { SearchParams, SearchScope } from "@/utils";
 import {
   CommonFilterScopeIdList,
   getValueFromSearchParams,
   getValuesFromSearchParams,
-  instanceV1HasCreateDatabase,
   instanceV1Name,
   setDocumentTitle,
 } from "@/utils";
@@ -132,9 +101,7 @@ const isInstanceHash = (x: unknown): x is InstanceHash =>
   instanceHashList.includes(x as InstanceHash);
 
 interface LocalState {
-  showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  selectedDatabaseNameList: string[];
   params: SearchParams;
   selectedTab: InstanceHash;
 }
@@ -170,9 +137,7 @@ const readonlyScopes = computed((): SearchScope[] => [
 ]);
 
 const state = reactive<LocalState>({
-  showCreateDatabaseModal: false,
   syncingSchema: false,
-  selectedDatabaseNameList: [],
   params: {
     query: "",
     scopes: [...readonlyScopes.value],
@@ -218,12 +183,6 @@ const instance = computed(() => {
   );
 });
 
-const environment = computed(() => {
-  return useEnvironmentV1Store().getEnvironmentByName(
-    instance.value.environment ?? ""
-  );
-});
-
 const selectedEnvironment = computed(() => {
   return getValueFromSearchParams(
     state.params,
@@ -251,20 +210,12 @@ const instanceRoleList = computed(() => {
   return instance.value.roles;
 });
 
-const allowCreateDatabase = computed(() => {
-  return instanceV1HasCreateDatabase(instance.value);
-});
-
 const syncSchema = async (enableFullSync: boolean) => {
   await instanceV1Store.syncInstance(instance.value.name, enableFullSync);
   // Remove the database list cache for the instance.
   databaseStore.removeCacheByInstance(instance.value.name);
   // Note: Notification is now handled by InstanceSyncButton component
   // which shows an honest "syncing" message and checks for errors after 30 seconds
-};
-
-const createDatabase = () => {
-  state.showCreateDatabaseModal = true;
 };
 
 watch(
@@ -274,10 +225,4 @@ watch(
   },
   { immediate: true }
 );
-
-const selectedDatabases = computed((): Database[] => {
-  return state.selectedDatabaseNameList
-    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
-    .filter((database) => isValidDatabaseName(database.name));
-});
 </script>

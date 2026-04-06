@@ -72,6 +72,7 @@
     "added": "Agregado",
     "address": "Dirección",
     "all": "Todos",
+    "approved": "Aprobado",
     "archive": "Archivo",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "archive-resource": "Archive {{type}}",
@@ -83,6 +84,7 @@
     "classification-level": "Nivel de clasificación",
     "clear": "Limpiar",
     "close": "Cerrar",
+    "closed": "Cerrado",
     "columns": "Columnas",
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
@@ -167,6 +169,7 @@
     "projects": "Proyectos",
     "reason": "Reason",
     "regenerate": "Regenerar",
+    "rejected": "Rechazado",
     "release": "Versión",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
@@ -190,6 +193,7 @@
     "sensitive-placeholder": "Sensible - solo escritura",
     "setting": "Configuración",
     "settings": "Configuraciones",
+    "sql": "SQL",
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
@@ -202,6 +206,7 @@
     "type": "Tipo",
     "unassigned": "No asignado",
     "unlimited": "Ilimitado",
+    "untitled": "Sin título",
     "update": "Actualizar",
     "updated": "Actualizado",
     "upload": "Subir",
@@ -250,6 +255,9 @@
         },
         "presets-title": "Plantillas"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "Generando flujo de aprobación"
     },
     "risk": {
       "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
@@ -363,6 +371,9 @@
   "export-center": {
     "data-export": "Exportación de datos"
   },
+  "export-data": {
+    "password-optional": "Cifrar con contraseña (opcional)"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
@@ -446,12 +457,28 @@
     "advanced-search": {
       "filter": "Filtrar"
     },
+    "data-export": {
+      "format": "Formato",
+      "limits": "Límites",
+      "options": "Opciones de exportación"
+    },
     "labels": "Etiquetas de problema",
+    "risk-level": {
+      "high": "Alto",
+      "moderate": "Moderado",
+      "self": "Nivel de riesgo"
+    },
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "use-cel": "Usar expresión CEL"
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "Abierto",
+      "waiting-role": "Waiting: {{role}}"
     },
     "upload-sql": "Upload SQL"
   },
@@ -473,7 +500,10 @@
     }
   },
   "plan": {
-    "plans": "Planes"
+    "plans": "Planes",
+    "targets": {
+      "title": "Objetivos"
+    }
   },
   "policy": {
     "environment-tier": {
@@ -647,7 +677,8 @@
     "create-db": "Crear base de datos",
     "create-project": "Crear Proyecto",
     "new-db": "Nueva BD",
-    "new-project": "Nuevo Proyecto"
+    "new-project": "Nuevo Proyecto",
+    "request-export-data": "Solicitar exportación"
   },
   "release": {
     "releases": "Lanzamientos"
