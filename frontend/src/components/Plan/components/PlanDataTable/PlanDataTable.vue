@@ -65,7 +65,7 @@ type StatusTag = {
   type?: TagProps["type"];
 };
 
-const getApprovalStatusTag = (plan: Plan): StatusTag => {
+const getApprovalStatusTag = (plan: Plan): StatusTag | undefined => {
   if (plan.issue === "") {
     return undefined;
   }
