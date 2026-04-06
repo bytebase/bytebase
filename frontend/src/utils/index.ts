@@ -19,7 +19,6 @@ export * from "./workspaceApprovalSetting";
 export * from "./TinyTimer";
 export * from "./sheet";
 export * from "./naive-ui";
-export * from "./useDashboardSidebar";
 export * from "./workloadIdentity";
 
 export * from "./v1";

@@ -251,7 +251,6 @@
     "title": "Tiêu đề",
     "text-wrap": "Ngắt dòng văn bản",
     "catalog": "Danh mục",
-    "remove": "Xóa",
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
     "draft": "Bản nháp",
@@ -447,8 +446,6 @@
       "integration": "Tích hợp",
       "general": "Chung",
       "members": "Thành viên",
-      "users-and-groups": "Người dùng & Nhóm",
-      "members-and-groups": "Thành viên & Nhóm",
       "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
       "mcp": "MCP",
@@ -488,7 +485,6 @@
       "inactive-workload-identities": "Danh tính Workload không hoạt động",
       "table": {
         "account": "Tài khoản",
-        "role": "Vai trò",
         "groups": "Nhóm",
         "roles": "Vai trò"
       },
@@ -501,7 +497,6 @@
           "email-tips": "Email phải là duy nhất, và không thể thay đổi sau khi tạo.",
           "title": "Tiêu đề",
           "description": "Mô tả",
-          "members": "Thành viên",
           "role": {
             "owner": "Chủ sở hữu nhóm",
             "member": "Thành viên nhóm"
@@ -778,9 +773,7 @@
             "self": "Thời gian truy vấn tối đa",
             "description": "Thời gian tối đa cho phép để thực hiện một truy vấn."
           },
-          "seconds": "Giây",
-          "project-scope": "dự án",
-          "environment-scope": "môi trường"
+          "seconds": "Giây"
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
@@ -1910,7 +1903,6 @@
     "settings": {
       "success-updated": "Đã cập nhật thành công cài đặt dự án.",
       "update-failed": "Không cập nhật được cài đặt dự án.",
-      "success-member-added-prompt": "Đã thêm thành công vào dự án.",
       "restore": {
         "title": "Khôi phục dự án",
         "btn-text": "Khôi phục @.lower:{'common.project'} này"
@@ -1986,19 +1978,11 @@
     },
     "members": {
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
-      "edit": "Chỉnh sửa thành viên - {member}",
-      "view-by-members": "Xem theo thành viên",
-      "view-by-roles": "Xem theo vai trò",
-      "revoke-role-from-user": "Thu hồi '{role}' từ '{user}'",
       "never-expires": "Không bao giờ",
       "role-never-expires": "Vai trò này không bao giờ hết hạn.",
-      "add-more": "Thêm",
-      "condition-name": "Tên điều kiện",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
-      "project-level-roles": "Vai trò cấp độ dự án",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
-      "disallow-ddl": "Không cho phép chạy câu lệnh DDL/DML trong tất cả các môi trường."
+      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn."
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
@@ -2491,10 +2475,8 @@
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
     "create-policy": "Tạo chính sách đánh giá SQL",
-    "select-review": "Chọn đánh giá SQL",
     "select-review-rules": "Chọn quy tắc đánh giá SQL",
     "select-all": "Chọn tất cả",
-    "select-review-label": "Bạn có thể đính kèm chính sách đánh giá SQL hiện có vào tài nguyên hoặc {create}.",
     "configure-policy": "Định cấu hình chính sách",
     "policy-removed": "Đã xóa thành công chính sách đánh giá.",
     "policy-created": "Đã tạo thành công chính sách đánh giá.",
@@ -2528,7 +2510,6 @@
       "configure-rule": {
         "name": "Định cấu hình quy tắc",
         "change-template": "Thay đổi mẫu",
-        "confirm-override-title": "Xác nhận thay đổi",
         "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè"
       }
     },
@@ -2543,8 +2524,7 @@
       "name": "Cấp độ",
       "error": "Lỗi",
       "warning": "Cảnh báo"
-    },
-    "tooltip-for-resource": "Bạn cũng có thể cấu hình ở cấp độ {scope}. Bytebase sẽ ưu tiên cấu hình ở cấp độ môi trường."
+    }
   },
   "agent": {
     "assistant-title": "Trợ lý Bytebase",
@@ -2869,7 +2849,6 @@
     },
     "title": "Tiêu đề",
     "select-role": "Chọn vai trò",
-    "expired-tip": "Vai trò có thể đã hết hạn.",
     "import-from-role": "Nhập từ vai trò",
     "workspace-roles": {
       "self": "Vai trò không gian làm việc"

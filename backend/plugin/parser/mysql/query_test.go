@@ -91,7 +91,6 @@ func TestValidateSQLForEditor(t *testing.T) {
 				`,
 			valid:       false,
 			gotAllQuery: false,
-			err:         true,
 		},
 		{
 			statement:   "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",

@@ -1746,7 +1746,7 @@ type SearchQueryHistoriesRequest struct {
 	// - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
 	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
 	// - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-	// - statement: the SQL statement, support ".matches()" operator.
+	// - statement: the SQL statement, support ".contains()" operator.
 	//
 	// For example:
 	// project == "projects/{project}"
@@ -1754,8 +1754,8 @@ type SearchQueryHistoriesRequest struct {
 	// instance == "instances/{instance}"
 	// type == "QUERY"
 	// type == "EXPORT"
-	// statement.matches("select")
-	// type == "QUERY" && statement.matches("select")
+	// statement.contains("select")
+	// type == "QUERY" && statement.contains("select")
 	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

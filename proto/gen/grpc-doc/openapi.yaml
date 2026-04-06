@@ -745,18 +745,18 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - title: the group title, support "==" and ".matches()" operator.
-             - email: the group email, support "==" and ".matches()" operator.
+             - title: the group title, support "==" and ".contains()" operator.
+             - email: the group email, support "==" and ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
 
              For example:
              title == "dba"
              email == "dba@bytebase.com"
-             title.matches("dba")
-             email.matches("dba")
+             title.contains("dba")
+             email.contains("dba")
              project == "projects/sample-project"
              You can combine filter conditions like:
-             title.matches("dba") || email.matches("dba")
+             title.contains("dba") || email.contains("dba")
           schema:
             type: string
             title: filter
@@ -765,18 +765,18 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - title: the group title, support "==" and ".matches()" operator.
-               - email: the group email, support "==" and ".matches()" operator.
+               - title: the group title, support "==" and ".contains()" operator.
+               - email: the group email, support "==" and ".contains()" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
 
                For example:
                title == "dba"
                email == "dba@bytebase.com"
-               title.matches("dba")
-               email.matches("dba")
+               title.contains("dba")
+               email.contains("dba")
                project == "projects/sample-project"
                You can combine filter conditions like:
-               title.matches("dba") || email.matches("dba")
+               title.contains("dba") || email.contains("dba")
       responses:
         "200":
           description: Success
@@ -1596,21 +1596,21 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filters:
-             - name: the instance name, support "==" and ".matches()" operator.
-             - resource_id: the instance id, support "==" and ".matches()" operator.
+             - name: the instance name, support "==" and ".contains()" operator.
+             - resource_id: the instance id, support "==" and ".contains()" operator.
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - state: the instance state, check State enum for values, support "==" operator.
              - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-             - host: the instance host, support "==" and ".matches()" operator.
-             - port: the instance port, support "==" and ".matches()" operator.
+             - host: the instance host, support "==" and ".contains()" operator.
+             - port: the instance port, support "==" and ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - labels.{key}: the instance label, support "==" and "in" operators.
 
              For example:
              name == "sample instance"
-             name.matches("sample")
+             name.contains("sample")
              resource_id == "sample-instance"
-             resource_id.matches("sample")
+             resource_id.contains("sample")
              state == "DELETED"
              environment == "environments/test"
              environment == "" (find instances which environment is not set)
@@ -1618,14 +1618,14 @@ paths:
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              host == "127.0.0.1"
-             host.matches("127.0")
+             host.contains("127.0")
              port == "54321"
-             port.matches("543")
+             port.contains("543")
              labels.org_group == "infrastructure"
              labels.environment in ["prod", "production"]
              project == "projects/sample-project"
              You can combine filter conditions like:
-             name.matches("sample") && environment == "environments/test"
+             name.contains("sample") && environment == "environments/test"
              host == "127.0.0.1" && port == "54321"
           schema:
             type: string
@@ -1635,21 +1635,21 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filters:
-               - name: the instance name, support "==" and ".matches()" operator.
-               - resource_id: the instance id, support "==" and ".matches()" operator.
+               - name: the instance name, support "==" and ".contains()" operator.
+               - resource_id: the instance id, support "==" and ".contains()" operator.
                - environment: the environment full name in "environments/{id}" format, support "==" operator.
                - state: the instance state, check State enum for values, support "==" operator.
                - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-               - host: the instance host, support "==" and ".matches()" operator.
-               - port: the instance port, support "==" and ".matches()" operator.
+               - host: the instance host, support "==" and ".contains()" operator.
+               - port: the instance port, support "==" and ".contains()" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
                - labels.{key}: the instance label, support "==" and "in" operators.
 
                For example:
                name == "sample instance"
-               name.matches("sample")
+               name.contains("sample")
                resource_id == "sample-instance"
-               resource_id.matches("sample")
+               resource_id.contains("sample")
                state == "DELETED"
                environment == "environments/test"
                environment == "" (find instances which environment is not set)
@@ -1657,14 +1657,14 @@ paths:
                engine in ["MYSQL", "POSTGRES"]
                !(engine in ["MYSQL", "POSTGRES"])
                host == "127.0.0.1"
-               host.matches("127.0")
+               host.contains("127.0")
                port == "54321"
-               port.matches("543")
+               port.contains("543")
                labels.org_group == "infrastructure"
                labels.environment in ["prod", "production"]
                project == "projects/sample-project"
                You can combine filter conditions like:
-               name.matches("sample") && environment == "environments/test"
+               name.contains("sample") && environment == "environments/test"
                host == "127.0.0.1" && port == "54321"
         - name: orderBy
           in: query
@@ -2118,12 +2118,12 @@ paths:
 
              Supported filter:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
-             - name: the database name, support ".matches()" operator.
+             - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - instance: the instance full name in "instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-             - table: filter by the database table, support "==" and ".matches()" operator.
+             - table: filter by the database table, support "==" and ".contains()" operator.
              - labels.{key}: the database label, support "==" and "in" operators.
 
              For example:
@@ -2131,19 +2131,19 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
-             name.matches("database name")
+             name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              exclude_unassigned == true
              table == "sample"
-             table.matches("sam")
+             table.contains("sam")
              labels.environment == "production"
              labels.region == "asia"
              labels.region in ["asia", "europe"]
 
              You can combine filter conditions like:
-             environment == "environments/prod" && name.matches("employee")
+             environment == "environments/prod" && name.contains("employee")
           schema:
             type: string
             title: filter
@@ -2153,12 +2153,12 @@ paths:
 
                Supported filter:
                - environment: the environment full name in "environments/{id}" format, support "==" operator.
-               - name: the database name, support ".matches()" operator.
+               - name: the database name, support ".contains()" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
                - instance: the instance full name in "instances/{id}" format, support "==" operator.
                - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-               - table: filter by the database table, support "==" and ".matches()" operator.
+               - table: filter by the database table, support "==" and ".contains()" operator.
                - labels.{key}: the database label, support "==" and "in" operators.
 
                For example:
@@ -2166,19 +2166,19 @@ paths:
                environment == "" (find databases which environment is not set)
                project == "projects/{project resource id}"
                instance == "instances/{instance resource id}"
-               name.matches("database name")
+               name.contains("database name")
                engine == "MYSQL"
                engine in ["MYSQL", "POSTGRES"]
                !(engine in ["MYSQL", "POSTGRES"])
                exclude_unassigned == true
                table == "sample"
-               table.matches("sam")
+               table.contains("sam")
                labels.environment == "production"
                labels.region == "asia"
                labels.region in ["asia", "europe"]
 
                You can combine filter conditions like:
-               environment == "environments/prod" && name.matches("employee")
+               environment == "environments/prod" && name.contains("employee")
         - name: showDeleted
           in: query
           description: Show deleted database if specified.
@@ -2816,14 +2816,14 @@ paths:
 
              Supported filter:
              - schema: the schema name, support "==" operator.
-             - table: the table name, support "==" and ".matches()" operator.
+             - table: the table name, support "==" and ".contains()" operator.
 
              For example:
              schema == "schema-a"
              table == "table-a"
-             table.matches("table-a")
-             schema == "schema-a" && table.matches("sample")
-             The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
+             table.contains("table-a")
+             schema == "schema-a" && table.contains("sample")
+             The filter is used to search for tables containing "sample" in the schema "schemas/schema-a".
              The column masking level will only be returned when a table filter is used.
           schema:
             type: string
@@ -2834,14 +2834,14 @@ paths:
 
                Supported filter:
                - schema: the schema name, support "==" operator.
-               - table: the table name, support "==" and ".matches()" operator.
+               - table: the table name, support "==" and ".contains()" operator.
 
                For example:
                schema == "schema-a"
                table == "table-a"
-               table.matches("table-a")
-               schema == "schema-a" && table.matches("sample")
-               The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
+               table.contains("table-a")
+               schema == "schema-a" && table.contains("sample")
+               The filter is used to search for tables containing "sample" in the schema "schemas/schema-a".
                The column masking level will only be returned when a table filter is used.
         - name: limit
           in: query
@@ -7750,12 +7750,12 @@ paths:
 
              Supported filter:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
-             - name: the database name, support ".matches()" operator.
+             - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - instance: the instance full name in "instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-             - table: filter by the database table, support "==" and ".matches()" operator.
+             - table: filter by the database table, support "==" and ".contains()" operator.
              - labels.{key}: the database label, support "==" and "in" operators.
 
              For example:
@@ -7763,19 +7763,19 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
-             name.matches("database name")
+             name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              exclude_unassigned == true
              table == "sample"
-             table.matches("sam")
+             table.contains("sam")
              labels.environment == "production"
              labels.region == "asia"
              labels.region in ["asia", "europe"]
 
              You can combine filter conditions like:
-             environment == "environments/prod" && name.matches("employee")
+             environment == "environments/prod" && name.contains("employee")
           schema:
             type: string
             title: filter
@@ -7785,12 +7785,12 @@ paths:
 
                Supported filter:
                - environment: the environment full name in "environments/{id}" format, support "==" operator.
-               - name: the database name, support ".matches()" operator.
+               - name: the database name, support ".contains()" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
                - instance: the instance full name in "instances/{id}" format, support "==" operator.
                - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-               - table: filter by the database table, support "==" and ".matches()" operator.
+               - table: filter by the database table, support "==" and ".contains()" operator.
                - labels.{key}: the database label, support "==" and "in" operators.
 
                For example:
@@ -7798,19 +7798,19 @@ paths:
                environment == "" (find databases which environment is not set)
                project == "projects/{project resource id}"
                instance == "instances/{instance resource id}"
-               name.matches("database name")
+               name.contains("database name")
                engine == "MYSQL"
                engine in ["MYSQL", "POSTGRES"]
                !(engine in ["MYSQL", "POSTGRES"])
                exclude_unassigned == true
                table == "sample"
-               table.matches("sam")
+               table.contains("sam")
                labels.environment == "production"
                labels.region == "asia"
                labels.region in ["asia", "europe"]
 
                You can combine filter conditions like:
-               environment == "environments/prod" && name.matches("employee")
+               environment == "environments/prod" && name.contains("employee")
         - name: showDeleted
           in: query
           description: Show deleted database if specified.
@@ -11202,16 +11202,16 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the service account name, support "==" and ".matches()" operator.
-             - email: the service account email, support "==" and ".matches()" operator.
+             - name: the service account name, support "==" and ".contains()" operator.
+             - email: the service account email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@service.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
           schema:
             type: string
             title: filter
@@ -11220,16 +11220,16 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - name: the service account name, support "==" and ".matches()" operator.
-               - email: the service account email, support "==" and ".matches()" operator.
+               - name: the service account name, support "==" and ".contains()" operator.
+               - email: the service account email, support "==" and ".contains()" operator.
                - state: check State enum for values, support "==" operator.
 
                For example:
                name == "ed"
-               name.matches("ed")
+               name.contains("ed")
                state == "DELETED"
                email == "ed@service.bytebase.com"
-               email.matches("ed")
+               email.contains("ed")
       responses:
         "200":
           description: Success
@@ -11749,16 +11749,16 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the workload identity name, support "==" and ".matches()" operator.
-             - email: the workload identity email, support "==" and ".matches()" operator.
+             - name: the workload identity name, support "==" and ".contains()" operator.
+             - email: the workload identity email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@workload.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
           schema:
             type: string
             title: filter
@@ -11767,16 +11767,16 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - name: the workload identity name, support "==" and ".matches()" operator.
-               - email: the workload identity email, support "==" and ".matches()" operator.
+               - name: the workload identity name, support "==" and ".contains()" operator.
+               - email: the workload identity email, support "==" and ".contains()" operator.
                - state: check State enum for values, support "==" operator.
 
                For example:
                name == "ed"
-               name.matches("ed")
+               name.contains("ed")
                state == "DELETED"
                email == "ed@workload.bytebase.com"
-               email.matches("ed")
+               email.contains("ed")
       responses:
         "200":
           description: Success
@@ -14304,20 +14304,20 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the user name, support "==" and ".matches()" operator.
-             - email: the user email, support "==" and ".matches()" operator.
+             - name: the user name, support "==" and ".contains()" operator.
+             - email: the user email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              email == "ed@bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
              state == "DELETED"
              project == "projects/sample-project"
              You can combine filter conditions like:
-             name.matches("ed") && project == "projects/sample-project"
+             name.contains("ed") && project == "projects/sample-project"
              (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
           schema:
             type: string
@@ -14327,20 +14327,20 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - name: the user name, support "==" and ".matches()" operator.
-               - email: the user email, support "==" and ".matches()" operator.
+               - name: the user name, support "==" and ".contains()" operator.
+               - email: the user email, support "==" and ".contains()" operator.
                - state: check State enum for values, support "==" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
 
                For example:
                name == "ed"
-               name.matches("ed")
+               name.contains("ed")
                email == "ed@bytebase.com"
-               email.matches("ed")
+               email.contains("ed")
                state == "DELETED"
                project == "projects/sample-project"
                You can combine filter conditions like:
-               name.matches("ed") && project == "projects/sample-project"
+               name.contains("ed") && project == "projects/sample-project"
                (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
       responses:
         "200":
@@ -15299,12 +15299,12 @@ paths:
 
              Supported filter:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
-             - name: the database name, support ".matches()" operator.
+             - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - instance: the instance full name in "instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-             - table: filter by the database table, support "==" and ".matches()" operator.
+             - table: filter by the database table, support "==" and ".contains()" operator.
              - labels.{key}: the database label, support "==" and "in" operators.
 
              For example:
@@ -15312,19 +15312,19 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
-             name.matches("database name")
+             name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              exclude_unassigned == true
              table == "sample"
-             table.matches("sam")
+             table.contains("sam")
              labels.environment == "production"
              labels.region == "asia"
              labels.region in ["asia", "europe"]
 
              You can combine filter conditions like:
-             environment == "environments/prod" && name.matches("employee")
+             environment == "environments/prod" && name.contains("employee")
           schema:
             type: string
             title: filter
@@ -15334,12 +15334,12 @@ paths:
 
                Supported filter:
                - environment: the environment full name in "environments/{id}" format, support "==" operator.
-               - name: the database name, support ".matches()" operator.
+               - name: the database name, support ".contains()" operator.
                - project: the project full name in "projects/{id}" format, support "==" operator.
                - instance: the instance full name in "instances/{id}" format, support "==" operator.
                - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
                - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-               - table: filter by the database table, support "==" and ".matches()" operator.
+               - table: filter by the database table, support "==" and ".contains()" operator.
                - labels.{key}: the database label, support "==" and "in" operators.
 
                For example:
@@ -15347,19 +15347,19 @@ paths:
                environment == "" (find databases which environment is not set)
                project == "projects/{project resource id}"
                instance == "instances/{instance resource id}"
-               name.matches("database name")
+               name.contains("database name")
                engine == "MYSQL"
                engine in ["MYSQL", "POSTGRES"]
                !(engine in ["MYSQL", "POSTGRES"])
                exclude_unassigned == true
                table == "sample"
-               table.matches("sam")
+               table.contains("sam")
                labels.environment == "production"
                labels.region == "asia"
                labels.region in ["asia", "europe"]
 
                You can combine filter conditions like:
-               environment == "environments/prod" && name.matches("employee")
+               environment == "environments/prod" && name.contains("employee")
         - name: showDeleted
           in: query
           description: Show deleted database if specified.
@@ -15858,16 +15858,16 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the service account name, support "==" and ".matches()" operator.
-             - email: the service account email, support "==" and ".matches()" operator.
+             - name: the service account name, support "==" and ".contains()" operator.
+             - email: the service account email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@service.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
           schema:
             type: string
             title: filter
@@ -15876,16 +15876,16 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - name: the service account name, support "==" and ".matches()" operator.
-               - email: the service account email, support "==" and ".matches()" operator.
+               - name: the service account name, support "==" and ".contains()" operator.
+               - email: the service account email, support "==" and ".contains()" operator.
                - state: check State enum for values, support "==" operator.
 
                For example:
                name == "ed"
-               name.matches("ed")
+               name.contains("ed")
                state == "DELETED"
                email == "ed@service.bytebase.com"
-               email.matches("ed")
+               email.contains("ed")
       responses:
         "200":
           description: Success
@@ -16002,16 +16002,16 @@ paths:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the workload identity name, support "==" and ".matches()" operator.
-             - email: the workload identity email, support "==" and ".matches()" operator.
+             - name: the workload identity name, support "==" and ".contains()" operator.
+             - email: the workload identity email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@workload.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
           schema:
             type: string
             title: filter
@@ -16020,16 +16020,16 @@ paths:
                The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                Supported filter:
-               - name: the workload identity name, support "==" and ".matches()" operator.
-               - email: the workload identity email, support "==" and ".matches()" operator.
+               - name: the workload identity name, support "==" and ".contains()" operator.
+               - email: the workload identity email, support "==" and ".contains()" operator.
                - state: check State enum for values, support "==" operator.
 
                For example:
                name == "ed"
-               name.matches("ed")
+               name.contains("ed")
                state == "DELETED"
                email == "ed@workload.bytebase.com"
-               email.matches("ed")
+               email.contains("ed")
       responses:
         "200":
           description: Success
@@ -20354,14 +20354,14 @@ components:
 
              Supported filter:
              - schema: the schema name, support "==" operator.
-             - table: the table name, support "==" and ".matches()" operator.
+             - table: the table name, support "==" and ".contains()" operator.
 
              For example:
              schema == "schema-a"
              table == "table-a"
-             table.matches("table-a")
-             schema == "schema-a" && table.matches("sample")
-             The filter used to search table with wildcard "sample" in the schema "schemas/schema-a".
+             table.contains("table-a")
+             schema == "schema-a" && table.contains("sample")
+             The filter is used to search for tables containing "sample" in the schema "schemas/schema-a".
              The column masking level will only be returned when a table filter is used.
         limit:
           type: integer
@@ -21899,12 +21899,12 @@ components:
 
              Supported filter:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
-             - name: the database name, support ".matches()" operator.
+             - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - instance: the instance full name in "instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
-             - table: filter by the database table, support "==" and ".matches()" operator.
+             - table: filter by the database table, support "==" and ".contains()" operator.
              - labels.{key}: the database label, support "==" and "in" operators.
 
              For example:
@@ -21912,19 +21912,19 @@ components:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
-             name.matches("database name")
+             name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              exclude_unassigned == true
              table == "sample"
-             table.matches("sam")
+             table.contains("sam")
              labels.environment == "production"
              labels.region == "asia"
              labels.region in ["asia", "europe"]
 
              You can combine filter conditions like:
-             environment == "environments/prod" && name.matches("employee")
+             environment == "environments/prod" && name.contains("employee")
         showDeleted:
           type: boolean
           title: show_deleted
@@ -21989,18 +21989,18 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - title: the group title, support "==" and ".matches()" operator.
-             - email: the group email, support "==" and ".matches()" operator.
+             - title: the group title, support "==" and ".contains()" operator.
+             - email: the group email, support "==" and ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
 
              For example:
              title == "dba"
              email == "dba@bytebase.com"
-             title.matches("dba")
-             email.matches("dba")
+             title.contains("dba")
+             email.contains("dba")
              project == "projects/sample-project"
              You can combine filter conditions like:
-             title.matches("dba") || email.matches("dba")
+             title.contains("dba") || email.contains("dba")
       title: ListGroupsRequest
       additionalProperties: false
       description: Request message for listing groups.
@@ -22155,21 +22155,21 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filters:
-             - name: the instance name, support "==" and ".matches()" operator.
-             - resource_id: the instance id, support "==" and ".matches()" operator.
+             - name: the instance name, support "==" and ".contains()" operator.
+             - resource_id: the instance id, support "==" and ".contains()" operator.
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - state: the instance state, check State enum for values, support "==" operator.
              - engine: the instance engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
-             - host: the instance host, support "==" and ".matches()" operator.
-             - port: the instance port, support "==" and ".matches()" operator.
+             - host: the instance host, support "==" and ".contains()" operator.
+             - port: the instance port, support "==" and ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
              - labels.{key}: the instance label, support "==" and "in" operators.
 
              For example:
              name == "sample instance"
-             name.matches("sample")
+             name.contains("sample")
              resource_id == "sample-instance"
-             resource_id.matches("sample")
+             resource_id.contains("sample")
              state == "DELETED"
              environment == "environments/test"
              environment == "" (find instances which environment is not set)
@@ -22177,14 +22177,14 @@ components:
              engine in ["MYSQL", "POSTGRES"]
              !(engine in ["MYSQL", "POSTGRES"])
              host == "127.0.0.1"
-             host.matches("127.0")
+             host.contains("127.0")
              port == "54321"
-             port.matches("543")
+             port.contains("543")
              labels.org_group == "infrastructure"
              labels.environment in ["prod", "production"]
              project == "projects/sample-project"
              You can combine filter conditions like:
-             name.matches("sample") && environment == "environments/test"
+             name.contains("sample") && environment == "environments/test"
              host == "127.0.0.1" && port == "54321"
         orderBy:
           type: string
@@ -22795,16 +22795,16 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the service account name, support "==" and ".matches()" operator.
-             - email: the service account email, support "==" and ".matches()" operator.
+             - name: the service account name, support "==" and ".contains()" operator.
+             - email: the service account email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@service.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
       title: ListServiceAccountsRequest
       additionalProperties: false
       description: Request message for listing service accounts.
@@ -22899,20 +22899,20 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the user name, support "==" and ".matches()" operator.
-             - email: the user email, support "==" and ".matches()" operator.
+             - name: the user name, support "==" and ".contains()" operator.
+             - email: the user email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              email == "ed@bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
              state == "DELETED"
              project == "projects/sample-project"
              You can combine filter conditions like:
-             name.matches("ed") && project == "projects/sample-project"
+             name.contains("ed") && project == "projects/sample-project"
              (name == "ed" || email == "ed@bytebase.com") && project == "projects/sample-project"
       title: ListUsersRequest
       additionalProperties: false
@@ -22972,16 +22972,16 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - name: the workload identity name, support "==" and ".matches()" operator.
-             - email: the workload identity email, support "==" and ".matches()" operator.
+             - name: the workload identity name, support "==" and ".contains()" operator.
+             - email: the workload identity email, support "==" and ".contains()" operator.
              - state: check State enum for values, support "==" operator.
 
              For example:
              name == "ed"
-             name.matches("ed")
+             name.contains("ed")
              state == "DELETED"
              email == "ed@workload.bytebase.com"
-             email.matches("ed")
+             email.contains("ed")
       title: ListWorkloadIdentitiesRequest
       additionalProperties: false
       description: Request message for listing workload identities.
@@ -26122,25 +26122,25 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filters:
-             - name: the project name, support "==" and ".matches()" operator.
-             - resource_id: the project id, support "==" and ".matches()" operator.
+             - name: the project name, support "==" and ".contains()" operator.
+             - resource_id: the project id, support "==" and ".contains()" operator.
              - exclude_default: if not include the default project, should be "true" or "false", support "==" operator.
              - state: check the State enum for the values, support "==" operator.
              - labels.{key}: the project label, support "==" and "in" operators.
 
              For example:
              name == "project name"
-             name.matches("project name")
+             name.contains("project name")
              resource_id == "project id"
-             resource_id.matches("project id")
+             resource_id.contains("project id")
              exclude_default == true
              state == "DELETED"
              labels.environment == "production"
              labels.tier == "critical"
              labels.environment in ["staging", "prod"]
              You can combine filter conditions like:
-             name == "project name" && resource_id.matches("project id")
-             name.matches("project name") || resource_id == "project id"
+             name == "project name" && resource_id.contains("project id")
+             name.contains("project name") || resource_id == "project id"
              labels.environment == "production" && labels.tier == "critical"
         pageSize:
           type: integer
@@ -26219,7 +26219,7 @@ components:
              - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
              - instance: the instance full name in "instances/{id}" format, support "==" operator.
              - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-             - statement: the SQL statement, support ".matches()" operator.
+             - statement: the SQL statement, support ".contains()" operator.
 
              For example:
              project == "projects/{project}"
@@ -26227,8 +26227,8 @@ components:
              instance == "instances/{instance}"
              type == "QUERY"
              type == "EXPORT"
-             statement.matches("select")
-             type == "QUERY" && statement.matches("select")
+             statement.contains("select")
+             type == "QUERY" && statement.contains("select")
       title: SearchQueryHistoriesRequest
       additionalProperties: false
     bytebase.v1.SearchQueryHistoriesResponse:

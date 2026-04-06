@@ -40,6 +40,13 @@ export default [
             "project.batch.archive.success",
             "project.batch.delete.title",
             "project.batch.delete.success",
+            "sql-review.select-review-rules",
+            "sql-review.select-all",
+            "sql-review.attach-resource.label-environment",
+            "sql-review.attach-resource.label-project",
+            "sql-review.attach-resource.override-warning",
+            "sql-review.create.basic-info.display-name-placeholder",
+            "sql-review.create.basic-info.choose-template",
           ],
           enableFix: true,
         },
@@ -72,6 +79,14 @@ export default [
         localeDir: "./src/locales/*.json",
         messageSyntaxVersion: "^9.0.0",
       },
+    },
+  },
+  // React .tsx files use their own locale files (src/react/locales/),
+  // so disable vue-i18n missing-keys checks for them.
+  {
+    files: ["src/react/**/*.tsx"],
+    rules: {
+      "@intlify/vue-i18n/no-missing-keys": "off",
     },
   },
 ];

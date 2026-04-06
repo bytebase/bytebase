@@ -96,11 +96,9 @@ func TestParseMongoShell(t *testing.T) {
 }
 
 func TestParseMongoShellSyntaxError(t *testing.T) {
-	// Syntax errors are handled by parseMongoShellRaw, used by Diagnose.
-	// ParseMongoShell returns whatever statements the error recovery produces.
-	raw := parseMongoShellRaw(`db.collection.find({`)
-	require.NotNil(t, raw)
-	require.NotEmpty(t, raw.Errors, "expected errors")
+	// Omni parser returns an error for invalid syntax.
+	_, err := ParseMongoShell(`db.collection.find({`)
+	require.Error(t, err, "expected parse error for unclosed brace")
 }
 
 func TestGetStatementRanges(t *testing.T) {

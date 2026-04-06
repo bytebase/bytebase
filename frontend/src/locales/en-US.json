@@ -253,7 +253,6 @@
     "title": "Title",
     "text-wrap": "Text Wrap",
     "catalog": "Catalog",
-    "remove": "Remove",
     "removed": "Removed",
     "submit": "Submit",
     "draft": "Draft",
@@ -447,8 +446,6 @@
       "integration": "Integration",
       "general": "General",
       "members": "Members",
-      "users-and-groups": "Users & Groups",
-      "members-and-groups": "Members & Groups",
       "iam-and-admin": "IAM & Admin",
       "im-integration": "IM",
       "mcp": "MCP",
@@ -488,7 +485,6 @@
       "inactive-workload-identities": "Inactive workload identities",
       "table": {
         "account": "Account",
-        "role": "Role",
         "groups": "Groups",
         "roles": "Roles"
       },
@@ -501,7 +497,6 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
-          "members": "Members",
           "role": {
             "owner": "Group owner",
             "member": "Group member"
@@ -778,9 +773,7 @@
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run."
           },
-          "seconds": "Seconds",
-          "project-scope": "project",
-          "environment-scope": "environment"
+          "seconds": "Seconds"
         },
         "domain-restriction": {
           "self": "Workspace Domain",
@@ -1910,7 +1903,6 @@
     "settings": {
       "success-updated": "Project settings updated successfully.",
       "update-failed": "Failed to update the project setting.",
-      "success-member-added-prompt": "Successfully added to the project.",
       "restore": {
         "title": "Restore project",
         "btn-text": "Restore this @.lower:{'common.project'}"
@@ -1986,19 +1978,11 @@
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
-      "edit": "Edit member - {member}",
-      "view-by-members": "View by members",
-      "view-by-roles": "View by roles",
-      "revoke-role-from-user": "Revoke '{role}' from '{user}'",
       "never-expires": "Never",
       "role-never-expires": "This role never expires.",
-      "add-more": "Add more",
-      "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
-      "project-level-roles": "Project level roles",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
-      "disallow-ddl": "Disallow running DDL/DML statements for all environments."
+      "allow-ddl": "Allow running DDL/DML statements in the selected environments."
     },
     "select": "Select Project",
     "all": "All projects",
@@ -2491,10 +2475,8 @@
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
     "create-policy": "Create SQL review",
-    "select-review": "Select SQL review",
     "select-review-rules": "Select SQL review rules",
     "select-all": "Select all",
-    "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "configure-policy": "Configure policy",
     "policy-removed": "Successfully removed the review policy.",
     "policy-created": "Successfully created the review policy.",
@@ -2528,7 +2510,6 @@
       "configure-rule": {
         "name": "Configure rule",
         "change-template": "Change the template",
-        "confirm-override-title": "Confirm change",
         "confirm-override-description": "Your rules will be overridden"
       }
     },
@@ -2543,8 +2524,7 @@
       "name": "Level",
       "error": "Error",
       "warning": "Warning"
-    },
-    "tooltip-for-resource": "It's also configurable at the {scope} level. Bytebase will prioritize the environment-level configuration."
+    }
   },
   "audit-log": {
     "export-finished": "Export finished",
@@ -2812,7 +2792,6 @@
     },
     "title": "Title",
     "select-role": "Select role",
-    "expired-tip": "The role might has been expired.",
     "import-from-role": "Import from role",
     "workspace-roles": {
       "self": "Workspace roles"

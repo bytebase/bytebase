@@ -7,14 +7,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -131,7 +124,6 @@ function MaskingRuleConfig({
   );
   const [dirty, setDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   const semanticTypeOptions = useVueState(() => {
     const setting = settingStore.getSettingByName(
@@ -210,9 +202,9 @@ function MaskingRuleConfig({
     setDirty(false);
   };
 
-  const handleExprUpdate = useCallback(() => {
+  const handleExprUpdate = useCallback((newExpr: ConditionGroupExpr) => {
+    setExpr(newExpr);
     setDirty(true);
-    forceUpdate();
   }, []);
 
   return (

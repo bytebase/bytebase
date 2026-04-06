@@ -246,7 +246,6 @@
     "title": "标题",
     "text-wrap": "文本折行",
     "catalog": "Catalog",
-    "remove": "移除",
     "removed": "已移除",
     "submit": "提交",
     "draft": "草稿",
@@ -447,8 +446,6 @@
       "integration": "集成",
       "general": "通用",
       "members": "成员",
-      "users-and-groups": "用户和群组",
-      "members-and-groups": "成员和群组",
       "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
       "mcp": "MCP",
@@ -488,7 +485,6 @@
       "inactive-workload-identities": "未激活工作负载身份",
       "table": {
         "account": "账户",
-        "role": "角色",
         "groups": "群组",
         "roles": "角色"
       },
@@ -501,7 +497,6 @@
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "名称",
           "description": "描述",
-          "members": "成员",
           "role": {
             "owner": "群组所有者",
             "member": "群组成员"
@@ -778,9 +773,7 @@
             "self": "最大查询时间",
             "description": "允许运行查询的最长时间。"
           },
-          "seconds": "秒",
-          "project-scope": "项目",
-          "environment-scope": "环境"
+          "seconds": "秒"
         },
         "domain-restriction": {
           "self": "工作空间域名",
@@ -1910,7 +1903,6 @@
     "settings": {
       "success-updated": "项目设置更新成功",
       "update-failed": "无法更新项目设置。",
-      "success-member-added-prompt": "成功添加到当前项目中.",
       "restore": {
         "title": "恢复项目",
         "btn-text": "恢复这个@:common.project"
@@ -1986,19 +1978,11 @@
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "edit": "编辑成员 - {member}",
-      "view-by-members": "按成员查看",
-      "view-by-roles": "按角色查看",
-      "revoke-role-from-user": "删除'{user}'{role}的角色",
       "never-expires": "永不过期",
       "role-never-expires": "此角色没有过期时间。",
-      "add-more": "增加更多",
-      "condition-name": "条件名称",
       "workspace-level-roles": "工作空间级别角色",
-      "project-level-roles": "项目级别角色",
       "roles-are-filtered-by-permissions": "角色已按权限筛选",
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
-      "disallow-ddl": "禁止在所有环境中执行 DDL/DML 语句。"
+      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。"
     },
     "select": "选择项目",
     "all": "所有项目",
@@ -2491,10 +2475,8 @@
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "SQL 审核策略已禁用",
     "create-policy": "创建审核策略",
-    "select-review": "选择 SQL 审核",
     "select-review-rules": "选择 SQL 审核规则",
     "select-all": "选择全部",
-    "select-review-label": "您可以将现有的 SQL 审核策略附加到资源，或者 {create}。",
     "configure-policy": "配置审核策略",
     "policy-removed": "审核策略已删除",
     "policy-created": "审核策略已创建",
@@ -2513,7 +2495,7 @@
       "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
       "label-environment": "SQL 审查策略将影响属于所选环境的所有数据库。",
       "label-project": "SQL 审核策略将影响所选项目下的所有数据库。数据库所属环境的 SQL 审核策略将被忽略。",
-      "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击“{button}”将覆盖配置。"
+      "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击\"{button}\"将覆盖配置。"
     },
     "create": {
       "breadcrumb": "创建审核策略",
@@ -2528,7 +2510,6 @@
       "configure-rule": {
         "name": "配置规则",
         "change-template": "更改模板",
-        "confirm-override-title": "规则变更",
         "confirm-override-description": "之前的规则将会被覆盖"
       }
     },
@@ -2543,8 +2524,7 @@
       "name": "级别",
       "error": "错误",
       "warning": "警告"
-    },
-    "tooltip-for-resource": "也可在 {scope} 级别进行配置。Bytebase 将优先考虑环境级别的配置。"
+    }
   },
   "audit-log": {
     "export-finished": "导出完成",
@@ -2812,7 +2792,6 @@
     },
     "title": "称谓",
     "select-role": "选择角色",
-    "expired-tip": "该角色可能已经过期。",
     "import-from-role": "从角色导入",
     "workspace-roles": {
       "self": "工作空间角色"

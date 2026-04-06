@@ -30,6 +30,8 @@ export interface ScopeOption {
   description?: string;
   options?: ValueOption[];
   allowMultiple?: boolean;
+  /** Server-side search callback. When provided, options are fetched dynamically instead of filtered client-side. */
+  onSearch?: (keyword: string) => Promise<ValueOption[]>;
 }
 
 export function emptySearchParams(): SearchParams {
@@ -65,6 +67,9 @@ export function AdvancedSearch({
   const [currentScope, setCurrentScope] = useState<string | undefined>();
   const [menuIndex, setMenuIndex] = useState(0);
   const [focusedTagIndex, setFocusedTagIndex] = useState<number | undefined>();
+  const [asyncOptions, setAsyncOptions] = useState<ValueOption[]>([]);
+  const [asyncLoading, setAsyncLoading] = useState(false);
+  const asyncSearchRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync external query changes
   useEffect(() => {
@@ -81,6 +86,7 @@ export function AdvancedSearch({
         !containerRef.current.contains(e.target as Node)
       ) {
         setMenuView(undefined);
+        setCurrentScope(undefined);
         setFocusedTagIndex(undefined);
       }
     };
@@ -135,25 +141,60 @@ export function AdvancedSearch({
     );
   }, [currentScopeOption, inputText, availableScopeOptions]);
 
+  // Trigger async search when scope has onSearch
+  const isAsyncScope = currentScopeOption?.onSearch != null;
+  useEffect(() => {
+    if (!isAsyncScope || !currentScopeOption?.onSearch) return;
+    clearTimeout(asyncSearchRef.current);
+    const keyword = currentValueForScope;
+    setAsyncLoading(true);
+    asyncSearchRef.current = setTimeout(() => {
+      currentScopeOption.onSearch!(keyword).then((results) => {
+        setAsyncOptions(results);
+        setAsyncLoading(false);
+        setMenuIndex(0);
+      });
+    }, 300);
+    return () => clearTimeout(asyncSearchRef.current);
+  }, [isAsyncScope, currentScopeOption, currentValueForScope]);
+
+  // Reset async state when scope changes
+  useEffect(() => {
+    setAsyncOptions([]);
+    setAsyncLoading(false);
+  }, [currentScope]);
+
   // Visible value options (filtered, de-duped)
   const visibleValueOptions = useMemo(() => {
     if (!currentScope || !currentScopeOption) return [];
     const selectedValues = new Set(
       params.scopes.filter((s) => s.id === currentScope).map((s) => s.value)
     );
-    let options = (currentScopeOption.options ?? []).filter(
-      (opt) => !selectedValues.has(opt.value)
-    );
-    const keyword = currentValueForScope.trim().toLowerCase();
-    if (keyword) {
-      options = options.filter(
-        (opt) =>
-          opt.value.toLowerCase().includes(keyword) ||
-          opt.keywords.some((k) => k.toLowerCase().includes(keyword))
-      );
+    // Use async results for scopes with onSearch, static options otherwise
+    const sourceOptions = isAsyncScope
+      ? asyncOptions
+      : (currentScopeOption.options ?? []);
+    let options = sourceOptions.filter((opt) => !selectedValues.has(opt.value));
+    // Only apply client-side filtering for static options
+    if (!isAsyncScope) {
+      const keyword = currentValueForScope.trim().toLowerCase();
+      if (keyword) {
+        options = options.filter(
+          (opt) =>
+            opt.value.toLowerCase().includes(keyword) ||
+            opt.keywords.some((k) => k.toLowerCase().includes(keyword))
+        );
+      }
     }
     return options;
-  }, [currentScope, currentScopeOption, params.scopes, currentValueForScope]);
+  }, [
+    currentScope,
+    currentScopeOption,
+    params.scopes,
+    currentValueForScope,
+    isAsyncScope,
+    asyncOptions,
+  ]);
 
   const showMenu = useMemo(() => {
     if (menuView === "scope") return visibleScopeOptions.length > 0;
@@ -168,8 +209,8 @@ export function AdvancedSearch({
     if (id) {
       setMenuView("value");
       setMenuIndex(0);
-      // Clear the input so the value menu is unobstructed
-      setInputText("");
+      // Show "scope:" prefix in the input to match Vue behavior
+      setInputText(`${id}:`);
     } else {
       setMenuView("scope");
     }
@@ -354,7 +395,13 @@ export function AdvancedSearch({
           ) {
             selectValue(visibleValueOptions[menuIndex].value);
           } else if (currentScope && inputText.trim()) {
-            selectValue(inputText.trim());
+            // Strip the "scope:" prefix if present
+            const prefix = `${currentScope}:`;
+            const raw = inputText.trim();
+            const value = raw.startsWith(prefix)
+              ? raw.substring(prefix.length).trim()
+              : raw;
+            if (value) selectValue(value);
           }
         }
       }
@@ -539,7 +586,12 @@ export function AdvancedSearch({
                     </div>
                   ))}
                 </div>
-              ) : !(currentScopeOption.options ?? []).length ? (
+              ) : asyncLoading ? (
+                <div className="py-4 text-center text-sm text-control-placeholder">
+                  …
+                </div>
+              ) : !(currentScopeOption.options ?? []).length &&
+                !isAsyncScope ? (
                 <div className="px-3 py-2 text-xs text-control-light border-t border-block-border">
                   Type a value and press Enter
                 </div>

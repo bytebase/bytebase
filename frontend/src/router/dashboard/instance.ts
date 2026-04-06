@@ -18,7 +18,7 @@ const instanceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/CreateInstancePage.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: { content: true },
   },
@@ -26,7 +26,7 @@ const instanceRoutes: RouteRecordRaw[] = [
     path: "instances/:instanceId",
     components: {
       content: InstanceLayout,
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     meta: {
       title: () => t("common.instance"),

@@ -133,7 +133,8 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 
 // listDatabasesResponse is the typed response from ListDatabases API.
 type listDatabasesResponse struct {
-	Databases []databaseEntry `json:"databases"`
+	Databases     []databaseEntry `json:"databases"`
+	NextPageToken string          `json:"nextPageToken,omitempty"`
 }
 
 // databaseEntry represents a database in the ListDatabases response.
@@ -158,8 +159,8 @@ type dataSource struct {
 
 // buildDatabaseFilter builds a CEL filter expression for ListDatabases.
 func buildDatabaseFilter(input QueryInput) string {
-	// name.matches does substring matching server-side.
-	filter := fmt.Sprintf("name.matches(%q)", input.Database)
+	// name.contains does substring matching server-side.
+	filter := fmt.Sprintf("name.contains(%q)", input.Database)
 	if input.Instance != "" {
 		filter += fmt.Sprintf(" && instance == %q", "instances/"+input.Instance)
 	}
@@ -169,31 +170,61 @@ func buildDatabaseFilter(input QueryInput) string {
 	return filter
 }
 
-// resolveDatabase resolves a database name to a unique resource using tiered matching.
-func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
-	body := map[string]any{
-		"parent":   "workspaces/-",
-		"filter":   buildDatabaseFilter(input),
-		"pageSize": 1000,
-	}
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list databases")
-	}
-	if resp.Status >= 400 {
-		return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
+// listDatabases lists databases matching the filter in the user's workspace.
+// Uses the workspace ID from the JWT token stored in context.
+func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEntry, error) {
+	workspaceID := getWorkspaceID(ctx)
+	if workspaceID == "" {
+		return nil, &toolError{
+			Code:       "AUTH_ERROR",
+			Message:    "workspace ID not found in token",
+			Suggestion: "re-authenticate with Bytebase",
+		}
 	}
 
-	var listResp listDatabasesResponse
-	if err := json.Unmarshal(resp.Body, &listResp); err != nil {
-		return nil, errors.Wrap(err, "failed to parse database list")
+	var databases []databaseEntry
+	pageToken := ""
+	for {
+		body := map[string]any{
+			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
+			"filter":   filter,
+			"pageSize": 1000,
+		}
+		if pageToken != "" {
+			body["pageToken"] = pageToken
+		}
+		resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/ListDatabases", body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to list databases")
+		}
+		if resp.Status == http.StatusForbidden {
+			return nil, &toolError{
+				Code:       "PERMISSION_DENIED",
+				Message:    "you don't have permission to list databases in this workspace",
+				Suggestion: "ask your workspace admin to grant you the bb.databases.list permission",
+			}
+		}
+		if resp.Status >= 400 {
+			return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
+		}
+
+		var listResp listDatabasesResponse
+		if err := json.Unmarshal(resp.Body, &listResp); err != nil {
+			return nil, errors.Wrap(err, "failed to parse database list")
+		}
+		databases = append(databases, listResp.Databases...)
+
+		if listResp.NextPageToken == "" {
+			break
+		}
+		pageToken = listResp.NextPageToken
 	}
+	return databases, nil
+}
 
-	// Server-side filter already narrows by name substring and instance/project.
-	// Apply client-side tiered matching to pick the best result.
-	databases := listResp.Databases
-
-	// Tiered matching: exact -> case-insensitive exact -> substring.
+// matchDatabases applies tiered matching (exact > case-insensitive > substring) and
+// returns the resolved result, an ambiguous result, or a not-found error.
+func matchDatabases(databases []databaseEntry, input QueryInput) (*resolvedDatabase, error) {
 	matches := matchExact(databases, input.Database)
 	if len(matches) == 0 {
 		matches = matchCaseInsensitive(databases, input.Database)
@@ -215,26 +246,39 @@ func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolv
 	}
 
 	if len(matches) > 1 {
-		candidates := make([]Candidate, 0, len(matches))
-		dsIDs := make(map[string]string, len(matches))
-		for _, db := range matches {
-			candidates = append(candidates, Candidate{
-				Database: db.Name,
-				Instance: extractShortName(db.InstanceResource.Name),
-				Project:  extractShortName(db.Project),
-				Engine:   db.InstanceResource.Engine,
-			})
-			dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
-		}
-		return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}, nil
+		return buildAmbiguousResult(matches), nil
 	}
 
-	// Single match.
 	db := matches[0]
 	return &resolvedDatabase{
 		resourceName: db.Name,
 		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
 	}, nil
+}
+
+// buildAmbiguousResult constructs a resolvedDatabase with multiple candidates.
+func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
+	candidates := make([]Candidate, 0, len(matches))
+	dsIDs := make(map[string]string, len(matches))
+	for _, db := range matches {
+		candidates = append(candidates, Candidate{
+			Database: db.Name,
+			Instance: extractShortName(db.InstanceResource.Name),
+			Project:  extractShortName(db.Project),
+			Engine:   db.InstanceResource.Engine,
+		})
+		dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
+	}
+	return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}
+}
+
+// resolveDatabase resolves a database name to a unique resource using tiered matching.
+func (s *Server) resolveDatabase(ctx context.Context, input QueryInput) (*resolvedDatabase, error) {
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(input))
+	if err != nil {
+		return nil, err
+	}
+	return matchDatabases(databases, input)
 }
 
 // elicitDatabaseChoice prompts the user to pick from ambiguous database matches

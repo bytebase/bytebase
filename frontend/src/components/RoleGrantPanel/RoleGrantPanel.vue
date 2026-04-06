@@ -154,7 +154,8 @@ const doCreateIssue = async () => {
           }),
           uniq(
             databaseResources?.map(
-              (databaseResource) => databaseResource.databaseFullName
+              (databaseResource: DatabaseResource) =>
+                databaseResource.databaseFullName
             )
           )
         ),

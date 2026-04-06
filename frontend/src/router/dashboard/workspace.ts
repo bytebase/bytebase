@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
 import {
@@ -13,6 +13,7 @@ import {
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
+  WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
@@ -49,7 +50,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/LandingPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
   },
   {
@@ -60,7 +61,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "ProjectsPage" }),
@@ -76,7 +77,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "InstancesPage" }),
@@ -92,7 +93,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "DatabasesPage" }),
@@ -108,7 +109,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/react/ReactPageMount.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: () => ({ page: "EnvironmentsPage" }),
@@ -119,10 +120,16 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "users/:principalEmail",
     name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
-      content: () => import("@/views/ProfileDashboard.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
-    props: true,
+    props: {
+      content: (route: RouteLocationNormalized) => ({
+        page: "ProfilePage",
+        principalEmail: route.params.principalEmail,
+      }),
+      leftSidebar: true,
+    },
   },
   {
     path: "403",
@@ -132,7 +139,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/Page403.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -147,7 +154,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/Page404.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -162,7 +169,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -179,8 +186,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
             "bb.policies.get",
           ],
         },
-        component: () => import("@/views/SettingWorkspaceSQLReview.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "SQLReviewPage" }),
       },
       {
         path: "new",
@@ -189,8 +196,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("sql-review.create.breadcrumb"),
           requiredPermissionList: () => ["bb.reviewConfigs.create"],
         },
-        component: () => import("@/views/SettingWorkspaceSQLReviewCreate.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "SQLReviewCreatePage" }),
       },
       {
         path: ":sqlReviewPolicySlug",
@@ -202,8 +209,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
             "bb.policies.get",
           ],
         },
-        component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "SQLReviewDetailPage",
+          ...route.params,
+        }),
       },
     ],
   },
@@ -216,7 +226,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,
@@ -244,7 +254,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: true,
     children: [
@@ -311,10 +321,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
         path: "users",
         name: WORKSPACE_ROUTE_USERS,
         meta: {
-          title: () => t("settings.sidebar.users-and-groups"),
+          title: () => t("common.users"),
+          requiredPermissionList: () => ["bb.users.list"],
         },
-        component: () => import("@/views/SettingWorkspaceUsers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "UsersPage" }),
       },
       {
         path: "service-accounts",
@@ -323,9 +334,8 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/ServiceAccountPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ServiceAccountsPage" }),
       },
       {
         path: "workload-identities",
@@ -334,23 +344,28 @@ const workspaceRoutes: RouteRecordRaw[] = [
           title: () => t("settings.members.workload-identities"),
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "WorkloadIdentitiesPage" }),
       },
       {
         path: "members",
         name: WORKSPACE_ROUTE_MEMBERS,
         meta: {
           title: () => t("settings.sidebar.members"),
-          requiredPermissionList: () => [
-            "bb.workspaces.getIamPolicy",
-            "bb.users.list",
-            "bb.groups.list",
-          ],
+          requiredPermissionList: () => ["bb.workspaces.getIamPolicy"],
         },
-        component: () => import("@/views/SettingWorkspaceMembers.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "MembersPage" }),
+      },
+      {
+        path: "groups",
+        name: WORKSPACE_ROUTE_GROUPS,
+        meta: {
+          title: () => t("settings.members.groups.self"),
+          requiredPermissionList: () => ["bb.groups.list"],
+        },
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "GroupsPage" }),
       },
       {
         path: "roles",
@@ -372,7 +387,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+      leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
       content: true,

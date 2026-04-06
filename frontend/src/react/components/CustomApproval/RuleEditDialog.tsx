@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -62,8 +62,6 @@ export function RuleEditDialog({
   onSave,
 }: RuleEditDialogProps) {
   const { t } = useTranslation();
-  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [conditionExpr, setConditionExpr] = useState<ConditionGroupExpr>(
@@ -248,7 +246,7 @@ export function RuleEditDialog({
               readonly={!allowAdmin}
               factorList={factorList}
               optionConfigMap={optionConfigMap}
-              onUpdate={forceUpdate}
+              onUpdate={setConditionExpr}
             />
           </div>
 

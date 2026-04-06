@@ -134,7 +134,6 @@ const scopeOptions = useCommonSearchScopeOptions([
   ...CommonFilterScopeIdList,
   "label",
   "engine",
-  "drifted",
 ]);
 
 const selectedInstance = computed(() => {
@@ -159,20 +158,12 @@ const selectedEngines = computed(() => {
   );
 });
 
-const selectedDriftedValue = computed(() => {
-  const driftedValue = getValueFromSearchParams(state.params, "drifted");
-  if (driftedValue === "true") return true;
-  if (driftedValue === "false") return false;
-  return undefined;
-});
-
 const filter = computed(() => ({
   instance: selectedInstance.value,
   environment: selectedEnvironment.value,
   query: state.params.query,
   labels: selectedLabels.value,
   engines: selectedEngines.value,
-  drifted: selectedDriftedValue.value,
 }));
 
 const selectedDatabases = computed((): Database[] => {

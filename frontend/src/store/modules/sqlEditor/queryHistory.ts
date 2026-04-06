@@ -21,7 +21,7 @@ const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
     params.push(`database == "${filter.database}"`);
   }
   if (filter.statement) {
-    params.push(`statement.matches("${filter.statement}")`);
+    params.push(`statement.contains("${filter.statement}")`);
   }
   return params.join(" && ");
 };

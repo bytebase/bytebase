@@ -1,8 +1,9 @@
 package mysql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/mysql"
+	"strings"
+
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -19,357 +20,156 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
-	l := &resourceChangedListener{
-		currentDatabase:  currentDatabase,
-		statement:        statement,
-		changedResources: changedResources,
-	}
-	for _, ast := range asts {
-		antlrAST, ok := base.GetANTLRAST(ast)
+
+	var dmlCount, insertCount int
+	var sampleDMLs []string
+
+	for _, unifiedAST := range asts {
+		omniAST, ok := unifiedAST.(*OmniAST)
 		if !ok {
-			return nil, errors.New("expected ANTLR AST for MySQL")
+			return nil, errors.New("expected OmniAST for MySQL")
 		}
-		l.reset()
-		antlr.ParseTreeWalkerDefault.Walk(l, antlrAST.Tree)
+		if omniAST.Node == nil {
+			continue
+		}
+
+		switch n := omniAST.Node.(type) {
+		case *ast.CreateTableStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.DropTableStmt:
+			for _, ref := range n.Tables {
+				db, table := omniTableRef(ref, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
+			}
+
+		case *ast.AlterTableStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
+			}
+
+		case *ast.RenameTableStmt:
+			for _, pair := range n.Pairs {
+				if pair.Old != nil {
+					db, table := omniTableRef(pair.Old, currentDatabase)
+					changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+				}
+				if pair.New != nil {
+					db, table := omniTableRef(pair.New, currentDatabase)
+					changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+				}
+			}
+
+		case *ast.CreateIndexStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.DropIndexStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+			}
+
+		case *ast.InsertStmt:
+			if n.Table != nil {
+				db, table := omniTableRef(n.Table, currentDatabase)
+				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
+			}
+			if len(n.Values) > 0 {
+				insertCount += len(n.Values)
+				continue
+			}
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
+			}
+
+		case *ast.UpdateStmt:
+			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
+				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
+			}
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
+			}
+
+		case *ast.DeleteStmt:
+			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
+				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
+			}
+			for _, resource := range extractTableExprs(n.Using, currentDatabase) {
+				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
+			}
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
+			}
+
+		default:
+		}
 	}
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS:       l.sampleDMLs,
-		DMLCount:         l.dmlCount,
-		InsertCount:      l.insertCount,
+		SampleDMLS:       sampleDMLs,
+		DMLCount:         dmlCount,
+		InsertCount:      insertCount,
 	}, nil
 }
 
-type resourceChangedListener struct {
-	*parser.BaseMySQLParserListener
-
-	currentDatabase string
-	statement       string
-
-	changedResources *model.ChangedResources
-	sampleDMLs       []string
-	dmlCount         int
-	insertCount      int
-
-	// Internal data structure used temporarily.
-	text string
+// omniTableRef extracts database and table name from an omni TableRef.
+func omniTableRef(ref *ast.TableRef, defaultDB string) (string, string) {
+	if ref == nil {
+		return defaultDB, ""
+	}
+	db := ref.Schema
+	if db == "" {
+		db = defaultDB
+	}
+	return db, ref.Name
 }
 
-func (l *resourceChangedListener) reset() {
-	l.text = ""
+// extractTableExprs collects schema resources from a slice of TableExpr.
+func extractTableExprs(exprs []ast.TableExpr, defaultDB string) []base.SchemaResource {
+	var result []base.SchemaResource
+	for _, expr := range exprs {
+		result = append(result, extractTableExpr(expr, defaultDB)...)
+	}
+	return result
 }
 
-func (l *resourceChangedListener) EnterQuery(ctx *parser.QueryContext) {
-	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-}
-
-// EnterCreateTable is called when production createTable is entered.
-func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContext) {
-	database, table := NormalizeMySQLTableName(ctx.TableName())
-	if database == "" {
-		database = l.currentDatabase
-	}
-
-	l.changedResources.AddTable(
-		database,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		false,
-	)
-}
-
-// EnterDropTable is called when production dropTable is entered.
-func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
-	for _, table := range ctx.TableRefList().AllTableRef() {
-		database, table := NormalizeMySQLTableRef(table)
-		if database == "" {
-			database = l.currentDatabase
-		}
-
-		l.changedResources.AddTable(
-			database,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: table,
-			},
-			true,
-		)
-	}
-}
-
-// EnterAlterTable is called when production alterTable is entered.
-func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext) {
-	database, table := NormalizeMySQLTableRef(ctx.TableRef())
-	if database == "" {
-		database = l.currentDatabase
-	}
-
-	l.changedResources.AddTable(
-		database,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		true,
-	)
-}
-
-// EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTableStatementContext) {
-	for _, pair := range ctx.AllRenamePair() {
-		{
-			database, table := NormalizeMySQLTableRef(pair.TableRef())
-			if database == "" {
-				database = l.currentDatabase
-			}
-
-			l.changedResources.AddTable(
-				database,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table,
-				},
-				false,
-			)
-		}
-		{
-			database, table := NormalizeMySQLTableName(pair.TableName())
-			if database == "" {
-				database = l.currentDatabase
-			}
-
-			l.changedResources.AddTable(
-				database,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: table,
-				},
-				false,
-			)
-		}
-	}
-}
-
-func (l *resourceChangedListener) EnterCreateIndex(ctx *parser.CreateIndexContext) {
-	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
-		return
-	}
-	database, table := NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
-	if database == "" {
-		database = l.currentDatabase
-	}
-
-	l.changedResources.AddTable(
-		database,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		false,
-	)
-}
-
-func (l *resourceChangedListener) EnterDropIndex(ctx *parser.DropIndexContext) {
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	database, table := NormalizeMySQLTableRef(ctx.TableRef())
-	if database == "" {
-		database = l.currentDatabase
-	}
-
-	l.changedResources.AddTable(
-		database,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		false,
-	)
-}
-
-func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStatementContext) {
-	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-
-	database, table := NormalizeMySQLTableRef(ctx.TableRef())
-	if database == "" {
-		database = l.currentDatabase
-	}
-
-	l.changedResources.AddTable(
-		database,
-		"",
-		&storepb.ChangedResourceTable{
-			Name: table,
-		},
-		false,
-	)
-
-	if ctx.InsertFromConstructor() != nil && ctx.InsertFromConstructor().InsertValues() != nil && ctx.InsertFromConstructor().InsertValues().ValueList() != nil {
-		l.insertCount += len(ctx.InsertFromConstructor().InsertValues().ValueList().AllValues())
-		return
-	}
-
-	// Track DMLs.
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
-}
-
-func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
-	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
-		resources := l.extractTableReference(tableRefCtx)
-		for _, resource := range resources {
-			l.changedResources.AddTable(
-				resource.Database,
-				"",
-				&storepb.ChangedResourceTable{
-					Name: resource.Table,
-				},
-				false,
-			)
-		}
-	}
-
-	// Track DMLs.
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
-}
-
-func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
-	if !IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	var allResources []base.SchemaResource
-	if ctx.TableRef() != nil {
-		resources := l.extractTableRef(ctx.TableRef())
-		allResources = append(allResources, resources...)
-	}
-	if ctx.TableReferenceList() != nil {
-		resources := l.extractTableReferenceList(ctx.TableReferenceList())
-		allResources = append(allResources, resources...)
-	}
-
-	for _, resource := range allResources {
-		l.changedResources.AddTable(
-			resource.Database,
-			"",
-			&storepb.ChangedResourceTable{
-				Name: resource.Table,
-			},
-			false,
-		)
-	}
-
-	// Track DMLs.
-	l.dmlCount++
-	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
-		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
-}
-
-func (l *resourceChangedListener) extractTableReference(ctx parser.ITableReferenceContext) []base.SchemaResource {
-	if ctx.TableFactor() == nil {
+// extractTableExpr recursively extracts schema resources from a single TableExpr.
+func extractTableExpr(expr ast.TableExpr, defaultDB string) []base.SchemaResource {
+	if expr == nil {
 		return nil
 	}
-	res := l.extractTableFactor(ctx.TableFactor())
-	for _, joinedTableCtx := range ctx.AllJoinedTable() {
-		tables := l.extractJoinedTable(joinedTableCtx)
-		res = append(res, tables...)
-	}
-
-	return res
-}
-
-func (l *resourceChangedListener) extractTableRef(ctx parser.ITableRefContext) []base.SchemaResource {
-	if ctx == nil {
-		return nil
-	}
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-	}
-	db, table := NormalizeMySQLTableRef(ctx)
-	if db != "" {
-		resource.Database = db
-	}
-	resource.Table = table
-
-	return []base.SchemaResource{resource}
-}
-
-func (l *resourceChangedListener) extractTableReferenceList(ctx parser.ITableReferenceListContext) []base.SchemaResource {
-	var res []base.SchemaResource
-	for _, tableRefCtx := range ctx.AllTableReference() {
-		tables := l.extractTableReference(tableRefCtx)
-		res = append(res, tables...)
-	}
-	return res
-}
-
-func (l *resourceChangedListener) extractTableReferenceListParens(ctx parser.ITableReferenceListParensContext) []base.SchemaResource {
-	if ctx.TableReferenceList() != nil {
-		return l.extractTableReferenceList(ctx.TableReferenceList())
-	}
-	if ctx.TableReferenceListParens() != nil {
-		return l.extractTableReferenceListParens(ctx.TableReferenceListParens())
-	}
-	return nil
-}
-
-func (l *resourceChangedListener) extractTableFactor(ctx parser.ITableFactorContext) []base.SchemaResource {
-	switch {
-	case ctx.SingleTable() != nil:
-		return l.extractSingleTable(ctx.SingleTable())
-	case ctx.SingleTableParens() != nil:
-		return l.extractSingleTableParens(ctx.SingleTableParens())
-	case ctx.DerivedTable() != nil:
-		return nil
-	case ctx.TableReferenceListParens() != nil:
-		return l.extractTableReferenceListParens(ctx.TableReferenceListParens())
-	case ctx.TableFunction() != nil:
-		return nil
+	switch n := expr.(type) {
+	case *ast.TableRef:
+		db, table := omniTableRef(n, defaultDB)
+		return []base.SchemaResource{{Database: db, Table: table}}
+	case *ast.JoinClause:
+		var res []base.SchemaResource
+		res = append(res, extractTableExpr(n.Left, defaultDB)...)
+		res = append(res, extractTableExpr(n.Right, defaultDB)...)
+		return res
 	default:
 		return nil
 	}
 }
 
-func (l *resourceChangedListener) extractSingleTable(ctx parser.ISingleTableContext) []base.SchemaResource {
-	return l.extractTableRef(ctx.TableRef())
-}
-
-func (l *resourceChangedListener) extractSingleTableParens(ctx parser.ISingleTableParensContext) []base.SchemaResource {
-	if ctx.SingleTable() != nil {
-		return l.extractSingleTable(ctx.SingleTable())
+// omniStatementText returns the text of a statement, ensuring it ends with a semicolon.
+func omniStatementText(a *OmniAST) string {
+	text := strings.TrimSpace(a.Text)
+	if !strings.HasSuffix(text, ";") {
+		text += ";"
 	}
-	if ctx.SingleTableParens() != nil {
-		return l.extractSingleTableParens(ctx.SingleTableParens())
-	}
-	return nil
-}
-
-func (l *resourceChangedListener) extractJoinedTable(ctx parser.IJoinedTableContext) []base.SchemaResource {
-	if ctx.TableFactor() != nil {
-		return l.extractTableFactor(ctx.TableFactor())
-	}
-	if ctx.TableReference() != nil {
-		return l.extractTableReference(ctx.TableReference())
-	}
-	return nil
+	return text
 }

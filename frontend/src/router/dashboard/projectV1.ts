@@ -1,6 +1,6 @@
-import type { RouteRecordRaw } from "vue-router";
-import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
+import ReactProjectSidebarMount from "@/react/ReactProjectSidebarMount.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
@@ -136,7 +136,7 @@ const projectV1Routes: RouteRecordRaw[] = [
     path: "projects/:projectId",
     components: {
       content: () => import("@/layouts/ProjectV1Layout.vue"),
-      leftSidebar: ProjectSidebarV1,
+      leftSidebar: ReactProjectSidebarMount,
     },
     props: { content: true, leftSidebar: true },
     meta: {
@@ -157,8 +157,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.databases"),
           requiredPermissionList: () => ["bb.databases.list"],
         },
-        component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectDatabasesPage",
+          ...route.params,
+        }),
       },
       {
         path: "access-grants",
@@ -166,9 +169,11 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("sql-editor.access-grants"),
         },
-        component: () =>
-          import("@/views/project/ProjectAccessGrantDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectAccessGrantsPage",
+          ...route.params,
+        }),
       },
       {
         path: "masking-exemption",
@@ -180,9 +185,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
-            component: () =>
-              import("@/views/project/ProjectMaskingExemption.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectMaskingExemptionPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.databases.get",
@@ -193,9 +200,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "create",
             name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
-            component: () =>
-              import("@/views/project/ProjectMaskingExemptionCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectMaskingExemptionCreatePage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.policies.createMaskingExemptionPolicy",
@@ -217,9 +226,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: "",
             name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupDashboard.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupsPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => ["bb.databaseGroups.list"],
             },
@@ -233,16 +244,20 @@ const projectV1Routes: RouteRecordRaw[] = [
                 "bb.databases.list",
               ],
             },
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupCreatePage",
+              ...route.params,
+            }),
           },
           {
             path: ":databaseGroupName",
             name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-            component: () =>
-              import("@/views/project/ProjectDatabaseGroupDetail.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectDatabaseGroupDetailPage",
+              ...route.params,
+            }),
             meta: {
               requiredPermissionList: () => [
                 "bb.databaseGroups.get",
@@ -296,22 +311,26 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.sidebar.audit-log"),
           requiredPermissionList: () => ["bb.auditLogs.search"],
         },
-        component: () => import("@/react/ProjectAuditLogPageMount.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectAuditLogPage",
+          ...route.params,
+        }),
       },
       {
         path: "webhooks",
         meta: {
           title: () => t("common.webhooks"),
         },
-        props: true,
         children: [
           {
             path: "",
             name: PROJECT_V1_ROUTE_WEBHOOKS,
-            component: () =>
-              import("@/views/project/ProjectWebhookDashboard.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhooksPage",
+              ...route.params,
+            }),
           },
           {
             path: "new",
@@ -320,14 +339,20 @@ const projectV1Routes: RouteRecordRaw[] = [
               title: () => t("project.webhook.create-webhook"),
               requiredPermissionList: () => ["bb.projects.update"],
             },
-            component: () => import("@/views/project/ProjectWebhookCreate.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhookCreatePage",
+              ...route.params,
+            }),
           },
           {
             path: ":webhookResourceId",
             name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-            component: () => import("@/views/project/ProjectWebhookDetail.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectWebhookDetailPage",
+              ...route.params,
+            }),
           },
         ],
       },
@@ -338,8 +363,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.members", 2 /* multiply*/),
           requiredPermissionList: () => ["bb.projects.getIamPolicy"],
         },
-        component: () => import("@/views/project/ProjectMemberDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "MembersPage",
+          ...route.params,
+        }),
       },
       {
         path: "service-accounts",
@@ -348,9 +376,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.members.service-accounts"),
           requiredPermissionList: () => ["bb.serviceAccounts.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/ServiceAccountPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ServiceAccountsPage",
+          ...route.params,
+        }),
       },
       {
         path: "workload-identities",
@@ -359,9 +389,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("settings.members.workload-identities"),
           requiredPermissionList: () => ["bb.workloadIdentities.list"],
         },
-        component: () =>
-          import("@/components/User/Settings/WorkloadIdentityPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "WorkloadIdentitiesPage",
+          ...route.params,
+        }),
       },
       {
         path: "settings",
@@ -369,8 +401,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         meta: {
           title: () => t("common.settings"),
         },
-        component: () => import("@/views/project/ProjectSettingPanel.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: () => ({ page: "ProjectSettingsPage" }),
       },
       {
         path: "instances/:instanceId/databases/:databaseName",
@@ -472,8 +504,11 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.databases.list",
           ],
         },
-        component: () => import("@/views/project/ProjectGitOpsDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectGitOpsPage",
+          ...route.params,
+        }),
       },
       ...planRoutes,
       ...issueRoutes,

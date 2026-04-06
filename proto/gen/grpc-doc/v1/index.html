@@ -9510,20 +9510,20 @@ the call that provided the page token. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter:
-- name: the user name, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- email: the user email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- name: the user name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- email: the user email, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - state: check State enum for values, support &#34;==&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example:
 name == &#34;ed&#34;
-name.matches(&#34;ed&#34;)
+name.contains(&#34;ed&#34;)
 email == &#34;ed@bytebase.com&#34;
-email.matches(&#34;ed&#34;)
+email.contains(&#34;ed&#34;)
 state == &#34;DELETED&#34;
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
-name.matches(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
+name.contains(&#34;ed&#34;) &amp;&amp; project == &#34;projects/sample-project&#34;
 (name == &#34;ed&#34; || email == &#34;ed@bytebase.com&#34;) &amp;&amp; project == &#34;projects/sample-project&#34; </p></td>
                 </tr>
               
@@ -13197,21 +13197,21 @@ the call that provided the page token. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filters:
-- name: the instance name, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- resource_id: the instance id, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- name: the instance name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- resource_id: the instance id, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator.
 - state: the instance state, check State enum for values, support &#34;==&#34; operator.
 - engine: the instance engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator.
-- host: the instance host, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- port: the instance port, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- host: the instance host, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- port: the instance port, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 - labels.{key}: the instance label, support &#34;==&#34; and &#34;in&#34; operators.
 
 For example:
 name == &#34;sample instance&#34;
-name.matches(&#34;sample&#34;)
+name.contains(&#34;sample&#34;)
 resource_id == &#34;sample-instance&#34;
-resource_id.matches(&#34;sample&#34;)
+resource_id.contains(&#34;sample&#34;)
 state == &#34;DELETED&#34;
 environment == &#34;environments/test&#34;
 environment == &#34;&#34; (find instances which environment is not set)
@@ -13219,14 +13219,14 @@ engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
 host == &#34;127.0.0.1&#34;
-host.matches(&#34;127.0&#34;)
+host.contains(&#34;127.0&#34;)
 port == &#34;54321&#34;
-port.matches(&#34;543&#34;)
+port.contains(&#34;543&#34;)
 labels.org_group == &#34;infrastructure&#34;
 labels.environment in [&#34;prod&#34;, &#34;production&#34;]
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
-name.matches(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34;
+name.contains(&#34;sample&#34;) &amp;&amp; environment == &#34;environments/test&#34;
 host == &#34;127.0.0.1&#34; &amp;&amp; port == &#34;54321&#34; </p></td>
                 </tr>
               
@@ -15408,14 +15408,14 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - schema: the schema name, support &#34;==&#34; operator.
-- table: the table name, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- table: the table name, support &#34;==&#34; and &#34;.contains()&#34; operator.
 
 For example:
 schema == &#34;schema-a&#34;
 table == &#34;table-a&#34;
-table.matches(&#34;table-a&#34;)
-schema == &#34;schema-a&#34; &amp;&amp; table.matches(&#34;sample&#34;)
-The filter used to search table with wildcard &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;.
+table.contains(&#34;table-a&#34;)
+schema == &#34;schema-a&#34; &amp;&amp; table.contains(&#34;sample&#34;)
+The filter is used to search for tables containing &#34;sample&#34; in the schema &#34;schemas/schema-a&#34;.
 The column masking level will only be returned when a table filter is used. </p></td>
                 </tr>
               
@@ -15917,12 +15917,12 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator.
-- name: the database name, support &#34;.matches()&#34; operator.
+- name: the database name, support &#34;.contains()&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
 - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator.
 - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator.
-- table: filter by the database table, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
 
 For example:
@@ -15930,19 +15930,19 @@ environment == &#34;environments/{environment resource id}&#34;
 environment == &#34;&#34; (find databases which environment is not set)
 project == &#34;projects/{project resource id}&#34;
 instance == &#34;instances/{instance resource id}&#34;
-name.matches(&#34;database name&#34;)
+name.contains(&#34;database name&#34;)
 engine == &#34;MYSQL&#34;
 engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
 !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
 exclude_unassigned == true
 table == &#34;sample&#34;
-table.matches(&#34;sam&#34;)
+table.contains(&#34;sam&#34;)
 labels.environment == &#34;production&#34;
 labels.region == &#34;asia&#34;
 labels.region in [&#34;asia&#34;, &#34;europe&#34;]
 
 You can combine filter conditions like:
-environment == &#34;environments/prod&#34; &amp;&amp; name.matches(&#34;employee&#34;) </p></td>
+environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) </p></td>
                 </tr>
               
                 <tr>
@@ -18253,18 +18253,18 @@ the call that provided the page token. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter:
-- title: the group title, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- email: the group email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- title: the group title, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- email: the group email, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
 
 For example:
 title == &#34;dba&#34;
 email == &#34;dba@bytebase.com&#34;
-title.matches(&#34;dba&#34;)
-email.matches(&#34;dba&#34;)
+title.contains(&#34;dba&#34;)
+email.contains(&#34;dba&#34;)
 project == &#34;projects/sample-project&#34;
 You can combine filter conditions like:
-title.matches(&#34;dba&#34;) || email.matches(&#34;dba&#34;) </p></td>
+title.contains(&#34;dba&#34;) || email.contains(&#34;dba&#34;) </p></td>
                 </tr>
               
             </tbody>
@@ -23977,7 +23977,7 @@ Supported filter:
 - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
 - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
 - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
-- statement: the SQL statement, support &#34;.matches()&#34; operator.
+- statement: the SQL statement, support &#34;.contains()&#34; operator.
 
 For example:
 project == &#34;projects/{project}&#34;
@@ -23985,8 +23985,8 @@ database == &#34;instances/{instance}/databases/{database}&#34;
 instance == &#34;instances/{instance}&#34;
 type == &#34;QUERY&#34;
 type == &#34;EXPORT&#34;
-statement.matches(&#34;select&#34;)
-type == &#34;QUERY&#34; &amp;&amp; statement.matches(&#34;select&#34;) </p></td>
+statement.contains(&#34;select&#34;)
+type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) </p></td>
                 </tr>
               
             </tbody>
@@ -26221,25 +26221,25 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filters:
-- name: the project name, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- resource_id: the project id, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- name: the project name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- resource_id: the project id, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - exclude_default: if not include the default project, should be &#34;true&#34; or &#34;false&#34;, support &#34;==&#34; operator.
 - state: check the State enum for the values, support &#34;==&#34; operator.
 - labels.{key}: the project label, support &#34;==&#34; and &#34;in&#34; operators.
 
 For example:
 name == &#34;project name&#34;
-name.matches(&#34;project name&#34;)
+name.contains(&#34;project name&#34;)
 resource_id == &#34;project id&#34;
-resource_id.matches(&#34;project id&#34;)
+resource_id.contains(&#34;project id&#34;)
 exclude_default == true
 state == &#34;DELETED&#34;
 labels.environment == &#34;production&#34;
 labels.tier == &#34;critical&#34;
 labels.environment in [&#34;staging&#34;, &#34;prod&#34;]
 You can combine filter conditions like:
-name == &#34;project name&#34; &amp;&amp; resource_id.matches(&#34;project id&#34;)
-name.matches(&#34;project name&#34;) || resource_id == &#34;project id&#34;
+name == &#34;project name&#34; &amp;&amp; resource_id.contains(&#34;project id&#34;)
+name.contains(&#34;project name&#34;) || resource_id == &#34;project id&#34;
 labels.environment == &#34;production&#34; &amp;&amp; labels.tier == &#34;critical&#34; </p></td>
                 </tr>
               
@@ -30000,16 +30000,16 @@ the call that provided the page token. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter:
-- name: the service account name, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- email: the service account email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- name: the service account name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- email: the service account email, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - state: check State enum for values, support &#34;==&#34; operator.
 
 For example:
 name == &#34;ed&#34;
-name.matches(&#34;ed&#34;)
+name.contains(&#34;ed&#34;)
 state == &#34;DELETED&#34;
 email == &#34;ed@service.bytebase.com&#34;
-email.matches(&#34;ed&#34;) </p></td>
+email.contains(&#34;ed&#34;) </p></td>
                 </tr>
               
             </tbody>
@@ -32108,16 +32108,16 @@ the call that provided the page token. </p></td>
 The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
 Supported filter:
-- name: the workload identity name, support &#34;==&#34; and &#34;.matches()&#34; operator.
-- email: the workload identity email, support &#34;==&#34; and &#34;.matches()&#34; operator.
+- name: the workload identity name, support &#34;==&#34; and &#34;.contains()&#34; operator.
+- email: the workload identity email, support &#34;==&#34; and &#34;.contains()&#34; operator.
 - state: check State enum for values, support &#34;==&#34; operator.
 
 For example:
 name == &#34;ed&#34;
-name.matches(&#34;ed&#34;)
+name.contains(&#34;ed&#34;)
 state == &#34;DELETED&#34;
 email == &#34;ed@workload.bytebase.com&#34;
-email.matches(&#34;ed&#34;) </p></td>
+email.contains(&#34;ed&#34;) </p></td>
                 </tr>
               
             </tbody>

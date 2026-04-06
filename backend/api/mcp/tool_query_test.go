@@ -44,30 +44,44 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves a ListDatabases response.
-// It applies basic filter awareness: if the request contains a "filter" field with
-// an instance constraint, only matching databases are returned.
+// mockListDatabases returns an HTTP handler that serves ListDatabases requests.
+// Supports both workspace-scoped (parent: "workspaces/...") and project-scoped parents.
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
 		var reqBody struct {
+			Parent string `json:"parent"`
 			Filter string `json:"filter"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
-		result := databases
-		if reqBody.Filter != "" {
-			result = applyMockFilter(databases, reqBody.Filter)
+		// For workspace-scoped requests, include all databases.
+		// For project-scoped requests, filter by parent project.
+		var scoped []map[string]any
+		if strings.HasPrefix(reqBody.Parent, "workspaces/") {
+			scoped = databases
+		} else {
+			for _, db := range databases {
+				proj, ok := db["project"].(string)
+				if ok && proj == reqBody.Parent {
+					scoped = append(scoped, db)
+				}
+			}
 		}
 
-		resp := map[string]any{"databases": result}
-		w.Header().Set("Content-Type", "application/json")
+		result := scoped
+		if reqBody.Filter != "" {
+			result = applyMockFilter(scoped, reqBody.Filter)
+		}
+
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(map[string]any{"databases": result})
 	})
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.matches("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.contains("x"), instance == "instances/x", project == "projects/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -83,15 +97,11 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 		if !ok {
 			continue
 		}
-		project, ok := db["project"].(string)
-		if !ok {
-			continue
-		}
 
 		match := true
-		// Check name.matches("x") — substring match
-		if idx := strings.Index(filter, `name.matches(`); idx >= 0 {
-			start := idx + len(`name.matches("`)
+		// Check name.contains("x") — substring match
+		if idx := strings.Index(filter, `name.contains(`); idx >= 0 {
+			start := idx + len(`name.contains("`)
 			end := strings.Index(filter[start:], `"`)
 			if end > 0 {
 				substr := filter[start : start+end]
@@ -117,7 +127,7 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			end := strings.Index(filter[start:], `"`)
 			if end > 0 {
 				expected := filter[start : start+end]
-				if project != expected {
+				if proj, ok := db["project"].(string); ok && proj != expected {
 					match = false
 				}
 			}
@@ -169,6 +179,41 @@ func mockQueryServer(databases []map[string]any, queryResp map[string]any) http.
 	})
 }
 
+func TestBuildDatabaseFilter(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  QueryInput
+		expect string
+	}{
+		{
+			name:   "database only",
+			input:  QueryInput{Database: "employee_db"},
+			expect: `name.contains("employee_db")`,
+		},
+		{
+			name:   "with instance",
+			input:  QueryInput{Database: "employee_db", Instance: "prod-pg"},
+			expect: `name.contains("employee_db") && instance == "instances/prod-pg"`,
+		},
+		{
+			name:   "with project",
+			input:  QueryInput{Database: "employee_db", Project: "hr-system"},
+			expect: `name.contains("employee_db") && project == "projects/hr-system"`,
+		},
+		{
+			name:   "with instance and project",
+			input:  QueryInput{Database: "employee_db", Instance: "prod-pg", Project: "hr-system"},
+			expect: `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := buildDatabaseFilter(tc.input)
+			require.Equal(t, tc.expect, got)
+		})
+	}
+}
+
 func TestQueryDatabase_SingleMatch(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
@@ -176,7 +221,7 @@ func TestQueryDatabase_SingleMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -189,7 +234,7 @@ func TestQueryDatabase_CaseInsensitiveMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "Employee_DB"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "Employee_DB"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -201,7 +246,7 @@ func TestQueryDatabase_SubstringMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -213,7 +258,7 @@ func TestQueryDatabase_NotFound(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	_, err := s.resolveDatabase(context.Background(), QueryInput{Database: "nonexistent"})
+	_, err := s.resolveDatabase(testContext(), QueryInput{Database: "nonexistent"})
 	require.Error(t, err)
 
 	var te *toolError
@@ -228,7 +273,7 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	_, err := s.resolveDatabase(context.Background(), QueryInput{
+	_, err := s.resolveDatabase(testContext(), QueryInput{
 		Database: "employee_db",
 		Instance: "nonexistent-instance",
 	})
@@ -240,6 +285,38 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	require.Contains(t, te.Suggestion, "without instance/project filters")
 }
 
+func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
+	s := newTestServerWithMock(t, http.NotFoundHandler())
+
+	// Use context.Background() — no workspace ID set.
+	_, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	require.Error(t, err)
+
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "AUTH_ERROR", te.Code)
+}
+
+func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"message": "permission denied",
+			"code":    "PERMISSION_DENIED",
+		})
+	})
+	s := newTestServerWithMock(t, handler)
+
+	_, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	require.Error(t, err)
+
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "PERMISSION_DENIED", te.Code)
+	require.Contains(t, te.Suggestion, "bb.databases.list")
+}
+
 func TestQueryDatabase_Ambiguous(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
@@ -247,7 +324,7 @@ func TestQueryDatabase_Ambiguous(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
 	require.NoError(t, err)
 	require.True(t, resolved.ambiguous)
 	require.Len(t, resolved.candidates, 2)
@@ -264,7 +341,7 @@ func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{
 		Database: "employee_db",
 		Instance: "prod-pg",
 	})
@@ -280,7 +357,7 @@ func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-ro-1", resolved.dataSourceID)
@@ -292,7 +369,7 @@ func TestQueryDatabase_AdminFallback(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
@@ -347,7 +424,7 @@ func TestQueryDatabase_LimitNormalization(t *testing.T) {
 	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s")
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT 1",
 		Limit:     2000,
@@ -369,7 +446,7 @@ func TestQueryDatabase_ExactMatchPriority(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee"})
+	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee"})
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee", resolved.resourceName)
@@ -390,7 +467,7 @@ func TestQueryDatabase_FullFlow(t *testing.T) {
 	)
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT id, name FROM users",
 	})
@@ -426,7 +503,7 @@ func TestQueryDatabase_EmptyResult(t *testing.T) {
 	)
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT * FROM users WHERE id = -1",
 	})
@@ -452,7 +529,7 @@ func TestQueryDatabase_Truncation(t *testing.T) {
 	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.050s")
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT id FROM users",
 		// Default limit is 100.
@@ -480,7 +557,7 @@ func TestQueryDatabase_CustomLimit(t *testing.T) {
 	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.020s")
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT id FROM users",
 		Limit:     50,
@@ -505,7 +582,7 @@ func TestQueryDatabase_LimitCappedAt1000(t *testing.T) {
 	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, rows, "0.003s")
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	result, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT id FROM users",
 		Limit:     2000,
@@ -537,7 +614,7 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 	})
 	s := newTestServerWithMock(t, handler)
 
-	result, _, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELEC * FROM users",
 	})
@@ -566,7 +643,7 @@ func TestQueryDatabase_PermissionDenied(t *testing.T) {
 	})
 	s := newTestServerWithMock(t, handler)
 
-	result, _, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT * FROM users",
 	})
@@ -591,7 +668,7 @@ func TestQueryDatabase_MaskedValues(t *testing.T) {
 	)
 	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
 
-	_, structured, err := s.handleQueryDatabase(context.Background(), nil, QueryInput{
+	_, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
 		Statement: "SELECT id, ssn, name FROM users",
 	})

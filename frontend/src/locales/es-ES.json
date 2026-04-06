@@ -251,7 +251,6 @@
     "title": "Título",
     "text-wrap": "Ajuste de texto",
     "catalog": "Catálogo",
-    "remove": "Eliminar",
     "removed": "Eliminado",
     "submit": "Enviar",
     "draft": "Borrador",
@@ -447,8 +446,6 @@
       "integration": "Integración",
       "general": "General",
       "members": "Miembros",
-      "users-and-groups": "Usuarios y grupos",
-      "members-and-groups": "Miembros y grupos",
       "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
       "mcp": "MCP",
@@ -488,7 +485,6 @@
       "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
       "table": {
         "account": "Cuenta",
-        "role": "Rol",
         "groups": "Grupos",
         "roles": "Roles"
       },
@@ -501,7 +497,6 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
-          "members": "Miembros",
           "role": {
             "owner": "Propietario del grupo",
             "member": "Miembro del grupo"
@@ -778,9 +773,7 @@
             "self": "Tiempo máximo de consulta",
             "description": "El tiempo máximo permitido para la ejecución de una consulta."
           },
-          "seconds": "Segundos",
-          "project-scope": "proyecto",
-          "environment-scope": "ambiente"
+          "seconds": "Segundos"
         },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
@@ -1910,7 +1903,6 @@
     "settings": {
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
       "update-failed": "No se pudo actualizar la configuración del proyecto.",
-      "success-member-added-prompt": "Se agregó correctamente al proyecto.",
       "restore": {
         "title": "Restaurar proyecto",
         "btn-text": "Restaurar este @.lower:{'common.project'}"
@@ -1986,19 +1978,11 @@
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
-      "edit": "Editar miembro - {member}",
-      "view-by-members": "Ver por miembros",
-      "view-by-roles": "Ver por roles",
-      "revoke-role-from-user": "Revocar '{role}' de '{user}'",
       "never-expires": "Nunca caduca",
       "role-never-expires": "Este rol nunca expira.",
-      "add-more": "Agregar más",
-      "condition-name": "Nombre de la condición",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
-      "project-level-roles": "Roles a nivel de proyecto",
       "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
-      "disallow-ddl": "No permitir ejecutar sentencias DDL/DML en ningún entorno."
+      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados."
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
@@ -2491,10 +2475,8 @@
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
     "disabled": "La revisión de SQL está deshabilitada",
     "create-policy": "Crear política",
-    "select-review": "Seleccione revisión SQL",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
     "select-all": "Seleccionar todo",
-    "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "configure-policy": "Configurar política",
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-created": "La política de revisión se creó correctamente.",
@@ -2528,7 +2510,6 @@
       "configure-rule": {
         "name": "Configurar regla",
         "change-template": "Cambiar plantilla",
-        "confirm-override-title": "Confirmar cambio",
         "confirm-override-description": "Sus reglas serán anuladas"
       }
     },
@@ -2543,8 +2524,7 @@
       "name": "Nivel",
       "error": "Error",
       "warning": "Advertencia"
-    },
-    "tooltip-for-resource": "También es configurable a nivel {scope}. Bytebase dará prioridad a la configuración a nivel de entorno."
+    }
   },
   "agent": {
     "assistant-title": "Asistente de Bytebase",
@@ -2869,7 +2849,6 @@
     },
     "title": "Título",
     "select-role": "Seleccionar rol",
-    "expired-tip": "El papel puede haber expirado.",
     "import-from-role": "Importar desde el rol",
     "workspace-roles": {
       "self": "Roles de espacio de trabajo"
