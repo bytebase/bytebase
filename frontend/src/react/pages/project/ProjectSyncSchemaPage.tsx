@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   ArrowDown,
   ArrowUp,
@@ -321,6 +322,9 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
           setShowConfirmDialog(true);
           return;
         }
+        // Even with no databases selected, clear stale diff cache
+        setSchemaDiffCache({});
+        setSelectedDatabaseName(undefined);
       } else if (
         currentStep === Step.SELECT_SOURCE_SCHEMA &&
         nextStep === Step.SELECT_TARGET_DATABASE_LIST
@@ -725,6 +729,8 @@ function ChangelogSelector({
   const changelogStore = useChangelogStore();
   const databaseStore = useDatabaseV1Store();
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
+  const [nextPageToken, setNextPageToken] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const disabled = !isValidDatabaseName(database);
@@ -737,27 +743,37 @@ function ChangelogSelector({
   const valueRef = useRef(value);
   valueRef.current = value;
 
+  const toEntry = useCallback(
+    (changelog: {
+      name: string;
+      createTime?: Timestamp;
+      planTitle: string;
+    }): ChangelogEntry => ({
+      name: changelog.name,
+      date: getDateForPbTimestampProtoEs(changelog.createTime)
+        ? new Date(getDateForPbTimestampProtoEs(changelog.createTime)!)
+        : undefined,
+      planTitle: changelog.planTitle,
+    }),
+    []
+  );
+
   useEffect(() => {
     if (!isValidDatabaseName(database)) {
       setEntries([]);
+      setNextPageToken("");
       return;
     }
 
     (async () => {
-      const { changelogs: fetchedChangelogs } =
+      const { changelogs: fetchedChangelogs, nextPageToken: token } =
         await changelogStore.fetchChangelogList({
           parent: database,
           pageSize: 50,
           filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
         });
 
-      let items: ChangelogEntry[] = fetchedChangelogs.map((changelog) => ({
-        name: changelog.name,
-        date: getDateForPbTimestampProtoEs(changelog.createTime)
-          ? new Date(getDateForPbTimestampProtoEs(changelog.createTime)!)
-          : undefined,
-        planTitle: changelog.planTitle,
-      }));
+      let items = fetchedChangelogs.map(toEntry);
 
       if (items.length === 0) {
         const db = databaseStore.getDatabaseByName(database);
@@ -766,6 +782,7 @@ function ChangelogSelector({
       }
 
       setEntries(items);
+      setNextPageToken(token);
 
       // Auto-select first when no value is set
       if (items.length > 0 && !valueRef.current) {
@@ -773,6 +790,21 @@ function ChangelogSelector({
       }
     })();
   }, [database]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextPageToken || !isValidDatabaseName(database) || loadingMore) return;
+    setLoadingMore(true);
+    const { changelogs: more, nextPageToken: token } =
+      await changelogStore.fetchChangelogList({
+        parent: database,
+        pageToken: nextPageToken,
+        pageSize: 50,
+        filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+      });
+    setEntries((prev) => [...prev, ...more.map(toEntry)]);
+    setNextPageToken(token);
+    setLoadingMore(false);
+  }, [nextPageToken, database, loadingMore, toEntry]);
 
   const selectedEntry = entries.find((e) => e.name === value);
 
@@ -823,6 +855,19 @@ function ChangelogSelector({
                 <ChangelogLabel entry={entry} />
               </button>
             ))}
+            {nextPageToken && (
+              <button
+                type="button"
+                className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-gray-50 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  loadMore();
+                }}
+                disabled={loadingMore}
+              >
+                {loadingMore ? t("common.loading") : t("common.load-more")}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1862,21 +1907,39 @@ function TargetDatabasesSelectPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbNextPageToken, setDbNextPageToken] = useState("");
+  const [loadingMoreDbs, setLoadingMoreDbs] = useState(false);
 
   useEscapeKey(true, onClose);
 
-  // Fetch databases for the project
+  // Fetch first page of databases
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { databases: fetched } = await databaseStore.fetchDatabases({
-        parent: project,
-        pageSize: 1000,
-      });
+      const { databases: fetched, nextPageToken: token } =
+        await databaseStore.fetchDatabases({
+          parent: project,
+          pageSize: 100,
+        });
       setDatabases(fetched);
+      setDbNextPageToken(token);
       setLoading(false);
     })();
   }, [project]);
+
+  const loadMoreDatabases = useCallback(async () => {
+    if (!dbNextPageToken || loadingMoreDbs) return;
+    setLoadingMoreDbs(true);
+    const { databases: more, nextPageToken: token } =
+      await databaseStore.fetchDatabases({
+        parent: project,
+        pageSize: 100,
+        pageToken: dbNextPageToken,
+      });
+    setDatabases((prev) => [...prev, ...more]);
+    setDbNextPageToken(token);
+    setLoadingMoreDbs(false);
+  }, [dbNextPageToken, loadingMoreDbs, project]);
 
   const filteredDatabases = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -1957,69 +2020,87 @@ function TargetDatabasesSelectPanel({
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-2 w-8 text-left">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredDatabases.length > 0 &&
-                        filteredDatabases.every((db) => selected.has(db.name))
-                      }
-                      onChange={toggleAll}
-                    />
-                  </th>
-                  <th className="py-2 px-2 text-left font-medium">
-                    {t("common.database")}
-                  </th>
-                  <th className="py-2 px-2 text-left font-medium">
-                    {t("common.environment")}
-                  </th>
-                  <th className="py-2 px-2 text-left font-medium">
-                    {t("common.instance")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDatabases.map((db) => (
-                  <tr
-                    key={db.name}
-                    className="border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => toggleDatabase(db.name)}
-                  >
-                    <td
-                      className="py-2 px-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+            <>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-2 w-8 text-left">
                       <input
                         type="checkbox"
-                        checked={selected.has(db.name)}
-                        onChange={() => toggleDatabase(db.name)}
+                        checked={
+                          filteredDatabases.length > 0 &&
+                          filteredDatabases.every((db) => selected.has(db.name))
+                        }
+                        onChange={toggleAll}
                       />
-                    </td>
-                    <td className="py-2 px-2">
-                      <div className="flex items-center gap-x-1">
-                        {EngineIconPath[getInstanceResource(db).engine] && (
-                          <img
-                            src={EngineIconPath[getInstanceResource(db).engine]}
-                            className="w-4 h-auto"
-                            alt=""
-                          />
-                        )}
-                        {extractDatabaseResourceName(db.name).databaseName}
-                      </div>
-                    </td>
-                    <td className="py-2 px-2">
-                      {getDatabaseEnvironment(db).title}
-                    </td>
-                    <td className="py-2 px-2">
-                      {getInstanceResource(db).title}
-                    </td>
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.database")}
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.environment")}
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.instance")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredDatabases.map((db) => (
+                    <tr
+                      key={db.name}
+                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      onClick={() => toggleDatabase(db.name)}
+                    >
+                      <td
+                        className="py-2 px-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(db.name)}
+                          onChange={() => toggleDatabase(db.name)}
+                        />
+                      </td>
+                      <td className="py-2 px-2">
+                        <div className="flex items-center gap-x-1">
+                          {EngineIconPath[getInstanceResource(db).engine] && (
+                            <img
+                              src={
+                                EngineIconPath[getInstanceResource(db).engine]
+                              }
+                              className="w-4 h-auto"
+                              alt=""
+                            />
+                          )}
+                          {extractDatabaseResourceName(db.name).databaseName}
+                        </div>
+                      </td>
+                      <td className="py-2 px-2">
+                        {getDatabaseEnvironment(db).title}
+                      </td>
+                      <td className="py-2 px-2">
+                        {getInstanceResource(db).title}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {dbNextPageToken && (
+                <div className="flex justify-center py-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loadingMoreDbs}
+                    onClick={loadMoreDatabases}
+                  >
+                    {loadingMoreDbs
+                      ? t("common.loading")
+                      : t("common.load-more")}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
