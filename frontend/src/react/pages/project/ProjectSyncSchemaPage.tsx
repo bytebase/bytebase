@@ -147,12 +147,28 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       sourceSchemaType === SourceSchemaType.RAW_SQL &&
       rawSQLState.statement !== "";
     if (!shouldGuard) return;
-    const handler = (e: BeforeUnloadEvent) => {
+
+    // Guard browser/tab unload
+    const beforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [sourceSchemaType, rawSQLState.statement]);
+    window.addEventListener("beforeunload", beforeUnload);
+
+    // Guard in-app Vue router navigation
+    const removeRouterGuard = router.beforeEach((_to, _from, next) => {
+      const answer = window.confirm(t("common.leave-without-saving"));
+      if (answer) {
+        next();
+      } else {
+        next(false);
+      }
+    });
+
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      removeRouterGuard();
+    };
+  }, [sourceSchemaType, rawSQLState.statement, t]);
 
   // Target databases state (lifted up so we can access from step controls)
   const [selectedDatabaseNameList, setSelectedDatabaseNameList] = useState<
@@ -323,6 +339,9 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
 
   const handleConfirmRevert = useCallback(() => {
     setShowConfirmDialog(false);
+    setSelectedDatabaseNameList([]);
+    setSchemaDiffCache({});
+    setSelectedDatabaseName(undefined);
     setCurrentStep(Step.SELECT_SOURCE_SCHEMA);
   }, []);
 
@@ -1969,7 +1988,10 @@ function TargetDatabasesSelectPanel({
                     className="border-b hover:bg-gray-50 cursor-pointer"
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 px-2">
+                    <td
+                      className="py-2 px-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={selected.has(db.name)}
