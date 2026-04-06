@@ -302,6 +302,7 @@ const effectiveTitle = computed(() => {
 });
 
 const syncGeneratedTitle = () => {
+  if (project.value.enforceIssueTitle) return;
   if (targetTitleNames.value.length === 0) return;
   if (state.titleEdited && state.title.trim()) return;
   state.title = generatePlanTitle(
