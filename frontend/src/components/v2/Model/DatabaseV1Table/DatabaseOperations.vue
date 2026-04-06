@@ -62,6 +62,19 @@
     @update="onEnvironmentUpdate($event)"
   />
 
+  <DataExportPrepDrawer
+    :show="state.showRequestExportPanel"
+    :project-name="selectedProjectName"
+    :seed="{
+      step: 2,
+      targetSelectState: {
+        changeSource: 'DATABASE',
+        selectedDatabaseNameList: selectedDatabaseNameList,
+      },
+    }"
+    @dismiss="state.showRequestExportPanel = false"
+  />
+
   <Drawer
     :show="!!state.transferOutDatabaseType"
     :auto-focus="true"
@@ -116,9 +129,8 @@ import { NButton, NScrollbar, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import type { LocationQueryRaw } from "vue-router";
-import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
+import DataExportPrepDrawer from "@/components/DataExportPrepForm/DataExportPrepDrawer.vue";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
@@ -126,10 +138,6 @@ import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
-import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -147,9 +155,6 @@ import {
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  extractDatabaseResourceName,
-  extractProjectResourceName,
-  generatePlanTitle,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
@@ -165,6 +170,7 @@ interface DatabaseAction {
 
 interface LocalState {
   loading: boolean;
+  showRequestExportPanel: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
   showEditEnvironmentDrawer: boolean;
@@ -183,6 +189,7 @@ const props = withDefaults(
 
 const state = reactive<LocalState>({
   loading: false,
+  showRequestExportPanel: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
   showEditEnvironmentDrawer: false,
@@ -195,7 +202,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
@@ -260,42 +266,6 @@ const operations = computed(() => {
     "TRANSFER-IN",
   ];
 });
-
-const generateMultiDb = async (
-  type: "bb.plan.change-database" | "bb.plan.export-data"
-) => {
-  // Fetch project to check enforce_issue_title setting
-  const project = await projectStore.getOrFetchProjectByName(
-    selectedProjectName.value
-  );
-
-  const query: LocationQueryRaw = {
-    template: type,
-    databaseList: props.databases.map((db) => db.name).join(","),
-  };
-  // Only set title from generated if enforceIssueTitle is false.
-  if (!project.enforceIssueTitle) {
-    query.name = generatePlanTitle(
-      type,
-      props.databases.map(
-        (db) => extractDatabaseResourceName(db.name).databaseName
-      )
-    );
-  }
-
-  const isDataExport = type === "bb.plan.export-data";
-  router.push({
-    name: isDataExport
-      ? PROJECT_V1_ROUTE_PLAN_DETAIL
-      : PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(selectedProjectName.value),
-      planId: "create",
-      ...(isDataExport ? {} : { specId: "placeholder" }),
-    },
-    query,
-  });
-};
 
 const syncSchema = async () => {
   if (state.loading) {
@@ -416,7 +386,7 @@ const actions = computed((): DatabaseAction[] => {
               !selectedProjectName.value ||
               props.databases.length < 1 ||
               hasDefaultProjectSelected.value,
-            click: () => generateMultiDb("bb.plan.export-data"),
+            click: () => (state.showRequestExportPanel = true),
             requiredPermissions: [...PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE],
           });
         }

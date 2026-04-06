@@ -11,7 +11,7 @@
     <OptionsSection />
 
     <div class="h-72 flex flex-col">
-      <StatementSection />
+      <StatementSection header-variant="section" />
     </div>
   </div>
 </template>
