@@ -2,7 +2,6 @@ package pg
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -21,23 +20,19 @@ func init() {
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)
 }
 
-// loadCatalog loads a schema text into a catalog. It tries LoadSDL first
-// (declarative CREATE/COMMENT/GRANT only). If that fails (e.g. raw dump with
-// SET/SELECT), it falls back to LoadSQL which accepts any SQL. If both fail,
-// it returns the LoadSDL error: LoadSDL is the canonical, dependency-aware
-// path and produces far more diagnostic errors than LoadSQL's order-dependent
+// loadCatalog parses a schema text and returns a catalog reflecting it.
+// LoadSDL is the canonical, dependency-aware path. LoadSQL is tried only as
+// a fallback for raw dumps containing non-SDL statements (e.g. SET, SELECT)
+// that LoadSDL legitimately rejects. When both fail, the LoadSDL error is
+// returned because it is far more diagnostic than LoadSQL's order-dependent
 // failures (e.g. "relation X does not exist" on a forward FK reference).
 func loadCatalog(text string) (*catalog.Catalog, error) {
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return catalog.LoadSDL("")
-	}
 	c, sdlErr := catalog.LoadSDL(text)
 	if sdlErr == nil {
 		return c, nil
 	}
-	if c2, sqlErr := catalog.LoadSQL(text); sqlErr == nil {
-		return c2, nil
+	if c, err := catalog.LoadSQL(text); err == nil {
+		return c, nil
 	}
 	return nil, sdlErr
 }
