@@ -2891,8 +2891,7 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
-    "filter-by-category": "按类别过滤"
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。"
   },
   "gitops": {
     "self": "GitOps",

@@ -220,7 +220,8 @@
     "draft": "Bản nháp",
     "error": "Lỗi",
     "type-to-search": "Nhập để tìm kiếm...",
-    "comment": "Bình luận"
+    "comment": "Bình luận",
+    "clear-filters": "Xóa bộ lọc"
   },
   "common.add": "Thêm",
   "common.admin": "Quản trị viên",
@@ -966,7 +967,10 @@
   },
   "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
-    "releases": "Bản phát hành"
+    "releases": "Bản phát hành",
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
+    "files": "Tệp",
+    "total-files": "Tổng số {{}} tệp"
   },
   "remind": {
     "release": {

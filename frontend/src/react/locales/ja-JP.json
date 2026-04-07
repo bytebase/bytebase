@@ -220,7 +220,8 @@
     "draft": "下書き",
     "error": "間違い",
     "type-to-search": "検索するには入力...",
-    "comment": "コメント"
+    "comment": "コメント",
+    "clear-filters": "フィルタをクリア"
   },
   "common.add": "追加",
   "common.admin": "管理者",
@@ -966,7 +967,10 @@
   },
   "quick-action.add-instance": "@:common.instance@:common.add",
   "release": {
-    "releases": "リリース"
+    "releases": "リリース",
+    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "files": "ファイル",
+    "total-files": "合計 {{}} ファイル"
   },
   "remind": {
     "release": {

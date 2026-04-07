@@ -2948,8 +2948,7 @@
     "vcs-type": {
       "unspecified": "未指定"
     },
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
-    "filter-by-category": "カテゴリでフィルタリング"
+    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
   },
   "gitops": {
     "self": "GitOps",
