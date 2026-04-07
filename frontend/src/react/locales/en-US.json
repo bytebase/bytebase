@@ -122,6 +122,7 @@
     "reorder": "Reorder",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "resource-not-found": "Resource not found",
     "restore": "Restore",
     "restored": "Restored",
     "revert": "Revert",
@@ -442,6 +443,7 @@
     "select": "Select environment"
   },
   "error-page": {
+    "go-back-home": "Go back home",
     "not-found": "Not Found"
   },
   "export-center": {

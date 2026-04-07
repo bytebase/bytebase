@@ -130,6 +130,7 @@
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
+    "resource-not-found": "リソースが見つかりません",
     "restore": "復元する",
     "restored": "Restored",
     "revert": "元に戻す",
@@ -442,6 +443,7 @@
     "select": "環境を選ぶ"
   },
   "error-page": {
+    "go-back-home": "ホームページに戻る",
     "not-found": "ページが見つかりません"
   },
   "export-center": {
