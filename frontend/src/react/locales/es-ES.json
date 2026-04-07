@@ -130,6 +130,7 @@
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
+    "resource-not-found": "Recurso no encontrado",
     "restore": "Restaurar",
     "restored": "Restored",
     "revert": "Revertir",
@@ -442,6 +443,7 @@
     "select": "Seleccionar entorno"
   },
   "error-page": {
+    "go-back-home": "Volver al inicio",
     "not-found": "No encontrado"
   },
   "export-center": {

@@ -5,10 +5,12 @@ const projectPageLoaders = import.meta.glob("./pages/project/*.tsx");
 const pluginComponentLoaders = import.meta.glob(
   "./plugins/agent/components/AgentWindow.tsx"
 );
+const workspacePageLoaders = import.meta.glob("./pages/workspace/*.tsx");
 const pageLoaders = {
   ...settingsPageLoaders,
   ...projectPageLoaders,
   ...pluginComponentLoaders,
+  ...workspacePageLoaders,
 };
 
 // biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
@@ -47,6 +49,7 @@ const pageDirs = [
   "./pages/settings",
   "./pages/project",
   "./plugins/agent/components",
+  "./pages/workspace",
 ];
 
 async function loadPage(name: string): Promise<ReactComponent> {

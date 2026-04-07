@@ -130,6 +130,7 @@
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "resource-not-found": "Không tìm thấy tài nguyên",
     "restore": "Khôi phục",
     "restored": "Restored",
     "revert": "Hoàn tác",
@@ -442,6 +443,7 @@
     "select": "Chọn môi trường"
   },
   "error-page": {
+    "go-back-home": "Về trang chủ",
     "not-found": "Không tìm thấy"
   },
   "export-center": {
