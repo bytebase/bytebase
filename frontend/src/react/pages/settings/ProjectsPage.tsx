@@ -46,6 +46,7 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import { PagedTableFooter } from "./shared/usePagedData";
 
 // ============================================================
 // Escape key stack for overlays

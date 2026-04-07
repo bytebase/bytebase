@@ -31,6 +31,7 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { PagedTableFooter } from "@/react/pages/settings/shared/usePagedData";
 import { pushNotification, useSubscriptionV1Store } from "@/store";
 import {
   extractUserEmail,

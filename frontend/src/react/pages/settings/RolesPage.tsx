@@ -46,6 +46,7 @@ import {
   isCustomRole,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
+import { RoleSelect } from "./shared/RoleSelect";
 
 // Escape key stack: only the topmost overlay handles Escape.
 const escapeStack: (() => void)[] = [];
