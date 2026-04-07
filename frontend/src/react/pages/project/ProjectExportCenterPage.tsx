@@ -9,11 +9,8 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  PagedTableFooter,
-  usePagedData,
-} from "@/react/pages/settings/shared/usePagedData";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { useIssueV1Store, useProjectV1Store, useUserStore } from "@/store";

@@ -3,10 +3,13 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RoleSelect } from "@/react/components/RoleSelect";
+import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   ensureServiceAccountFullName,
@@ -31,9 +34,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
-import { RoleSelect } from "./shared/RoleSelect";
-import { UserAvatar } from "./shared/UserAvatar";
-import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
 // ServiceAccountTable

@@ -1,14 +1,7 @@
-import {
-  Check,
-  ChevronDown,
-  KeyRound,
-  Search,
-  Shield,
-  Users,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, KeyRound, Shield, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -332,16 +325,13 @@ export function AccountMultiSelect({
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col">
           {/* Search input */}
-          <div className="flex items-center gap-x-2 px-3 py-2 border-b sticky top-0 bg-white">
-            <Search className="h-4 w-4 text-control-light shrink-0" />
-            <input
-              ref={inputRef}
-              className="flex-1 outline-hidden text-sm bg-transparent"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("common.search-for-more")}
-            />
-          </div>
+          <SearchInput
+            ref={inputRef}
+            wrapperClassName="sticky top-0 bg-white m-2"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("common.search-for-more")}
+          />
 
           <div className="overflow-auto">
             {/* allUsers option */}

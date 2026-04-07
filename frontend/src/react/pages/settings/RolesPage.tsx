@@ -11,6 +11,7 @@ import {
   ResourceIdField,
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
+import { RoleSelect } from "@/react/components/RoleSelect";
 import {
   Alert,
   AlertDescription,
@@ -45,7 +46,6 @@ import {
   isCustomRole,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
-import { RoleSelect } from "./shared/RoleSelect";
 
 // Escape key stack: only the topmost overlay handles Escape.
 const escapeStack: (() => void)[] = [];

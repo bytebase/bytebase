@@ -2,8 +2,10 @@ import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   ensureWorkloadIdentityFullName,
@@ -21,8 +23,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
-import { UserAvatar } from "./shared/UserAvatar";
-import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
 // WorkloadIdentityTable
@@ -311,9 +311,9 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   };
 
   return (
-    <div className="w-full overflow-x-hidden flex flex-col py-4">
+    <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {/* Header */}
-      <div className="flex justify-between items-center px-4 pb-2">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-lg font-medium leading-7 text-main">
           {t("settings.members.workload-identities")}
         </p>
@@ -334,7 +334,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-y-4 px-4">
+      <div className="flex flex-col gap-y-4">
         {activeData.isLoading && activeData.dataList.length === 0 ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />

@@ -17,12 +17,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { RoleSelect } from "@/react/components/RoleSelect";
+import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -58,9 +61,6 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
-import { RoleSelect } from "./shared/RoleSelect";
-import { UserAvatar } from "./shared/UserAvatar";
-import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
 // UserTable

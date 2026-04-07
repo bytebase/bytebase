@@ -21,6 +21,7 @@ import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
@@ -45,7 +46,6 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
-import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
 // ============================================================
 // Helpers

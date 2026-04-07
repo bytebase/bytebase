@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
+import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { PagedTableFooter } from "@/react/pages/settings/shared/usePagedData";
 import { router } from "@/router";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
 import type { DatabaseFilter } from "@/store/modules/v1/database";

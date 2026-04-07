@@ -24,6 +24,7 @@ import {
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -45,7 +46,6 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
-import { PagedTableFooter } from "./shared/usePagedData";
 
 // ============================================================
 // Escape key stack for overlays

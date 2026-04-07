@@ -3,11 +3,11 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RoleSelect } from "@/react/components/RoleSelect";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
-import { RoleSelect } from "@/react/pages/settings/shared/RoleSelect";
 import {
   ensureWorkloadIdentityFullName,
   pushNotification,

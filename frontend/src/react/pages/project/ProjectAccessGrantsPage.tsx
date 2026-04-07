@@ -19,11 +19,8 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  PagedTableFooter,
-  usePagedData,
-} from "@/react/pages/settings/shared/usePagedData";
 import { router } from "@/router";
 import {
   featureToRef,

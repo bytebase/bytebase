@@ -23,13 +23,13 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
+import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { PagedTableFooter } from "@/react/pages/settings/shared/usePagedData";
 import { pushNotification, useSubscriptionV1Store } from "@/store";
 import {
   extractUserEmail,
