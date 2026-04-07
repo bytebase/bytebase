@@ -23,17 +23,23 @@ func init() {
 
 // loadCatalog loads a schema text into a catalog. It tries LoadSDL first
 // (declarative CREATE/COMMENT/GRANT only). If that fails (e.g. raw dump with
-// SET/SELECT), it falls back to LoadSQL which accepts any SQL.
+// SET/SELECT), it falls back to LoadSQL which accepts any SQL. If both fail,
+// it returns the LoadSDL error: LoadSDL is the canonical, dependency-aware
+// path and produces far more diagnostic errors than LoadSQL's order-dependent
+// failures (e.g. "relation X does not exist" on a forward FK reference).
 func loadCatalog(text string) (*catalog.Catalog, error) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return catalog.LoadSDL("")
 	}
-	c, err := catalog.LoadSDL(text)
-	if err != nil {
-		return catalog.LoadSQL(text)
+	c, sdlErr := catalog.LoadSDL(text)
+	if sdlErr == nil {
+		return c, nil
 	}
-	return c, nil
+	if c2, sqlErr := catalog.LoadSQL(text); sqlErr == nil {
+		return c2, nil
+	}
+	return nil, sdlErr
 }
 
 // buildMigrationPlan loads two schema texts into catalogs, diffs them, and
