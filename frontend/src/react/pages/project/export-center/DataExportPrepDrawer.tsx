@@ -180,15 +180,15 @@ export function DataExportPrepDrawer({
     }
   }, [targets, dbStore, dbGroupStore]);
 
-  // Reset on open
+  // Reset on open or when seed changes while open
+  const seedKey = seed?.selectedDatabaseNames?.join(",") ?? "";
+  const seedStep = seed?.step ?? 1;
   useEffect(() => {
     if (open) {
-      const initialStep = seed?.step ?? 1;
-      const initialDbs = seed?.selectedDatabaseNames ?? [];
-      setStep(initialStep);
+      setStep(seedStep);
       setCreating(false);
       setChangeSource("DATABASE");
-      setSelectedDatabaseNames(new Set(initialDbs));
+      setSelectedDatabaseNames(new Set(seed?.selectedDatabaseNames ?? []));
       setSelectedDatabaseGroup(undefined);
       setTitle("");
       setTitleEdited(false);
@@ -199,7 +199,14 @@ export function DataExportPrepDrawer({
       setPassword("");
       setPasswordEnabled(false);
     }
-  }, [open]);
+  }, [open, seedKey, seedStep]);
+
+  // Close the drawer if the project context changes while open
+  useEffect(() => {
+    if (open) {
+      onClose();
+    }
+  }, [projectName]);
 
   useEscapeKey(open, onClose);
 
