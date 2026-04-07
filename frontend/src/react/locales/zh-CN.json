@@ -176,6 +176,7 @@
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
     "resource": "资源",
     "resources": "资源",
+    "resource-not-found": "未找到请求的资源",
     "restore": "恢复",
     "restored": "已恢复",
     "revert": "恢复",
@@ -384,6 +385,7 @@
     "successfully-updated-environment": "环境'{{name}}'更新成功"
   },
   "error-page": {
+    "go-back-home": "回到主页",
     "not-found": "页面未找到"
   },
   "export-center": {

@@ -176,6 +176,7 @@
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
     "resource": "Resource",
     "resources": "リソース",
+    "resource-not-found": "リソースが見つかりません",
     "restore": "復元する",
     "restored": "Restored",
     "revert": "元に戻す",
@@ -384,6 +385,7 @@
     "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
   },
   "error-page": {
+    "go-back-home": "ホームページに戻る",
     "not-found": "ページが見つかりません"
   },
   "export-center": {

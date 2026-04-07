@@ -138,11 +138,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: () => t("error-page.forbidden"),
     },
     components: {
-      content: () => import("@/views/Page403.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({ page: "Page403" }),
       leftSidebar: true,
     },
   },
@@ -153,11 +153,11 @@ const workspaceRoutes: RouteRecordRaw[] = [
       title: () => t("error-page.not-found"),
     },
     components: {
-      content: () => import("@/views/Page404.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({ page: "Page404" }),
       leftSidebar: true,
     },
   },

@@ -173,6 +173,7 @@
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
     "resource": "Resource",
     "resources": "Resources",
+    "resource-not-found": "Resource not found",
     "restore": "Restore",
     "restored": "Restored",
     "revert": "Revert",
@@ -384,6 +385,7 @@
     "successfully-updated-environment": "Successfully updated environment '{{name}}'."
   },
   "error-page": {
+    "go-back-home": "Go back home",
     "not-found": "Not Found"
   },
   "export-center": {

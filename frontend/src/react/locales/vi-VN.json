@@ -176,6 +176,7 @@
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
     "resource": "Resource",
     "resources": "Tài nguyên",
+    "resource-not-found": "Không tìm thấy tài nguyên",
     "restore": "Khôi phục",
     "restored": "Restored",
     "revert": "Hoàn tác",
@@ -384,6 +385,7 @@
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
   },
   "error-page": {
+    "go-back-home": "Về trang chủ",
     "not-found": "Không tìm thấy"
   },
   "export-center": {
