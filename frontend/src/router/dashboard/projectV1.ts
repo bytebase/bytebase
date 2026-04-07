@@ -287,8 +287,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("plan.plans"),
           requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
         },
-        component: () => import("@/views/project/ProjectPlanDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectPlanDashboardPage",
+          ...route.params,
+        }),
       },
       {
         path: "sync-schema",
