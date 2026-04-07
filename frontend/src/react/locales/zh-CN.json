@@ -220,7 +220,8 @@
     "draft": "草稿",
     "error": "错误",
     "type-to-search": "输入搜索...",
-    "comment": "评论"
+    "comment": "评论",
+    "clear-filters": "清除过滤"
   },
   "common.add": "添加",
   "common.admin": "管理员",
@@ -966,7 +967,10 @@
   },
   "quick-action.add-instance": "@:common.add@:common.instance",
   "release": {
-    "releases": "发布包"
+    "releases": "发布包",
+    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "files": "文件",
+    "total-files": "共 {{}} 个文件"
   },
   "remind": {
     "release": {

@@ -493,9 +493,11 @@ const projectV1Routes: RouteRecordRaw[] = [
             meta: {
               requiredPermissionList: () => ["bb.releases.list"],
             },
-            component: () =>
-              import("@/views/project/ProjectReleaseDashboard.vue"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectReleaseDashboardPage",
+              ...route.params,
+            }),
           },
           {
             path: ":releaseId",

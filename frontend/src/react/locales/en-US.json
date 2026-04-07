@@ -220,7 +220,8 @@
     "draft": "Draft",
     "error": "Error",
     "type-to-search": "Type to search...",
-    "comment": "Comment"
+    "comment": "Comment",
+    "clear-filters": "Clear filters"
   },
   "common.add": "Add",
   "common.admin": "Admin",
@@ -966,7 +967,10 @@
   },
   "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
-    "releases": "Releases"
+    "releases": "Releases",
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "files": "Files",
+    "total-files": "Total {{}} files"
   },
   "remind": {
     "release": {
