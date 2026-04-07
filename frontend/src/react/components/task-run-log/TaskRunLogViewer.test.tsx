@@ -6,6 +6,7 @@ import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { SectionContent } from "./SectionContent";
 import { TaskRunLogViewer } from "./TaskRunLogViewer";
 import type { Section } from "./types";
+import type { UseTaskRunLogSectionsOptions } from "./useTaskRunLogSections";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -25,6 +26,32 @@ vi.mock("react-i18next", () => ({
             ? options
             : { sections: options, entries: "" };
         return `${summary.sections} sections · ${summary.entries} entries`;
+      }
+      if (key === "task-run.log-detail.completed") {
+        return "Completed";
+      }
+      if (key === "task-run.log-detail.dumping") {
+        return "Dumping...";
+      }
+      if (key === "task-run.log-detail.syncing") {
+        return "Syncing...";
+      }
+      if (key === "task-run.log-detail.backup-completed" && options) {
+        const { count } = options as { count?: number };
+        return `Completed (${count} tables)`;
+      }
+      if (key === "task-run.log-detail.backing-up") {
+        return "Backing up...";
+      }
+      if (key === "task-run.log-detail.retry-attempt" && options) {
+        const { current, max } = options as {
+          current?: number;
+          max?: number;
+        };
+        return `Attempt ${current}/${max}`;
+      }
+      if (key === "task-run.log-detail.computing") {
+        return "Computing...";
       }
       return key;
     },
@@ -124,6 +151,37 @@ describe("TaskRunLogViewer", () => {
     expect(container.textContent).toContain("1 sections · 1 entries");
     expect(container.textContent).toContain("Command Execute");
     expect(container.textContent).toContain("SELECT 1;");
+
+    unmount();
+  });
+
+  test("passes localized detail text into the section builder", () => {
+    let capturedOptions: UseTaskRunLogSectionsOptions | undefined;
+
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) => {
+        capturedOptions = options;
+        return createDefaultSections();
+      }
+    );
+
+    const { unmount } = renderIntoContainer(
+      createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
+    );
+
+    expect(capturedOptions?.detailText?.completed).toBe("Completed");
+    expect(capturedOptions?.detailText?.backingUp).toBe("Backing up...");
+    expect(
+      capturedOptions?.detailText?.runningByType?.[
+        TaskRunLogEntry_Type.SCHEMA_DUMP
+      ]
+    ).toBe("Dumping...");
+    expect(capturedOptions?.detailText?.backupCompleted?.(3)).toBe(
+      "Completed (3 tables)"
+    );
+    expect(capturedOptions?.detailText?.retryAttempt?.(2, 5)).toBe(
+      "Attempt 2/5"
+    );
 
     unmount();
   });
@@ -246,8 +304,11 @@ describe("TaskRunLogViewer", () => {
       })),
     };
 
-    const { container, unmount } = renderIntoContainer(
-      createElement(SectionContent, { section: largeSection })
+    const { container, root, unmount } = renderIntoContainer(
+      createElement(SectionContent, {
+        section: largeSection,
+        datasetKey: "runs/1",
+      })
     );
 
     expect(container.textContent).toContain("common.load-more");
@@ -266,6 +327,18 @@ describe("TaskRunLogViewer", () => {
     });
 
     expect(container.textContent).toContain("ROW 59");
+
+    act(() => {
+      root.render(
+        createElement(SectionContent, {
+          section: largeSection,
+          datasetKey: "runs/2",
+        })
+      );
+    });
+
+    expect(container.textContent).toContain("common.load-more");
+    expect(container.textContent).not.toContain("ROW 59");
 
     unmount();
   });

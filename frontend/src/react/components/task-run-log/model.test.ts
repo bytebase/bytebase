@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
 import {
   type TaskRunLogEntry,
+  TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema,
   TaskRunLogEntry_Type,
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -13,6 +14,7 @@ import {
   buildSectionsFromEntries,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
+  type TaskRunLogDetailText,
 } from "./model";
 import {
   buildReleaseSheetFetchResult,
@@ -241,7 +243,71 @@ describe("task-run-log model", () => {
     expect(sections[1]?.status).toBe("error");
   });
 
-  test("preserves orphan entries and marker-only file groups in release grouping", () => {
+  test("uses localized detail text for completed timed entries, prior backup completion, and retries", () => {
+    const detailText = {
+      completed: "Completed",
+      backingUp: "Backing up...",
+      runningByType: {
+        [TaskRunLogEntry_Type.SCHEMA_DUMP]: "Dumping...",
+      },
+      backupCompleted: (count: number) => `Completed (${count} tables)`,
+      retryAttempt: (current: number, max: number) =>
+        `Attempt ${current}/${max}`,
+    } satisfies TaskRunLogDetailText;
+
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.SCHEMA_DUMP,
+        logTime: ts(1),
+        schemaDump: {
+          startTime: ts(1),
+          endTime: ts(2),
+          error: "",
+        },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.PRIOR_BACKUP,
+        logTime: ts(3),
+        priorBackup: {
+          startTime: ts(3),
+          endTime: ts(4),
+          priorBackupDetail: {
+            items: [
+              create(
+                TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema,
+                {}
+              ),
+              create(
+                TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema,
+                {}
+              ),
+            ],
+          },
+          error: "",
+        },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RETRY_INFO,
+        logTime: ts(5),
+        retryInfo: {
+          error: "",
+          retryCount: 2,
+          maximumRetries: 5,
+        },
+      }),
+    ];
+
+    const sections = buildSectionsFromEntries(entries, {
+      getSectionLabel: (type) => String(type),
+      detailText,
+    });
+
+    expect(sections[0]?.items[0]?.detail).toBe("Completed");
+    expect(sections[1]?.items[0]?.detail).toBe("Completed (2 tables)");
+    expect(sections[2]?.items[0]?.detail).toBe("Attempt 2/5");
+  });
+
+  test("drops empty release-file groups created by consecutive and trailing markers", () => {
     const entries = [
       create(TaskRunLogEntrySchema, {
         type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
@@ -269,10 +335,15 @@ describe("task-run-log model", () => {
           response: { logTime: ts(6) },
         },
       }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(7),
+        releaseFileExecute: { version: "v3", filePath: "003.sql" },
+      }),
     ];
 
     const groupedEntries = groupEntriesByReleaseFile(entries);
-    expect(groupedEntries).toHaveLength(3);
+    expect(groupedEntries).toHaveLength(4);
     expect(groupedEntries[0]).toMatchObject({ file: null });
     expect(groupedEntries[0]?.entries).toHaveLength(1);
     expect(groupedEntries[1]).toMatchObject({
@@ -283,12 +354,16 @@ describe("task-run-log model", () => {
       file: { version: "v2", filePath: "002.sql" },
     });
     expect(groupedEntries[2]?.entries).toHaveLength(1);
+    expect(groupedEntries[3]).toMatchObject({
+      file: { version: "v3", filePath: "003.sql" },
+    });
+    expect(groupedEntries[3]?.entries).toHaveLength(0);
 
     const groups = buildReleaseFileGroups(entries, {
       getSectionLabel: (type) => String(type),
       includeOrphanGroup: true,
     });
-    expect(groups).toHaveLength(3);
+    expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({
       id: "orphan",
       isOrphan: true,
@@ -298,19 +373,13 @@ describe("task-run-log model", () => {
     });
     expect(groups[1]).toMatchObject({
       id: "file-0",
-      version: "v1",
-      filePath: "001.sql",
-    });
-    expect(groups[1]?.sections).toHaveLength(0);
-    expect(groups[2]).toMatchObject({
-      id: "file-1",
       version: "v2",
       filePath: "002.sql",
       sections: [{ entryCount: 1 }],
     });
   });
 
-  test("handles expand/collapse state for marker-only release-file groups", () => {
+  test("handles expand/collapse state for filtered release-file groups", () => {
     const entries = [
       create(TaskRunLogEntrySchema, {
         type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
@@ -322,15 +391,23 @@ describe("task-run-log model", () => {
         logTime: ts(2),
         releaseFileExecute: { version: "v2", filePath: "002.sql" },
       }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(3),
+        commandExecute: {
+          statement: "SELECT 1;",
+          response: { logTime: ts(4) },
+        },
+      }),
     ];
 
     const hook = createHookHarness({ entries, datasetKey: "marker-only" });
 
-    expect(hook.getCurrent().releaseFileGroups).toHaveLength(2);
+    expect(hook.getCurrent().releaseFileGroups).toHaveLength(1);
     expect(
       hook.getCurrent().releaseFileGroups.map((group) => group.id)
-    ).toEqual(["file-0", "file-1"]);
-    expect(hook.getCurrent().totalSections).toBe(0);
+    ).toEqual(["file-0"]);
+    expect(hook.getCurrent().totalSections).toBe(1);
 
     act(() => {
       hook.getCurrent().collapseAll();

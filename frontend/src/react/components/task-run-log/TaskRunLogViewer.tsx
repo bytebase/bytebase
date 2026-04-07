@@ -6,10 +6,11 @@ import {
   List,
   Server,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import type { TaskRunLogDetailText } from "./model";
 import { SectionContent } from "./SectionContent";
 import { SectionHeader } from "./SectionHeader";
 import { useTaskRunLogData } from "./useTaskRunLogData";
@@ -52,6 +53,23 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     [t]
   );
 
+  const detailText = useMemo<TaskRunLogDetailText>(
+    () => ({
+      completed: t("task-run.log-detail.completed"),
+      backingUp: t("task-run.log-detail.backing-up"),
+      runningByType: {
+        [TaskRunLogEntry_Type.SCHEMA_DUMP]: t("task-run.log-detail.dumping"),
+        [TaskRunLogEntry_Type.DATABASE_SYNC]: t("task-run.log-detail.syncing"),
+        [TaskRunLogEntry_Type.COMPUTE_DIFF]: t("task-run.log-detail.computing"),
+      },
+      backupCompleted: (count: number) =>
+        t("task-run.log-detail.backup-completed", { count }),
+      retryAttempt: (current: number, max: number) =>
+        t("task-run.log-detail.retry-attempt", { current, max }),
+    }),
+    [t]
+  );
+
   const {
     sections,
     hasMultipleReplicas,
@@ -75,11 +93,14 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     sheet,
     sheetsMap,
     getSectionLabel,
+    detailText,
     datasetKey: taskRunName,
   });
 
+  const hasRenderableReleaseFiles =
+    hasReleaseFiles && releaseFileGroups.length > 0;
   const hasContent =
-    sections.length > 0 || hasMultipleReplicas || hasReleaseFiles;
+    sections.length > 0 || hasMultipleReplicas || hasRenderableReleaseFiles;
 
   if (!taskRunName) {
     return null;
@@ -109,7 +130,11 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
         onToggle={() => toggleSection(section.id)}
       />
       {isSectionExpanded(section.id) ? (
-        <SectionContent section={section} indent={indent} />
+        <SectionContent
+          section={section}
+          indent={indent}
+          datasetKey={taskRunName}
+        />
       ) : null}
     </div>
   );
@@ -204,7 +229,7 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
         </div>
       ))}
     </>
-  ) : hasReleaseFiles ? (
+  ) : hasRenderableReleaseFiles ? (
     <>
       {releaseFileGroups.map((fileGroup) => renderReleaseFileGroup(fileGroup))}
     </>

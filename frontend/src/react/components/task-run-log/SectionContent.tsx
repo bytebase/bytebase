@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
@@ -11,14 +11,21 @@ const MAX_RENDERED_ITEMS = 50;
 export interface SectionContentProps {
   section: Section;
   indent?: boolean;
+  datasetKey?: string;
 }
 
 export function SectionContent({
   section,
   indent = false,
+  datasetKey,
 }: SectionContentProps) {
   const { t } = useTranslation();
   const [showAllItems, setShowAllItems] = useState(false);
+
+  useEffect(() => {
+    setShowAllItems(false);
+  }, [datasetKey, section.id]);
+
   const visibleItems =
     showAllItems || section.items.length <= MAX_RENDERED_ITEMS
       ? section.items

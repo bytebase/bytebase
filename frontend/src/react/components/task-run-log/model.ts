@@ -566,6 +566,10 @@ export const buildReleaseFileGroups = (
       continue;
     }
 
+    if (group.entries.length === 0) {
+      continue;
+    }
+
     const filePrefix = buildOptions.idPrefix
       ? `${buildOptions.idPrefix}-file-${fileIndex}`
       : `file-${fileIndex}`;
