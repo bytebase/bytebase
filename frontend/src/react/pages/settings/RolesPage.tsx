@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, sortBy, uniq } from "lodash-es";
-import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -137,16 +138,14 @@ function PermissionTransfer({
           </span>
         </div>
         <div className="px-3 py-2 border-b">
-          <div className="relative">
-            <Input
-              placeholder={t("common.search")}
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-              className="h-8 text-sm pr-8"
-              disabled={disabled}
-            />
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-          </div>
+          <SearchInput
+            placeholder={t("common.search")}
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="h-8"
+            wrapperClassName="flex-none"
+            disabled={disabled}
+          />
         </div>
         <div className="flex-1 overflow-auto">
           {sourceItems.map((p) => (

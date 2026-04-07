@@ -4,7 +4,6 @@ import {
   ChevronRight,
   ExternalLink,
   Pencil,
-  Search,
   Trash2,
   Undo2,
   X,
@@ -22,7 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import classificationExample from "@/components/SensitiveData/classification-example.json";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
-import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -338,13 +337,11 @@ function ClassificationTree({
 
   return (
     <div className="space-y-4 h-full">
-      <div className="relative max-w-full">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-control-placeholder" />
-        <Input
+      <div>
+        <SearchInput
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder={t("schema-template.classification.search")}
-          className="pl-8"
         />
       </div>
       <div>

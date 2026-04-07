@@ -1,15 +1,10 @@
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  Pencil,
-  Search,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { t as vueT } from "@/plugins/i18n";
 import { Button } from "@/react/components/ui/button";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
@@ -221,10 +216,8 @@ export function RuleFilter({
               </span>
             </div>
           )}
-          <div className="relative ml-auto mt-2 md:mt-0 md:max-w-72 w-full md:w-auto">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-control-placeholder" />
-            <input
-              className="w-full rounded-xs border border-control-border bg-transparent py-1.5 pl-8 pr-3 text-sm text-main placeholder:text-control-placeholder focus:outline-hidden focus:ring-2 focus:ring-accent"
+          <div className="ml-auto mt-2 md:mt-0 md:max-w-72 w-full md:w-auto">
+            <SearchInput
               placeholder={t("common.filter-by-name")}
               value={params.searchText}
               onChange={(e) => onChangeSearchText(e.target.value)}

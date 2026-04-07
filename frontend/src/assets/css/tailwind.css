@@ -26,7 +26,7 @@
   /* Thin scrollbars globally */
   * {
     scrollbar-width: thin; /* Firefox */
-    scrollbar-color: theme(colors.gray.300) transparent;
+    scrollbar-color: #d1d5db transparent; /* gray-300 */
   }
   *::-webkit-scrollbar {
     width: 6px;
@@ -36,11 +36,11 @@
     background: transparent;
   }
   *::-webkit-scrollbar-thumb {
-    background-color: theme(colors.gray.300);
+    background-color: #d1d5db; /* gray-300 */
     border-radius: 3px;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background-color: theme(colors.gray.400);
+    background-color: #9ca3af; /* gray-400 */
   }
 
   /* All disabled form elements should show not-allowed cursor */

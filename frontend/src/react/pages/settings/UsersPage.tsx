@@ -8,7 +8,6 @@ import {
   EyeOff,
   Pencil,
   Plus,
-  Search,
   Settings,
   Trash2,
   Undo2,
@@ -21,6 +20,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -925,16 +925,12 @@ export function UsersPage() {
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {/* Action bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative flex-1">
-          <Input
-            placeholder={t("common.filter-by-name")}
-            value={userSearchText}
-            onChange={(e) => setUserSearchText(e.target.value)}
-            className="h-8 text-sm pr-8"
-          />
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-        </div>
+      <div className="flex items-center justify-between gap-x-2 mb-4">
+        <SearchInput
+          placeholder={t("common.filter-by-name")}
+          value={userSearchText}
+          onChange={(e) => setUserSearchText(e.target.value)}
+        />
         <div className="flex items-center gap-x-2">
           <Button
             variant="outline"
@@ -1008,15 +1004,11 @@ export function UsersPage() {
               <h3 className="text-base font-medium">
                 {t("settings.members.inactive-users")}
               </h3>
-              <div className="relative flex-1">
-                <Input
-                  placeholder={t("common.filter-by-name")}
-                  value={inactiveUserSearchText}
-                  onChange={(e) => setInactiveUserSearchText(e.target.value)}
-                  className="h-8 text-sm pr-8"
-                />
-                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-              </div>
+              <SearchInput
+                placeholder={t("common.filter-by-name")}
+                value={inactiveUserSearchText}
+                onChange={(e) => setInactiveUserSearchText(e.target.value)}
+              />
             </div>
 
             {inactiveUsers.isLoading && inactiveUsers.dataList.length === 0 ? (

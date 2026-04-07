@@ -7,7 +7,6 @@ import {
   Info,
   Pencil,
   Plus,
-  Search,
   Trash2,
   Users,
   X,
@@ -36,6 +35,7 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Tabs,
   TabsList,
@@ -1721,16 +1721,12 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative flex-1">
-          <Input
-            placeholder={t("settings.members.search-member")}
-            value={memberSearchText}
-            onChange={(e) => setMemberSearchText(e.target.value)}
-            className="h-8 text-sm pr-8"
-          />
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-        </div>
+      <div className="flex items-center justify-between gap-x-2 mb-4">
+        <SearchInput
+          placeholder={t("settings.members.search-member")}
+          value={memberSearchText}
+          onChange={(e) => setMemberSearchText(e.target.value)}
+        />
         <div className="flex items-center gap-x-2">
           {memberViewTab === "MEMBERS" && (
             <Button
