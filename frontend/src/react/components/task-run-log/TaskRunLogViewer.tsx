@@ -6,13 +6,8 @@ import {
   List,
   Server,
 } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { SectionContent } from "./SectionContent";
@@ -24,63 +19,9 @@ export interface TaskRunLogViewerProps {
   taskRunName: string;
 }
 
-const getFetchBanner = (
-  metadataStatus: string,
-  metadataError: string | undefined,
-  logStatus: string,
-  logError: string | undefined,
-  sheetStatus: string,
-  sheetError: string | undefined
-): {
-  variant: "info" | "warning" | "error";
-  title: string;
-  description?: string;
-} | null => {
-  if (logStatus === "error") {
-    return {
-      variant: "error",
-      title: "common.error",
-      description: logError,
-    };
-  }
-  if (metadataStatus === "error") {
-    return {
-      variant: "error",
-      title: "common.error",
-      description: metadataError,
-    };
-  }
-  if (sheetStatus === "error") {
-    return {
-      variant: "error",
-      title: "common.error",
-      description: sheetError,
-    };
-  }
-  if (sheetStatus === "partial") {
-    return {
-      variant: "warning",
-      title: "common.warning",
-      description: sheetError,
-    };
-  }
-  if (
-    metadataStatus === "loading" ||
-    logStatus === "loading" ||
-    sheetStatus === "loading"
-  ) {
-    return {
-      variant: "info",
-      title: "common.loading",
-    };
-  }
-  return null;
-};
-
 export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
   const { t } = useTranslation();
-  const { entries, sheet, sheetsMap, metadataFetch, logFetch, sheetFetch } =
-    useTaskRunLogData(taskRunName);
+  const { entries, sheet, sheetsMap } = useTaskRunLogData(taskRunName);
 
   const getSectionLabel = useCallback(
     (type: TaskRunLogEntry_Type) => {
@@ -137,26 +78,6 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     datasetKey: taskRunName,
   });
 
-  const banner = useMemo(
-    () =>
-      getFetchBanner(
-        metadataFetch.status,
-        metadataFetch.error,
-        logFetch.status,
-        logFetch.error,
-        sheetFetch.status,
-        sheetFetch.error
-      ),
-    [
-      logFetch.error,
-      logFetch.status,
-      metadataFetch.error,
-      metadataFetch.status,
-      sheetFetch.error,
-      sheetFetch.status,
-    ]
-  );
-
   const hasContent =
     sections.length > 0 || hasMultipleReplicas || hasReleaseFiles;
 
@@ -164,7 +85,7 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     return null;
   }
 
-  if (!hasContent && !banner) {
+  if (!hasContent) {
     return null;
   }
 
@@ -304,15 +225,6 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
 
   return (
     <div className="w-full font-mono text-xs">
-      {banner ? (
-        <Alert className="mb-2" variant={banner.variant} showIcon>
-          <AlertTitle>{t(banner.title)}</AlertTitle>
-          {banner.description ? (
-            <AlertDescription>{banner.description}</AlertDescription>
-          ) : null}
-        </Alert>
-      ) : null}
-
       {hasContent ? (
         <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-2 py-1">
