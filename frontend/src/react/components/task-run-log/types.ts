@@ -48,6 +48,7 @@ export interface ReleaseFileEntriesGroup {
 export interface ReleaseFileGroup {
   version: string;
   filePath: string;
+  isOrphan?: boolean;
   sections: Section[];
 }
 

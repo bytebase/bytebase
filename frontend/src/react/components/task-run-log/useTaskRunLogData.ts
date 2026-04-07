@@ -81,9 +81,9 @@ export const useTaskRunLogData = (
 
   useEffect(() => {
     const version = ++logFetchVersion.current;
+    setEntries([]);
 
     if (!taskRunName) {
-      setEntries([]);
       return;
     }
 

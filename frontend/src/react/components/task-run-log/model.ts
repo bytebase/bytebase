@@ -43,6 +43,7 @@ export interface BuildReleaseFileGroupsOptions {
   idPrefix?: string;
   forceError?: boolean;
   detailText?: TaskRunLogDetailText;
+  includeOrphanGroup?: boolean;
 }
 
 export interface TaskRunLogDetailText {
@@ -173,7 +174,7 @@ export const groupEntriesByReleaseFile = (
 
   for (const entry of sorted) {
     if (entry.type === TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE) {
-      if (current.entries.length > 0) {
+      if (current.file !== null || current.entries.length > 0) {
         groups.push(current);
       }
       const releaseFile = entry.releaseFileExecute;
@@ -191,7 +192,7 @@ export const groupEntriesByReleaseFile = (
     current.entries.push(entry);
   }
 
-  if (current.entries.length > 0) {
+  if (current.file !== null || current.entries.length > 0) {
     groups.push(current);
   }
 
@@ -537,24 +538,47 @@ export const buildReleaseFileGroups = (
 ): ReleaseFileGroup[] => {
   const buildOptions: BuildReleaseFileGroupsOptions = {
     getSectionLabel: (type) => String(type),
+    includeOrphanGroup: false,
     ...options,
   };
 
-  return groupEntriesByReleaseFile(entries)
-    .filter((group) => group.file !== null)
-    .map((group, index) => {
-      const file = group.file!;
-      const filePrefix = buildOptions.idPrefix
-        ? `${buildOptions.idPrefix}-file-${index}`
-        : `file-${index}`;
-      return {
-        version: file.version,
-        filePath: file.filePath,
+  const results: ReleaseFileGroup[] = [];
+  let fileIndex = 0;
+
+  for (const group of groupEntriesByReleaseFile(entries)) {
+    if (group.file === null) {
+      if (!buildOptions.includeOrphanGroup || group.entries.length === 0) {
+        continue;
+      }
+      const orphanPrefix = buildOptions.idPrefix
+        ? `${buildOptions.idPrefix}-orphan`
+        : "orphan";
+      results.push({
+        version: "",
+        filePath: "",
+        isOrphan: true,
         sections: buildSectionsFromEntries(group.entries, {
           ...buildOptions,
-          idPrefix: filePrefix,
-          fileVersion: file.version,
+          idPrefix: orphanPrefix,
         }),
-      };
+      });
+      continue;
+    }
+
+    const filePrefix = buildOptions.idPrefix
+      ? `${buildOptions.idPrefix}-file-${fileIndex}`
+      : `file-${fileIndex}`;
+    fileIndex++;
+    results.push({
+      version: group.file.version,
+      filePath: group.file.filePath,
+      sections: buildSectionsFromEntries(group.entries, {
+        ...buildOptions,
+        idPrefix: filePrefix,
+        fileVersion: group.file.version,
+      }),
     });
+  }
+
+  return results;
 };

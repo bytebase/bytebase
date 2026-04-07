@@ -7,6 +7,7 @@ import {
 import {
   buildReleaseFileGroups,
   buildSectionsFromEntries,
+  groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
 } from "./model";
 
@@ -86,5 +87,71 @@ describe("task-run-log model", () => {
 
     expect(sections[0]?.status).toBe("running");
     expect(sections[1]?.status).toBe("error");
+  });
+
+  test("preserves orphan entries and marker-only file groups in release grouping", () => {
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(1),
+        commandExecute: {
+          statement: "SELECT 1;",
+          response: { logTime: ts(2) },
+        },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(3),
+        releaseFileExecute: { version: "v1", filePath: "001.sql" },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(4),
+        releaseFileExecute: { version: "v2", filePath: "002.sql" },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(5),
+        commandExecute: {
+          statement: "ALTER TABLE t ADD COLUMN c INT;",
+          response: { logTime: ts(6) },
+        },
+      }),
+    ];
+
+    const groupedEntries = groupEntriesByReleaseFile(entries);
+    expect(groupedEntries).toHaveLength(3);
+    expect(groupedEntries[0]).toMatchObject({ file: null });
+    expect(groupedEntries[0]?.entries).toHaveLength(1);
+    expect(groupedEntries[1]).toMatchObject({
+      file: { version: "v1", filePath: "001.sql" },
+    });
+    expect(groupedEntries[1]?.entries).toHaveLength(0);
+    expect(groupedEntries[2]).toMatchObject({
+      file: { version: "v2", filePath: "002.sql" },
+    });
+    expect(groupedEntries[2]?.entries).toHaveLength(1);
+
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      includeOrphanGroup: true,
+    });
+    expect(groups).toHaveLength(3);
+    expect(groups[0]).toMatchObject({
+      isOrphan: true,
+      version: "",
+      filePath: "",
+      sections: [{ entryCount: 1 }],
+    });
+    expect(groups[1]).toMatchObject({
+      version: "v1",
+      filePath: "001.sql",
+    });
+    expect(groups[1]?.sections).toHaveLength(0);
+    expect(groups[2]).toMatchObject({
+      version: "v2",
+      filePath: "002.sql",
+      sections: [{ entryCount: 1 }],
+    });
   });
 });

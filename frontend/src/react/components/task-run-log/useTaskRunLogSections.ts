@@ -110,6 +110,7 @@ export const useTaskRunLogSections = ({
       sheet,
       sheetsMap,
       detailText,
+      includeOrphanGroup: true,
     });
   }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
 
