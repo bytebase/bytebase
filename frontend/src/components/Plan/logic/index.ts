@@ -4,6 +4,8 @@ export * from "./plan";
 export * from "./initialize";
 export * from "./sheet";
 export * from "./plan-check";
+export * from "./plan-check-status";
+export * from "./useResolvedPlanCheckStatus";
 export * from "./utils";
 export * from "./sidebar";
 export * from "./usePlanCheckStatus";

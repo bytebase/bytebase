@@ -35,8 +35,17 @@
         :key="target"
         class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg cursor-default"
       >
-        <DatabaseDisplay v-if="isValidDatabaseName(target)" :database="target" size="small" show-environment />
-        <DatabaseGroupTargetDisplay v-else-if="isValidDatabaseGroupName(target)" :target="target" class="py-1" />
+        <DatabaseDisplay
+          v-if="isValidDatabaseName(target)"
+          :database="target"
+          size="medium"
+          show-environment
+        />
+        <DatabaseGroupTargetDisplay
+          v-else-if="isValidDatabaseGroupName(target)"
+          :target="target"
+          class="py-1"
+        />
         <span v-else class="text-sm text-control-placeholder">{{ target }}</span>
       </div>
       <NButton

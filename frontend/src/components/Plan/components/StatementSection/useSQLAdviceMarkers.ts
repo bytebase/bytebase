@@ -59,7 +59,7 @@ const getLatestAdviceOptions = (
   if (!latest) {
     return [];
   }
-  // Filter results by type
+  // O(n) over this run's results (consolidated model: one run, possibly many rows).
   const resultList = latest.results.filter(
     (result) => result.type === resultType
   );

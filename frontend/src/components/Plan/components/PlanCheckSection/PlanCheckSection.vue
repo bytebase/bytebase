@@ -33,6 +33,7 @@
     <div class="flex items-center flex-wrap gap-2 min-w-0">
       <PlanCheckStatusCount
         :plan="plan"
+        :plan-check-runs="checksOfSelectedSpec"
         :show-label="true"
         clickable
         @click="openChecksDrawer($event)"
@@ -64,6 +65,7 @@
     <ChecksDrawer
       v-model:show="showChecksDrawer"
       :status="selectedResultStatus"
+      :plan-check-runs="checksOfSelectedSpec"
     />
   </div>
 </template>
