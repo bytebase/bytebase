@@ -125,6 +125,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				scale = 6
 			}
 			if typeName == "TIMESTAMP" {
+				if !isTimestampInRange(raw.Time) {
+					return &v1pb.RowValue{
+						Kind: &v1pb.RowValue_StringValue{
+							StringValue: raw.Time.Format(time.RFC3339Nano),
+						},
+					}
+				}
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
@@ -135,6 +142,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				}
 			}
 			zone, offset := raw.Time.Zone()
+			if !isTimestampInRange(raw.Time) {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.Time.Format(time.RFC3339Nano),
+					},
+				}
+			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_TimestampTzValue{
 					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
@@ -149,6 +163,17 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	default:
 	}
 	return util.NullRowValue
+}
+
+// isTimestampInRange checks whether a time value falls within the valid range
+// of google.protobuf.Timestamp (0001-01-01T00:00:00Z to 9999-12-31T23:59:59Z).
+func isTimestampInRange(t time.Time) bool {
+	const (
+		minSeconds = -62135596800  // 0001-01-01T00:00:00Z
+		maxSeconds = 253402300799  // 9999-12-31T23:59:59Z
+	)
+	unix := t.Unix()
+	return unix >= minSeconds && unix <= maxSeconds
 }
 
 // Padding 0's to nanosecond precision to make sure it's always 6 digits.
