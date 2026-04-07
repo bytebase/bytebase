@@ -244,11 +244,6 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                         : ""
                     }`}
                   >
-                    {!logoUrl && (
-                      <div className="py-4 text-gray-500">
-                        {t("common.no-data")}
-                      </div>
-                    )}
                     <div className="text-sm text-gray-600 inline-flex pointer-events-none">
                       <span className="relative cursor-pointer rounded-xs font-medium text-indigo-600 hover:text-indigo-500">
                         {t("settings.general.workspace.select-logo")}
