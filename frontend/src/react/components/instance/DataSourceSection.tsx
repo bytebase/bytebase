@@ -112,7 +112,7 @@ export function DataSourceSection({
   return (
     <>
       {showROTips && (
-        <div className="mt-2 rounded-md bg-yellow-50 border border-yellow-200 p-3 flex items-center justify-between">
+        <div className="mt-2 rounded-sm bg-yellow-50 border border-yellow-200 p-3 flex items-center justify-between">
           <span className="text-sm text-yellow-800">
             {t("data-source.no-read-only-data-source")}
           </span>

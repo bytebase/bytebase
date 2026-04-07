@@ -475,7 +475,7 @@ function GcpCredentialField({
         <Textarea
           value={value}
           placeholder={t("instance.type-or-paste-credentials-write-only")}
-          className={`w-full h-24 whitespace-pre-wrap resize-none ${isDragOver ? "ring-2 ring-accent border-accent" : ""}`}
+          className={`w-full h-24 whitespace-pre-wrap resize-none ${isDragOver ? "border-accent" : ""}`}
           onChange={(e) => onChange(e.target.value)}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

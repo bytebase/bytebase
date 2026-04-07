@@ -217,7 +217,21 @@
     "view-details": "詳細を表示",
     "warning": "警告する",
     "webhooks": "Webhook",
-    "you": "あなた"
+    "you": "あなた",
+    "admin": "管理者",
+    "continue-anyway": "まだ続けたい",
+    "creating": "作成...",
+    "custom": "カスタマイズ",
+    "detailed-guide": "詳細ガイド",
+    "dismiss": "閉じる",
+    "minutes": "分",
+    "overview": "概要",
+    "password": "パスワード",
+    "read-only": "読み取り専用",
+    "updating": "更新中...",
+    "user": "ユーザー",
+    "username": "ユーザー名",
+    "write-only": "書き込み専用"
   },
   "create-db": {
     "cluster": "集まる",
@@ -337,7 +351,8 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する"
+    "unassign-alert-title": "データベースの割り当てを解除する",
+    "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました"
   },
   "database-group": {
     "condition": {
@@ -356,7 +371,9 @@
     "encoding": "エンコーディング",
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
     "start-to-sync-schema": "スキーマの同期を開始します",
-    "successfully-synced-schema": "スキーマの同期に成功しました"
+    "successfully-synced-schema": "スキーマの同期に成功しました",
+    "n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
+    "syncing-databases-for-instance": "{{0}} のデータベースを同期中..."
   },
   "environment": {
     "create": "環境を作成する",
@@ -452,7 +469,177 @@
       "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。",
       "sync-new": "新しいデータベースのみを同期する"
     },
-    "syncing": "同期中 ..."
+    "syncing": "同期中 ...",
+    "account-locator": "アカウントロケーター",
+    "authentication-database": "認証データベース",
+    "connection-info": "接続情報",
+    "connection-options": "接続オプション",
+    "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
+    "database-region": "データベース領域",
+    "endpoint": "エンドポイント",
+    "external-id": "外部 ID",
+    "external-id-description": "ロールを引き受ける際の追加セキュリティ用の外部 ID（オプション）",
+    "external-id-placeholder": "オプションの外部 ID",
+    "external-link": "外部リンク",
+    "external-secret-azure": {
+      "secret-name": "シークレット名",
+      "vault-url": "Key Vault URL",
+      "secret-name-tips": "Azure Key Vault に保存されているシークレットの名前。",
+      "vault-url-tips": "Key Vault URL は「https://myvault.vault.azure.net/」のような形式である必要があります。"
+    },
+    "external-secret-gcp": {
+      "secret-name": "キーのフルパス",
+      "secret-name-tips": "キーへのフルパスは、「projects/project-id/secrets/secret-id」のようなものである必要があります。"
+    },
+    "external-secret-vault": {
+      "vault-auth-type": {
+        "approle": {
+          "role-id": "認証ロールID",
+          "secret-env-name": "環境変数名",
+          "secret-id": "認証シークレットID",
+          "secret-plain-text": "プレーンテキスト",
+          "self": "AppRole"
+        },
+        "token": {
+          "self": "トークン"
+        },
+        "self": "認証タイプ"
+      },
+      "vault-secret-key": "秘密鍵",
+      "vault-secret-path": "秘密の道",
+      "vault-secret-engine-name": "シークレットエンジン名",
+      "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします",
+      "vault-tls-config": "Vault TLS 構成 (オプション)",
+      "vault-url": "ボールトの URL"
+    },
+    "external-secret": {
+      "key-name": "秘密鍵",
+      "secret-name": "秘密の名前"
+    },
+    "failed-to-connect-instance": "インスタンスへの接続に失敗しました。",
+    "failed-to-connect-instance-localhost": "Docker デプロイメントを使用している場合は、ホスト アドレスとして「host.docker.internal」を使用してみてください。",
+    "find-gcp-project-id": "GCP プロジェクト ID とインスタンス ID を表示するには、次を参照してください。",
+    "find-gcp-project-id-and-instance-id": "GCP プロジェクト ID の確認方法については、次を参照してください",
+    "grants": "権限",
+    "host-or-socket": "ホストまたはソケット",
+    "iam-extension": {
+      "client-id": "Client ID",
+      "client-secret": "Client Secret",
+      "credential-source": "Credential Source",
+      "specific-credential": "特定の資格情報",
+      "tenant-id": "Tenant ID",
+      "saas-default-credential-restriction": "セキュリティ上の理由により、Bytebase Cloud ではデフォルトの認証情報は使用できません。具体的な認証情報を入力してください。"
+    },
+    "info-panel": {
+      "no-info": "このエンジンの追加情報はありません。"
+    },
+    "instance-id": "インスタンスID",
+    "instance-name": "@:common.instance@:instance.name",
+    "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
+    "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
+    "no-password": "パスワードがありません",
+    "parameter-name-placeholder": "パラメーター名",
+    "parameter-value-placeholder": "パラメーター値",
+    "password-type": {
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "password": "パスワード",
+      "external-secret-aws": "AWS シークレットマネージャー",
+      "external-secret-azure": "Azure Key Vault",
+      "external-secret-gcp": "GCP シークレット マネージャー",
+      "external-secret-vault": "ボールト (KV v2)"
+    },
+    "password-write-only": "YOUR_DB_PWD - 書き込み専用",
+    "port": "ポート",
+    "project-id": "プロジェクトID",
+    "role-arn": "ロール ARN",
+    "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "scan-interval": {
+      "default-never": "デフォルト (なし)",
+      "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
+      "self": "スキャン間隔",
+      "min-value": "最短 {{value}} 分"
+    },
+    "section": {
+      "basic-info": "基本情報",
+      "connection": "接続"
+    },
+    "sentence": {
+      "console": {
+        "snowflake": "この インスタンス を管理する外部コンソール URL (AWS RDS コンソール、データベース コンソールなど)"
+      },
+      "create-admin-user": "これは、データベースに接続し、DDL および DML (非 SELECT) 操作を実行するために Bytebase によって使用されるユーザーです。",
+      "create-admin-user-non-sql": "これは、データベースに接続し、書き込みおよび管理操作を実行するために Bytebase によって使用されるユーザーです。",
+      "create-readonly-user": "これは、データベースに接続し、SELECT などの読み取り専用操作を実行するために Bytebase によって使用されるユーザーです。",
+      "create-readonly-user-non-sql": "これは、データベースに接続して読み取り専用操作を実行するために Bytebase によって使用されるユーザーです。",
+      "create-user-example": {
+        "postgresql": {
+          "warn": "接続しているインスタンスがクラウド サービス プロバイダーによって管理されている場合、SUPERUSER は使用できないため、プロバイダーの管理者コンソールを通じてユーザーを作成する必要があります。作成したユーザーには、ベンダー固有の準 SUPERUSER 権限が与えられます。 「GRANT role_name TO bytebase;」ステートメントを使用して、すべてのロールに Bytebase 権限を付与する必要があります。そうしないと、Bytebase に既存のデータベースまたはテーブルを操作する権限がない可能性があり、操作が失敗します。",
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。接続しているインスタンスが自己ホスト型の場合は、SUPERUSER を付与できます。"
+        },
+        "clickhouse": {
+          "sql-driven-workflow": "SQLワークフロー",
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。次のコマンドを実行してユーザーを作成する前に、{{link}} を有効にする必要があります。"
+        },
+        "mysql": {
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+        },
+        "redis": {
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+        },
+        "snowflake": {
+          "template": "ユーザー {{user}}、パスワード {{password}}、ウェアハウス {{warehouse}} を作成し、必要な権限を付与する例は次のとおりです。"
+        }
+      },
+      "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。",
+      "host": {
+        "none-snowflake": "たとえば、host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+      },
+      "proxy": {
+        "snowflake": "プロキシ サーバーの場合は、{{'@'}}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "以下は、ユーザー {{user}}@% を作成し、そのユーザーに必要な権限を付与する例です。"
+        },
+        "postgresql": {
+          "template": "以下は、ユーザー '{{user}}' を作成し、そのユーザーに必要な権限を付与する例です。"
+        }
+      },
+      "google-cloud-sql": {
+        "instance-name": "インスタンス接続名",
+        "instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",
+        "mysql": {
+          "template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。"
+        },
+        "postgresql": {
+          "template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@project-id.iam として Google Cloud SQL に追加します。ユーザーに必要な権限を付与します。"
+        }
+      }
+    },
+    "show-how-to-create": "作成方法",
+    "snowflake-web-console": "スノーフレークウェブコンソール",
+    "successfully-connected-instance": "インスタンスに正常に接続されました。",
+    "sync-databases": {
+      "add-database": "+ データベースを追加し、Enterキーを押して送信します",
+      "description": "選択したデータベースのみを同期します。",
+      "search-database": "データベースを検索",
+      "self": "データベースを同期する",
+      "sync-all": "すべてのデータベースを同期する"
+    },
+    "test-connection": "テスト接続",
+    "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
+    "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{{0}}",
+    "users": "ユーザー",
+    "your-snowflake-account-locator": "Snowflake アカウント ロケーター",
+    "testing-connection": "接続テスト中...",
+    "new-instance": "新しいインスタンス",
+    "no-environment": "このインスタンスは環境にバインドされていません",
+    "restore-instance-instance-name-to-normal-state": "インスタンス '{{0}}' を通常の状態に復元しますか?",
+    "successfully-created-instance-createdinstance-name": "インスタンス '{{0}}' が正常に作成されました。",
+    "successfully-updated-instance-instance-name": "インスタンス '{{0}}' が正常に更新されました。"
   },
   "issue": {
     "advanced-search": {
@@ -487,8 +674,11 @@
     "error": {
       "key-duplicated": "キーが繰り返されました",
       "key-necessary": "キーを指定する必要があります",
-      "max-value-length-exceeded": "値は {{length}} 文字を超えることはできません"
-    }
+      "max-value-length-exceeded": "値は {{length}} 文字を超えることはできません",
+      "value-necessary": "値を指定する必要があります"
+    },
+    "add-label": "タグ付けする",
+    "empty-label-value": "ヌル"
   },
   "landing": {
     "changelog-for-version": "{{version}} の変更履歴",
@@ -1305,7 +1495,8 @@
       "license": "ライセンス",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
-      "used-and-total-user": "アクティブ/合計ユーザー制限"
+      "used-and-total-user": "アクティブ/合計ユーザー制限",
+      "n-license-remain": "残り {{n}}"
     },
     "max-instance-count": "最大インスタンス数",
     "plan": {
@@ -1435,5 +1626,107 @@
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
     }
+  },
+  "data-source": {
+    "additional-node-addresses": "追加のノードアドレス",
+    "connection-string-schema": "接続文字列モード",
+    "connection-type": "接続タイプ",
+    "delete-read-only-data-source": "読み取り専用データソースを削除する",
+    "direct-connection": "Direct Connection",
+    "extra-params": {
+      "description": "データベース接続文字列の追加パラメーター",
+      "self": "追加のパラメーター"
+    },
+    "private-key-passphrase": "秘密鍵のパスフレーズ",
+    "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
+    "read-replica-host": "リードレプリカホスト",
+    "read-replica-port": "リードレプリカポート",
+    "replica-set": "レプリカセット",
+    "snowflake-keypair-tip": "キーペア認証",
+    "ssh-connection": "SSH接続",
+    "ssh-type": {
+      "none": "なし",
+      "tunnel-and-private-key": "トンネル + 秘密鍵"
+    },
+    "ssh": {
+      "host": "サーバ",
+      "password": "パスワード",
+      "port": "ポート",
+      "private-key": "秘密鍵",
+      "ssh-key": "SSHキー",
+      "user": "ユーザー名"
+    },
+    "ssl-connection": "SSL接続",
+    "ssl": {
+      "ca-cert": "CA証明書",
+      "client-cert": "クライアント証明書",
+      "client-key": "クライアントキー",
+      "verify-certificate": "TLS証明書を検証",
+      "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
+    },
+    "no-read-only-data-source": "読み取り専用データソースがありません",
+    "private-key-passphrase-placeholder": "秘密鍵が暗号化されていない場合は空のままにしてください"
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "タグキー...",
+      "value-placeholder": "タグ値…"
+    }
+  },
+  "agent": {
+    "active-only-chats": "アクティブのみ",
+    "ai-not-configured": {
+      "configure": "設定",
+      "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
+      "description": "このワークスペースでは AI が設定されていません。",
+      "title": "AI 未設定"
+    },
+    "archive-chat": "チャットをアーカイブ",
+    "archive-chat-confirmation": "このチャットをアーカイブしますか？",
+    "archived-only-chats": "アーカイブ済みのみ",
+    "args": "引数",
+    "assistant-title": "AI アシスタント",
+    "cancel": "キャンセル",
+    "chat-archived-label": "アーカイブ済み",
+    "chat-default-title": "新しいチャット",
+    "chat-list-label": "チャット",
+    "chat-status-awaiting-user": "ユーザー待ち",
+    "chat-status-error": "エラー",
+    "chat-status-idle": "アイドル",
+    "chat-status-interrupted": "中断",
+    "chat-status-running": "実行中",
+    "chat-total-tokens": "合計トークン数",
+    "close": "閉じる",
+    "confirm": "確認",
+    "delete-chat": "チャットを削除",
+    "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "input-placeholder": "AI に何でも聞いてください...",
+    "interrupted": "中断",
+    "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "minimize": "最小化",
+    "new-chat": "新しいチャット",
+    "pending-choose-hint": "上のオプションから選択してください",
+    "pending-confirm-hint": "上で確認またはキャンセルしてください",
+    "pending-input-hint": "上に入力してください",
+    "rename-chat-placeholder": "チャット名を入力",
+    "reply": "返信",
+    "resize": "リサイズ",
+    "result": "結果",
+    "retry-last-chat-turn": "再試行",
+    "send": "送信",
+    "stop": "停止",
+    "tool-answer": "回答",
+    "tool-ask-user": "ユーザーに質問中",
+    "tool-ask-user-choose": "オプションを選択",
+    "tool-ask-user-confirm": "操作を確認",
+    "tool-ask-user-input": "入力を提供",
+    "tool-completed": "完了",
+    "tool-default-value": "デフォルト",
+    "tool-failed": "失敗",
+    "tool-options": "オプション",
+    "tool-prompt": "プロンプト",
+    "tool-response-submitted": "回答が送信されました",
+    "tool-value": "値",
+    "unarchive-chat": "アーカイブ解除"
   }
 }

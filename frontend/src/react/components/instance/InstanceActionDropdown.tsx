@@ -126,7 +126,7 @@ export function InstanceActionDropdown({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-md border bg-white shadow-md py-1">
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-sm border bg-white shadow-md py-1">
             {options.map((opt) => (
               <button
                 key={opt.key}

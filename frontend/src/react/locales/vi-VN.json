@@ -217,7 +217,21 @@
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
     "webhooks": "Webhooks",
-    "you": "bạn"
+    "you": "bạn",
+    "admin": "Quản trị viên",
+    "continue-anyway": "Tiếp tục",
+    "creating": "Đang tạo...",
+    "custom": "Tùy chỉnh",
+    "detailed-guide": "Hướng dẫn chi tiết",
+    "dismiss": "Loại bỏ",
+    "minutes": "Phút",
+    "overview": "Tổng quan",
+    "password": "Mật khẩu",
+    "read-only": "Chỉ đọc",
+    "updating": "Đang cập nhật...",
+    "user": "Người dùng",
+    "username": "Tên người dùng",
+    "write-only": "chỉ ghi"
   },
   "create-db": {
     "cluster": "Cụm",
@@ -337,7 +351,8 @@
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
+    "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'"
   },
   "database-group": {
     "condition": {
@@ -356,7 +371,9 @@
     "encoding": "Mã hóa",
     "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
-    "successfully-synced-schema": "Đồng bộ hóa lược đồ thành công"
+    "successfully-synced-schema": "Đồng bộ hóa lược đồ thành công",
+    "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
+    "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}..."
   },
   "environment": {
     "create": "Tạo môi trường",
@@ -452,7 +469,177 @@
       "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút",
       "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
     },
-    "syncing": "Đang đồng bộ hóa ..."
+    "syncing": "Đang đồng bộ hóa ...",
+    "account-locator": "Định vị tài khoản",
+    "authentication-database": "Cơ sở dữ liệu xác thực",
+    "connection-info": "Thông tin kết nối",
+    "connection-options": "Tùy chọn kết nối",
+    "create-gcp-credentials": "Để tạo thông tin xác thực, xem",
+    "database-region": "Khu vực cơ sở dữ liệu",
+    "endpoint": "Điểm cuối",
+    "external-id": "ID bên ngoài",
+    "external-id-description": "ID bên ngoài để bảo mật bổ sung khi đảm nhận vai trò (tùy chọn)",
+    "external-id-placeholder": "ID bên ngoài tùy chọn",
+    "external-link": "Liên kết ngoài",
+    "external-secret-azure": {
+      "secret-name": "Tên bí mật",
+      "vault-url": "URL Key Vault",
+      "secret-name-tips": "Tên của bí mật được lưu trữ trong Azure Key Vault.",
+      "vault-url-tips": "URL Key Vault phải giống như \"https://myvault.vault.azure.net/\"."
+    },
+    "external-secret-gcp": {
+      "secret-name": "Tên đầy đủ bí mật",
+      "secret-name-tips": "Tên bí mật phải giống như \"projects/project-id/secrets/secret-id\"."
+    },
+    "external-secret-vault": {
+      "vault-auth-type": {
+        "approle": {
+          "role-id": "ID vai trò xác thực",
+          "secret-env-name": "Tên môi trường",
+          "secret-id": "ID bí mật xác thực",
+          "secret-plain-text": "Văn bản thuần",
+          "self": "AppRole"
+        },
+        "token": {
+          "self": "Mã thông báo"
+        },
+        "self": "Loại xác thực"
+      },
+      "vault-secret-key": "Khóa bí mật",
+      "vault-secret-path": "Đường dẫn bí mật",
+      "vault-secret-engine-name": "Tên công cụ bí mật",
+      "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2.",
+      "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
+      "vault-url": "URL Vault"
+    },
+    "external-secret": {
+      "key-name": "Khóa bí mật",
+      "secret-name": "Tên bí mật"
+    },
+    "failed-to-connect-instance": "Không kết nối được với phiên bản.",
+    "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" cho địa chỉ máy chủ.",
+    "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
+    "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
+    "grants": "Quyền",
+    "host-or-socket": "Máy chủ hoặc Socket",
+    "iam-extension": {
+      "client-id": "Client ID",
+      "client-secret": "Client Secret",
+      "credential-source": "Credential Source",
+      "specific-credential": "Chứng chỉ cụ thể",
+      "tenant-id": "Tenant ID",
+      "saas-default-credential-restriction": "Thông tin xác thực mặc định không khả dụng trong Bytebase Cloud vì lý do bảo mật. Vui lòng cung cấp thông tin xác thực cụ thể."
+    },
+    "info-panel": {
+      "no-info": "Không có thông tin bổ sung cho engine này."
+    },
+    "instance-id": "ID phiên bản",
+    "instance-name": "Tên phiên bản",
+    "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
+    "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
+    "no-password": "Không có mật khẩu",
+    "parameter-name-placeholder": "Tên tham số",
+    "parameter-value-placeholder": "Giá trị tham số",
+    "password-type": {
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "password": "Mật khẩu",
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-azure": "Azure Key Vault",
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-vault": "Vault (KV v2)"
+    },
+    "password-write-only": "YOUR_DB_PWD - chỉ ghi",
+    "port": "Cổng",
+    "project-id": "ID dự án",
+    "role-arn": "ARN vai trò",
+    "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "scan-interval": {
+      "default-never": "Mặc định (không bao giờ)",
+      "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
+      "self": "Khoảng thời gian quét",
+      "min-value": "Giá trị nhỏ nhất {{value}} phút"
+    },
+    "section": {
+      "basic-info": "Thông tin cơ bản",
+      "connection": "Kết nối"
+    },
+    "sentence": {
+      "console": {
+        "snowflake": "URL bảng điều khiển bên ngoài quản lý phiên bản này (ví dụ: bảng điều khiển AWS RDS, bảng điều khiển phiên bản cơ sở dữ liệu nội bộ của bạn)"
+      },
+      "create-admin-user": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động DDL và DML (không phải SELECT).",
+      "create-admin-user-non-sql": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động ghi và quản trị.",
+      "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc như truy vấn SELECT.",
+      "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
+      "create-user-example": {
+        "postgresql": {
+          "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây, thì SUPERUSER không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển quản trị của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SUPERUSER cụ thể của nhà cung cấp. Bạn nên cấp các đặc quyền Bytebase với 'GRANT role_name TO bytebase;' cho tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được các cơ sở dữ liệu hoặc bảng hiện có.",
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER."
+        },
+        "clickhouse": {
+          "sql-driven-workflow": "Quy trình công việc dựa trên SQL",
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Đầu tiên, bạn cần bật {{link}} quy trình công việc dựa trên SQL và sau đó chạy truy vấn sau để tạo người dùng."
+        },
+        "mysql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "redis": {
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}} với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "snowflake": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} cho {{warehouse}} và cấp cho người dùng các đặc quyền cần thiết."
+        }
+      },
+      "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase.",
+      "host": {
+        "none-snowflake": "ví dụ: host.docker.internal {{'|'}} địa chỉ IP máy chủ {{'|'}} local socket"
+      },
+      "proxy": {
+        "snowflake": "Đối với máy chủ proxy, thêm {{'@'}}PROXY_HOST và chỉ định PROXY_PORT trong cổng"
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' và cấp cho người dùng các đặc quyền cần thiết."
+        }
+      },
+      "google-cloud-sql": {
+        "instance-name": "Tên kết nối phiên bản",
+        "instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",
+        "mysql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {{user}}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {{user}}@'%'. Cấp cho người dùng này các đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Tạo một tài khoản dịch vụ có tên {{user}}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {{user}}@project-id.iam. Cấp cho người dùng các đặc quyền cần thiết."
+        }
+      }
+    },
+    "show-how-to-create": "Hiển thị cách tạo",
+    "snowflake-web-console": "Bảng điều khiển web Snowflake",
+    "successfully-connected-instance": "Đã kết nối thành công với phiên bản.",
+    "sync-databases": {
+      "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
+      "description": "Chỉ đồng bộ các cơ sở dữ liệu đã chọn.",
+      "search-database": "Tìm kiếm cơ sở dữ liệu",
+      "self": "Đồng bộ cơ sở dữ liệu",
+      "sync-all": "Đồng bộ tất cả cơ sở dữ liệu"
+    },
+    "test-connection": "Kiểm tra kết nối",
+    "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
+    "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
+    "users": "Người dùng",
+    "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn",
+    "testing-connection": "Đang kiểm tra kết nối...",
+    "new-instance": "Phiên bản mới",
+    "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
+    "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
+    "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{{0}}'.",
+    "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{{0}}'."
   },
   "issue": {
     "advanced-search": {
@@ -487,8 +674,11 @@
     "error": {
       "key-duplicated": "Khóa trùng lặp",
       "key-necessary": "Khóa là bắt buộc",
-      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {{length}} ký tự"
-    }
+      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {{length}} ký tự",
+      "value-necessary": "Giá trị là bắt buộc"
+    },
+    "add-label": "Thêm nhãn",
+    "empty-label-value": "Trống"
   },
   "landing": {
     "changelog-for-version": "Nhật ký thay đổi cho phiên bản {{version}}",
@@ -1305,7 +1495,8 @@
       "license": "Giấy phép",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
-      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"
+      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
+      "n-license-remain": "còn lại {{n}}"
     },
     "max-instance-count": "Số lượng phiên bản tối đa",
     "plan": {
@@ -1435,5 +1626,107 @@
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
     }
+  },
+  "data-source": {
+    "additional-node-addresses": "Địa chỉ nút bổ sung",
+    "connection-string-schema": "Lược đồ chuỗi kết nối",
+    "connection-type": "Loại kết nối",
+    "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
+    "direct-connection": "Kết nối trực tiếp",
+    "extra-params": {
+      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
+      "self": "Thông số bổ sung"
+    },
+    "private-key-passphrase": "Mật khẩu khóa riêng",
+    "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
+    "read-replica-host": "Máy chủ bản sao đọc",
+    "read-replica-port": "Cổng bản sao đọc",
+    "replica-set": "Bộ bản sao",
+    "snowflake-keypair-tip": "Xác thực cặp khóa",
+    "ssh-connection": "Kết nối SSH",
+    "ssh-type": {
+      "none": "Không có",
+      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
+    },
+    "ssh": {
+      "host": "Máy chủ",
+      "password": "Mật khẩu",
+      "port": "Cổng",
+      "private-key": "Khóa riêng",
+      "ssh-key": "Khóa SSH",
+      "user": "Người dùng"
+    },
+    "ssl-connection": "Kết nối SSL",
+    "ssl": {
+      "ca-cert": "Chứng chỉ CA",
+      "client-cert": "Chứng chỉ máy khách",
+      "client-key": "Khóa máy khách",
+      "verify-certificate": "Xác minh chứng chỉ TLS",
+      "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
+    },
+    "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
+    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa"
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "Khóa nhãn...",
+      "value-placeholder": "Giá trị nhãn..."
+    }
+  },
+  "agent": {
+    "active-only-chats": "Chỉ hoạt động",
+    "ai-not-configured": {
+      "configure": "Cấu hình",
+      "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
+      "description": "AI chưa được cấu hình cho không gian làm việc này.",
+      "title": "AI chưa được cấu hình"
+    },
+    "archive-chat": "Lưu trữ cuộc trò chuyện",
+    "archive-chat-confirmation": "Bạn có chắc chắn muốn lưu trữ cuộc trò chuyện này?",
+    "archived-only-chats": "Chỉ đã lưu trữ",
+    "args": "Tham số",
+    "assistant-title": "Trợ lý AI",
+    "cancel": "Hủy",
+    "chat-archived-label": "Đã lưu trữ",
+    "chat-default-title": "Cuộc trò chuyện mới",
+    "chat-list-label": "Cuộc trò chuyện",
+    "chat-status-awaiting-user": "Đang chờ người dùng",
+    "chat-status-error": "Lỗi",
+    "chat-status-idle": "Rảnh",
+    "chat-status-interrupted": "Bị gián đoạn",
+    "chat-status-running": "Đang chạy",
+    "chat-total-tokens": "Tổng số token",
+    "close": "Đóng",
+    "confirm": "Xác nhận",
+    "delete-chat": "Xóa cuộc trò chuyện",
+    "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "input-placeholder": "Hỏi AI bất cứ điều gì...",
+    "interrupted": "Bị gián đoạn",
+    "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
+    "minimize": "Thu nhỏ",
+    "new-chat": "Cuộc trò chuyện mới",
+    "pending-choose-hint": "Vui lòng chọn một tùy chọn ở trên",
+    "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
+    "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
+    "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
+    "reply": "Trả lời",
+    "resize": "Thay đổi kích thước",
+    "result": "Kết quả",
+    "retry-last-chat-turn": "Thử lại",
+    "send": "Gửi",
+    "stop": "Dừng",
+    "tool-answer": "Câu trả lời",
+    "tool-ask-user": "Đang hỏi người dùng",
+    "tool-ask-user-choose": "Chọn một tùy chọn",
+    "tool-ask-user-confirm": "Xác nhận hành động",
+    "tool-ask-user-input": "Cung cấp đầu vào",
+    "tool-completed": "Đã hoàn thành",
+    "tool-default-value": "Mặc định",
+    "tool-failed": "Thất bại",
+    "tool-options": "Tùy chọn",
+    "tool-prompt": "Lời nhắc",
+    "tool-response-submitted": "Phản hồi đã được gửi",
+    "tool-value": "Giá trị",
+    "unarchive-chat": "Bỏ lưu trữ"
   }
 }

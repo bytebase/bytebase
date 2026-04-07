@@ -11,7 +11,7 @@ export function InstanceRoleTable({
   const { t } = useTranslation();
 
   return (
-    <table className="w-full text-sm border border-block-border rounded-md">
+    <table className="w-full text-sm border border-block-border rounded-sm">
       <thead>
         <tr className="bg-gray-50 border-b border-block-border">
           <th className="text-left px-4 py-2 w-[200px] font-medium">

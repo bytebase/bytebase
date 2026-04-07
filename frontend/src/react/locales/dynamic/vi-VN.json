@@ -344,5 +344,8 @@
         }
       }
     }
+  },
+  "resource": {
+    "instance": "Phiên bản"
   }
 }

@@ -72,7 +72,7 @@ function DroppableTextarea({
       onDragOver={handleDragOver}
       disabled={disabled}
       placeholder={placeholder}
-      className="w-full h-24 whitespace-pre-wrap resize-none rounded border border-control-border bg-white px-3 py-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full h-24 whitespace-pre-wrap resize-none rounded-xs border border-control-border bg-white px-3 py-2 text-sm focus:outline-hidden focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
     />
   );
 }

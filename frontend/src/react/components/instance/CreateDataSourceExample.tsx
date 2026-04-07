@@ -380,7 +380,7 @@ function EngineSpecificDescription({
   if (engine === Engine.POSTGRES) {
     return (
       <>
-        <div className="my-2 rounded border border-yellow-400 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+        <div className="my-2 rounded-xs border border-yellow-400 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
           {t("instance.sentence.create-user-example.postgresql.warn")}
         </div>
         {authenticationType ===
