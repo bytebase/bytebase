@@ -1335,7 +1335,6 @@
     "add-instance": "@:common.add @:common.instance",
     "new-project": "@:common.new @:common.project",
     "create-project": "@:common.create @:common.project",
-    "transfer-in-db": "Transferir",
     "from-unassigned-databases": "Bases de datos no asignadas",
     "from-projects": "De otro proyecto",
     "transfer-in-db-title": "Transferir base de datos",
@@ -1398,7 +1397,6 @@
   },
   "instance": {
     "select-database-user": "Seleccionar usuario de base de datos",
-    "new-database": "Nueva base de datos",
     "syncing": "Sincronizando...",
     "sync": {
       "self": "Instancia de sincronización",
@@ -1723,8 +1721,6 @@
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
     "table-detail": "Detalle de la tabla",
-    "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
-    "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "nullable": "Anulable",
     "expression": "Expresión",
@@ -1743,7 +1739,6 @@
     "go-to-transfer": "Ir a transferir",
     "unassigned-databases": "Bases de datos no asignadas",
     "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
-    "n-databases": "{n} base de datos | {n} bases de datos",
     "sync-schema": {
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",

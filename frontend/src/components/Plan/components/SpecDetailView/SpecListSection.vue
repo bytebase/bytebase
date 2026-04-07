@@ -71,7 +71,7 @@ import { computed, h, inject, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { planServiceClientConnect } from "@/connect";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
+import { buildSpecDetailRouteForCurrentPage } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -180,14 +180,7 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
 
 const gotoSpec = (specId: string, enableEditing = false) => {
   const currentRoute = router.currentRoute.value;
-  const nextRoute = {
-    name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-    params: {
-      ...(currentRoute.params || {}),
-      specId,
-    },
-    query: currentRoute.query || {},
-  };
+  const nextRoute = buildSpecDetailRouteForCurrentPage(currentRoute, specId);
 
   // When spec selection is managed via injection (PlanDetailPage),
   // keep the local selection responsive while still syncing the URL.

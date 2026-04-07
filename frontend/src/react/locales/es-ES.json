@@ -60,6 +60,10 @@
       "self": "Condición"
     }
   },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
   "common": {
     "activated": "Activado",
     "active": "Activo",
@@ -68,6 +72,7 @@
     "added": "Agregado",
     "address": "Dirección",
     "all": "Todos",
+    "approved": "Aprobado",
     "archive": "Archivo",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "archive-resource": "Archive {{type}}",
@@ -75,8 +80,12 @@
     "back": "Volver",
     "cancel": "Cancelar",
     "cannot-undo-this-action": "No se puede deshacer esta acción",
+    "changelog": "Changelog",
+    "classification-level": "Nivel de clasificación",
     "clear": "Limpiar",
     "close": "Cerrar",
+    "closed": "Cerrado",
+    "columns": "Columnas",
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
     "confirm": "Confirmar",
@@ -84,6 +93,7 @@
     "confirm-and-update": "Confirmar y actualizar",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
     "copied": "Copiado",
     "copy": "Copiar",
     "copy-failed": "Copy failed",
@@ -107,6 +117,7 @@
     "download": "Descargar",
     "edit": "Editar",
     "email": "Correo electrónico",
+    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
     "empty": "Empty",
     "enable": "Habilitar",
     "enabled": "Enabled",
@@ -130,6 +141,7 @@
     "instance": "Instancia",
     "instances": "Instancias",
     "is-required": "is required",
+    "issues": "Incidencias",
     "items": "items",
     "key": "Clave",
     "labels": "Etiquetas",
@@ -137,11 +149,13 @@
     "leave-without-saving": "¿Salir sin guardar?",
     "load-more": "Cargar más",
     "loading": "Cargando",
+    "manage": "Administrar",
     "manually-select": "Manually select",
     "members_one": "Miembro",
     "members_other": "Miembros",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "n-items-selected": "{{n}} elementos seleccionados",
+    "n-more": "+{{n}} más",
     "name": "Nombre",
     "next": "Siguiente",
     "no-data": "Sin datos",
@@ -155,25 +169,31 @@
     "projects": "Proyectos",
     "reason": "Reason",
     "regenerate": "Regenerar",
+    "rejected": "Rechazado",
     "release": "Versión",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
     "resource": "Resource",
+    "resources": "Recursos",
     "restore": "Restaurar",
     "restored": "Restored",
     "revert": "Revertir",
+    "revoke": "Revocar",
     "revoked": "Revocado",
     "rows-per-page": "Filas por página",
     "save": "Guardar",
     "schema": "Esquema",
+    "scope": "Alcance",
     "search": "Buscar",
     "search-for-more": "Buscar más",
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
     "selected": "selected",
     "sensitive-placeholder": "Sensible - solo escritura",
+    "setting": "Configuración",
     "settings": "Configuraciones",
+    "sql": "SQL",
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
@@ -186,6 +206,7 @@
     "type": "Tipo",
     "unassigned": "No asignado",
     "unlimited": "Ilimitado",
+    "untitled": "Sin título",
     "update": "Actualizar",
     "updated": "Actualizado",
     "upload": "Subir",
@@ -194,18 +215,8 @@
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
-    "you": "tu",
-    "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
-    "issues": "Incidencias",
-    "manage": "Administrar",
-    "setting": "Configuración",
     "webhooks": "Webhooks",
-    "revoke": "Revocar",
-    "n-more": "+{{n}} más",
-    "scope": "Alcance",
-    "classification-level": "Nivel de clasificación",
-    "columns": "Columnas",
-    "resources": "Recursos"
+    "you": "tu"
   },
   "create-db": {
     "cluster": "Clúster",
@@ -244,6 +255,9 @@
         },
         "presets-title": "Plantillas"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "Generando flujo de aprobación"
     },
     "risk": {
       "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
@@ -295,15 +309,34 @@
     "select": "Seleccionar base de datos",
     "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
+    "sync-schema": {
+      "copy-schema": "Copy schema",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
+      "generated-ddl-statement": "Generated DDL statement",
+      "message": {
+        "no-diff-found": "No diff found.",
+        "no-target-databases": "No target databases",
+        "select-a-target-database-first": "Please select a target database first."
+      },
+      "no-diff": "No diff",
+      "preview-issue": "Preview issue",
+      "schema-change": "Schema change",
+      "schema-change-preview": "Preview Schema change for '{{database}}'",
+      "select-source-schema": "Select source schema",
+      "select-target-databases": "Select target databases",
+      "source-schema": "Source schema",
+      "synchronize-statements": "Corresponding generated DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements",
+      "target-databases": "Target databases",
+      "title": "Sincronizar esquema",
+      "with-diff": "With diff"
+    },
     "sync-schema-button": "Sincronizar esquema",
     "sync-status-failed": "Sincronización fallida",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
-    "unassign-alert-title": "Desasignar bases de datos",
-    "sync-schema": {
-      "title": "Sincronizar esquema"
-    }
+    "unassign-alert-title": "Desasignar bases de datos"
   },
   "database-group": {
     "condition": {
@@ -335,6 +368,12 @@
   "error-page": {
     "not-found": "No encontrado"
   },
+  "export-center": {
+    "data-export": "Exportación de datos"
+  },
+  "export-data": {
+    "password-optional": "Cifrar con contraseña (opcional)"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
@@ -351,6 +390,7 @@
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
       "title": "Qué es GitOps"
     },
+    "self": "GitOps",
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
@@ -368,8 +408,7 @@
     },
     "workload-identity": {
       "select-placeholder": "Seleccionar una identidad de carga de trabajo"
-    },
-    "self": "GitOps"
+    }
   },
   "identity-provider": {
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",
@@ -418,13 +457,30 @@
     "advanced-search": {
       "filter": "Filtrar"
     },
+    "data-export": {
+      "format": "Formato",
+      "limits": "Límites",
+      "options": "Opciones de exportación"
+    },
     "labels": "Etiquetas de problema",
+    "risk-level": {
+      "high": "Alto",
+      "moderate": "Moderado",
+      "self": "Nivel de riesgo"
+    },
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
       "use-cel": "Usar expresión CEL"
-    }
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "Abierto",
+      "waiting-role": "Waiting: {{role}}"
+    },
+    "upload-sql": "Upload SQL"
   },
   "label": {
     "error": {
@@ -441,6 +497,12 @@
       "self": "Enlace rápido",
       "visit-issues": "Problemas de visita",
       "visit-prjects": "Visitar Proyectos"
+    }
+  },
+  "plan": {
+    "plans": "Planes",
+    "targets": {
+      "title": "Objetivos"
     }
   },
   "policy": {
@@ -484,6 +546,19 @@
       "success-prompt": "Proyecto {{name}} creado exitosamente."
     },
     "filter-projects": "Filtrar proyectos",
+    "masking-exemption": {
+      "all-levels": "Todos los niveles",
+      "expires-in-days_one": "Expira en {{days}} día",
+      "expires-in-days_other": "Expira en {{days}} días",
+      "expires-today": "Expira hoy",
+      "grant-exemption": "Conceder Exención",
+      "n-exemptions_one": "{{n}} exención",
+      "n-exemptions_other": "{{n}} exenciones",
+      "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
+      "no-reason": "No se proporcionó motivo",
+      "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {{member}}?",
+      "self": "Exenciones de Enmascaramiento"
+    },
     "members": {
       "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
@@ -595,19 +670,6 @@
       "test-webhook": "Probar webhook",
       "triggering-activity": "Actividades de disparo",
       "webhook-url": "URL del webhook"
-    },
-    "masking-exemption": {
-      "self": "Exenciones de Enmascaramiento",
-      "grant-exemption": "Conceder Exención",
-      "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {{member}}?",
-      "no-reason": "No se proporcionó motivo",
-      "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
-      "expires-today": "Expira hoy",
-      "expires-in-days_one": "Expira en {{days}} día",
-      "expires-in-days_other": "Expira en {{days}} días",
-      "all-levels": "Todos los niveles",
-      "n-exemptions_one": "{{n}} exención",
-      "n-exemptions_other": "{{n}} exenciones"
     }
   },
   "quick-action": {
@@ -615,7 +677,11 @@
     "create-db": "Crear base de datos",
     "create-project": "Crear Proyecto",
     "new-db": "Nueva BD",
-    "new-project": "Nuevo Proyecto"
+    "new-project": "Nuevo Proyecto",
+    "request-export-data": "Solicitar exportación"
+  },
+  "release": {
+    "releases": "Lanzamientos"
   },
   "remind": {
     "release": {
@@ -659,6 +725,9 @@
     "workspace-roles": {
       "self": "Roles de espacio de trabajo"
     }
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
   },
   "schema-template": {
     "classification": {
@@ -929,9 +998,9 @@
       "revoke-allusers-alert": "Revocar \"Todos los usuarios\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
       "revoked": "Revocado",
       "search-member": "Buscar miembro",
+      "select-account-hint": "Puede buscar usuarios y grupos, o introducir el correo electrónico completo para seleccionar la cuenta de servicio o identidad de carga de trabajo.",
       "select-account_one": "Seleccionar cuenta",
       "select-account_other": "Seleccionar cuentas",
-      "select-account-hint": "Puede buscar usuarios y grupos, o introducir el correo electrónico completo para seleccionar la cuenta de servicio o identidad de carga de trabajo.",
       "select-role_one": "Seleccionar rol",
       "select-role_other": "Seleccionar roles",
       "service-account": "Cuenta de Servicio",
@@ -985,7 +1054,6 @@
       "subscription": "(Actualice para habilitar la gestión de roles)"
     },
     "sensitive-data": {
-      "never-expires": "Nunca expira",
       "algorithms": {
         "add": "Agregar algoritmo",
         "edit": "Editar algoritmo",
@@ -1048,6 +1116,7 @@
         },
         "re-order": "Reordenar"
       },
+      "never-expires": "Nunca expira",
       "semantic-types": {
         "add-from-template": "Agregar desde plantilla",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
@@ -1173,6 +1242,7 @@
     }
   },
   "sql-editor": {
+    "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -1181,8 +1251,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Editor de SQL",
-    "view-issue": "View Issue",
-    "access-grants": "Access Grants"
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1225,6 +1294,7 @@
     "contact-us": "Contáctenos",
     "current": "Plan actual",
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
+    "disabled-feature": "Función deshabilitada",
     "enterprise-free-trial": "{{days}}-días de prueba gratuita para la empresa",
     "expired": "expirado",
     "expires-at": "Expira el",
@@ -1315,8 +1385,7 @@
         "title": "Límite de conteo de usuarios",
         "upgrade": "Actualizar para obtener más cuota de usuario."
       }
-    },
-    "disabled-feature": "Función deshabilitada"
+    }
   },
   "two-factor": {
     "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
@@ -1365,14 +1434,5 @@
       "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
       "self": "Su secreto de dos factores"
     }
-  },
-  "export-center": {
-    "data-export": "Exportación de datos"
-  },
-  "plan": {
-    "plans": "Planes"
-  },
-  "release": {
-    "releases": "Lanzamientos"
   }
 }

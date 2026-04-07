@@ -60,6 +60,10 @@
       "self": "状態"
     }
   },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
   "common": {
     "activated": "有効化しました",
     "active": "アクティブ",
@@ -68,6 +72,7 @@
     "added": "作成した",
     "address": "接続先",
     "all": "全て",
+    "approved": "承認済み",
     "archive": "アーカイブ",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "archive-resource": "Archive {{type}}",
@@ -75,8 +80,12 @@
     "back": "戻る",
     "cancel": "キャンセル",
     "cannot-undo-this-action": "この操作は元に戻せません",
+    "changelog": "Changelog",
+    "classification-level": "分類レベル",
     "clear": "クリア",
     "close": "閉じる",
+    "closed": "閉まっている",
+    "columns": "カラム",
     "configure": "設定",
     "configure-now": "今すぐ設定する",
     "confirm": "確認する",
@@ -84,6 +93,7 @@
     "confirm-and-update": "確認して更新する",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
     "copied": "コピーされました",
     "copy": "コピー",
     "copy-failed": "Copy failed",
@@ -107,6 +117,7 @@
     "download": "ダウンロード",
     "edit": "編集",
     "email": "メールアドレス",
+    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
     "empty": "Empty",
     "enable": "オンにする",
     "enabled": "Enabled",
@@ -130,6 +141,7 @@
     "instance": "インスタンス",
     "instances": "インスタンス",
     "is-required": "is required",
+    "issues": "イシュー",
     "items": "items",
     "key": "キー",
     "labels": "ラベル",
@@ -137,11 +149,13 @@
     "leave-without-saving": "変更を保存していませんか?",
     "load-more": "もっと読み込む",
     "loading": "読み込み中",
+    "manage": "管理",
     "manually-select": "Manually select",
     "members_one": "メンバー",
     "members_other": "メンバー",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "n-items-selected": "{{n}} 件選択済み",
+    "n-more": "+{{n}} もっと",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",
@@ -155,25 +169,31 @@
     "projects": "プロジェクト",
     "reason": "Reason",
     "regenerate": "再生する",
+    "rejected": "却下",
     "release": "リリース",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
     "resource": "Resource",
+    "resources": "リソース",
     "restore": "復元する",
     "restored": "Restored",
     "revert": "元に戻す",
+    "revoke": "キャンセル",
     "revoked": "取り消し済み",
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
     "schema": "スキーマ",
+    "scope": "スコープ",
     "search": "検索",
     "search-for-more": "さらに検索",
     "select": "選択してください",
     "select-all": "すべて選択",
     "selected": "selected",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
+    "setting": "設定",
     "settings": "設定",
+    "sql": "SQL",
     "state": "ステート",
     "statement": "ステートメント",
     "status": "ステータス",
@@ -186,6 +206,7 @@
     "type": "タイプ",
     "unassigned": "割り当てられていない",
     "unlimited": "無制限",
+    "untitled": "名前のない",
     "update": "更新する",
     "updated": "更新しました",
     "upload": "アップロード",
@@ -194,18 +215,8 @@
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "you": "あなた",
-    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
-    "issues": "イシュー",
-    "manage": "管理",
-    "setting": "設定",
     "webhooks": "Webhook",
-    "revoke": "キャンセル",
-    "n-more": "+{{n}} もっと",
-    "scope": "スコープ",
-    "classification-level": "分類レベル",
-    "columns": "カラム",
-    "resources": "リソース"
+    "you": "あなた"
   },
   "create-db": {
     "cluster": "集まる",
@@ -244,6 +255,9 @@
         },
         "presets-title": "プリセット"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "承認フローが生成されています"
     },
     "risk": {
       "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
@@ -295,15 +309,34 @@
     "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
+    "sync-schema": {
+      "copy-schema": "Copy schema",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
+      "generated-ddl-statement": "Generated DDL statement",
+      "message": {
+        "no-diff-found": "No diff found.",
+        "no-target-databases": "No target databases",
+        "select-a-target-database-first": "Please select a target database first."
+      },
+      "no-diff": "No diff",
+      "preview-issue": "Preview issue",
+      "schema-change": "Schema change",
+      "schema-change-preview": "Preview Schema change for '{{database}}'",
+      "select-source-schema": "Select source schema",
+      "select-target-databases": "Select target databases",
+      "source-schema": "Source schema",
+      "synchronize-statements": "Corresponding generated DDL statements",
+      "synchronize-statements-description": "You can further edit the generated DDL statements",
+      "target-databases": "Target databases",
+      "title": "データベーステーブルの同期",
+      "with-diff": "With diff"
+    },
     "sync-schema-button": "スキーマを同期",
     "sync-status-failed": "同期に失敗しました",
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する",
-    "sync-schema": {
-      "title": "データベーステーブルの同期"
-    }
+    "unassign-alert-title": "データベースの割り当てを解除する"
   },
   "database-group": {
     "condition": {
@@ -335,6 +368,12 @@
   "error-page": {
     "not-found": "ページが見つかりません"
   },
+  "export-center": {
+    "data-export": "データエクスポート"
+  },
+  "export-data": {
+    "password-optional": "パスワード暗号化の設定 (オプション)"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
@@ -351,6 +390,7 @@
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
       "title": "GitOps とは"
     },
+    "self": "GitOps",
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
@@ -368,8 +408,7 @@
     },
     "workload-identity": {
       "select-placeholder": "ワークロードアイデンティティを選択"
-    },
-    "self": "GitOps"
+    }
   },
   "identity-provider": {
     "claims-description": "IDプロバイダーから以下のクレームが返されました。この情報は、フィールドマッピングの設定に役立ちます。",
@@ -418,13 +457,30 @@
     "advanced-search": {
       "filter": "フィルター"
     },
+    "data-export": {
+      "format": "エクスポート形式",
+      "limits": "制限",
+      "options": "設定項目"
+    },
     "labels": "イシューラベル",
+    "risk-level": {
+      "high": "高い",
+      "moderate": "適度",
+      "self": "リスクレベル"
+    },
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "manually-select": "手動選択",
       "use-cel": "CEL式を使用"
-    }
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "オープン",
+      "waiting-role": "Waiting: {{role}}"
+    },
+    "upload-sql": "Upload SQL"
   },
   "label": {
     "error": {
@@ -441,6 +497,12 @@
       "self": "クイックリンク",
       "visit-issues": "イシューを開く",
       "visit-prjects": "プロジェクトを開く"
+    }
+  },
+  "plan": {
+    "plans": "プラン",
+    "targets": {
+      "title": "ターゲット"
     }
   },
   "policy": {
@@ -484,6 +546,19 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "masking-exemption": {
+      "all-levels": "全レベル",
+      "expires-in-days_one": "{{days}} 日後に期限切れ",
+      "expires-in-days_other": "{{days}} 日後に期限切れ",
+      "expires-today": "本日期限切れ",
+      "grant-exemption": "免除を付与",
+      "n-exemptions_one": "{{n}} 件の免除",
+      "n-exemptions_other": "{{n}} 件の免除",
+      "no-exemptions": "マスキング免除はまだ付与されていません",
+      "no-reason": "理由が提供されていません",
+      "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
+      "self": "マスキング免除"
+    },
     "members": {
       "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
@@ -595,19 +670,6 @@
       "test-webhook": "Webhook のテスト",
       "triggering-activity": "トリガーイベント",
       "webhook-url": "Webhook URL"
-    },
-    "masking-exemption": {
-      "self": "マスキング免除",
-      "grant-exemption": "免除を付与",
-      "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
-      "no-reason": "理由が提供されていません",
-      "no-exemptions": "マスキング免除はまだ付与されていません",
-      "expires-today": "本日期限切れ",
-      "expires-in-days_one": "{{days}} 日後に期限切れ",
-      "expires-in-days_other": "{{days}} 日後に期限切れ",
-      "all-levels": "全レベル",
-      "n-exemptions_one": "{{n}} 件の免除",
-      "n-exemptions_other": "{{n}} 件の免除"
     }
   },
   "quick-action": {
@@ -615,7 +677,11 @@
     "create-db": "データベースの作成",
     "create-project": "作成するプロジェクト",
     "new-db": "データベースの作成",
-    "new-project": "作成するプロジェクト"
+    "new-project": "作成するプロジェクト",
+    "request-export-data": "データ出力を申請する"
+  },
+  "release": {
+    "releases": "リリース"
   },
   "remind": {
     "release": {
@@ -659,6 +725,9 @@
     "workspace-roles": {
       "self": "ワークスペースのロール"
     }
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
   },
   "schema-template": {
     "classification": {
@@ -929,9 +998,9 @@
       "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
       "revoked": "取り消されました",
       "search-member": "メンバーを検索",
+      "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
       "select-account_one": "アカウントを選択",
       "select-account_other": "アカウントを選択",
-      "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
       "select-role_one": "ロールを選択",
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
@@ -985,7 +1054,6 @@
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
     "sensitive-data": {
-      "never-expires": "有効期限なし",
       "algorithms": {
         "add": "アルゴリズムを追加",
         "edit": "アルゴリズムを編集",
@@ -1048,6 +1116,7 @@
         },
         "re-order": "並び替え"
       },
+      "never-expires": "有効期限なし",
       "semantic-types": {
         "add-from-template": "テンプレートから追加",
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
@@ -1173,6 +1242,7 @@
     }
   },
   "sql-editor": {
+    "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -1181,8 +1251,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQLエディタ",
-    "view-issue": "View Issue",
-    "access-grants": "Access Grants"
+    "view-issue": "View Issue"
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
@@ -1225,6 +1294,7 @@
     "contact-us": "お問い合わせ",
     "current": "現在のプラン",
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
+    "disabled-feature": "無効な機能",
     "enterprise-free-trial": "Enterprise の {{days}} 日間の無料トライアル",
     "expired": "期限切れ",
     "expires-at": "有効期限",
@@ -1315,8 +1385,7 @@
         "title": "ユーザー制限",
         "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
-    },
-    "disabled-feature": "無効な機能"
+    }
   },
   "two-factor": {
     "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
@@ -1365,14 +1434,5 @@
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
     }
-  },
-  "export-center": {
-    "data-export": "データエクスポート"
-  },
-  "plan": {
-    "plans": "プラン"
-  },
-  "release": {
-    "releases": "リリース"
   }
 }

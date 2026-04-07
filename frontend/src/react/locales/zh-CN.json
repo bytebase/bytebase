@@ -60,6 +60,10 @@
       "self": "条件"
     }
   },
+  "changelog": {
+    "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
+    "self": "变更历史"
+  },
   "common": {
     "activated": "已激活",
     "active": "开启",
@@ -68,6 +72,7 @@
     "added": "已创建",
     "address": "地址",
     "all": "全部",
+    "approved": "已批准",
     "archive": "归档",
     "archive-description": "将「{{name}}」标记为已归档且只读。",
     "archive-resource": "归档{{type}}",
@@ -75,8 +80,12 @@
     "back": "返回",
     "cancel": "取消",
     "cannot-undo-this-action": "这个操作无法撤销",
+    "changelog": "变更历史",
+    "classification-level": "分类等级",
     "clear": "清除",
     "close": "关闭",
+    "closed": "已关闭",
+    "columns": "列",
     "configure": "配置",
     "configure-now": "现在配置",
     "confirm": "确认",
@@ -84,6 +93,7 @@
     "confirm-and-update": "确认并更新",
     "confirm-archive": "确定归档资源？",
     "confirm-delete": "确定删除资源？",
+    "confirm-to-revert": "确定撤销编辑？",
     "copied": "已拷贝",
     "copy": "拷贝",
     "copy-failed": "Copy failed",
@@ -107,6 +117,7 @@
     "download": "下载",
     "edit": "编辑",
     "email": "邮箱",
+    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
     "empty": "Empty",
     "enable": "开启",
     "enabled": "开启",
@@ -130,6 +141,7 @@
     "instance": "实例",
     "instances": "实例",
     "is-required": "is required",
+    "issues": "工单",
     "items": "items",
     "key": "键",
     "labels": "标签",
@@ -137,11 +149,13 @@
     "leave-without-saving": "不保存变动？",
     "load-more": "加载更多",
     "loading": "加载中",
+    "manage": "管理",
     "manually-select": "Manually select",
     "members_one": "成员",
     "members_other": "成员",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
     "n-items-selected": "已选 {{n}} 项",
+    "n-more": "+{{n}} 更多",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",
@@ -155,25 +169,31 @@
     "projects": "项目",
     "reason": "Reason",
     "regenerate": "重新生成",
+    "rejected": "已拒绝",
     "release": "版本",
     "reorder": "排序",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
     "resource": "资源",
+    "resources": "资源",
     "restore": "恢复",
     "restored": "已恢复",
     "revert": "恢复",
+    "revoke": "撤销",
     "revoked": "已撤销",
     "rows-per-page": "每页行数",
     "save": "保存",
     "schema": "模式",
+    "scope": "范围",
     "search": "搜索",
     "search-for-more": "搜索更多",
     "select": "请选择",
     "select-all": "全选",
     "selected": "selected",
     "sensitive-placeholder": "敏感数据 - 仅写入",
+    "setting": "设置",
     "settings": "设置",
+    "sql": "SQL",
     "state": "状态",
     "statement": "语句",
     "status": "状态",
@@ -186,6 +206,7 @@
     "type": "类型",
     "unassigned": "未分配",
     "unlimited": "无限制",
+    "untitled": "未命名",
     "update": "更新",
     "updated": "已更新",
     "upload": "上传",
@@ -194,18 +215,8 @@
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
-    "you": "您",
-    "email-ascii-only": "邮箱地址仅支持 ASCII 字符（英文字母、数字及 . _ - + 等符号）。",
-    "issues": "工单",
-    "manage": "管理",
-    "setting": "设置",
     "webhooks": "Webhook",
-    "revoke": "撤销",
-    "n-more": "+{{n}} 更多",
-    "scope": "范围",
-    "classification-level": "分类等级",
-    "columns": "列",
-    "resources": "资源"
+    "you": "您"
   },
   "create-db": {
     "cluster": "集群",
@@ -244,6 +255,9 @@
         },
         "presets-title": "预设模板"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "正在生成审批流"
     },
     "risk": {
       "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
@@ -295,15 +309,34 @@
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
+    "sync-schema": {
+      "copy-schema": "粘贴 Schema 文本",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
+      "generated-ddl-statement": "生成的 DDL 语句",
+      "message": {
+        "no-diff-found": "未发现差异。",
+        "no-target-databases": "无目标数据库",
+        "select-a-target-database-first": "请先选择一个目标数据库。"
+      },
+      "no-diff": "无差异",
+      "preview-issue": "预览工单",
+      "schema-change": "Schema 变化",
+      "schema-change-preview": "预览 '{{database}}' 的 Schema 变更",
+      "select-source-schema": "选择源 Schema",
+      "select-target-databases": "选择目标数据库",
+      "source-schema": "源 Schema",
+      "synchronize-statements": "对应生成的 DDL 语句",
+      "synchronize-statements-description": "您可以继续编辑生成的 Schema DDL 语句",
+      "target-databases": "目标数据库",
+      "title": "库表同步",
+      "with-diff": "有差异"
+    },
     "sync-schema-button": "同步 Schema",
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库",
-    "sync-schema": {
-      "title": "库表同步"
-    }
+    "unassign-alert-title": "取消分配数据库"
   },
   "database-group": {
     "condition": {
@@ -335,6 +368,12 @@
   "error-page": {
     "not-found": "页面未找到"
   },
+  "export-center": {
+    "data-export": "数据导出"
+  },
+  "export-data": {
+    "password-optional": "设置密码加密（可选）"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
@@ -351,6 +390,7 @@
       "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
       "title": "什么是 GitOps"
     },
+    "self": "GitOps",
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
@@ -368,8 +408,7 @@
     },
     "workload-identity": {
       "select-placeholder": "选择工作负载身份"
-    },
-    "self": "GitOps"
+    }
   },
   "identity-provider": {
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",
@@ -418,13 +457,30 @@
     "advanced-search": {
       "filter": "过滤"
     },
+    "data-export": {
+      "format": "导出格式",
+      "limits": "限制",
+      "options": "配置项"
+    },
     "labels": "工单标签",
+    "risk-level": {
+      "high": "高风险",
+      "moderate": "中风险",
+      "self": "风险等级"
+    },
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
       "use-cel": "使用 CEL 表达式"
-    }
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} 已审批",
+      "approved": "已审批",
+      "open": "开启中",
+      "waiting-role": "等待: {{role}}"
+    },
+    "upload-sql": "上传 SQL"
   },
   "label": {
     "error": {
@@ -441,6 +497,12 @@
       "self": "快捷访问",
       "visit-issues": "访问工单",
       "visit-prjects": "访问项目"
+    }
+  },
+  "plan": {
+    "plans": "变更计划",
+    "targets": {
+      "title": "目标库"
     }
   },
   "policy": {
@@ -484,6 +546,19 @@
       "success-prompt": "成功创建 {{name}}."
     },
     "filter-projects": "过滤项目",
+    "masking-exemption": {
+      "all-levels": "所有等级",
+      "expires-in-days_one": "{{days}} 天后到期",
+      "expires-in-days_other": "{{days}} 天后到期",
+      "expires-today": "今天到期",
+      "grant-exemption": "授予豁免",
+      "n-exemptions_one": "{{n}} 项豁免",
+      "n-exemptions_other": "{{n}} 项豁免",
+      "no-exemptions": "尚未授予脱敏豁免",
+      "no-reason": "未提供原因",
+      "revoke-exemption-title": "是否撤销 {{member}} 的脱敏豁免？",
+      "self": "脱敏豁免"
+    },
     "members": {
       "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
@@ -595,19 +670,6 @@
       "test-webhook": "测试 Webhook",
       "triggering-activity": "触发事件",
       "webhook-url": "Webhook URL"
-    },
-    "masking-exemption": {
-      "self": "脱敏豁免",
-      "grant-exemption": "授予豁免",
-      "revoke-exemption-title": "是否撤销 {{member}} 的脱敏豁免？",
-      "no-reason": "未提供原因",
-      "no-exemptions": "尚未授予脱敏豁免",
-      "expires-today": "今天到期",
-      "expires-in-days_one": "{{days}} 天后到期",
-      "expires-in-days_other": "{{days}} 天后到期",
-      "all-levels": "所有等级",
-      "n-exemptions_one": "{{n}} 项豁免",
-      "n-exemptions_other": "{{n}} 项豁免"
     }
   },
   "quick-action": {
@@ -615,7 +677,11 @@
     "create-db": "创建数据库",
     "create-project": "创建项目",
     "new-db": "创建数据库",
-    "new-project": "创建项目"
+    "new-project": "创建项目",
+    "request-export-data": "申请导出数据"
+  },
+  "release": {
+    "releases": "发布包"
   },
   "remind": {
     "release": {
@@ -659,6 +725,9 @@
     "workspace-roles": {
       "self": "工作空间角色"
     }
+  },
+  "schema-editor": {
+    "raw-sql": "SQL 语句"
   },
   "schema-template": {
     "classification": {
@@ -929,9 +998,9 @@
       "revoke-allusers-alert": "撤销“全部用户”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
       "revoked": "已撤销",
       "search-member": "搜索成员",
+      "select-account-hint": "您可以搜索用户和组，或输入完整的电子邮件地址来选择服务账号或工作负载身份。",
       "select-account_one": "选择账户",
       "select-account_other": "选择账户",
-      "select-account-hint": "您可以搜索用户和组，或输入完整的电子邮件地址来选择服务账号或工作负载身份。",
       "select-role_one": "选择角色",
       "select-role_other": "选择角色",
       "service-account": "服务账号",
@@ -985,7 +1054,6 @@
       "subscription": "（升级到付费方案来解锁角色管理）"
     },
     "sensitive-data": {
-      "never-expires": "无过期时间",
       "algorithms": {
         "add": "添加算法",
         "edit": "编辑算法",
@@ -1048,6 +1116,7 @@
         },
         "re-order": "排序"
       },
+      "never-expires": "无过期时间",
       "semantic-types": {
         "add-from-template": "从模板添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
@@ -1173,6 +1242,7 @@
     }
   },
   "sql-editor": {
+    "access-grants": "访问授权",
     "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
@@ -1181,8 +1251,7 @@
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "self": "SQL 编辑器",
-    "view-issue": "查看工单",
-    "access-grants": "访问授权"
+    "view-issue": "查看工单"
   },
   "sql-review": {
     "add-or-remove-rules": "添加或删除规则",
@@ -1225,6 +1294,7 @@
     "contact-us": "联系我们",
     "current": "当前版本",
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
+    "disabled-feature": "禁用功能",
     "enterprise-free-trial": "企业版 {{days}} 天免费试用",
     "expired": "已过期",
     "expires-at": "过期时间",
@@ -1315,8 +1385,7 @@
         "title": "用户数量限制",
         "upgrade": "升级来获取更多用户额度。"
       }
-    },
-    "disabled-feature": "禁用功能"
+    }
   },
   "two-factor": {
     "description": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。",
@@ -1365,14 +1434,5 @@
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
     }
-  },
-  "export-center": {
-    "data-export": "数据导出"
-  },
-  "plan": {
-    "plans": "变更计划"
-  },
-  "release": {
-    "releases": "发布包"
   }
 }

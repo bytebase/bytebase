@@ -80,23 +80,19 @@ import {
 } from "@/components/Plan/components/common";
 import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
+import { planServiceClientConnect } from "@/connect";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
+  experimentalCreateIssueByPlan,
   pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
   useSheetV1Store,
 } from "@/store";
-import {
-  CreateIssueRequestSchema,
-  Issue_Type,
-  IssueSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   CreatePlanRequestSchema,
   type Plan_ChangeDatabaseConfig,
@@ -133,10 +129,10 @@ const handleCancel = () => {
 // Use the validation hook for all specs
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 
-// Check if this is a data export plan
 const isDataExportPlan = computed(() => {
-  return plan.value.specs.every(
-    (spec) => spec.config.case === "exportDataConfig"
+  return (
+    plan.value.specs.length > 0 &&
+    plan.value.specs.every((spec) => spec.config?.case === "exportDataConfig")
   );
 });
 
@@ -231,30 +227,19 @@ const doCreateDataExportIssue = async () => {
   // Create sheets first
   await createSheets();
 
-  // Create the plan
-  const planRequest = create(CreatePlanRequestSchema, {
-    parent: project.value.name,
-    plan: plan.value,
+  const issueCreate = create(IssueSchema, {
+    title: plan.value.title,
+    description: plan.value.description,
+    creator: `users/${currentUser.value.email}`,
+    labels: selectedLabels.value,
+    type: Issue_Type.DATABASE_EXPORT,
   });
-  const createdPlan = await planServiceClientConnect.createPlan(planRequest);
-  if (!createdPlan) {
-    loading.value = false;
-    return;
-  }
-
-  // Create the issue with selected labels
-  const issueRequest = create(CreateIssueRequestSchema, {
-    parent: project.value.name,
-    issue: create(IssueSchema, {
-      creator: `users/${currentUser.value.email}`,
-      labels: selectedLabels.value,
-      plan: createdPlan.name,
-      status: IssueStatus.OPEN,
-      type: Issue_Type.DATABASE_EXPORT,
-    }),
-  });
-  const createdIssue =
-    await issueServiceClientConnect.createIssue(issueRequest);
+  const { createdIssue } = await experimentalCreateIssueByPlan(
+    project.value,
+    issueCreate,
+    plan.value,
+    { skipRollout: true }
+  );
 
   resetDraft();
 
@@ -263,7 +248,7 @@ const doCreateDataExportIssue = async () => {
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
-        projectId: extractProjectResourceName(createdPlan.name),
+        projectId: extractProjectResourceName(createdIssue.name),
         issueId: extractIssueUID(createdIssue.name),
       },
     });

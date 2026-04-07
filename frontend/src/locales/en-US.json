@@ -1335,7 +1335,6 @@
     "add-instance": "@:common.add @:common.instance",
     "new-project": "@:common.new @:common.project",
     "create-project": "@:common.create @:common.project",
-    "transfer-in-db": "Transfer In",
     "from-unassigned-databases": "Unassigned databases",
     "from-projects": "From other projects",
     "transfer-in-db-title": "Transfer in database",
@@ -1398,7 +1397,6 @@
   },
   "instance": {
     "select-database-user": "Select database user",
-    "new-database": "New Database",
     "syncing": "Syncing ...",
     "sync": {
       "self": "Sync instance",
@@ -1723,8 +1721,6 @@
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "table-detail": "Table detail",
-    "batch-action-disabled": "Can not {action} for the databases from different projects",
-    "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
     "successfully-transferred-databases": "Successfully transferred databases",
     "nullable": "Nullable",
     "expression": "Expression",
@@ -1743,7 +1739,6 @@
     "go-to-transfer": "Go to transfer",
     "unassigned-databases": "Unassigned databases",
     "selected-n-databases": "{n} database selected | {n} databases selected",
-    "n-databases": "{n} database | {n} databases",
     "sync-schema": {
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
