@@ -95,29 +95,21 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
   };
 };
 
-/**
- * Applies the extra connection parameters from an EditDataSource to a DataSource object
- * This ensures that the extraConnectionParameters are properly handled as plain objects
- */
 export const applyExtraConnectionParameters = (
   dataSource: DataSource,
   editState: EditDataSource
 ): DataSource => {
-  // Make sure dataSource has the correct extraConnectionParameters
   if (editState.extraConnectionParameters) {
-    // Clone the map manually to ensure it's a plain object, not a Proxy
     const params: Record<string, string> = {};
     Object.entries(editState.extraConnectionParameters).forEach(
       ([key, value]) => {
         params[key] = value;
       }
     );
-
     dataSource.extraConnectionParameters = params;
   } else {
     dataSource.extraConnectionParameters = {};
   }
-
   return dataSource;
 };
 
@@ -131,8 +123,6 @@ export const calcDataSourceUpdateMask = (
   );
   const { useEmptyPassword, updateSsl } = editState;
   if (useEmptyPassword) {
-    // We need to implicitly set "password" need to be updated
-    // if the "use empty password" option if checked
     editing.password = "";
     updateMask.add("password");
   }

@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from "vue-router";
+import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import { t } from "@/plugins/i18n";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
@@ -17,10 +17,12 @@ const instanceRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => [],
     },
     components: {
-      content: () => import("@/views/CreateInstancePage.vue"),
+      content: () => import("@/react/ReactPageMount.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
-    props: { content: true },
+    props: {
+      content: () => ({ page: "CreateInstancePage" }),
+    },
   },
   {
     path: "instances/:instanceId",
@@ -39,8 +41,11 @@ const instanceRoutes: RouteRecordRaw[] = [
         meta: {
           requiredPermissionList: () => ["bb.instances.get"],
         },
-        component: () => import("@/views/InstanceDetail.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "InstanceDetailPage",
+          instanceId: route.params.instanceId,
+        }),
       },
       {
         path: "databases/:databaseName",

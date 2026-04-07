@@ -33,8 +33,8 @@ export interface DatabaseTableProps {
   filter: DatabaseFilter;
   parent?: string;
   mode?: DatabaseTableMode;
-  selectedNames: Set<string>;
-  onSelectedNamesChange: (names: Set<string>) => void;
+  selectedNames?: Set<string>;
+  onSelectedNamesChange?: (names: Set<string>) => void;
   refreshToken?: number;
 }
 
@@ -155,8 +155,11 @@ export function DatabaseTable({
     }
   }, [isFetchingMore, fetchDatabases]);
 
+  const showSelection = !!selectedNames && !!onSelectedNamesChange;
+
   const toggleSelection = useCallback(
     (name: string) => {
+      if (!selectedNames || !onSelectedNamesChange) return;
       const next = new Set(selectedNames);
       if (next.has(name)) next.delete(name);
       else next.add(name);
@@ -166,12 +169,13 @@ export function DatabaseTable({
   );
 
   const toggleSelectAll = useCallback(() => {
+    if (!selectedNames || !onSelectedNamesChange) return;
     if (selectedNames.size === databases.length) {
       onSelectedNamesChange(new Set());
     } else {
       onSelectedNamesChange(new Set(databases.map((db) => db.name)));
     }
-  }, [databases, selectedNames.size, onSelectedNamesChange]);
+  }, [databases, selectedNames, onSelectedNamesChange]);
 
   const handleRowClick = useCallback((db: Database, e: React.MouseEvent) => {
     const url = router.resolve(autoDatabaseRoute(db)).fullPath;
@@ -197,9 +201,10 @@ export function DatabaseTable({
   };
 
   const allSelected =
-    databases.length > 0 && selectedNames.size === databases.length;
+    databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
   const someSelected =
-    selectedNames.size > 0 && selectedNames.size < databases.length;
+    (selectedNames?.size ?? 0) > 0 &&
+    (selectedNames?.size ?? 0) < databases.length;
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (headerCheckboxRef.current) {
@@ -215,15 +220,17 @@ export function DatabaseTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-50 border-b border-control-border">
-            <th className="w-12 px-4 py-2">
-              <input
-                ref={headerCheckboxRef}
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleSelectAll}
-                className="rounded-xs border-control-border"
-              />
-            </th>
+            {showSelection && (
+              <th className="w-12 px-4 py-2">
+                <input
+                  ref={headerCheckboxRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="rounded-xs border-control-border"
+                />
+              </th>
+            )}
             <th
               className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
               onClick={() => toggleSort("name")}
@@ -296,7 +303,7 @@ export function DatabaseTable({
             </tr>
           ) : (
             databases.map((db, i) => {
-              const isSelected = selectedNames.has(db.name);
+              const isSelected = selectedNames?.has(db.name) ?? false;
               const instanceResource = getInstanceResource(db);
               return (
                 <tr
@@ -307,15 +314,17 @@ export function DatabaseTable({
                   )}
                   onClick={(e) => handleRowClick(db, e)}
                 >
-                  <td className="w-12 px-4 py-2">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelection(db.name)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded-xs border-control-border"
-                    />
-                  </td>
+                  {showSelection && (
+                    <td className="w-12 px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelection(db.name)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-xs border-control-border"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-x-2">
                       <img
