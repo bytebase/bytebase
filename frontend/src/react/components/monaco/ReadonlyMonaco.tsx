@@ -3,7 +3,6 @@ import { createMonacoEditor } from "@/components/MonacoEditor/editor";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor/types";
 import { cn } from "@/react/lib/utils";
 import type { Language } from "@/types";
-import { clampEditorHeight } from "./height";
 
 export interface ReadonlyMonacoProps {
   content: string;
@@ -25,6 +24,9 @@ export function ReadonlyMonaco({
   const contentRef = useRef(content);
   const languageRef = useRef(language);
   const [contentHeight, setContentHeight] = useState(min);
+  const clampMeasuredHeight = (height: number): number => {
+    return Math.min(max, Math.max(min, height));
+  };
 
   contentRef.current = content;
   languageRef.current = language;
@@ -56,6 +58,12 @@ export function ReadonlyMonaco({
         setContentHeight(event.contentHeight);
       });
 
+      if (editor.getValue() !== contentRef.current) {
+        editor.setValue(contentRef.current);
+      }
+
+      setContentHeight(editor.getContentHeight());
+
       const model = editor.getModel();
       if (model) {
         const { editor: monacoEditor } = await import("monaco-editor");
@@ -72,12 +80,6 @@ export function ReadonlyMonaco({
         editor.dispose();
         return;
       }
-
-      if (editor.getValue() !== contentRef.current) {
-        editor.setValue(contentRef.current);
-      }
-
-      setContentHeight(editor.getContentHeight());
 
       editorRef.current = editor;
     })();
@@ -110,11 +112,7 @@ export function ReadonlyMonaco({
     })();
   }, [language]);
 
-  const height = clampEditorHeight({
-    contentHeight,
-    min,
-    max,
-  });
+  const height = clampMeasuredHeight(contentHeight);
 
   return (
     <div
