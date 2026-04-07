@@ -1,13 +1,12 @@
-import { ArrowUpRight, Copy, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
-import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
-import { pushNotification, useRevisionStore } from "@/store";
+import { useRevisionStore } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { bytesToString, formatAbsoluteDateTime } from "@/utils";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
@@ -22,28 +21,21 @@ function CopyButton({ content }: CopyButtonProps) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(content);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
     } catch {
       // Ignore clipboard errors for parity with the existing UI.
     }
   };
 
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7 shrink-0"
+      className="text-sm text-control-light transition-colors hover:text-accent"
       title={t("common.copy")}
       aria-label={t("common.copy")}
       onClick={handleCopy}
     >
-      <Copy className="h-4 w-4" />
-    </Button>
+      {t("common.copy")}
+    </button>
   );
 }
 
