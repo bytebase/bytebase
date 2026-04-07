@@ -199,6 +199,13 @@ export function AgentInput() {
     const requestToken = ++domRefRequestToken;
     void lazyExtractDomRefSuggestions().then((suggestions) => {
       if (requestToken !== domRefRequestToken) return;
+      // Verify @ query is still active before updating suggestions
+      const currentQuery = getDomRefQuery(
+        textareaRef.current?.value ?? "",
+        textareaRef.current?.selectionStart ?? 0,
+        textareaRef.current?.selectionEnd ?? 0
+      );
+      if (!currentQuery) return;
       setDomRefSuggestions(suggestions);
     });
   }, [input, selectionStart, selectionEnd]);

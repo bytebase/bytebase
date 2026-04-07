@@ -411,6 +411,18 @@ export function AgentWindow() {
   // immer drafts + React re-renders.
 
   const sidebarRef = useRef<HTMLElement>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+  const sidebarResizeCleanupRef = useRef<(() => void) | null>(null);
+
+  // Cleanup drag/resize listeners on unmount
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+      resizeCleanupRef.current?.();
+      sidebarResizeCleanupRef.current?.();
+    };
+  }, []);
 
   const startDrag = useCallback(
     (event: React.MouseEvent) => {
@@ -449,26 +461,20 @@ export function AgentWindow() {
         );
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
+        useAgentStore.getState().setPosition(x, y);
       };
 
       const stopDrag = () => {
         isDraggingRef.current = false;
         document.removeEventListener("mousemove", onDrag);
         document.removeEventListener("mouseup", stopDrag);
-        // Commit final position to store
-        const el = windowRef.current;
-        if (el) {
-          const store = useAgentStore.getState();
-          store.setPosition(
-            parseInt(el.style.left) || 0,
-            parseInt(el.style.top) || 0
-          );
-          store.saveWindowState();
-        }
+        dragCleanupRef.current = null;
+        useAgentStore.getState().saveWindowState();
       };
 
       document.addEventListener("mousemove", onDrag);
       document.addEventListener("mouseup", stopDrag);
+      dragCleanupRef.current = stopDrag;
     },
     [syncStoreToDisplayState]
   );
@@ -511,28 +517,26 @@ export function AgentWindow() {
         const maxY = Math.max(WINDOW_MARGIN, vh - clH - WINDOW_MARGIN);
         const curX = parseInt(el.style.left) || 0;
         const curY = parseInt(el.style.top) || 0;
-        el.style.left = `${Math.min(maxX, Math.max(WINDOW_MARGIN, curX))}px`;
-        el.style.top = `${Math.min(maxY, Math.max(WINDOW_MARGIN, curY))}px`;
+        const clX = Math.min(maxX, Math.max(WINDOW_MARGIN, curX));
+        const clY = Math.min(maxY, Math.max(WINDOW_MARGIN, curY));
+        el.style.left = `${clX}px`;
+        el.style.top = `${clY}px`;
+        const store = useAgentStore.getState();
+        store.setSize(clW, clH);
+        store.setPosition(clX, clY);
       };
 
       const stopResize = () => {
         isResizingRef.current = false;
         document.removeEventListener("mousemove", onResize);
         document.removeEventListener("mouseup", stopResize);
-        const el = windowRef.current;
-        if (el) {
-          const store = useAgentStore.getState();
-          store.setSize(el.offsetWidth, el.offsetHeight);
-          store.setPosition(
-            parseInt(el.style.left) || 0,
-            parseInt(el.style.top) || 0
-          );
-          store.saveWindowState();
-        }
+        resizeCleanupRef.current = null;
+        useAgentStore.getState().saveWindowState();
       };
 
       document.addEventListener("mousemove", onResize);
       document.addEventListener("mouseup", stopResize);
+      resizeCleanupRef.current = stopResize;
     },
     [syncStoreToDisplayState]
   );
@@ -562,22 +566,20 @@ export function AgentWindow() {
         const minSW = Math.min(MIN_SIDEBAR_WIDTH, maxSW);
         const clamped = Math.min(maxSW, Math.max(minSW, Math.round(newWidth)));
         sidebarRef.current.style.width = `${clamped}px`;
+        useAgentStore.getState().setSidebarWidth(clamped);
       };
 
       const stopSidebarResize = () => {
         isSidebarResizingRef.current = false;
         document.removeEventListener("mousemove", onSidebarResize);
         document.removeEventListener("mouseup", stopSidebarResize);
-        if (sidebarRef.current) {
-          useAgentStore
-            .getState()
-            .setSidebarWidth(parseInt(sidebarRef.current.style.width) || 256);
-          useAgentStore.getState().saveWindowState();
-        }
+        sidebarResizeCleanupRef.current = null;
+        useAgentStore.getState().saveWindowState();
       };
 
       document.addEventListener("mousemove", onSidebarResize);
       document.addEventListener("mouseup", stopSidebarResize);
+      sidebarResizeCleanupRef.current = stopSidebarResize;
     },
     [syncStoreToDisplayState, clampedSidebarWidth]
   );
