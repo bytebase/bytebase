@@ -612,13 +612,13 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                     <div className="relative" ref={ellipsisMenuRef}>
                       <button
                         type="button"
-                        className="p-1 rounded hover:bg-control-bg"
+                        className="p-1 rounded-xs hover:bg-control-bg"
                         onClick={() => setShowEllipsisMenu((v) => !v)}
                       >
                         <Ellipsis className="w-8" />
                       </button>
                       {showEllipsisMenu && (
-                        <div className="absolute right-0 mt-1 z-10 bg-white border border-control-border rounded shadow-md py-1 min-w-36">
+                        <div className="absolute right-0 mt-1 z-10 bg-white border border-control-border rounded-sm shadow-md py-1 min-w-36">
                           <button
                             type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"

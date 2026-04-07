@@ -8,7 +8,6 @@ import {
   EyeOff,
   Pencil,
   Plus,
-  Search,
   Settings,
   Trash2,
   Undo2,
@@ -18,14 +17,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -63,7 +58,7 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AADSyncDrawer } from "./shared/AADSyncDrawer";
-import { RoleMultiSelect } from "./shared/RoleMultiSelect";
+import { RoleSelect } from "./shared/RoleSelect";
 import { UserAvatar } from "./shared/UserAvatar";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
@@ -577,12 +572,16 @@ function CreateUserDrawer({
       password,
     });
     if (roles.length > 0) {
-      await workspaceStore.patchIamPolicy([
-        {
-          member: getUserEmailInBinding(createdUser.email),
-          roles,
-        },
-      ]);
+      try {
+        await workspaceStore.patchIamPolicy([
+          {
+            member: getUserEmailInBinding(createdUser.email),
+            roles,
+          },
+        ]);
+      } catch {
+        // do nothing
+      }
     }
     onCreated(createdUser);
     pushNotification({
@@ -696,7 +695,7 @@ function CreateUserDrawer({
                 <label className="block text-sm font-medium text-control">
                   {t("settings.members.table.roles")}
                 </label>
-                <RoleMultiSelect
+                <RoleSelect
                   value={roles}
                   onChange={setRoles}
                   disabled={false}
@@ -844,8 +843,6 @@ export function UsersPage() {
   const userStore = useUserStore();
 
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
-  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
 
   const hasDirectorySyncFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
@@ -860,11 +857,6 @@ export function UsersPage() {
   const [showCreateUserDrawer, setShowCreateUserDrawer] = useState(false);
   const [showAadSyncDrawer, setShowAadSyncDrawer] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>(undefined);
-
-  const remainingUserCount = useMemo(
-    () => Math.max(0, userCountLimit - activeUserCount),
-    [userCountLimit, activeUserCount]
-  );
 
   // Active users paged data
   const fetchActiveUsers = useCallback(
@@ -932,34 +924,13 @@ export function UsersPage() {
 
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
-      {!isSaaSMode && remainingUserCount <= 3 && (
-        <Alert variant="warning" className="mb-2">
-          <AlertTitle>{t("subscription.usage.user-count.title")}</AlertTitle>
-          <AlertDescription>
-            {remainingUserCount > 0
-              ? t("subscription.usage.user-count.remaining", {
-                  total: userCountLimit,
-                  count: remainingUserCount,
-                })
-              : t("subscription.usage.user-count.runoutof", {
-                  total: userCountLimit,
-                })}{" "}
-            {t("subscription.usage.user-count.upgrade")}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Action bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative">
-          <Input
-            placeholder={t("common.filter-by-name")}
-            value={userSearchText}
-            onChange={(e) => setUserSearchText(e.target.value)}
-            className="h-8 text-sm pr-8"
-          />
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-        </div>
+      <div className="flex items-center justify-between gap-x-2 mb-4">
+        <SearchInput
+          placeholder={t("common.filter-by-name")}
+          value={userSearchText}
+          onChange={(e) => setUserSearchText(e.target.value)}
+        />
         <div className="flex items-center gap-x-2">
           <Button
             variant="outline"
@@ -1028,20 +999,16 @@ export function UsersPage() {
         )}
 
         {showInactiveUsers && (
-          <div className="flex flex-col gap-y-3">
+          <div className="flex flex-col gap-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium">
                 {t("settings.members.inactive-users")}
               </h3>
-              <div className="relative">
-                <Input
-                  placeholder={t("common.filter-by-name")}
-                  value={inactiveUserSearchText}
-                  onChange={(e) => setInactiveUserSearchText(e.target.value)}
-                  className="h-8 text-sm pr-8"
-                />
-                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-              </div>
+              <SearchInput
+                placeholder={t("common.filter-by-name")}
+                value={inactiveUserSearchText}
+                onChange={(e) => setInactiveUserSearchText(e.target.value)}
+              />
             </div>
 
             {inactiveUsers.isLoading && inactiveUsers.dataList.length === 0 ? (

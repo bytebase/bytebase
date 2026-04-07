@@ -326,7 +326,7 @@ function RolloutPolicyConfig({
                 {t("common.add")}
               </Button>
               {showRoleDropdown && (
-                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
+                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
                   {availableRoles.map((group) => (
                     <div key={group.label}>
                       <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
@@ -539,7 +539,7 @@ function SQLReviewSectionInner(
               {t("sql-review.configure-policy")}
             </Button>
             {showSelectPanel && (
-              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md">
+              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
                 {reviewPolicyList.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-400">
                     {t("common.no-data")}

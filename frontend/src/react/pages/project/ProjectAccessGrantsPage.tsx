@@ -487,7 +487,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                 </tbody>
               </table>
 
-              <div className="mt-3">
+              <div className="mt-4">
                 <PagedTableFooter
                   pageSize={paged.pageSize}
                   pageSizeOptions={paged.pageSizeOptions}

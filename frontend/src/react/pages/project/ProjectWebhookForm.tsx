@@ -347,7 +347,7 @@ export function ProjectWebhookForm({
 
         {/* Missing external URL warning */}
         {!externalUrl && (
-          <div className="mb-6 p-3 border border-red-300 bg-red-50 rounded text-sm text-red-800">
+          <div className="mb-6 p-3 border border-red-300 bg-red-50 rounded-xs text-sm text-red-800">
             <div className="font-medium">{t("banner.external-url")}</div>
             <div className="mt-1">
               {t("settings.general.workspace.external-url.description")}
@@ -494,7 +494,7 @@ export function ProjectWebhookForm({
               <div className="text-md leading-6 font-medium text-main">
                 {t("project.webhook.direct-messages")}
               </div>
-              <div className="my-2 p-3 border rounded text-sm">
+              <div className="my-2 p-3 border rounded-xs text-sm">
                 {imApp ? (
                   <span>{t("project.webhook.direct-messages-tip")}</span>
                 ) : (
@@ -632,7 +632,7 @@ function DetailDropdown({
     <div className="relative">
       <button
         type="button"
-        className="p-1 rounded hover:bg-gray-100"
+        className="p-1 rounded-xs hover:bg-gray-100"
         onClick={() => setOpen((v) => !v)}
       >
         <EllipsisVertical className="w-4 h-4" />
@@ -640,7 +640,7 @@ function DetailDropdown({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded shadow-md min-w-[100px]">
+          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
             <button
               type="button"
               className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"

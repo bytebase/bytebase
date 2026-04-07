@@ -234,9 +234,9 @@ function filterSidebarList(items: SidebarItem[]): SidebarItem[] {
 // ---------------------------------------------------------------------------
 
 const parentRouteClass =
-  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item text-sm!";
+  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-gray-700 outline-item text-sm!";
 const childRouteClass =
-  "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-md";
+  "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-xs";
 
 export function ProjectSidebar() {
   const rawItems = useSidebarItems();

@@ -427,7 +427,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             className="fixed inset-0 bg-black/50"
             onClick={() => setShowUnassignConfirm(false)}
           />
-          <div className="relative bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+          <div className="relative bg-white rounded-sm shadow-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-2">
               {t("database.unassign-alert-title")}
             </h3>

@@ -29,6 +29,7 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { PagedTableFooter } from "@/react/pages/settings/shared/usePagedData";
 import { pushNotification, useSubscriptionV1Store } from "@/store";
 import {
   extractUserEmail,
@@ -973,37 +974,15 @@ export function AuditLogTable({
           </div>
 
           {/* Pagination footer */}
-          <div className="flex items-center justify-end gap-x-2 mx-4 py-2">
-            <div className="flex items-center gap-x-2">
-              <span className="text-sm text-control-light">
-                {t("common.rows-per-page")}
-              </span>
-              <select
-                className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1 min-w-[5rem]"
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-              >
-                {pageSizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {hasMore && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isFetchingMore || loading}
-                onClick={loadMore}
-              >
-                <span className="text-sm text-control-light">
-                  {isFetchingMore || loading
-                    ? t("common.loading")
-                    : t("common.load-more")}
-                </span>
-              </Button>
-            )}
+          <div className="mx-4 py-4">
+            <PagedTableFooter
+              pageSize={pageSize}
+              pageSizeOptions={pageSizeOptions}
+              onPageSizeChange={setPageSize}
+              hasMore={hasMore}
+              isFetchingMore={isFetchingMore || loading}
+              onLoadMore={loadMore}
+            />
           </div>
         </div>
       ) : (

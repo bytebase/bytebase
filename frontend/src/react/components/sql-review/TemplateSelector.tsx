@@ -100,7 +100,7 @@ export function TemplateSelector({
             {reviewPolicyTemplateList.map((template) => (
               <div
                 key={template.id}
-                className={`relative border border-gray-300 hover:bg-gray-100 rounded-lg px-6 py-4 transition-all cursor-pointer w-full sm:max-w-xs ${
+                className={`relative border border-gray-300 hover:bg-gray-100 rounded-sm px-6 py-4 transition-all cursor-pointer w-full sm:max-w-xs ${
                   isSelected(template) ? "bg-gray-100" : "bg-transparent"
                 }`}
                 onClick={() => onSelectTemplate(template)}
@@ -136,7 +136,7 @@ export function TemplateSelector({
         {builtInTemplateList.map((template) => (
           <div
             key={template.id}
-            className={`relative border border-gray-300 hover:bg-gray-100 rounded-lg px-6 py-4 transition-all cursor-pointer w-full sm:max-w-xs ${
+            className={`relative border border-gray-300 hover:bg-gray-100 rounded-sm px-6 py-4 transition-all cursor-pointer w-full sm:max-w-xs ${
               isSelected(template) ? "bg-gray-100" : "bg-transparent"
             }`}
             onClick={() => onSelectTemplate(template)}

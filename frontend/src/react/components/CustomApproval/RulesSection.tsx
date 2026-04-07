@@ -143,14 +143,14 @@ function SortableRow({
         ) : (
           <>
             <button
-              className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-200"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
               onClick={handleEditClick}
             >
               <Pencil className="h-3 w-3" />
             </button>
             {allowAdmin && (
               <button
-                className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-200"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
                 onClick={handleDeleteClick}
               >
                 <Trash2 className="h-3 w-3" />

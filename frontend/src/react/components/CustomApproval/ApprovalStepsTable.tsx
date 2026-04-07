@@ -1,9 +1,9 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { RoleSelect } from "@/react/pages/settings/shared/RoleSelect";
 import { PresetRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 import { Button } from "../ui/button";
-import { RoleSelect } from "./RoleSelect";
 
 interface ApprovalStepsTableProps {
   roles: string[];
@@ -67,12 +67,13 @@ export function ApprovalStepsTable({
               <td className="border border-control-border px-3 py-2">
                 {editable ? (
                   <RoleSelect
-                    value={role}
-                    onChange={(val) => {
+                    value={role ? [role] : []}
+                    onChange={(vals) => {
                       const newRoles = [...roles];
-                      newRoles[index] = val;
+                      newRoles[index] = vals[0] ?? "";
                       onRolesChange(newRoles);
                     }}
+                    multiple={false}
                   />
                 ) : (
                   <span className="text-control">{displayRoleTitle(role)}</span>

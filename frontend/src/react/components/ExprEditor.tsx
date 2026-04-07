@@ -383,7 +383,7 @@ function SearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          className="w-56 bg-white border border-control-border rounded-xs shadow-md"
+          className="w-56 bg-white border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <input
@@ -559,7 +559,7 @@ function MultiSearchableSelect({
         {value.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded"
+            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
           >
             {getLabelForValue(v)}
             {!disabled && (
@@ -581,7 +581,7 @@ function MultiSearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          className="w-56 bg-white border border-control-border rounded-xs shadow-md"
+          className="w-56 bg-white border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <input
@@ -673,7 +673,7 @@ function TagInput({
       {value.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded"
+          className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
         >
           {tag}
           {!disabled && (
@@ -762,7 +762,7 @@ function MultiCheckSelect({
         {value.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded"
+            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
           >
             {renderValue
               ? renderValue(v, getLabelForValue(v))
@@ -1499,7 +1499,7 @@ function ConditionGroup({
             {t("cel.condition.add-group")}
             <span className="relative">
               <HelpCircle className="ml-1 w-3 h-3 text-gray-400" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-gray-800 text-white rounded shadow-lg z-50">
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-gray-800 text-white rounded-sm shadow-lg z-50">
                 {t("cel.condition.group.tooltip")}
               </span>
             </span>

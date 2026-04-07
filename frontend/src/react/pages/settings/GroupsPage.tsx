@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Pencil,
   Plus,
-  Search,
   Settings,
   Trash2,
   Users,
@@ -19,6 +18,7 @@ import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -310,7 +310,7 @@ function GroupRow({
         <td className="px-4 py-2">
           <div className="flex items-center gap-x-2">
             <button
-              className="shrink-0 p-0.5 rounded hover:bg-gray-200"
+              className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
               onClick={onToggle}
             >
               {isExpanded ? (
@@ -983,16 +983,12 @@ export function GroupsPage() {
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {/* Action bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative">
-          <Input
-            placeholder={t("common.filter-by-name")}
-            value={groupSearchText}
-            onChange={(e) => setGroupSearchText(e.target.value)}
-            className="h-8 text-sm pr-8"
-          />
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-control-placeholder pointer-events-none" />
-        </div>
+      <div className="flex items-center justify-between gap-x-2 mb-4">
+        <SearchInput
+          placeholder={t("common.filter-by-name")}
+          value={groupSearchText}
+          onChange={(e) => setGroupSearchText(e.target.value)}
+        />
         <div className="flex items-center gap-x-2">
           <Button
             variant="outline"
@@ -1070,14 +1066,16 @@ export function GroupsPage() {
               onGroupSelected={handleGroupSelected}
               onGroupDeleted={handleGroupDeleted}
             />
-            <PagedTableFooter
-              pageSize={groupPaged.pageSize}
-              pageSizeOptions={groupPaged.pageSizeOptions}
-              onPageSizeChange={groupPaged.onPageSizeChange}
-              hasMore={groupPaged.hasMore}
-              isFetchingMore={groupPaged.isFetchingMore}
-              onLoadMore={groupPaged.loadMore}
-            />
+            <div className="mt-4">
+              <PagedTableFooter
+                pageSize={groupPaged.pageSize}
+                pageSizeOptions={groupPaged.pageSizeOptions}
+                onPageSizeChange={groupPaged.onPageSizeChange}
+                hasMore={groupPaged.hasMore}
+                isFetchingMore={groupPaged.isFetchingMore}
+                onLoadMore={groupPaged.loadMore}
+              />
+            </div>
           </>
         )}
       </ComponentPermissionGuard>

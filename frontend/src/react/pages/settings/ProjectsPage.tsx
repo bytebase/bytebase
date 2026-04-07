@@ -45,6 +45,7 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import { PagedTableFooter } from "./shared/usePagedData";
 
 // ============================================================
 // Escape key stack for overlays
@@ -305,7 +306,7 @@ function CreateProjectDrawer({
             {t("quick-action.create-project")}
           </h2>
           <button
-            className="p-1 hover:bg-control-bg rounded"
+            className="p-1 hover:bg-control-bg rounded-xs"
             onClick={closeDrawer}
           >
             <X className="h-5 w-5" />
@@ -550,7 +551,7 @@ function BatchOperationsBar({
             projects={selectedProjects}
             iconColor="text-red-600"
           />
-          <div className="rounded-xs border border-error bg-error/5 p-3">
+          <div className="rounded-sm border border-error bg-error/5 p-3">
             <p className="text-sm font-medium text-error">
               {t("common.cannot-undo-this-action")}
             </p>
@@ -650,7 +651,7 @@ function ProjectActionDropdown({
   return (
     <div ref={dropdownRef} className="relative">
       <button
-        className="p-1 hover:bg-control-bg rounded"
+        className="p-1 hover:bg-control-bg rounded-xs"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(!open);
@@ -1179,35 +1180,15 @@ export function ProjectsPage() {
         </table>
 
         {/* Pagination footer */}
-        <div className="flex items-center justify-end gap-x-2 mx-4">
-          <div className="flex items-center gap-x-2">
-            <span className="text-sm text-control-light">
-              {t("common.rows-per-page")}
-            </span>
-            <select
-              className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1 min-w-[5rem]"
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-          {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={isFetchingMore}
-              onClick={loadMore}
-            >
-              <span className="text-sm text-control-light">
-                {isFetchingMore ? t("common.loading") : t("common.load-more")}
-              </span>
-            </Button>
-          )}
+        <div className="mx-4">
+          <PagedTableFooter
+            pageSize={pageSize}
+            pageSizeOptions={pageSizeOptions}
+            onPageSizeChange={setPageSize}
+            hasMore={hasMore}
+            isFetchingMore={isFetchingMore}
+            onLoadMore={loadMore}
+          />
         </div>
       </div>
 

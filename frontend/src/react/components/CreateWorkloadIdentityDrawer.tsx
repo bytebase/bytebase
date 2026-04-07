@@ -7,7 +7,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
-import { RoleMultiSelect } from "@/react/pages/settings/shared/RoleMultiSelect";
+import { RoleSelect } from "@/react/pages/settings/shared/RoleSelect";
 import {
   ensureWorkloadIdentityFullName,
   pushNotification,
@@ -595,7 +595,7 @@ export function CreateWorkloadIdentityDrawer({
                   <label className="block text-sm font-medium text-control">
                     {t("settings.members.table.roles")}
                   </label>
-                  <RoleMultiSelect
+                  <RoleSelect
                     value={roles}
                     onChange={setRoles}
                     disabled={false}

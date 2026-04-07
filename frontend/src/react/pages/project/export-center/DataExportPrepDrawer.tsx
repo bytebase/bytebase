@@ -307,7 +307,7 @@ export function DataExportPrepDrawer({
                 {t("custom-approval.risk-rule.risk.namespace.data_export")}
               </span>
               <button
-                className="p-1 hover:bg-control-bg rounded"
+                className="p-1 hover:bg-control-bg rounded-xs"
                 onClick={onClose}
               >
                 <X className="w-4 h-4" />
@@ -663,7 +663,7 @@ function IssueLabelSelect({
                 return (
                   <span
                     key={val}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-xs"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-gray-100 text-xs"
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-sm shrink-0"
@@ -712,7 +712,7 @@ function IssueLabelSelect({
                         type="checkbox"
                         checked={isSelected}
                         readOnly
-                        className="rounded border-gray-300 accent-accent"
+                        className="rounded-xs border-gray-300 accent-accent"
                       />
                       <span
                         className="w-4 h-4 rounded-sm shrink-0"

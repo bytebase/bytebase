@@ -1,18 +1,10 @@
-import {
-  Check,
-  ExternalLink,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Check, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -140,7 +132,7 @@ function PolicyTable({
                       type="checkbox"
                       checked={policy.enforce}
                       onChange={(e) => toggleEnabled(policy, e.target.checked)}
-                      className="h-4 w-4 rounded border-control-border accent-accent"
+                      className="h-4 w-4 rounded-xs border-control-border accent-accent"
                     />
                   ) : policy.enforce ? (
                     <Check className="w-4 h-4 text-control-light" />
@@ -313,16 +305,13 @@ export function SQLReviewPage() {
       </div>
 
       <div className="flex justify-end items-center gap-x-2">
-        <div className="relative max-w-full">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-control-light pointer-events-none" />
-          <Input
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder={t("common.filter-by-name")}
-            className="pl-8"
-            autoFocus
-          />
-        </div>
+        <SearchInput
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder={t("common.filter-by-name")}
+          autoFocus
+          wrapperClassName="max-w-full"
+        />
         {hasCreatePermission && (
           <Button onClick={navigateToCreate}>
             <Plus className="w-4 h-4 mr-1" />

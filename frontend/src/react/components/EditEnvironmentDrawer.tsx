@@ -42,7 +42,10 @@ export function EditEnvironmentDrawer({
           <h2 className="text-lg font-semibold">
             {t("database.edit-environment")}
           </h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
+          <button
+            className="p-1 hover:bg-control-bg rounded-xs"
+            onClick={onClose}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -52,7 +55,7 @@ export function EditEnvironmentDrawer({
               <label
                 key={env.name}
                 className={cn(
-                  "flex items-center gap-x-3 px-3 py-2.5 rounded-lg cursor-pointer border transition-colors",
+                  "flex items-center gap-x-3 px-3 py-2.5 rounded-sm cursor-pointer border transition-colors",
                   selected === env.name
                     ? "border-accent bg-accent/5"
                     : "border-transparent hover:bg-gray-50"

@@ -258,7 +258,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
         <div className="w-full max-w-2xl mx-auto flex flex-col justify-start items-start gap-y-4 my-8">
           <p>{t("two-factor.setup-steps.setup-auth-app.description")}</p>
           <div
-            className={`w-full border rounded-md p-3 ${
+            className={`w-full border rounded-sm p-3 ${
               isExpired || isExpiringSoon
                 ? "bg-red-50 border-red-200"
                 : "bg-yellow-50 border-yellow-200"

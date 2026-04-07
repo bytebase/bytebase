@@ -1128,7 +1128,7 @@ export function ProjectSettingsPage() {
             <h1 className="text-2xl font-bold">{t("common.danger-zone")}</h1>
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <div className="border border-error-alpha bg-error-alpha rounded-lg divide-y divide-error-alpha">
+            <div className="border border-error-alpha bg-error-alpha rounded-sm divide-y divide-error-alpha">
               {/* Archive / Restore */}
               <div className="p-6 flex items-start justify-between gap-x-6">
                 {project.state === State.ACTIVE ? (

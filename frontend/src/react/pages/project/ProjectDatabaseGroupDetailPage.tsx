@@ -142,7 +142,7 @@ export function ProjectDatabaseGroupDetailPage({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowDropdown(false)}
                   />
-                  <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded shadow-md min-w-[100px]">
+                  <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
                     <button
                       type="button"
                       className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"

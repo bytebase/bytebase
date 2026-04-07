@@ -100,7 +100,7 @@ export function Combobox({
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-md h-9 px-3 text-sm bg-white text-left transition-colors",
+          "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-xs h-9 px-3 text-sm bg-white text-left transition-colors",
           "hover:border-gray-400",
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
@@ -141,7 +141,7 @@ export function Combobox({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 min-w-full w-max bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 min-w-full w-max bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
           {/* Search */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
