@@ -47,6 +47,8 @@ interface ReleaseSheetFetchResult {
   sheet?: Sheet;
 }
 
+const TASK_RESOLUTION_ERROR = "Task cannot be resolved from rollout metadata";
+
 const getTaskFromRollout = (
   taskRunName: string | undefined,
   rollout: { stages: Array<{ tasks: Task[] }> } | undefined
@@ -78,23 +80,34 @@ export const buildSheetFetchStateForMissingTask = (
   if (!taskRunName) {
     return { status: "idle", source: "none" };
   }
-  if (metadataFetchState.status === "loading") {
+  if (
+    metadataFetchState.status === "idle" ||
+    metadataFetchState.status === "loading"
+  ) {
     return { status: "loading", source: "none" };
   }
   if (metadataFetchState.status === "error") {
     return {
       status: "error",
       source: "none",
-      error:
-        metadataFetchState.error ??
-        "Task cannot be resolved from rollout metadata",
+      error: metadataFetchState.error ?? TASK_RESOLUTION_ERROR,
     };
   }
   return {
     status: "error",
     source: "none",
-    error: "Task cannot be resolved from rollout metadata",
+    error: TASK_RESOLUTION_ERROR,
   };
+};
+
+export const getUnresolvedTaskMetadataStateKey = (
+  hasResolvedTask: boolean,
+  metadataFetchState: FetchState
+): string => {
+  if (hasResolvedTask) {
+    return "resolved";
+  }
+  return `${metadataFetchState.status}:${metadataFetchState.error ?? ""}`;
 };
 
 export const buildReleaseSheetFetchResult = (
@@ -183,7 +196,7 @@ export const useTaskRunLogData = (
         if (!resolvedTask) {
           setMetadataFetchState({
             status: "error",
-            error: "Task cannot be resolved from rollout metadata",
+            error: TASK_RESOLUTION_ERROR,
           });
           return;
         }
@@ -206,6 +219,17 @@ export const useTaskRunLogData = (
   const task = useMemo(
     () => getTaskFromRollout(taskRunName, rollout),
     [rollout, taskRunName]
+  );
+  const sheetFetchTaskKey = useMemo(() => {
+    if (!task) return "";
+    if (isReleaseBasedTask(task)) {
+      return `release:${task.name}:${releaseNameOfTaskV1(task) ?? ""}`;
+    }
+    return `sheet:${task.name}:${sheetNameOfTaskV1(task) ?? ""}`;
+  }, [task]);
+  const unresolvedTaskMetadataStateKey = useMemo(
+    () => getUnresolvedTaskMetadataStateKey(Boolean(task), metadataFetchState),
+    [metadataFetchState, task]
   );
 
   useEffect(() => {
@@ -337,11 +361,11 @@ export const useTaskRunLogData = (
         });
       });
   }, [
-    metadataFetchState.error,
-    metadataFetchState.status,
     releaseStore,
     task,
     taskRunName,
+    sheetFetchTaskKey,
+    unresolvedTaskMetadataStateKey,
   ]);
 
   return {

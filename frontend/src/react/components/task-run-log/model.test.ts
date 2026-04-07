@@ -17,6 +17,7 @@ import {
 import {
   buildReleaseSheetFetchResult,
   buildSheetFetchStateForMissingTask,
+  getUnresolvedTaskMetadataStateKey,
 } from "./useTaskRunLogData";
 import {
   type UseTaskRunLogSectionsResult,
@@ -95,7 +96,18 @@ const createHookHarness = (initialProps: HookHarnessProps) => {
 };
 
 describe("task-run-log model", () => {
-  test("returns explicit error state when task cannot be resolved", () => {
+  test("keeps unresolved task sheet state non-error while metadata is pending", () => {
+    const metadataIdleState = buildSheetFetchStateForMissingTask(
+      "tasks/run-1",
+      {
+        status: "idle",
+      }
+    );
+    expect(metadataIdleState).toMatchObject({
+      status: "loading",
+      source: "none",
+    });
+
     const unresolvedTaskState = buildSheetFetchStateForMissingTask(
       "tasks/run-1",
       {
@@ -118,6 +130,23 @@ describe("task-run-log model", () => {
       status: "loading",
       source: "none",
     });
+  });
+
+  test("ignores metadata transitions for resolved task fetch dependencies", () => {
+    const loadingKey = getUnresolvedTaskMetadataStateKey(true, {
+      status: "loading",
+    });
+    const successKey = getUnresolvedTaskMetadataStateKey(true, {
+      status: "success",
+    });
+    const errorKey = getUnresolvedTaskMetadataStateKey(true, {
+      status: "error",
+      error: "boom",
+    });
+
+    expect(loadingKey).toBe("resolved");
+    expect(successKey).toBe("resolved");
+    expect(errorKey).toBe("resolved");
   });
 
   test("marks release sheet fetch as partial when some versions fail", () => {
