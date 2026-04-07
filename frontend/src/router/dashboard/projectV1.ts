@@ -277,8 +277,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.issues"),
           requiredPermissionList: () => ["bb.issues.list"],
         },
-        component: () => import("@/views/project/ProjectIssueDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectIssueDashboardPage",
+          ...route.params,
+        }),
       },
       {
         path: "plans",
@@ -287,8 +290,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("plan.plans"),
           requiredPermissionList: () => ["bb.databases.list", "bb.plans.list"],
         },
-        component: () => import("@/views/project/ProjectPlanDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectPlanDashboardPage",
+          ...route.params,
+        }),
       },
       {
         path: "sync-schema",
