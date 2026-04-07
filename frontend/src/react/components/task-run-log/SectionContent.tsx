@@ -1,0 +1,68 @@
+import { useTranslation } from "react-i18next";
+import { cn } from "@/react/lib/utils";
+import type { Section } from "./types";
+
+const ITEM_HEIGHT = 20;
+const MAX_VISIBLE_ITEMS = 10;
+
+export interface SectionContentProps {
+  section: Section;
+  indent?: boolean;
+}
+
+export function SectionContent({
+  section,
+  indent = false,
+}: SectionContentProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className="bg-gray-50 border-t border-gray-100 overflow-auto"
+      style={{ maxHeight: `${MAX_VISIBLE_ITEMS * ITEM_HEIGHT}px` }}
+    >
+      {section.items.map((item, index) => (
+        <div
+          key={item.key}
+          className={cn(
+            "flex items-start gap-x-2 py-0.5 hover:bg-gray-100",
+            indent ? "px-6" : "px-3",
+            index > 0 && "border-t border-gray-100"
+          )}
+        >
+          <span className="w-6 shrink-0 text-right tabular-nums text-gray-300">
+            {index + 1}
+          </span>
+          <span className="shrink-0 tabular-nums text-gray-400">
+            {item.time}
+          </span>
+          {item.relativeTime ? (
+            <span className="shrink-0 tabular-nums text-gray-300">
+              {item.relativeTime}
+            </span>
+          ) : null}
+          <span className={cn("shrink-0", item.levelClass)}>
+            {item.levelIndicator}
+          </span>
+          <span className={cn("break-all", item.detailClass)}>
+            {item.detail}
+          </span>
+          <span className="ml-auto flex shrink-0 items-center gap-x-2">
+            {item.duration ? (
+              <span className="tabular-nums text-blue-500">
+                {item.duration}
+              </span>
+            ) : null}
+            {item.affectedRows !== undefined ? (
+              <span className="text-gray-400">
+                {item.affectedRows} {t("task.affected-rows")}
+              </span>
+            ) : null}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default SectionContent;
