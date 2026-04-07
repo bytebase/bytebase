@@ -1,6 +1,9 @@
 import { create } from "@bufbuild/protobuf";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { describe, expect, test } from "vitest";
 import {
+  type TaskRunLogEntry,
   TaskRunLogEntry_Type,
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -10,8 +13,59 @@ import {
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
 } from "./model";
+import {
+  type UseTaskRunLogSectionsResult,
+  useTaskRunLogSections,
+} from "./useTaskRunLogSections";
 
 const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+interface HookHarnessProps {
+  entries: TaskRunLogEntry[];
+  datasetKey?: string;
+}
+
+const createHookHarness = (initialProps: HookHarnessProps) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  let current: UseTaskRunLogSectionsResult | undefined;
+
+  const Harness = (props: HookHarnessProps) => {
+    current = useTaskRunLogSections({
+      entries: props.entries,
+      datasetKey: props.datasetKey,
+      getSectionLabel: (type) => String(type),
+    });
+    return null;
+  };
+
+  const render = (props: HookHarnessProps) => {
+    act(() => {
+      root.render(createElement(Harness, props));
+    });
+  };
+
+  const getCurrent = () => {
+    if (!current) {
+      throw new Error("hook result is unavailable");
+    }
+    return current;
+  };
+
+  render(initialProps);
+
+  return {
+    render,
+    getCurrent,
+    unmount: () =>
+      act(() => {
+        root.unmount();
+      }),
+  };
+};
 
 describe("task-run-log model", () => {
   test("groups release-file entries by version marker", () => {
@@ -153,5 +207,64 @@ describe("task-run-log model", () => {
       filePath: "002.sql",
       sections: [{ entryCount: 1 }],
     });
+  });
+
+  test("handles expand/collapse state for marker-only release-file groups", () => {
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(1),
+        releaseFileExecute: { version: "v1", filePath: "001.sql" },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(2),
+        releaseFileExecute: { version: "v2", filePath: "002.sql" },
+      }),
+    ];
+
+    const hook = createHookHarness({ entries, datasetKey: "marker-only" });
+
+    expect(hook.getCurrent().releaseFileGroups).toHaveLength(2);
+    expect(hook.getCurrent().totalSections).toBe(0);
+
+    act(() => {
+      hook.getCurrent().collapseAll();
+    });
+    expect(hook.getCurrent().areAllExpanded).toBe(false);
+
+    act(() => {
+      hook.getCurrent().expandAll();
+    });
+    expect(hook.getCurrent().areAllExpanded).toBe(true);
+
+    hook.unmount();
+  });
+
+  test("resets expansion state when dataset key changes", () => {
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(1),
+        commandExecute: {
+          statement: "SELECT 1;",
+          response: { logTime: ts(2) },
+        },
+      }),
+    ];
+
+    const hook = createHookHarness({ entries, datasetKey: "dataset-a" });
+    const sectionId = hook.getCurrent().sections[0]?.id;
+    expect(sectionId).toBe("section-0");
+
+    act(() => {
+      hook.getCurrent().toggleSection(sectionId!);
+    });
+    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(true);
+
+    hook.render({ entries, datasetKey: "dataset-b" });
+    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(false);
+
+    hook.unmount();
   });
 });

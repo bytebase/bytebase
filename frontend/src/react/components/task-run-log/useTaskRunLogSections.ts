@@ -407,10 +407,15 @@ export const useTaskRunLogSections = ({
   };
 
   const areAllExpanded =
-    allSectionIds.length > 0 &&
-    allSectionIds.every((id) => expandedSections.has(id)) &&
-    allReleaseFileIds.every((id) => expandedReleaseFiles.has(id)) &&
+    (allSectionIds.length > 0 ||
+      allReleaseFileIds.length > 0 ||
+      allReplicaIds.length > 0) &&
+    (allSectionIds.length === 0 ||
+      allSectionIds.every((id) => expandedSections.has(id))) &&
+    (allReleaseFileIds.length === 0 ||
+      allReleaseFileIds.every((id) => expandedReleaseFiles.has(id))) &&
     (!hasMultipleReplicas ||
+      allReplicaIds.length === 0 ||
       allReplicaIds.every((id) => expandedReplicas.has(id)));
 
   const totalSections = useMemo(() => {
