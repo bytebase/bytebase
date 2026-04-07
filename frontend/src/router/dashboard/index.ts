@@ -3,7 +3,6 @@ import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import IssuesLayout from "@/layouts/IssuesLayout.vue";
 import { t } from "@/plugins/i18n";
-import MyIssues from "@/views/MyIssues.vue";
 import environmentV1Routes from "./environmentV1";
 import instanceRoutes from "./instance";
 import projectV1Routes from "./projectV1";
@@ -39,7 +38,12 @@ const dashboardRoutes: RouteRecordRaw[] = [
             path: "",
             name: WORKSPACE_ROUTE_MY_ISSUES,
             components: {
-              content: MyIssues,
+              content: () => import("@/react/ReactPageMount.vue"),
+            },
+            props: {
+              content: () => ({
+                page: "MyIssuesPage",
+              }),
             },
           },
         ],
