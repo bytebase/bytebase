@@ -907,13 +907,8 @@
   "resource-id.self": "{{resource}} ID",
   "resource-id.validation.duplicated": "The {{resource}} ID already exists. Please choose another one.",
   "resource-id.validation.empty": "The {{resource}} ID cannot be empty",
-  "resource-id.validation.minlength": "The {{resource}} ID is too short. It should have at least 1 character.",
   "resource-id.validation.overflow": "The {{resource}} ID is too long. It should have less than 64 characters.",
   "resource-id.validation.pattern": "The {{resource}} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number.",
-  "resource.available": "Available",
-  "resource.checking": "Checking",
-  "resource.resource-id": "Resource ID",
-  "resource.unavailable": "Unavailable",
   "role": {
     "custom-roles": {
       "self": "Custom roles"

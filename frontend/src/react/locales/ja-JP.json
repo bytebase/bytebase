@@ -907,13 +907,8 @@
   "resource-id.self": "{{resource}} ID",
   "resource-id.validation.duplicated": "{{resource}} ID はすでに存在します。別のIDを使用してください。",
   "resource-id.validation.empty": "{{resource}} ID は空にできません",
-  "resource-id.validation.minlength": "{{resource}} ID には少なくとも 1 文字が含まれている必要があります。",
   "resource-id.validation.overflow": "{{resource}} ID は 64 文字未満である必要があります。",
   "resource-id.validation.pattern": "{{resource}} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。",
-  "resource.available": "利用可能",
-  "resource.checking": "確認中",
-  "resource.resource-id": "リソースID",
-  "resource.unavailable": "利用不可",
   "role": {
     "custom-roles": {
       "self": "カスタムロール"

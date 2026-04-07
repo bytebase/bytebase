@@ -474,18 +474,18 @@ export function CreateDataSourceExample({
     return null;
   }
 
-  const descriptionKey = isEngineUsingSQL
+  const descriptionText = isEngineUsingSQL
     ? dataSourceType === DataSourceType.ADMIN
-      ? "instance.sentence.create-admin-user"
-      : "instance.sentence.create-readonly-user"
+      ? t("instance.sentence.create-admin-user")
+      : t("instance.sentence.create-readonly-user")
     : dataSourceType === DataSourceType.ADMIN
-      ? "instance.sentence.create-admin-user-non-sql"
-      : "instance.sentence.create-readonly-user-non-sql";
+      ? t("instance.sentence.create-admin-user-non-sql")
+      : t("instance.sentence.create-readonly-user-non-sql");
 
   return (
     <div className={`w-full flex flex-col justify-start ${className ?? ""}`}>
       <p className="w-full text-sm text-gray-500">
-        {t(descriptionKey)}
+        {descriptionText}
         {!createInstanceFlag && (
           <span
             className="normal-link select-none ml-1 cursor-pointer"

@@ -907,13 +907,8 @@
   "resource-id.self": "{{resource}} ID",
   "resource-id.validation.duplicated": "{{resource}} ID 已存在。请使用其他 ID。",
   "resource-id.validation.empty": "{{resource}} ID 不能为空",
-  "resource-id.validation.minlength": "{{resource}} ID 至少包含 1 个字符。",
   "resource-id.validation.overflow": "{{resource}} ID 应该少于 64 个字符。",
   "resource-id.validation.pattern": "{{resource}} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。",
-  "resource.available": "可用",
-  "resource.checking": "检查中",
-  "resource.resource-id": "资源 ID",
-  "resource.unavailable": "不可用",
   "role": {
     "custom-roles": {
       "self": "自定义角色"
