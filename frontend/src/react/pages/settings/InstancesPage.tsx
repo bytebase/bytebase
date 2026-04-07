@@ -23,6 +23,7 @@ import {
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -61,7 +62,6 @@ import {
   hostPortOfInstanceV1,
   supportedEngineV1List,
 } from "@/utils";
-import { PagedTableFooter } from "./shared/usePagedData";
 
 // ============================================================
 // Pagination helpers

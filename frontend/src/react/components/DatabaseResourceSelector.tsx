@@ -3,13 +3,13 @@ import {
   ChevronRight,
   Database as DatabaseIcon,
   Layers,
-  Search,
   Table2,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { useDatabaseV1Store } from "@/store";
 import { useDBSchemaV1Store } from "@/store/modules/v1/dbSchema";
 import type { DatabaseResource } from "@/types";
@@ -388,14 +388,12 @@ export function DatabaseResourceSelector({
   return (
     <div className="border border-control-border rounded-sm overflow-hidden">
       {/* Filter */}
-      <div className="flex items-center gap-x-2 px-3 py-2 bg-gray-50 border-b border-control-border">
-        <Search className="w-4 h-4 text-control-placeholder shrink-0" />
-        <input
-          type="text"
-          className="flex-1 text-sm bg-transparent outline-none placeholder:text-control-placeholder"
+      <div className="bg-gray-50 border-b border-control-border px-2 py-1.5">
+        <SearchInput
           placeholder={t("common.filter")}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
+          className="h-7"
         />
       </div>
       {/* Body */}

@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from "uuid";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Switch } from "@/react/components/ui/switch";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -366,8 +368,7 @@ export function DataExportPrepDrawer({
                     <span className="text-error"> *</span>
                   )}
                 </label>
-                <input
-                  className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent"
+                <Input
                   value={title}
                   placeholder={t("common.title")}
                   onChange={(e) => {
@@ -902,9 +903,7 @@ function DatabaseSelector({
 
   return (
     <div className="flex flex-col gap-y-2">
-      <input
-        type="text"
-        className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent"
+      <SearchInput
         placeholder={t("database.filter-database")}
         value={query}
         onChange={(e) => setQuery(e.target.value)}

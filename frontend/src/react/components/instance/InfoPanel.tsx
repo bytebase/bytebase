@@ -100,7 +100,7 @@ function PanelHeader({
         {title}
       </h3>
       <button
-        className="text-control-light hover:text-main p-0.5 rounded"
+        className="text-control-light hover:text-main p-0.5 rounded-xs"
         onClick={onClose}
       >
         <X className="w-4 h-4" />
@@ -177,7 +177,7 @@ function CopyButton({ content }: { content: string }) {
 
   return (
     <button
-      className="p-0.5 rounded text-control-light hover:text-main"
+      className="p-0.5 rounded-xs text-control-light hover:text-main"
       onClick={handleCopy}
     >
       {copied ? (

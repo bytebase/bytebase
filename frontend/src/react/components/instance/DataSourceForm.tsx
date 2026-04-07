@@ -1444,7 +1444,7 @@ export function DataSourceForm({
                 <textarea
                   value={dataSource.authenticationPrivateKey ?? ""}
                   disabled={!allowEdit}
-                  className="w-full h-32 mt-2 whitespace-pre-wrap rounded-md border border-control-border p-2 text-sm font-mono"
+                  className="w-full h-32 mt-2 whitespace-pre-wrap rounded-sm border border-control-border p-2 text-sm font-mono"
                   placeholder={`-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----`}
                   onChange={(e) =>
                     update({ authenticationPrivateKey: e.target.value })
@@ -1689,7 +1689,7 @@ export function DataSourceForm({
               </div>
 
               {allowEdit && (
-                <div className="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-md">
+                <div className="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-sm">
                   <Input
                     value={newParamKey}
                     className="w-full"

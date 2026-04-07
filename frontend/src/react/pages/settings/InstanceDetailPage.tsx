@@ -139,14 +139,14 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     <div className="pt-4 flex flex-col gap-y-2 px-6">
       {/* Archive banner */}
       {instance.state === State.DELETED && (
-        <div className="bg-gray-700 text-white text-center py-2 rounded-md text-sm font-medium">
+        <div className="bg-gray-700 text-white text-center py-2 rounded-sm text-sm font-medium">
           {t("common.archived")}
         </div>
       )}
 
       {/* No environment warning */}
       {!instance.environment && (
-        <div className="w-full mb-4 rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+        <div className="w-full mb-4 rounded-sm bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
           {t("instance.no-environment")}
         </div>
       )}

@@ -25,8 +25,11 @@ import {
   roleHasDatabaseLimitation,
   roleHasEnvironmentLimitation,
 } from "@/components/ProjectMember/utils";
+import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { RoleSelect } from "@/react/components/RoleSelect";
+import { UserAvatar } from "@/react/components/UserAvatar";
 import {
   Alert,
   AlertDescription,
@@ -79,9 +82,6 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { AccountMultiSelect } from "./shared/AccountMultiSelect";
-import { RoleSelect } from "./shared/RoleSelect";
-import { UserAvatar } from "./shared/UserAvatar";
 
 const EMPTY_ROLE_SET = new Set<string>();
 

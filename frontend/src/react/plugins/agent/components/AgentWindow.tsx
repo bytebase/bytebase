@@ -744,7 +744,7 @@ export function AgentWindow() {
         <div className="flex items-center gap-x-1">
           <button
             data-agent-window-action
-            className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            className="flex h-5 w-5 items-center justify-center rounded-xs text-gray-400 hover:bg-gray-200 hover:text-gray-600"
             title={t("agent.minimize")}
             onClick={(e) => {
               e.stopPropagation();
@@ -755,7 +755,7 @@ export function AgentWindow() {
           </button>
           <button
             data-agent-window-action
-            className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            className="flex h-5 w-5 items-center justify-center rounded-xs text-gray-400 hover:bg-gray-200 hover:text-gray-600"
             title={t("agent.close")}
             onClick={(e) => {
               e.stopPropagation();
@@ -784,7 +784,7 @@ export function AgentWindow() {
                 </h2>
               </div>
               <button
-                className="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                className="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                 disabled={isChatCreationDisabled}
                 onClick={createChat}
               >
@@ -799,7 +799,7 @@ export function AgentWindow() {
               {displayedChats.map((chat) => (
                 <div
                   key={chat.id}
-                  className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                  className={`w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
                     chat.id === currentChatId
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-700 hover:bg-white"
@@ -863,7 +863,7 @@ export function AgentWindow() {
                   <>
                     {showArchivedOnly ? (
                       <button
-                        className="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                        className="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
                         data-agent-unarchive-chat
                         onClick={toggleArchiveCurrentChat}
                       >
@@ -873,7 +873,7 @@ export function AgentWindow() {
                       <ConfirmDialog
                         message={t("agent.archive-chat-confirmation")}
                         onConfirm={toggleArchiveCurrentChat}
-                        triggerClassName="rounded-md border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
                         triggerLabel={t("agent.archive-chat")}
                         triggerDataAttr="data-agent-archive-chat"
                       />
@@ -882,7 +882,7 @@ export function AgentWindow() {
                       <ConfirmDialog
                         message={t("agent.delete-chat-confirmation")}
                         onConfirm={deleteCurrentChat}
-                        triggerClassName="rounded-md border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                         triggerLabel={t("agent.delete-chat")}
                         triggerDataAttr="data-agent-delete-chat"
                       />
@@ -890,7 +890,7 @@ export function AgentWindow() {
                   </>
                 )}
                 <button
-                  className="ml-auto inline-flex items-center rounded-md border p-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-gray-600 hover:bg-white"
                   aria-label={
                     showArchivedOnly
                       ? t("agent.archived-only-chats")
@@ -991,7 +991,7 @@ function ConfirmDialog({
         <div className="flex justify-end gap-x-2">
           <DialogClose
             render={
-              <button className="rounded-md border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
+              <button className="rounded-xs border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
                 {t("common.cancel")}
               </button>
             }
@@ -999,7 +999,7 @@ function ConfirmDialog({
           <DialogClose
             render={
               <button
-                className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                className="rounded-xs bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
                 onClick={onConfirm}
               >
                 {t("common.confirm")}

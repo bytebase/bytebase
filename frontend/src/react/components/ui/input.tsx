@@ -11,7 +11,7 @@ function Input({ className, ref, ...props }: InputProps) {
       className={cn(
         "flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm text-main transition-colors",
         "placeholder:text-control-placeholder",
-        "focus:outline-hidden focus:ring-2 focus:ring-accent focus:border-accent",
+        "focus:outline-hidden",
         "disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50",
         "read-only:cursor-default read-only:bg-control-bg read-only:focus:ring-0 read-only:focus:border-control-border",
         className

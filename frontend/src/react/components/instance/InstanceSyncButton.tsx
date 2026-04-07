@@ -132,7 +132,7 @@ export function InstanceSyncButton({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 min-w-[140px] rounded-md border bg-white shadow-md py-1">
+          <div className="absolute left-0 top-full mt-1 z-50 min-w-[140px] rounded-sm border bg-white shadow-md py-1">
             <button
               type="button"
               className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100"

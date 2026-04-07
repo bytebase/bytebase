@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { RoleSelect } from "@/react/pages/settings/shared/RoleSelect";
+import { RoleSelect } from "@/react/components/RoleSelect";
 import { PresetRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 import { Button } from "../ui/button";

@@ -14,6 +14,7 @@ import {
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
+import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector } from "@/react/components/DatabaseResourceSelector";
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
@@ -28,7 +29,6 @@ import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
-import { AccountMultiSelect } from "@/react/pages/settings/shared/AccountMultiSelect";
 import { router } from "@/router";
 import {
   hasFeature,

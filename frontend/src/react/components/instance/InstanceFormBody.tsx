@@ -231,7 +231,7 @@ function InstanceEngineRadioGrid({
         <button
           key={eng}
           type="button"
-          className={`flex items-center gap-x-2 rounded-md border px-3 py-2 text-sm text-left transition-colors ${
+          className={`flex items-center gap-x-2 rounded-sm border px-3 py-2 text-sm text-left transition-colors ${
             eng === engine
               ? "border-accent bg-accent/5 ring-1 ring-accent"
               : "border-control-border hover:border-accent/50 hover:bg-gray-50"
@@ -1705,10 +1705,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         {isCreating && onOpenInfoPanel && hasHostInfo && (
                           <button
                             type="button"
-                            className="ml-1 text-accent hover:text-accent-hover text-sm"
+                            className="ml-1 text-accent text-xs hover:underline"
                             onClick={() => openInfoPanel("host")}
                           >
-                            ?
+                            ⓘ
                           </button>
                         )}
                       </>
@@ -1946,7 +1946,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
 
               {actuatorStore.isSaaSMode && (
-                <div className="mt-4 rounded-md border-none bg-blue-50 p-3">
+                <div className="mt-4 rounded-sm border-none bg-blue-50 p-3">
                   <a
                     href="https://docs.bytebase.com/get-started/cloud#prerequisites"
                     target="_blank"

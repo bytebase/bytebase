@@ -112,7 +112,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       <p className="my-1 first:mt-0 last:mb-0">{children}</p>
                     ),
                     pre: ({ children }) => (
-                      <pre className="my-1 overflow-x-auto rounded bg-gray-100 p-2 text-xs">
+                      <pre className="my-1 overflow-x-auto rounded-xs bg-gray-100 p-2 text-xs">
                         {children}
                       </pre>
                     ),

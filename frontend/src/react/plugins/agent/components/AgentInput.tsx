@@ -600,7 +600,7 @@ export function AgentInput() {
     <div className="border-t p-3">
       {/* Pending ask banner */}
       {currentPendingAsk && (
-        <div className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <div className="mb-3 rounded-xs bg-amber-50 px-3 py-2 text-xs text-amber-700">
           <div className="font-medium">{currentPendingAsk.prompt}</div>
           <div className="mt-1">
             {currentPendingAsk.kind === "confirm"
@@ -614,19 +614,19 @@ export function AgentInput() {
 
       {/* Interrupted banner */}
       {isInterrupted && (
-        <div className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+        <div className="mb-3 rounded-xs bg-red-50 px-3 py-2 text-xs text-red-700">
           <div className="font-medium">{t("agent.interrupted")}</div>
           <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
             <button
-              className="rounded-md bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+              className="rounded-xs bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={retryLastTurn}
             >
               {t("agent.retry-last-chat-turn")}
             </button>
             <button
-              className="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xs border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={dismissInterrupted}
             >
@@ -640,14 +640,14 @@ export function AgentInput() {
       {isAwaitingConfirm ? (
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <button
-            className="rounded-md bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+            className="rounded-xs bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(true)}
           >
             {confirmLabel}
           </button>
           <button
-            className="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-xs border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
@@ -660,7 +660,7 @@ export function AgentInput() {
           {chooseOptions.map((option) => (
             <button
               key={option.value}
-              className="rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xs border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={() => submitChoice(option)}
             >
@@ -684,7 +684,7 @@ export function AgentInput() {
               ref={textareaRef}
               value={input}
               rows={1}
-              className="w-full resize-none rounded-md border px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="w-full resize-none rounded-xs border px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               style={{ maxHeight: 120 }}
               placeholder={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
@@ -702,7 +702,7 @@ export function AgentInput() {
             {showMention && (
               <div
                 ref={mentionListRef}
-                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-md border bg-white shadow-lg"
+                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-xs border bg-white shadow-lg"
               >
                 {mentionOptions.map((option, index) => {
                   const meta = formatDomRefSuggestionMeta(option.suggestion);

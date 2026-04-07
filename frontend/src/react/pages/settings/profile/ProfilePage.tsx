@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { t as vueT } from "@/plugins/i18n";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -17,10 +18,6 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  getAvatarColor,
-  getInitials,
-} from "@/react/pages/settings/shared/UserAvatar";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
 import { router } from "@/router";
 import {
