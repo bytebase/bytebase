@@ -11,7 +11,10 @@ type SearchInputProps = Omit<ComponentProps<typeof Input>, "className"> & {
 };
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  function SearchInput({ className, wrapperClassName, placeholder, ...props }, ref) {
+  function SearchInput(
+    { className, wrapperClassName, placeholder, ...props },
+    ref
+  ) {
     const { t } = useTranslation();
     return (
       <div className={cn("relative flex-1", wrapperClassName)}>
