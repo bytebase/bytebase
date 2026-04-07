@@ -1186,47 +1186,13 @@ export function DataSourceForm({
 
           {/* Oracle SID/Service Name */}
           {basicInfo.engine === Engine.ORACLE && (
-            <div className="sm:col-span-3 sm:col-start-1">
-              <div className="textlabel flex gap-x-4 mb-2">
-                <label className="flex items-center gap-x-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={!!dataSource.sid}
-                    onChange={() =>
-                      update({ sid: dataSource.sid || "XE", serviceName: "" })
-                    }
-                    disabled={!allowEdit}
-                  />
-                  SID
-                </label>
-                <label className="flex items-center gap-x-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={!!dataSource.serviceName && !dataSource.sid}
-                    onChange={() =>
-                      update({
-                        serviceName: dataSource.serviceName || "",
-                        sid: "",
-                      })
-                    }
-                    disabled={!allowEdit}
-                  />
-                  Service Name
-                </label>
-              </div>
-              <Input
-                value={dataSource.sid || dataSource.serviceName || ""}
-                className="w-full"
-                disabled={!allowEdit}
-                onChange={(e) => {
-                  if (dataSource.sid !== undefined && dataSource.sid !== "") {
-                    update({ sid: e.target.value });
-                  } else {
-                    update({ serviceName: e.target.value });
-                  }
-                }}
-              />
-            </div>
+            <OracleSIDServiceNameInput
+              sid={dataSource.sid ?? ""}
+              serviceName={dataSource.serviceName ?? ""}
+              allowEdit={allowEdit}
+              onSidChange={(val) => update({ sid: val })}
+              onServiceNameChange={(val) => update({ serviceName: val })}
+            />
           )}
 
           {/* Snowflake keypair */}
@@ -1236,8 +1202,18 @@ export function DataSourceForm({
                 <div className="textlabel block">
                   {t("data-source.ssh.private-key")}
                 </div>
-                <div className="flex gap-x-2 text-sm textinfolabel">
-                  {t("data-source.snowflake-keypair-tip")}
+                <div className="flex gap-x-2 text-sm">
+                  <span className="textinfolabel">
+                    {t("data-source.snowflake-keypair-tip")}
+                  </span>
+                  <a
+                    href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-accent hover:underline"
+                  >
+                    {t("common.learn-more")}
+                  </a>
                 </div>
                 <textarea
                   value={dataSource.authenticationPrivateKey ?? ""}
@@ -1252,6 +1228,9 @@ export function DataSourceForm({
               <div className="sm:col-span-3 sm:col-start-1">
                 <div className="textlabel block">
                   {t("data-source.private-key-passphrase")}
+                </div>
+                <div className="textinfolabel text-sm">
+                  {t("data-source.private-key-passphrase-tip")}
                 </div>
                 <Input
                   value={dataSource.authenticationPrivateKeyPassphrase ?? ""}
@@ -1551,6 +1530,70 @@ export function DataSourceForm({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// Matches Vue OracleSIDAndServiceNameInput.vue exactly
+function OracleSIDServiceNameInput({
+  sid,
+  serviceName,
+  allowEdit,
+  onSidChange,
+  onServiceNameChange,
+}: {
+  sid: string;
+  serviceName: string;
+  allowEdit: boolean;
+  onSidChange: (val: string) => void;
+  onServiceNameChange: (val: string) => void;
+}) {
+  // Track which mode is selected — default to "serviceName" if both empty
+  const mode = sid ? "sid" : "serviceName";
+
+  const handleModeChange = (newMode: "sid" | "serviceName") => {
+    if (newMode === "sid") {
+      onServiceNameChange("");
+      if (!sid) onSidChange("XE");
+    } else {
+      onSidChange("");
+    }
+  };
+
+  return (
+    <div className="sm:col-span-3 sm:col-start-1">
+      <div className="textlabel flex gap-x-4 mb-2">
+        <label className="flex items-center gap-x-1.5 cursor-pointer">
+          <input
+            type="radio"
+            checked={mode === "sid"}
+            onChange={() => handleModeChange("sid")}
+            disabled={!allowEdit}
+          />
+          SID
+        </label>
+        <label className="flex items-center gap-x-1.5 cursor-pointer">
+          <input
+            type="radio"
+            checked={mode === "serviceName"}
+            onChange={() => handleModeChange("serviceName")}
+            disabled={!allowEdit}
+          />
+          Service Name
+        </label>
+      </div>
+      <Input
+        value={mode === "sid" ? sid : serviceName}
+        className="w-full"
+        disabled={!allowEdit}
+        onChange={(e) => {
+          if (mode === "sid") {
+            onSidChange(e.target.value);
+          } else {
+            onServiceNameChange(e.target.value);
+          }
+        }}
+      />
     </div>
   );
 }
