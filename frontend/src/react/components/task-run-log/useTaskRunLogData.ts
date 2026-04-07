@@ -20,7 +20,7 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 
-export type FetchStatus = "idle" | "loading" | "success" | "error";
+export type FetchStatus = "idle" | "loading" | "success" | "partial" | "error";
 export type SheetSource = "none" | "sheet" | "release";
 
 export interface FetchState {
@@ -30,12 +30,14 @@ export interface FetchState {
 
 export interface SheetFetchState extends FetchState {
   source: SheetSource;
+  failedReleaseVersions?: string[];
 }
 
 export interface UseTaskRunLogDataResult {
   entries: TaskRunLogEntry[];
   sheet: Sheet | undefined;
   sheetsMap: Map<string, Sheet>;
+  metadataFetch: FetchState;
   logFetch: FetchState;
   sheetFetch: SheetFetchState;
 }
@@ -73,6 +75,9 @@ export const useTaskRunLogData = (
   const [entries, setEntries] = useState<TaskRunLogEntry[]>([]);
   const [sheet, setSheet] = useState<Sheet | undefined>(undefined);
   const [sheetsMap, setSheetsMap] = useState<Map<string, Sheet>>(new Map());
+  const [metadataFetchState, setMetadataFetchState] = useState<FetchState>({
+    status: "idle",
+  });
   const [logFetchState, setLogFetchState] = useState<FetchState>({
     status: "idle",
   });
@@ -80,6 +85,7 @@ export const useTaskRunLogData = (
     status: "idle",
     source: "none",
   });
+  const metadataFetchVersion = useRef(0);
   const logFetchVersion = useRef(0);
   const sheetFetchVersion = useRef(0);
 
@@ -89,11 +95,35 @@ export const useTaskRunLogData = (
   }, [taskRunName]);
 
   useEffect(() => {
-    if (!rolloutName) return;
-    void rolloutStore.fetchRolloutByName(rolloutName, true).catch(() => {
-      // Ignore rollout fetch errors and keep best-effort cached value.
-    });
-  }, [rolloutName, rolloutStore]);
+    const version = ++metadataFetchVersion.current;
+    if (!rolloutName || !taskRunName) {
+      setMetadataFetchState({ status: "idle" });
+      return;
+    }
+
+    setMetadataFetchState({ status: "loading" });
+    void rolloutStore
+      .fetchRolloutByName(rolloutName, true)
+      .then((fetchedRollout) => {
+        if (version !== metadataFetchVersion.current) return;
+        const resolvedTask = getTaskFromRollout(taskRunName, fetchedRollout);
+        if (!resolvedTask) {
+          setMetadataFetchState({
+            status: "error",
+            error: "Task cannot be resolved from rollout metadata",
+          });
+          return;
+        }
+        setMetadataFetchState({ status: "success" });
+      })
+      .catch((error: unknown) => {
+        if (version !== metadataFetchVersion.current) return;
+        setMetadataFetchState({
+          status: "error",
+          error: getErrorMessage(error),
+        });
+      });
+  }, [rolloutName, rolloutStore, taskRunName]);
 
   const rollout = useVueState(() => {
     if (!rolloutName) return undefined;
@@ -144,7 +174,25 @@ export const useTaskRunLogData = (
     setSheetsMap(new Map());
 
     if (!task) {
-      setSheetFetchState({ status: "idle", source: "none" });
+      if (!taskRunName) {
+        setSheetFetchState({ status: "idle", source: "none" });
+      } else if (metadataFetchState.status === "loading") {
+        setSheetFetchState({ status: "loading", source: "none" });
+      } else if (metadataFetchState.status === "error") {
+        setSheetFetchState({
+          status: "error",
+          source: "none",
+          error:
+            metadataFetchState.error ??
+            "Task cannot be resolved from rollout metadata",
+        });
+      } else {
+        setSheetFetchState({
+          status: "error",
+          source: "none",
+          error: "Task cannot be resolved from rollout metadata",
+        });
+      }
       return;
     }
 
@@ -171,21 +219,45 @@ export const useTaskRunLogData = (
                     }
                   );
                   return { version: file.version, sheet: fetchedSheet };
-                } catch {
-                  return undefined;
+                } catch (error: unknown) {
+                  return {
+                    version: file.version,
+                    error: getErrorMessage(error),
+                  };
                 }
               })
           );
           if (version !== sheetFetchVersion.current) return;
 
           const nextSheetsMap = new Map<string, Sheet>();
+          const failedReleaseVersions: string[] = [];
           for (const item of fileSheets) {
             if (item?.sheet) {
               nextSheetsMap.set(item.version, item.sheet);
+            } else if (item?.version) {
+              failedReleaseVersions.push(item.version);
             }
           }
           setSheetsMap(nextSheetsMap);
-          setSheetFetchState({ status: "success", source: "release" });
+          if (failedReleaseVersions.length === 0) {
+            setSheetFetchState({ status: "success", source: "release" });
+            return;
+          }
+          if (nextSheetsMap.size === 0) {
+            setSheetFetchState({
+              status: "error",
+              source: "release",
+              error: "Failed to fetch all release sheets",
+              failedReleaseVersions,
+            });
+            return;
+          }
+          setSheetFetchState({
+            status: "partial",
+            source: "release",
+            error: "Failed to fetch some release sheets",
+            failedReleaseVersions,
+          });
         })
         .catch((error: unknown) => {
           if (version !== sheetFetchVersion.current) return;
@@ -226,12 +298,19 @@ export const useTaskRunLogData = (
           error: getErrorMessage(error),
         });
       });
-  }, [releaseStore, task]);
+  }, [
+    metadataFetchState.error,
+    metadataFetchState.status,
+    releaseStore,
+    task,
+    taskRunName,
+  ]);
 
   return {
     entries,
     sheet,
     sheetsMap,
+    metadataFetch: metadataFetchState,
     logFetch: logFetchState,
     sheetFetch: sheetFetchState,
   };
