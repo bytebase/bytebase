@@ -53,6 +53,8 @@ export function ReadonlyMonaco({
         return;
       }
 
+      editorRef.current = editor;
+
       contentSizeSubscription = editor.onDidContentSizeChange((event) => {
         if (!event.contentHeightChanged) return;
         setContentHeight(event.contentHeight);
@@ -80,8 +82,6 @@ export function ReadonlyMonaco({
         editor.dispose();
         return;
       }
-
-      editorRef.current = editor;
     })();
 
     return () => {
