@@ -949,6 +949,206 @@ export function DataSourceForm({
                                   />
                                 </div>
                               )}
+                              {/* AppRole fields */}
+                              {dataSource.externalSecret.authOption?.case ===
+                                "appRole" && (
+                                <div className="flex flex-col gap-y-4">
+                                  <div>
+                                    <label className="textlabel block">
+                                      {t(
+                                        "instance.external-secret-vault.vault-auth-type.approle.role-id"
+                                      )}{" "}
+                                      <span className="text-red-600">*</span>
+                                    </label>
+                                    <Input
+                                      value={
+                                        dataSource.externalSecret.authOption
+                                          .value.roleId ?? ""
+                                      }
+                                      className="mt-2 w-full"
+                                      disabled={!allowEdit}
+                                      placeholder={`${t("instance.external-secret-vault.vault-auth-type.approle.role-id")} - ${t("common.write-only")}`}
+                                      onChange={(e) => {
+                                        const ds = { ...dataSource };
+                                        if (
+                                          ds.externalSecret?.authOption
+                                            ?.case === "appRole"
+                                        ) {
+                                          ds.externalSecret = {
+                                            ...ds.externalSecret,
+                                            authOption: {
+                                              ...ds.externalSecret.authOption,
+                                              value: {
+                                                ...ds.externalSecret.authOption
+                                                  .value,
+                                                roleId: e.target.value,
+                                              },
+                                            },
+                                          };
+                                        }
+                                        onDataSourceChange(ds);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="textlabel block">
+                                      {t(
+                                        "instance.external-secret-vault.vault-auth-type.approle.secret-id"
+                                      )}{" "}
+                                      <span className="text-red-600">*</span>
+                                    </label>
+                                    <div className="textlabel my-1 flex gap-x-4">
+                                      <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          checked={
+                                            dataSource.externalSecret.authOption
+                                              .value.type === 0
+                                          }
+                                          disabled={!allowEdit}
+                                          onChange={() => {
+                                            const ds = { ...dataSource };
+                                            if (
+                                              ds.externalSecret?.authOption
+                                                ?.case === "appRole"
+                                            ) {
+                                              ds.externalSecret = {
+                                                ...ds.externalSecret,
+                                                authOption: {
+                                                  ...ds.externalSecret
+                                                    .authOption,
+                                                  value: {
+                                                    ...ds.externalSecret
+                                                      .authOption.value,
+                                                    type: 0,
+                                                  },
+                                                },
+                                              };
+                                            }
+                                            onDataSourceChange(ds);
+                                          }}
+                                        />
+                                        {t(
+                                          "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
+                                        )}
+                                      </label>
+                                      <label className="flex items-center gap-x-1.5 cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          checked={
+                                            dataSource.externalSecret.authOption
+                                              .value.type === 1
+                                          }
+                                          disabled={!allowEdit}
+                                          onChange={() => {
+                                            const ds = { ...dataSource };
+                                            if (
+                                              ds.externalSecret?.authOption
+                                                ?.case === "appRole"
+                                            ) {
+                                              ds.externalSecret = {
+                                                ...ds.externalSecret,
+                                                authOption: {
+                                                  ...ds.externalSecret
+                                                    .authOption,
+                                                  value: {
+                                                    ...ds.externalSecret
+                                                      .authOption.value,
+                                                    type: 1,
+                                                  },
+                                                },
+                                              };
+                                            }
+                                            onDataSourceChange(ds);
+                                          }}
+                                        />
+                                        {t(
+                                          "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
+                                        )}
+                                      </label>
+                                    </div>
+                                    <Input
+                                      value={
+                                        dataSource.externalSecret.authOption
+                                          .value.secretId ?? ""
+                                      }
+                                      className="mt-2 w-full"
+                                      disabled={!allowEdit}
+                                      onChange={(e) => {
+                                        const ds = { ...dataSource };
+                                        if (
+                                          ds.externalSecret?.authOption
+                                            ?.case === "appRole"
+                                        ) {
+                                          ds.externalSecret = {
+                                            ...ds.externalSecret,
+                                            authOption: {
+                                              ...ds.externalSecret.authOption,
+                                              value: {
+                                                ...ds.externalSecret.authOption
+                                                  .value,
+                                                secretId: e.target.value,
+                                              },
+                                            },
+                                          };
+                                        }
+                                        onDataSourceChange(ds);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {/* Vault TLS config */}
+                              <div>
+                                <label className="textlabel block">
+                                  {t(
+                                    "instance.external-secret-vault.vault-tls-config"
+                                  )}
+                                </label>
+                                <SslCertificateForm
+                                  verify={
+                                    !dataSource.externalSecret
+                                      .skipVaultTlsVerification
+                                  }
+                                  onVerifyChange={(val) => {
+                                    const ds = { ...dataSource };
+                                    ds.externalSecret = {
+                                      ...ds.externalSecret!,
+                                      skipVaultTlsVerification: !val,
+                                    };
+                                    onDataSourceChange(ds);
+                                  }}
+                                  ca={dataSource.externalSecret.vaultSslCa}
+                                  onCaChange={(val) => {
+                                    const ds = { ...dataSource };
+                                    ds.externalSecret = {
+                                      ...ds.externalSecret!,
+                                      vaultSslCa: val,
+                                    };
+                                    onDataSourceChange(ds);
+                                  }}
+                                  cert={dataSource.externalSecret.vaultSslCert}
+                                  onCertChange={(val) => {
+                                    const ds = { ...dataSource };
+                                    ds.externalSecret = {
+                                      ...ds.externalSecret!,
+                                      vaultSslCert: val,
+                                    };
+                                    onDataSourceChange(ds);
+                                  }}
+                                  sslKey={dataSource.externalSecret.vaultSslKey}
+                                  onKeyChange={(val) => {
+                                    const ds = { ...dataSource };
+                                    ds.externalSecret = {
+                                      ...ds.externalSecret!,
+                                      vaultSslKey: val,
+                                    };
+                                    onDataSourceChange(ds);
+                                  }}
+                                  disabled={!allowEdit}
+                                  showKeyAndCert
+                                />
+                              </div>
                               {/* Engine name */}
                               <div>
                                 <label className="textlabel block">
@@ -957,6 +1157,11 @@ export function DataSourceForm({
                                   )}{" "}
                                   <span className="text-red-600">*</span>
                                 </label>
+                                <div className="flex gap-x-2 text-sm textinfolabel">
+                                  {t(
+                                    "instance.external-secret-vault.vault-secret-engine-tips"
+                                  )}
+                                </div>
                                 <Input
                                   value={
                                     dataSource.externalSecret.engineName ?? ""
@@ -988,6 +1193,11 @@ export function DataSourceForm({
                                 {t("instance.external-secret-azure.vault-url")}{" "}
                                 <span className="text-red-600">*</span>
                               </label>
+                              <div className="flex gap-x-2 text-sm textinfolabel">
+                                {t(
+                                  "instance.external-secret-azure.vault-url-tips"
+                                )}
+                              </div>
                               <Input
                                 value={dataSource.externalSecret.url ?? ""}
                                 required
@@ -1014,6 +1224,22 @@ export function DataSourceForm({
                               {secretNameLabel}{" "}
                               <span className="text-red-600">*</span>
                             </label>
+                            {passwordType ===
+                              DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER && (
+                              <div className="flex gap-x-2 text-sm textinfolabel">
+                                {t(
+                                  "instance.external-secret-gcp.secret-name-tips"
+                                )}
+                              </div>
+                            )}
+                            {passwordType ===
+                              DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
+                              <div className="flex gap-x-2 text-sm textinfolabel">
+                                {t(
+                                  "instance.external-secret-azure.secret-name-tips"
+                                )}
+                              </div>
+                            )}
                             <Input
                               value={dataSource.externalSecret.secretName ?? ""}
                               required
