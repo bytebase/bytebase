@@ -1,7 +1,11 @@
 <template>
   <div class="flex items-center gap-2" v-if="hasAnyStatus">
     <template v-if="displayMode === 'icon'">
-      <PlanCheckRunStatusIcon :plan="plan" :size="size" />
+      <PlanCheckRunStatusIcon
+        :plan="plan"
+        :plan-check-runs="planCheckRuns"
+        :size="size"
+      />
     </template>
     <!-- Default display mode: show all status counts with icons -->
     <template v-else>
@@ -56,9 +60,9 @@ import {
   XCircleIcon,
 } from "lucide-vue-next";
 import { computed, type PropType } from "vue";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { usePlanCheckStatus } from "../logic";
+import { useResolvedPlanCheckStatus } from "../logic";
 import PlanCheckRunStatusIcon from "./PlanCheckRunStatusIcon.vue";
 
 type DisplayMode = "icon" | "default";
@@ -89,14 +93,21 @@ const props = defineProps({
     type: Number as PropType<Advice_Level | undefined>,
     default: undefined,
   },
+  planCheckRuns: {
+    type: Array as PropType<PlanCheckRun[] | undefined>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
   click: [status: Advice_Level];
 }>();
 
-const { statusSummary, hasAnyStatus } = usePlanCheckStatus(
-  computed(() => props.plan)
+const planCheckRunsRef = computed(() => props.planCheckRuns);
+
+const { statusSummary, hasAnyStatus } = useResolvedPlanCheckStatus(
+  computed(() => props.plan),
+  planCheckRunsRef
 );
 
 const iconSizeClass = computed(() => {

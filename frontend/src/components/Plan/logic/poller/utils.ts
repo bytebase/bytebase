@@ -42,6 +42,7 @@ export const refreshPlanCheckRuns = async (
   });
   try {
     const response = await planServiceClientConnect.getPlanCheckRun(request);
+    // One consolidated run per plan; large payloads are mostly `results[]`.
     planCheckRuns.value = [response];
   } catch {
     // Plan check run might not exist yet

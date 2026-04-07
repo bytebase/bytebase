@@ -167,6 +167,7 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { computePlanCheckStatusSummary } from "../../logic/plan-check-status";
 import CheckResultItem from "../common/CheckResultItem.vue";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
@@ -200,36 +201,20 @@ const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
 });
 
-// Calculate status summary from plan check runs
-const statusSummary = computed(() => {
-  const summary = { error: 0, warning: 0, success: 0 };
+// Summary depends only on `planCheckRuns` (not status filter) so toggling the filter does not rescan for counts.
+const planCheckSummary = computed(() =>
+  computePlanCheckStatusSummary(props.planCheckRuns)
+);
 
-  for (const checkRun of props.planCheckRuns) {
-    // Count failed plan check runs as errors
-    if (checkRun.status === PlanCheckRun_Status.FAILED) {
-      summary.error++;
-    }
-
-    for (const result of checkRun.results) {
-      if (result.status === Advice_Level.ERROR) {
-        summary.error++;
-      } else if (result.status === Advice_Level.WARNING) {
-        summary.warning++;
-      } else if (result.status === Advice_Level.SUCCESS) {
-        summary.success++;
-      }
-    }
-  }
-
-  return summary;
-});
+const statusSummary = computed(() => ({
+  error: planCheckSummary.value.error,
+  warning: planCheckSummary.value.warning,
+  success: planCheckSummary.value.success,
+}));
 
 const hasAnyStatus = computed(() => {
-  return (
-    statusSummary.value.error > 0 ||
-    statusSummary.value.warning > 0 ||
-    statusSummary.value.success > 0
-  );
+  const s = planCheckSummary.value;
+  return s.error > 0 || s.warning > 0 || s.success > 0;
 });
 
 const toggleSelectedStatus = (status: Advice_Level) => {
@@ -248,7 +233,7 @@ const getItemClass = (status: Advice_Level) => {
     : "px-2 py-1";
 };
 
-// Group results by type and target
+// O(total results); pagination only slices `groups` — very large `results` may need future virtualization.
 const filteredResultGroups = computed(() => {
   const groups: ResultGroup[] = [];
   const groupMap = new Map<string, ResultGroup>();

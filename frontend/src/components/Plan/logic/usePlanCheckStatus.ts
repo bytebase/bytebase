@@ -4,14 +4,12 @@ import {
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  EMPTY_PLAN_CHECK_STATUS_SUMMARY,
+  type PlanCheckStatusSummary,
+} from "./plan-check-status";
 
-export interface PlanCheckStatusSummary {
-  running: number;
-  success: number;
-  warning: number;
-  error: number;
-  total: number;
-}
+export type { PlanCheckStatusSummary } from "./plan-check-status";
 
 export const usePlanCheckStatus = (
   plan: ComputedRef<Plan | undefined> | Ref<Plan | undefined>
@@ -41,7 +39,7 @@ export const usePlanCheckStatus = (
 
   const statusSummary = computed<PlanCheckStatusSummary>(() => {
     if (!plan.value) {
-      return { running: 0, success: 0, warning: 0, error: 0, total: 0 };
+      return { ...EMPTY_PLAN_CHECK_STATUS_SUMMARY };
     }
 
     const statusCount = plan.value.planCheckRunStatusCount || {};
