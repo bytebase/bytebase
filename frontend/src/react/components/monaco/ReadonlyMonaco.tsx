@@ -3,28 +3,32 @@ import { createMonacoEditor } from "@/components/MonacoEditor/editor";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor/types";
 import { cn } from "@/react/lib/utils";
 import type { Language } from "@/types";
-import { getReadonlyMonacoHeight } from "./height";
+import { clampEditorHeight } from "./height";
 
 export interface ReadonlyMonacoProps {
   content: string;
   language?: Language;
   className?: string;
-  minHeight?: number;
-  maxHeight?: number;
+  min?: number;
+  max?: number;
 }
 
 const MONACO_LINE_HEIGHT = 24;
-const MONACO_PADDING = 16;
 
 export function ReadonlyMonaco({
   content,
   language = "sql",
-  className,
-  minHeight = 160,
-  maxHeight = 720,
+  className = "",
+  min = 120,
+  max = 600,
 }: ReadonlyMonacoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
+  const contentRef = useRef(content);
+  const languageRef = useRef(language);
+
+  contentRef.current = content;
+  languageRef.current = language;
 
   useEffect(() => {
     let disposed = false;
@@ -35,9 +39,10 @@ export function ReadonlyMonaco({
       const editor = await createMonacoEditor({
         container: containerRef.current,
         options: {
-          language,
-          value: content,
+          language: languageRef.current,
+          value: contentRef.current,
           readOnly: true,
+          domReadOnly: true,
         },
       });
 
@@ -59,8 +64,8 @@ export function ReadonlyMonaco({
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    if (editor.getValue() !== content) {
-      editor.setValue(content);
+    if (editor.getValue() !== contentRef.current) {
+      editor.setValue(contentRef.current);
     }
   }, [content]);
 
@@ -71,21 +76,22 @@ export function ReadonlyMonaco({
 
     (async () => {
       const { editor: monacoEditor } = await import("monaco-editor");
-      monacoEditor.setModelLanguage(model, language);
+      monacoEditor.setModelLanguage(model, languageRef.current);
     })();
   }, [language]);
 
-  const height = getReadonlyMonacoHeight(content, {
-    minHeight,
-    maxHeight,
+  const lineCount = Math.max(1, content.split(/\r?\n/).length);
+  const height = clampEditorHeight({
+    lineCount,
     lineHeight: MONACO_LINE_HEIGHT,
-    padding: MONACO_PADDING,
+    min,
+    max,
   });
 
   return (
     <div
       ref={containerRef}
-      className={cn("w-full overflow-hidden", className)}
+      className={cn("overflow-clip rounded-md border text-sm", className)}
       style={{ height }}
     />
   );
