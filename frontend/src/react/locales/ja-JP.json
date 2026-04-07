@@ -60,13 +60,7 @@
       "self": "状態"
     }
   },
-  "changelog": {
-    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
-  },
   "common": {
-    "activated": "有効化しました",
-    "active": "アクティブ",
     "add": "追加",
     "add-permissions": "権限を追加",
     "added": "作成した",
@@ -74,14 +68,10 @@
     "all": "全て",
     "approved": "承認済み",
     "archive": "アーカイブ",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "archive-resource": "Archive {{type}}",
     "archived": "アーカイブ済み",
     "back": "戻る",
     "cancel": "キャンセル",
     "cannot-undo-this-action": "この操作は元に戻せません",
-    "changelog": "Changelog",
-    "classification-level": "分類レベル",
     "clear": "クリア",
     "close": "閉じる",
     "closed": "閉まっている",
@@ -89,82 +79,48 @@
     "configure": "設定",
     "configure-now": "今すぐ設定する",
     "confirm": "確認する",
-    "confirm-and-add": "Confirm and add",
     "confirm-and-update": "確認して更新する",
-    "confirm-archive": "Archive Resource?",
-    "confirm-delete": "Delete Resource?",
-    "confirm-to-revert": "Confirm to revert your editing?",
     "copied": "コピーされました",
     "copy": "コピー",
-    "copy-failed": "Copy failed",
     "create": "作成する",
     "created": "作成済",
-    "created-at": "作成日時",
-    "creator": "作成者",
-    "danger-zone": "Danger Zone",
-    "database": "データベース",
-    "database-group": "データベースグループ",
-    "databases": "データベース",
-    "default": "デフォルト",
     "delete": "消去",
     "delete-resource": "Delete {{type}}",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "削除されました",
     "description": "説明",
-    "deselect-all": "Deselect all",
-    "disable": "Disable",
     "discard-changes": "変更をキャンセルする",
-    "download": "ダウンロード",
     "edit": "編集",
     "email": "メールアドレス",
-    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
-    "empty": "Empty",
-    "enable": "オンにする",
-    "enabled": "Enabled",
     "environment": "環境",
     "environment-name": "環境名",
-    "environments": "環境",
-    "expiration": "Expiration",
     "export": "エクスポート",
     "failed": "失敗",
     "file-selector": {
       "size-limit": "ファイルサイズは {{size}} MiB 未満である必要があります",
       "type-limit": "タイプ {{extension}} のファイルのみがサポートされます"
     },
-    "filter": "Filter",
     "filter-by-name": "名前でフィルタリングする",
     "from": "開始",
     "general": "全般",
     "groups": "グループ",
-    "home": "ホームページ",
     "id": "ID",
     "instance": "インスタンス",
-    "instances": "インスタンス",
     "is-required": "is required",
-    "issues": "イシュー",
-    "items": "items",
-    "key": "キー",
     "labels": "ラベル",
     "learn-more": "もっと詳しく知る",
     "leave-without-saving": "変更を保存していませんか?",
     "load-more": "もっと読み込む",
     "loading": "読み込み中",
-    "manage": "管理",
-    "manually-select": "Manually select",
     "members_one": "メンバー",
     "members_other": "メンバー",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "n-items-selected": "{{n}} 件選択済み",
-    "n-more": "+{{n}} もっと",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",
     "ok": "わかりました",
     "operations": "操作",
-    "optional": "Optional",
-    "pending": "保留中",
     "permissions": "権限",
-    "previous": "Previous",
     "project": "プロジェクト",
     "projects": "プロジェクト",
     "reason": "Reason",
@@ -174,34 +130,22 @@
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
-    "resource": "Resource",
-    "resources": "リソース",
     "restore": "復元する",
     "restored": "Restored",
     "revert": "元に戻す",
-    "revoke": "キャンセル",
-    "revoked": "取り消し済み",
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
-    "schema": "スキーマ",
-    "scope": "スコープ",
     "search": "検索",
-    "search-for-more": "さらに検索",
     "select": "選択してください",
     "select-all": "すべて選択",
-    "selected": "selected",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "setting": "設定",
     "settings": "設定",
     "sql": "SQL",
     "state": "ステート",
-    "statement": "ステートメント",
-    "status": "ステータス",
     "system": "システム",
-    "table": "テーブル",
     "title": "タイトル",
     "to": "終了",
-    "total": "Total",
     "total-n-items": "合計 {{n}} 件",
     "type": "タイプ",
     "unassigned": "割り当てられていない",
@@ -211,12 +155,65 @@
     "updated": "更新しました",
     "upload": "アップロード",
     "users": "ユーザー",
-    "value": "値",
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
-    "webhooks": "Webhook",
-    "you": "あなた"
+    "you": "あなた",
+    "copy-failed": "Copy failed",
+    "dismiss": "閉じる",
+    "activated": "有効化しました",
+    "active": "アクティブ",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
+    "changelog": "Changelog",
+    "classification-level": "分類レベル",
+    "confirm-and-add": "Confirm and add",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
+    "created-at": "作成日時",
+    "creator": "作成者",
+    "danger-zone": "Danger Zone",
+    "database": "データベース",
+    "database-group": "データベースグループ",
+    "databases": "データベース",
+    "default": "デフォルト",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
+    "deselect-all": "Deselect all",
+    "disable": "Disable",
+    "download": "ダウンロード",
+    "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
+    "empty": "Empty",
+    "enable": "オンにする",
+    "enabled": "Enabled",
+    "environments": "環境",
+    "expiration": "Expiration",
+    "filter": "Filter",
+    "home": "ホームページ",
+    "instances": "インスタンス",
+    "issues": "イシュー",
+    "items": "items",
+    "key": "キー",
+    "manage": "管理",
+    "manually-select": "Manually select",
+    "n-more": "+{{n}} もっと",
+    "optional": "Optional",
+    "pending": "保留中",
+    "previous": "Previous",
+    "resource": "Resource",
+    "resources": "リソース",
+    "revoke": "キャンセル",
+    "revoked": "取り消し済み",
+    "schema": "スキーマ",
+    "scope": "スコープ",
+    "search-for-more": "さらに検索",
+    "selected": "selected",
+    "statement": "ステートメント",
+    "status": "ステータス",
+    "table": "テーブル",
+    "total": "Total",
+    "value": "値",
+    "webhooks": "Webhook"
   },
   "common.add": "追加",
   "common.admin": "管理者",
@@ -365,21 +362,25 @@
   "data-source.ssl.verify-certificate": "TLS証明書を検証",
   "data-source.ssl.verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません",
   "database": {
-    "all": "すべてのデータベース",
-    "change-database": "データベースの変更",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
     "engine": "エンジン",
-    "expression": "Expression",
     "filter-database": "データベースをフィルター",
+    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
+    "successfully-transferred-databases": "データベースの転送に成功しました",
+    "sync-schema-button": "スキーマを同期",
+    "sync-status-failed": "同期に失敗しました",
+    "transfer-project": "プロジェクトの転送",
+    "unassign": "割り当てを解除する",
+    "all": "すべてのデータベース",
+    "change-database": "データベースの変更",
+    "expression": "Expression",
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "select": "データベースの選択",
-    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
-    "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -402,10 +403,6 @@
       "title": "データベーステーブルの同期",
       "with-diff": "With diff"
     },
-    "sync-schema-button": "スキーマを同期",
-    "sync-status-failed": "同期に失敗しました",
-    "transfer-project": "プロジェクトの転送",
-    "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "unassign-alert-title": "データベースの割り当てを解除する"
   },
@@ -441,8 +438,8 @@
     "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "reorder": "環境の並べ替え",
-    "select": "環境を選ぶ",
-    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました"
+    "successfully-updated-environment": "環境「{{name}}」は正常に更新されました",
+    "select": "環境を選ぶ"
   },
   "error-page": {
     "not-found": "ページが見つかりません"
@@ -655,6 +652,7 @@
   "instance.users": "ユーザー",
   "instance.your-snowflake-account-locator": "Snowflake アカウント ロケーター",
   "issue": {
+    "labels": "イシューラベル",
     "advanced-search": {
       "filter": "フィルター"
     },
@@ -663,7 +661,6 @@
       "limits": "制限",
       "options": "設定項目"
     },
-    "labels": "イシューラベル",
     "risk-level": {
       "high": "高い",
       "moderate": "適度",
@@ -753,6 +750,9 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "table": {
+      "name": "名前"
+    },
     "masking-exemption": {
       "all-levels": "全レベル",
       "expires-in-days_one": "{{days}} 日後に期限切れ",
@@ -849,9 +849,6 @@
       "success-updated": "プロジェクト設定が正常に更新されました",
       "update-failed": "プロジェクト設定の更新に失敗しました。"
     },
-    "table": {
-      "name": "名前"
-    },
     "webhook": {
       "activity-support-direct-message": "関連するユーザーへのプライベートメッセージ通知の送信のサポート",
       "add-a-webhook": "Webhook を追加する",
@@ -897,9 +894,9 @@
     }
   },
   "resource": {
-    "delete-warning": "「{{name}}」は削除されます。この操作は元に戻せません。",
+    "delete-warning-with-resources": "「{{name}}」は次のリソースによって使用されます:",
     "delete-warning-retry": "これらのリソースから削除して、もう一度お試しください。",
-    "delete-warning-with-resources": "「{{name}}」は次のリソースによって使用されます:"
+    "delete-warning": "「{{name}}」は削除されます。この操作は元に戻せません。"
   },
   "resource-id": {
     "cannot-be-changed-later": "作成後に変更することはできません。",
@@ -940,9 +937,6 @@
     "workspace-roles": {
       "self": "ワークスペースのロール"
     }
-  },
-  "schema-editor": {
-    "raw-sql": "Raw SQL"
   },
   "schema-template": {
     "classification": {
@@ -1169,13 +1163,8 @@
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "add-member": "メンバーを追加",
-      "add-service-account": "サービスアカウントを追加",
       "add-user": "ユーザーを追加",
-      "add-workload-identity": "ワークロードIDを追加",
-      "all-users": "すべてのユーザー",
-      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
-      "copy-service-key": "サービスキーをコピーする",
       "entra-sync": {
         "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "Endpoint",
@@ -1205,11 +1194,7 @@
         "update-group": "更新グループ",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
-      "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-users": "非アクティブユーザー",
-      "inactive-workload-identities": "非アクティブワークロードID",
-      "reset-service-key": "サービスキーのリセット",
-      "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoke-access": "アクセスを取り消す",
       "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
       "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
@@ -1221,21 +1206,30 @@
       "select-role_one": "ロールを選択",
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
-      "service-accounts": "サービスアカウント",
-      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "show-inactive": "非アクティブなアカウントを表示",
       "table": {
         "account": "アカウント",
         "groups": "グループ",
         "roles": "ロール"
       },
-      "update-service-account": "サービスアカウントを更新",
       "update-user": "ユーザーを更新",
-      "update-workload-identity": "ワークロードIDを更新",
       "view-by-members": "メンバー別に表示",
       "view-by-roles": "ロールごとに表示",
-      "workload-identities": "ワークロードID",
       "workload-identity": "Workload Identity",
+      "add-service-account": "サービスアカウントを追加",
+      "add-workload-identity": "ワークロードIDを追加",
+      "all-users": "すべてのユーザー",
+      "assign-role": "Assign role",
+      "copy-service-key": "サービスキーをコピーする",
+      "inactive-service-accounts": "非アクティブサービスアカウント",
+      "inactive-workload-identities": "非アクティブワークロードID",
+      "reset-service-key": "サービスキーのリセット",
+      "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
+      "service-accounts": "サービスアカウント",
+      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
+      "update-service-account": "サービスアカウントを更新",
+      "update-workload-identity": "ワークロードIDを更新",
+      "workload-identities": "ワークロードID",
       "workload-identity-advanced": "Advanced Settings",
       "workload-identity-all-branches-tags": "All branches and tags",
       "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
@@ -1259,7 +1253,6 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
-      "email": "メールアドレス",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
@@ -1267,6 +1260,7 @@
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
+      "email": "メールアドレス",
       "role": "ロール",
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
     },
@@ -1333,12 +1327,10 @@
         },
         "re-order": "並び替え"
       },
-      "never-expires": "有効期限なし",
       "semantic-types": {
         "add-from-template": "テンプレートから追加",
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",
-        "self": "セマンティックタイプ",
         "table": {
           "delete": "このセマンティック タイプを削除しますか?",
           "description": "説明",
@@ -1350,27 +1342,29 @@
           "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。",
           "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します"
         },
-        "use-predefined-type": "事前定義されたタイプを使用する"
-      }
+        "use-predefined-type": "事前定義されたタイプを使用する",
+        "self": "セマンティックタイプ"
+      },
+      "never-expires": "有効期限なし"
     },
     "sidebar": {
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
-      "data-access": "データアクセス",
       "data-classification": "データ分類",
       "general": "全般",
       "global-masking": "グローバルマスキング",
-      "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
-      "integration": "連携",
       "mcp": "MCP",
       "members": "メンバー",
       "members-and-groups": "メンバーとグループ",
-      "profile": "プロフィール",
-      "security-and-policy": "セキュリティポリシー",
       "sso": "SSO",
       "subscription": "サブスクリプション",
-      "users-and-groups": "ユーザーとグループ"
+      "users-and-groups": "ユーザーとグループ",
+      "data-access": "データアクセス",
+      "iam-and-admin": "IAM と管理",
+      "integration": "連携",
+      "profile": "プロフィール",
+      "security-and-policy": "セキュリティポリシー"
     },
     "sso": {
       "create": "SSOの作成",
@@ -1459,6 +1453,7 @@
     }
   },
   "sql-editor": {
+    "self": "SQLエディタ",
     "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
@@ -1467,10 +1462,11 @@
     "grant-type-unmask": "Unmask",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
-    "self": "SQLエディタ",
     "view-issue": "View Issue"
   },
   "sql-review": {
+    "configure-policy": "Configure policy",
+    "title": "SQL Review",
     "add-or-remove-rules": "Add or remove rules",
     "add-rules": "Add rules",
     "attach-resource": {
@@ -1479,7 +1475,6 @@
       "no-linked-resources": "No attached resources",
       "self": "Attach to resources"
     },
-    "configure-policy": "Configure policy",
     "create": {
       "basic-info": {
         "display-name": "Display name",
@@ -1504,14 +1499,12 @@
     "policy-removed": "Successfully removed the review policy.",
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
-    "review-policy": "Review policy",
-    "title": "SQL Review"
+    "review-policy": "Review policy"
   },
   "subscription": {
     "contact-us": "お問い合わせ",
     "current": "現在のプラン",
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
-    "disabled-feature": "無効な機能",
     "enterprise-free-trial": "Enterprise の {{days}} 日間の無料トライアル",
     "expired": "期限切れ",
     "expires-at": "有効期限",
@@ -1602,19 +1595,20 @@
         "title": "ユーザー制限",
         "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
-    }
+    },
+    "disabled-feature": "無効な機能"
   },
   "subscription.instance-assignment.assign-license": "ライセンスの割り当て",
   "subscription.instance-assignment.n-license-remain": "残り {{n}}",
   "subscription.usage.instance-count.runoutof": "すべての {{total}} インスタンス クレジットが使用されました。",
   "subscription.usage.instance-count.title": "インスタンスの制限",
   "two-factor": {
+    "enabled": "二要素認証がオンになっています",
     "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
     "disable": {
       "description": "アカウントの 2 要素認証を無効にしようとしています。ログイン時に認証アプリによって生成されたセキュリティ コードを入力する必要がなくなりました。",
       "self": "二要素認証を無効にする"
     },
-    "enabled": "二要素認証がオンになっています",
     "messages": {
       "2fa-disabled": "二要素認証が正常に無効になりました",
       "2fa-enabled": "二要素認証が正常にオンになりました",
@@ -1655,5 +1649,68 @@
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
     }
+  },
+  "agent": {
+    "assistant-title": "Bytebase アシスタント",
+    "resize": "Resize",
+    "minimize": "最小化",
+    "close": "閉じる",
+    "input-placeholder": "何でも質問してください...",
+    "send": "送信",
+    "args": "引数:",
+    "result": "結果:",
+    "stop": "停止",
+    "interrupted": "中断",
+    "retry-last-chat-turn": "直前のターンを再試行",
+    "interrupted-retry-hint": "再試行すると、現在のページ状態で中断されたターンをやり直します。",
+    "new-chat": "新しいチャット",
+    "rename-chat-placeholder": "チャット名を入力してください",
+    "archive-chat": "アーカイブ",
+    "unarchive-chat": "アーカイブ解除",
+    "delete-chat": "削除",
+    "active-only-chats": "アクティブのみ",
+    "archived-only-chats": "アーカイブのみ",
+    "archive-chat-confirmation": "このチャットをアーカイブしますか？",
+    "delete-chat-confirmation": "このチャットを削除しますか？",
+    "chat-list-label": "チャット",
+    "chat-default-title": "新しいチャット",
+    "chat-archived-label": "アーカイブ済み",
+    "chat-status-idle": "待機中",
+    "chat-status-running": "実行中",
+    "chat-status-awaiting-user": "入力待ち",
+    "chat-status-error": "エラー",
+    "chat-status-interrupted": "中断",
+    "chat-total-tokens": "使用済みトークン: {{count}}",
+    "reply": "返信",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "pending-input-hint": "このチャットを続けるには、下に返信してください。",
+    "pending-confirm-hint": "このチャットを続けるには、確認またはキャンセルを選択してください。",
+    "pending-choose-hint": "このチャットを続けるには、選択肢を選んでください。",
+    "tool-ask-user": "あなたの回答を待っています",
+    "tool-ask-user-input": "入力が必要です",
+    "tool-ask-user-confirm": "確認が必要です",
+    "tool-ask-user-choose": "選択が必要です",
+    "tool-response-submitted": "回答を送信しました",
+    "tool-prompt": "質問:",
+    "tool-default-value": "既定値:",
+    "tool-options": "選択肢:",
+    "tool-answer": "回答:",
+    "tool-value": "値:",
+    "tool-completed": "完了",
+    "tool-failed": "問題ありで完了",
+    "ai-not-configured": {
+      "title": "このワークスペースでは AI アシスタントが設定されていません",
+      "description": "ページエージェントを続けるには、ワークスペース設定で AI アシスタントを有効にしてください。",
+      "configure": "AI を設定",
+      "contact-admin": "AI アシスタントを設定するには、組織の管理者に連絡してください。"
+    }
+  },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
   }
 }

@@ -2,7 +2,14 @@
 // Vite resolves the glob at build time and creates a lazy chunk for the matched module.
 const settingsPageLoaders = import.meta.glob("./pages/settings/*.tsx");
 const projectPageLoaders = import.meta.glob("./pages/project/*.tsx");
-const pageLoaders = { ...settingsPageLoaders, ...projectPageLoaders };
+const pluginComponentLoaders = import.meta.glob(
+  "./plugins/agent/components/AgentWindow.tsx"
+);
+const pageLoaders = {
+  ...settingsPageLoaders,
+  ...projectPageLoaders,
+  ...pluginComponentLoaders,
+};
 
 // biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
 type ReactDeps = any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -36,7 +43,11 @@ async function loadCoreDeps() {
   return cachedDeps;
 }
 
-const pageDirs = ["./pages/settings", "./pages/project"];
+const pageDirs = [
+  "./pages/settings",
+  "./pages/project",
+  "./plugins/agent/components",
+];
 
 async function loadPage(name: string): Promise<ReactComponent> {
   const hit = cachedPages.get(name);
