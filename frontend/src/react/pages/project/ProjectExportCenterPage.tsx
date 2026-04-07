@@ -515,7 +515,7 @@ function IssueListItem({
             {validLabels.map((label: { value: string; color: string }) => (
               <span
                 key={label.value}
-                className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded text-xs whitespace-nowrap border shrink-0"
+                className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded-xs text-xs whitespace-nowrap border shrink-0"
               >
                 <span
                   className="w-2.5 h-2.5 rounded-sm shrink-0"

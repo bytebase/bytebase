@@ -846,7 +846,7 @@ function ChangelogSelector({
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-md h-9 px-3 text-sm bg-white text-left transition-colors",
+          "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-xs h-9 px-3 text-sm bg-white text-left transition-colors",
           "hover:border-gray-400",
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
@@ -868,7 +868,7 @@ function ChangelogSelector({
         />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 min-w-full w-max bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 min-w-full w-max bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
           <div className="max-h-60 overflow-y-auto">
             {entries.map((entry) => (
               <button
@@ -1452,10 +1452,10 @@ function SelectTargetDatabasesView({
               </div>
               {targetDatabaseList.length > 0 && (
                 <div className="w-full mt-2 px-2">
-                  <div className="flex rounded-md bg-gray-100 p-0.5">
+                  <div className="flex rounded-xs bg-gray-100 p-0.5">
                     <button
                       className={cn(
-                        "flex-1 text-xs px-2 py-1 rounded transition-colors",
+                        "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         showDatabaseWithDiff
                           ? "bg-white shadow-sm font-medium"
                           : "text-gray-500 hover:text-gray-700"
@@ -1469,7 +1469,7 @@ function SelectTargetDatabasesView({
                     </button>
                     <button
                       className={cn(
-                        "flex-1 text-xs px-2 py-1 rounded transition-colors",
+                        "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         !showDatabaseWithDiff
                           ? "bg-white shadow-sm font-medium"
                           : "text-gray-500 hover:text-gray-700"
@@ -2029,7 +2029,10 @@ function TargetDatabasesSelectPanel({
           <h2 className="text-lg font-semibold">
             {t("database.sync-schema.target-databases")}
           </h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
+          <button
+            className="p-1 hover:bg-control-bg rounded-xs"
+            onClick={onClose}
+          >
             &times;
           </button>
         </div>
@@ -2038,7 +2041,7 @@ function TargetDatabasesSelectPanel({
         <div className="px-6 pt-4">
           <input
             type="text"
-            className="w-full border border-gray-300 rounded-md h-9 px-3 text-sm"
+            className="w-full border border-gray-300 rounded-xs h-9 px-3 text-sm"
             placeholder={t("database.filter-database")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
