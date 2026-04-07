@@ -459,6 +459,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: (route: RouteLocationNormalized) => ({
               page: "DatabaseRevisionDetailPage",
               ...route.params,
+              project: `projects/${route.params.projectId}`,
+              instance: `instances/${route.params.instanceId}`,
+              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
+              revisionId: route.params.revisionId,
             }),
           },
         ],

@@ -1,32 +1,56 @@
 import { LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RevisionDetailPanel } from "@/react/components/revision";
-import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
-import { useDatabaseV1ByName } from "@/store";
 import {
-  databaseV1Url,
-  extractDatabaseResourceName,
-} from "@/utils/v1/database";
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/router/dashboard/projectV1";
+import { useDatabaseV1Store } from "@/store";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
+import { extractInstanceResourceName } from "@/utils/v1/instance";
+import { extractProjectResourceName } from "@/utils/v1/project";
 
 export function DatabaseRevisionDetailPage({
-  projectId,
-  instanceId,
-  databaseName,
+  project,
+  instance,
+  database,
   revisionId,
 }: {
-  projectId: string;
-  instanceId: string;
-  databaseName: string;
+  project: string;
+  instance: string;
+  database: string;
   revisionId: string;
 }) {
   const { t } = useTranslation();
-  const databaseFullName = `instances/${instanceId}/databases/${databaseName}`;
-  const { database, ready } = useDatabaseV1ByName(databaseFullName);
-  const databaseItem = useVueState(() => database.value);
-  const databaseReady = useVueState(() => ready.value);
+  const databaseStore = useDatabaseV1Store();
+  const [loading, setLoading] = useState(true);
+  const projectId = extractProjectResourceName(project);
+  const databaseFullName = database;
+  const { databaseName } = extractDatabaseResourceName(database);
+  const instanceId = extractInstanceResourceName(instance);
   const revisionName = `${databaseFullName}/revisions/${revisionId}`;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
+    void databaseStore
+      .getOrFetchDatabaseByName(databaseFullName)
+      .catch((error) => {
+        console.error("Failed to fetch database details", error);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [databaseFullName, databaseStore]);
 
   const handleProjectBreadcrumbClick = () => {
     router.push({
@@ -36,11 +60,26 @@ export function DatabaseRevisionDetailPage({
   };
 
   const handleDatabaseBreadcrumbClick = () => {
-    router.push(databaseV1Url(databaseItem));
+    router.push({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId,
+        instanceId,
+        databaseName,
+      },
+    });
   };
 
   const handleRevisionBreadcrumbClick = () => {
-    router.push(`${databaseV1Url(databaseItem)}#revision`);
+    router.push({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId,
+        instanceId,
+        databaseName,
+      },
+      hash: "#revision",
+    });
   };
 
   return (
@@ -63,7 +102,7 @@ export function DatabaseRevisionDetailPage({
               className="transition-colors hover:text-accent"
               onClick={handleDatabaseBreadcrumbClick}
             >
-              {extractDatabaseResourceName(databaseItem.name).databaseName}
+              {databaseName}
             </button>
           </li>
           <li aria-hidden="true">/</li>
@@ -81,12 +120,12 @@ export function DatabaseRevisionDetailPage({
         </ol>
       </nav>
 
-      {databaseReady ? (
-        <RevisionDetailPanel revisionName={revisionName} />
-      ) : (
+      {loading ? (
         <div className="flex items-center justify-center py-10">
           <LoaderCircle className="h-4 w-4 animate-spin text-control-light" />
         </div>
+      ) : (
+        <RevisionDetailPanel revisionName={revisionName} />
       )}
     </div>
   );
