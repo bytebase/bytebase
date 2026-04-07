@@ -391,14 +391,16 @@ export function DataExportPrepDrawer({
               </div>
 
               {/* Labels */}
-              {project && project.issueLabels.length > 0 && (
-                <IssueLabelSelect
-                  labels={project.issueLabels}
-                  selected={labels}
-                  required={project.forceIssueLabels}
-                  onChange={setLabels}
-                />
-              )}
+              {project &&
+                (project.issueLabels.length > 0 ||
+                  project.forceIssueLabels) && (
+                  <IssueLabelSelect
+                    labels={project.issueLabels}
+                    selected={labels}
+                    required={project.forceIssueLabels}
+                    onChange={setLabels}
+                  />
+                )}
 
               {/* SQL */}
               <div className="flex flex-col gap-y-2">
