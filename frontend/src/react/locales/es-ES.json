@@ -219,7 +219,8 @@
     "under-review": "En revisión",
     "draft": "Borrador",
     "error": "Error",
-    "type-to-search": "Escriba para buscar..."
+    "type-to-search": "Escriba para buscar...",
+    "comment": "Comentario"
   },
   "common.add": "Agregar",
   "common.admin": "Admin",
@@ -669,6 +670,38 @@
         "creator": {
           "title": "Creador",
           "description": "Búsqueda por creador"
+        },
+        "status": {
+          "description": "Buscar por el estado del issue"
+        },
+        "approval": {
+          "title": "Estado de aprobación",
+          "description": "Buscar por estado de revisión del problema",
+          "value": {
+            "checking": "Verificando",
+            "pending": "Aprobación pendiente",
+            "approved": "Aprobado",
+            "rejected": "Rechazado",
+            "skipped": "Omitido"
+          }
+        },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "role-grant": "Role Grant",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
+        "current-approver": {
+          "title": "aprobador actual",
+          "description": "Buscar por el aprobador actual del problema"
+        },
+        "issue-label": {
+          "title": "Etiqueta de emisión",
+          "description": "Filtrar por etiqueta de problema"
         }
       }
     },
@@ -680,7 +713,9 @@
     "risk-level": {
       "high": "Alto",
       "moderate": "Moderado",
-      "self": "Nivel de riesgo"
+      "self": "Nivel de riesgo",
+      "filter": "Filtrar por nivel de riesgo",
+      "low": "Bajo"
     },
     "role-grant": {
       "all-databases": "todas las bases de datos",
@@ -695,9 +730,27 @@
       "waiting-role": "Waiting: {{role}}",
       "name": "Nombre",
       "updated": "Actualizado",
-      "creator": "Creador"
+      "creator": "Creador",
+      "closed": "Cerrado"
     },
-    "upload-sql": "Upload SQL"
+    "upload-sql": "Upload SQL",
+    "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
+    "waiting-approval": "A la espera de la aprobación",
+    "sort": {
+      "sort": "Ordenar",
+      "created": "Fecha de creación",
+      "updated": "Fecha de actualización",
+      "descending": "Descendente",
+      "ascending": "Ascendente"
+    },
+    "batch-transition": {
+      "close": "Cerrar",
+      "reopen": "Reabrir",
+      "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {{}}",
+      "closed": "cerrado",
+      "reopened": "reabierto"
+    },
+    "leave-a-comment": "Dejar un comentario..."
   },
   "label": {
     "error": {

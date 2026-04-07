@@ -277,8 +277,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.issues"),
           requiredPermissionList: () => ["bb.issues.list"],
         },
-        component: () => import("@/views/project/ProjectIssueDashboard.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectIssueDashboardPage",
+          ...route.params,
+        }),
       },
       {
         path: "plans",

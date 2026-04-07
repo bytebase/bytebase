@@ -219,7 +219,8 @@
     "under-review": "Đang xem xét",
     "draft": "Bản nháp",
     "error": "Lỗi",
-    "type-to-search": "Nhập để tìm kiếm..."
+    "type-to-search": "Nhập để tìm kiếm...",
+    "comment": "Bình luận"
   },
   "common.add": "Thêm",
   "common.admin": "Quản trị viên",
@@ -669,6 +670,38 @@
         "creator": {
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"
+        },
+        "status": {
+          "description": "Tìm kiếm theo trạng thái issue"
+        },
+        "approval": {
+          "title": "Trạng thái phê duyệt",
+          "description": "Tìm kiếm theo trạng thái phê duyệt của vấn đề",
+          "value": {
+            "checking": "Đang kiểm tra",
+            "pending": "Đang chờ phê duyệt",
+            "approved": "Đã phê duyệt",
+            "rejected": "Đã từ chối",
+            "skipped": "Đã bỏ qua"
+          }
+        },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "role-grant": "Role Grant",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
+        "current-approver": {
+          "title": "Người phê duyệt hiện tại",
+          "description": "Tìm kiếm theo người phê duyệt hiện tại"
+        },
+        "issue-label": {
+          "title": "Nhãn vấn đề",
+          "description": "Lọc theo nhãn vấn đề"
         }
       }
     },
@@ -680,7 +713,9 @@
     "risk-level": {
       "high": "Cao",
       "moderate": "Trung bình",
-      "self": "Mức độ rủi ro"
+      "self": "Mức độ rủi ro",
+      "filter": "Lọc theo mức độ rủi ro",
+      "low": "Thấp"
     },
     "role-grant": {
       "all-databases": "Tất cả",
@@ -695,9 +730,27 @@
       "waiting-role": "Waiting: {{role}}",
       "name": "Tên",
       "updated": "Đã cập nhật",
-      "creator": "Người tạo"
+      "creator": "Người tạo",
+      "closed": "Đã đóng"
     },
-    "upload-sql": "Upload SQL"
+    "upload-sql": "Upload SQL",
+    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
+    "waiting-approval": "Đang chờ phê duyệt",
+    "sort": {
+      "sort": "Sắp xếp",
+      "created": "Thời gian tạo",
+      "updated": "Thời gian cập nhật",
+      "descending": "Giảm dần",
+      "ascending": "Tăng dần"
+    },
+    "batch-transition": {
+      "close": "Đóng",
+      "reopen": "Mở lại",
+      "not-allowed-tips": "Một số vấn đề đã chọn không thể {{}}",
+      "closed": "đã đóng",
+      "reopened": "đã mở lại"
+    },
+    "leave-a-comment": "Để lại bình luận..."
   },
   "label": {
     "error": {

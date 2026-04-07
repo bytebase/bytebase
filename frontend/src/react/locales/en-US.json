@@ -219,7 +219,8 @@
     "under-review": "Under review",
     "draft": "Draft",
     "error": "Error",
-    "type-to-search": "Type to search..."
+    "type-to-search": "Type to search...",
+    "comment": "Comment"
   },
   "common.add": "Add",
   "common.admin": "Admin",
@@ -669,6 +670,38 @@
         "creator": {
           "title": "Creator",
           "description": "Search by the creator"
+        },
+        "status": {
+          "description": "Search by the issue status"
+        },
+        "approval": {
+          "title": "Approval Status",
+          "description": "Search by the issue approval status",
+          "value": {
+            "checking": "Checking",
+            "pending": "Pending approval",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "skipped": "Skipped"
+          }
+        },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "role-grant": "Role Grant",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
+        "current-approver": {
+          "title": "Current approver",
+          "description": "Search by the issue current approver"
+        },
+        "issue-label": {
+          "title": "Issue label",
+          "description": "Filter by issue label"
         }
       }
     },
@@ -680,7 +713,9 @@
     "risk-level": {
       "high": "High",
       "moderate": "Moderate",
-      "self": "Risk level"
+      "self": "Risk level",
+      "filter": "Filter issues by risk level",
+      "low": "Low"
     },
     "role-grant": {
       "all-databases": "All",
@@ -695,9 +730,27 @@
       "waiting-role": "Waiting: {{role}}",
       "name": "Name",
       "updated": "Updated",
-      "creator": "Creator"
+      "creator": "Creator",
+      "closed": "Closed"
     },
-    "upload-sql": "Upload SQL"
+    "upload-sql": "Upload SQL",
+    "subtitle": "Issues cover database changes, data exports, and access requests. Review and approve before execution.",
+    "waiting-approval": "Waiting for Approval",
+    "sort": {
+      "sort": "Sort",
+      "created": "Create time",
+      "updated": "Update time",
+      "descending": "Descending",
+      "ascending": "Ascending"
+    },
+    "batch-transition": {
+      "close": "Close",
+      "reopen": "Reopen",
+      "not-allowed-tips": "Some of selected issues cannot be {{}}",
+      "closed": "closed",
+      "reopened": "reopened"
+    },
+    "leave-a-comment": "Leave a comment..."
   },
   "label": {
     "error": {
