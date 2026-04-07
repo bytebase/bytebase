@@ -41,6 +41,7 @@ export interface UseTaskRunLogSectionsOptions {
   sheetsMap?: Map<string, Sheet>;
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
   detailText?: TaskRunLogDetailText;
+  datasetKey?: string;
 }
 
 export interface UseTaskRunLogSectionsResult {
@@ -72,6 +73,7 @@ export const useTaskRunLogSections = ({
   sheetsMap,
   getSectionLabel,
   detailText,
+  datasetKey,
 }: UseTaskRunLogSectionsOptions): UseTaskRunLogSectionsResult => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set()
@@ -207,6 +209,31 @@ export const useTaskRunLogSections = ({
     }
     return releaseFileGroups.map((_, fileIndex) => `file-${fileIndex}`);
   }, [hasMultipleReplicas, releaseFileGroups, replicaGroups]);
+
+  const resolvedDatasetKey = useMemo(() => {
+    if (datasetKey) return datasetKey;
+    return entries
+      .map((entry) => {
+        return [
+          entry.type,
+          entry.replicaId,
+          entry.logTime?.seconds.toString() ?? "",
+          entry.logTime?.nanos ?? 0,
+          entry.releaseFileExecute?.version ?? "",
+          entry.releaseFileExecute?.filePath ?? "",
+        ].join(":");
+      })
+      .join("|");
+  }, [datasetKey, entries]);
+
+  useEffect(() => {
+    setExpandedSections(new Set());
+    setUserCollapsedSections(new Set());
+    setExpandedReplicas(new Set());
+    setUserCollapsedReplicas(new Set());
+    setExpandedReleaseFiles(new Set());
+    setUserCollapsedReleaseFiles(new Set());
+  }, [resolvedDatasetKey]);
 
   useEffect(() => {
     setExpandedSections((previous) => {

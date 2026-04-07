@@ -105,17 +105,18 @@ export const useTaskRunLogData = (
   useEffect(() => {
     const version = ++sheetFetchVersion.current;
 
+    // Always clear both sources when task changes, so previous-task data
+    // cannot be displayed while the new task's requests are in flight.
+    setSheet(undefined);
+    setSheetsMap(new Map());
+
     if (!task) {
-      setSheet(undefined);
-      setSheetsMap(new Map());
       return;
     }
 
     if (isReleaseBasedTask(task)) {
-      setSheet(undefined);
       const releaseName = releaseNameOfTaskV1(task);
       if (!releaseName) {
-        setSheetsMap(new Map());
         return;
       }
 
@@ -157,10 +158,8 @@ export const useTaskRunLogData = (
       return;
     }
 
-    setSheetsMap(new Map());
     const sheetName = sheetNameOfTaskV1(task);
     if (!sheetName) {
-      setSheet(undefined);
       return;
     }
 
