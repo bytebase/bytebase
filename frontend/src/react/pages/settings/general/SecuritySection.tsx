@@ -16,6 +16,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSubscriptionV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -255,9 +256,9 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
               <div className="mt-3 w-full flex flex-row">
                 <div className="flex items-center gap-4">
                   <div className="relative w-60">
-                    <input
+                    <Input
                       type="number"
-                      className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-14 text-sm disabled:opacity-50"
+                      className="pr-14"
                       value={state.inputValue}
                       min={1}
                       step={1}
@@ -316,6 +317,18 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
               <div className="w-full flex flex-col gap-2 mt-2">
                 {/* Domain tags + input */}
                 <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="text"
+                    className="min-w-[20rem]"
+                    placeholder={t(
+                      "settings.general.workspace.domain-restriction.domain-input-placeholder"
+                    )}
+                    value={domainInput}
+                    disabled={!canEdit}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={handleDomainKeyDown}
+                    onBlur={addDomain}
+                  />
                   {state.domains.map((domain, index) => (
                     <span
                       key={index}
@@ -332,18 +345,6 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                       </button>
                     </span>
                   ))}
-                  <input
-                    type="text"
-                    className="min-w-[20rem] rounded-xs border border-control-border px-3 py-1.5 text-sm disabled:opacity-50"
-                    placeholder={t(
-                      "settings.general.workspace.domain-restriction.domain-input-placeholder"
-                    )}
-                    value={domainInput}
-                    disabled={!canEdit}
-                    onChange={(e) => setDomainInput(e.target.value)}
-                    onKeyDown={handleDomainKeyDown}
-                    onBlur={addDomain}
-                  />
                 </div>
 
                 {/* Enforce restriction checkbox */}

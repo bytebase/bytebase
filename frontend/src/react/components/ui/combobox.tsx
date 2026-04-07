@@ -331,7 +331,6 @@ export function Combobox(props: ComboboxProps) {
         ref={inputRef}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={placeholder}
         wrapperClassName="m-2"
         className="h-7"
       />

@@ -197,9 +197,8 @@ export function RuleConfig({
           )}
 
           {config.payload.type === "NUMBER" && (
-            <input
+            <Input
               type="number"
-              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm text-main placeholder:text-control-placeholder focus:outline-hidden focus:ring-2 focus:ring-accent focus:border-accent disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50"
               value={(payload[index] as number) ?? 0}
               disabled={disabled}
               placeholder={`${config.payload.default}`}
@@ -302,8 +301,8 @@ function StringArrayInput({
           </span>
         ))}
         {!disabled && (
-          <input
-            className="min-w-[20rem] flex-1 border border-control-border rounded-xs px-2 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-accent"
+          <Input
+            className="min-w-[20rem] flex-1"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}

@@ -2,6 +2,7 @@ import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
@@ -88,20 +89,18 @@ export function LabelEditorDrawer({
             </div>
           )}
           <div className="flex items-center gap-x-2 mb-4">
-            <input
-              type="text"
+            <Input
               placeholder={t("common.key")}
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
-              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
+              className="flex-1"
             />
             <span className="text-control-placeholder">:</span>
-            <input
-              type="text"
+            <Input
               placeholder={t("common.value")}
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
-              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
+              className="flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter") addLabelToAll();
               }}

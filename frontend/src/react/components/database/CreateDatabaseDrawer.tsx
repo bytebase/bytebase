@@ -7,6 +7,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceSelect } from "@/react/components/InstanceSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
+import { Input } from "@/react/components/ui/input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -436,15 +437,11 @@ export function CreateDatabaseDrawer({
               {t("create-db.new-database-name")}{" "}
               <span className="text-error">*</span>
             </label>
-            <input
-              type="text"
+            <Input
               value={databaseName}
               onChange={(e) => setDatabaseName(e.target.value)}
               placeholder={t("create-db.new-database-name")}
-              className={cn(
-                "w-full border rounded-xs px-3 py-2 text-sm",
-                isReservedName ? "border-error" : "border-control-border"
-              )}
+              className={cn(isReservedName && "border-error")}
             />
             {isReservedName && (
               <p className="mt-1 text-xs text-error">
@@ -459,11 +456,9 @@ export function CreateDatabaseDrawer({
                 {t("create-db.new-collection-name")}{" "}
                 <span className="text-error">*</span>
               </label>
-              <input
-                type="text"
+              <Input
                 value={tableName}
                 onChange={(e) => setTableName(e.target.value)}
-                className="w-full border border-gray-300 rounded-xs px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -473,11 +468,9 @@ export function CreateDatabaseDrawer({
               <label className="block text-sm font-medium mb-1">
                 {t("create-db.cluster")}
               </label>
-              <input
-                type="text"
+              <Input
                 value={cluster}
                 onChange={(e) => setCluster(e.target.value)}
-                className="w-full border border-gray-300 rounded-xs px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -529,29 +522,25 @@ export function CreateDatabaseDrawer({
                     ? t("db.encoding")
                     : t("db.character-set")}
                 </label>
-                <input
-                  type="text"
+                <Input
                   value={characterSet}
                   onChange={(e) => setCharacterSet(e.target.value)}
                   placeholder={defaultCharsetOfEngineV1(
                     selectedInstance.engine
                   )}
-                  className="w-full border border-control-border rounded-xs px-3 py-2 text-sm"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
                   {t("db.collation")}
                 </label>
-                <input
-                  type="text"
+                <Input
                   value={collation}
                   onChange={(e) => setCollation(e.target.value)}
                   placeholder={
                     defaultCollationOfEngineV1(selectedInstance.engine) ||
                     t("common.default")
                   }
-                  className="w-full border border-control-border rounded-xs px-3 py-2 text-sm"
                 />
               </div>
             </>

@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -2039,9 +2040,7 @@ function TargetDatabasesSelectPanel({
 
         {/* Search */}
         <div className="px-6 pt-4">
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded-xs h-9 px-3 text-sm"
+          <SearchInput
             placeholder={t("database.filter-database")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

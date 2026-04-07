@@ -23,6 +23,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -317,10 +318,10 @@ function TimeRangePicker({
             <label className="text-sm text-control-light whitespace-nowrap w-10">
               {t("common.from")}
             </label>
-            <input
+            <Input
               type="datetime-local"
               step="1"
-              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
+              className="flex-1"
               value={fromDatetime}
               onChange={(e) => updateRange(e.target.value, toDatetime)}
             />
@@ -329,10 +330,10 @@ function TimeRangePicker({
             <label className="text-sm text-control-light whitespace-nowrap w-10">
               {t("common.to")}
             </label>
-            <input
+            <Input
               type="datetime-local"
               step="1"
-              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
+              className="flex-1"
               value={toDatetime}
               onChange={(e) => updateRange(fromDatetime, e.target.value)}
             />

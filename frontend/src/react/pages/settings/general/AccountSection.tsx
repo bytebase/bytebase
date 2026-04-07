@@ -17,6 +17,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useActuatorV1Store,
@@ -415,9 +416,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               </p>
               <div className="flex flex-col gap-y-3">
                 <div className="flex items-center">
-                  <input
+                  <Input
                     type="number"
-                    className="w-24 mr-2 rounded-xs border border-control-border px-2 py-1 text-sm"
+                    className="w-24 mr-2"
                     value={passwordState.minLength || DEFAULT_MIN_LENGTH}
                     min={DEFAULT_MIN_LENGTH}
                     disabled={disabled || !hasPasswordFeature}
@@ -543,9 +544,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                       ).split("{day}")[0]
                     }
                     {passwordState.passwordRotation ? (
-                      <input
+                      <Input
                         type="number"
-                        className="w-24 mx-2 rounded-xs border border-control-border px-2 py-1 text-sm"
+                        className="w-24 mx-2"
                         value={passwordRotationDays}
                         min={1}
                         disabled={disabled || !hasPasswordFeature}
@@ -673,9 +674,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 )}
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <input
+                <Input
                   type="number"
-                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  className="w-24"
                   value={tokenState.accessTokenDuration}
                   min={1}
                   max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
@@ -747,9 +748,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 )}
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <input
+                <Input
                   type="number"
-                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  className="w-24"
                   value={tokenState.refreshTokenDuration}
                   min={1}
                   max={
@@ -831,9 +832,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 </span>
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <input
+                <Input
                   type="number"
-                  className="w-24 rounded-xs border border-control-border px-2 py-1 text-sm"
+                  className="w-24"
                   value={tokenState.inactiveTimeout}
                   min={-1}
                   disabled={disabled || !hasSecureTokenFeature}

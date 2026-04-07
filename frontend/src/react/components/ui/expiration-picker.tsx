@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Input } from "@/react/components/ui/input";
 
 /**
  * ExpirationPicker — a datetime picker with inline clear button.
@@ -20,9 +21,9 @@ export function ExpirationPicker({
 
   return (
     <div className="flex items-center gap-x-2">
-      <input
+      <Input
         type="datetime-local"
-        className="h-9 w-64 rounded-xs border border-control-border bg-transparent px-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+        className="w-64"
         value={value ?? ""}
         min={minDate}
         onChange={(e) => onChange(e.target.value || undefined)}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -143,12 +144,11 @@ export function TransferProjectDrawer({
 
           {mode === "project" && (
             <div>
-              <input
-                type="text"
+              <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t("common.filter-by-name")}
-                className="w-full border border-control-border rounded-xs px-3 py-2 text-sm mb-2"
+                className="mb-2"
               />
               <div className="border border-control-border rounded-sm max-h-64 overflow-y-auto">
                 {loadingProjects ? (

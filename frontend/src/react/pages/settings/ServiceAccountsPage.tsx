@@ -7,6 +7,7 @@ import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -519,14 +520,12 @@ function CreateServiceAccountDrawer({
               <label className="block text-sm font-medium text-control">
                 {t("common.name")}
               </label>
-              <input
-                type="text"
+              <Input
                 autoComplete="off"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Foo"
                 maxLength={200}
-                className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm outline-hidden placeholder:text-control-placeholder focus:ring-2 focus:ring-accent focus:border-accent"
               />
             </div>
 
@@ -537,22 +536,17 @@ function CreateServiceAccountDrawer({
                 <span className="ml-0.5 text-error">*</span>
               </label>
               {isEditMode ? (
-                <input
-                  type="text"
-                  value={serviceAccount?.email ?? ""}
-                  disabled
-                  className="flex h-9 w-full rounded-xs border border-control-border bg-gray-50 px-3 py-1 text-sm opacity-60 cursor-not-allowed"
-                />
+                <Input value={serviceAccount?.email ?? ""} disabled />
               ) : (
-                <div className="flex items-center border border-control-border rounded-xs overflow-hidden focus-within:ring-2 focus-within:ring-accent focus-within:border-accent">
+                <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
                   <input
                     type="text"
                     autoComplete="off"
                     value={emailPrefix}
                     onChange={(e) => setEmailPrefix(e.target.value)}
-                    className="flex-1 h-9 px-3 py-1 text-sm outline-hidden bg-transparent"
+                    className="flex-1 h-9 px-3 py-1 text-sm bg-transparent border-none outline-none ring-0 shadow-none focus:border-none focus:outline-none focus:ring-0 focus:shadow-none"
                   />
-                  <span className="px-2 py-1 text-sm text-control-light bg-control-bg border-l border-control-border whitespace-nowrap">
+                  <span className="px-2 py-1 text-sm text-control-light bg-control-bg whitespace-nowrap">
                     @{emailSuffix}
                   </span>
                 </div>
