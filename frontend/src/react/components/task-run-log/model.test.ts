@@ -28,12 +28,41 @@ describe("task-run-log model", () => {
           response: { logTime: ts(3) },
         },
       }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(4),
+        commandExecute: {
+          statement: "ALTER TABLE book ADD COLUMN author TEXT;",
+          response: { logTime: ts(5) },
+        },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+        logTime: ts(6),
+        releaseFileExecute: { version: "v2", filePath: "002.sql" },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(7),
+        commandExecute: {
+          statement: "CREATE INDEX idx_book_author ON book(author);",
+          response: { logTime: ts(8) },
+        },
+      }),
     ];
 
     expect(hasReleaseFileMarkers(entries)).toBe(true);
-    expect(buildReleaseFileGroups(entries)[0]).toMatchObject({
+    const groups = buildReleaseFileGroups(entries);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toMatchObject({
       version: "v1",
       filePath: "001.sql",
+      sections: [{ entryCount: 2 }],
+    });
+    expect(groups[1]).toMatchObject({
+      version: "v2",
+      filePath: "002.sql",
+      sections: [{ entryCount: 1 }],
     });
   });
 
