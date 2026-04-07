@@ -326,6 +326,7 @@
   "common.learn-more": "もっと詳しく知る",
   "common.loading": "読み込み中",
   "common.load-more": "さらに読み込む",
+  "common.show-more": "もっと見る",
   "common.minutes": "分",
   "common.no-data": "データなし",
   "common.optional": "オプション",
@@ -358,6 +359,8 @@
   "task-run.log-viewer.expand-all": "すべて展開",
   "task-run.log-viewer.collapse-all": "すべて折りたたむ",
   "task-run.log-viewer.summary": "{sections} セクション · {entries} エントリ",
+  "issue.task-run.logs": "ログ",
+  "database.revision.self": "リビジョン",
   "create-db": {
     "cluster": "集まる",
     "database-owner-name": "データベース所有者",

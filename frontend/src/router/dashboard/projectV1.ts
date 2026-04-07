@@ -455,14 +455,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             meta: {
               requiredPermissionList: () => ["bb.databases.get"],
             },
-            component: () =>
-              import("@/views/DatabaseDetail/RevisionDetail.vue"),
-            props: (route) => ({
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "DatabaseRevisionDetailPage",
               ...route.params,
-              project: `projects/${route.params.projectId}`,
-              instance: `instances/${route.params.instanceId}`,
-              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
-              revisionId: route.params.revisionId,
             }),
           },
         ],

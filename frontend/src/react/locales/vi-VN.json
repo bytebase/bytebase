@@ -326,6 +326,7 @@
   "common.learn-more": "Tìm hiểu thêm",
   "common.loading": "Đang tải",
   "common.load-more": "Tải thêm",
+  "common.show-more": "Hiển thị thêm",
   "common.minutes": "Phút",
   "common.no-data": "Không có dữ liệu",
   "common.optional": "Tùy chọn",
@@ -358,6 +359,8 @@
   "task-run.log-viewer.expand-all": "Mở rộng tất cả",
   "task-run.log-viewer.collapse-all": "Thu gọn tất cả",
   "task-run.log-viewer.summary": "{sections} phần · {entries} mục",
+  "issue.task-run.logs": "Nhật ký",
+  "database.revision.self": "Phiên bản",
   "create-db": {
     "cluster": "Cụm",
     "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",

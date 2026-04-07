@@ -326,6 +326,7 @@
   "common.learn-more": "了解更多",
   "common.loading": "加载中",
   "common.load-more": "加载更多",
+  "common.show-more": "显示更多",
   "common.minutes": "分钟",
   "common.no-data": "无数据",
   "common.optional": "可选",
@@ -358,6 +359,8 @@
   "task-run.log-viewer.expand-all": "全部展开",
   "task-run.log-viewer.collapse-all": "全部收起",
   "task-run.log-viewer.summary": "{sections} 个分组 · {entries} 条记录",
+  "issue.task-run.logs": "日志",
+  "database.revision.self": "版本",
   "create-db": {
     "cluster": "集群",
     "database-owner-name": "数据库所有者",

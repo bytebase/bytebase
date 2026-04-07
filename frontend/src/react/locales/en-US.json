@@ -326,6 +326,7 @@
   "common.learn-more": "Learn more",
   "common.loading": "Loading",
   "common.load-more": "Load more",
+  "common.show-more": "Show more",
   "common.minutes": "Minutes",
   "common.no-data": "No data",
   "common.optional": "Optional",
@@ -358,6 +359,8 @@
   "task-run.log-viewer.expand-all": "Expand all",
   "task-run.log-viewer.collapse-all": "Collapse all",
   "task-run.log-viewer.summary": "{sections} sections · {entries} entries",
+  "issue.task-run.logs": "Logs",
+  "database.revision.self": "Revision",
   "create-db": {
     "cluster": "Cluster",
     "database-owner-name": "Database owner name",
