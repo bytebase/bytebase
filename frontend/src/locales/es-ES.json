@@ -1532,29 +1532,21 @@
       "vault-auth-type": {
         "self": "Tipo de autenticación",
         "token": {
-          "self": "Token",
-          "tips": "Un token raíz sin TTL."
+          "self": "Token"
         },
         "approle": {
           "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
-          "secret-id-plain-text": "Texto sin formato para identificación secreta de rol",
-          "secret-id-environment": "Nombre del entorno para la identificación secreta del rol",
           "secret-plain-text": "Texto sin formato",
-          "secret-env-name": "Nombre del entorno",
-          "secret-tips": "Una identificación secreta desenvuelta sin TTL. Puede utilizar texto sin formato o colocarlo en el entorno o en el archivo local. {learn_more}"
+          "secret-env-name": "Nombre del entorno"
         }
       },
       "vault-secret-engine-name": "Secret engine name",
       "vault-secret-path": "Secret path",
       "vault-secret-key": "Secret key",
       "vault-secret-engine-tips": "Solo admite motor KV v2.",
-      "vault-tls-config": "Configuración TLS de Vault (opcional)",
-      "verify-vault-certificate": "Verificar certificado TLS de Vault",
-      "vault-ca-cert": "Certificado de CA de Vault",
-      "vault-client-cert": "Certificado de cliente de Vault",
-      "vault-client-key": "Clave de cliente de Vault"
+      "vault-tls-config": "Configuración TLS de Vault (opcional)"
     },
     "external-secret": {
       "secret-name": "Nombre secreto",

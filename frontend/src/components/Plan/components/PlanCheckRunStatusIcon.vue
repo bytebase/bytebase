@@ -25,11 +25,11 @@
 <script lang="ts" setup>
 import type { PropType } from "vue";
 import { computed } from "vue";
-import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import CheckIcon from "~icons/heroicons-solid/check";
 import XIcon from "~icons/heroicons-solid/x";
-import { usePlanCheckStatus } from "../logic";
+import { useResolvedPlanCheckStatus } from "../logic";
 
 export type SizeType = "small" | "normal";
 
@@ -38,17 +38,26 @@ const props = defineProps({
     required: true,
     type: Object as PropType<Plan>,
   },
+  planCheckRuns: {
+    type: Array as PropType<PlanCheckRun[] | undefined>,
+    default: undefined,
+  },
   size: {
     type: String as PropType<SizeType>,
     default: "normal",
   },
 });
 
+const planCheckRunsRef = computed(() => props.planCheckRuns);
+
 const {
-  getOverallStatus: planCheckRunStatus,
+  overallAdviceLevel: planCheckRunStatus,
   hasAnyStatus: hasAnyChecks,
   hasRunning: hasRunningChecks,
-} = usePlanCheckStatus(computed(() => props.plan));
+} = useResolvedPlanCheckStatus(
+  computed(() => props.plan),
+  planCheckRunsRef
+);
 
 const iconClass = () => {
   const sizeClass = props.size === "normal" ? "w-4 h-4" : "w-3.5 h-3.5";

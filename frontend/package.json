@@ -55,6 +55,7 @@
     "html-query-plan": "^2.6.1",
     "html-to-image": "^1.11.13",
     "i18next": "^25.10.10",
+    "immer": "^11.1.4",
     "is-chinese": "^2.0.0",
     "js-yaml": "4.1.1",
     "jszip": "^3.10.1",
@@ -77,6 +78,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^16.6.6",
+    "react-markdown": "^10.1.0",
     "regenerator-runtime": "^0.14.1",
     "rxjs": "^7.8.2",
     "scroll-into-view-if-needed": "^3.1.0",
@@ -92,7 +94,8 @@
     "vscode-ws-jsonrpc": "3.5.0",
     "vue": "3.5.29",
     "vue-draggable-plus": "^0.6.0",
-    "vueuc": "0.4.65"
+    "vueuc": "0.4.65",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",

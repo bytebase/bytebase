@@ -1532,29 +1532,21 @@
       "vault-auth-type": {
         "self": "認証タイプ",
         "token": {
-          "self": "トークン",
-          "tips": "有効期限のないルートトークン"
+          "self": "トークン"
         },
         "approle": {
           "self": "AppRole",
           "role-id": "認証ロールID",
           "secret-id": "認証シークレットID",
-          "secret-id-plain-text": "シークレットIDのプレーンテキスト",
-          "secret-id-environment": "シークレットIDを格納する環境変数の名前",
           "secret-plain-text": "プレーンテキスト",
-          "secret-env-name": "環境変数名",
-          "secret-tips": "有効期限のないカプセル化されていないシークレット ID は、プレーン テキスト、環境変数名、またはファイル パスを使用できます。 {learn_more}"
+          "secret-env-name": "環境変数名"
         }
       },
       "vault-secret-engine-name": "シークレットエンジン名",
       "vault-secret-path": "秘密の道",
       "vault-secret-key": "秘密鍵",
       "vault-secret-engine-tips": "KV v2 ストレージのみをサポートします",
-      "vault-tls-config": "Vault TLS 構成 (オプション)",
-      "verify-vault-certificate": "Vault TLS証明書を確認する",
-      "vault-ca-cert": "Vault CA 証明書",
-      "vault-client-cert": "Vaultクライアント証明書",
-      "vault-client-key": "Vaultクライアントキー"
+      "vault-tls-config": "Vault TLS 構成 (オプション)"
     },
     "external-secret": {
       "secret-name": "秘密の名前",

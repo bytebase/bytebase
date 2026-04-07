@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center pt-3">
+  <div class="flex items-center pt-2">
     <NTabs
       :key="`${plan.specs.length}-${selectedSpec.id}`"
       :value="selectedSpec.id"

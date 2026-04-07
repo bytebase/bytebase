@@ -6,7 +6,7 @@
     >
       <ChecksView
         :default-status="status"
-        :plan-check-runs="planCheckRuns"
+        :plan-check-runs="resolvedPlanCheckRuns"
         :is-loading="isLoading"
       />
     </DrawerContent>
@@ -14,18 +14,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { usePlanContext } from "../../logic";
 import { useResourcePoller } from "../../logic/poller";
 import ChecksView from "./ChecksView.vue";
 
-defineProps<{
+const props = defineProps<{
   status: Advice_Level;
+  planCheckRuns?: PlanCheckRun[];
 }>();
 
-const { planCheckRuns } = usePlanContext();
+const { planCheckRuns: contextPlanCheckRuns } = usePlanContext();
+
+const resolvedPlanCheckRuns = computed(() => {
+  return props.planCheckRuns ?? contextPlanCheckRuns.value;
+});
 const { refreshResources } = useResourcePoller();
 
 const isLoading = ref(true);

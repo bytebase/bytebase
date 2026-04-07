@@ -1532,29 +1532,21 @@
       "vault-auth-type": {
         "self": "Loại xác thực",
         "token": {
-          "self": "Mã thông báo",
-          "tips": "Mã thông báo gốc không có TTL."
+          "self": "Mã thông báo"
         },
         "approle": {
           "self": "AppRole",
           "role-id": "ID vai trò xác thực",
           "secret-id": "ID bí mật xác thực",
-          "secret-id-plain-text": "Văn bản thuần cho id bí mật vai trò",
-          "secret-id-environment": "Tên môi trường cho id bí mật vai trò",
           "secret-plain-text": "Văn bản thuần",
-          "secret-env-name": "Tên môi trường",
-          "secret-tips": "Id bí mật không được bao bọc không có TTL. Bạn có thể sử dụng văn bản thuần túy hoặc đưa nó vào môi trường hoặc tệp cục bộ. {learn_more}"
+          "secret-env-name": "Tên môi trường"
         }
       },
       "vault-secret-engine-name": "Tên công cụ bí mật",
       "vault-secret-path": "Đường dẫn bí mật",
       "vault-secret-key": "Khóa bí mật",
       "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2.",
-      "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
-      "verify-vault-certificate": "Xác minh chứng chỉ TLS của Vault",
-      "vault-ca-cert": "Chứng chỉ Vault CA",
-      "vault-client-cert": "Chứng chỉ máy khách Vault",
-      "vault-client-key": "Khóa máy khách Vault"
+      "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)"
     },
     "external-secret": {
       "secret-name": "Tên bí mật",
