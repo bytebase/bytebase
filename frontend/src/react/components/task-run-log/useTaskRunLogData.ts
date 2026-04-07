@@ -127,10 +127,12 @@ export const useTaskRunLogData = (
               .filter((file) => file.sheet && file.version)
               .map(async (file) => {
                 try {
-                  const fetchedSheet = await sheetServiceClientConnect.getSheet({
-                    name: file.sheet,
-                    raw: true,
-                  });
+                  const fetchedSheet = await sheetServiceClientConnect.getSheet(
+                    {
+                      name: file.sheet,
+                      raw: true,
+                    }
+                  );
                   return { version: file.version, sheet: fetchedSheet };
                 } catch {
                   return undefined;

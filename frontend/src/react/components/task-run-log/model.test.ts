@@ -1,8 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import {
-  TaskRunLogEntrySchema,
   TaskRunLogEntry_Type,
+  TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   buildReleaseFileGroups,

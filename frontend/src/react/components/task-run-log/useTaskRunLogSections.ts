@@ -4,6 +4,7 @@ import type {
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import type { TaskRunLogDetailText } from "./model";
 import {
   buildReleaseFileGroups,
   buildSectionsFromEntries,
@@ -39,6 +40,7 @@ export interface UseTaskRunLogSectionsOptions {
   sheet?: Sheet;
   sheetsMap?: Map<string, Sheet>;
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
+  detailText?: TaskRunLogDetailText;
 }
 
 export interface UseTaskRunLogSectionsResult {
@@ -69,6 +71,7 @@ export const useTaskRunLogSections = ({
   sheet,
   sheetsMap,
   getSectionLabel,
+  detailText,
 }: UseTaskRunLogSectionsOptions): UseTaskRunLogSectionsResult => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set()
@@ -94,8 +97,9 @@ export const useTaskRunLogSections = ({
       getSectionLabel,
       sheet,
       sheetsMap,
+      detailText,
     });
-  }, [entries, getSectionLabel, sheet, sheetsMap]);
+  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
 
   const releaseFileGroups = useMemo(() => {
     if (!hasReleaseFileMarkers(entries)) return [];
@@ -103,8 +107,9 @@ export const useTaskRunLogSections = ({
       getSectionLabel,
       sheet,
       sheetsMap,
+      detailText,
     });
-  }, [entries, getSectionLabel, sheet, sheetsMap]);
+  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
 
   const replicaGroups = useMemo(() => {
     const replicaIds = getUniqueReplicaIds(entries);
@@ -125,12 +130,15 @@ export const useTaskRunLogSections = ({
             sheetsMap,
             idPrefix: replicaId,
             forceError,
+            detailText,
           }),
         };
       }
 
       const releaseEntryGroups = groupEntriesByReleaseFile(replicaEntries);
-      const orphanGroup = releaseEntryGroups.find((group) => group.file === null);
+      const orphanGroup = releaseEntryGroups.find(
+        (group) => group.file === null
+      );
       return {
         replicaId,
         releaseFileGroups: buildReleaseFileGroups(replicaEntries, {
@@ -139,6 +147,7 @@ export const useTaskRunLogSections = ({
           sheetsMap,
           idPrefix: replicaId,
           forceError,
+          detailText,
         }),
         sections:
           orphanGroup && orphanGroup.entries.length > 0
@@ -148,13 +157,17 @@ export const useTaskRunLogSections = ({
                 sheetsMap,
                 idPrefix: `${replicaId}-orphan`,
                 forceError,
+                detailText,
               })
             : [],
       };
     });
-  }, [entries, getSectionLabel, sheet, sheetsMap]);
+  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
 
-  const hasReleaseFiles = useMemo(() => hasReleaseFileMarkers(entries), [entries]);
+  const hasReleaseFiles = useMemo(
+    () => hasReleaseFileMarkers(entries),
+    [entries]
+  );
   const hasMultipleReplicas = replicaGroups.length > 1;
 
   const allSectionIds = useMemo(() => {
@@ -172,7 +185,13 @@ export const useTaskRunLogSections = ({
       );
     }
     return sections.map((section) => section.id);
-  }, [hasMultipleReplicas, hasReleaseFiles, releaseFileGroups, replicaGroups, sections]);
+  }, [
+    hasMultipleReplicas,
+    hasReleaseFiles,
+    releaseFileGroups,
+    replicaGroups,
+    sections,
+  ]);
 
   const allReplicaIds = useMemo(() => {
     return replicaGroups.map((group) => group.replicaId);
@@ -363,7 +382,8 @@ export const useTaskRunLogSections = ({
     allSectionIds.length > 0 &&
     allSectionIds.every((id) => expandedSections.has(id)) &&
     allReleaseFileIds.every((id) => expandedReleaseFiles.has(id)) &&
-    (!hasMultipleReplicas || allReplicaIds.every((id) => expandedReplicas.has(id)));
+    (!hasMultipleReplicas ||
+      allReplicaIds.every((id) => expandedReplicas.has(id)));
 
   const totalSections = useMemo(() => {
     if (hasMultipleReplicas) {
@@ -413,13 +433,23 @@ export const useTaskRunLogSections = ({
       );
     }
     return countEntries(sections);
-  }, [hasMultipleReplicas, hasReleaseFiles, releaseFileGroups, replicaGroups, sections]);
+  }, [
+    hasMultipleReplicas,
+    hasReleaseFiles,
+    releaseFileGroups,
+    replicaGroups,
+    sections,
+  ]);
 
   const totalDuration = useMemo(() => {
     if (entries.length === 0) return "";
     const timeRanges = entries.map(getEntryTimeRange);
-    const startTimes = timeRanges.map((range) => range.start).filter((time) => time > 0);
-    const endTimes = timeRanges.map((range) => range.end).filter((time) => time > 0);
+    const startTimes = timeRanges
+      .map((range) => range.start)
+      .filter((time) => time > 0);
+    const endTimes = timeRanges
+      .map((range) => range.end)
+      .filter((time) => time > 0);
     if (startTimes.length === 0 || endTimes.length === 0) return "";
 
     const startTime = Math.min(...startTimes);

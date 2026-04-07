@@ -1,6 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { CheckCircle2, Circle, LoaderCircle, XCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { CheckCircle2, Circle, LoaderCircle, XCircle } from "lucide-react";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   TaskRunLogEntry_TransactionControl_Type,
@@ -33,6 +33,7 @@ export interface BuildSectionsOptions {
   idPrefix?: string;
   forceError?: boolean;
   fileVersion?: string;
+  detailText?: TaskRunLogDetailText;
 }
 
 export interface BuildReleaseFileGroupsOptions {
@@ -41,6 +42,16 @@ export interface BuildReleaseFileGroupsOptions {
   sheetsMap?: Map<string, Sheet>;
   idPrefix?: string;
   forceError?: boolean;
+  detailText?: TaskRunLogDetailText;
+}
+
+export interface TaskRunLogDetailText {
+  completed?: string;
+  backingUp?: string;
+  runningByType?: Partial<Record<TaskRunLogEntry_Type, string>>;
+  transactionError?: (typeLabel: string, error: string) => string;
+  retryAttempt?: (current: number, max: number) => string;
+  backupCompleted?: (count: number) => string;
 }
 
 export const getTimestampMs = (timestamp?: Timestamp): number => {
@@ -110,7 +121,9 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
         entry.priorBackup?.startTime && entry.priorBackup?.endTime
       );
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
-      return Boolean(entry.computeDiff?.startTime && entry.computeDiff?.endTime);
+      return Boolean(
+        entry.computeDiff?.startTime && entry.computeDiff?.endTime
+      );
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
     case TaskRunLogEntry_Type.RETRY_INFO:
       return true;
@@ -119,7 +132,9 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
   }
 };
 
-export const groupEntriesByType = (entries: TaskRunLogEntry[]): EntryGroup[] => {
+export const groupEntriesByType = (
+  entries: TaskRunLogEntry[]
+): EntryGroup[] => {
   if (entries.length === 0) return [];
   const sorted = [...entries].sort(
     (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
@@ -289,10 +304,15 @@ const getCommandExecuteDetail = (
   if (!statement) return "-";
 
   const normalized = statement.trim().replace(/\s+/g, " ");
-  return normalized.length > 80 ? `${normalized.substring(0, 80)}...` : normalized;
+  return normalized.length > 80
+    ? `${normalized.substring(0, 80)}...`
+    : normalized;
 };
 
-const getTransactionControlDetail = (entry: TaskRunLogEntry): string => {
+const getTransactionControlDetail = (
+  entry: TaskRunLogEntry,
+  detailText: TaskRunLogDetailText | undefined
+): string => {
   const transaction = entry.transactionControl;
   if (!transaction) return "";
 
@@ -303,7 +323,12 @@ const getTransactionControlDetail = (entry: TaskRunLogEntry): string => {
   };
 
   const typeLabel = typeLabels[transaction.type] ?? "";
-  return transaction.error ? `${typeLabel} error: ${transaction.error}` : typeLabel;
+  if (!transaction.error) return typeLabel;
+
+  if (detailText?.transactionError) {
+    return detailText.transactionError(typeLabel, transaction.error);
+  }
+  return typeLabel ? `${typeLabel}: ${transaction.error}` : transaction.error;
 };
 
 const getTimedEntryDetail = (
@@ -314,31 +339,45 @@ const getTimedEntryDetail = (
         endTime?: Timestamp;
       }
     | undefined,
-  runningLabel: string
+  runningLabel: string,
+  completedLabel: string
 ): string => {
   if (!timedEntry) return "";
   if (timedEntry.error) return timedEntry.error;
-  if (timedEntry.startTime && timedEntry.endTime) return "completed";
+  if (timedEntry.startTime && timedEntry.endTime) return completedLabel;
   return runningLabel;
 };
 
-const getPriorBackupDetail = (entry: TaskRunLogEntry): string => {
+const getPriorBackupDetail = (
+  entry: TaskRunLogEntry,
+  detailText: TaskRunLogDetailText | undefined
+): string => {
   const priorBackup = entry.priorBackup;
   if (!priorBackup) return "";
   if (priorBackup.error) return priorBackup.error;
   const itemCount = priorBackup.priorBackupDetail?.items.length ?? 0;
   if (itemCount > 0) {
-    return `${itemCount} backup item${itemCount === 1 ? "" : "s"} completed`;
+    if (detailText?.backupCompleted) {
+      return detailText.backupCompleted(itemCount);
+    }
+    return String(itemCount);
   }
-  if (priorBackup.startTime && priorBackup.endTime) return "completed";
-  return "backing up";
+  if (priorBackup.startTime && priorBackup.endTime) {
+    return detailText?.completed ?? "";
+  }
+  return detailText?.backingUp ?? "";
 };
 
-const getRetryInfoDetail = (entry: TaskRunLogEntry): string => {
+const getRetryInfoDetail = (
+  entry: TaskRunLogEntry,
+  detailText: TaskRunLogDetailText | undefined
+): string => {
   const retryInfo = entry.retryInfo;
   if (!retryInfo) return "";
-  const attempt = `retry ${retryInfo.retryCount}/${retryInfo.maximumRetries}`;
-  return retryInfo.error ? `${attempt} - ${retryInfo.error}` : attempt;
+  const attempt = detailText?.retryAttempt
+    ? detailText.retryAttempt(retryInfo.retryCount, retryInfo.maximumRetries)
+    : `${retryInfo.retryCount}/${retryInfo.maximumRetries}`;
+  return retryInfo.error ? `${attempt}: ${retryInfo.error}` : attempt;
 };
 
 const getReleaseFileExecuteDetail = (entry: TaskRunLogEntry): string => {
@@ -353,23 +392,39 @@ const getEntryDetail = (
   entry: TaskRunLogEntry,
   sheet: Sheet | undefined,
   sheetsMap: Map<string, Sheet> | undefined,
+  detailText: TaskRunLogDetailText | undefined,
   fileVersion?: string
 ): string => {
+  const runningByType = detailText?.runningByType;
+  const completed = detailText?.completed ?? "";
+
   switch (entry.type) {
     case TaskRunLogEntry_Type.COMMAND_EXECUTE:
       return getCommandExecuteDetail(entry, sheet, sheetsMap, fileVersion);
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-      return getTransactionControlDetail(entry);
+      return getTransactionControlDetail(entry, detailText);
     case TaskRunLogEntry_Type.SCHEMA_DUMP:
-      return getTimedEntryDetail(entry.schemaDump, "dumping");
+      return getTimedEntryDetail(
+        entry.schemaDump,
+        runningByType?.[TaskRunLogEntry_Type.SCHEMA_DUMP] ?? "",
+        completed
+      );
     case TaskRunLogEntry_Type.DATABASE_SYNC:
-      return getTimedEntryDetail(entry.databaseSync, "syncing");
+      return getTimedEntryDetail(
+        entry.databaseSync,
+        runningByType?.[TaskRunLogEntry_Type.DATABASE_SYNC] ?? "",
+        completed
+      );
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
-      return getPriorBackupDetail(entry);
+      return getPriorBackupDetail(entry, detailText);
     case TaskRunLogEntry_Type.RETRY_INFO:
-      return getRetryInfoDetail(entry);
+      return getRetryInfoDetail(entry, detailText);
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
-      return getTimedEntryDetail(entry.computeDiff, "computing");
+      return getTimedEntryDetail(
+        entry.computeDiff,
+        runningByType?.[TaskRunLogEntry_Type.COMPUTE_DIFF] ?? "",
+        completed
+      );
     case TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE:
       return getReleaseFileExecuteDetail(entry);
     default:
@@ -392,6 +447,7 @@ const buildDisplayItems = (
   sheet: Sheet | undefined,
   sheetsMap: Map<string, Sheet> | undefined,
   idPrefix: string | undefined,
+  detailText: TaskRunLogDetailText | undefined,
   fileVersion?: string
 ): DisplayItem[] => {
   return entries.map((entry, entryIndex) => {
@@ -405,11 +461,12 @@ const buildDisplayItems = (
       relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
       levelIndicator: entryHasError ? "\u2717" : "\u2713",
       levelClass: entryHasError ? "text-red-600" : "text-green-600",
-      detail: getEntryDetail(entry, sheet, sheetsMap, fileVersion),
+      detail: getEntryDetail(entry, sheet, sheetsMap, detailText, fileVersion),
       detailClass: entryHasError ? "text-red-700" : "text-gray-600",
       affectedRows:
         entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
-          ? Number(entry.commandExecute?.response?.affectedRows ?? 0) || undefined
+          ? Number(entry.commandExecute?.response?.affectedRows ?? 0) ||
+            undefined
           : undefined,
       duration: getCommandDuration(entry),
     };
@@ -436,8 +493,12 @@ export const buildSectionsFromEntries = (
     const statusConfig = STATUS_CONFIG[status];
 
     const timeRanges = group.entries.map(getEntryTimeRange);
-    const startTimes = timeRanges.map((range) => range.start).filter((time) => time > 0);
-    const endTimes = timeRanges.map((range) => range.end).filter((time) => time > 0);
+    const startTimes = timeRanges
+      .map((range) => range.start)
+      .filter((time) => time > 0);
+    const endTimes = timeRanges
+      .map((range) => range.end)
+      .filter((time) => time > 0);
     const startTime = startTimes.length > 0 ? Math.min(...startTimes) : 0;
     const endTime = endTimes.length > 0 ? Math.max(...endTimes) : 0;
     const durationMs = endTime - startTime;
@@ -452,7 +513,9 @@ export const buildSectionsFromEntries = (
       statusIcon: statusConfig.icon,
       statusClass: statusConfig.className,
       duration:
-        startTime > 0 && endTime > 0 ? formatDuration(Math.max(durationMs, 0)) : "",
+        startTime > 0 && endTime > 0
+          ? formatDuration(Math.max(durationMs, 0))
+          : "",
       entryCount: group.entries.length,
       items: buildDisplayItems(
         group.entries,
@@ -461,6 +524,7 @@ export const buildSectionsFromEntries = (
         options.sheet,
         options.sheetsMap,
         options.idPrefix,
+        options.detailText,
         options.fileVersion
       ),
     };
