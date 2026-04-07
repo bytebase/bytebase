@@ -20,10 +20,24 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 
+export type FetchStatus = "idle" | "loading" | "success" | "error";
+export type SheetSource = "none" | "sheet" | "release";
+
+export interface FetchState {
+  status: FetchStatus;
+  error?: string;
+}
+
+export interface SheetFetchState extends FetchState {
+  source: SheetSource;
+}
+
 export interface UseTaskRunLogDataResult {
   entries: TaskRunLogEntry[];
   sheet: Sheet | undefined;
   sheetsMap: Map<string, Sheet>;
+  logFetch: FetchState;
+  sheetFetch: SheetFetchState;
 }
 
 const getTaskFromRollout = (
@@ -45,6 +59,11 @@ const getTaskFromRollout = (
   return undefined;
 };
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
 export const useTaskRunLogData = (
   taskRunName?: string
 ): UseTaskRunLogDataResult => {
@@ -54,6 +73,13 @@ export const useTaskRunLogData = (
   const [entries, setEntries] = useState<TaskRunLogEntry[]>([]);
   const [sheet, setSheet] = useState<Sheet | undefined>(undefined);
   const [sheetsMap, setSheetsMap] = useState<Map<string, Sheet>>(new Map());
+  const [logFetchState, setLogFetchState] = useState<FetchState>({
+    status: "idle",
+  });
+  const [sheetFetchState, setSheetFetchState] = useState<SheetFetchState>({
+    status: "idle",
+    source: "none",
+  });
   const logFetchVersion = useRef(0);
   const sheetFetchVersion = useRef(0);
 
@@ -84,9 +110,11 @@ export const useTaskRunLogData = (
     setEntries([]);
 
     if (!taskRunName) {
+      setLogFetchState({ status: "idle" });
       return;
     }
 
+    setLogFetchState({ status: "loading" });
     const request = create(GetTaskRunLogRequestSchema, {
       parent: taskRunName,
     });
@@ -95,10 +123,15 @@ export const useTaskRunLogData = (
       .then((response) => {
         if (version !== logFetchVersion.current) return;
         setEntries(response.entries);
+        setLogFetchState({ status: "success" });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (version !== logFetchVersion.current) return;
         setEntries([]);
+        setLogFetchState({
+          status: "error",
+          error: getErrorMessage(error),
+        });
       });
   }, [taskRunName]);
 
@@ -111,12 +144,15 @@ export const useTaskRunLogData = (
     setSheetsMap(new Map());
 
     if (!task) {
+      setSheetFetchState({ status: "idle", source: "none" });
       return;
     }
 
     if (isReleaseBasedTask(task)) {
+      setSheetFetchState({ status: "loading", source: "release" });
       const releaseName = releaseNameOfTaskV1(task);
       if (!releaseName) {
+        setSheetFetchState({ status: "success", source: "release" });
         return;
       }
 
@@ -149,17 +185,25 @@ export const useTaskRunLogData = (
             }
           }
           setSheetsMap(nextSheetsMap);
+          setSheetFetchState({ status: "success", source: "release" });
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (version !== sheetFetchVersion.current) return;
           setSheetsMap(new Map());
+          setSheetFetchState({
+            status: "error",
+            source: "release",
+            error: getErrorMessage(error),
+          });
         });
 
       return;
     }
 
+    setSheetFetchState({ status: "loading", source: "sheet" });
     const sheetName = sheetNameOfTaskV1(task);
     if (!sheetName) {
+      setSheetFetchState({ status: "success", source: "sheet" });
       return;
     }
 
@@ -171,12 +215,24 @@ export const useTaskRunLogData = (
       .then((fetchedSheet) => {
         if (version !== sheetFetchVersion.current) return;
         setSheet(fetchedSheet);
+        setSheetFetchState({ status: "success", source: "sheet" });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (version !== sheetFetchVersion.current) return;
         setSheet(undefined);
+        setSheetFetchState({
+          status: "error",
+          source: "sheet",
+          error: getErrorMessage(error),
+        });
       });
   }, [releaseStore, task]);
 
-  return { entries, sheet, sheetsMap };
+  return {
+    entries,
+    sheet,
+    sheetsMap,
+    logFetch: logFetchState,
+    sheetFetch: sheetFetchState,
+  };
 };

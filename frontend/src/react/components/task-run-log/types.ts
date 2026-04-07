@@ -46,6 +46,7 @@ export interface ReleaseFileEntriesGroup {
 }
 
 export interface ReleaseFileGroup {
+  id: string;
   version: string;
   filePath: string;
   isOrphan?: boolean;

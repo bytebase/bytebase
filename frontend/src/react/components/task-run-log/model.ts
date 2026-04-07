@@ -554,6 +554,7 @@ export const buildReleaseFileGroups = (
         ? `${buildOptions.idPrefix}-orphan`
         : "orphan";
       results.push({
+        id: orphanPrefix,
         version: "",
         filePath: "",
         isOrphan: true,
@@ -570,6 +571,7 @@ export const buildReleaseFileGroups = (
       : `file-${fileIndex}`;
     fileIndex++;
     results.push({
+      id: filePrefix,
       version: group.file.version,
       filePath: group.file.filePath,
       sections: buildSectionsFromEntries(group.entries, {

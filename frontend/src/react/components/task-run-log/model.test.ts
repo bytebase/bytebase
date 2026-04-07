@@ -110,11 +110,13 @@ describe("task-run-log model", () => {
     const groups = buildReleaseFileGroups(entries);
     expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({
+      id: "file-0",
       version: "v1",
       filePath: "001.sql",
       sections: [{ entryCount: 2 }],
     });
     expect(groups[1]).toMatchObject({
+      id: "file-1",
       version: "v2",
       filePath: "002.sql",
       sections: [{ entryCount: 1 }],
@@ -192,17 +194,20 @@ describe("task-run-log model", () => {
     });
     expect(groups).toHaveLength(3);
     expect(groups[0]).toMatchObject({
+      id: "orphan",
       isOrphan: true,
       version: "",
       filePath: "",
       sections: [{ entryCount: 1 }],
     });
     expect(groups[1]).toMatchObject({
+      id: "file-0",
       version: "v1",
       filePath: "001.sql",
     });
     expect(groups[1]?.sections).toHaveLength(0);
     expect(groups[2]).toMatchObject({
+      id: "file-1",
       version: "v2",
       filePath: "002.sql",
       sections: [{ entryCount: 1 }],
@@ -226,6 +231,9 @@ describe("task-run-log model", () => {
     const hook = createHookHarness({ entries, datasetKey: "marker-only" });
 
     expect(hook.getCurrent().releaseFileGroups).toHaveLength(2);
+    expect(
+      hook.getCurrent().releaseFileGroups.map((group) => group.id)
+    ).toEqual(["file-0", "file-1"]);
     expect(hook.getCurrent().totalSections).toBe(0);
 
     act(() => {
@@ -237,6 +245,11 @@ describe("task-run-log model", () => {
       hook.getCurrent().expandAll();
     });
     expect(hook.getCurrent().areAllExpanded).toBe(true);
+
+    act(() => {
+      hook.getCurrent().toggleReleaseFile("file-0");
+    });
+    expect(hook.getCurrent().areAllExpanded).toBe(false);
 
     hook.unmount();
   });

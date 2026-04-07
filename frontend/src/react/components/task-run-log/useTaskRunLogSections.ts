@@ -203,12 +203,10 @@ export const useTaskRunLogSections = ({
   const allReleaseFileIds = useMemo(() => {
     if (hasMultipleReplicas) {
       return replicaGroups.flatMap((group) =>
-        group.releaseFileGroups.map(
-          (_, fileIndex) => `${group.replicaId}-file-${fileIndex}`
-        )
+        group.releaseFileGroups.map((fileGroup) => fileGroup.id)
       );
     }
-    return releaseFileGroups.map((_, fileIndex) => `file-${fileIndex}`);
+    return releaseFileGroups.map((fileGroup) => fileGroup.id);
   }, [hasMultipleReplicas, releaseFileGroups, replicaGroups]);
 
   const resolvedDatasetKey = useMemo(() => {
@@ -265,8 +263,8 @@ export const useTaskRunLogSections = ({
     setExpandedReleaseFiles((previousFiles) => {
       let next = previousFiles;
       for (const group of replicaGroups) {
-        group.releaseFileGroups.forEach((_, fileIndex) => {
-          const fileId = `${group.replicaId}-file-${fileIndex}`;
+        group.releaseFileGroups.forEach((fileGroup) => {
+          const fileId = fileGroup.id;
           if (!userCollapsedReleaseFiles.has(fileId)) {
             next = addToSet(next, fileId);
           }
@@ -309,8 +307,8 @@ export const useTaskRunLogSections = ({
   useEffect(() => {
     setExpandedReleaseFiles((previousFiles) => {
       let next = previousFiles;
-      releaseFileGroups.forEach((_, fileIndex) => {
-        const fileId = `file-${fileIndex}`;
+      releaseFileGroups.forEach((fileGroup) => {
+        const fileId = fileGroup.id;
         if (!userCollapsedReleaseFiles.has(fileId)) {
           next = addToSet(next, fileId);
         }
