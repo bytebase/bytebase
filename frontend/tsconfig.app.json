@@ -10,7 +10,8 @@
   "exclude": [
     "src/**/__tests__/*",
     "src/react/**/*.tsx",
-    "src/react/components/task-run-log/index.ts"
+    "src/react/components/task-run-log/index.ts",
+    "src/react/components/monaco/index.ts"
   ],
   "compilerOptions": {
     "composite": true,
