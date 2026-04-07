@@ -1000,7 +1000,7 @@ export function UsersPage() {
 
         {showInactiveUsers && (
           <div className="flex flex-col gap-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-x-4">
               <h3 className="text-base font-medium">
                 {t("settings.members.inactive-users")}
               </h3>

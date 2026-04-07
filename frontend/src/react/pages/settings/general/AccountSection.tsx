@@ -541,7 +541,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     {
                       t(
                         "settings.general.workspace.password-restriction.password-rotation"
-                      ).split("{day}")[0]
+                      ).split("{{day}}")[0]
                     }
                     {passwordState.passwordRotation ? (
                       <Input
@@ -572,7 +572,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     {
                       t(
                         "settings.general.workspace.password-restriction.password-rotation"
-                      ).split("{day}")[1]
+                      ).split("{{day}}")[1]
                     }
                   </span>
                 </label>
