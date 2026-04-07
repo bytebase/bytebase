@@ -199,32 +199,36 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
 
   // Computed source schema string
   const [sourceSchemaString, setSourceSchemaString] = useState("");
+  const [isSourceSchemaLoading, setIsSourceSchemaLoading] = useState(false);
 
   // Recompute source schema when source changes
   useEffect(() => {
     let cancelled = false;
+    setIsSourceSchemaLoading(true);
     (async () => {
-      if (sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
-        if (isValidChangelogName(changelogSource.changelogName)) {
-          const changelog = changelogStore.getChangelogByName(
-            changelogSource.changelogName || ""
-          );
-          if (changelog) {
-            if (!cancelled) setSourceSchemaString(changelog.schema);
+      try {
+        if (sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
+          if (isValidChangelogName(changelogSource.changelogName)) {
+            const changelog = await changelogStore.getOrFetchChangelogByName(
+              changelogSource.changelogName || "",
+              ChangelogView.FULL
+            );
+            if (cancelled) return;
+            setSourceSchemaString(changelog?.schema ?? "");
+            return;
+          } else if (isValidDatabaseName(changelogSource.databaseName)) {
+            const databaseSchema = await databaseStore.fetchDatabaseSchema(
+              changelogSource.databaseName
+            );
+            if (!cancelled) setSourceSchemaString(databaseSchema.schema);
             return;
           }
           if (!cancelled) setSourceSchemaString("");
-          return;
-        } else if (isValidDatabaseName(changelogSource.databaseName)) {
-          const databaseSchema = await databaseStore.fetchDatabaseSchema(
-            changelogSource.databaseName
-          );
-          if (!cancelled) setSourceSchemaString(databaseSchema.schema);
-          return;
+        } else {
+          if (!cancelled) setSourceSchemaString(rawSQLState.statement);
         }
-        if (!cancelled) setSourceSchemaString("");
-      } else {
-        if (!cancelled) setSourceSchemaString(rawSQLState.statement);
+      } finally {
+        if (!cancelled) setIsSourceSchemaLoading(false);
       }
     })();
     return () => {
@@ -258,11 +262,12 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       const isRollback = currentRoute.query.rollback === "true";
 
       if (isValidChangelogName(changelogName)) {
-        await changelogStore.getOrFetchChangelogByName(
+        // Validate the changelog exists before proceeding.
+        const existing = await changelogStore.getOrFetchChangelogByName(
           changelogName,
-          ChangelogView.FULL
+          ChangelogView.BASIC
         );
-        if (cancelled) return;
+        if (cancelled || !existing) return;
 
         const sourceChangelogName = changelogName;
         let targetChangelogName: string | undefined = undefined;
@@ -338,7 +343,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const handleStepChange = useCallback(
-    async (nextStep: number) => {
+    (nextStep: number) => {
       if (
         currentStep === Step.SELECT_TARGET_DATABASE_LIST &&
         nextStep === Step.SELECT_SOURCE_SCHEMA
@@ -350,20 +355,10 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         // Even with no databases selected, clear stale diff cache
         setSchemaDiffCache({});
         setSelectedDatabaseName(undefined);
-      } else if (
-        currentStep === Step.SELECT_SOURCE_SCHEMA &&
-        nextStep === Step.SELECT_TARGET_DATABASE_LIST
-      ) {
-        if (changelogSource.changelogName) {
-          await changelogStore.getOrFetchChangelogByName(
-            changelogSource.changelogName,
-            ChangelogView.FULL
-          );
-        }
       }
       setCurrentStep(nextStep as Step);
     },
-    [currentStep, selectedDatabaseNameList, changelogSource.changelogName]
+    [currentStep, selectedDatabaseNameList]
   );
 
   const handleConfirmRevert = useCallback(() => {
@@ -453,6 +448,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
               <SelectTargetDatabasesView
                 project={project}
                 sourceSchemaString={sourceSchemaString}
+                isSourceSchemaLoading={isSourceSchemaLoading}
                 sourceEngine={sourceEngine}
                 changelogSourceSchema={
                   sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
@@ -1154,6 +1150,7 @@ function SourceSchemaInfo({
 function SelectTargetDatabasesView({
   project,
   sourceSchemaString,
+  isSourceSchemaLoading,
   sourceEngine,
   changelogSourceSchema,
   selectedDatabaseNameList,
@@ -1165,6 +1162,7 @@ function SelectTargetDatabasesView({
 }: {
   project: Project;
   sourceSchemaString: string;
+  isSourceSchemaLoading: boolean;
   sourceEngine: Engine;
   changelogSourceSchema?: ChangelogSourceSchema;
   selectedDatabaseNameList: string[];
@@ -1561,7 +1559,7 @@ function SelectTargetDatabasesView({
               {t("database.sync-schema.message.select-a-target-database-first")}
             </div>
           )}
-          {isLoadingDiff && (
+          {(isLoadingDiff || isSourceSchemaLoading) && (
             <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-xs w-full h-full flex flex-col justify-center items-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
               <span className="mt-1">{t("common.loading")}</span>
