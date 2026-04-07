@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
 import type { Section } from "./types";
 
 const ITEM_HEIGHT = 20;
 const MAX_VISIBLE_ITEMS = 10;
+const MAX_RENDERED_ITEMS = 50;
 
 export interface SectionContentProps {
   section: Section;
@@ -15,13 +18,19 @@ export function SectionContent({
   indent = false,
 }: SectionContentProps) {
   const { t } = useTranslation();
+  const [showAllItems, setShowAllItems] = useState(false);
+  const visibleItems =
+    showAllItems || section.items.length <= MAX_RENDERED_ITEMS
+      ? section.items
+      : section.items.slice(0, MAX_RENDERED_ITEMS);
+  const hiddenItemCount = section.items.length - visibleItems.length;
 
   return (
     <div
       className="bg-gray-50 border-t border-gray-100 overflow-auto"
       style={{ maxHeight: `${MAX_VISIBLE_ITEMS * ITEM_HEIGHT}px` }}
     >
-      {section.items.map((item, index) => (
+      {visibleItems.map((item, index) => (
         <div
           key={item.key}
           className={cn(
@@ -61,6 +70,21 @@ export function SectionContent({
           </span>
         </div>
       ))}
+      {hiddenItemCount > 0 ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "flex w-full items-center justify-center gap-x-2 rounded-none border-t border-gray-100 px-3 py-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700",
+            indent ? "px-6" : "px-3"
+          )}
+          onClick={() => setShowAllItems(true)}
+        >
+          <span>{t("common.load-more")}</span>
+          <span className="tabular-nums">({hiddenItemCount})</span>
+        </Button>
+      ) : null}
     </div>
   );
 }

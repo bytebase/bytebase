@@ -114,6 +114,53 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     </div>
   );
 
+  const renderReleaseFileGroup = (
+    fileGroup: (typeof releaseFileGroups)[number],
+    indent = false
+  ) => {
+    if (fileGroup.isOrphan) {
+      return (
+        <div key={fileGroup.id}>
+          {fileGroup.sections.map((section) => renderSection(section, indent))}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={fileGroup.id}
+        className="border-b border-gray-200 last:border-b-0"
+      >
+        <div className={indent ? "pl-4" : ""}>
+          <button
+            type="button"
+            className="flex w-full select-none items-center gap-x-2 bg-blue-50 px-3 py-1.5 text-left hover:bg-blue-100"
+            onClick={() => toggleReleaseFile(fileGroup.id)}
+          >
+            {isReleaseFileExpanded(fileGroup.id) ? (
+              <ChevronsDownUp className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+            ) : (
+              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+            )}
+            <FileCode className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+            <span className="font-medium text-blue-700">
+              {fileGroup.filePath
+                ? `${fileGroup.version}: ${fileGroup.filePath}`
+                : fileGroup.version}
+            </span>
+          </button>
+          {isReleaseFileExpanded(fileGroup.id) ? (
+            <div className={indent ? "pl-4" : ""}>
+              {fileGroup.sections.map((section) =>
+                renderSection(section, true)
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   const content = hasMultipleReplicas ? (
     <>
       <div className="flex items-center gap-x-2 px-3 py-2 bg-amber-50 border-b border-amber-200 text-amber-800">
@@ -149,37 +196,9 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
               {replicaGroup.sections.map((section) =>
                 renderSection(section, true)
               )}
-              {replicaGroup.releaseFileGroups.map((fileGroup) => (
-                <div
-                  key={fileGroup.id}
-                  className="border-b border-gray-200 last:border-b-0"
-                >
-                  <button
-                    type="button"
-                    className="ml-4 flex w-full select-none items-center gap-x-2 bg-blue-50 px-3 py-1.5 text-left hover:bg-blue-100"
-                    onClick={() => toggleReleaseFile(fileGroup.id)}
-                  >
-                    {isReleaseFileExpanded(fileGroup.id) ? (
-                      <ChevronsDownUp className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                    ) : (
-                      <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                    )}
-                    <FileCode className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                    <span className="font-medium text-blue-700">
-                      {fileGroup.filePath
-                        ? `${fileGroup.version}: ${fileGroup.filePath}`
-                        : fileGroup.version}
-                    </span>
-                  </button>
-                  {isReleaseFileExpanded(fileGroup.id) ? (
-                    <div className="ml-4">
-                      {fileGroup.sections.map((section) =>
-                        renderSection(section, true)
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+              {replicaGroup.releaseFileGroups.map((fileGroup) =>
+                renderReleaseFileGroup(fileGroup, true)
+              )}
             </div>
           ) : null}
         </div>
@@ -187,37 +206,7 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
     </>
   ) : hasReleaseFiles ? (
     <>
-      {releaseFileGroups.map((fileGroup) => (
-        <div
-          key={fileGroup.id}
-          className="border-b border-gray-200 last:border-b-0"
-        >
-          <button
-            type="button"
-            className="flex w-full select-none items-center gap-x-2 bg-blue-50 px-3 py-1.5 text-left hover:bg-blue-100"
-            onClick={() => toggleReleaseFile(fileGroup.id)}
-          >
-            {isReleaseFileExpanded(fileGroup.id) ? (
-              <ChevronsDownUp className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-            ) : (
-              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-            )}
-            <FileCode className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-            <span className="font-medium text-blue-700">
-              {fileGroup.filePath
-                ? `${fileGroup.version}: ${fileGroup.filePath}`
-                : fileGroup.version}
-            </span>
-          </button>
-          {isReleaseFileExpanded(fileGroup.id) ? (
-            <div>
-              {fileGroup.sections.map((section) =>
-                renderSection(section, true)
-              )}
-            </div>
-          ) : null}
-        </div>
-      ))}
+      {releaseFileGroups.map((fileGroup) => renderReleaseFileGroup(fileGroup))}
     </>
   ) : (
     <>{sections.map((section) => renderSection(section))}</>
