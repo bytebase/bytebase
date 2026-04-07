@@ -219,7 +219,8 @@
     "under-review": "审批中",
     "draft": "草稿",
     "error": "错误",
-    "type-to-search": "输入搜索..."
+    "type-to-search": "输入搜索...",
+    "comment": "评论"
   },
   "common.add": "添加",
   "common.admin": "管理员",
@@ -669,6 +670,38 @@
         "creator": {
           "title": "创建人",
           "description": "根据创建人搜索"
+        },
+        "status": {
+          "description": "按工单状态搜索"
+        },
+        "approval": {
+          "title": "审批状态",
+          "description": "按工单的审批状态搜索",
+          "value": {
+            "checking": "检查中",
+            "pending": "待审批",
+            "approved": "审批通过",
+            "rejected": "已拒绝",
+            "skipped": "已跳过"
+          }
+        },
+        "issue-type": {
+          "title": "类型",
+          "description": "按工单类型过滤",
+          "value": {
+            "database-change": "数据库变更",
+            "role-grant": "角色授权",
+            "database-export": "数据导出",
+            "access-grant": "访问授权"
+          }
+        },
+        "current-approver": {
+          "title": "当前审批人",
+          "description": "按工单的当前审批人搜索"
+        },
+        "issue-label": {
+          "title": "工单标签",
+          "description": "按工单标签过滤"
         }
       }
     },
@@ -680,7 +713,9 @@
     "risk-level": {
       "high": "高风险",
       "moderate": "中风险",
-      "self": "风险等级"
+      "self": "风险等级",
+      "filter": "按风险等级筛选",
+      "low": "低风险"
     },
     "role-grant": {
       "all-databases": "所有数据库",
@@ -695,9 +730,27 @@
       "waiting-role": "等待: {{role}}",
       "name": "名称",
       "updated": "更新于",
-      "creator": "创建人"
+      "creator": "创建人",
+      "closed": "已关闭"
     },
-    "upload-sql": "上传 SQL"
+    "upload-sql": "上传 SQL",
+    "subtitle": "工单涵盖数据库变更、数据导出和权限申请。执行前需审查和审批。",
+    "waiting-approval": "等待审批",
+    "sort": {
+      "sort": "排序",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "descending": "倒序",
+      "ascending": "正序"
+    },
+    "batch-transition": {
+      "close": "关闭",
+      "reopen": "重开",
+      "not-allowed-tips": "部分选中的工单无法被{{}}",
+      "closed": "关闭",
+      "reopened": "重开"
+    },
+    "leave-a-comment": "发表一条评论…"
   },
   "label": {
     "error": {

@@ -219,7 +219,8 @@
     "under-review": "レビュー中",
     "draft": "下書き",
     "error": "間違い",
-    "type-to-search": "検索するには入力..."
+    "type-to-search": "検索するには入力...",
+    "comment": "コメント"
   },
   "common.add": "追加",
   "common.admin": "管理者",
@@ -669,6 +670,38 @@
         "creator": {
           "title": "作成者",
           "description": "作成者で検索"
+        },
+        "status": {
+          "description": "イシューのステータスで検索"
+        },
+        "approval": {
+          "title": "承認状況",
+          "description": "イシューの承認ステータスで検索する",
+          "value": {
+            "checking": "確認中",
+            "pending": "保留中",
+            "approved": "承認された",
+            "rejected": "却下",
+            "skipped": "スキップ"
+          }
+        },
+        "issue-type": {
+          "title": "Type",
+          "description": "Filter by issue type",
+          "value": {
+            "database-change": "Database Change",
+            "role-grant": "Role Grant",
+            "database-export": "Database Export",
+            "access-grant": "Access Grant"
+          }
+        },
+        "current-approver": {
+          "title": "現在の承認者",
+          "description": "イシューの現在の承認者による検索"
+        },
+        "issue-label": {
+          "title": "イシューラベル",
+          "description": "イシューラベルでフィルタリング"
         }
       }
     },
@@ -680,7 +713,9 @@
     "risk-level": {
       "high": "高い",
       "moderate": "適度",
-      "self": "リスクレベル"
+      "self": "リスクレベル",
+      "filter": "リスクレベルでフィルタリング",
+      "low": "低い"
     },
     "role-grant": {
       "all-databases": "すべてのデータベース",
@@ -695,9 +730,27 @@
       "waiting-role": "Waiting: {{role}}",
       "name": "名前",
       "updated": "更新日時",
-      "creator": "作成者"
+      "creator": "作成者",
+      "closed": "クローズ　"
     },
-    "upload-sql": "Upload SQL"
+    "upload-sql": "Upload SQL",
+    "subtitle": "イシューには、データベースの変更、データのエクスポート、アクセス要求が含まれます。実行前に確認と承認が必要です。",
+    "waiting-approval": "承認待ち",
+    "sort": {
+      "sort": "並べ替え",
+      "created": "作成日時",
+      "updated": "更新日時",
+      "descending": "降順",
+      "ascending": "昇順"
+    },
+    "batch-transition": {
+      "close": "閉じる",
+      "reopen": "再開",
+      "not-allowed-tips": "選択したイシューの一部を {{}} にすることはできません",
+      "closed": "閉まっている",
+      "reopened": "再開"
+    },
+    "leave-a-comment": "コメントを残す…"
   },
   "label": {
     "error": {
