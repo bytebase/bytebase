@@ -1,15 +1,13 @@
 export interface ClampEditorHeightOptions {
-  lineCount: number;
-  lineHeight: number;
+  contentHeight: number;
   min: number;
   max: number;
 }
 
 export function clampEditorHeight({
-  lineCount,
-  lineHeight,
+  contentHeight,
   min,
   max,
 }: ClampEditorHeightOptions): number {
-  return Math.min(max, Math.max(min, lineCount * lineHeight));
+  return Math.min(max, Math.max(min, contentHeight));
 }

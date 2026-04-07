@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createMonacoEditor } from "@/components/MonacoEditor/editor";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor/types";
 import { cn } from "@/react/lib/utils";
@@ -13,8 +13,6 @@ export interface ReadonlyMonacoProps {
   max?: number;
 }
 
-const MONACO_LINE_HEIGHT = 24;
-
 export function ReadonlyMonaco({
   content,
   language = "sql",
@@ -26,12 +24,14 @@ export function ReadonlyMonaco({
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const contentRef = useRef(content);
   const languageRef = useRef(language);
+  const [contentHeight, setContentHeight] = useState(min);
 
   contentRef.current = content;
   languageRef.current = language;
 
   useEffect(() => {
     let disposed = false;
+    let contentSizeSubscription: { dispose(): void } | null = null;
 
     (async () => {
       if (!containerRef.current) return;
@@ -51,11 +51,40 @@ export function ReadonlyMonaco({
         return;
       }
 
+      contentSizeSubscription = editor.onDidContentSizeChange((event) => {
+        if (!event.contentHeightChanged) return;
+        setContentHeight(event.contentHeight);
+      });
+
+      const model = editor.getModel();
+      if (model) {
+        const { editor: monacoEditor } = await import("monaco-editor");
+        if (disposed) {
+          contentSizeSubscription?.dispose();
+          editor.dispose();
+          return;
+        }
+        monacoEditor.setModelLanguage(model, languageRef.current);
+      }
+
+      if (disposed) {
+        contentSizeSubscription?.dispose();
+        editor.dispose();
+        return;
+      }
+
+      if (editor.getValue() !== contentRef.current) {
+        editor.setValue(contentRef.current);
+      }
+
+      setContentHeight(editor.getContentHeight());
+
       editorRef.current = editor;
     })();
 
     return () => {
       disposed = true;
+      contentSizeSubscription?.dispose();
       editorRef.current?.dispose();
       editorRef.current = null;
     };
@@ -67,6 +96,7 @@ export function ReadonlyMonaco({
     if (editor.getValue() !== contentRef.current) {
       editor.setValue(contentRef.current);
     }
+    setContentHeight(editor.getContentHeight());
   }, [content]);
 
   useEffect(() => {
@@ -80,10 +110,8 @@ export function ReadonlyMonaco({
     })();
   }, [language]);
 
-  const lineCount = Math.max(1, content.split(/\r?\n/).length);
   const height = clampEditorHeight({
-    lineCount,
-    lineHeight: MONACO_LINE_HEIGHT,
+    contentHeight,
     min,
     max,
   });
@@ -91,7 +119,10 @@ export function ReadonlyMonaco({
   return (
     <div
       ref={containerRef}
-      className={cn("overflow-clip rounded-md border text-sm", className)}
+      className={cn(
+        "w-full overflow-clip rounded-md border text-sm",
+        className
+      )}
       style={{ height }}
     />
   );
