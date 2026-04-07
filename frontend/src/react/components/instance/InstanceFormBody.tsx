@@ -1705,10 +1705,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         {isCreating && onOpenInfoPanel && hasHostInfo && (
                           <button
                             type="button"
-                            className="ml-1 text-accent hover:text-accent-hover text-sm"
+                            className="ml-1 text-accent text-xs hover:underline"
                             onClick={() => openInfoPanel("host")}
                           >
-                            ?
+                            ⓘ
                           </button>
                         )}
                       </>
