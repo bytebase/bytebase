@@ -2891,8 +2891,7 @@
     "vcs-type": {
       "unspecified": "Unspecified"
     },
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
-    "filter-by-category": "Filter by category"
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
   },
   "gitops": {
     "self": "GitOps",

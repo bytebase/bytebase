@@ -2948,8 +2948,7 @@
     "vcs-type": {
       "unspecified": "Không xác định"
     },
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
-    "filter-by-category": "Lọc theo danh mục"
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
   },
   "gitops": {
     "self": "GitOps",
