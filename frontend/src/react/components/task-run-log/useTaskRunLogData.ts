@@ -42,6 +42,11 @@ export interface UseTaskRunLogDataResult {
   sheetFetch: SheetFetchState;
 }
 
+interface ReleaseSheetFetchResult {
+  version: string;
+  sheet?: Sheet;
+}
+
 const getTaskFromRollout = (
   taskRunName: string | undefined,
   rollout: { stages: Array<{ tasks: Task[] }> } | undefined
@@ -64,6 +69,74 @@ const getTaskFromRollout = (
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return String(error);
+};
+
+export const buildSheetFetchStateForMissingTask = (
+  taskRunName: string | undefined,
+  metadataFetchState: FetchState
+): SheetFetchState => {
+  if (!taskRunName) {
+    return { status: "idle", source: "none" };
+  }
+  if (metadataFetchState.status === "loading") {
+    return { status: "loading", source: "none" };
+  }
+  if (metadataFetchState.status === "error") {
+    return {
+      status: "error",
+      source: "none",
+      error:
+        metadataFetchState.error ??
+        "Task cannot be resolved from rollout metadata",
+    };
+  }
+  return {
+    status: "error",
+    source: "none",
+    error: "Task cannot be resolved from rollout metadata",
+  };
+};
+
+export const buildReleaseSheetFetchResult = (
+  fileSheets: ReleaseSheetFetchResult[]
+): { sheetsMap: Map<string, Sheet>; state: SheetFetchState } => {
+  const sheetsMap = new Map<string, Sheet>();
+  const failedReleaseVersions: string[] = [];
+
+  for (const item of fileSheets) {
+    if (item.sheet) {
+      sheetsMap.set(item.version, item.sheet);
+    } else {
+      failedReleaseVersions.push(item.version);
+    }
+  }
+
+  if (failedReleaseVersions.length === 0) {
+    return {
+      sheetsMap,
+      state: { status: "success", source: "release" },
+    };
+  }
+  if (sheetsMap.size === 0) {
+    return {
+      sheetsMap,
+      state: {
+        status: "error",
+        source: "release",
+        error: "Failed to fetch all release sheets",
+        failedReleaseVersions,
+      },
+    };
+  }
+  return {
+    sheetsMap,
+    state: {
+      status: "partial",
+      source: "release",
+      error: "Failed to fetch some release sheets",
+      failedReleaseVersions,
+    },
+  };
 };
 
 export const useTaskRunLogData = (
@@ -174,25 +247,9 @@ export const useTaskRunLogData = (
     setSheetsMap(new Map());
 
     if (!task) {
-      if (!taskRunName) {
-        setSheetFetchState({ status: "idle", source: "none" });
-      } else if (metadataFetchState.status === "loading") {
-        setSheetFetchState({ status: "loading", source: "none" });
-      } else if (metadataFetchState.status === "error") {
-        setSheetFetchState({
-          status: "error",
-          source: "none",
-          error:
-            metadataFetchState.error ??
-            "Task cannot be resolved from rollout metadata",
-        });
-      } else {
-        setSheetFetchState({
-          status: "error",
-          source: "none",
-          error: "Task cannot be resolved from rollout metadata",
-        });
-      }
+      setSheetFetchState(
+        buildSheetFetchStateForMissingTask(taskRunName, metadataFetchState)
+      );
       return;
     }
 
@@ -229,35 +286,16 @@ export const useTaskRunLogData = (
           );
           if (version !== sheetFetchVersion.current) return;
 
-          const nextSheetsMap = new Map<string, Sheet>();
-          const failedReleaseVersions: string[] = [];
-          for (const item of fileSheets) {
-            if (item?.sheet) {
-              nextSheetsMap.set(item.version, item.sheet);
-            } else if (item?.version) {
-              failedReleaseVersions.push(item.version);
-            }
-          }
-          setSheetsMap(nextSheetsMap);
-          if (failedReleaseVersions.length === 0) {
-            setSheetFetchState({ status: "success", source: "release" });
-            return;
-          }
-          if (nextSheetsMap.size === 0) {
-            setSheetFetchState({
-              status: "error",
-              source: "release",
-              error: "Failed to fetch all release sheets",
-              failedReleaseVersions,
-            });
-            return;
-          }
-          setSheetFetchState({
-            status: "partial",
-            source: "release",
-            error: "Failed to fetch some release sheets",
-            failedReleaseVersions,
-          });
+          const releaseResult = buildReleaseSheetFetchResult(
+            fileSheets
+              .filter((item) => item?.version)
+              .map((item) => ({
+                version: item.version,
+                sheet: item.sheet,
+              }))
+          );
+          setSheetsMap(releaseResult.sheetsMap);
+          setSheetFetchState(releaseResult.state);
         })
         .catch((error: unknown) => {
           if (version !== sheetFetchVersion.current) return;

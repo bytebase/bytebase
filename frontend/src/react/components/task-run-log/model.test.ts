@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
   type TaskRunLogEntry,
   TaskRunLogEntry_Type,
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   buildReleaseFileGroups,
   buildSectionsFromEntries,
@@ -14,9 +15,35 @@ import {
   hasReleaseFileMarkers,
 } from "./model";
 import {
+  buildReleaseSheetFetchResult,
+  buildSheetFetchStateForMissingTask,
+} from "./useTaskRunLogData";
+import {
   type UseTaskRunLogSectionsResult,
   useTaskRunLogSections,
 } from "./useTaskRunLogSections";
+
+vi.mock("@/connect", () => ({
+  rolloutServiceClientConnect: {},
+  sheetServiceClientConnect: {},
+}));
+
+vi.mock("@/react/hooks/useVueState", () => ({
+  useVueState: () => undefined,
+}));
+
+vi.mock("@/store", () => ({
+  useReleaseStore: () => ({}),
+  useRolloutStore: () => ({}),
+}));
+
+vi.mock("@/utils", () => ({
+  extractRolloutNameFromTaskRunName: () => "",
+  extractTaskNameFromTaskRunName: () => "",
+  isReleaseBasedTask: () => false,
+  releaseNameOfTaskV1: () => "",
+  sheetNameOfTaskV1: () => "",
+}));
 
 const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
 (
@@ -68,6 +95,46 @@ const createHookHarness = (initialProps: HookHarnessProps) => {
 };
 
 describe("task-run-log model", () => {
+  test("returns explicit error state when task cannot be resolved", () => {
+    const unresolvedTaskState = buildSheetFetchStateForMissingTask(
+      "tasks/run-1",
+      {
+        status: "success",
+      }
+    );
+    expect(unresolvedTaskState).toMatchObject({
+      status: "error",
+      source: "none",
+      error: "Task cannot be resolved from rollout metadata",
+    });
+
+    const metadataLoadingState = buildSheetFetchStateForMissingTask(
+      "tasks/run-1",
+      {
+        status: "loading",
+      }
+    );
+    expect(metadataLoadingState).toMatchObject({
+      status: "loading",
+      source: "none",
+    });
+  });
+
+  test("marks release sheet fetch as partial when some versions fail", () => {
+    const result = buildReleaseSheetFetchResult([
+      { version: "v1", sheet: {} as Sheet },
+      { version: "v2" },
+    ]);
+
+    expect(result.sheetsMap.size).toBe(1);
+    expect(result.sheetsMap.has("v1")).toBe(true);
+    expect(result.state).toMatchObject({
+      status: "partial",
+      source: "release",
+      failedReleaseVersions: ["v2"],
+    });
+  });
+
   test("groups release-file entries by version marker", () => {
     const entries = [
       create(TaskRunLogEntrySchema, {
