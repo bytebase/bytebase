@@ -19,8 +19,6 @@ import {
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -50,12 +48,11 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   engineNameV1,
-  extractDatabaseResourceName,
-  generatePlanTitle,
   hasProjectPermissionV2,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
+import { DataExportPrepDrawer } from "./export-center/DataExportPrepDrawer";
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -342,29 +339,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     );
   }, [projectName, selectedDatabases]);
 
-  const handleExportData = useCallback(async () => {
-    const project = await projectStore.getOrFetchProjectByName(projectName);
-    const query: Record<string, string> = {
-      template: "bb.plan.export-data",
-      databaseList: selectedDatabases.map((db) => db.name).join(","),
-    };
-    if (!project.enforceIssueTitle) {
-      query.name = generatePlanTitle(
-        "bb.plan.export-data",
-        selectedDatabases.map(
-          (db) => extractDatabaseResourceName(db.name).databaseName
-        )
-      );
-    }
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: {
-        projectId,
-        planId: "create",
-      },
-      query,
-    });
-  }, [projectName, projectId, selectedDatabases, projectStore]);
+  const [showExportDrawer, setShowExportDrawer] = useState(false);
+
+  const handleExportData = useCallback(() => {
+    setShowExportDrawer(true);
+  }, []);
 
   return (
     <div className="py-4 flex flex-col">
@@ -429,6 +408,16 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         projectName={projectName}
+      />
+
+      <DataExportPrepDrawer
+        open={showExportDrawer}
+        onClose={() => setShowExportDrawer(false)}
+        projectName={projectName}
+        seed={{
+          selectedDatabaseNames: selectedDatabases.map((db) => db.name),
+          step: 2,
+        }}
       />
 
       {/* Unassign confirmation dialog */}

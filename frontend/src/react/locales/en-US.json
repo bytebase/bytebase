@@ -211,6 +211,11 @@
     "view-details": "View Details",
     "warning": "Warning",
     "webhooks": "Webhooks",
+    "approved": "Approved",
+    "closed": "Closed",
+    "rejected": "Rejected",
+    "sql": "SQL",
+    "untitled": "Untitled",
     "you": "you"
   },
   "create-db": {
@@ -282,6 +287,9 @@
     },
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
+    },
+    "issue-review": {
+      "generating-approval-flow": "Generating approval flow"
     },
     "self": "Custom Approval"
   },
@@ -446,12 +454,28 @@
     "advanced-search": {
       "filter": "Filter"
     },
+    "data-export": {
+      "format": "Format",
+      "limits": "Limits",
+      "options": "Options"
+    },
     "labels": "Issue Labels",
+    "risk-level": {
+      "high": "High",
+      "moderate": "Moderate",
+      "self": "Risk level"
+    },
     "role-grant": {
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
       "use-cel": "Use CEL Expression"
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "Open",
+      "waiting-role": "Waiting: {{role}}"
     },
     "upload-sql": "Upload SQL"
   },
@@ -473,7 +497,10 @@
     }
   },
   "plan": {
-    "plans": "Plans"
+    "plans": "Plans",
+    "targets": {
+      "title": "Targets"
+    }
   },
   "policy": {
     "environment-tier": {
@@ -647,7 +674,8 @@
     "create-db": "Create database",
     "create-project": "Create Project",
     "new-db": "New DB",
-    "new-project": "New Project"
+    "new-project": "New Project",
+    "request-export-data": "Request Export"
   },
   "release": {
     "releases": "Releases"
@@ -1403,5 +1431,8 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
+  },
+  "export-data": {
+    "password-optional": "Encrypt with password (Optional)"
   }
 }

@@ -72,6 +72,7 @@
     "added": "已创建",
     "address": "地址",
     "all": "全部",
+    "approved": "已批准",
     "archive": "归档",
     "archive-description": "将「{{name}}」标记为已归档且只读。",
     "archive-resource": "归档{{type}}",
@@ -83,6 +84,7 @@
     "classification-level": "分类等级",
     "clear": "清除",
     "close": "关闭",
+    "closed": "已关闭",
     "columns": "列",
     "configure": "配置",
     "configure-now": "现在配置",
@@ -167,6 +169,7 @@
     "projects": "项目",
     "reason": "Reason",
     "regenerate": "重新生成",
+    "rejected": "已拒绝",
     "release": "版本",
     "reorder": "排序",
     "required-permission": "所需权限",
@@ -190,6 +193,7 @@
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "setting": "设置",
     "settings": "设置",
+    "sql": "SQL",
     "state": "状态",
     "statement": "语句",
     "status": "状态",
@@ -202,6 +206,7 @@
     "type": "类型",
     "unassigned": "未分配",
     "unlimited": "无限制",
+    "untitled": "未命名",
     "update": "更新",
     "updated": "已更新",
     "upload": "上传",
@@ -250,6 +255,9 @@
         },
         "presets-title": "预设模板"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "正在生成审批流"
     },
     "risk": {
       "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
@@ -363,6 +371,9 @@
   "export-center": {
     "data-export": "数据导出"
   },
+  "export-data": {
+    "password-optional": "设置密码加密（可选）"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
@@ -446,12 +457,28 @@
     "advanced-search": {
       "filter": "过滤"
     },
+    "data-export": {
+      "format": "导出格式",
+      "limits": "限制",
+      "options": "配置项"
+    },
     "labels": "工单标签",
+    "risk-level": {
+      "high": "高风险",
+      "moderate": "中风险",
+      "self": "风险等级"
+    },
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
       "use-cel": "使用 CEL 表达式"
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} 已审批",
+      "approved": "已审批",
+      "open": "开启中",
+      "waiting-role": "等待: {{role}}"
     },
     "upload-sql": "上传 SQL"
   },
@@ -473,7 +500,10 @@
     }
   },
   "plan": {
-    "plans": "变更计划"
+    "plans": "变更计划",
+    "targets": {
+      "title": "目标库"
+    }
   },
   "policy": {
     "environment-tier": {
@@ -647,7 +677,8 @@
     "create-db": "创建数据库",
     "create-project": "创建项目",
     "new-db": "创建数据库",
-    "new-project": "创建项目"
+    "new-project": "创建项目",
+    "request-export-data": "申请导出数据"
   },
   "release": {
     "releases": "发布包"

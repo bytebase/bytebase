@@ -465,8 +465,11 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("export-center.self"),
           requiredPermissionList: () => ["bb.issues.list", "bb.databases.list"],
         },
-        component: () => import("@/views/ExportCenter/index.vue"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route) => ({
+          page: "ProjectExportCenterPage",
+          ...route.params,
+        }),
       },
       {
         path: "releases",

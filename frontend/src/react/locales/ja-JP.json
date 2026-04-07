@@ -72,6 +72,7 @@
     "added": "作成した",
     "address": "接続先",
     "all": "全て",
+    "approved": "承認済み",
     "archive": "アーカイブ",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
     "archive-resource": "Archive {{type}}",
@@ -83,6 +84,7 @@
     "classification-level": "分類レベル",
     "clear": "クリア",
     "close": "閉じる",
+    "closed": "閉まっている",
     "columns": "カラム",
     "configure": "設定",
     "configure-now": "今すぐ設定する",
@@ -167,6 +169,7 @@
     "projects": "プロジェクト",
     "reason": "Reason",
     "regenerate": "再生する",
+    "rejected": "却下",
     "release": "リリース",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
@@ -190,6 +193,7 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "setting": "設定",
     "settings": "設定",
+    "sql": "SQL",
     "state": "ステート",
     "statement": "ステートメント",
     "status": "ステータス",
@@ -202,6 +206,7 @@
     "type": "タイプ",
     "unassigned": "割り当てられていない",
     "unlimited": "無制限",
+    "untitled": "名前のない",
     "update": "更新する",
     "updated": "更新しました",
     "upload": "アップロード",
@@ -250,6 +255,9 @@
         },
         "presets-title": "プリセット"
       }
+    },
+    "issue-review": {
+      "generating-approval-flow": "承認フローが生成されています"
     },
     "risk": {
       "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
@@ -363,6 +371,9 @@
   "export-center": {
     "data-export": "データエクスポート"
   },
+  "export-data": {
+    "password-optional": "パスワード暗号化の設定 (オプション)"
+  },
   "gitops": {
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
@@ -446,12 +457,28 @@
     "advanced-search": {
       "filter": "フィルター"
     },
+    "data-export": {
+      "format": "エクスポート形式",
+      "limits": "制限",
+      "options": "設定項目"
+    },
     "labels": "イシューラベル",
+    "risk-level": {
+      "high": "高い",
+      "moderate": "適度",
+      "self": "リスクレベル"
+    },
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "manually-select": "手動選択",
       "use-cel": "CEL式を使用"
+    },
+    "table": {
+      "approval-progress": "{{approved}}/{{total}} Approvals",
+      "approved": "Approved",
+      "open": "オープン",
+      "waiting-role": "Waiting: {{role}}"
     },
     "upload-sql": "Upload SQL"
   },
@@ -473,7 +500,10 @@
     }
   },
   "plan": {
-    "plans": "プラン"
+    "plans": "プラン",
+    "targets": {
+      "title": "ターゲット"
+    }
   },
   "policy": {
     "environment-tier": {
@@ -647,7 +677,8 @@
     "create-db": "データベースの作成",
     "create-project": "作成するプロジェクト",
     "new-db": "データベースの作成",
-    "new-project": "作成するプロジェクト"
+    "new-project": "作成するプロジェクト",
+    "request-export-data": "データ出力を申請する"
   },
   "release": {
     "releases": "リリース"
