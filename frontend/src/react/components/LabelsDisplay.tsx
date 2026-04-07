@@ -16,7 +16,7 @@ export function LabelsDisplay({
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-md bg-gray-100 py-0.5 px-2 text-sm">
+        <span key={key} className="rounded-xs bg-gray-100 py-0.5 px-2 text-sm">
           {key}:{value}
         </span>
       ))}

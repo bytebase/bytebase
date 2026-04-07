@@ -134,7 +134,7 @@ function SpecialAccountOption({
           <span className="text-sm font-medium truncate">
             {match.email.split("@")[0]}
           </span>
-          <span className="text-xs text-control-light bg-gray-100 rounded px-1">
+          <span className="text-xs text-control-light bg-gray-100 rounded-xs px-1">
             {label}
           </span>
         </div>
@@ -291,7 +291,7 @@ export function AccountMultiSelect({
         className={cn(
           "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
           disabled && "opacity-50 cursor-not-allowed",
-          open && "ring-2 ring-accent border-accent"
+          open && "border-accent"
         )}
         onClick={() => {
           if (!disabled) {
@@ -320,7 +320,7 @@ export function AccountMultiSelect({
             )}
           </span>
         ))}
-        {!open && value.length === 0 && (
+        {value.length === 0 && (
           <span className="text-control-placeholder">
             {t("settings.members.select-account", { count: 2 })}
           </span>
@@ -405,7 +405,7 @@ export function AccountMultiSelect({
                             {displayName}
                           </span>
                           {isCurrentUser && (
-                            <span className="text-xs text-control-light bg-gray-100 rounded px-1">
+                            <span className="text-xs text-control-light bg-gray-100 rounded-xs px-1">
                               {t("common.you")}
                             </span>
                           )}

@@ -371,7 +371,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         </label>
 
         {showInactive && (
-          <div className="flex flex-col gap-y-3">
+          <div className="flex flex-col gap-y-4">
             <p className="text-lg font-medium leading-7">
               {t("settings.members.inactive-workload-identities")}
             </p>

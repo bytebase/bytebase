@@ -74,13 +74,16 @@ export function LabelEditorDrawer({
       <div className="ml-auto relative bg-white w-[28rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">{t("database.edit-labels")}</h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
+          <button
+            className="p-1 hover:bg-control-bg rounded-xs"
+            onClick={onClose}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           {hasMixedValues && (
-            <div className="mb-4 rounded-md bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
+            <div className="mb-4 rounded-xs bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
               {t("database.mixed-label-values-warning")}
             </div>
           )}
@@ -90,7 +93,7 @@ export function LabelEditorDrawer({
               placeholder={t("common.key")}
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
-              className="flex-1 border border-control-border rounded-md px-2 py-1 text-sm"
+              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
             />
             <span className="text-control-placeholder">:</span>
             <input
@@ -98,7 +101,7 @@ export function LabelEditorDrawer({
               placeholder={t("common.value")}
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
-              className="flex-1 border border-control-border rounded-md px-2 py-1 text-sm"
+              className="flex-1 border border-control-border rounded-xs px-2 py-1 text-sm"
               onKeyDown={(e) => {
                 if (e.key === "Enter") addLabelToAll();
               }}
@@ -114,7 +117,7 @@ export function LabelEditorDrawer({
                 return (
                   <div
                     key={key}
-                    className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
+                    className="flex items-center justify-between rounded-xs bg-gray-50 px-3 py-2"
                   >
                     <span className="text-sm">
                       {key}:
@@ -127,7 +130,7 @@ export function LabelEditorDrawer({
                       )}
                     </span>
                     <button
-                      className="p-0.5 hover:bg-gray-200 rounded"
+                      className="p-0.5 hover:bg-gray-200 rounded-xs"
                       onClick={() => removeLabel(key)}
                     >
                       <X className="w-3 h-3" />

@@ -520,7 +520,7 @@ export function AdvancedSearch({
       {/* Dropdown menu */}
       {showMenu && (
         <div
-          className="absolute top-[38px] w-full bg-gray-100 shadow-xl origin-top-left rounded-xs overflow-hidden z-50"
+          className="absolute top-[38px] w-full bg-gray-100 shadow-xl origin-top-left rounded-sm overflow-hidden z-50"
           onMouseDown={(e) => e.preventDefault()}
         >
           {/* Scope menu */}

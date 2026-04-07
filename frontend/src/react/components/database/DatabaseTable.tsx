@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
-import { Button } from "@/react/components/ui/button";
 import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { PagedTableFooter } from "@/react/pages/settings/shared/usePagedData";
 import { router } from "@/router";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
@@ -221,7 +221,7 @@ export function DatabaseTable({
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleSelectAll}
-                className="rounded border-control-border"
+                className="rounded-xs border-control-border"
               />
             </th>
             <th
@@ -313,7 +313,7 @@ export function DatabaseTable({
                       checked={isSelected}
                       onChange={() => toggleSelection(db.name)}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded border-control-border"
+                      className="rounded-xs border-control-border"
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -378,35 +378,15 @@ export function DatabaseTable({
         </tbody>
       </table>
 
-      <div className="flex items-center justify-end gap-x-2 mx-4">
-        <div className="flex items-center gap-x-2">
-          <span className="text-sm text-control-light">
-            {t("common.rows-per-page")}
-          </span>
-          <select
-            className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1 min-w-[5rem]"
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-          >
-            {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </div>
-        {hasMore && (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isFetchingMore}
-            onClick={loadMore}
-          >
-            <span className="text-sm text-control-light">
-              {isFetchingMore ? t("common.loading") : t("common.load-more")}
-            </span>
-          </Button>
-        )}
+      <div className="mx-4">
+        <PagedTableFooter
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={setPageSize}
+          hasMore={hasMore}
+          isFetchingMore={isFetchingMore}
+          onLoadMore={loadMore}
+        />
       </div>
     </>
   );

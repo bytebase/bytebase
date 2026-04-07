@@ -199,7 +199,7 @@ export function MCPPage() {
             {t("settings.mcp.first-prompt.description")}
           </p>
         </div>
-        <code className="text-sm bg-gray-100 px-3 py-2 rounded">
+        <code className="text-sm bg-gray-100 px-3 py-2 rounded-xs">
           {firstPromptExample}
         </code>
       </div>

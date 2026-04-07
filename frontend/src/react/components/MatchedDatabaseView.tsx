@@ -278,12 +278,12 @@ export function MatchedDatabaseView({
       </div>
 
       {matchingError && (
-        <p className="my-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600">
+        <p className="my-2 text-sm border border-red-600 px-2 py-1 rounded-sm bg-red-50 text-red-600">
           {matchingError}
         </p>
       )}
 
-      <div className="border p-2 rounded-lg">
+      <div className="border p-2 rounded-sm">
         {sections.map((section) => {
           const isExpanded = expandedSections.has(section.name);
           const isEmpty = section.databases.length === 0;

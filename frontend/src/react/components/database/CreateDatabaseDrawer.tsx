@@ -79,7 +79,7 @@ function IssueLabelSelect({
         <button
           type="button"
           className={cn(
-            "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-md h-9 px-3 text-sm bg-white text-left transition-colors",
+            "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-xs h-9 px-3 text-sm bg-white text-left transition-colors",
             "hover:border-gray-400",
             open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
           )}
@@ -92,7 +92,7 @@ function IssueLabelSelect({
                 return (
                   <span
                     key={val}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-xs"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-gray-100 text-xs"
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-sm shrink-0"
@@ -121,7 +121,7 @@ function IssueLabelSelect({
           />
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
+          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
             <div className="max-h-60 overflow-y-auto">
               {labels.length === 0 ? (
                 <div className="px-3 py-6 text-sm text-gray-400 text-center">
@@ -141,7 +141,7 @@ function IssueLabelSelect({
                         type="checkbox"
                         checked={isSelected}
                         readOnly
-                        className="rounded border-gray-300 accent-accent"
+                        className="rounded-xs border-gray-300 accent-accent"
                       />
                       <span
                         className="w-4 h-4 rounded-sm shrink-0"
@@ -382,7 +382,10 @@ export function CreateDatabaseDrawer({
           <h2 className="text-lg font-semibold">
             {t("quick-action.create-db")}
           </h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
+          <button
+            className="p-1 hover:bg-control-bg rounded-xs"
+            onClick={onClose}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -439,7 +442,7 @@ export function CreateDatabaseDrawer({
               onChange={(e) => setDatabaseName(e.target.value)}
               placeholder={t("create-db.new-database-name")}
               className={cn(
-                "w-full border rounded-md px-3 py-2 text-sm",
+                "w-full border rounded-xs px-3 py-2 text-sm",
                 isReservedName ? "border-error" : "border-control-border"
               )}
             />
@@ -460,7 +463,7 @@ export function CreateDatabaseDrawer({
                 type="text"
                 value={tableName}
                 onChange={(e) => setTableName(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-xs px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -474,7 +477,7 @@ export function CreateDatabaseDrawer({
                 type="text"
                 value={cluster}
                 onChange={(e) => setCluster(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-xs px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -533,7 +536,7 @@ export function CreateDatabaseDrawer({
                   placeholder={defaultCharsetOfEngineV1(
                     selectedInstance.engine
                   )}
-                  className="w-full border border-control-border rounded-md px-3 py-2 text-sm"
+                  className="w-full border border-control-border rounded-xs px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -548,7 +551,7 @@ export function CreateDatabaseDrawer({
                     defaultCollationOfEngineV1(selectedInstance.engine) ||
                     t("common.default")
                   }
-                  className="w-full border border-control-border rounded-md px-3 py-2 text-sm"
+                  className="w-full border border-control-border rounded-xs px-3 py-2 text-sm"
                 />
               </div>
             </>

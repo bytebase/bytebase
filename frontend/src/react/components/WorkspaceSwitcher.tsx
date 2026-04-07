@@ -34,7 +34,7 @@ export function WorkspaceSwitcher() {
     <div ref={containerRef} className="relative px-2.5 pb-2">
       <button
         type="button"
-        className="w-full flex items-center gap-x-2 px-2 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 cursor-pointer"
+        className="w-full flex items-center gap-x-2 px-2 py-1.5 rounded-xs text-sm font-medium text-gray-700 hover:bg-gray-100 cursor-pointer"
         onClick={() => setOpen(!open)}
       >
         <Building2 className="w-4 h-4 text-gray-500 shrink-0" />
@@ -44,7 +44,7 @@ export function WorkspaceSwitcher() {
         <ChevronsUpDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
       </button>
       {open && (
-        <div className="absolute left-2.5 right-2.5 z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+        <div className="absolute left-2.5 right-2.5 z-10 mt-1 bg-white border border-gray-200 rounded-sm shadow-lg py-1">
           {workspaceList.map((ws) => (
             <button
               key={ws.name}

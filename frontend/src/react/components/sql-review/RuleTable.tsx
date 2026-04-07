@@ -532,7 +532,7 @@ function RuleTableRow({
               type="checkbox"
               checked={isSelected}
               onChange={onToggleRule}
-              className="h-4 w-4 rounded border-control-border accent-accent"
+              className="h-4 w-4 rounded-xs border-control-border accent-accent"
             />
           </td>
         )}

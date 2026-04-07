@@ -310,7 +310,7 @@ function GroupRow({
         <td className="px-4 py-2">
           <div className="flex items-center gap-x-2">
             <button
-              className="shrink-0 p-0.5 rounded hover:bg-gray-200"
+              className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
               onClick={onToggle}
             >
               {isExpanded ? (
@@ -984,7 +984,7 @@ export function GroupsPage() {
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {/* Action bar */}
       <div className="flex items-center justify-between mb-4">
-        <div className="relative">
+        <div className="relative flex-1">
           <Input
             placeholder={t("common.filter-by-name")}
             value={groupSearchText}
@@ -1070,14 +1070,16 @@ export function GroupsPage() {
               onGroupSelected={handleGroupSelected}
               onGroupDeleted={handleGroupDeleted}
             />
-            <PagedTableFooter
-              pageSize={groupPaged.pageSize}
-              pageSizeOptions={groupPaged.pageSizeOptions}
-              onPageSizeChange={groupPaged.onPageSizeChange}
-              hasMore={groupPaged.hasMore}
-              isFetchingMore={groupPaged.isFetchingMore}
-              onLoadMore={groupPaged.loadMore}
-            />
+            <div className="mt-4">
+              <PagedTableFooter
+                pageSize={groupPaged.pageSize}
+                pageSizeOptions={groupPaged.pageSizeOptions}
+                onPageSizeChange={groupPaged.onPageSizeChange}
+                hasMore={groupPaged.hasMore}
+                isFetchingMore={groupPaged.isFetchingMore}
+                onLoadMore={groupPaged.loadMore}
+              />
+            </div>
           </>
         )}
       </ComponentPermissionGuard>

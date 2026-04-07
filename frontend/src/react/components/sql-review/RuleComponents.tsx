@@ -287,7 +287,7 @@ function StringArrayInput({
         {value.map((tag, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 rounded bg-control-bg px-2 py-0.5 text-sm"
+            className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-0.5 text-sm"
           >
             {tag}
             {!disabled && (

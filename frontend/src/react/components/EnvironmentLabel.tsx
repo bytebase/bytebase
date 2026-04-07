@@ -52,7 +52,7 @@ export function EnvironmentLabel({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-x-1 px-1.5 rounded truncate",
+        "inline-flex items-center gap-x-1 px-1.5 rounded-xs truncate",
         className
       )}
       style={

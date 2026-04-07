@@ -1771,7 +1771,7 @@ function CreateWizardDrawer({
                       return (
                         <label
                           key={tmpl.title}
-                          className={`block border rounded-xs p-4 transition-colors cursor-pointer ${
+                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
                             selectedTemplate?.title === tmpl.title
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"

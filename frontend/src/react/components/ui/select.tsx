@@ -48,7 +48,7 @@ function SelectContent({
         <BaseSelect.Popup
           ref={ref}
           className={cn(
-            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-xs border border-control-border bg-white py-1 shadow-md",
+            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
             className
           )}
           {...props}

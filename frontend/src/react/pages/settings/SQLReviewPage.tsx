@@ -140,7 +140,7 @@ function PolicyTable({
                       type="checkbox"
                       checked={policy.enforce}
                       onChange={(e) => toggleEnabled(policy, e.target.checked)}
-                      className="h-4 w-4 rounded border-control-border accent-accent"
+                      className="h-4 w-4 rounded-xs border-control-border accent-accent"
                     />
                   ) : policy.enforce ? (
                     <Check className="w-4 h-4 text-control-light" />

@@ -29,7 +29,7 @@ export function RecoveryCodesView({
 
   return (
     <div className="w-full flex flex-col gap-y-4 my-8">
-      <div className="flex gap-3 rounded-md border border-blue-200 bg-blue-50 p-4">
+      <div className="flex gap-3 rounded-sm border border-blue-200 bg-blue-50 p-4">
         <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-blue-800">
@@ -46,7 +46,7 @@ export function RecoveryCodesView({
         </div>
       </div>
       <div className="w-full mx-auto flex flex-col justify-start items-start">
-        <ul className="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-24 p-8 px-12 border rounded-md bg-gray-50">
+        <ul className="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-24 p-8 px-12 border rounded-xs bg-gray-50">
           {recoveryCodes.map((code) => (
             <li key={code}>
               <code className="ml-2">{code}</code>

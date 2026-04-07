@@ -204,7 +204,7 @@ function WebhookTable({
                     {activityTitles.map((title) => (
                       <span
                         key={title}
-                        className="inline-block px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700"
+                        className="inline-block px-2 py-0.5 text-xs rounded-xs bg-gray-100 text-gray-700"
                       >
                         {title}
                       </span>
@@ -239,7 +239,7 @@ function ActionDropdown({
     <div className="relative flex justify-end">
       <button
         type="button"
-        className="p-1 rounded hover:bg-gray-100"
+        className="p-1 rounded-xs hover:bg-gray-100"
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
@@ -256,7 +256,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded shadow-md min-w-[100px]">
+          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
             <button
               type="button"
               className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"

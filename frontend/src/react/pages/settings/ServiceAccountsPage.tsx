@@ -31,7 +31,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
-import { RoleMultiSelect } from "./shared/RoleMultiSelect";
+import { RoleSelect } from "./shared/RoleSelect";
 import { UserAvatar } from "./shared/UserAvatar";
 import { PagedTableFooter, usePagedData } from "./shared/usePagedData";
 
@@ -571,7 +571,7 @@ function CreateServiceAccountDrawer({
                   <label className="block text-sm font-medium text-control">
                     {t("settings.members.table.roles")}
                   </label>
-                  <RoleMultiSelect
+                  <RoleSelect
                     value={roles}
                     onChange={setRoles}
                     disabled={false}
@@ -763,7 +763,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
         {/* Inactive list */}
         {showInactive && (
-          <div className="flex flex-col gap-y-3">
+          <div className="flex flex-col gap-y-4">
             <h3 className="text-base font-medium">
               {t("settings.members.inactive-service-accounts")}
             </h3>

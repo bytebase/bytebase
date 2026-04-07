@@ -44,6 +44,7 @@ import {
   isCustomRole,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
+import { RoleSelect } from "./shared/RoleSelect";
 
 // Escape key stack: only the topmost overlay handles Escape.
 const escapeStack: (() => void)[] = [];
@@ -241,18 +242,11 @@ function ImportPermissionModal({
             <label className="textlabel mb-1 block">
               {t("role.select-role")}
             </label>
-            <select
-              value={selectedRoleName}
-              onChange={(e) => setSelectedRoleName(e.target.value)}
-              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm"
-            >
-              <option value="">--</option>
-              {roleList.map((role) => (
-                <option key={role.name} value={role.name}>
-                  {displayRoleTitle(role.name)}
-                </option>
-              ))}
-            </select>
+            <RoleSelect
+              value={selectedRoleName ? [selectedRoleName] : []}
+              onChange={(roles) => setSelectedRoleName(roles[0] ?? "")}
+              multiple={false}
+            />
           </div>
 
           {selectedRole && (

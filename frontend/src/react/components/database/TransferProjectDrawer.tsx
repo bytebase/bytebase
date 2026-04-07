@@ -88,7 +88,10 @@ export function TransferProjectDrawer({
           <h2 className="text-lg font-semibold">
             {t("database.transfer-project")}
           </h2>
-          <button className="p-1 hover:bg-control-bg rounded" onClick={onClose}>
+          <button
+            className="p-1 hover:bg-control-bg rounded-xs"
+            onClick={onClose}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -97,7 +100,7 @@ export function TransferProjectDrawer({
             {t("database.selected-n-databases", { n: databases.length })}
           </p>
 
-          <div className="border border-control-border rounded-md max-h-48 overflow-y-auto">
+          <div className="border border-control-border rounded-sm max-h-48 overflow-y-auto">
             {databases.map((db) => (
               <div
                 key={db.name}
@@ -145,9 +148,9 @@ export function TransferProjectDrawer({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t("common.filter-by-name")}
-                className="w-full border border-control-border rounded-md px-3 py-2 text-sm mb-2"
+                className="w-full border border-control-border rounded-xs px-3 py-2 text-sm mb-2"
               />
-              <div className="border border-control-border rounded-md max-h-64 overflow-y-auto">
+              <div className="border border-control-border rounded-sm max-h-64 overflow-y-auto">
                 {loadingProjects ? (
                   <div className="px-3 py-4 text-sm text-center text-control-placeholder">
                     {t("common.loading")}

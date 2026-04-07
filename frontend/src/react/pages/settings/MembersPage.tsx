@@ -28,7 +28,11 @@ import {
 } from "@/components/ProjectMember/utils";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { FeatureBadge } from "@/react/components/FeatureBadge";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -60,13 +64,10 @@ import {
   isDefaultProject,
   userBindingPrefix,
 } from "@/types";
-import { PRESET_PROJECT_ROLES, PRESET_ROLES } from "@/types/iam";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
-  displayRoleDescription,
   displayRoleTitle,
   formatAbsoluteDateTime,
   hasProjectPermissionV2,
@@ -79,7 +80,7 @@ import {
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import { AccountMultiSelect } from "./shared/AccountMultiSelect";
-import { RoleMultiSelect } from "./shared/RoleMultiSelect";
+import { RoleSelect } from "./shared/RoleSelect";
 import { UserAvatar } from "./shared/UserAvatar";
 
 const EMPTY_ROLE_SET = new Set<string>();
@@ -471,163 +472,6 @@ function MemberTableByRole({
 }
 
 // ============================================================
-// ProjectRoleSelect — single-select dropdown for project roles
-// ============================================================
-
-function ProjectRoleSelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (role: string) => void;
-}) {
-  const { t } = useTranslation();
-  const roleStore = useRoleStore();
-  const subscriptionStore = useSubscriptionV1Store();
-  const roleList = useVueState(() => [...roleStore.roleList]);
-  const hasCustomRoleFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
-  );
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleClickOutside = useCallback(() => {
-    setOpen(false);
-    setSearch("");
-  }, []);
-  useClickOutside(containerRef, open, handleClickOutside);
-
-  const groups = useMemo(() => {
-    const kw = search.toLowerCase();
-    const matchRole = (name: string) =>
-      !kw || displayRoleTitle(name).toLowerCase().includes(kw);
-
-    const project = PRESET_PROJECT_ROLES.filter(matchRole);
-    const custom = roleList
-      .filter((r) => !PRESET_ROLES.includes(r.name))
-      .map((r) => r.name)
-      .filter(matchRole);
-
-    const result: { label: string; roles: string[] }[] = [];
-    if (project.length > 0)
-      result.push({ label: t("role.project-roles.self"), roles: project });
-    if (custom.length > 0)
-      result.push({ label: t("role.custom-roles.self"), roles: custom });
-    return result;
-  }, [roleList, search, t]);
-
-  const isCustomRole = (name: string) => !PRESET_ROLES.includes(name);
-
-  const select = (roleName: string) => {
-    const isCustom = isCustomRole(roleName);
-    if (isCustom && !hasCustomRoleFeature) return;
-    onChange(roleName);
-    setOpen(false);
-    setSearch("");
-  };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <div
-        className={cn(
-          "flex items-center min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
-          open && "ring-2 ring-accent border-accent"
-        )}
-        onClick={() => {
-          setOpen(!open);
-          requestAnimationFrame(() => inputRef.current?.focus());
-        }}
-      >
-        {open ? (
-          <input
-            ref={inputRef}
-            className="flex-1 min-w-[4rem] outline-hidden text-sm bg-transparent"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={
-              value
-                ? displayRoleTitle(value)
-                : t("settings.members.assign-role")
-            }
-          />
-        ) : (
-          <span className={cn("flex-1", !value && "text-control-placeholder")}>
-            {value
-              ? displayRoleTitle(value)
-              : t("settings.members.assign-role")}
-          </span>
-        )}
-        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
-      </div>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
-          {groups.length === 0 && (
-            <div className="px-3 py-2 text-sm text-control-light">
-              {t("common.no-data")}
-            </div>
-          )}
-          {groups.map((group) => (
-            <div key={group.label}>
-              <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50">
-                {group.label}
-              </div>
-              {group.roles.map((roleName) => {
-                const selected = value === roleName;
-                const isCustom = isCustomRole(roleName);
-                const blocked = isCustom && !hasCustomRoleFeature;
-                return (
-                  <div
-                    key={roleName}
-                    className={cn(
-                      "flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-gray-50",
-                      selected && "bg-accent/5",
-                      blocked
-                        ? "opacity-50 cursor-not-allowed"
-                        : "cursor-pointer"
-                    )}
-                    onClick={() => select(roleName)}
-                  >
-                    <div
-                      className={cn(
-                        "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
-                        selected
-                          ? "bg-accent border-accent text-white"
-                          : "border-control-border"
-                      )}
-                    >
-                      {selected && <Check className="h-3 w-3" />}
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-x-1">
-                        <span>{displayRoleTitle(roleName)}</span>
-                        {blocked && (
-                          <FeatureBadge
-                            feature={PlanFeature.FEATURE_CUSTOM_ROLES}
-                            clickable={false}
-                          />
-                        )}
-                      </div>
-                      {displayRoleDescription(roleName) && (
-                        <span className="text-xs text-control-light">
-                          {displayRoleDescription(roleName)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================================
 // Expiration presets
 // ============================================================
 
@@ -934,7 +778,12 @@ function ProjectRoleBindingForm({
         <label className="block text-sm font-medium text-control">
           {t("settings.members.assign-role")}
         </label>
-        <ProjectRoleSelect value={form.role} onChange={handleRoleChange} />
+        <RoleSelect
+          value={form.role ? [form.role] : []}
+          onChange={(roles) => handleRoleChange(roles[0] ?? "")}
+          multiple={false}
+          scope="project"
+        />
       </div>
 
       {/* Permissions display */}
@@ -1654,7 +1503,7 @@ function EditMemberRoleDrawer({
                 <label className="block text-sm font-medium text-control">
                   {t("settings.members.select-role", { count: 2 })}
                 </label>
-                <RoleMultiSelect
+                <RoleSelect
                   value={selectedRoles}
                   onChange={setSelectedRoles}
                   scope={projectName ? "project" : undefined}
@@ -1700,9 +1549,18 @@ function EditMemberRoleDrawer({
 export function MembersPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
   const workspaceStore = useWorkspaceV1Store();
+  const actuatorStore = useActuatorV1Store();
+  const subscriptionStore = useSubscriptionV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
+
+  const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
+  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
+  const remainingUserCount = useMemo(
+    () => Math.max(0, userCountLimit - activeUserCount),
+    [userCountLimit, activeUserCount]
+  );
 
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
@@ -1833,6 +1691,22 @@ export function MembersPage({ projectId }: { projectId?: string }) {
 
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
+      {!projectName && remainingUserCount <= 3 && (
+        <Alert variant="warning" className="mb-2">
+          <AlertTitle>{t("subscription.usage.user-count.title")}</AlertTitle>
+          <AlertDescription>
+            {remainingUserCount > 0
+              ? t("subscription.usage.user-count.remaining", {
+                  total: userCountLimit,
+                  count: remainingUserCount,
+                })
+              : t("subscription.usage.user-count.runoutof", {
+                  total: userCountLimit,
+                })}{" "}
+            {t("subscription.usage.user-count.upgrade")}
+          </AlertDescription>
+        </Alert>
+      )}
       {projectName && (
         <div className="textinfolabel px-4 pt-4">
           {t("project.members.description")}{" "}
@@ -1848,7 +1722,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <div className="relative">
+        <div className="relative flex-1">
           <Input
             placeholder={t("settings.members.search-member")}
             value={memberSearchText}
