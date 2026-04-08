@@ -52,7 +52,9 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 
 	// Step 2: Create catalog, create database, and load existing schema.
 	c := catalog.New()
-	initSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`;\nUSE `%s`;", dbName, dbName)
+	// Disable FK checks so that tables can reference not-yet-loaded tables,
+	// matching standard MySQL behavior for schema loading.
+	initSQL := fmt.Sprintf("SET foreign_key_checks = 0;\nCREATE DATABASE IF NOT EXISTS `%s`;\nUSE `%s`;", dbName, dbName)
 	if schemaDDL != "" {
 		initSQL += "\n" + schemaDDL
 	}
@@ -84,11 +86,15 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 			continue
 		}
 		errCode := mapMySQLErrorToCode(r.Error)
+		content := r.Error.Error()
+		if catErr, ok := r.Error.(*catalog.Error); ok {
+			content = catErr.Message
+		}
 		return &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    errCode.Int32(),
 			Title:   "DDL simulation failed",
-			Content: r.Error.Error(),
+			Content: content,
 			StartPosition: &storepb.Position{
 				Line: int32(r.Line),
 			},
