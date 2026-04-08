@@ -9,8 +9,9 @@ import { BytebaseApiClient } from "./api-client";
 const PID_FILE = "/tmp/bytebase-e2e-pid";
 const DEFAULT_PORT = 18234;
 const DEFAULT_TIMEOUT = 300000; // 5 minutes — server startup includes embedded Postgres + migrations + demo data
-const ADMIN_EMAIL = "e2e-admin@bytebase.com";
-const ADMIN_PASSWORD = "e2e-password-123";
+// Demo mode pre-populates this admin user with workspace admin role
+const ADMIN_EMAIL = "demo@example.com";
+const ADMIN_PASSWORD = "12345678"; // NOSONAR: fixed demo account password
 
 let serverProcess: child_process.ChildProcess | undefined;
 let tempDir: string | undefined;
@@ -117,20 +118,20 @@ export async function startServer(): Promise<{
     );
   }
 
-  // Phase 2: Retry signup until success
+  // Phase 2: Retry login until success (demo admin is pre-populated)
   const api = new BytebaseApiClient({ baseURL });
   while (Date.now() < deadline) {
     try {
-      await api.signup(ADMIN_EMAIL, ADMIN_PASSWORD, "E2E Admin");
+      await api.login(ADMIN_EMAIL, ADMIN_PASSWORD);
       break;
     } catch {
-      /* not ready */
+      /* not ready — demo data still loading */
     }
     await new Promise((r) => setTimeout(r, 500));
   }
   if (Date.now() >= deadline) {
     throw new Error(
-      "Failed to create admin account. Server may not be fully initialized."
+      "Failed to login as demo admin. Server may not be fully initialized."
     );
   }
 
