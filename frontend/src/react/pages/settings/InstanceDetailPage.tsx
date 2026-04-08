@@ -175,7 +175,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="border-b-0">
           <TabsTrigger value="overview">{t("common.overview")}</TabsTrigger>
           <TabsTrigger value="databases">{t("common.databases")}</TabsTrigger>
           <TabsTrigger value="users">{t("instance.users")}</TabsTrigger>
