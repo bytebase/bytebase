@@ -38,7 +38,7 @@ import {
 } from "@/utils";
 import { DataExportPrepDrawer } from "./export-center/DataExportPrepDrawer";
 
-export function ProjectExportCenterPage({ projectId }: { projectId: string }) {
+export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
   const projectStore = useProjectV1Store();
