@@ -87,7 +87,14 @@ export class BytebaseApiClient {
   }
 
   async upsertPolicy(parent: string, policyType: string, policy: unknown) {
-    return this.request<unknown>("PATCH", `/v1/${parent}/policies/${policyType}?allowMissing=true`, policy);
+    // Extract the oneof field name for updateMask (e.g. "masking_exemption_policy" from the policy body)
+    const policyBody = policy as Record<string, unknown>;
+    const oneofFields = ["maskingExemptionPolicy", "maskingRulePolicy", "rolloutPolicy", "tagPolicy", "queryDataPolicy"];
+    const activeField = oneofFields.find((f) => f in policyBody);
+    // Convert camelCase to snake_case for the proto field mask
+    const snakeField = activeField ? activeField.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`) : "";
+    const maskParam = snakeField ? `&updateMask=${snakeField}` : "";
+    return this.request<unknown>("PATCH", `/v1/${parent}/policies/${policyType}?allowMissing=true${maskParam}`, policy);
   }
 
   async deletePolicy(parent: string, policyType: string) {
