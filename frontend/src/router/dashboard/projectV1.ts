@@ -422,8 +422,13 @@ const projectV1Routes: RouteRecordRaw[] = [
           title: () => t("common.database"),
           requiredPermissionList: () => ["bb.databases.get"],
         },
-        component: () => import("@/views/DatabaseDetail"),
-        props: true,
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "ProjectDatabaseDetailPage",
+          ...route.params,
+          hash: route.hash,
+          query: route.query,
+        }),
       },
       {
         path: "instances/:instanceId/databases/:databaseName/changelogs/:changelogId",
