@@ -53,6 +53,92 @@ interface AdvancedSearchProps {
   onParamsChange: (params: SearchParams) => void;
 }
 
+const SCROLL_FADE_EPSILON = 1;
+
+type OverflowAxis = "horizontal" | "vertical";
+
+interface OverflowFadeState {
+  showStart: boolean;
+  showEnd: boolean;
+}
+
+function useOverflowFade<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  axis: OverflowAxis,
+  deps: readonly unknown[]
+): OverflowFadeState {
+  const [fadeState, setFadeState] = useState<OverflowFadeState>({
+    showStart: false,
+    showEnd: false,
+  });
+
+  const updateFadeState = useCallback(() => {
+    const el = ref.current;
+    if (!el) {
+      setFadeState({ showStart: false, showEnd: false });
+      return;
+    }
+
+    const scrollOffset = axis === "horizontal" ? el.scrollLeft : el.scrollTop;
+    const clientSize = axis === "horizontal" ? el.clientWidth : el.clientHeight;
+    const scrollSize = axis === "horizontal" ? el.scrollWidth : el.scrollHeight;
+    const hasOverflow = scrollSize > clientSize + SCROLL_FADE_EPSILON;
+
+    setFadeState({
+      showStart: hasOverflow && scrollOffset > SCROLL_FADE_EPSILON,
+      showEnd:
+        hasOverflow &&
+        scrollOffset + clientSize < scrollSize - SCROLL_FADE_EPSILON,
+    });
+  }, [axis, ref]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      setFadeState({ showStart: false, showEnd: false });
+      return;
+    }
+
+    updateFadeState();
+
+    el.addEventListener("scroll", updateFadeState, { passive: true });
+    const observer = new ResizeObserver(updateFadeState);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", updateFadeState);
+      observer.disconnect();
+    };
+  }, [ref, updateFadeState, ...deps]);
+
+  return fadeState;
+}
+
+function ScrollFade({
+  edge,
+  className,
+}: {
+  edge: "left" | "right" | "top" | "bottom";
+  className?: string;
+}) {
+  const edgeClasses = {
+    left: "inset-y-0 left-0 w-4 bg-gradient-to-r",
+    right: "inset-y-0 right-0 w-4 bg-gradient-to-l",
+    top: "inset-x-0 top-0 h-4 bg-gradient-to-b",
+    bottom: "inset-x-0 bottom-0 h-4 bg-gradient-to-t",
+  };
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute",
+        edgeClasses[edge],
+        className
+      )}
+    />
+  );
+}
+
 export function AdvancedSearch({
   params,
   scopeOptions = [],
@@ -60,6 +146,9 @@ export function AdvancedSearch({
   onParamsChange,
 }: AdvancedSearchProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const tagsContainerRef = useRef<HTMLDivElement>(null);
+  const scopeMenuListRef = useRef<HTMLDivElement>(null);
+  const valueMenuListRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [inputText, setInputText] = useState(params.query);
@@ -70,6 +159,8 @@ export function AdvancedSearch({
   const [asyncOptions, setAsyncOptions] = useState<ValueOption[]>([]);
   const [asyncLoading, setAsyncLoading] = useState(false);
   const asyncSearchRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const asyncRequestRef = useRef(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync external query changes
   useEffect(() => {
@@ -92,6 +183,13 @@ export function AdvancedSearch({
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(asyncSearchRef.current);
+      clearTimeout(debounceRef.current);
+    };
   }, []);
 
   const editableScopes = useMemo(
@@ -147,19 +245,32 @@ export function AdvancedSearch({
     if (!isAsyncScope || !currentScopeOption?.onSearch) return;
     clearTimeout(asyncSearchRef.current);
     const keyword = currentValueForScope;
+    const onSearch = currentScopeOption.onSearch;
+    const requestID = asyncRequestRef.current + 1;
+    asyncRequestRef.current = requestID;
     setAsyncLoading(true);
     asyncSearchRef.current = setTimeout(() => {
-      currentScopeOption.onSearch!(keyword).then((results) => {
-        setAsyncOptions(results);
-        setAsyncLoading(false);
-        setMenuIndex(0);
-      });
+      onSearch(keyword)
+        .then((results) => {
+          if (asyncRequestRef.current !== requestID) return;
+          setAsyncOptions(results);
+          setMenuIndex(0);
+        })
+        .catch(() => {
+          if (asyncRequestRef.current !== requestID) return;
+          setAsyncOptions([]);
+        })
+        .finally(() => {
+          if (asyncRequestRef.current !== requestID) return;
+          setAsyncLoading(false);
+        });
     }, 300);
     return () => clearTimeout(asyncSearchRef.current);
   }, [isAsyncScope, currentScopeOption, currentValueForScope]);
 
   // Reset async state when scope changes
   useEffect(() => {
+    asyncRequestRef.current += 1;
     setAsyncOptions([]);
     setAsyncLoading(false);
   }, [currentScope]);
@@ -201,6 +312,19 @@ export function AdvancedSearch({
     if (menuView === "value") return true;
     return false;
   }, [menuView, visibleScopeOptions]);
+
+  const tagFade = useOverflowFade(tagsContainerRef, "horizontal", [
+    params.scopes,
+  ]);
+  const scopeMenuFade = useOverflowFade(scopeMenuListRef, "vertical", [
+    menuView === "scope",
+    visibleScopeOptions,
+  ]);
+  const valueMenuFade = useOverflowFade(valueMenuListRef, "vertical", [
+    menuView === "value",
+    visibleValueOptions,
+    asyncLoading,
+  ]);
 
   // ---- Actions ----
 
@@ -270,7 +394,6 @@ export function AdvancedSearch({
   }, [params, onParamsChange]);
 
   // Debounced query emit
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const emitQuery = useCallback(
     (text: string) => {
       clearTimeout(debounceRef.current);
@@ -443,59 +566,86 @@ export function AdvancedSearch({
         .find((o) => o.id === scope.id)
         ?.options?.find((o) => o.value === scope.value);
       if (opt?.render) return opt.render();
-      return <span>{scope.value}</span>;
+      return scope.value;
     },
     [scopeOptions]
   );
+
+  useEffect(() => {
+    if (focusedTagIndex === undefined) return;
+    const tag = tagsContainerRef.current?.querySelector<HTMLElement>(
+      `[data-search-scope-index="${focusedTagIndex}"]`
+    );
+    tag?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [focusedTagIndex]);
 
   return (
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex items-center h-9 border border-gray-300 rounded-xs bg-white transition-colors"
+        className="flex min-w-0 items-center h-9 overflow-hidden border border-gray-300 rounded-xs bg-white transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
-        {/* Prefix: filter icon + tags */}
-        <div className="flex items-center gap-x-2 pl-2 shrink-0">
-          <Filter className="w-4 h-4 text-control-placeholder shrink-0" />
-        </div>
+        <div className="flex min-w-0 max-w-[60%] items-center shrink">
+          <div className="shrink-0 pl-2">
+            <Filter className="h-4 w-4 text-control-placeholder" />
+          </div>
 
-        {/* Scope tags */}
-        <div className="flex items-center gap-1 overflow-x-auto pl-1 shrink-0 hide-scrollbar">
-          {visibleTags.map(({ scope, originalIndex }) => (
-            <span
-              key={`${originalIndex}-${scope.id}`}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs whitespace-nowrap shrink-0",
-                focusedTagIndex === originalIndex && "ring-1 ring-accent"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                // Re-enter editing for this scope
-                if (scopeOptions.some((o) => o.id === scope.id)) {
-                  selectScope(scope.id);
-                }
-              }}
+          {/* Scope tags */}
+          <div className="relative min-w-0 flex-1">
+            <div
+              ref={tagsContainerRef}
+              className="flex min-w-0 items-center gap-1 overflow-x-auto pl-1 hide-scrollbar"
             >
-              <span className="text-control">{scope.id}:</span>
-              {renderTagValue(scope)}
-              <button
-                className="ml-0.5 hover:text-error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeScope(originalIndex);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
+              {visibleTags.map(({ scope, originalIndex }) => (
+                <span
+                  key={`${originalIndex}-${scope.id}`}
+                  data-search-scope-id={scope.id}
+                  data-search-scope-index={originalIndex}
+                  className={cn(
+                    "inline-flex max-w-[16rem] min-w-0 shrink-0 items-center gap-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs whitespace-nowrap",
+                    focusedTagIndex === originalIndex && "ring-1 ring-accent"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Re-enter editing for this scope
+                    if (scopeOptions.some((o) => o.id === scope.id)) {
+                      selectScope(scope.id);
+                    }
+                  }}
+                >
+                  <span className="text-control">{scope.id}:</span>
+                  <span className="min-w-0 truncate" title={scope.value}>
+                    {renderTagValue(scope)}
+                  </span>
+                  <button
+                    className="ml-0.5 hover:text-error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeScope(originalIndex);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {tagFade.showStart && (
+              <ScrollFade edge="left" className="from-white to-transparent" />
+            )}
+            {tagFade.showEnd && (
+              <ScrollFade edge="right" className="from-white to-transparent" />
+            )}
+          </div>
         </div>
 
         {/* Input */}
         <input
           ref={inputRef}
-          className="flex-1 min-w-[120px] bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
+          className="min-w-[120px] flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
           value={inputText}
           placeholder={visibleTags.length > 0 ? "" : placeholder}
           onClick={handleInputClick}
@@ -525,26 +675,43 @@ export function AdvancedSearch({
         >
           {/* Scope menu */}
           {menuView === "scope" && visibleScopeOptions.length > 0 && (
-            <div className="max-h-[480px] overflow-auto">
-              {visibleScopeOptions.map((option, index) => (
-                <div
-                  key={option.id}
-                  className={cn(
-                    "flex gap-x-2 px-3 py-2 cursor-pointer text-sm items-center",
-                    index > 0 && "border-t border-block-border",
-                    index === menuIndex && "bg-gray-200/75"
-                  )}
-                  onMouseEnter={() => setMenuIndex(index)}
-                  onClick={() => selectScope(option.id)}
-                >
-                  <span className="text-accent">{option.id}</span>
-                  {option.description && (
-                    <span className="text-control-light truncate">
-                      {option.description}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="relative">
+              <div
+                ref={scopeMenuListRef}
+                className="max-h-[480px] overflow-auto"
+              >
+                {visibleScopeOptions.map((option, index) => (
+                  <div
+                    key={option.id}
+                    className={cn(
+                      "flex gap-x-2 px-3 py-2 cursor-pointer text-sm items-center",
+                      index > 0 && "border-t border-block-border",
+                      index === menuIndex && "bg-gray-200/75"
+                    )}
+                    onMouseEnter={() => setMenuIndex(index)}
+                    onClick={() => selectScope(option.id)}
+                  >
+                    <span className="text-accent">{option.id}</span>
+                    {option.description && (
+                      <span className="text-control-light truncate">
+                        {option.description}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {scopeMenuFade.showStart && (
+                <ScrollFade
+                  edge="top"
+                  className="from-gray-100 to-transparent"
+                />
+              )}
+              {scopeMenuFade.showEnd && (
+                <ScrollFade
+                  edge="bottom"
+                  className="from-gray-100 to-transparent"
+                />
+              )}
             </div>
           )}
 
@@ -562,29 +729,37 @@ export function AdvancedSearch({
                 )}
               </div>
               {visibleValueOptions.length > 0 ? (
-                <div className="max-h-[240px] overflow-auto">
-                  {visibleValueOptions.map((option, index) => (
-                    <div
-                      key={option.value}
-                      className={cn(
-                        "h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden",
-                        index === menuIndex && "bg-gray-200/75"
-                      )}
-                      onMouseEnter={() => setMenuIndex(index)}
-                      onClick={() => selectValue(option.value)}
-                    >
-                      {option.render && (
-                        <span className="text-control text-sm">
-                          {option.render()}
-                        </span>
-                      )}
-                      {!option.custom && (
-                        <span className="text-control-light text-sm">
-                          {option.value}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                <div className="relative">
+                  <div
+                    ref={valueMenuListRef}
+                    className="max-h-[240px] overflow-auto"
+                  >
+                    {visibleValueOptions.map((option, index) => (
+                      <div
+                        key={option.value}
+                        className={cn(
+                          "h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden",
+                          index === menuIndex && "bg-gray-200/75"
+                        )}
+                        onMouseEnter={() => setMenuIndex(index)}
+                        onClick={() => selectValue(option.value)}
+                      >
+                        {option.render && (
+                          <span className="min-w-0 truncate text-control text-sm">
+                            {option.render()}
+                          </span>
+                        )}
+                        {!option.custom && (
+                          <span
+                            className="min-w-0 flex-1 truncate text-control-light text-sm"
+                            title={option.value}
+                          >
+                            {option.value}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : asyncLoading ? (
                 <div className="py-4 text-center text-sm text-control-placeholder">
@@ -599,6 +774,18 @@ export function AdvancedSearch({
                 <div className="py-4 text-center text-sm text-control-placeholder">
                   —
                 </div>
+              )}
+              {valueMenuFade.showStart && (
+                <ScrollFade
+                  edge="top"
+                  className="top-[41px] from-gray-100 to-transparent"
+                />
+              )}
+              {valueMenuFade.showEnd && (
+                <ScrollFade
+                  edge="bottom"
+                  className="from-gray-100 to-transparent"
+                />
               )}
             </div>
           )}
