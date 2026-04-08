@@ -565,8 +565,8 @@
   "database.labels": "データベースラベル",
   "database.revision.self": "リビジョン",
   "database.successfully-exported-schema": "スキーマのエクスポートに成功しました",
-  "database.sync-database": "データベースを同期",
   "database.sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
+  "database.sync-database": "データベースを同期",
   "db": {
     "character-set": "文字セット",
     "collation": "照合順序",
@@ -1723,8 +1723,8 @@
         },
         "re-order": "並び替え"
       },
-      "never-expires": "有効期限なし",
       "grant-access": "許可されたアクセス",
+      "never-expires": "有効期限なし",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",

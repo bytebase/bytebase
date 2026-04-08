@@ -565,8 +565,8 @@
   "database.labels": "Nhãn cơ sở dữ liệu",
   "database.revision.self": "Phiên bản",
   "database.successfully-exported-schema": "Đã xuất schema thành công",
-  "database.sync-database": "Đồng bộ cơ sở dữ liệu",
   "database.sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
+  "database.sync-database": "Đồng bộ cơ sở dữ liệu",
   "db": {
     "character-set": "Bộ ký tự",
     "collation": "Đối chiếu",
@@ -1723,8 +1723,8 @@
         },
         "re-order": "Sắp xếp lại"
       },
-      "never-expires": "Không bao giờ hết hạn",
       "grant-access": "Cấp quyền truy cập",
+      "never-expires": "Không bao giờ hết hạn",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",

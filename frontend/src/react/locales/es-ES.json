@@ -565,8 +565,8 @@
   "database.labels": "Etiquetas de base de datos",
   "database.revision.self": "Revisión",
   "database.successfully-exported-schema": "Esquema exportado correctamente",
-  "database.sync-database": "Sincronizar base de datos",
   "database.sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
+  "database.sync-database": "Sincronizar base de datos",
   "db": {
     "character-set": "Juego de caracteres",
     "collation": "Colación",
@@ -1723,8 +1723,8 @@
         },
         "re-order": "Reordenar"
       },
-      "never-expires": "Nunca expira",
       "grant-access": "Autorizará el acceso",
+      "never-expires": "Nunca expira",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",

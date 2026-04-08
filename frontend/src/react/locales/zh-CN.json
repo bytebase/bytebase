@@ -565,8 +565,8 @@
   "database.labels": "数据库标签",
   "database.revision.self": "版本",
   "database.successfully-exported-schema": "成功导出 Schema",
-  "database.sync-database": "同步数据库",
   "database.sync-complete-for-instance": "实例 '{{0}}' 同步完成",
+  "database.sync-database": "同步数据库",
   "db": {
     "character-set": "字符集",
     "collation": "排序规则",
@@ -1723,8 +1723,8 @@
         },
         "re-order": "排序"
       },
-      "never-expires": "无过期时间",
       "grant-access": "授权访问",
+      "never-expires": "无过期时间",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
