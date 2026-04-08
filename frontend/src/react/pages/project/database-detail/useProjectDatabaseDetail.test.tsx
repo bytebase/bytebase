@@ -1,11 +1,21 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
 import type { UseProjectDatabaseDetailOptions } from "./useProjectDatabaseDetail";
+import { useProjectDatabaseDetail } from "./useProjectDatabaseDetail";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
+
+const originalConsoleError = console.error;
 
 const mocks = vi.hoisted(() => {
   const localStorage = {
@@ -18,18 +28,18 @@ const mocks = vi.hoisted(() => {
 
   return {
     localStorage,
-    extractProjectResourceName: vi.fn((name: string) =>
-      name.split("/").at(-1) ?? ""
-    ),
-    getInstanceResource: vi.fn((database: { instanceResource?: unknown }) =>
-      database.instanceResource ?? {}
-    ),
     replace: vi.fn(),
     getOrFetchDatabaseByName: vi.fn(),
     getOrFetchDatabaseMetadata: vi.fn(),
     getDatabaseByName: vi.fn(),
-    isDefaultProject: vi.fn(() => false),
+    getInstanceResource: vi.fn((database: { instanceResource?: unknown }) => {
+      return database.instanceResource ?? {};
+    }),
     instanceV1HasAlterSchema: vi.fn(() => true),
+    extractProjectResourceName: vi.fn((name: string) => {
+      return name.split("/").at(-1) ?? "";
+    }),
+    isDefaultProject: vi.fn(() => false),
     routeNames: {
       databaseDetail: "workspace.project.database.detail",
       databaseChangelogDetail: "workspace.project.database.changelog.detail",
@@ -37,15 +47,6 @@ const mocks = vi.hoisted(() => {
     },
   };
 });
-
-const databaseStore = {
-  getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
-  getDatabaseByName: mocks.getDatabaseByName,
-};
-
-const dbSchemaStore = {
-  getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-};
 
 vi.mock("@/router", () => ({
   router: { replace: mocks.replace },
@@ -60,57 +61,50 @@ vi.mock("@/router/dashboard/projectV1", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => databaseStore,
-  useDBSchemaV1Store: () => dbSchemaStore,
+  useDatabaseV1Store: () => ({
+    getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+    getDatabaseByName: mocks.getDatabaseByName,
+  }),
+  useDBSchemaV1Store: () => ({
+    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+  }),
 }));
 
 vi.mock("@/utils", () => ({
   getInstanceResource: mocks.getInstanceResource,
   instanceV1HasAlterSchema: mocks.instanceV1HasAlterSchema,
-  isDev: () => true,
 }));
 
 vi.mock("@/utils/v1/project", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
 }));
 
-vi.mock("@/types", () => ({
-  isDefaultProject: mocks.isDefaultProject,
-}));
-
-vi.mock("@/types/v1/project", () => ({
-  isDefaultProject: mocks.isDefaultProject,
-}));
-
-type UseProjectDatabaseDetail = typeof import("./useProjectDatabaseDetail").useProjectDatabaseDetail;
-
-let useProjectDatabaseDetail: UseProjectDatabaseDetail;
+vi.mock("@/types/v1/project", () => {
+  const UNKNOWN_PROJECT_NAME = "projects/-";
+  return {
+    UNKNOWN_PROJECT_NAME,
+    isDefaultProject: mocks.isDefaultProject,
+    unknownProject: () => ({
+      name: UNKNOWN_PROJECT_NAME,
+      title: "",
+    }),
+    defaultProject: (name: string) => ({
+      name,
+      title: "Default project",
+    }),
+    isValidProjectName: (name: string | undefined) =>
+      !!name && name.startsWith("projects/") && name !== UNKNOWN_PROJECT_NAME,
+  };
+});
 
 function HookProbe(
   props: UseProjectDatabaseDetailOptions & {
-    onValue: (value: ReturnType<UseProjectDatabaseDetail>) => void;
+    onValue: (value: ReturnType<typeof useProjectDatabaseDetail>) => void;
   }
 ) {
   props.onValue(useProjectDatabaseDetail(props));
   return null;
 }
-
-const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
-  const container = document.createElement("div");
-  const root = createRoot(container);
-
-  return {
-    container,
-    root,
-    render: () => {
-      root.render(element);
-    },
-    unmount: () =>
-      act(() => {
-        root.unmount();
-      }),
-  };
-};
 
 const createDeferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -122,33 +116,67 @@ const createDeferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
+const waitFor = async (condition: () => boolean, timeoutMs = 1000) => {
+  const start = Date.now();
+  while (!condition()) {
+    if (Date.now() - start >= timeoutMs) {
+      throw new Error("Timed out waiting for condition");
+    }
+    await Promise.resolve();
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+};
+
+const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+
+  return {
+    render: () => {
+      root.render(element);
+    },
+    unmount: () =>
+      act(() => {
+        root.unmount();
+      }),
+  };
+};
+
 beforeEach(() => {
-  mocks.replace.mockReset();
-  mocks.extractProjectResourceName.mockReset();
-  mocks.extractProjectResourceName.mockImplementation((name: string) =>
-    name.split("/").at(-1) ?? ""
-  );
-  mocks.getInstanceResource.mockReset();
-  mocks.getInstanceResource.mockImplementation(
-    (database: { instanceResource?: unknown }) => database.instanceResource ?? {}
-  );
-  mocks.getOrFetchDatabaseByName.mockReset();
-  mocks.getOrFetchDatabaseMetadata.mockReset();
-  mocks.getDatabaseByName.mockReset();
-  mocks.isDefaultProject.mockReset();
-  mocks.isDefaultProject.mockReturnValue(false);
-  mocks.instanceV1HasAlterSchema.mockReset();
-  mocks.instanceV1HasAlterSchema.mockReturnValue(true);
+  vi.spyOn(console, "error").mockImplementation((message, ...args) => {
+    const text = String(message);
+    if (text.includes("not wrapped in act")) {
+      return;
+    }
+    originalConsoleError(message, ...args);
+  });
   mocks.localStorage.getItem.mockReset();
   mocks.localStorage.getItem.mockReturnValue(null);
   mocks.localStorage.setItem.mockReset();
   mocks.localStorage.removeItem.mockReset();
   mocks.localStorage.clear.mockReset();
+  mocks.replace.mockReset();
+  mocks.getOrFetchDatabaseByName.mockReset();
+  mocks.getOrFetchDatabaseMetadata.mockReset();
+  mocks.getDatabaseByName.mockReset();
+  mocks.getInstanceResource.mockReset();
+  mocks.getInstanceResource.mockImplementation(
+    (database: { instanceResource?: unknown }) => database.instanceResource ?? {}
+  );
+  mocks.instanceV1HasAlterSchema.mockReset();
+  mocks.instanceV1HasAlterSchema.mockReturnValue(true);
+  mocks.extractProjectResourceName.mockReset();
+  mocks.extractProjectResourceName.mockImplementation(
+    (name: string) => name.split("/").at(-1) ?? ""
+  );
+  mocks.isDefaultProject.mockReset();
+  mocks.isDefaultProject.mockReturnValue(false);
 });
 
-beforeEach(async () => {
-  vi.resetModules();
-  ({ useProjectDatabaseDetail } = await import("./useProjectDatabaseDetail"));
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("useProjectDatabaseDetail", () => {
@@ -159,15 +187,16 @@ describe("useProjectDatabaseDetail", () => {
     };
     const databaseDeferred = createDeferred<typeof database>();
     const metadataDeferred = createDeferred<Record<string, never>>();
+
     mocks.getDatabaseByName.mockReturnValue(database);
     mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
     mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
 
     let latest:
-      | ReturnType<UseProjectDatabaseDetail>
+      | ReturnType<typeof useProjectDatabaseDetail>
       | undefined;
 
-    const { unmount, render } = renderIntoContainer(
+    const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
         projectId: "proj1",
         instanceId: "inst1",
@@ -208,15 +237,16 @@ describe("useProjectDatabaseDetail", () => {
     };
     const databaseDeferred = createDeferred<typeof database>();
     const metadataDeferred = createDeferred<never>();
+
     mocks.getDatabaseByName.mockReturnValue(database);
     mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
     mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
 
     let latest:
-      | ReturnType<UseProjectDatabaseDetail>
+      | ReturnType<typeof useProjectDatabaseDetail>
       | undefined;
 
-    const { unmount, render } = renderIntoContainer(
+    const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
         projectId: "proj1",
         instanceId: "inst1",
@@ -227,11 +257,12 @@ describe("useProjectDatabaseDetail", () => {
       })
     );
 
-    act(() => {
-      render();
-    });
     void metadataDeferred.promise.catch(() => {
       // The hook swallows metadata permission failures.
+    });
+
+    act(() => {
+      render();
     });
     await act(async () => {
       databaseDeferred.resolve(database);
@@ -251,11 +282,12 @@ describe("useProjectDatabaseDetail", () => {
     };
     const databaseDeferred = createDeferred<typeof database>();
     const metadataDeferred = createDeferred<Record<string, never>>();
+
     mocks.getDatabaseByName.mockReturnValue(database);
     mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
     mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
 
-    const { unmount, render } = renderIntoContainer(
+    const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
         projectId: "proj1",
         instanceId: "inst1",
