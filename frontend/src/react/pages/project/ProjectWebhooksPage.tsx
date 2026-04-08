@@ -150,14 +150,6 @@ function WebhookTable({
 }) {
   const { t } = useTranslation();
 
-  if (webhooks.length === 0) {
-    return (
-      <div className="flex justify-center py-8 text-control-light">
-        {t("common.no-data")}
-      </div>
-    );
-  }
-
   const activityItemList = projectWebhookV1ActivityItemList();
 
   return (
@@ -174,51 +166,67 @@ function WebhookTable({
           </tr>
         </thead>
         <tbody>
-          {webhooks.map((webhook) => {
-            const activityTitles = webhook.notificationTypes.map((activity) => {
-              const item = activityItemList.find(
-                (item) => item.activity === activity
-              );
-              return item
-                ? item.title
-                : Activity_Type[activity] || `ACTIVITY_${activity}`;
-            });
-
-            return (
-              <tr
-                key={webhook.name}
-                className="border-b cursor-pointer hover:bg-gray-50"
-                onClick={(e) => onRowClick(e, webhook)}
+          {webhooks.length === 0 ? (
+            <tr>
+              <td
+                colSpan={allowEdit ? 4 : 3}
+                className="py-8 text-center text-control-light"
               >
-                <td className="py-2 pr-4">
-                  <div className="flex items-center gap-x-2">
-                    <WebhookTypeIcon type={webhook.type} className="w-5 h-5" />
-                    {webhook.title}
-                  </div>
-                </td>
-                <td className="py-2 pr-4 truncate max-w-xs text-control-light">
-                  {webhook.url}
-                </td>
-                <td className="py-2 pr-4">
-                  <div className="flex flex-wrap gap-2">
-                    {activityTitles.map((title) => (
-                      <span
-                        key={title}
-                        className="inline-block px-2 py-0.5 text-xs rounded-xs bg-gray-100 text-gray-700"
-                      >
-                        {title}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                {allowEdit && (
-                  <td className="py-2">
-                    <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                {t("common.no-data")}
+              </td>
+            </tr>
+          ) : (
+            webhooks.map((webhook) => {
+              const activityTitles = webhook.notificationTypes.map(
+                (activity) => {
+                  const item = activityItemList.find(
+                    (item) => item.activity === activity
+                  );
+                  return item
+                    ? item.title
+                    : Activity_Type[activity] || `ACTIVITY_${activity}`;
+                }
+              );
+
+              return (
+                <tr
+                  key={webhook.name}
+                  className="border-b cursor-pointer hover:bg-gray-50"
+                  onClick={(e) => onRowClick(e, webhook)}
+                >
+                  <td className="py-2 pr-4">
+                    <div className="flex items-center gap-x-2">
+                      <WebhookTypeIcon
+                        type={webhook.type}
+                        className="w-5 h-5"
+                      />
+                      {webhook.title}
+                    </div>
                   </td>
-                )}
-              </tr>
-            );
-          })}
+                  <td className="py-2 pr-4 truncate max-w-xs text-control-light">
+                    {webhook.url}
+                  </td>
+                  <td className="py-2 pr-4">
+                    <div className="flex flex-wrap gap-2">
+                      {activityTitles.map((title) => (
+                        <span
+                          key={title}
+                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-gray-100 text-gray-700"
+                        >
+                          {title}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  {allowEdit && (
+                    <td className="py-2">
+                      <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                    </td>
+                  )}
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

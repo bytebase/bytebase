@@ -1708,7 +1708,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         </Alert>
       )}
       {projectName && (
-        <div className="textinfolabel px-4 pt-4">
+        <div className="textinfolabel mb-4">
           {t("project.members.description")}{" "}
           <a
             href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"

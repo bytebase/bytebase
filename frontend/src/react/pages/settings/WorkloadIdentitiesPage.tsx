@@ -79,14 +79,6 @@ function WorkloadIdentityTable({
     }
   };
 
-  if (users.length === 0) {
-    return (
-      <div className="py-8 text-center text-control-light text-sm">
-        {t("common.no-data")}
-      </div>
-    );
-  }
-
   return (
     <div className="border rounded-sm overflow-hidden">
       <table className="w-full text-sm">
@@ -101,114 +93,125 @@ function WorkloadIdentityTable({
           </tr>
         </thead>
         <tbody>
-          {users.map((user, i) => {
-            const isDeleted = user.state === State.DELETED;
-
-            return (
-              <tr
-                key={user.name}
-                className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
+          {users.length === 0 ? (
+            <tr>
+              <td
+                colSpan={2}
+                className="py-8 text-center text-control-light text-sm"
               >
-                {/* Account column */}
-                <td className="px-4 py-2">
-                  <div className="flex items-center gap-x-3">
-                    <UserAvatar title={user.title || user.email} />
-                    <div className="flex flex-col">
-                      <span
-                        className={
-                          isDeleted
-                            ? "line-through text-control-light font-medium"
-                            : "font-medium text-accent"
-                        }
-                      >
-                        {user.title || user.email}
-                      </span>
-                      <span className="textinfolabel text-xs">
-                        {user.email}
-                      </span>
-                    </div>
-                  </div>
-                </td>
+                {t("common.no-data")}
+              </td>
+            </tr>
+          ) : (
+            users.map((user, i) => {
+              const isDeleted = user.state === State.DELETED;
 
-                {/* Operations column */}
-                <td className="px-4 py-2">
-                  <div className="flex justify-end gap-x-1">
-                    {!isDeleted && (
-                      <>
-                        {(project
+              return (
+                <tr
+                  key={user.name}
+                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
+                >
+                  {/* Account column */}
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-x-3">
+                      <UserAvatar title={user.title || user.email} />
+                      <div className="flex flex-col">
+                        <span
+                          className={
+                            isDeleted
+                              ? "line-through text-control-light font-medium"
+                              : "font-medium text-accent"
+                          }
+                        >
+                          {user.title || user.email}
+                        </span>
+                        <span className="textinfolabel text-xs">
+                          {user.email}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Operations column */}
+                  <td className="px-4 py-2">
+                    <div className="flex justify-end gap-x-1">
+                      {!isDeleted && (
+                        <>
+                          {(project
+                            ? hasProjectPermissionV2(
+                                project,
+                                "bb.workloadIdentities.delete"
+                              )
+                            : hasWorkspacePermissionV2(
+                                "bb.workloadIdentities.delete"
+                              )) && (
+                            <Tooltip
+                              content={t(
+                                "settings.members.action.deactivate-confirm-title"
+                              )}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-error hover:text-error"
+                                onClick={() => handleDeactivate(user)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </Tooltip>
+                          )}
+                          {(project
+                            ? hasProjectPermissionV2(
+                                project,
+                                "bb.workloadIdentities.get"
+                              )
+                            : hasWorkspacePermissionV2(
+                                "bb.workloadIdentities.get"
+                              )) &&
+                            onUserSelected && (
+                              <Tooltip content={t("common.edit")}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => onUserSelected(user)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </Tooltip>
+                            )}
+                        </>
+                      )}
+                      {isDeleted &&
+                        (project
                           ? hasProjectPermissionV2(
                               project,
-                              "bb.workloadIdentities.delete"
+                              "bb.workloadIdentities.undelete"
                             )
                           : hasWorkspacePermissionV2(
-                              "bb.workloadIdentities.delete"
+                              "bb.workloadIdentities.undelete"
                             )) && (
                           <Tooltip
                             content={t(
-                              "settings.members.action.deactivate-confirm-title"
+                              "settings.members.action.reactivate-confirm-title"
                             )}
                           >
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-error hover:text-error"
-                              onClick={() => handleDeactivate(user)}
+                              className="h-7 w-7"
+                              onClick={() => handleRestore(user)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Undo2 className="h-4 w-4" />
                             </Button>
                           </Tooltip>
                         )}
-                        {(project
-                          ? hasProjectPermissionV2(
-                              project,
-                              "bb.workloadIdentities.get"
-                            )
-                          : hasWorkspacePermissionV2(
-                              "bb.workloadIdentities.get"
-                            )) &&
-                          onUserSelected && (
-                            <Tooltip content={t("common.edit")}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onUserSelected(user)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
-                          )}
-                      </>
-                    )}
-                    {isDeleted &&
-                      (project
-                        ? hasProjectPermissionV2(
-                            project,
-                            "bb.workloadIdentities.undelete"
-                          )
-                        : hasWorkspacePermissionV2(
-                            "bb.workloadIdentities.undelete"
-                          )) && (
-                        <Tooltip
-                          content={t(
-                            "settings.members.action.reactivate-confirm-title"
-                          )}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleRestore(user)}
-                          >
-                            <Undo2 className="h-4 w-4" />
-                          </Button>
-                        </Tooltip>
-                      )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

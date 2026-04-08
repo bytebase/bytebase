@@ -132,16 +132,21 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 
 func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission permission.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	projects, err := stores.ListProjects(ctx, &store.FindProjectMessage{Workspace: workspaceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list projects")
+	}
+
 	ok, err := iamManager.CheckPermission(ctx, permission, user, workspaceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
 	}
 	if ok {
-		return nil, nil
-	}
-	projects, err := stores.ListProjects(ctx, &store.FindProjectMessage{Workspace: workspaceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list projects")
+		projectIDs := make([]string, 0, len(projects))
+		for _, project := range projects {
+			projectIDs = append(projectIDs, project.ResourceID)
+		}
+		return &projectIDs, nil
 	}
 
 	var projectIDs []string

@@ -1399,7 +1399,9 @@ function ConditionGroup({
         >
           <div className="w-14 shrink-0">
             {i === 0 ? (
-              <div className="pl-1.5 pt-1 text-control text-sm">Where</div>
+              <div className="pl-1.5 h-8 flex items-center text-control text-sm">
+                Where
+              </div>
             ) : i === 1 ? (
               <Select
                 value={operator}
@@ -1410,7 +1412,7 @@ function ConditionGroup({
                   });
                 }}
               >
-                <SelectTrigger className="h-7 px-1.5">
+                <SelectTrigger className="shrink-0 px-2">
                   <SelectValue>
                     {(value: string | null) =>
                       value ? logicalLabel(value) : null
@@ -1423,7 +1425,7 @@ function ConditionGroup({
                 </SelectContent>
               </Select>
             ) : (
-              <div className="pl-2 pt-1 text-control text-sm lowercase">
+              <div className="pl-2 h-8 flex items-center text-control text-sm lowercase">
                 {logicalLabel(operator)}
               </div>
             )}
