@@ -253,8 +253,8 @@ github.com/bytebase/gomongo v0.0.0-20260403033636-f6c50d4ab888 h1:E8tz8maxpih/vt
 github.com/bytebase/gomongo v0.0.0-20260403033636-f6c50d4ab888/go.mod h1:IgLUOjyiHehdE0G3C92IjGYu9lJQgkPwf2mdNSvPWq8=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20260408072050-615fac4c38c5 h1:1EY5m6ONYnbm8DL/K2oGvA2jEc0oEK45gGNashoJzFc=
-github.com/bytebase/omni v0.0.0-20260408072050-615fac4c38c5/go.mod h1:SBAYEmMjJhA9WujfrIVIq76UFmsvNDOa5CekPhFXIis=
+github.com/bytebase/omni v0.0.0-20260408102012-90c1e6cd4b97 h1:w6QwCG7fF736aLE+b+g/850JYrTEBX1Wa5CJU3Bbldc=
+github.com/bytebase/omni v0.0.0-20260408102012-90c1e6cd4b97/go.mod h1:SBAYEmMjJhA9WujfrIVIq76UFmsvNDOa5CekPhFXIis=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50 h1:Kq5wlhZ586Rch39y/IQV9MnrEzHob4iiXBG6zrbvSMU=
 github.com/bytebase/parser v0.0.0-20260324092042-1d52e5412f50/go.mod h1:jeak/EfutSOAuWKvrFIT2IZunhWprM7oTFBRgZ9RCxo=
 github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=

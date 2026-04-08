@@ -6,33 +6,26 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
-	"github.com/bytebase/parser/mysql"
+	"github.com/bytebase/omni/mysql/ast"
+	mysqlparser "github.com/bytebase/omni/mysql/parser"
 
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-var (
-	// globalFollowSetsByState is the global follow sets by state.
-	// It is shared by all MySQL completers.
-	// The FollowSetsByState is the thread-safe struct.
-	globalFollowSetsByState = base.NewFollowSetsByState()
-)
-
 func init() {
-	base.RegisterCompleteFunc(store.Engine_MYSQL, Completion)
-	base.RegisterCompleteFunc(store.Engine_MARIADB, Completion)
-	base.RegisterCompleteFunc(store.Engine_TIDB, Completion)
-	base.RegisterCompleteFunc(store.Engine_OCEANBASE, Completion)
-	base.RegisterCompleteFunc(store.Engine_CLICKHOUSE, Completion)
-	base.RegisterCompleteFunc(store.Engine_STARROCKS, Completion)
-	base.RegisterCompleteFunc(store.Engine_DORIS, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_MYSQL, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_MARIADB, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_TIDB, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_OCEANBASE, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_CLICKHOUSE, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_STARROCKS, Completion)
+	base.RegisterCompleteFunc(storepb.Engine_DORIS, Completion)
 }
 
-// Completion is the entry point of MySQL code completion.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
 	result, err := completer.completion()
@@ -47,187 +40,60 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	return trickyCompleter.completion()
 }
 
-func newIgnoredTokens() map[int]bool {
-	return map[int]bool{
-		mysql.MySQLParserEOF:                      true,
-		mysql.MySQLLexerEQUAL_OPERATOR:            true,
-		mysql.MySQLLexerASSIGN_OPERATOR:           true,
-		mysql.MySQLLexerNULL_SAFE_EQUAL_OPERATOR:  true,
-		mysql.MySQLLexerGREATER_OR_EQUAL_OPERATOR: true,
-		mysql.MySQLLexerGREATER_THAN_OPERATOR:     true,
-		mysql.MySQLLexerLESS_OR_EQUAL_OPERATOR:    true,
-		mysql.MySQLLexerLESS_THAN_OPERATOR:        true,
-		mysql.MySQLLexerNOT_EQUAL_OPERATOR:        true,
-		mysql.MySQLLexerNOT_EQUAL2_OPERATOR:       true,
-		mysql.MySQLLexerPLUS_OPERATOR:             true,
-		mysql.MySQLLexerMINUS_OPERATOR:            true,
-		mysql.MySQLLexerMULT_OPERATOR:             true,
-		mysql.MySQLLexerDIV_OPERATOR:              true,
-		mysql.MySQLLexerMOD_OPERATOR:              true,
-		mysql.MySQLLexerLOGICAL_NOT_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_NOT_OPERATOR:      true,
-		mysql.MySQLLexerSHIFT_LEFT_OPERATOR:       true,
-		mysql.MySQLLexerSHIFT_RIGHT_OPERATOR:      true,
-		mysql.MySQLLexerLOGICAL_AND_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_AND_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_XOR_OPERATOR:      true,
-		mysql.MySQLLexerLOGICAL_OR_OPERATOR:       true,
-		mysql.MySQLLexerBITWISE_OR_OPERATOR:       true,
-		mysql.MySQLLexerDOT_SYMBOL:                true,
-		mysql.MySQLLexerCOMMA_SYMBOL:              true,
-		mysql.MySQLLexerSEMICOLON_SYMBOL:          true,
-		mysql.MySQLLexerCOLON_SYMBOL:              true,
-		mysql.MySQLLexerOPEN_PAR_SYMBOL:           true,
-		mysql.MySQLLexerCLOSE_PAR_SYMBOL:          true,
-		mysql.MySQLLexerOPEN_CURLY_SYMBOL:         true,
-		mysql.MySQLLexerCLOSE_CURLY_SYMBOL:        true,
-		mysql.MySQLLexerUNDERLINE_SYMBOL:          true,
-		mysql.MySQLLexerAT_SIGN_SYMBOL:            true,
-		mysql.MySQLLexerAT_AT_SIGN_SYMBOL:         true,
-		mysql.MySQLLexerNULL2_SYMBOL:              true,
-		mysql.MySQLLexerPARAM_MARKER:              true,
-		mysql.MySQLLexerCONCAT_PIPES_SYMBOL:       true,
-		mysql.MySQLLexerAT_TEXT_SUFFIX:            true,
-		mysql.MySQLLexerBACK_TICK_QUOTED_ID:       true,
-		mysql.MySQLLexerSINGLE_QUOTED_TEXT:        true,
-		mysql.MySQLLexerDOUBLE_QUOTED_TEXT:        true,
-		mysql.MySQLLexerNCHAR_TEXT:                true,
-		mysql.MySQLLexerUNDERSCORE_CHARSET:        true,
-		mysql.MySQLLexerIDENTIFIER:                true,
-		mysql.MySQLLexerINT_NUMBER:                true,
-		mysql.MySQLLexerLONG_NUMBER:               true,
-		mysql.MySQLLexerULONGLONG_NUMBER:          true,
-		mysql.MySQLLexerDECIMAL_NUMBER:            true,
-		mysql.MySQLLexerBIN_NUMBER:                true,
-		mysql.MySQLLexerHEX_NUMBER:                true,
+func computeSQLAndByteOffset(statement string, caretLine int, caretOffset int, tricky bool) (string, int) {
+	var sql string
+	var newLine, newOffset int
+	if tricky {
+		sql, newLine, newOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
+		sql, newLine, newOffset = skipHeadingSQLWithoutSemicolon(sql, newLine, newOffset)
+	} else {
+		sql, newLine, newOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
 	}
+	return sql, lineColumnToByteOffset(sql, newLine, newOffset)
 }
 
-func newPreferredRules() map[int]bool {
-	return map[int]bool{
-		mysql.MySQLParserRULE_schemaRef:            true,
-		mysql.MySQLParserRULE_tableRef:             true,
-		mysql.MySQLParserRULE_tableRefWithWildcard: true,
-		mysql.MySQLParserRULE_filterTableRef:       true,
-		mysql.MySQLParserRULE_columnRef:            true,
-		mysql.MySQLParserRULE_columnInternalRef:    true,
-		mysql.MySQLParserRULE_tableWild:            true,
-		mysql.MySQLParserRULE_functionRef:          true,
-		mysql.MySQLParserRULE_functionCall:         true,
-		mysql.MySQLParserRULE_runtimeFunctionCall:  true,
-		mysql.MySQLParserRULE_triggerRef:           true,
-		mysql.MySQLParserRULE_viewRef:              true,
-		mysql.MySQLParserRULE_procedureRef:         true,
-		mysql.MySQLParserRULE_logfileGroupRef:      true,
-		mysql.MySQLParserRULE_tablespaceRef:        true,
-		mysql.MySQLParserRULE_engineRef:            true,
-		mysql.MySQLParserRULE_collationName:        true,
-		mysql.MySQLParserRULE_charsetName:          true,
-		mysql.MySQLParserRULE_eventRef:             true,
-		mysql.MySQLParserRULE_serverRef:            true,
-		mysql.MySQLParserRULE_user:                 true,
-		mysql.MySQLParserRULE_userVariable:         true,
-		mysql.MySQLParserRULE_systemVariable:       true,
-		mysql.MySQLParserRULE_labelRef:             true,
-		mysql.MySQLParserRULE_setSystemVariable:    true,
-		mysql.MySQLParserRULE_parameterName:        true,
-		mysql.MySQLParserRULE_procedureName:        true,
-		mysql.MySQLParserRULE_identifier:           true,
-		mysql.MySQLParserRULE_labelIdentifier:      true,
+func lineColumnToByteOffset(sql string, line, column int) int {
+	currentLine := 1
+	for i := 0; i < len(sql); i++ {
+		if currentLine == line {
+			pos := i
+			for c := 0; c < column && pos < len(sql); c++ {
+				_, size := utf8.DecodeRuneInString(sql[pos:])
+				pos += size
+			}
+			if pos > len(sql) {
+				return len(sql)
+			}
+			return pos
+		}
+		if sql[i] == '\n' {
+			currentLine++
+		}
 	}
+	return len(sql)
 }
 
-func newNoSeparatorRequired() map[int]bool {
-	return map[int]bool{
-		mysql.MySQLLexerEQUAL_OPERATOR:            true,
-		mysql.MySQLLexerASSIGN_OPERATOR:           true,
-		mysql.MySQLLexerNULL_SAFE_EQUAL_OPERATOR:  true,
-		mysql.MySQLLexerGREATER_OR_EQUAL_OPERATOR: true,
-		mysql.MySQLLexerGREATER_THAN_OPERATOR:     true,
-		mysql.MySQLLexerLESS_OR_EQUAL_OPERATOR:    true,
-		mysql.MySQLLexerLESS_THAN_OPERATOR:        true,
-		mysql.MySQLLexerNOT_EQUAL_OPERATOR:        true,
-		mysql.MySQLLexerNOT_EQUAL2_OPERATOR:       true,
-		mysql.MySQLLexerPLUS_OPERATOR:             true,
-		mysql.MySQLLexerMINUS_OPERATOR:            true,
-		mysql.MySQLLexerMULT_OPERATOR:             true,
-		mysql.MySQLLexerDIV_OPERATOR:              true,
-		mysql.MySQLLexerMOD_OPERATOR:              true,
-		mysql.MySQLLexerLOGICAL_NOT_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_NOT_OPERATOR:      true,
-		mysql.MySQLLexerSHIFT_LEFT_OPERATOR:       true,
-		mysql.MySQLLexerSHIFT_RIGHT_OPERATOR:      true,
-		mysql.MySQLLexerLOGICAL_AND_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_AND_OPERATOR:      true,
-		mysql.MySQLLexerBITWISE_XOR_OPERATOR:      true,
-		mysql.MySQLLexerLOGICAL_OR_OPERATOR:       true,
-		mysql.MySQLLexerBITWISE_OR_OPERATOR:       true,
-		mysql.MySQLLexerDOT_SYMBOL:                true,
-		mysql.MySQLLexerCOMMA_SYMBOL:              true,
-		mysql.MySQLLexerSEMICOLON_SYMBOL:          true,
-		mysql.MySQLLexerCOLON_SYMBOL:              true,
-		mysql.MySQLLexerOPEN_PAR_SYMBOL:           true,
-		mysql.MySQLLexerCLOSE_PAR_SYMBOL:          true,
-		mysql.MySQLLexerOPEN_CURLY_SYMBOL:         true,
-		mysql.MySQLLexerCLOSE_CURLY_SYMBOL:        true,
-		mysql.MySQLLexerPARAM_MARKER:              true,
+func isNoSeparatorRequired(tokenType int) bool {
+	switch tokenType {
+	case '.', '(', ')', ',', ';', '=', '<', '>', '+', '-', '*', '/', '%', '^', '~', '!', '@':
+		return true
 	}
-}
-
-func newSynonyms() map[int][]string {
-	return map[int][]string{
-		mysql.MySQLLexerCHAR_SYMBOL:         {"CHARACTER"},
-		mysql.MySQLLexerNOW_SYMBOL:          {"CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP"},
-		mysql.MySQLLexerDAY_SYMBOL:          {"DAYOFMONTH", "SQL_TSI_DAY"},
-		mysql.MySQLLexerDECIMAL_SYMBOL:      {"DEC"},
-		mysql.MySQLLexerDISTINCT_SYMBOL:     {"DISTINCTROW"},
-		mysql.MySQLLexerCOLUMNS_SYMBOL:      {"FIELDS"},
-		mysql.MySQLLexerFLOAT_SYMBOL:        {"FLOAT4"},
-		mysql.MySQLLexerDOUBLE_SYMBOL:       {"FLOAT8"},
-		mysql.MySQLLexerINT_SYMBOL:          {"INTEGER", "INT4"},
-		mysql.MySQLLexerRELAY_THREAD_SYMBOL: {"IO_THREAD"},
-		mysql.MySQLLexerSUBSTRING_SYMBOL:    {"MID", "SUBSTR"},
-		mysql.MySQLLexerMID_SYMBOL:          {"MEDIUMINT"},
-		mysql.MySQLLexerMEDIUMINT_SYMBOL:    {"MIDDLEINT", "INT3"},
-		mysql.MySQLLexerNDBCLUSTER_SYMBOL:   {"NDB"},
-		mysql.MySQLLexerREGEXP_SYMBOL:       {"RLIKE"},
-		mysql.MySQLLexerDATABASE_SYMBOL:     {"SCHEMA"},
-		mysql.MySQLLexerDATABASES_SYMBOL:    {"SCHEMAS"},
-		mysql.MySQLLexerUSER_SYMBOL:         {"SESSION_USER"},
-		mysql.MySQLLexerSTD_SYMBOL:          {"STDDEV", "STDDEV"},
-		mysql.MySQLLexerVARCHAR_SYMBOL:      {"VARCHARACTER"},
-		mysql.MySQLLexerVARIANCE_SYMBOL:     {"VAR_POP"},
-		mysql.MySQLLexerTINYINT_SYMBOL:      {"INT1"},
-		mysql.MySQLLexerSMALLINT_SYMBOL:     {"INT2"},
-		mysql.MySQLLexerBIGINT_SYMBOL:       {"INT8"},
-		mysql.MySQLLexerSECOND_SYMBOL:       {"SQL_TSI_SECOND"},
-		mysql.MySQLLexerMINUTE_SYMBOL:       {"SQL_TSI_MINUTE"},
-		mysql.MySQLLexerHOUR_SYMBOL:         {"SQL_TSI_HOUR"},
-		mysql.MySQLLexerWEEK_SYMBOL:         {"SQL_TSI_WEEK"},
-		mysql.MySQLLexerMONTH_SYMBOL:        {"SQL_TSI_MONTH"},
-		mysql.MySQLLexerQUARTER_SYMBOL:      {"SQL_TSI_QUARTER"},
-		mysql.MySQLLexerYEAR_SYMBOL:         {"SQL_TSI_YEAR"},
-	}
+	return false
 }
 
 type Completer struct {
-	ctx                 context.Context
-	core                *base.CodeCompletionCore
-	scene               base.SceneType
-	parser              *mysql.MySQLParser
-	lexer               *mysql.MySQLLexer
-	scanner             *base.Scanner
-	instanceID          string
-	defaultDatabase     string
-	getMetadata         base.GetDatabaseMetadataFunc
-	listDatabaseNames   base.ListDatabaseNamesFunc
-	metadataCache       map[string]*model.DatabaseMetadata
-	noSeparatorRequired map[int]bool
-	// referencesStack is a hierarchical stack of table references.
-	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]base.TableReference
-	// references is the flattened table references.
-	// It's helpful to look up the table reference.
+	ctx                context.Context
+	scene              base.SceneType
+	sql                string
+	cursorByteOffset   int
+	tokens             []mysqlparser.Token
+	caretTokenIndex    int
+	instanceID         string
+	defaultDatabase    string
+	getMetadata        base.GetDatabaseMetadataFunc
+	listDatabaseNames  base.ListDatabaseNamesFunc
+	metadataCache      map[string]*model.DatabaseMetadata
+	referencesStack    [][]base.TableReference
 	references         []base.TableReference
 	cteCache           map[int][]*base.VirtualTableReference
 	cteTables          []*base.VirtualTableReference
@@ -235,1125 +101,132 @@ type Completer struct {
 }
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	// For all MySQL completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		mysql.MySQLParserRULE_querySpecification,
-		mysql.MySQLParserRULE_queryExpression,
-		mysql.MySQLParserRULE_selectAlias,
-		mysql.MySQLParserRULE_withClause,
-	)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false)
+	tokens := mysqlparser.Tokenize(sql)
+	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		getMetadata:         cCtx.Metadata,
-		listDatabaseNames:   cCtx.ListDatabaseNames,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
+		ctx:               ctx,
+		scene:             cCtx.Scene,
+		sql:               sql,
+		cursorByteOffset:  byteOffset,
+		tokens:            tokens,
+		caretTokenIndex:   caretTokenIndex,
+		instanceID:        cCtx.InstanceID,
+		defaultDatabase:   cCtx.DefaultDatabase,
+		getMetadata:       cCtx.Metadata,
+		listDatabaseNames: cCtx.ListDatabaseNames,
+		metadataCache:     make(map[string]*model.DatabaseMetadata),
+		cteCache:          make(map[int][]*base.VirtualTableReference),
 	}
 }
 
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	// For all MySQL completers, we use one global follow sets by state.
-	// The FollowSetsByState is the thread-safe struct.
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		newIgnoredTokens(),
-		newPreferredRules(),
-		&globalFollowSetsByState,
-		mysql.MySQLParserRULE_querySpecification,
-		mysql.MySQLParserRULE_queryExpression,
-		mysql.MySQLParserRULE_selectAlias,
-		mysql.MySQLParserRULE_withClause,
-	)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, true)
+	tokens := mysqlparser.Tokenize(sql)
+	caretTokenIndex := findCaretTokenIndex(tokens, byteOffset)
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		getMetadata:         cCtx.Metadata,
-		listDatabaseNames:   cCtx.ListDatabaseNames,
-		metadataCache:       make(map[string]*model.DatabaseMetadata),
-		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*base.VirtualTableReference),
+		ctx:               ctx,
+		scene:             cCtx.Scene,
+		sql:               sql,
+		cursorByteOffset:  byteOffset,
+		tokens:            tokens,
+		caretTokenIndex:   caretTokenIndex,
+		instanceID:        cCtx.InstanceID,
+		defaultDatabase:   cCtx.DefaultDatabase,
+		getMetadata:       cCtx.Metadata,
+		listDatabaseNames: cCtx.ListDatabaseNames,
+		metadataCache:     make(map[string]*model.DatabaseMetadata),
+		cteCache:          make(map[int][]*base.VirtualTableReference),
 	}
 }
 
+func findCaretTokenIndex(tokens []mysqlparser.Token, byteOffset int) int {
+	for i, tok := range tokens {
+		if tok.Loc >= byteOffset {
+			return i
+		}
+	}
+	return len(tokens)
+}
+
 func (c *Completer) completion() ([]base.Candidate, error) {
-	// Check the caret token is quoted or not.
-	// This check should be done before checking the caret token is a separator or not.
-	if c.scanner.IsTokenType(mysql.MySQLLexerBACK_TICK_QUOTED_ID) {
-		c.caretTokenIsQuoted = true
+	if c.caretTokenIndex < len(c.tokens) {
+		tok := c.tokens[c.caretTokenIndex]
+		if mysqlparser.IsIdentTokenType(tok.Type) && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '`' {
+			c.caretTokenIsQuoted = true
+		}
 	}
 
-	caretIndex := c.scanner.GetIndex()
-	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
+	caretIndex := c.caretTokenIndex
+	if caretIndex > 0 && !isNoSeparatorRequired(c.tokens[caretIndex-1].Type) {
 		caretIndex--
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-	c.parser.Reset()
-	var context antlr.ParserRuleContext
-	if c.scene == base.SceneTypeQuery {
-		context = c.parser.SelectStatement()
-	} else {
-		context = c.parser.Script()
+
+	candidates := mysqlparser.Collect(c.sql, c.cursorByteOffset)
+
+	// Retry at adjusted positions if no candidates found.
+	if len(candidates.Rules) == 0 && len(candidates.Tokens) == 0 {
+		// Try at cursor-1 for cases where cursor is right after a context boundary.
+		if c.cursorByteOffset > 0 {
+			if retry := mysqlparser.Collect(c.sql, c.cursorByteOffset-1); len(retry.Rules) > 0 || len(retry.Tokens) > 0 {
+				candidates = retry
+			}
+		}
 	}
 
-	candidates := c.core.CollectCandidates(caretIndex, context)
-
-	if len(candidates.Tokens[mysql.MySQLLexerNOT2_SYMBOL]) > 0 {
-		// For code completion, we don't distinguish NOT and NOT2.
-		candidates.Tokens[mysql.MySQLLexerNOT_SYMBOL] = candidates.Tokens[mysql.MySQLLexerNOT2_SYMBOL]
-		delete(candidates.Tokens, mysql.MySQLLexerNOT2_SYMBOL)
+	if len(candidates.Rules) == 0 {
+		if prefixTok, ok := c.prefixToken(); ok {
+			candidates = mysqlparser.Collect(c.sql, prefixTok.Loc)
+		}
 	}
 
-	for ruleName := range candidates.Rules {
-		if ruleName == mysql.MySQLParserRULE_columnRef {
-			c.collectLeadingTableReferences(caretIndex, false /* forTableAlter */)
+	// If cursor is right after a dot (table.| pattern), synthesize a columnref rule.
+	if len(candidates.Rules) == 0 && c.caretTokenIndex > 0 && c.tokens[c.caretTokenIndex-1].Type == '.' {
+		candidates.Rules = append(candidates.Rules, mysqlparser.RuleCandidate{Rule: "columnref"})
+	}
+
+	for _, rc := range candidates.Rules {
+		if rc.Rule == "columnref" {
+			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
-			c.collectInsertTableReferences(caretIndex)
-			c.takeReferencesSnapshot()
 			break
-		} else if ruleName == mysql.MySQLParserRULE_columnInternalRef {
-			c.collectLeadingTableReferences(caretIndex, true /* forTableAlter */)
-			c.takeReferencesSnapshot()
 		}
 	}
 
 	return c.convertCandidates(candidates)
 }
 
-func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
-	synonyms := newSynonyms()
-	keywordEntries := make(CompletionMap)
-	runtimeFunctionEntries := make(CompletionMap)
-	schemaEntries := make(CompletionMap)
-	tableEntries := make(CompletionMap)
-	columnEntries := make(CompletionMap)
-	viewEntries := make(CompletionMap)
-
-	for token, value := range candidates.Tokens {
-		entry := c.parser.SymbolicNames[token]
-		if strings.HasSuffix(entry, "_SYMBOL") {
-			entry = entry[:len(entry)-7]
-		} else {
-			entry = unquote(entry)
-		}
-
-		list := 0
-		if len(value) > 0 {
-			// For function call:
-			if value[0] == mysql.MySQLLexerOPEN_PAR_SYMBOL {
-				list = 1
-			} else {
-				for _, item := range value {
-					subEntry := c.parser.SymbolicNames[item]
-					if strings.HasSuffix(subEntry, "_SYMBOL") {
-						subEntry = subEntry[:len(subEntry)-7]
-					} else {
-						subEntry = unquote(subEntry)
-					}
-					entry += " " + subEntry
-				}
-			}
-		}
-
-		switch list {
-		case 1:
-			runtimeFunctionEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeFunction,
-				Text: strings.ToLower(entry) + "()",
-			})
-		default:
-			keywordEntries.Insert(base.Candidate{
-				Type: base.CandidateTypeKeyword,
-				Text: entry,
-			})
-
-			// Add also synonyms, if there are any.
-			if synonyms[token] != nil {
-				for _, synonym := range synonyms[token] {
-					keywordEntries.Insert(base.Candidate{
-						Type: base.CandidateTypeKeyword,
-						Text: synonym,
-					})
-				}
-			}
+func (c *Completer) prefixToken() (mysqlparser.Token, bool) {
+	idx := c.caretTokenIndex
+	if idx < len(c.tokens) {
+		tok := c.tokens[idx]
+		if tok.Loc < c.cursorByteOffset && c.cursorByteOffset <= tok.End && mysqlparser.IsIdentTokenType(tok.Type) {
+			return tok, true
 		}
 	}
-
-	for candidate := range candidates.Rules {
-		c.scanner.PopAndRestore()
-		c.scanner.Push()
-
-		c.fetchCommonTableExpression(candidates.Rules[candidate])
-
-		switch candidate {
-		case mysql.MySQLParserRULE_runtimeFunctionCall:
-			runtimeFunctionEntries.insertFunctions()
-		case mysql.MySQLParserRULE_schemaRef:
-			schemaEntries.insertDatabases(c)
-		case mysql.MySQLParserRULE_tableRefWithWildcard:
-			// A special form of table references (id.id.*) used only in multi-table delete.
-			// Handling is similar as for column references (just that we have table/view objects instead of column refs).
-			schema, _, flags := c.determineSchemaTableQualifier()
-			if flags&ObjectFlagsShowSchemas != 0 {
-				schemaEntries.insertDatabases(c)
-			}
-
-			schemas := make(map[string]bool)
-			if len(schema) == 0 {
-				schemas[c.defaultDatabase] = true
-				// User didn't specify a schema, so we need to append cte tables.
-				schemas[""] = true
-			} else {
-				schemas[schema] = true
-			}
-			if flags&ObjectFlagsShowTables != 0 {
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
-			}
-		case mysql.MySQLParserRULE_tableRef, mysql.MySQLParserRULE_filterTableRef:
-			qualifier, flags := c.determineQualifier()
-
-			if flags&ObjectFlagsShowFirst != 0 {
-				schemaEntries.insertDatabases(c)
-			}
-
-			if flags&ObjectFlagsShowSecond != 0 {
-				schemas := make(map[string]bool)
-				if len(qualifier) == 0 {
-					schemas[c.defaultDatabase] = true
-					schemas[""] = true // User didn't specify a schema, so we need to append cte tables.
-				} else {
-					schemas[qualifier] = true
-				}
-
-				tableEntries.insertTables(c, schemas)
-				viewEntries.insertViews(c, schemas)
-			}
-		case mysql.MySQLParserRULE_tableWild, mysql.MySQLParserRULE_columnRef:
-			database, table, flags := c.determineSchemaTableQualifier()
-			if flags&ObjectFlagsShowSchemas != 0 {
-				schemaEntries.insertDatabases(c)
-			}
-
-			schemas := make(map[string]bool)
-			if len(database) != 0 {
-				schemas[database] = true
-			} else if len(c.references) > 0 {
-				for _, reference := range c.references {
-					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
-						if len(physicalTable.Database) != 0 {
-							schemas[physicalTable.Database] = true
-						}
-					}
-				}
-			}
-
-			if len(schemas) == 0 {
-				schemas[c.defaultDatabase] = true
-				// User didn't specify a schema, so we need to append cte tables.
-				schemas[""] = true
-			}
-
-			if flags&ObjectFlagsShowTables != 0 {
-				tableEntries.insertTables(c, schemas)
-				if candidate == mysql.MySQLParserRULE_columnRef {
-					viewEntries.insertViews(c, schemas)
-
-					for _, reference := range c.references {
-						switch reference := reference.(type) {
-						case *base.PhysicalTableReference:
-							if (len(database) == 0 && len(reference.Database) == 0) || schemas[reference.Database] {
-								if len(reference.Alias) == 0 {
-									tableEntries.Insert(base.Candidate{
-										Type: base.CandidateTypeTable,
-										Text: c.quotedIdentifierIfNeeded(reference.Table),
-									})
-								} else {
-									tableEntries.Insert(base.Candidate{
-										Type: base.CandidateTypeTable,
-										Text: c.quotedIdentifierIfNeeded(reference.Alias),
-									})
-								}
-							}
-						case *base.VirtualTableReference:
-							// User specified a database qualifier, so we don't show virtual tables.
-							if len(database) > 0 {
-								continue
-							}
-							tableEntries.Insert(base.Candidate{
-								Type: base.CandidateTypeTable,
-								Text: c.quotedIdentifierIfNeeded(reference.Table),
-							})
-						default:
-						}
-					}
-				}
-			}
-
-			if flags&ObjectFlagsShowColumns != 0 {
-				if database == table { // Schema and table are equal if it's not clear if we see a schema or table qualifier.
-					schemas[c.defaultDatabase] = true
-					// User didn't specify a schema, so we need to append cte tables.
-					schemas[""] = true
-				}
-
-				tables := make(map[string]bool)
-				if len(table) != 0 {
-					tables[table] = true
-
-					for _, reference := range c.references {
-						switch reference := reference.(type) {
-						case *base.PhysicalTableReference:
-							// Could be an alias
-							if strings.EqualFold(reference.Alias, table) {
-								tables[reference.Table] = true
-								schemas[reference.Database] = true
-							}
-						case *base.VirtualTableReference:
-							// Could be a virtual table
-							if strings.EqualFold(reference.Table, table) {
-								for _, column := range reference.Columns {
-									columnEntries.Insert(base.Candidate{
-										Type: base.CandidateTypeColumn,
-										Text: c.quotedIdentifierIfNeeded(column),
-									})
-								}
-							}
-						default:
-						}
-					}
-				} else if len(c.references) > 0 && candidate == mysql.MySQLParserRULE_columnRef {
-					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
-					for _, alias := range list {
-						columnEntries.Insert(base.Candidate{
-							Type: base.CandidateTypeColumn,
-							Text: c.quotedIdentifierIfNeeded(alias),
-						})
-					}
-					for _, reference := range c.references {
-						switch reference := reference.(type) {
-						case *base.PhysicalTableReference:
-							schemas[""] = true
-							tables[reference.Table] = true
-						case *base.VirtualTableReference:
-							for _, column := range reference.Columns {
-								columnEntries.Insert(base.Candidate{
-									Type: base.CandidateTypeColumn,
-									Text: c.quotedIdentifierIfNeeded(column),
-								})
-							}
-						default:
-						}
-					}
-				} else if candidate == mysql.MySQLParserRULE_columnRef {
-					// No specified table, return all columns
-					columnEntries.insertAllColumns(c)
-				}
-
-				if len(tables) > 0 {
-					columnEntries.insertColumns(c, schemas, tables)
-				}
-			}
-
-			// TODO: special handling for triggers.
-
-		case mysql.MySQLParserRULE_viewRef:
-			schema, _, flags := c.determineSchemaTableQualifier()
-
-			if flags&ObjectFlagsShowFirst != 0 {
-				schemaEntries.insertDatabases(c)
-			}
-
-			if flags&ObjectFlagsShowSecond != 0 {
-				schemas := make(map[string]bool)
-				if len(schema) != 0 {
-					schemas[schema] = true
-				} else {
-					schemas[c.defaultDatabase] = true
-				}
-				viewEntries.insertViews(c, schemas)
-			}
-		default:
-			// Handle other candidates
+	if idx > 0 {
+		tok := c.tokens[idx-1]
+		if tok.End == c.cursorByteOffset && mysqlparser.IsIdentTokenType(tok.Type) {
+			return tok, true
 		}
 	}
-
-	c.scanner.PopAndRestore()
-	var result []base.Candidate
-	result = append(result, keywordEntries.toSLice()...)
-	result = append(result, runtimeFunctionEntries.toSLice()...)
-	result = append(result, schemaEntries.toSLice()...)
-	result = append(result, tableEntries.toSLice()...)
-	result = append(result, columnEntries.toSLice()...)
-	result = append(result, viewEntries.toSLice()...)
-	return result, nil
-}
-
-func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
-	c.cteTables = nil
-	for _, rule := range ruleStack {
-		if rule.ID == mysql.MySQLParserRULE_queryExpression {
-			for _, pos := range rule.CTEList {
-				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
-			}
-		}
-	}
-}
-
-func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
-	if metadata, exists := c.cteCache[pos]; exists {
-		return metadata
-	}
-	followingText := c.scanner.GetFollowingTextAfter(pos)
-	if len(followingText) == 0 {
-		return nil
-	}
-
-	input := antlr.NewInputStream(followingText)
-	lexer := mysql.NewMySQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, 0)
-	parser := mysql.NewMySQLParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.WithClause()
-
-	listener := &CTETableListener{context: c}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-
-	c.cteCache[pos] = listener.tables
-	return listener.tables
-}
-
-type CTETableListener struct {
-	*mysql.BaseMySQLParserListener
-
-	context *Completer
-	tables  []*base.VirtualTableReference
-}
-
-func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpressionContext) {
-	table := &base.VirtualTableReference{}
-	if ctx.Identifier() != nil {
-		table.Table = unquote(ctx.Identifier().GetText())
-	}
-	if ctx.ColumnInternalRefList() != nil {
-		for _, column := range ctx.ColumnInternalRefList().AllColumnInternalRef() {
-			table.Columns = append(table.Columns, unquote(column.Identifier().GetText()))
-		}
-	} else {
-		// User didn't specify the column list, so we need to fetch the column list from the database.
-		if span, err := GetQuerySpan(
-			l.context.ctx,
-			base.GetQuerySpanContext{
-				InstanceID:              l.context.instanceID,
-				GetDatabaseMetadataFunc: l.context.getMetadata,
-				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
-			},
-			base.Statement{Text: fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery()))},
-			l.context.defaultDatabase,
-			"",
-			false,
-		); err == nil && span.NotFoundError == nil {
-			for _, column := range span.Results {
-				table.Columns = append(table.Columns, column.Name)
-			}
-		}
-	}
-
-	l.tables = append(l.tables, table)
-}
-
-func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
-	canUseAliases := false
-	for i := len(ruleStack) - 1; i >= 0; i-- {
-		switch ruleStack[i].ID {
-		case mysql.MySQLParserRULE_queryExpression, mysql.MySQLParserRULE_querySpecification:
-			if !canUseAliases {
-				return nil
-			}
-			aliasMap := make(map[string]bool)
-			for pos := range ruleStack[i].SelectItemAliases {
-				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
-					aliasMap[aliasText] = true
-				}
-			}
-
-			var result []string
-			for alias := range aliasMap {
-				result = append(result, alias)
-			}
-			slices.Sort(result)
-			return result
-		case mysql.MySQLParserRULE_orderClause, mysql.MySQLParserRULE_groupByClause, mysql.MySQLParserRULE_havingClause:
-			canUseAliases = true
-		default:
-			// Other cases
-		}
-	}
-
-	return nil
-}
-
-func (c *Completer) extractAliasText(pos int) string {
-	followingText := c.scanner.GetFollowingTextAfter(pos)
-	if len(followingText) == 0 {
-		return ""
-	}
-
-	input := antlr.NewInputStream(followingText)
-	lexer := mysql.NewMySQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, 0)
-	parser := mysql.NewMySQLParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.SelectAlias()
-
-	listener := &SelectAliasListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-
-	return listener.result
-}
-
-type SelectAliasListener struct {
-	*mysql.BaseMySQLParserListener
-
-	result string
-}
-
-func (l *SelectAliasListener) EnterSelectAlias(ctx *mysql.SelectAliasContext) {
-	if ctx.Identifier() != nil {
-		l.result = unquote(ctx.Identifier().GetText())
-	} else if ctx.TextStringLiteral() != nil {
-		l.result = unquote(ctx.TextStringLiteral().GetText())
-	}
-}
-
-type ObjectFlags int
-
-const (
-	ObjectFlagsShowSchemas ObjectFlags = 1 << iota
-	ObjectFlagsShowTables
-	ObjectFlagsShowColumns
-	ObjectFlagsShowFirst
-	ObjectFlagsShowSecond
-)
-
-func (c *Completer) determineSchemaTableQualifier() (schema, table string, flags ObjectFlags) {
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */) // First skip to the next non-hidden token.
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if tokenType != mysql.MySQLLexerDOT_SYMBOL && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec. Jump back, so that the other tests succeed.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == mysql.MySQLLexerDOT_SYMBOL {
-			c.scanner.Backward(true /* skipHidden */)
-		}
-		if c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
-
-			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == mysql.MySQLLexerDOT_SYMBOL {
-				c.scanner.Backward(true /* skipHidden */)
-				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-					c.scanner.Backward(true /* skipHidden */)
-				}
-			}
-		}
-	}
-
-	schema = ""
-	table = ""
-	temp := ""
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	if !c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) || position <= c.scanner.GetIndex() {
-		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
-	}
-
-	c.scanner.Forward(true /* skipHidden */) // skip dot
-	table = temp
-	schema = temp
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-
-		if !c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) || position <= c.scanner.GetIndex() {
-			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-		}
-
-		table = temp
-		return schema, table, ObjectFlagsShowColumns
-	}
-
-	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
-}
-
-func (c *Completer) determineQualifier() (string, ObjectFlags) {
-	// Five possible positions here:
-	//   - In the first id (including the position directly after the last char).
-	//   - In the space between first id and a dot.
-	//   - On a dot (visually directly before the dot).
-	//   - In space after the dot, that includes the position directly after the dot.
-	//   - In the second id.
-	// All parts are optional (though not at the same time). The on-dot position is considered the same
-	// as in first id as it visually belongs to the first id
-
-	position := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != 0 {
-		c.scanner.Forward(true /* skipHidden */) // First skip to the next non-hidden token.
-	}
-
-	if !c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		// We are at the end of an incomplete identifier spec. Jump back, so that the other tests succeed.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	// Go left until we find something not related to an id or find at most 1 dot.
-	if position > 0 {
-		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == mysql.MySQLLexerDOT_SYMBOL {
-			c.scanner.Backward(true /* skipHidden */)
-		}
-		if c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
-			c.scanner.Backward(true /* skipHidden */)
-		}
-	}
-
-	// The c.scanner is now on the leading identifier or dot (if there's no leading id).
-	qualifier := ""
-	temp := ""
-	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
-		temp = unquote(c.scanner.GetTokenText())
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	if !c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) || position <= c.scanner.GetIndex() {
-		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond
-	}
-
-	qualifier = temp
-	return qualifier, ObjectFlagsShowSecond
-}
-
-func (c *Completer) collectRemainingTableReferences() {
-	c.scanner.Push()
-
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == mysql.MySQLLexerFROM_SYMBOL
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case mysql.MySQLLexerOPEN_PAR_SYMBOL:
-				level++
-			case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
-				if level > 0 {
-					level--
-				}
-			case mysql.MySQLLexerFROM_SYMBOL:
-				// Open and close parentheses don't need to match, if we come from within a subquery.
-				if level == 0 {
-					found = true
-				}
-			default:
-				// Other tokens, continue scanning
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clause found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == mysql.MySQLLexerFROM_SYMBOL {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) takeReferencesSnapshot() {
-	for _, references := range c.referencesStack {
-		c.references = append(c.references, references...)
-	}
-}
-
-func (c *Completer) collectInsertTableReferences(caretIndex int) {
-	c.scanner.Push()
-
-	c.scanner.SeekIndex(0)
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case mysql.MySQLLexerOPEN_PAR_SYMBOL:
-				level++
-			case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
-				if level == 0 {
-					c.scanner.PopAndRestore()
-					return
-				}
-
-				level--
-			case mysql.MySQLLexerINSERT_SYMBOL, mysql.MySQLLexerINTO_SYMBOL:
-				found = true
-			default:
-				// Other tokens, continue scanning
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more INSERT clause found.
-		}
-
-		c.parseInsertTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == mysql.MySQLLexerINSERT_SYMBOL || c.scanner.GetTokenType() == mysql.MySQLLexerINTO_SYMBOL {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter bool) {
-	c.scanner.Push()
-
-	if forTableAlter {
-		// nolint
-		for c.scanner.Backward(false /* skipHidden */) && c.scanner.GetTokenType() != mysql.MySQLLexerALTER_SYMBOL {
-			// Skip all tokens until ALTER
-		}
-
-		if c.scanner.GetTokenType() == mysql.MySQLLexerALTER_SYMBOL {
-			c.scanner.SkipTokenSequence([]int{mysql.MySQLLexerALTER_SYMBOL, mysql.MySQLLexerTABLE_SYMBOL})
-
-			var reference base.PhysicalTableReference
-			reference.Table = unquote(c.scanner.GetTokenText())
-			if c.scanner.Forward(false /* skipHidden */) && c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) {
-				reference.Database = reference.Table
-				c.scanner.Forward(false /* skipHidden */)
-				c.scanner.Forward(false /* skipHidden */)
-				reference.Table = unquote(c.scanner.GetTokenText())
-			}
-			c.referencesStack[0] = append(c.referencesStack[0], &reference)
-		}
-	} else {
-		c.scanner.SeekIndex(0)
-
-		level := 0
-		for {
-			found := c.scanner.GetTokenType() == mysql.MySQLLexerFROM_SYMBOL
-			for !found {
-				if !c.scanner.Forward(false /* skipHidden */) || c.scanner.GetIndex() >= caretIndex {
-					break
-				}
-
-				switch c.scanner.GetTokenType() {
-				case mysql.MySQLLexerOPEN_PAR_SYMBOL:
-					level++
-					c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-				case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
-					if level == 0 {
-						c.scanner.PopAndRestore()
-						return // We cannot go above the initial nesting level.
-					}
-
-					level--
-					c.referencesStack = c.referencesStack[1:]
-				case mysql.MySQLLexerFROM_SYMBOL:
-					found = true
-				default:
-					// Other tokens, continue scanning
-				}
-			}
-
-			if !found {
-				c.scanner.PopAndRestore()
-				return // No more FROM clause found.
-			}
-
-			c.parseTableReferences(c.scanner.GetFollowingText())
-			if c.scanner.GetTokenType() == mysql.MySQLLexerFROM_SYMBOL {
-				c.scanner.Forward(false /* skipHidden */)
-			}
-		}
-	}
-}
-
-func (c *Completer) parseInsertTableReferences(text string) {
-	input := antlr.NewInputStream(text)
-	lexer := mysql.NewMySQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, 0)
-	parser := mysql.NewMySQLParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.InsertStatement()
-
-	listener := &insertTableRefListener{
-		context: c,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-}
-
-type insertTableRefListener struct {
-	*mysql.BaseMySQLParserListener
-
-	context *Completer
-}
-
-func (l *insertTableRefListener) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
-	if ctx.TableRef() != nil {
-		reference := &base.PhysicalTableReference{}
-		if ctx.TableRef().QualifiedIdentifier() != nil {
-			reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().Identifier().GetText())
-			if ctx.TableRef().QualifiedIdentifier().DotIdentifier() != nil {
-				reference.Database = reference.Table
-				reference.Table = unquote(ctx.TableRef().QualifiedIdentifier().DotIdentifier().Identifier().GetText())
-			}
-		} else {
-			reference.Table = unquote(ctx.TableRef().DotIdentifier().Identifier().GetText())
-		}
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (c *Completer) parseTableReferences(fromClause string) {
-	// We use a local parser just for the FROM clause to avoid messing up tokens on the autocompletion
-	// parser (which would affect the processing of the found candidates)
-	input := antlr.NewInputStream(fromClause)
-	lexer := mysql.NewMySQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, 0)
-	parser := mysql.NewMySQLParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.FromClause()
-
-	listener := &TableRefListener{
-		context:        c,
-		fromClauseMode: true,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-}
-
-type TableRefListener struct {
-	*mysql.BaseMySQLParserListener
-
-	context        *Completer
-	fromClauseMode bool
-	done           bool
-	level          int
-}
-
-func (l *TableRefListener) ExitTableRef(ctx *mysql.TableRefContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		reference := &base.PhysicalTableReference{}
-		if ctx.QualifiedIdentifier() != nil {
-			reference.Table = unquote(ctx.QualifiedIdentifier().Identifier().GetText())
-			if ctx.QualifiedIdentifier().DotIdentifier() != nil {
-				reference.Database = reference.Table
-				reference.Table = unquote(ctx.QualifiedIdentifier().DotIdentifier().Identifier().GetText())
-			}
-		} else {
-			reference.Table = unquote(ctx.DotIdentifier().Identifier().GetText())
-		}
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *TableRefListener) ExitTableAlias(ctx *mysql.TableAliasContext) {
-	if l.done {
-		return
-	}
-
-	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
-		// Appears after a single or derived table.
-
-		if _, ok := ctx.GetParent().(*mysql.DerivedTableContext); ok {
-			// We are no need to set the alias for the derived table.
-			// We handle the derived table in the EnterDerivedTable() methods.
-			return
-		}
-
-		// We are in the single table.
-		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.PhysicalTableReference); ok {
-			physicalTable.Alias = unquote(ctx.Identifier().GetText())
-		}
-	}
-}
-
-func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
-	if l.done {
-		return
-	}
-
-	if l.level == 0 && len(l.context.referencesStack) > 0 && ctx.TableAlias() != nil {
-		reference := &base.VirtualTableReference{
-			Table: unquote(ctx.TableAlias().Identifier().GetText()),
-		}
-
-		if ctx.ColumnInternalRefList() != nil {
-			for _, column := range ctx.ColumnInternalRefList().AllColumnInternalRef() {
-				reference.Columns = append(reference.Columns, unquote(column.Identifier().GetText()))
-			}
-		} else {
-			// User didn't specify the column list, so we should extract the column list from the select statement.
-			if span, err := GetQuerySpan(
-				l.context.ctx,
-				base.GetQuerySpanContext{
-					InstanceID:              l.context.instanceID,
-					GetDatabaseMetadataFunc: l.context.getMetadata,
-					ListDatabaseNamesFunc:   l.context.listDatabaseNames,
-				},
-				base.Statement{Text: fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery()))},
-				l.context.defaultDatabase,
-				"",
-				false,
-			); err == nil && span.NotFoundError == nil {
-				for _, column := range span.Results {
-					reference.Columns = append(reference.Columns, column.Name)
-				}
-			}
-		}
-
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *TableRefListener) EnterSubquery(_ *mysql.SubqueryContext) {
-	if l.done {
-		return
-	}
-
-	if l.fromClauseMode {
-		l.level++
-	} else {
-		l.context.referencesStack = append([][]base.TableReference{{}}, l.context.referencesStack...)
-	}
-}
-
-func (l *TableRefListener) ExitSubquery(_ *mysql.SubqueryContext) {
-	if l.done {
-		return
-	}
-
-	if l.fromClauseMode {
-		l.level--
-	} else {
-		l.context.referencesStack = l.context.referencesStack[1:]
-	}
-}
-
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := mysql.NewMySQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := mysql.NewMySQLParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*mysql.MySQLParser, *mysql.MySQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := mysql.NewMySQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := mysql.NewMySQLParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-func notEmptySQLCount(list []base.Statement) int {
-	count := 0
-	for _, sql := range list {
-		if !sql.Empty {
-			count++
-		}
-	}
-	return count
-}
-
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	list, err := SplitSQL(statement)
-	if err != nil || notEmptySQLCount(list) <= 1 {
-		return statement, caretLine, caretOffset
-	}
-
-	start := 0
-	for i, sql := range list {
-		// Both caretLine and End.Line are 1-based
-		// End.Column is 1-based exclusive (points after the last character)
-		// caretOffset is 0-based
-		sqlEndLine := int(sql.End.GetLine())
-		sqlEndColumn := int(sql.End.GetColumn())
-		// Use > for End.Column comparison because it's exclusive (points after last char)
-		// A 0-based offset of N corresponds to 1-based position N+1
-		// Exclusive End.Column of N means last char is at 1-based position N-1 (0-based N-2)
-		// So caret is in this statement if: sqlEndColumn > caretOffset+1, i.e., sqlEndColumn > caretOffset
-		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn > caretOffset) {
-			start = i
-			if i == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				break
-			}
-			previousSQLEndLine := int(list[i-1].End.GetLine())
-			previousSQLEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLine - previousSQLEndLine + 1
-			if caretLine == previousSQLEndLine {
-				// The caret is in the same line as the last line of the previous SQL statement.
-				// We need to adjust the caret offset.
-				// previousSQLEndColumn is 1-based exclusive, caretOffset is 0-based
-				// New offset = caretOffset - (previousSQLEndColumn - 1) = caretOffset - previousSQLEndColumn + 1
-				newCaretOffset = caretOffset - previousSQLEndColumn + 1
-			}
-			break
-		}
-	}
-
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
-		}
-	}
-
-	return buf.String(), newCaretLine, newCaretOffset
-}
-
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	input := antlr.NewInputStream(statement)
-	lexer := mysql.NewMySQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-	latestSelect := 0
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
-		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
-			break
-		}
-		if token.GetTokenType() == mysql.MySQLLexerSELECT_SYMBOL && token.GetColumn() == 0 {
-			latestSelect = token.GetTokenIndex()
-			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
-			newCaretOffset = caretOffset
-		}
-	}
-
-	if latestSelect == 0 {
-		return statement, caretLine, caretOffset
-	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
-}
-
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-
-	if (s[0] == '`' || s[0] == '\'' || s[0] == '"') && s[0] == s[len(s)-1] {
-		return s[1 : len(s)-1]
-	}
-	return s
+	return mysqlparser.Token{}, false
 }
 
 type CompletionMap map[string]base.Candidate
-
-func (m CompletionMap) toSLice() []base.Candidate {
-	var result []base.Candidate
-	for _, candidate := range m {
-		result = append(result, candidate)
-	}
-	slices.SortFunc(result, func(i, j base.Candidate) int {
-		if i.Type != j.Type {
-			if i.Type < j.Type {
-				return -1
-			}
-			return 1
-		}
-		if i.Text < j.Text {
-			return -1
-		}
-		if i.Text > j.Text {
-			return 1
-		}
-		return 0
-	})
-	return result
-}
 
 func (m CompletionMap) Insert(entry base.Candidate) {
 	m[entry.String()] = entry
 }
 
 func (m CompletionMap) insertFunctions() {
-	for _, function := range mysql.GetBuiltinFunctions() {
+	for _, name := range getMySQLBuiltinFunctions() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeFunction,
-			Text: function + "()",
+			Text: name + "()",
 		})
 	}
 }
@@ -1370,7 +243,6 @@ func (m CompletionMap) insertDatabases(c *Completer) {
 func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	for schema := range schemas {
 		if len(schema) == 0 {
-			// User didn't specify a schema, so we need to append cte tables.
 			for _, table := range c.cteTables {
 				m.Insert(base.Candidate{
 					Type: base.CandidateTypeTable,
@@ -1402,7 +274,6 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]bool) {
 	for database := range databases {
 		if len(database) == 0 {
-			// User didn't specify a schema, so we need to append cte tables.
 			for _, table := range c.cteTables {
 				if tables[table.Table] {
 					for _, column := range table.Columns {
@@ -1480,18 +351,709 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 	}
 }
 
+func (m CompletionMap) toSlice() []base.Candidate {
+	var result []base.Candidate
+	for _, candidate := range m {
+		result = append(result, candidate)
+	}
+	slices.SortFunc(result, func(a, b base.Candidate) int {
+		if a.Type != b.Type {
+			if a.Type < b.Type {
+				return -1
+			}
+			return 1
+		}
+		if a.Text < b.Text {
+			return -1
+		}
+		if a.Text > b.Text {
+			return 1
+		}
+		return 0
+	})
+	return result
+}
+
+func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]base.Candidate, error) {
+	keywordEntries := make(CompletionMap)
+	runtimeFunctionEntries := make(CompletionMap)
+	databaseEntries := make(CompletionMap)
+	tableEntries := make(CompletionMap)
+	columnEntries := make(CompletionMap)
+	viewEntries := make(CompletionMap)
+
+	// Token candidates → keywords.
+	for _, tok := range candidates.Tokens {
+		if tok > 0 && tok < 256 {
+			continue
+		}
+		name := mysqlparser.TokenName(tok)
+		if name == "" {
+			continue
+		}
+		keywordEntries.Insert(base.Candidate{
+			Type: base.CandidateTypeKeyword,
+			Text: name,
+		})
+	}
+
+	for _, rc := range candidates.Rules {
+		c.fetchCommonTableExpression(candidates.CTEPositions)
+
+		switch rc.Rule {
+		case "func_name":
+			runtimeFunctionEntries.insertFunctions()
+		case "database_ref":
+			databaseEntries.insertDatabases(c)
+		case "table_ref":
+			qualifier, flags := c.determineQualifier()
+
+			if flags&ObjectFlagsShowFirst != 0 {
+				databaseEntries.insertDatabases(c)
+			}
+
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(qualifier) == 0 {
+					schemas[c.defaultDatabase] = true
+					schemas[""] = true // CTE tables
+				} else {
+					schemas[qualifier] = true
+				}
+				tableEntries.insertTables(c, schemas)
+				viewEntries.insertViews(c, schemas)
+			}
+		case "columnref":
+			schema, table, flags := c.determineColumnRef()
+
+			if flags&ObjectFlagsShowSchemas != 0 {
+				databaseEntries.insertDatabases(c)
+			}
+
+			databases := make(map[string]bool)
+			if len(schema) != 0 {
+				databases[schema] = true
+			} else if len(c.references) > 0 {
+				for _, reference := range c.references {
+					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
+						if len(physicalTable.Database) > 0 {
+							databases[physicalTable.Database] = true
+						}
+					}
+				}
+			}
+
+			if len(schema) == 0 {
+				databases[c.defaultDatabase] = true
+				databases[""] = true // CTE tables
+			}
+
+			if flags&ObjectFlagsShowTables != 0 {
+				tableEntries.insertTables(c, databases)
+				viewEntries.insertViews(c, databases)
+
+				for _, reference := range c.references {
+					switch reference := reference.(type) {
+					case *base.PhysicalTableReference:
+						if len(schema) == 0 && len(reference.Database) == 0 || databases[reference.Database] {
+							if len(reference.Alias) == 0 {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: c.quotedIdentifierIfNeeded(reference.Table),
+								})
+							} else {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: c.quotedIdentifierIfNeeded(reference.Alias),
+								})
+							}
+						}
+					case *base.VirtualTableReference:
+						if len(schema) > 0 {
+							continue
+						}
+						tableEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeTable,
+							Text: c.quotedIdentifierIfNeeded(reference.Table),
+						})
+					default:
+					}
+				}
+			}
+
+			if flags&ObjectFlagsShowColumns != 0 {
+				if schema == table {
+					databases[c.defaultDatabase] = true
+					databases[""] = true
+				}
+
+				tables := make(map[string]bool)
+				if len(table) != 0 {
+					tables[table] = true
+
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							if reference.Alias == table {
+								tables[reference.Table] = true
+								databases[reference.Database] = true
+							}
+						case *base.VirtualTableReference:
+							if reference.Table == table {
+								for _, column := range reference.Columns {
+									columnEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeColumn,
+										Text: c.quotedIdentifierIfNeeded(column),
+									})
+								}
+							}
+						default:
+						}
+					}
+				} else if len(c.references) > 0 {
+					if c.isInAliasAllowedContext() {
+						list := c.fetchSelectItemAliases(candidates.SelectAliasPositions)
+						for _, alias := range list {
+							columnEntries.Insert(base.Candidate{
+								Type: base.CandidateTypeColumn,
+								Text: c.quotedIdentifierIfNeeded(alias),
+							})
+						}
+					}
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							databases[reference.Database] = true
+							tables[reference.Table] = true
+						case *base.VirtualTableReference:
+							for _, column := range reference.Columns {
+								columnEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeColumn,
+									Text: c.quotedIdentifierIfNeeded(column),
+								})
+							}
+						default:
+						}
+					}
+				} else {
+					columnEntries.insertAllColumns(c)
+				}
+
+				if len(tables) > 0 {
+					columnEntries.insertColumns(c, databases, tables)
+				}
+			}
+		default:
+		}
+	}
+
+	var result []base.Candidate
+	result = append(result, keywordEntries.toSlice()...)
+	result = append(result, runtimeFunctionEntries.toSlice()...)
+	result = append(result, databaseEntries.toSlice()...)
+	result = append(result, tableEntries.toSlice()...)
+	result = append(result, viewEntries.toSlice()...)
+	result = append(result, columnEntries.toSlice()...)
+
+	return result, nil
+}
+
+func (c *Completer) fetchCommonTableExpression(ctePositions []int) {
+	c.cteTables = nil
+	for _, pos := range ctePositions {
+		c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
+	}
+}
+
+func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
+	if metadata, exists := c.cteCache[pos]; exists {
+		return metadata
+	}
+	if pos >= len(c.sql) {
+		return nil
+	}
+	followingText := c.sql[pos:]
+	if len(followingText) == 0 {
+		return nil
+	}
+
+	const suffix = " SELECT 1"
+	tokens := mysqlparser.Tokenize(followingText)
+
+	var selStmt *ast.SelectStmt
+	var wrappedSQL string
+	for end := len(tokens); end > 0; end-- {
+		if end < len(tokens) {
+			lastTok := tokens[end-1]
+			wrappedSQL = followingText[:lastTok.End] + suffix
+		} else {
+			wrappedSQL = followingText + suffix
+		}
+		parsed, err := ParseMySQLOmni(wrappedSQL)
+		if err != nil || parsed == nil || len(parsed.Items) == 0 {
+			continue
+		}
+		sel, ok := parsed.Items[0].(*ast.SelectStmt)
+		if ok && len(sel.CTEs) > 0 {
+			selStmt = sel
+			break
+		}
+	}
+	if selStmt == nil {
+		c.cteCache[pos] = nil
+		return nil
+	}
+
+	var tables []*base.VirtualTableReference
+	for _, cte := range selStmt.CTEs {
+		table := &base.VirtualTableReference{
+			Table: cte.Name,
+		}
+		if len(cte.Columns) > 0 {
+			table.Columns = cte.Columns
+		} else if cte.Select != nil {
+			// Extract query text from wrappedSQL using Loc.
+			loc := cte.Select.Loc
+			if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(wrappedSQL) {
+				queryText := wrappedSQL[loc.Start:loc.End]
+				if span, err := GetQuerySpan(
+					c.ctx,
+					base.GetQuerySpanContext{
+						InstanceID:              c.instanceID,
+						GetDatabaseMetadataFunc: c.getMetadata,
+						ListDatabaseNamesFunc:   c.listDatabaseNames,
+					},
+					base.Statement{Text: queryText},
+					c.defaultDatabase,
+					"",
+					false,
+				); err == nil && span.NotFoundError == nil {
+					for _, column := range span.Results {
+						table.Columns = append(table.Columns, column.Name)
+					}
+				}
+			}
+		}
+		tables = append(tables, table)
+	}
+
+	c.cteCache[pos] = tables
+	return tables
+}
+
+func (c *Completer) isInAliasAllowedContext() bool {
+	level := 0
+	for i := c.caretTokenIndex - 1; i >= 0; i-- {
+		switch c.tokens[i].Type {
+		case ')':
+			level++
+		case '(':
+			if level > 0 {
+				level--
+			} else {
+				return false
+			}
+		default:
+		}
+		if level > 0 {
+			continue
+		}
+		switch c.tokens[i].Type {
+		case mysqlparser.ORDER, mysqlparser.GROUP, mysqlparser.HAVING:
+			return true
+		case mysqlparser.WHERE, mysqlparser.ON, mysqlparser.FROM, mysqlparser.SELECT,
+			mysqlparser.LIMIT, mysqlparser.FOR:
+			return false
+		}
+	}
+	return false
+}
+
+func (c *Completer) fetchSelectItemAliases(aliasPositions []int) []string {
+	aliasMap := make(map[string]bool)
+	for _, pos := range aliasPositions {
+		if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+			aliasMap[aliasText] = true
+		}
+	}
+	var result []string
+	for alias := range aliasMap {
+		result = append(result, alias)
+	}
+	slices.Sort(result)
+	return result
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	if pos >= len(c.sql) {
+		return ""
+	}
+	followingText := c.sql[pos:]
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	tokens := mysqlparser.Tokenize(followingText)
+	if len(tokens) == 0 {
+		return ""
+	}
+	idx := 0
+	if tokens[0].Type == mysqlparser.AS && len(tokens) > 1 {
+		idx = 1
+	}
+	if idx >= len(tokens) || !mysqlparser.IsIdentTokenType(tokens[idx].Type) {
+		return ""
+	}
+	return unquote(tokens[idx].Str)
+}
+
+type ObjectFlags int
+
+const (
+	ObjectFlagsShowSchemas ObjectFlags = 1 << iota
+	ObjectFlagsShowTables
+	ObjectFlagsShowColumns
+	ObjectFlagsShowFirst
+	ObjectFlagsShowSecond
+)
+
+func (c *Completer) determineQualifier() (string, ObjectFlags) {
+	idx := c.caretTokenIndex
+	if idx < len(c.tokens) && !mysqlparser.IsIdentTokenType(c.tokens[idx].Type) {
+		idx--
+	} else if idx >= len(c.tokens) {
+		idx = len(c.tokens) - 1
+	}
+
+	if idx < 0 {
+		return "", ObjectFlagsShowFirst | ObjectFlagsShowSecond
+	}
+
+	if idx >= 2 && mysqlparser.IsIdentTokenType(c.tokens[idx].Type) &&
+		c.tokens[idx-1].Type == '.' &&
+		mysqlparser.IsIdentTokenType(c.tokens[idx-2].Type) {
+		qualifier := unquote(c.tokens[idx-2].Str)
+		return qualifier, ObjectFlagsShowSecond
+	}
+
+	if idx >= 1 && c.tokens[idx].Type == '.' &&
+		mysqlparser.IsIdentTokenType(c.tokens[idx-1].Type) {
+		qualifier := unquote(c.tokens[idx-1].Str)
+		return qualifier, ObjectFlagsShowSecond
+	}
+
+	return "", ObjectFlagsShowFirst | ObjectFlagsShowSecond
+}
+
+func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlags) {
+	idx := c.caretTokenIndex
+	if idx < len(c.tokens) {
+		tt := c.tokens[idx].Type
+		if tt != '.' && !mysqlparser.IsIdentTokenType(tt) {
+			idx--
+		}
+	} else {
+		idx = len(c.tokens) - 1
+	}
+
+	if idx < 0 {
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	}
+
+	parts := []string{}
+	pos := idx
+
+	if pos >= 0 && mysqlparser.IsIdentTokenType(c.tokens[pos].Type) {
+		parts = append(parts, unquote(c.tokens[pos].Str))
+		pos--
+	}
+
+	for pos >= 1 && c.tokens[pos].Type == '.' && mysqlparser.IsIdentTokenType(c.tokens[pos-1].Type) {
+		parts = append(parts, unquote(c.tokens[pos-1].Str))
+		pos -= 2
+	}
+
+	if idx >= 0 && c.tokens[idx].Type == '.' {
+		switch len(parts) {
+		case 0:
+			return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+		case 1:
+			return parts[0], parts[0], ObjectFlagsShowTables | ObjectFlagsShowColumns
+		default:
+			return parts[1], parts[0], ObjectFlagsShowColumns
+		}
+	}
+
+	switch len(parts) {
+	case 0:
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	case 1:
+		return "", "", ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	case 2:
+		return parts[1], parts[1], ObjectFlagsShowTables | ObjectFlagsShowColumns
+	default:
+		return parts[len(parts)-1], parts[len(parts)-2], ObjectFlagsShowColumns
+	}
+}
+
+func (c *Completer) takeReferencesSnapshot() {
+	for _, references := range c.referencesStack {
+		c.references = append(c.references, references...)
+	}
+}
+
+func (c *Completer) collectRemainingTableReferences() {
+	level := 0
+	for i := c.caretTokenIndex; i < len(c.tokens); i++ {
+		switch c.tokens[i].Type {
+		case '(':
+			level++
+		case ')':
+			if level > 0 {
+				level--
+			}
+		case mysqlparser.FROM:
+			if level == 0 {
+				c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+			}
+		default:
+		}
+	}
+}
+
+func (c *Completer) collectLeadingTableReferences(caretIndex int) {
+	level := 0
+	for i := 0; i < len(c.tokens) && i < caretIndex; i++ {
+		switch c.tokens[i].Type {
+		case '(':
+			level++
+			c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+		case ')':
+			if level == 0 {
+				return
+			}
+			level--
+			c.referencesStack = c.referencesStack[1:]
+		case mysqlparser.FROM:
+			c.parseTableReferences(c.sql[c.tokens[i].Loc:])
+		case mysqlparser.INSERT, mysqlparser.INTO:
+			c.parseInsertTableReferences(c.sql[c.tokens[i].Loc:])
+		default:
+		}
+	}
+}
+
+func (c *Completer) parseTableReferences(fromClause string) {
+	const prefix = "SELECT * "
+	tokens := mysqlparser.Tokenize(fromClause)
+
+	var selStmt *ast.SelectStmt
+	var wrappedSQL string
+	for end := len(tokens); end > 0; end-- {
+		if end < len(tokens) {
+			lastTok := tokens[end-1]
+			wrappedSQL = prefix + fromClause[:lastTok.End]
+		} else {
+			wrappedSQL = prefix + fromClause
+		}
+		parsed, err := ParseMySQLOmni(wrappedSQL)
+		if err != nil || parsed == nil || len(parsed.Items) == 0 {
+			continue
+		}
+		sel, ok := parsed.Items[0].(*ast.SelectStmt)
+		if ok && len(sel.From) > 0 {
+			selStmt = sel
+			break
+		}
+	}
+	if selStmt == nil {
+		return
+	}
+
+	for _, item := range selStmt.From {
+		c.extractFromItem(item, wrappedSQL)
+	}
+}
+
+func (c *Completer) parseInsertTableReferences(insertClause string) {
+	tokens := mysqlparser.Tokenize(insertClause)
+	idx := 0
+
+	// Skip INSERT keyword.
+	if idx < len(tokens) && tokens[idx].Type == mysqlparser.INSERT {
+		idx++
+	}
+	// Skip INTO keyword.
+	if idx < len(tokens) && tokens[idx].Type == mysqlparser.INTO {
+		idx++
+	}
+	if idx >= len(tokens) || !mysqlparser.IsIdentTokenType(tokens[idx].Type) {
+		return
+	}
+
+	ref := &base.PhysicalTableReference{}
+	ref.Table = unquote(tokens[idx].Str)
+	idx++
+
+	if idx+1 < len(tokens) && tokens[idx].Type == '.' && mysqlparser.IsIdentTokenType(tokens[idx+1].Type) {
+		ref.Database = ref.Table
+		ref.Table = unquote(tokens[idx+1].Str)
+	}
+
+	if ref.Database == "" {
+		ref.Database = c.defaultDatabase
+	}
+	c.referencesStack[0] = append(c.referencesStack[0], ref)
+}
+
+func (c *Completer) extractFromItem(item ast.TableExpr, wrappedSQL string) {
+	switch v := item.(type) {
+	case *ast.TableRef:
+		ref := &base.PhysicalTableReference{
+			Database: v.Schema,
+			Table:    v.Name,
+			Alias:    v.Alias,
+		}
+		if ref.Database == "" {
+			ref.Database = c.defaultDatabase
+		}
+		c.referencesStack[0] = append(c.referencesStack[0], ref)
+
+	case *ast.JoinClause:
+		if v.Left != nil {
+			c.extractFromItem(v.Left, wrappedSQL)
+		}
+		if v.Right != nil {
+			c.extractFromItem(v.Right, wrappedSQL)
+		}
+
+	case *ast.SubqueryExpr:
+		if v.Alias == "" {
+			return
+		}
+		virtualRef := &base.VirtualTableReference{
+			Table: v.Alias,
+		}
+		if v.Select != nil {
+			loc := v.Select.Loc
+			if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(wrappedSQL) {
+				subqueryText := wrappedSQL[loc.Start:loc.End]
+				if span, err := GetQuerySpan(
+					c.ctx,
+					base.GetQuerySpanContext{
+						InstanceID:              c.instanceID,
+						GetDatabaseMetadataFunc: c.getMetadata,
+						ListDatabaseNamesFunc:   c.listDatabaseNames,
+					},
+					base.Statement{Text: fmt.Sprintf("SELECT * FROM (%s) AS %s;", subqueryText, v.Alias)},
+					c.defaultDatabase,
+					"",
+					false,
+				); err == nil && span.NotFoundError == nil {
+					for _, column := range span.Results {
+						virtualRef.Columns = append(virtualRef.Columns, column.Name)
+					}
+				}
+			}
+		}
+		c.referencesStack[0] = append(c.referencesStack[0], virtualRef)
+
+	default:
+	}
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+	list, err := SplitSQL(statement)
+	if err != nil || len(base.FilterEmptyStatements(list)) <= 1 {
+		return statement, caretLine, caretOffset
+	}
+
+	start := 0
+	for i, sql := range list {
+		sqlEndLine := int(sql.End.GetLine())
+		sqlEndColumn := int(sql.End.GetColumn())
+		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn > caretOffset) {
+			start = i
+			if i == 0 {
+				break
+			}
+			previousSQLEndLine := int(list[i-1].End.GetLine())
+			previousSQLEndColumn := int(list[i-1].End.GetColumn())
+			newCaretLine = caretLine - previousSQLEndLine + 1
+			if caretLine == previousSQLEndLine {
+				newCaretOffset = caretOffset - previousSQLEndColumn + 1
+			}
+			break
+		}
+	}
+
+	var buf strings.Builder
+	for i := start; i < len(list); i++ {
+		if _, err := buf.WriteString(list[i].Text); err != nil {
+			return statement, caretLine, caretOffset
+		}
+	}
+
+	return buf.String(), newCaretLine, newCaretOffset
+}
+
+// caretLine is 1-based and caretOffset is 0-based.
+func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
+	tokens := mysqlparser.Tokenize(statement)
+	caretByteOff := lineColumnToByteOffset(statement, caretLine, caretOffset)
+
+	latestSelectOffset := -1
+	newCaretLine, newCaretOffset := caretLine, caretOffset
+
+	for _, tok := range tokens {
+		if tok.Loc >= caretByteOff {
+			break
+		}
+		if tok.Type == mysqlparser.SELECT {
+			atColumn0 := tok.Loc == 0 || statement[tok.Loc-1] == '\n'
+			if atColumn0 {
+				latestSelectOffset = tok.Loc
+				line := 1
+				for j := 0; j < tok.Loc; j++ {
+					if statement[j] == '\n' {
+						line++
+					}
+				}
+				newCaretLine = caretLine - line + 1
+				newCaretOffset = caretOffset
+			}
+		}
+	}
+
+	if latestSelectOffset < 0 {
+		return statement, caretLine, caretOffset
+	}
+
+	return statement[latestSelectOffset:], newCaretLine, newCaretOffset
+}
+
+func unquote(s string) string {
+	if len(s) < 2 {
+		return s
+	}
+	if (s[0] == '`' || s[0] == '\'' || s[0] == '"') && s[0] == s[len(s)-1] {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
 func (c *Completer) listAllDatabases() []string {
 	var result []string
 	if c.defaultDatabase != "" {
 		result = append(result, c.defaultDatabase)
 	}
-
 	for databaseName := range c.metadataCache {
 		if databaseName != c.defaultDatabase {
 			result = append(result, databaseName)
 		}
 	}
-
 	return result
 }
 
@@ -1503,7 +1065,6 @@ func (c *Completer) listTables(database string) []string {
 		}
 		c.metadataCache[database] = metadata
 	}
-
 	return c.metadataCache[database].GetSchemaMetadata("").ListTableNames()
 }
 
@@ -1515,7 +1076,6 @@ func (c *Completer) listViews(database string) []string {
 		}
 		c.metadataCache[database] = metadata
 	}
-
 	return c.metadataCache[database].GetSchemaMetadata("").ListViewNames()
 }
 
@@ -1523,18 +1083,76 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if c.caretTokenIsQuoted {
 		return s
 	}
-	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
-		return fmt.Sprintf("`%s`", s)
-	}
-	for _, r := range s {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+	if mysqlparser.IsIdentTokenType(mysqlparser.Tokenize(strings.ToUpper(s))[0].Type) {
+		// It's an identifier or non-reserved keyword, check if it needs quoting.
+		for _, r := range s {
+			if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+				return fmt.Sprintf("`%s`", s)
+			}
+		}
+		if len(s) > 0 && unicode.IsDigit(rune(s[0])) {
 			return fmt.Sprintf("`%s`", s)
 		}
+		return s
 	}
+	// It's a reserved keyword, quote it.
+	return fmt.Sprintf("`%s`", s)
+}
 
-	if len(s) > 0 && unicode.IsDigit(rune(s[0])) {
-		return fmt.Sprintf("`%s`", s)
+// getMySQLBuiltinFunctions returns a list of MySQL builtin function names.
+func getMySQLBuiltinFunctions() []string {
+	return []string{
+		"ABS", "ACOS", "ADDDATE", "ADDTIME", "AES_DECRYPT", "AES_ENCRYPT",
+		"ASCII", "ASIN", "ATAN", "ATAN2", "AVG",
+		"BENCHMARK", "BIN", "BIT_AND", "BIT_COUNT", "BIT_LENGTH", "BIT_OR", "BIT_XOR",
+		"CAST", "CEIL", "CEILING", "CHAR", "CHAR_LENGTH", "CHARACTER_LENGTH",
+		"COALESCE", "COERCIBILITY", "COLLATION", "COMPRESS", "CONCAT", "CONCAT_WS",
+		"CONNECTION_ID", "CONV", "CONVERT", "CONVERT_TZ", "COS", "COT", "COUNT",
+		"CRC32", "CURDATE", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
+		"CURRENT_USER", "CURTIME",
+		"DATABASE", "DATE", "DATE_ADD", "DATE_FORMAT", "DATE_SUB", "DATEDIFF",
+		"DAY", "DAYNAME", "DAYOFMONTH", "DAYOFWEEK", "DAYOFYEAR", "DECODE",
+		"DEFAULT", "DEGREES", "DES_DECRYPT", "DES_ENCRYPT",
+		"ELT", "ENCODE", "ENCRYPT", "EXP", "EXPORT_SET", "EXTRACT",
+		"FIELD", "FIND_IN_SET", "FLOOR", "FORMAT", "FOUND_ROWS", "FROM_BASE64",
+		"FROM_DAYS", "FROM_UNIXTIME",
+		"GET_FORMAT", "GET_LOCK", "GREATEST", "GROUP_CONCAT",
+		"HEX", "HOUR",
+		"IF", "IFNULL", "IN", "INET_ATON", "INET_NTOA", "INET6_ATON", "INET6_NTOA",
+		"INSERT", "INSTR", "IS_FREE_LOCK", "IS_IPV4", "IS_IPV4_COMPAT",
+		"IS_IPV4_MAPPED", "IS_IPV6", "IS_USED_LOCK", "ISNULL",
+		"JSON_ARRAY", "JSON_ARRAYAGG", "JSON_CONTAINS", "JSON_CONTAINS_PATH",
+		"JSON_DEPTH", "JSON_EXTRACT", "JSON_INSERT", "JSON_KEYS", "JSON_LENGTH",
+		"JSON_MERGE", "JSON_MERGE_PATCH", "JSON_MERGE_PRESERVE", "JSON_OBJECT",
+		"JSON_OBJECTAGG", "JSON_OVERLAPS", "JSON_PRETTY", "JSON_QUOTE",
+		"JSON_REMOVE", "JSON_REPLACE", "JSON_SCHEMA_VALID", "JSON_SEARCH",
+		"JSON_SET", "JSON_STORAGE_FREE", "JSON_STORAGE_SIZE", "JSON_TABLE",
+		"JSON_TYPE", "JSON_UNQUOTE", "JSON_VALID", "JSON_VALUE",
+		"LAST_DAY", "LAST_INSERT_ID", "LCASE", "LEAST", "LEFT", "LENGTH",
+		"LN", "LOAD_FILE", "LOCALTIME", "LOCALTIMESTAMP", "LOCATE", "LOG",
+		"LOG10", "LOG2", "LOWER", "LPAD", "LTRIM",
+		"MAKE_SET", "MAKEDATE", "MAKETIME", "MAX", "MD5", "MICROSECOND",
+		"MID", "MIN", "MINUTE", "MOD", "MONTH", "MONTHNAME",
+		"NOW", "NULLIF",
+		"OCT", "OCTET_LENGTH", "ORD",
+		"PASSWORD", "PERIOD_ADD", "PERIOD_DIFF", "PI", "POW", "POWER",
+		"QUARTER",
+		"RADIANS", "RAND", "RANDOM_BYTES", "REGEXP_INSTR", "REGEXP_LIKE",
+		"REGEXP_REPLACE", "REGEXP_SUBSTR", "RELEASE_ALL_LOCKS", "RELEASE_LOCK",
+		"REPEAT", "REPLACE", "REVERSE", "RIGHT", "ROUND", "ROW_COUNT", "RPAD", "RTRIM",
+		"SCHEMA", "SEC_TO_TIME", "SECOND", "SESSION_USER", "SHA1", "SHA2",
+		"SIGN", "SIN", "SLEEP", "SOUNDEX", "SPACE", "SQRT",
+		"STD", "STDDEV", "STDDEV_POP", "STDDEV_SAMP",
+		"STR_TO_DATE", "STRCMP", "SUBDATE", "SUBSTR", "SUBSTRING",
+		"SUBSTRING_INDEX", "SUM", "SYSDATE", "SYSTEM_USER",
+		"TAN", "TIME", "TIME_FORMAT", "TIME_TO_SEC", "TIMEDIFF", "TIMESTAMP",
+		"TIMESTAMPADD", "TIMESTAMPDIFF", "TO_BASE64", "TO_DAYS", "TO_SECONDS",
+		"TRIM", "TRUNCATE",
+		"UCASE", "UNCOMPRESS", "UNCOMPRESSED_LENGTH", "UNHEX",
+		"UNIX_TIMESTAMP", "UPPER", "USER", "UTC_DATE", "UTC_TIME", "UTC_TIMESTAMP",
+		"UUID", "UUID_SHORT", "UUID_TO_BIN",
+		"VALUES", "VAR_POP", "VAR_SAMP", "VARIANCE", "VERSION",
+		"WEEK", "WEEKDAY", "WEEKOFYEAR", "WEIGHT_STRING",
+		"YEAR", "YEARWEEK",
 	}
-
-	return s
 }
