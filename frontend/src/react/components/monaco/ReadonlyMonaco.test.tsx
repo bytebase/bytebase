@@ -8,22 +8,17 @@ import { ReadonlyMonaco } from "./ReadonlyMonaco";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => {
-  const setModelLanguage = vi.fn();
   const createMonacoEditor = vi.fn();
+  const setMonacoModelLanguage = vi.fn();
   return {
-    setModelLanguage,
     createMonacoEditor,
+    setMonacoModelLanguage,
   };
 });
 
 vi.mock("@/components/MonacoEditor/editor", () => ({
   createMonacoEditor: mocks.createMonacoEditor,
-}));
-
-vi.mock("monaco-editor", () => ({
-  editor: {
-    setModelLanguage: mocks.setModelLanguage,
-  },
+  setMonacoModelLanguage: mocks.setMonacoModelLanguage,
 }));
 
 const createDeferred = <T,>() => {
@@ -95,7 +90,7 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
 
 beforeEach(() => {
   mocks.createMonacoEditor.mockReset();
-  mocks.setModelLanguage.mockReset();
+  mocks.setMonacoModelLanguage.mockReset();
 });
 
 describe("ReadonlyMonaco", () => {
@@ -125,7 +120,10 @@ describe("ReadonlyMonaco", () => {
     });
 
     expect(editor.setValue).toHaveBeenCalledWith("updated");
-    expect(mocks.setModelLanguage).toHaveBeenCalledWith(editor.model, "json");
+    expect(mocks.setMonacoModelLanguage).toHaveBeenCalledWith(
+      editor.model,
+      "json"
+    );
 
     unmount();
   });

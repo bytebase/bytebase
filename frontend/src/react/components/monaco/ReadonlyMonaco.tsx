@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { createMonacoEditor } from "@/components/MonacoEditor/editor";
+import {
+  createMonacoEditor,
+  setMonacoModelLanguage,
+} from "@/components/MonacoEditor/editor";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor/types";
 import { cn } from "@/react/lib/utils";
 import type { Language } from "@/types";
@@ -68,13 +71,12 @@ export function ReadonlyMonaco({
 
       const model = editor.getModel();
       if (model) {
-        const { editor: monacoEditor } = await import("monaco-editor");
+        await setMonacoModelLanguage(model, languageRef.current);
         if (disposed) {
           contentSizeSubscription?.dispose();
           editor.dispose();
           return;
         }
-        monacoEditor.setModelLanguage(model, languageRef.current);
       }
 
       if (disposed) {
@@ -107,8 +109,7 @@ export function ReadonlyMonaco({
     if (!model) return;
 
     (async () => {
-      const { editor: monacoEditor } = await import("monaco-editor");
-      monacoEditor.setModelLanguage(model, languageRef.current);
+      await setMonacoModelLanguage(model, languageRef.current);
     })();
   }, [language]);
 
