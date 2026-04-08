@@ -265,12 +265,16 @@ export function AdvancedSearch({
           setAsyncLoading(false);
         });
     }, 300);
-    return () => clearTimeout(asyncSearchRef.current);
+    return () => {
+      clearTimeout(asyncSearchRef.current);
+      if (asyncRequestRef.current === requestID) {
+        asyncRequestRef.current += 1;
+      }
+    };
   }, [isAsyncScope, currentScopeOption, currentValueForScope]);
 
   // Reset async state when scope changes
   useEffect(() => {
-    asyncRequestRef.current += 1;
     setAsyncOptions([]);
     setAsyncLoading(false);
   }, [currentScope]);
