@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  Info,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -1424,16 +1426,28 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               </div>
             </button>
 
-            {!isEngineSelectorCollapsed && (
-              <div className="border-t border-block-border px-4 py-4">
-                <InstanceEngineRadioGrid
-                  engine={basicInfo.engine}
-                  engineList={supportedEngineV1List()}
-                  onEngineChange={handleSelectInstanceEngine}
-                  isEngineBeta={isEngineBeta}
-                />
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-in-out",
+                !isEngineSelectorCollapsed && "border-t border-block-border"
+              )}
+              style={{
+                gridTemplateRows: !isEngineSelectorCollapsed ? "1fr" : "0fr",
+              }}
+              // @ts-expect-error -- inert is a valid HTML attribute but not yet in React's type definitions
+              inert={isEngineSelectorCollapsed ? "" : undefined}
+            >
+              <div className="overflow-hidden">
+                <div className="px-4 py-4">
+                  <InstanceEngineRadioGrid
+                    engine={basicInfo.engine}
+                    engineList={supportedEngineV1List()}
+                    onEngineChange={handleSelectInstanceEngine}
+                    isEngineBeta={isEngineBeta}
+                  />
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -1705,10 +1719,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         {isCreating && onOpenInfoPanel && hasHostInfo && (
                           <button
                             type="button"
-                            className="ml-1 text-accent text-xs hover:underline"
+                            className="ml-1 inline-flex items-center gap-x-0.5 text-accent text-xs"
                             onClick={() => openInfoPanel("host")}
                           >
-                            ⓘ
+                            <Info className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </>
@@ -1980,16 +1994,28 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 )}
               </div>
             </button>
-            {!isConnectionOptionsCollapsed && (
-              <div className="border-t border-block-border px-5 py-4">
-                <DataSourceForm
-                  dataSource={editingDataSource}
-                  optionsOnly
-                  onDataSourceChange={handleDataSourceChange}
-                  onOpenInfoPanel={onOpenInfoPanel}
-                />
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-in-out",
+                !isConnectionOptionsCollapsed && "border-t border-block-border"
+              )}
+              style={{
+                gridTemplateRows: !isConnectionOptionsCollapsed ? "1fr" : "0fr",
+              }}
+              // @ts-expect-error -- inert is a valid HTML attribute but not yet in React's type definitions
+              inert={isConnectionOptionsCollapsed ? "" : undefined}
+            >
+              <div className="overflow-hidden">
+                <div className="px-5 py-4">
+                  <DataSourceForm
+                    dataSource={editingDataSource}
+                    optionsOnly
+                    onDataSourceChange={handleDataSourceChange}
+                    onOpenInfoPanel={onOpenInfoPanel}
+                  />
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 

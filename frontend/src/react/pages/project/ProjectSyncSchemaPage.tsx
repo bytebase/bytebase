@@ -582,7 +582,7 @@ function SourceSchemaStep({
   return (
     <>
       <div className="mb-4">
-        <div className="flex gap-x-4">
+        <div className="flex items-center gap-x-6">
           <label className="flex items-center gap-x-2 cursor-pointer">
             <input
               type="radio"

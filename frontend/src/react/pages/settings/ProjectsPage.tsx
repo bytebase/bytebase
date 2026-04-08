@@ -22,6 +22,7 @@ import {
   ResourceIdField,
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
+import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
@@ -622,6 +623,15 @@ function ProjectActionDropdown({
 
   const handleArchive = useCallback(async () => {
     setOpen(false);
+    if (
+      !window.confirm(
+        t("project.settings.confirm-archive-project", {
+          name: project.title,
+        })
+      )
+    ) {
+      return;
+    }
     await projectStore.archiveProject(project);
     pushNotification({
       module: "bytebase",
@@ -1066,129 +1076,141 @@ export function ProjectsPage() {
       )}
 
       {/* Table */}
-      <div className="flex flex-col gap-y-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-control-border">
-              {canDelete && (
-                <th className="w-12 px-4 py-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="rounded-xs border-control-border"
-                  />
+      <div className="border rounded-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-control-border">
+                {canDelete && (
+                  <th className="w-12 px-4 py-2">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded-xs border-control-border"
+                    />
+                  </th>
+                )}
+                <th className="px-4 py-2 text-left font-medium min-w-[128px]">
+                  {t("common.id")}
                 </th>
-              )}
-              <th className="px-4 py-2 text-left font-medium min-w-[128px]">
-                {t("common.id")}
-              </th>
-              <th
-                className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                onClick={() => toggleSort("title")}
-              >
-                <div className="flex items-center gap-x-1">
-                  {t("project.table.name")}
-                  {renderSortIndicator("title")}
-                </div>
-              </th>
-              <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-                {t("common.labels")}
-              </th>
-              <th className="w-[50px]" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading && projects.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={canDelete ? 5 : 4}
-                  className="px-4 py-8 text-center text-control-placeholder"
+                <th
+                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
+                  onClick={() => toggleSort("title")}
                 >
-                  <div className="flex items-center justify-center gap-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                    {t("common.loading")}
+                  <div className="flex items-center gap-x-1">
+                    {t("project.table.name")}
+                    {renderSortIndicator("title")}
                   </div>
-                </td>
+                </th>
+                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
+                  {t("common.labels")}
+                </th>
+                <th className="w-[50px]" />
               </tr>
-            ) : projects.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={canDelete ? 5 : 4}
-                  className="px-4 py-8 text-center text-control-placeholder"
-                >
-                  {t("common.no-data")}
-                </td>
-              </tr>
-            ) : (
-              projects.map((project, i) => {
-                const resourceName = extractProjectResourceName(project.name);
-                const isDefault = resourceName === "default";
-                const isSelected = selectedNames.has(project.name);
-
-                return (
-                  <tr
-                    key={project.name}
-                    className={cn(
-                      "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
-                      i % 2 === 1 && "bg-gray-50/50"
-                    )}
-                    onClick={(e) => handleRowClick(project, e)}
+            </thead>
+            <tbody>
+              {loading && projects.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={canDelete ? 5 : 4}
+                    className="px-4 py-8 text-center text-control-placeholder"
                   >
-                    {canDelete && (
-                      <td className="w-12 px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={isDefault}
-                          onChange={() => toggleSelection(project.name)}
+                    <div className="flex items-center justify-center gap-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      {t("common.loading")}
+                    </div>
+                  </td>
+                </tr>
+              ) : projects.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={canDelete ? 5 : 4}
+                    className="px-4 py-8 text-center text-control-placeholder"
+                  >
+                    {t("common.no-data")}
+                  </td>
+                </tr>
+              ) : (
+                projects.map((project, i) => {
+                  const resourceName = extractProjectResourceName(project.name);
+                  const isDefault = resourceName === "default";
+                  const isSelected = selectedNames.has(project.name);
+
+                  return (
+                    <tr
+                      key={project.name}
+                      className={cn(
+                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
+                        i % 2 === 1 && "bg-gray-50/50"
+                      )}
+                      onClick={(e) => handleRowClick(project, e)}
+                    >
+                      {canDelete && (
+                        <td
+                          className="w-12 px-4 py-2"
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-xs border-control-border disabled:opacity-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isDefault}
+                            onChange={() => toggleSelection(project.name)}
+                            className="rounded-xs border-control-border disabled:opacity-50"
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-2">
+                        <HighlightText
+                          text={resourceName}
+                          keyword={searchText}
                         />
                       </td>
-                    )}
-                    <td className="px-4 py-2">
-                      <HighlightText text={resourceName} keyword={searchText} />
-                    </td>
-                    <td className="px-4 py-2">
-                      <HighlightText
-                        text={project.title}
-                        keyword={searchText}
-                      />
-                    </td>
-                    <td className="px-4 py-2 hidden md:table-cell">
-                      <LabelsDisplay labels={project.labels} />
-                    </td>
-                    <td className="px-4 py-2">
-                      <div
-                        className="flex justify-end"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ProjectActionDropdown
-                          project={project}
-                          onAction={handleProjectAction}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-
-        {/* Pagination footer */}
-        <div className="mx-4">
-          <PagedTableFooter
-            pageSize={pageSize}
-            pageSizeOptions={pageSizeOptions}
-            onPageSizeChange={setPageSize}
-            hasMore={hasMore}
-            isFetchingMore={isFetchingMore}
-            onLoadMore={loadMore}
-          />
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-x-2">
+                          <HighlightText
+                            text={project.title}
+                            keyword={searchText}
+                          />
+                          {project.state === State.DELETED && (
+                            <Badge variant="warning" className="text-xs">
+                              {t("common.archived")}
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 hidden md:table-cell">
+                        <LabelsDisplay labels={project.labels} />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div
+                          className="flex justify-end"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ProjectActionDropdown
+                            project={project}
+                            onAction={handleProjectAction}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Pagination footer */}
+      <PagedTableFooter
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        onPageSizeChange={setPageSize}
+        hasMore={hasMore}
+        isFetchingMore={isFetchingMore}
+        onLoadMore={loadMore}
+      />
 
       {/* Create drawer */}
       <CreateProjectDrawer

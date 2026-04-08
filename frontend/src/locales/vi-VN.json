@@ -2716,7 +2716,7 @@
       }
     },
     "delete": "Xóa chính sách đánh giá SQL",
-    "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+    "description": "Định nghĩa các quy tắc lint SQL để áp dụng các phương pháp tốt nhất và tính nhất quán của lược đồ. Các quy tắc chỉ áp dụng cho các thay đổi DDL/DML, không áp dụng cho truy vấn trong SQL Editor.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
     "enabled-rules": "Quy tắc được bật",
     "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",

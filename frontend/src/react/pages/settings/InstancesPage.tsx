@@ -23,6 +23,7 @@ import {
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -1185,172 +1186,174 @@ export function InstancesPage() {
       />
 
       {/* Table */}
-      <div className="flex flex-col gap-y-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-control-border">
-              <th className="w-12 px-4 py-2">
-                <input
-                  ref={headerCheckboxRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  className="rounded-xs border-control-border"
-                />
-              </th>
-              <th
-                className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                onClick={() => toggleSort("title")}
-              >
-                <div className="flex items-center gap-x-1">
-                  {t("common.name")}
-                  {renderSortIndicator("title")}
-                </div>
-              </th>
-              <th
-                className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                onClick={() => toggleSort("environment")}
-              >
-                <div className="flex items-center gap-x-2 text-sm text-main">
-                  {t("common.environment")}
-                  {renderSortIndicator("environment")}
-                </div>
-              </th>
-              <th className="px-4 py-2 text-left font-medium">
-                {t("common.address")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-                {t("common.labels")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium w-[100px]">
-                {t("subscription.instance-assignment.license")}
-              </th>
-              <th className="w-[50px]" />
-            </tr>
-          </thead>
-          <tbody>
-            {loading && instances.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-8 text-center text-control-placeholder"
+      <div className="border rounded-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-control-border">
+                <th className="w-12 px-4 py-2">
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="rounded-xs border-control-border"
+                  />
+                </th>
+                <th
+                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
+                  onClick={() => toggleSort("title")}
                 >
-                  <div className="flex items-center justify-center gap-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                    {t("common.loading")}
+                  <div className="flex items-center gap-x-1">
+                    {t("common.name")}
+                    {renderSortIndicator("title")}
                   </div>
-                </td>
-              </tr>
-            ) : instances.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-8 text-center text-control-placeholder"
+                </th>
+                <th
+                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
+                  onClick={() => toggleSort("environment")}
                 >
-                  {t("common.no-data")}
-                </td>
+                  <div className="flex items-center gap-x-2 text-sm text-main">
+                    {t("common.environment")}
+                    {renderSortIndicator("environment")}
+                  </div>
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  {t("common.address")}
+                </th>
+                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
+                  {t("common.labels")}
+                </th>
+                <th className="px-4 py-2 text-left font-medium w-[100px]">
+                  {t("subscription.instance-assignment.license")}
+                </th>
+                <th className="w-[50px]" />
               </tr>
-            ) : (
-              instances.map((instance, i) => {
-                const isSelected = selectedNames.has(instance.name);
-                const isExpanded = expandedDataSources.has(instance.name);
-                const hasMultipleDS = instance.dataSources.length > 1;
-
-                return (
-                  <tr
-                    key={instance.name}
-                    className={cn(
-                      "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
-                      i % 2 === 1 && "bg-gray-50/50"
-                    )}
-                    onClick={(e) => handleRowClick(instance, e)}
+            </thead>
+            <tbody>
+              {loading && instances.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-control-placeholder"
                   >
-                    <td className="w-12 px-4 py-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelection(instance.name)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-xs border-control-border"
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-x-2">
-                        <img
-                          className="h-5 w-5"
-                          src={EngineIconPath[instance.engine]}
-                          alt=""
-                        />
-                        <span className="truncate">{instance.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <EnvironmentName
-                        environmentName={instance.environment ?? ""}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex items-start gap-x-2">
-                        <span className="truncate">
-                          {isExpanded
-                            ? instance.dataSources.map((ds, idx) => (
-                                <div key={idx}>{hostPortOfDataSource(ds)}</div>
-                              ))
-                            : hostPortOfInstanceV1(instance)}
-                        </span>
-                        {hasMultipleDS && (
-                          <button
-                            className="p-0.5 hover:bg-control-bg rounded-xs shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleDataSource(instance.name);
-                            }}
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 hidden md:table-cell">
-                      <LabelsDisplay labels={instance.labels} />
-                    </td>
-                    <td className="px-4 py-2">
-                      {instance.activation ? "Y" : ""}
-                    </td>
-                    <td className="px-4 py-2">
-                      <div
-                        className="flex justify-end"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <InstanceActionDropdown
-                          instance={instance}
-                          onAction={handleRowAction}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      {t("common.loading")}
+                    </div>
+                  </td>
+                </tr>
+              ) : instances.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-control-placeholder"
+                  >
+                    {t("common.no-data")}
+                  </td>
+                </tr>
+              ) : (
+                instances.map((instance, i) => {
+                  const isSelected = selectedNames.has(instance.name);
+                  const isExpanded = expandedDataSources.has(instance.name);
+                  const hasMultipleDS = instance.dataSources.length > 1;
 
-        {/* Pagination footer */}
-        <div className="mx-4">
-          <PagedTableFooter
-            pageSize={pageSize}
-            pageSizeOptions={pageSizeOptions}
-            onPageSizeChange={setPageSize}
-            hasMore={hasMore}
-            isFetchingMore={isFetchingMore}
-            onLoadMore={loadMore}
-          />
+                  return (
+                    <tr
+                      key={instance.name}
+                      className={cn(
+                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
+                        i % 2 === 1 && "bg-gray-50/50"
+                      )}
+                      onClick={(e) => handleRowClick(instance, e)}
+                    >
+                      <td className="w-12 px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelection(instance.name)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-xs border-control-border"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-x-2 min-w-0">
+                          <img
+                            className="h-5 w-5 shrink-0"
+                            src={EngineIconPath[instance.engine]}
+                            alt=""
+                          />
+                          <EllipsisText text={instance.title} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <EnvironmentName
+                          environmentName={instance.environment ?? ""}
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex items-start gap-x-2">
+                          <span className="truncate">
+                            {isExpanded
+                              ? instance.dataSources.map((ds, idx) => (
+                                  <div key={idx}>
+                                    {hostPortOfDataSource(ds)}
+                                  </div>
+                                ))
+                              : hostPortOfInstanceV1(instance)}
+                          </span>
+                          {hasMultipleDS && (
+                            <button
+                              className="p-0.5 hover:bg-control-bg rounded-xs shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDataSource(instance.name);
+                              }}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 hidden md:table-cell">
+                        <LabelsDisplay labels={instance.labels} />
+                      </td>
+                      <td className="px-4 py-2">
+                        {instance.activation ? "Y" : ""}
+                      </td>
+                      <td className="px-4 py-2">
+                        <div
+                          className="flex justify-end"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <InstanceActionDropdown
+                            instance={instance}
+                            onAction={handleRowAction}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Pagination footer */}
+      <PagedTableFooter
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        onPageSizeChange={setPageSize}
+        hasMore={hasMore}
+        isFetchingMore={isFetchingMore}
+        onLoadMore={loadMore}
+      />
     </div>
   );
 }

@@ -283,7 +283,7 @@
               <!-- Selectable files section -->
               <div
                 v-if="selectableFiles.length > 0"
-                class="flex flex-col gap-y-2"
+                class="flex flex-col gap-y-4"
               >
                 <div>
                   <h4 class="font-medium text-control">
@@ -308,7 +308,7 @@
               <!-- Files with existing versions section -->
               <div
                 v-if="filesWithExistingVersions.length > 0"
-                class="flex flex-col gap-y-2 mt-6"
+                class="flex flex-col gap-y-4 mt-6"
               >
                 <div>
                   <h4 class="text font-medium text-control">

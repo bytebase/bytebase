@@ -70,6 +70,7 @@ import {
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   displayRoleTitle,
   formatAbsoluteDateTime,
@@ -107,6 +108,7 @@ function MemberTable({
   scope: "workspace" | "project";
 }) {
   const { t } = useTranslation();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const selectableBindings = useMemo(
     () =>
@@ -201,6 +203,26 @@ function MemberTable({
                       <span className="font-medium text-accent">
                         {mb.title}
                       </span>
+                      {mb.type === "users" &&
+                        mb.user?.name === currentUser.name && (
+                          <Badge className="text-xs">{t("common.you")}</Badge>
+                        )}
+                      {mb.type === "users" &&
+                        mb.user?.email &&
+                        getAccountTypeByEmail(mb.user.email) ===
+                          AccountType.SERVICE_ACCOUNT && (
+                          <Badge variant="secondary" className="text-xs">
+                            {t("settings.members.service-account")}
+                          </Badge>
+                        )}
+                      {mb.type === "users" &&
+                        mb.user?.email &&
+                        getAccountTypeByEmail(mb.user.email) ===
+                          AccountType.WORKLOAD_IDENTITY && (
+                          <Badge variant="secondary" className="text-xs">
+                            {t("settings.members.workload-identity")}
+                          </Badge>
+                        )}
                       {mb.group && (
                         <span className="text-control-light text-xs">
                           ({mb.group.members.length}{" "}
@@ -308,6 +330,7 @@ function MemberTableByRole({
   scope: "workspace" | "project";
 }) {
   const { t } = useTranslation();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
@@ -403,20 +426,53 @@ function MemberTableByRole({
                             </div>
                           )}
                           <div className="flex flex-col">
-                            <span className="font-medium text-accent">
-                              {mb.title}
-                            </span>
+                            <div className="flex items-center gap-x-1.5">
+                              <span className="font-medium text-accent">
+                                {mb.title}
+                              </span>
+                              {mb.type === "users" &&
+                                mb.user?.name === currentUser.name && (
+                                  <Badge className="text-xs">
+                                    {t("common.you")}
+                                  </Badge>
+                                )}
+                              {mb.type === "users" &&
+                                mb.user?.email &&
+                                getAccountTypeByEmail(mb.user.email) ===
+                                  AccountType.SERVICE_ACCOUNT && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {t("settings.members.service-account")}
+                                  </Badge>
+                                )}
+                              {mb.type === "users" &&
+                                mb.user?.email &&
+                                getAccountTypeByEmail(mb.user.email) ===
+                                  AccountType.WORKLOAD_IDENTITY && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {t("settings.members.workload-identity")}
+                                  </Badge>
+                                )}
+                              {mb.group?.deleted && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  {t("common.deleted")}
+                                </Badge>
+                              )}
+                            </div>
                             <span className="text-control-light text-xs">
                               {mb.type === "users"
                                 ? mb.user?.email
                                 : mb.binding.replace("group:", "groups/")}
                             </span>
                           </div>
-                          {mb.group?.deleted && (
-                            <Badge variant="destructive" className="text-xs">
-                              {t("common.deleted")}
-                            </Badge>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-2" />

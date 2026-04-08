@@ -2716,7 +2716,7 @@
       }
     },
     "delete": "删除审核策略",
-    "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
+    "description": "定义 SQL lint 规则以实施最佳实践和 schema 一致性。规则仅适用于 DDL/DML 变更，不适用于 SQL 编辑器中的查询。",
     "disabled": "SQL 审核策略已禁用",
     "enabled-rules": "开启的规则数",
     "input-then-press-enter": "输入后按下回车来添加",

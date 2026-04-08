@@ -1073,6 +1073,9 @@ function DatabaseSelector({
                   {t("common.database")}
                 </th>
                 <th className="py-2 pr-4 font-medium">
+                  {t("common.instance")}
+                </th>
+                <th className="py-2 pr-4 font-medium">
                   {t("common.environment")}
                 </th>
               </tr>
@@ -1112,6 +1115,7 @@ function DatabaseSelector({
                         <span>{databaseName}</span>
                       </div>
                     </td>
+                    <td className="py-2 pr-4">{inst?.title}</td>
                     <td className="py-2 pr-4">
                       {env && <EnvironmentLabel environmentName={env.name} />}
                     </td>
