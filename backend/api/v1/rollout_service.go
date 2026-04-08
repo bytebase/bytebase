@@ -440,7 +440,7 @@ func CreateRolloutAndPendingTasks(
 		policy, ok := envPolicies[task.Environment]
 		if !ok {
 			var err error
-			policy, err = s.GetRolloutPolicy(ctx, common.GetWorkspaceIDFromContext(ctx), task.Environment)
+			policy, err = s.GetRolloutPolicy(ctx, project.Workspace, task.Environment)
 			if err != nil {
 				// Don't error out entirely just because policy fetch failed for one env, but logging/continuing is better.
 				// However, here we don't have logger injected easily.
