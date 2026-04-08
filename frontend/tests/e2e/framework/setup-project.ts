@@ -37,10 +37,13 @@ setup("authenticate and discover", async ({ page }) => {
   // Browser auth: navigate and save state
   if (env.adminEmail && env.adminPassword) {
     await page.goto(`${env.baseURL}/auth/signin`);
-    await page.getByRole("textbox", { name: /email/i }).fill(env.adminEmail);
-    await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page).not.toHaveURL(/\/auth/);
+    // If already authenticated, the server redirects away from /auth
+    if (page.url().includes("/auth")) {
+      await page.getByRole("textbox", { name: /email/i }).fill(env.adminEmail);
+      await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expect(page).not.toHaveURL(/\/auth/);
+    }
   }
 
   // Dismiss modals
