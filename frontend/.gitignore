@@ -30,3 +30,12 @@ type-check.log*
 *.njsproj
 *.sln
 *.sw?
+
+# E2E test artifacts
+.e2e-env.json
+.e2e-snapshot.json
+.auth/
+test-results/
+playwright-report/
+.playwright-cli/
+.playwright-mcp/
