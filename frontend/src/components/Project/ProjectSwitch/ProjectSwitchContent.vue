@@ -174,12 +174,12 @@ const onProjectSelect = (selected: Project) => {
   });
   record(route.fullPath);
   if (selected.name === project.value.name) {
-    // Same project — just close the popover.
+    // Same project — ProjectV1Table already navigated but the route didn't
+    // change, so the watcher won't fire. Close the popover explicitly.
     emit("close");
-  } else {
-    // Different project — navigate (watcher closes the popover).
-    router.push(route.fullPath);
   }
+  // For different projects, ProjectV1Table handles router.push() before
+  // emitting row-click, and the watcher on project.name closes the popover.
 };
 
 const gotoWorkspace = (e: MouseEvent) => {
