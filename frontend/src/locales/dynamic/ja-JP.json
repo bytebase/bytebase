@@ -1,42 +1,51 @@
 {
   "activity": {
     "sentence": {
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "{name} が変更されました。 {link}",
-      "modified-sql-of-spec-link": "{spec} の SQL が変更されました。{link}"
+      "modified-sql-of-spec-link": "{spec} の SQL が変更されました。{link}",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}"
     }
   },
+  "resource": {
+    "database-group": "データベースのグループ化",
+    "environment": "環境",
+    "idp": "アイデンティティプロバイダー",
+    "instance": "例",
+    "project": "プロジェクト",
+    "review-config": "設定を確認する",
+    "role": "ロール"
+  },
   "settings": {
-    "sensitive-data": {
-      "semantic-types": {
-        "template": {
-          "bb-default": {
-            "title": "デフォルト",
-            "description": "完全なマスク付きのデフォルトタイプ",
-            "algorithm": {
-              "title": "フルマスク",
-              "description": "すべての値は「******」としてマスクされます"
-            }
-          },
-          "bb-default-partial": {
-            "title": "デフォルト 部分的",
-            "description": "部分マスク付きのデフォルトの部分タイプ",
-            "algorithm": {
-              "title": "範囲マスク",
-              "description": "中央の生データのみを保持し、先頭と末尾を「**」で覆います。\nたとえば、「address」は「**dre**」としてマスクされます。"
-            }
-          }
-        }
-      }
-    },
     "general": {
       "workspace": {
         "announcement-alert-level": {
           "field": {
+            "critical": "重要",
             "info": "情報",
-            "warning": "警告",
-            "critical": "重要"
+            "warning": "警告"
+          }
+        }
+      }
+    },
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "algorithm": {
+              "description": "すべての値は「******」としてマスクされます",
+              "title": "フルマスク"
+            },
+            "description": "完全なマスク付きのデフォルトタイプ",
+            "title": "デフォルト"
+          },
+          "bb-default-partial": {
+            "algorithm": {
+              "description": "中央の生データのみを保持し、先頭と末尾を「**」で覆います。\nたとえば、「address」は「**dre**」としてマスクされます。",
+              "title": "範囲マスク"
+            },
+            "description": "部分マスク付きのデフォルトの部分タイプ",
+            "title": "デフォルト 部分的"
           }
         }
       }
@@ -44,336 +53,327 @@
   },
   "subscription": {
     "features": {
-      "FEATURE_DATABASE_CHANGE": {
-        "title": "データベース変更",
-        "desc": "コアデータベース変更管理機能。"
-      },
-      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
-        "title": "Gitベースのスキーマバージョン管理",
-        "desc": "自動チェック付きでVCSプルリクエストでSQLの変更をレビューします。"
-      },
-      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
-        "title": "宣言的スキーマ移行",
-        "desc": "望ましいスキーマ状態を定義し、Bytebaseに移行を処理させます。"
-      },
-      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
-        "title": "スキーマの比較と同期",
-        "desc": "データベース間でスキーマを比較し、差分を同期します。"
-      },
-      "FEATURE_ONLINE_SCHEMA_CHANGE": {
-        "title": "オンラインスキーマ変更",
-        "desc": "最小限のロックで大規模なテーブルに対してスキーマ変更を実行します。"
-      },
-      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
-        "title": "SQLレビュー",
-        "desc": "100以上のlintルールとスキーマ一貫性チェックでSQLベストプラクティスを適用します。"
-      },
-      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
-        "title": "自動バックアップ",
-        "desc": "変更を加える前にデータを自動的にバックアップします。"
-      },
-      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
-        "title": "ワンクリックデータロールバック",
-        "desc": "ワンクリックでデータ変更を素早くロールバックします。"
-      },
-      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
-        "title": "複数データベースバッチ変更",
-        "desc": "異なるテナントやパーティション間で複数のデータベースに同じ変更を適用します。"
-      },
-      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
-        "title": "段階的環境デプロイメント",
-        "desc": "異なる環境を通じて段階的に変更をデプロイします。"
-      },
-      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
-        "title": "スケジュールされたロールアウト時間",
-        "desc": "特定の時間に実行するようにデータベース変更をスケジュールします。"
-      },
-      "FEATURE_DATABASE_CHANGELOG": {
-        "title": "データベース変更ログ",
-        "desc": "すべてのデータベーススキーマとデータの変更を追跡します。"
-      },
-      "FEATURE_ROLLOUT_POLICY": {
-        "title": "ロールアウトポリシー",
-        "desc": "スキーマ変更タスクが手動ロールアウトを必要とするかどうかを制御します。"
-      },
-      "FEATURE_WEB_BASED_SQL_EDITOR": {
-        "title": "WebベースのSQLエディター",
-        "desc": "Webインターフェースから直接SQLクエリを実行します。"
-      },
-      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
-        "title": "SQLエディター管理者モード",
-        "desc": "SQLエディターで管理機能にアクセスします。"
-      },
-      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
-        "title": "自然言語からSQL",
-        "desc": "AIを使用して自然言語クエリをSQLに変換します。"
-      },
       "FEATURE_AI_QUERY_EXPLANATION": {
-        "title": "AIクエリ説明",
-        "desc": "複雑なSQLクエリに対するAI駆動の説明を取得します。"
+        "desc": "複雑なSQLクエリに対するAI駆動の説明を取得します。",
+        "title": "AIクエリ説明"
       },
       "FEATURE_AI_QUERY_SUGGESTIONS": {
-        "title": "AIクエリ提案",
-        "desc": "AI駆動のクエリ提案とインデックス推奨を取得します。"
-      },
-      "FEATURE_AUTO_COMPLETE": {
-        "title": "オートコンプリート",
-        "desc": "エディターでのインテリジェントSQLオートコンプリート。"
-      },
-      "FEATURE_SCHEMA_DIAGRAM": {
-        "title": "スキーマダイアグラム",
-        "desc": "インタラクティブなダイアグラムでデータベーススキーマを視覚化します。"
-      },
-      "FEATURE_SCHEMA_EDITOR": {
-        "title": "スキーマエディター",
-        "desc": "ドラッグアンドドロップインターフェースでビジュアルスキーマ編集。"
-      },
-      "FEATURE_DATA_EXPORT": {
-        "title": "データエクスポート",
-        "desc": "さまざまな形式でクエリ結果をエクスポートします。"
-      },
-      "FEATURE_DATA_OFFLINE_EXPORT": {
-        "title": "データオフラインエクスポート",
-        "desc": "オフラインでの使用と分析のためにデータをエクスポートします。"
-      },
-      "FEATURE_QUERY_HISTORY": {
-        "title": "クエリ履歴",
-        "desc": "検索機能を備えた完全なクエリ実行履歴にアクセスします。"
-      },
-      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
-        "title": "保存および共有されたSQLスクリプト",
-        "desc": "チームメンバーとSQLスクリプトを保存して共有します。"
-      },
-      "FEATURE_BATCH_QUERY": {
-        "title": "バッチクエリ",
-        "desc": "複数のデータベースで同時にクエリを実行します。"
-      },
-      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
-        "title": "読み取り専用接続",
-        "desc": "読み取り専用操作のために読み取りレプリカに接続します。"
-      },
-      "FEATURE_QUERY_POLICY": {
-        "title": "クエリポリシー",
-        "desc": "高度なクエリ制限と権限を設定します。"
-      },
-      "FEATURE_RESTRICT_COPYING_DATA": {
-        "title": "データコピーの制限",
-        "desc": "クエリ結果からデータをコピーするユーザーアクセスを制御します。"
-      },
-      "FEATURE_IAM": {
-        "title": "アイデンティティとアクセス管理",
-        "desc": "きめ細かなロールベースのアクセス制御システム。"
-      },
-      "FEATURE_INSTANCE_SSL_CONNECTION": {
-        "title": "SSL接続",
-        "desc": "SSL/TLS暗号化による安全なデータベース接続。"
-      },
-      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
-        "title": "SSHトンネル接続",
-        "desc": "セキュリティ強化のためSSHトンネルを介してインスタンスに接続します。"
-      },
-      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
-        "title": "IAM認証",
-        "desc": "データベース認証にクラウドプロバイダーのIAMを使用します。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "カスタムインスタンス同期時間",
-        "desc": "データベース同期間隔と設定をカスタマイズします。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "カスタムインスタンス接続制限",
-        "desc": "最大データベース接続制限を設定します。"
-      },
-      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
-        "title": "GoogleとGitHub SSO",
-        "desc": "GoogleまたはGitHubアカウントでサインインします。"
-      },
-      "FEATURE_USER_GROUPS": {
-        "title": "ユーザーグループ",
-        "desc": "管理を容易にするためにユーザーをグループに編成します。"
-      },
-      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
-        "title": "セルフサービスサインアップを無効化",
-        "desc": "新しいユーザー登録に管理者の招待を必要とします。"
-      },
-      "FEATURE_RISK_ASSESSMENT": {
-        "title": "リスク評価",
-        "desc": "データベース変更のリスクレベルを評価し分類します。"
-      },
-      "FEATURE_APPROVAL_WORKFLOW": {
-        "title": "承認ワークフロー",
-        "desc": "異なるタスクのリスクレベルと承認フローを設定します。"
-      },
-      "FEATURE_AUDIT_LOG": {
-        "title": "監査ログ",
-        "desc": "ワークスペースでユーザーが実行したすべての操作を追跡します。"
-      },
-      "FEATURE_ENTERPRISE_SSO": {
-        "title": "エンタープライズSSO",
-        "desc": "SAML、OIDC、OAuthプロバイダーでのシングルサインオン。"
-      },
-      "FEATURE_TWO_FA": {
-        "title": "二要素認証",
-        "desc": "認証アプリ検証で追加のセキュリティレイヤーを追加します。"
-      },
-      "FEATURE_PASSWORD_RESTRICTIONS": {
-        "title": "パスワード制限",
-        "desc": "パスワードの複雑さとセキュリティ要件を適用します。"
-      },
-      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
-        "title": "パスワードサインインを無効化",
-        "desc": "ユーザーサインインにSSO認証のみを要求します。"
-      },
-      "FEATURE_CUSTOM_ROLES": {
-        "title": "カスタムロール",
-        "desc": "組織に特定の権限を持つカスタムロールを定義します。"
-      },
-      "FEATURE_REQUEST_ROLE_WORKFLOW": {
-        "title": "ロールリクエストワークフロー",
-        "desc": "ユーザーは承認ワークフローでプロジェクトロールをリクエストできます。"
-      },
-      "FEATURE_DATA_MASKING": {
-        "title": "データマスキング",
-        "desc": "テーブル列を機密データとしてマークし、クエリ結果をマスクします。"
-      },
-      "FEATURE_DATA_CLASSIFICATION": {
-        "title": "データ分類",
-        "desc": "機密性レベルに基づいてデータを分類およびラベル付けします。"
-      },
-      "FEATURE_SCIM": {
-        "title": "SCIM",
-        "desc": "クロスドメインアイデンティティ管理のためのシステムサポート。"
-      },
-      "FEATURE_DIRECTORY_SYNC": {
-        "title": "ディレクトリ同期",
-        "desc": "Entra IDからBytebaseにユーザーとグループを同期します。"
-      },
-      "FEATURE_TOKEN_DURATION_CONTROL": {
-        "title": "トークン期間制御",
-        "desc": "アクセストークンとリフレッシュトークンの有効期間を設定します。"
-      },
-      "FEATURE_EXTERNAL_SECRET_MANAGER": {
-        "title": "外部シークレットマネージャー",
-        "desc": "データベースパスワードの外部シークレットとしてVaultまたはカスタムURLを使用します。"
-      },
-      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
-        "title": "メールドメイン制限",
-        "desc": "指定されたメールドメインのユーザーのみにサインインを制限します。"
-      },
-      "FEATURE_PROJECT_MANAGEMENT": {
-        "title": "プロジェクト管理",
-        "desc": "高度な機能でプロジェクトを管理および整理します。"
-      },
-      "FEATURE_ENVIRONMENT_MANAGEMENT": {
-        "title": "環境管理",
-        "desc": "異なるデプロイメント環境を管理および設定します。"
-      },
-      "FEATURE_IM_NOTIFICATIONS": {
-        "title": "IM通知",
-        "desc": "SlackやTeamsなどのIMプラットフォームに通知を送信します。"
-      },
-      "FEATURE_TERRAFORM_PROVIDER": {
-        "title": "Terraformプロバイダー",
-        "desc": "Terraformを使用してBytebaseリソースを管理します。"
-      },
-      "FEATURE_DATABASE_GROUPS": {
-        "title": "データベースグループ",
-        "desc": "バッチ操作と管理のためにデータベースをグループ化します。"
-      },
-      "FEATURE_ENVIRONMENT_TIERS": {
-        "title": "環境ティア",
-        "desc": "本番環境や開発環境などの環境ティアを定義します。"
-      },
-      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
-        "title": "ダッシュボードアナウンスメント",
-        "desc": "ダッシュボードにカスタムアナウンスメントを表示します。"
+        "desc": "AI駆動のクエリ提案とインデックス推奨を取得します。",
+        "title": "AIクエリ提案"
       },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
-        "title": "API統合ガイダンス",
-        "desc": "API統合のドキュメントとガイダンス。"
+        "desc": "API統合のドキュメントとガイダンス。",
+        "title": "API統合ガイダンス"
       },
-      "FEATURE_CUSTOM_LOGO": {
-        "title": "カスタムロゴ",
-        "desc": "組織のロゴをカスタマイズします。"
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "desc": "異なるタスクのリスクレベルと承認フローを設定します。",
+        "title": "承認ワークフロー"
       },
-      "FEATURE_WATERMARK": {
-        "title": "ウォーターマーク",
-        "desc": "ページにユーザー情報を含む可視ウォーターマークを表示します。"
+      "FEATURE_AUDIT_LOG": {
+        "desc": "ワークスペースでユーザーが実行したすべての操作を追跡します。",
+        "title": "監査ログ"
       },
-      "FEATURE_ROADMAP_PRIORITIZATION": {
-        "title": "ロードマップの優先順位付け",
-        "desc": "機能開発の優先順位に影響を与えます。"
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "desc": "変更を加える前にデータを自動的にバックアップします。",
+        "title": "自動バックアップ"
       },
-      "FEATURE_CUSTOM_MSA": {
-        "title": "カスタムMSA",
-        "desc": "カスタムマスターサービス契約条項。"
+      "FEATURE_AUTO_COMPLETE": {
+        "desc": "エディターでのインテリジェントSQLオートコンプリート。",
+        "title": "オートコンプリート"
+      },
+      "FEATURE_BATCH_QUERY": {
+        "desc": "複数のデータベースで同時にクエリを実行します。",
+        "title": "バッチクエリ"
       },
       "FEATURE_COMMUNITY_SUPPORT": {
-        "title": "コミュニティサポート",
-        "desc": "Bytebaseコミュニティからヘルプを取得します。"
+        "desc": "Bytebaseコミュニティからヘルプを取得します。",
+        "title": "コミュニティサポート"
       },
-      "FEATURE_EMAIL_SUPPORT": {
-        "title": "メールサポート",
-        "desc": "Bytebaseチームからの直接メールサポート。"
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "desc": "データベース間でスキーマを比較し、差分を同期します。",
+        "title": "スキーマの比較と同期"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "desc": "最大データベース接続制限を設定します。",
+        "title": "カスタムインスタンス接続制限"
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "desc": "データベース同期間隔と設定をカスタマイズします。",
+        "title": "カスタムインスタンス同期時間"
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "desc": "組織のロゴをカスタマイズします。",
+        "title": "カスタムロゴ"
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "desc": "カスタムマスターサービス契約条項。",
+        "title": "カスタムMSA"
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "desc": "組織に特定の権限を持つカスタムロールを定義します。",
+        "title": "カスタムロール"
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "desc": "ダッシュボードにカスタムアナウンスメントを表示します。",
+        "title": "ダッシュボードアナウンスメント"
+      },
+      "FEATURE_DATABASE_CHANGE": {
+        "desc": "コアデータベース変更管理機能。",
+        "title": "データベース変更"
+      },
+      "FEATURE_DATABASE_CHANGELOG": {
+        "desc": "すべてのデータベーススキーマとデータの変更を追跡します。",
+        "title": "データベース変更ログ"
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "desc": "バッチ操作と管理のためにデータベースをグループ化します。",
+        "title": "データベースグループ"
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "desc": "機密性レベルに基づいてデータを分類およびラベル付けします。",
+        "title": "データ分類"
+      },
+      "FEATURE_DATA_EXPORT": {
+        "desc": "さまざまな形式でクエリ結果をエクスポートします。",
+        "title": "データエクスポート"
+      },
+      "FEATURE_DATA_MASKING": {
+        "desc": "テーブル列を機密データとしてマークし、クエリ結果をマスクします。",
+        "title": "データマスキング"
+      },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "desc": "オフラインでの使用と分析のためにデータをエクスポートします。",
+        "title": "データオフラインエクスポート"
+      },
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "desc": "望ましいスキーマ状態を定義し、Bytebaseに移行を処理させます。",
+        "title": "宣言的スキーマ移行"
       },
       "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
-        "title": "SLA付き専用サポート",
-        "desc": "保証された応答時間での優先サポート。"
+        "desc": "保証された応答時間での優先サポート。",
+        "title": "SLA付き専用サポート"
+      },
+      "FEATURE_DIRECTORY_SYNC": {
+        "desc": "Entra IDからBytebaseにユーザーとグループを同期します。",
+        "title": "ディレクトリ同期"
+      },
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "desc": "ユーザーサインインにSSO認証のみを要求します。",
+        "title": "パスワードサインインを無効化"
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "desc": "新しいユーザー登録に管理者の招待を必要とします。",
+        "title": "セルフサービスサインアップを無効化"
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "desc": "Bytebaseチームからの直接メールサポート。",
+        "title": "メールサポート"
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "desc": "SAML、OIDC、OAuthプロバイダーでのシングルサインオン。",
+        "title": "エンタープライズSSO"
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "desc": "異なるデプロイメント環境を管理および設定します。",
+        "title": "環境管理"
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "desc": "本番環境や開発環境などの環境ティアを定義します。",
+        "title": "環境ティア"
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "desc": "データベースパスワードの外部シークレットとしてVaultまたはカスタムURLを使用します。",
+        "title": "外部シークレットマネージャー"
+      },
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "desc": "自動チェック付きでVCSプルリクエストでSQLの変更をレビューします。",
+        "title": "Gitベースのスキーマバージョン管理"
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "desc": "GoogleまたはGitHubアカウントでサインインします。",
+        "title": "GoogleとGitHub SSO"
+      },
+      "FEATURE_IAM": {
+        "desc": "きめ細かなロールベースのアクセス制御システム。",
+        "title": "アイデンティティとアクセス管理"
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "desc": "SlackやTeamsなどのIMプラットフォームに通知を送信します。",
+        "title": "IM通知"
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "desc": "データベース認証にクラウドプロバイダーのIAMを使用します。",
+        "title": "IAM認証"
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "desc": "セキュリティ強化のためSSHトンネルを介してインスタンスに接続します。",
+        "title": "SSHトンネル接続"
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "desc": "読み取り専用操作のために読み取りレプリカに接続します。",
+        "title": "読み取り専用接続"
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "desc": "SSL/TLS暗号化による安全なデータベース接続。",
+        "title": "SSL接続"
+      },
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "desc": "異なるテナントやパーティション間で複数のデータベースに同じ変更を適用します。",
+        "title": "複数データベースバッチ変更"
+      },
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "desc": "AIを使用して自然言語クエリをSQLに変換します。",
+        "title": "自然言語からSQL"
+      },
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "desc": "ワンクリックでデータ変更を素早くロールバックします。",
+        "title": "ワンクリックデータロールバック"
+      },
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "desc": "最小限のロックで大規模なテーブルに対してスキーマ変更を実行します。",
+        "title": "オンラインスキーマ変更"
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
+        "desc": "パスワードの複雑さとセキュリティ要件を適用します。",
+        "title": "パスワード制限"
+      },
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "desc": "100以上のlintルールとスキーマ一貫性チェックでSQLベストプラクティスを適用します。",
+        "title": "SQLレビュー"
+      },
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "desc": "異なる環境を通じて段階的に変更をデプロイします。",
+        "title": "段階的環境デプロイメント"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "desc": "高度な機能でプロジェクトを管理および整理します。",
+        "title": "プロジェクト管理"
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "desc": "検索機能を備えた完全なクエリ実行履歴にアクセスします。",
+        "title": "クエリ履歴"
+      },
+      "FEATURE_QUERY_POLICY": {
+        "desc": "高度なクエリ制限と権限を設定します。",
+        "title": "クエリポリシー"
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "desc": "ユーザーは承認ワークフローでプロジェクトロールをリクエストできます。",
+        "title": "ロールリクエストワークフロー"
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "desc": "クエリ結果からデータをコピーするユーザーアクセスを制御します。",
+        "title": "データコピーの制限"
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "desc": "データベース変更のリスクレベルを評価し分類します。",
+        "title": "リスク評価"
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "desc": "機能開発の優先順位に影響を与えます。",
+        "title": "ロードマップの優先順位付け"
+      },
+      "FEATURE_ROLLOUT_POLICY": {
+        "desc": "スキーマ変更タスクが手動ロールアウトを必要とするかどうかを制御します。",
+        "title": "ロールアウトポリシー"
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "desc": "チームメンバーとSQLスクリプトを保存して共有します。",
+        "title": "保存および共有されたSQLスクリプト"
+      },
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "desc": "特定の時間に実行するようにデータベース変更をスケジュールします。",
+        "title": "スケジュールされたロールアウト時間"
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "desc": "インタラクティブなダイアグラムでデータベーススキーマを視覚化します。",
+        "title": "スキーマダイアグラム"
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "desc": "ドラッグアンドドロップインターフェースでビジュアルスキーマ編集。",
+        "title": "スキーマエディター"
+      },
+      "FEATURE_SCIM": {
+        "desc": "クロスドメインアイデンティティ管理のためのシステムサポート。",
+        "title": "SCIM"
+      },
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "desc": "SQLエディターで管理機能にアクセスします。",
+        "title": "SQLエディター管理者モード"
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "desc": "Terraformを使用してBytebaseリソースを管理します。",
+        "title": "Terraformプロバイダー"
+      },
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "desc": "アクセストークンとリフレッシュトークンの有効期間を設定します。",
+        "title": "トークン期間制御"
+      },
+      "FEATURE_TWO_FA": {
+        "desc": "認証アプリ検証で追加のセキュリティレイヤーを追加します。",
+        "title": "二要素認証"
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "desc": "指定されたメールドメインのユーザーのみにサインインを制限します。",
+        "title": "メールドメイン制限"
+      },
+      "FEATURE_USER_GROUPS": {
+        "desc": "管理を容易にするためにユーザーをグループに編成します。",
+        "title": "ユーザーグループ"
+      },
+      "FEATURE_WATERMARK": {
+        "desc": "ページにユーザー情報を含む可視ウォーターマークを表示します。",
+        "title": "ウォーターマーク"
+      },
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "desc": "Webインターフェースから直接SQLクエリを実行します。",
+        "title": "WebベースのSQLエディター"
       }
     },
     "purchase": {
-      "free-description": "個人開発者、サイドプロジェクト、実験向け。",
-      "pro-description": "本番対応アプリケーションを構築するチーム向け。",
       "enterprise-description": "コンプライアンスを維持しながら安全にビジネスを拡大。",
       "features": {
-        "free": {
-          "limits": "最大20ユーザー、10インスタンス",
-          "dcm": "完全なデータベース変更管理",
-          "git": "Gitベースのバージョン管理とスキーマ移行",
-          "sql-review": "200以上のルールによるSQLレビュー",
-          "backup": "自動バックアップとワンクリックロールバック",
-          "sql-editor": "AI支援付きWebベースSQLエディタ",
-          "schema": "スキーマ図とデータエクスポート",
-          "iam": "基本的なIAMとセキュリティ機能",
-          "support": "コミュニティサポート"
-        },
-        "pro": {
-          "limits": "無制限ユーザー（$20/ユーザー/月）、10インスタンス",
-          "everything": "無料版のすべてに加えて：",
-          "batch-query": "バッチクエリ機能",
-          "read-only": "インスタンス読み取り専用接続",
-          "query-policy": "ガバナンスのためのクエリポリシー",
-          "sso": "Google & GitHub SSO",
-          "groups": "ユーザーグループ管理",
-          "db-groups": "データベースグループ",
-          "audit-log": "限定的な監査ログ",
-          "support": "メールサポート"
-        },
         "enterprise": {
-          "limits": "ニーズに基づくカスタム制限",
-          "everything": "プロ版のすべてに加えて：",
-          "custom-limits": "カスタムユーザーとインスタンス制限",
+          "2fa": "二要素認証と高度な認証ポリシー",
           "approval": "リスク評価と承認ワークフロー",
           "audit-log": "完全な監査ログ",
-          "sso": "エンタープライズSSO（カスタムOAuth2、OIDC、LDAP）",
-          "2fa": "二要素認証と高度な認証ポリシー",
+          "branding": "カスタムブランディングとウォーターマーク",
+          "custom-limits": "カスタムユーザーとインスタンス制限",
+          "everything": "プロ版のすべてに加えて：",
+          "limits": "ニーズに基づくカスタム制限",
           "masking": "データマスキングと分類",
           "roles": "カスタムロールとロール申請ワークフロー",
           "scim": "SCIMユーザープロビジョニングとディレクトリ同期",
           "secret": "外部シークレットマネージャー統合",
-          "branding": "カスタムブランディングとウォーターマーク",
+          "sso": "エンタープライズSSO（カスタムOAuth2、OIDC、LDAP）",
           "support": "SLA付き専用サポート"
+        },
+        "free": {
+          "backup": "自動バックアップとワンクリックロールバック",
+          "dcm": "完全なデータベース変更管理",
+          "git": "Gitベースのバージョン管理とスキーマ移行",
+          "iam": "基本的なIAMとセキュリティ機能",
+          "limits": "最大20ユーザー、10インスタンス",
+          "schema": "スキーマ図とデータエクスポート",
+          "sql-editor": "AI支援付きWebベースSQLエディタ",
+          "sql-review": "200以上のルールによるSQLレビュー",
+          "support": "コミュニティサポート"
+        },
+        "pro": {
+          "audit-log": "限定的な監査ログ",
+          "batch-query": "バッチクエリ機能",
+          "db-groups": "データベースグループ",
+          "everything": "無料版のすべてに加えて：",
+          "groups": "ユーザーグループ管理",
+          "limits": "無制限ユーザー（$20/ユーザー/月）、10インスタンス",
+          "query-policy": "ガバナンスのためのクエリポリシー",
+          "read-only": "インスタンス読み取り専用接続",
+          "sso": "Google & GitHub SSO",
+          "support": "メールサポート"
         }
-      }
+      },
+      "free-description": "個人開発者、サイドプロジェクト、実験向け。",
+      "pro-description": "本番対応アプリケーションを構築するチーム向け。"
     }
-  },
-  "resource": {
-    "environment": "環境",
-    "instance": "例",
-    "project": "プロジェクト",
-    "idp": "アイデンティティプロバイダー",
-    "database-group": "データベースのグループ化",
-    "review-config": "設定を確認する",
-    "role": "ロール"
   }
 }

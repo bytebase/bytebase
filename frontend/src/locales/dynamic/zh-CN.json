@@ -1,42 +1,51 @@
 {
   "activity": {
     "sentence": {
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "修改了 {name}。{link}",
-      "modified-sql-of-spec-link": "修改了 {spec} 的 SQL。{link}"
+      "modified-sql-of-spec-link": "修改了 {spec} 的 SQL。{link}",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}"
     }
   },
+  "resource": {
+    "database-group": "数据库分组",
+    "environment": "环境",
+    "idp": "身份提供商",
+    "instance": "实例",
+    "project": "项目",
+    "review-config": "审查配置",
+    "role": "角色"
+  },
   "settings": {
-    "sensitive-data": {
-      "semantic-types": {
-        "template": {
-          "bb-default": {
-            "title": "全遮掩",
-            "description": "遮掩全部数据",
-            "algorithm": {
-              "title": "全遮掩",
-              "description": "所有值都将被屏蔽为“******”"
-            }
-          },
-          "bb-default-partial": {
-            "title": "半遮掩",
-            "description": "遮掩部分数据",
-            "algorithm": {
-              "title": "范围遮掩",
-              "description": "只保留中间的原始数据，并用“**”覆盖开头和结尾。\n例如，“address”将被屏蔽为“**dre**”。"
-            }
-          }
-        }
-      }
-    },
     "general": {
       "workspace": {
         "announcement-alert-level": {
           "field": {
+            "critical": "重要",
             "info": "普通",
-            "warning": "警告",
-            "critical": "重要"
+            "warning": "警告"
+          }
+        }
+      }
+    },
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "algorithm": {
+              "description": "所有值都将被屏蔽为“******”",
+              "title": "全遮掩"
+            },
+            "description": "遮掩全部数据",
+            "title": "全遮掩"
+          },
+          "bb-default-partial": {
+            "algorithm": {
+              "description": "只保留中间的原始数据，并用“**”覆盖开头和结尾。\n例如，“address”将被屏蔽为“**dre**”。",
+              "title": "范围遮掩"
+            },
+            "description": "遮掩部分数据",
+            "title": "半遮掩"
           }
         }
       }
@@ -44,336 +53,327 @@
   },
   "subscription": {
     "features": {
-      "FEATURE_DATABASE_CHANGE": {
-        "title": "数据库变更",
-        "desc": "核心数据库变更管理功能。"
-      },
-      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
-        "title": "基于 Git 的 schema 版本控制",
-        "desc": "在 VCS 拉取请求中审查 SQL 变更，并进行自动检查。"
-      },
-      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
-        "title": "声明式 schema 迁移",
-        "desc": "定义所需的 schema 状态，让 Bytebase 处理迁移。"
-      },
-      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
-        "title": "比较和同步 schema",
-        "desc": "比较数据库之间的 schema 并同步差异。"
-      },
-      "FEATURE_ONLINE_SCHEMA_CHANGE": {
-        "title": "在线 schema 变更",
-        "desc": "在大表上执行 schema 变更，最小化锁定时间。"
-      },
-      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
-        "title": "SQL 审核",
-        "desc": "通过 100+ lint 规则和 schema 一致性检查来执行 SQL 最佳实践。"
-      },
-      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
-        "title": "自动备份",
-        "desc": "在进行更改之前自动备份数据。"
-      },
-      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
-        "title": "一键数据回滚",
-        "desc": "只需单击一次即可快速回滚数据更改。"
-      },
-      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
-        "title": "多数据库批量变更",
-        "desc": "将相同的更改应用于跨不同租户或分区的多个数据库。"
-      },
-      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
-        "title": "渐进式环境部署",
-        "desc": "通过不同环境逐步部署更改。"
-      },
-      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
-        "title": "定时发布",
-        "desc": "安排数据库更改在特定时间运行。"
-      },
-      "FEATURE_DATABASE_CHANGELOG": {
-        "title": "数据库变更日志",
-        "desc": "跟踪所有数据库 schema 和数据更改。"
-      },
-      "FEATURE_ROLLOUT_POLICY": {
-        "title": "发布策略",
-        "desc": "控制 schema 变更任务是否需要手动发布。"
-      },
-      "FEATURE_WEB_BASED_SQL_EDITOR": {
-        "title": "基于 Web 的 SQL 编辑器",
-        "desc": "直接从 Web 界面执行 SQL 查询。"
-      },
-      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
-        "title": "SQL 编辑器管理员模式",
-        "desc": "在 SQL 编辑器中访问管理功能。"
-      },
-      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
-        "title": "自然语言转 SQL",
-        "desc": "使用 AI 将自然语言查询转换为 SQL。"
-      },
       "FEATURE_AI_QUERY_EXPLANATION": {
-        "title": "AI 查询解释",
-        "desc": "获得复杂 SQL 查询的 AI 驱动解释。"
+        "desc": "获得复杂 SQL 查询的 AI 驱动解释。",
+        "title": "AI 查询解释"
       },
       "FEATURE_AI_QUERY_SUGGESTIONS": {
-        "title": "AI 查询建议",
-        "desc": "获得 AI 驱动的查询建议和索引建议。"
-      },
-      "FEATURE_AUTO_COMPLETE": {
-        "title": "自动完成",
-        "desc": "编辑器中的智能 SQL 自动完成。"
-      },
-      "FEATURE_SCHEMA_DIAGRAM": {
-        "title": "Schema 图表",
-        "desc": "使用交互式图表可视化数据库 schema。"
-      },
-      "FEATURE_SCHEMA_EDITOR": {
-        "title": "Schema 编辑器",
-        "desc": "使用拖放界面进行可视化 schema 编辑。"
-      },
-      "FEATURE_DATA_EXPORT": {
-        "title": "数据导出",
-        "desc": "以各种格式导出查询结果。"
-      },
-      "FEATURE_DATA_OFFLINE_EXPORT": {
-        "title": "数据离线导出",
-        "desc": "导出数据以供离线使用和分析。"
-      },
-      "FEATURE_QUERY_HISTORY": {
-        "title": "查询历史",
-        "desc": "访问具有搜索功能的完整查询执行历史记录。"
-      },
-      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
-        "title": "保存和共享 SQL 脚本",
-        "desc": "与团队成员保存和共享 SQL 脚本。"
-      },
-      "FEATURE_BATCH_QUERY": {
-        "title": "批量查询",
-        "desc": "同时跨多个数据库执行查询。"
-      },
-      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
-        "title": "只读连接",
-        "desc": "连接到只读副本进行只读操作。"
-      },
-      "FEATURE_QUERY_POLICY": {
-        "title": "查询策略",
-        "desc": "配置高级查询限制和权限。"
-      },
-      "FEATURE_RESTRICT_COPYING_DATA": {
-        "title": "限制复制数据",
-        "desc": "控制用户从查询结果复制数据的访问权限。"
-      },
-      "FEATURE_IAM": {
-        "title": "身份和访问管理",
-        "desc": "细粒度的基于角色的访问控制系统。"
-      },
-      "FEATURE_INSTANCE_SSL_CONNECTION": {
-        "title": "SSL 连接",
-        "desc": "使用 SSL/TLS 加密的安全数据库连接。"
-      },
-      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
-        "title": "SSH 隧道连接",
-        "desc": "通过 SSH 隧道连接到实例以增强安全性。"
-      },
-      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
-        "title": "IAM 身份验证",
-        "desc": "使用云提供商 IAM 进行数据库身份验证。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "自定义实例同步时间",
-        "desc": "自定义数据库同步间隔和设置。"
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "自定义实例连接限制",
-        "desc": "配置最大数据库连接限制。"
-      },
-      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
-        "title": "Google 和 GitHub SSO",
-        "desc": "使用 Google 或 GitHub 账户登录。"
-      },
-      "FEATURE_USER_GROUPS": {
-        "title": "用户组",
-        "desc": "将用户组织成组以便于管理。"
-      },
-      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
-        "title": "禁用自助注册",
-        "desc": "新用户注册需要管理员邀请。"
-      },
-      "FEATURE_RISK_ASSESSMENT": {
-        "title": "风险评估",
-        "desc": "评估和分类数据库更改的风险级别。"
-      },
-      "FEATURE_APPROVAL_WORKFLOW": {
-        "title": "审批工作流",
-        "desc": "为不同任务配置风险级别和审批流程。"
-      },
-      "FEATURE_AUDIT_LOG": {
-        "title": "审计日志",
-        "desc": "跟踪工作空间中用户执行的所有操作。"
-      },
-      "FEATURE_ENTERPRISE_SSO": {
-        "title": "企业 SSO",
-        "desc": "使用 SAML、OIDC 和 OAuth 提供商的单点登录。"
-      },
-      "FEATURE_TWO_FA": {
-        "title": "双因素认证",
-        "desc": "通过身份验证器应用验证添加额外的安全层。"
-      },
-      "FEATURE_PASSWORD_RESTRICTIONS": {
-        "title": "密码限制",
-        "desc": "执行密码复杂性和安全要求。"
-      },
-      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
-        "title": "禁用密码登录",
-        "desc": "仅要求 SSO 身份验证进行用户登录。"
-      },
-      "FEATURE_CUSTOM_ROLES": {
-        "title": "自定义角色",
-        "desc": "为您的组织定义具有特定权限的自定义角色。"
-      },
-      "FEATURE_REQUEST_ROLE_WORKFLOW": {
-        "title": "请求角色工作流",
-        "desc": "用户可以通过审批工作流请求项目角色。"
-      },
-      "FEATURE_DATA_MASKING": {
-        "title": "数据脱敏",
-        "desc": "将表列标记为敏感数据并脱敏查询结果。"
-      },
-      "FEATURE_DATA_CLASSIFICATION": {
-        "title": "数据分类",
-        "desc": "根据敏感度级别对数据进行分类和标记。"
-      },
-      "FEATURE_SCIM": {
-        "title": "SCIM",
-        "desc": "跨域身份管理系统支持。"
-      },
-      "FEATURE_DIRECTORY_SYNC": {
-        "title": "目录同步",
-        "desc": "将用户和组从 Entra ID 同步到 Bytebase。"
-      },
-      "FEATURE_TOKEN_DURATION_CONTROL": {
-        "title": "令牌时长控制",
-        "desc": "配置访问令牌和刷新令牌的有效时长。"
-      },
-      "FEATURE_EXTERNAL_SECRET_MANAGER": {
-        "title": "外部密钥管理器",
-        "desc": "使用 Vault 或自定义 URL 作为数据库密码的外部密钥。"
-      },
-      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
-        "title": "电子邮件域限制",
-        "desc": "限制来自指定电子邮件域的用户登录。"
-      },
-      "FEATURE_PROJECT_MANAGEMENT": {
-        "title": "项目管理",
-        "desc": "使用高级功能管理和组织项目。"
-      },
-      "FEATURE_ENVIRONMENT_MANAGEMENT": {
-        "title": "环境管理",
-        "desc": "管理和配置不同的部署环境。"
-      },
-      "FEATURE_IM_NOTIFICATIONS": {
-        "title": "IM 通知",
-        "desc": "向 Slack 和 Teams 等 IM 平台发送通知。"
-      },
-      "FEATURE_TERRAFORM_PROVIDER": {
-        "title": "Terraform 提供商",
-        "desc": "使用 Terraform 管理 Bytebase 资源。"
-      },
-      "FEATURE_DATABASE_GROUPS": {
-        "title": "数据库分组",
-        "desc": "对数据库进行分组以进行批量操作和管理。"
-      },
-      "FEATURE_ENVIRONMENT_TIERS": {
-        "title": "环境层级",
-        "desc": "定义环境层级，如生产和开发。"
-      },
-      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
-        "title": "仪表板公告",
-        "desc": "在仪表板上显示自定义公告。"
+        "desc": "获得 AI 驱动的查询建议和索引建议。",
+        "title": "AI 查询建议"
       },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
-        "title": "API 集成指南",
-        "desc": "API 集成的文档和指南。"
+        "desc": "API 集成的文档和指南。",
+        "title": "API 集成指南"
       },
-      "FEATURE_CUSTOM_LOGO": {
-        "title": "自定义 Logo",
-        "desc": "为您的组织自定义 Logo。"
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "desc": "为不同任务配置风险级别和审批流程。",
+        "title": "审批工作流"
       },
-      "FEATURE_WATERMARK": {
-        "title": "水印",
-        "desc": "在页面上显示带有用户信息的可见水印。"
+      "FEATURE_AUDIT_LOG": {
+        "desc": "跟踪工作空间中用户执行的所有操作。",
+        "title": "审计日志"
       },
-      "FEATURE_ROADMAP_PRIORITIZATION": {
-        "title": "路线图优先级",
-        "desc": "影响功能开发优先级。"
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "desc": "在进行更改之前自动备份数据。",
+        "title": "自动备份"
       },
-      "FEATURE_CUSTOM_MSA": {
-        "title": "自定义 MSA",
-        "desc": "自定义主服务协议条款。"
+      "FEATURE_AUTO_COMPLETE": {
+        "desc": "编辑器中的智能 SQL 自动完成。",
+        "title": "自动完成"
+      },
+      "FEATURE_BATCH_QUERY": {
+        "desc": "同时跨多个数据库执行查询。",
+        "title": "批量查询"
       },
       "FEATURE_COMMUNITY_SUPPORT": {
-        "title": "社区支持",
-        "desc": "从 Bytebase 社区获得帮助。"
+        "desc": "从 Bytebase 社区获得帮助。",
+        "title": "社区支持"
       },
-      "FEATURE_EMAIL_SUPPORT": {
-        "title": "电子邮件支持",
-        "desc": "来自 Bytebase 团队的直接电子邮件支持。"
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "desc": "比较数据库之间的 schema 并同步差异。",
+        "title": "比较和同步 schema"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "desc": "配置最大数据库连接限制。",
+        "title": "自定义实例连接限制"
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "desc": "自定义数据库同步间隔和设置。",
+        "title": "自定义实例同步时间"
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "desc": "为您的组织自定义 Logo。",
+        "title": "自定义 Logo"
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "desc": "自定义主服务协议条款。",
+        "title": "自定义 MSA"
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "desc": "为您的组织定义具有特定权限的自定义角色。",
+        "title": "自定义角色"
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "desc": "在仪表板上显示自定义公告。",
+        "title": "仪表板公告"
+      },
+      "FEATURE_DATABASE_CHANGE": {
+        "desc": "核心数据库变更管理功能。",
+        "title": "数据库变更"
+      },
+      "FEATURE_DATABASE_CHANGELOG": {
+        "desc": "跟踪所有数据库 schema 和数据更改。",
+        "title": "数据库变更日志"
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "desc": "对数据库进行分组以进行批量操作和管理。",
+        "title": "数据库分组"
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "desc": "根据敏感度级别对数据进行分类和标记。",
+        "title": "数据分类"
+      },
+      "FEATURE_DATA_EXPORT": {
+        "desc": "以各种格式导出查询结果。",
+        "title": "数据导出"
+      },
+      "FEATURE_DATA_MASKING": {
+        "desc": "将表列标记为敏感数据并脱敏查询结果。",
+        "title": "数据脱敏"
+      },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "desc": "导出数据以供离线使用和分析。",
+        "title": "数据离线导出"
+      },
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "desc": "定义所需的 schema 状态，让 Bytebase 处理迁移。",
+        "title": "声明式 schema 迁移"
       },
       "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
-        "title": "专属支持与 SLA",
-        "desc": "具有保证响应时间的优先支持。"
+        "desc": "具有保证响应时间的优先支持。",
+        "title": "专属支持与 SLA"
+      },
+      "FEATURE_DIRECTORY_SYNC": {
+        "desc": "将用户和组从 Entra ID 同步到 Bytebase。",
+        "title": "目录同步"
+      },
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "desc": "仅要求 SSO 身份验证进行用户登录。",
+        "title": "禁用密码登录"
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "desc": "新用户注册需要管理员邀请。",
+        "title": "禁用自助注册"
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "desc": "来自 Bytebase 团队的直接电子邮件支持。",
+        "title": "电子邮件支持"
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "desc": "使用 SAML、OIDC 和 OAuth 提供商的单点登录。",
+        "title": "企业 SSO"
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "desc": "管理和配置不同的部署环境。",
+        "title": "环境管理"
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "desc": "定义环境层级，如生产和开发。",
+        "title": "环境层级"
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "desc": "使用 Vault 或自定义 URL 作为数据库密码的外部密钥。",
+        "title": "外部密钥管理器"
+      },
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "desc": "在 VCS 拉取请求中审查 SQL 变更，并进行自动检查。",
+        "title": "基于 Git 的 schema 版本控制"
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "desc": "使用 Google 或 GitHub 账户登录。",
+        "title": "Google 和 GitHub SSO"
+      },
+      "FEATURE_IAM": {
+        "desc": "细粒度的基于角色的访问控制系统。",
+        "title": "身份和访问管理"
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "desc": "向 Slack 和 Teams 等 IM 平台发送通知。",
+        "title": "IM 通知"
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "desc": "使用云提供商 IAM 进行数据库身份验证。",
+        "title": "IAM 身份验证"
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "desc": "通过 SSH 隧道连接到实例以增强安全性。",
+        "title": "SSH 隧道连接"
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "desc": "连接到只读副本进行只读操作。",
+        "title": "只读连接"
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "desc": "使用 SSL/TLS 加密的安全数据库连接。",
+        "title": "SSL 连接"
+      },
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "desc": "将相同的更改应用于跨不同租户或分区的多个数据库。",
+        "title": "多数据库批量变更"
+      },
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "desc": "使用 AI 将自然语言查询转换为 SQL。",
+        "title": "自然语言转 SQL"
+      },
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "desc": "只需单击一次即可快速回滚数据更改。",
+        "title": "一键数据回滚"
+      },
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "desc": "在大表上执行 schema 变更，最小化锁定时间。",
+        "title": "在线 schema 变更"
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
+        "desc": "执行密码复杂性和安全要求。",
+        "title": "密码限制"
+      },
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "desc": "通过 100+ lint 规则和 schema 一致性检查来执行 SQL 最佳实践。",
+        "title": "SQL 审核"
+      },
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "desc": "通过不同环境逐步部署更改。",
+        "title": "渐进式环境部署"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "desc": "使用高级功能管理和组织项目。",
+        "title": "项目管理"
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "desc": "访问具有搜索功能的完整查询执行历史记录。",
+        "title": "查询历史"
+      },
+      "FEATURE_QUERY_POLICY": {
+        "desc": "配置高级查询限制和权限。",
+        "title": "查询策略"
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "desc": "用户可以通过审批工作流请求项目角色。",
+        "title": "请求角色工作流"
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "desc": "控制用户从查询结果复制数据的访问权限。",
+        "title": "限制复制数据"
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "desc": "评估和分类数据库更改的风险级别。",
+        "title": "风险评估"
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "desc": "影响功能开发优先级。",
+        "title": "路线图优先级"
+      },
+      "FEATURE_ROLLOUT_POLICY": {
+        "desc": "控制 schema 变更任务是否需要手动发布。",
+        "title": "发布策略"
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "desc": "与团队成员保存和共享 SQL 脚本。",
+        "title": "保存和共享 SQL 脚本"
+      },
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "desc": "安排数据库更改在特定时间运行。",
+        "title": "定时发布"
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "desc": "使用交互式图表可视化数据库 schema。",
+        "title": "Schema 图表"
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "desc": "使用拖放界面进行可视化 schema 编辑。",
+        "title": "Schema 编辑器"
+      },
+      "FEATURE_SCIM": {
+        "desc": "跨域身份管理系统支持。",
+        "title": "SCIM"
+      },
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "desc": "在 SQL 编辑器中访问管理功能。",
+        "title": "SQL 编辑器管理员模式"
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "desc": "使用 Terraform 管理 Bytebase 资源。",
+        "title": "Terraform 提供商"
+      },
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "desc": "配置访问令牌和刷新令牌的有效时长。",
+        "title": "令牌时长控制"
+      },
+      "FEATURE_TWO_FA": {
+        "desc": "通过身份验证器应用验证添加额外的安全层。",
+        "title": "双因素认证"
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "desc": "限制来自指定电子邮件域的用户登录。",
+        "title": "电子邮件域限制"
+      },
+      "FEATURE_USER_GROUPS": {
+        "desc": "将用户组织成组以便于管理。",
+        "title": "用户组"
+      },
+      "FEATURE_WATERMARK": {
+        "desc": "在页面上显示带有用户信息的可见水印。",
+        "title": "水印"
+      },
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "desc": "直接从 Web 界面执行 SQL 查询。",
+        "title": "基于 Web 的 SQL 编辑器"
       }
     },
     "purchase": {
-      "free-description": "适用于个人开发者、副业项目和实验。",
-      "pro-description": "适用于构建生产级应用的团队。",
       "enterprise-description": "安全合规地扩展您的业务。",
       "features": {
-        "free": {
-          "limits": "最多 20 个用户和 10 个实例",
-          "dcm": "完整的数据库变更管理",
-          "git": "基于 Git 的版本控制和 Schema 迁移",
-          "sql-review": "200+ 条 SQL 审查规则",
-          "backup": "自动备份和一键回滚",
-          "sql-editor": "基于 Web 的 SQL 编辑器（含 AI 辅助）",
-          "schema": "Schema 图表和数据导出",
-          "iam": "基本 IAM 和安全功能",
-          "support": "社区支持"
-        },
-        "pro": {
-          "limits": "无限用户，$20/用户/月，10 个实例",
-          "everything": "包含免费版所有功能，另外：",
-          "batch-query": "批量查询功能",
-          "read-only": "实例只读连接",
-          "query-policy": "查询治理策略",
-          "sso": "Google 和 GitHub SSO",
-          "groups": "用户组管理",
-          "db-groups": "数据库分组",
-          "audit-log": "有限审计日志",
-          "support": "邮件支持"
-        },
         "enterprise": {
-          "limits": "按需自定义限制",
-          "everything": "包含专业版所有功能，另外：",
-          "custom-limits": "自定义用户和实例限制",
+          "2fa": "双因素认证和高级认证策略",
           "approval": "风险评估和审批工作流",
           "audit-log": "完整审计日志",
-          "sso": "企业级 SSO（自定义 OAuth2、OIDC、LDAP）",
-          "2fa": "双因素认证和高级认证策略",
+          "branding": "自定义品牌和水印",
+          "custom-limits": "自定义用户和实例限制",
+          "everything": "包含专业版所有功能，另外：",
+          "limits": "按需自定义限制",
           "masking": "数据脱敏和分类",
           "roles": "自定义角色和角色申请工作流",
           "scim": "SCIM 用户配置和目录同步",
           "secret": "外部密钥管理器集成",
-          "branding": "自定义品牌和水印",
+          "sso": "企业级 SSO（自定义 OAuth2、OIDC、LDAP）",
           "support": "专属 SLA 支持"
+        },
+        "free": {
+          "backup": "自动备份和一键回滚",
+          "dcm": "完整的数据库变更管理",
+          "git": "基于 Git 的版本控制和 Schema 迁移",
+          "iam": "基本 IAM 和安全功能",
+          "limits": "最多 20 个用户和 10 个实例",
+          "schema": "Schema 图表和数据导出",
+          "sql-editor": "基于 Web 的 SQL 编辑器（含 AI 辅助）",
+          "sql-review": "200+ 条 SQL 审查规则",
+          "support": "社区支持"
+        },
+        "pro": {
+          "audit-log": "有限审计日志",
+          "batch-query": "批量查询功能",
+          "db-groups": "数据库分组",
+          "everything": "包含免费版所有功能，另外：",
+          "groups": "用户组管理",
+          "limits": "无限用户，$20/用户/月，10 个实例",
+          "query-policy": "查询治理策略",
+          "read-only": "实例只读连接",
+          "sso": "Google 和 GitHub SSO",
+          "support": "邮件支持"
         }
-      }
+      },
+      "free-description": "适用于个人开发者、副业项目和实验。",
+      "pro-description": "适用于构建生产级应用的团队。"
     }
-  },
-  "resource": {
-    "environment": "环境",
-    "instance": "实例",
-    "project": "项目",
-    "idp": "身份提供商",
-    "database-group": "数据库分组",
-    "review-config": "审查配置",
-    "role": "角色"
   }
 }
