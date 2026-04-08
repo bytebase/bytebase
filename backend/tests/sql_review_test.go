@@ -40,8 +40,8 @@ var (
 	builtinOnlyPolicyWithConflict = []*v1pb.PlanCheckRun_Result{
 		{
 			Status:  v1pb.Advice_WARNING,
-			Title:   "Table `user` already exists",
-			Content: "Table `user` already exists",
+			Title:   "Table 'user' already exists",
+			Content: "Table 'user' already exists",
 			Code:    607, // code.TableExists
 			Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
 				SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
