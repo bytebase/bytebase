@@ -1274,10 +1274,9 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("email is required"))
 	}
 
-	// Validate email format
-	if !common.IsWorkloadIdentityEmail(request.Email) {
+	if err := validateWorkloadIdentityEmail(request.Email); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument,
-			errors.Errorf("email must end with %s", common.WorkloadIdentitySuffix))
+			invalidAccountEmailError("workload identity", request.Email, err))
 	}
 
 	// Find workload identity by email (cross-workspace lookup since this is unauthenticated).

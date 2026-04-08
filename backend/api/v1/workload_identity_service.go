@@ -74,6 +74,9 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		projectIDStr = *projectID
 	}
 	email := common.BuildWorkloadIdentityEmail(workloadIdentityID, projectIDStr)
+	if err := validateWorkloadIdentityEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("workload identity", email, err))
+	}
 
 	// Check for duplicate email
 	existingWI, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
@@ -110,6 +113,9 @@ func (s *WorkloadIdentityService) GetWorkloadIdentity(ctx context.Context, reque
 	email, err := common.GetWorkloadIdentityEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateWorkloadIdentityEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("workload identity", email, err))
 	}
 
 	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
@@ -203,6 +209,9 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateWorkloadIdentityEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("workload identity", email, err))
+	}
 
 	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
@@ -246,6 +255,9 @@ func (s *WorkloadIdentityService) DeleteWorkloadIdentity(ctx context.Context, re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateWorkloadIdentityEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("workload identity", email, err))
+	}
 
 	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
@@ -271,6 +283,9 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 	email, err := common.GetWorkloadIdentityEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateWorkloadIdentityEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("workload identity", email, err))
 	}
 
 	wi, err := s.store.GetWorkloadIdentity(ctx, common.GetWorkspaceIDFromContext(ctx), email)
