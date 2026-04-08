@@ -19,6 +19,12 @@ import (
 
 const (
 	taskSchedulerInterval = 5 * time.Second
+	// haFailGraceTicks is the number of consecutive HA-limit failures before
+	// task runs are marked FAILED. This avoids permanently failing task runs
+	// during transient over-counts caused by rolling restarts: stale heartbeats
+	// linger for up to 30 s (replicaActiveWindow), so 7 × 5 s = 35 s provides
+	// enough margin.
+	haFailGraceTicks = 7
 )
 
 // Scheduler is the scheduler for task run.
@@ -29,6 +35,10 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
+	// haFailCount tracks consecutive scheduler ticks where CheckReplicaLimit
+	// returned an error. Task runs are only failed after haFailGraceTicks
+	// consecutive failures.
+	haFailCount int
 }
 
 // NewScheduler will create a new scheduler.
@@ -72,12 +82,12 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 	}
 
 	// Track affected plans to send failure webhooks.
+	// Key by (projectID, planID) to match ClaimPipelineFailureNotification's dedup key.
 	type planKey struct {
-		projectID   string
-		planID      int64
-		environment string
+		projectID string
+		planID    int64
 	}
-	affectedPlans := map[planKey]bool{}
+	affectedPlans := map[planKey]string{} // value = first environment seen
 
 	for _, taskRun := range taskRuns {
 		if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
@@ -94,13 +104,16 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 			)
 			continue
 		}
-		affectedPlans[planKey{projectID: taskRun.ProjectID, planID: taskRun.PlanUID, environment: taskRun.Environment}] = true
+		key := planKey{projectID: taskRun.ProjectID, planID: taskRun.PlanUID}
+		if _, ok := affectedPlans[key]; !ok {
+			affectedPlans[key] = taskRun.Environment
+		}
 	}
 
 	slog.Warn("Failed task runs due to HA license restriction", slog.Int64("count", int64(len(taskRuns))), log.BBError(haErr))
 
 	// Send PIPELINE_FAILED webhook for each affected plan.
-	for key := range affectedPlans {
+	for key, environment := range affectedPlans {
 		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, key.projectID, key.planID)
 		if err != nil {
 			slog.Error("failed to claim pipeline failure notification", log.BBError(err))
@@ -124,7 +137,7 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 			Project: webhook.NewProject(project),
 			RolloutFailed: &webhook.EventRolloutFailed{
 				Rollout:     webhook.NewRollout(plan),
-				Environment: key.environment,
+				Environment: environment,
 			},
 		})
 	}
