@@ -397,7 +397,7 @@
       "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
       "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
       "risk-levels": "风险等级",
-      "self": "风险中心"
+      "self": "风险评估"
     },
     "risk-rule": {
       "risk": {

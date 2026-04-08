@@ -542,7 +542,7 @@
       "risk-level-low": "Las operaciones de bajo riesgo incluyen consultas SELECT y cambios menores en el esquema que es poco probable que causen problemas.",
       "risk-level-moderate": "Las operaciones de riesgo moderado incluyen cambios DDL estándar como agregar columnas o índices.",
       "risk-levels": "Niveles de Riesgo",
-      "self": "Centro de Riesgos"
+      "self": "Evaluación de Riesgos"
     },
     "risk-rule": {
       "risk": {

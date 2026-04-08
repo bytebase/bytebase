@@ -3,7 +3,7 @@ import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Badge } from "@/react/components/ui/badge";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
-export function RiskCenterPage() {
+export function RiskAssessmentPage() {
   const { t } = useTranslation();
 
   return (

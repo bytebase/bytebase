@@ -33,7 +33,7 @@ import {
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MCP,
   WORKSPACE_ROUTE_MEMBERS,
-  WORKSPACE_ROUTE_RISK_CENTER,
+  WORKSPACE_ROUTE_RISK_ASSESSMENT,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
@@ -196,7 +196,7 @@ function useSidebarItems(): SidebarItem[] {
           },
           {
             title: t("custom-approval.risk.self"),
-            name: WORKSPACE_ROUTE_RISK_CENTER,
+            name: WORKSPACE_ROUTE_RISK_ASSESSMENT,
             type: "route",
           },
           {

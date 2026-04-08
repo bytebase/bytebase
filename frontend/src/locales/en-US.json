@@ -542,7 +542,7 @@
       "risk-level-low": "Low risk operations include SELECT queries and minor schema changes that are unlikely to cause issues.",
       "risk-level-moderate": "Moderate risk operations include standard DDL changes like adding columns or indexes.",
       "risk-levels": "Risk Levels",
-      "self": "Risk Center"
+      "self": "Risk Assessment"
     },
     "risk-rule": {
       "risk": {
