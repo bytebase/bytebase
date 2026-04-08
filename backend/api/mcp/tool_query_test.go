@@ -181,34 +181,40 @@ func mockQueryServer(databases []map[string]any, queryResp map[string]any) http.
 
 func TestBuildDatabaseFilter(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  QueryInput
-		expect string
+		name     string
+		database string
+		instance string
+		project  string
+		expect   string
 	}{
 		{
-			name:   "database only",
-			input:  QueryInput{Database: "employee_db"},
-			expect: `name.contains("employee_db")`,
+			name:     "database only",
+			database: "employee_db",
+			expect:   `name.contains("employee_db")`,
 		},
 		{
-			name:   "with instance",
-			input:  QueryInput{Database: "employee_db", Instance: "prod-pg"},
-			expect: `name.contains("employee_db") && instance == "instances/prod-pg"`,
+			name:     "with instance",
+			database: "employee_db",
+			instance: "prod-pg",
+			expect:   `name.contains("employee_db") && instance == "instances/prod-pg"`,
 		},
 		{
-			name:   "with project",
-			input:  QueryInput{Database: "employee_db", Project: "hr-system"},
-			expect: `name.contains("employee_db") && project == "projects/hr-system"`,
+			name:     "with project",
+			database: "employee_db",
+			project:  "hr-system",
+			expect:   `name.contains("employee_db") && project == "projects/hr-system"`,
 		},
 		{
-			name:   "with instance and project",
-			input:  QueryInput{Database: "employee_db", Instance: "prod-pg", Project: "hr-system"},
-			expect: `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
+			name:     "with instance and project",
+			database: "employee_db",
+			instance: "prod-pg",
+			project:  "hr-system",
+			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDatabaseFilter(tc.input)
+			got := buildDatabaseFilter(tc.database, tc.instance, tc.project)
 			require.Equal(t, tc.expect, got)
 		})
 	}
@@ -221,7 +227,7 @@ func TestQueryDatabase_SingleMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -234,7 +240,7 @@ func TestQueryDatabase_CaseInsensitiveMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "Employee_DB"})
+	resolved, err := s.resolveDatabase(testContext(), "Employee_DB", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -246,7 +252,7 @@ func TestQueryDatabase_SubstringMatch(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee"})
+	resolved, err := s.resolveDatabase(testContext(), "employee", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -258,7 +264,7 @@ func TestQueryDatabase_NotFound(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	_, err := s.resolveDatabase(testContext(), QueryInput{Database: "nonexistent"})
+	_, err := s.resolveDatabase(testContext(), "nonexistent", "", "")
 	require.Error(t, err)
 
 	var te *toolError
@@ -273,10 +279,7 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	_, err := s.resolveDatabase(testContext(), QueryInput{
-		Database: "employee_db",
-		Instance: "nonexistent-instance",
-	})
+	_, err := s.resolveDatabase(testContext(), "employee_db", "nonexistent-instance", "")
 	require.Error(t, err)
 
 	var te *toolError
@@ -289,7 +292,7 @@ func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
 	s := newTestServerWithMock(t, http.NotFoundHandler())
 
 	// Use context.Background() — no workspace ID set.
-	_, err := s.resolveDatabase(context.Background(), QueryInput{Database: "employee_db"})
+	_, err := s.resolveDatabase(context.Background(), "employee_db", "", "")
 	require.Error(t, err)
 
 	var te *toolError
@@ -308,7 +311,7 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 	})
 	s := newTestServerWithMock(t, handler)
 
-	_, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.Error(t, err)
 
 	var te *toolError
@@ -324,7 +327,7 @@ func TestQueryDatabase_Ambiguous(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.NoError(t, err)
 	require.True(t, resolved.ambiguous)
 	require.Len(t, resolved.candidates, 2)
@@ -341,10 +344,7 @@ func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{
-		Database: "employee_db",
-		Instance: "prod-pg",
-	})
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "prod-pg", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
@@ -357,7 +357,7 @@ func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-ro-1", resolved.dataSourceID)
@@ -369,7 +369,7 @@ func TestQueryDatabase_AdminFallback(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee_db"})
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
@@ -446,7 +446,7 @@ func TestQueryDatabase_ExactMatchPriority(t *testing.T) {
 	}
 	s := newTestServerWithMock(t, mockListDatabases(databases))
 
-	resolved, err := s.resolveDatabase(testContext(), QueryInput{Database: "employee"})
+	resolved, err := s.resolveDatabase(testContext(), "employee", "", "")
 	require.NoError(t, err)
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee", resolved.resourceName)
