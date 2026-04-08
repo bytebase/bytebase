@@ -75,6 +75,9 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		projectIDStr = *projectID
 	}
 	email := common.BuildServiceAccountEmail(serviceAccountID, projectIDStr)
+	if err := validateServiceAccountEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("service account", email, err))
+	}
 
 	// Check for duplicate email
 	existingSA, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
@@ -121,6 +124,9 @@ func (s *ServiceAccountService) GetServiceAccount(ctx context.Context, request *
 	email, err := common.GetServiceAccountEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateServiceAccountEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("service account", email, err))
 	}
 
 	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
@@ -214,6 +220,9 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateServiceAccountEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("service account", email, err))
+	}
 
 	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
@@ -270,6 +279,9 @@ func (s *ServiceAccountService) DeleteServiceAccount(ctx context.Context, reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if err := validateServiceAccountEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("service account", email, err))
+	}
 
 	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
 	if err != nil {
@@ -295,6 +307,9 @@ func (s *ServiceAccountService) UndeleteServiceAccount(ctx context.Context, requ
 	email, err := common.GetServiceAccountEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateServiceAccountEmail(email); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, invalidAccountEmailError("service account", email, err))
 	}
 
 	sa, err := s.store.GetServiceAccount(ctx, common.GetWorkspaceIDFromContext(ctx), email)
