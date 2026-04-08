@@ -417,55 +417,50 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "instances/:instanceId/databases/:databaseName",
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
         meta: {
           title: () => t("common.database"),
           requiredPermissionList: () => ["bb.databases.get"],
         },
-        component: () => import("@/views/project/ProjectDatabaseLayout.vue"),
-        props: { content: true, leftSidebar: true },
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-            component: () => import("@/views/DatabaseDetail"),
-            props: true,
-          },
-          {
-            path: "changelogs/:changelogId",
-            name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
-            meta: {
-              requiredPermissionList: () => [
-                "bb.databases.get",
-                "bb.changelogs.get",
-              ],
-            },
-            component: () =>
-              import("@/views/DatabaseDetail/ChangelogDetail.vue"),
-            props: (route) => ({
-              ...route.params,
-              project: `projects/${route.params.projectId}`,
-              instance: `instances/${route.params.instanceId}`,
-              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
-              changelogId: route.params.changelogId,
-            }),
-          },
-          {
-            path: "revisions/:revisionId",
-            name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
-            meta: {
-              requiredPermissionList: () => ["bb.databases.get"],
-            },
-            component: () => import("@/react/ReactPageMount.vue"),
-            props: (route: RouteLocationNormalized) => ({
-              page: "DatabaseRevisionDetailPage",
-              ...route.params,
-              project: `projects/${route.params.projectId}`,
-              instance: `instances/${route.params.instanceId}`,
-              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
-              revisionId: route.params.revisionId,
-            }),
-          },
-        ],
+        component: () => import("@/views/DatabaseDetail"),
+        props: true,
+      },
+      {
+        path: "instances/:instanceId/databases/:databaseName/changelogs/:changelogId",
+        name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
+        meta: {
+          title: () => t("common.database"),
+          requiredPermissionList: () => [
+            "bb.databases.get",
+            "bb.changelogs.get",
+          ],
+        },
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "DatabaseChangelogDetailPage",
+          ...route.params,
+          project: `projects/${route.params.projectId}`,
+          instance: `instances/${route.params.instanceId}`,
+          database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
+          changelogId: route.params.changelogId,
+        }),
+      },
+      {
+        path: "instances/:instanceId/databases/:databaseName/revisions/:revisionId",
+        name: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+        meta: {
+          title: () => t("common.database"),
+          requiredPermissionList: () => ["bb.databases.get"],
+        },
+        component: () => import("@/react/ReactPageMount.vue"),
+        props: (route: RouteLocationNormalized) => ({
+          page: "DatabaseRevisionDetailPage",
+          ...route.params,
+          project: `projects/${route.params.projectId}`,
+          instance: `instances/${route.params.instanceId}`,
+          database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
+          revisionId: route.params.revisionId,
+        }),
       },
       {
         path: "export-center",

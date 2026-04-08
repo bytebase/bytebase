@@ -4,8 +4,8 @@ import { RevisionDetailPanel } from "@/react/components/revision";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
-  PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
 } from "@/router/dashboard/projectV1";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
