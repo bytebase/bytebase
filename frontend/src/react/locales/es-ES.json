@@ -117,8 +117,11 @@
     }
   },
   "changelog": {
+    "current-schema-empty": "El esquema actual está vacío",
+    "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
+    "self": "Changelog",
+    "show-diff": "Mostrar diferencias"
   },
   "common": {
     "activated": "Activado",
@@ -257,6 +260,7 @@
     "role": {
       "self": "Rol"
     },
+    "rollback": "Retroceder",
     "rows-per-page": "Filas por página",
     "save": "Guardar",
     "schema": "Esquema",
@@ -270,6 +274,7 @@
     "setting": "Configuración",
     "settings": "Configuraciones",
     "skipped": "Omitido",
+    "snapshot": "Instantánea",
     "sql": "SQL",
     "state": "Estado",
     "statement": "Declaración",

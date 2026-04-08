@@ -219,10 +219,10 @@
 <script lang="ts" setup>
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { computed, onMounted, reactive, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention, BBModal } from "@/bbkit";
-import { useDatabaseDetailContext } from "@/components/Database/context";
+import { provideDatabaseDetailContext } from "@/components/Database/context";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
@@ -247,7 +247,11 @@ import {
   ProductionEnvironmentV1Icon,
 } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1ByName } from "@/store";
+import {
+  useDatabaseV1ByName,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -289,6 +293,8 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const databaseStore = useDatabaseV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
@@ -297,7 +303,24 @@ const state = reactive<LocalState>({
   selectedTab: "overview",
 });
 const route = useRoute();
-const { isDefaultProject } = useDatabaseDetailContext();
+const { isDefaultProject } = provideDatabaseDetailContext(
+  computed(() => props.instanceId),
+  computed(() => props.databaseName)
+);
+
+onMounted(async () => {
+  const database = await databaseStore.getOrFetchDatabaseByName(
+    `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
+  );
+  try {
+    await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
+      silent: true,
+    });
+  } catch {
+    // Silently ignore permission errors.
+  }
+});
 
 watch(
   () => route.hash,

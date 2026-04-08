@@ -193,7 +193,6 @@
   },
   "changelog": {
     "current-schema-empty": "El esquema actual está vacío",
-    "no-schema-change": "esta migración no tiene cambios de esquema",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "self": "Historial de cambios",
