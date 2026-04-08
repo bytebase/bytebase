@@ -1,4 +1,3 @@
-import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { useCallback, useRef, useState } from "react";
 
 interface EllipsisTextProps {
@@ -12,34 +11,35 @@ interface EllipsisTextProps {
  */
 export function EllipsisText({ text, className }: EllipsisTextProps) {
   const textRef = useRef<HTMLSpanElement>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
-  const checkTruncation = useCallback(() => {
+  const handleMouseEnter = useCallback(() => {
     const el = textRef.current;
-    if (el) {
-      setIsTruncated(el.scrollWidth > el.clientWidth);
+    if (el && el.scrollWidth > el.clientWidth) {
+      setShowTooltip(true);
     }
   }, []);
 
+  const handleMouseLeave = useCallback(() => {
+    setShowTooltip(false);
+  }, []);
+
   return (
-    <BaseTooltip.Provider delay={100}>
-      <BaseTooltip.Root open={isTruncated ? undefined : false}>
-        <BaseTooltip.Trigger
-          render={<span className={`block truncate ${className ?? ""}`} />}
-          ref={textRef}
-          onMouseEnter={checkTruncation}
+    <span
+      ref={textRef}
+      className={`relative block truncate ${className ?? ""}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {text}
+      {showTooltip && (
+        <span
+          role="tooltip"
+          className="absolute left-1/2 bottom-full mb-1.5 -translate-x-1/2 z-50 rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs font-normal text-white shadow-md max-w-80 whitespace-normal pointer-events-none"
         >
           {text}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal>
-          <BaseTooltip.Positioner side="top" sideOffset={4}>
-            <BaseTooltip.Popup className="z-50 rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-md max-w-80">
-              {text}
-              <BaseTooltip.Arrow className="fill-gray-900" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+        </span>
+      )}
+    </span>
   );
 }
