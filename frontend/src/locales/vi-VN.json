@@ -806,7 +806,6 @@
     "views": "Khung nhìn"
   },
   "environment": {
-    "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "production-environment": "Môi trường sản xuất",
     "reorder": "Sắp xếp lại môi trường",

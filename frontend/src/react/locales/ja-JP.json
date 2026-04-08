@@ -568,7 +568,6 @@
   "db.syncing-databases-for-instance": "{{0}} のデータベースを同期中...",
   "dynamic.resource.instance": "インスタンス ID",
   "environment": {
-    "delete": "この環境を削除します",
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "reorder": "環境の並べ替え",
     "select": "環境を選ぶ",

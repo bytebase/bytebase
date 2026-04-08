@@ -901,7 +901,7 @@ function EnvironmentDetail({
                 variant="destructive"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                {t("environment.delete")}
+                {t("common.delete")}
               </Button>
             </div>
           )}
@@ -928,7 +928,7 @@ function EnvironmentDetail({
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="bg-white rounded-sm shadow-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-medium mb-2">
-                {t("environment.delete")} '{editTitle}'?
+                {t("common.delete")} '{editTitle}'?
               </h3>
               <div className="mt-3">
                 {existRelatedResource && (
@@ -1449,18 +1449,13 @@ export function EnvironmentsPage() {
           <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
             <Button
               variant="outline"
-              size="sm"
               disabled={!canEdit || environmentList.length <= 1}
               onClick={() => setShowReorder(true)}
             >
               <ListOrdered className="h-4 w-4 mr-1" />
               {t("common.reorder")}
             </Button>
-            <Button
-              size="sm"
-              disabled={!canEdit}
-              onClick={() => setShowCreate(true)}
-            >
+            <Button disabled={!canEdit} onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4 mr-1" />
               {t("common.create")}
             </Button>
