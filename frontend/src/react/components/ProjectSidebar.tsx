@@ -474,7 +474,7 @@ export function ProjectSidebar() {
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
       </div>
-      <div className="flex-1 overflow-y-auto px-2.5 flex flex-col gap-y-1">
+      <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>
     </nav>
