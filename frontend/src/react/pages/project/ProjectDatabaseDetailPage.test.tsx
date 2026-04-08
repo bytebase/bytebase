@@ -75,6 +75,12 @@ const mocks = vi.hoisted(() => {
         </div>
       )
     ),
+    DatabaseChangelogPanel: vi.fn(() => (
+      <div data-testid="database-changelog-panel" />
+    )),
+    DatabaseRevisionPanel: vi.fn(() => (
+      <div data-testid="database-revision-panel" />
+    )),
     useProjectV1Store: vi.fn(() => ({
       getProjectByName: vi.fn(() => ({
         name: "projects/proj1",
@@ -200,6 +206,14 @@ vi.mock("./database-detail/useProjectDatabaseDetail", () => ({
   useProjectDatabaseDetail: mocks.useProjectDatabaseDetail,
 }));
 
+vi.mock("./database-detail/panels/DatabaseChangelogPanel", () => ({
+  DatabaseChangelogPanel: mocks.DatabaseChangelogPanel,
+}));
+
+vi.mock("./database-detail/panels/DatabaseRevisionPanel", () => ({
+  DatabaseRevisionPanel: mocks.DatabaseRevisionPanel,
+}));
+
 vi.mock("@/store", () => ({
   pinia: mocks.pinia,
   pushNotification: mocks.pushNotification,
@@ -318,6 +332,8 @@ beforeEach(() => {
   });
   mocks.pushNotification.mockReset();
   mocks.transferProjectDrawer.mockClear();
+  mocks.DatabaseChangelogPanel.mockClear();
+  mocks.DatabaseRevisionPanel.mockClear();
   mocks.useProjectV1Store.mockReset();
   mocks.useProjectV1Store.mockReturnValue({
     getProjectByName: vi.fn(() => ({
@@ -414,6 +430,25 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("selects the tab from a valid hash and keeps the query when the tab changes", async () => {
+    mocks.usePermissionStore.mockReturnValue({
+      currentPermissions: new Set([
+        "bb.databases.sync",
+        "bb.databases.getSchema",
+        "bb.databases.update",
+        "bb.changelogs.list",
+        "bb.revisions.list",
+      ]),
+      currentPermissionsInProjectV1: vi.fn(
+        () =>
+          new Set([
+            "bb.databases.sync",
+            "bb.databases.getSchema",
+            "bb.databases.update",
+            "bb.changelogs.list",
+            "bb.revisions.list",
+          ])
+      ),
+    });
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
@@ -456,6 +491,14 @@ describe("ProjectDatabaseDetailPage", () => {
         .querySelector('[data-testid="tabs"]')
         ?.getAttribute("data-value")
     ).toBe(PROJECT_DATABASE_DETAIL_TAB_REVISION);
+    expect(mocks.DatabaseRevisionPanel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        database: expect.objectContaining({
+          name: "instances/inst1/databases/db1",
+        }),
+      }),
+      undefined
+    );
     expect(
       Array.from(container.querySelectorAll('[data-testid^="tab-"]')).map(
         (button) => button.textContent
@@ -488,6 +531,14 @@ describe("ProjectDatabaseDetailPage", () => {
         .querySelector('[data-testid="tabs"]')
         ?.getAttribute("data-value")
     ).toBe("changelog");
+    expect(mocks.DatabaseChangelogPanel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        database: expect.objectContaining({
+          name: "instances/inst1/databases/db1",
+        }),
+      }),
+      undefined
+    );
 
     unmount();
   });
@@ -682,6 +733,62 @@ describe("ProjectDatabaseDetailPage", () => {
     expect(mocks.highlightPlugin.install).toHaveBeenCalled();
     expect(mocks.i18nPlugin.install).toHaveBeenCalled();
     expect(mocks.naivePlugin.install).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("renders the tab panels only when the matching list permissions are present", async () => {
+    mocks.usePermissionStore.mockReturnValue({
+      currentPermissions: new Set([
+        "bb.databases.sync",
+        "bb.databases.getSchema",
+        "bb.databases.update",
+        "bb.changelogs.list",
+      ]),
+      currentPermissionsInProjectV1: vi.fn(
+        () =>
+          new Set([
+            "bb.databases.sync",
+            "bb.databases.getSchema",
+            "bb.databases.update",
+            "bb.changelogs.list",
+          ])
+      ),
+    });
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        hash: "#changelog",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="database-changelog-panel"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="database-revision-panel"]')
+    ).toBeNull();
 
     unmount();
   });
