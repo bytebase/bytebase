@@ -1095,13 +1095,10 @@ function ExemptionGrantSection({
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
-  const isExpired = useMemo(
-    () =>
-      !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now(),
-    [grant.expirationTimestamp]
-  );
+  const isExpired =
+    !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now();
 
-  const expiryLabel = useMemo(() => {
+  const expiryLabel = (() => {
     if (!grant.expirationTimestamp) return "";
     const msRemaining = grant.expirationTimestamp - Date.now();
     const hoursRemaining = msRemaining / (1000 * 60 * 60);
@@ -1112,7 +1109,7 @@ function ExemptionGrantSection({
       days,
       count: days,
     });
-  }, [grant.expirationTimestamp, t]);
+  })();
 
   return (
     <div>
