@@ -26,13 +26,15 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 		select {
 		case <-ticker.C:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
-				s.haFailCount++
-				if s.haFailCount >= haFailGraceTicks {
+				if s.haFailSince.IsZero() {
+					s.haFailSince = time.Now()
+				}
+				if time.Since(s.haFailSince) >= haFailGracePeriod {
 					s.failTaskRunsForHA(ctx, err)
 				}
 				continue
 			}
-			s.haFailCount = 0
+			s.haFailSince = time.Time{}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
@@ -41,7 +43,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 				// Grace period is tracked by the ticker branch; just skip here.
 				continue
 			}
-			s.haFailCount = 0
+			s.haFailSince = time.Time{}
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}

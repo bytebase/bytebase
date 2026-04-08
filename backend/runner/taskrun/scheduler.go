@@ -19,12 +19,11 @@ import (
 
 const (
 	taskSchedulerInterval = 5 * time.Second
-	// haFailGraceTicks is the number of consecutive HA-limit failures before
-	// task runs are marked FAILED. This avoids permanently failing task runs
-	// during transient over-counts caused by rolling restarts: stale heartbeats
-	// linger for up to 30 s (replicaActiveWindow), so 7 × 5 s = 35 s provides
-	// enough margin.
-	haFailGraceTicks = 7
+	// haFailGracePeriod is the duration to wait before failing task runs after
+	// the HA license check starts failing. This avoids permanently failing task
+	// runs during rolling restarts where stale heartbeats cause transient
+	// over-counts.
+	haFailGracePeriod = 10 * time.Minute
 )
 
 // Scheduler is the scheduler for task run.
@@ -35,10 +34,9 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
-	// haFailCount tracks consecutive scheduler ticks where CheckReplicaLimit
-	// returned an error. Task runs are only failed after haFailGraceTicks
-	// consecutive failures.
-	haFailCount int
+	// haFailSince is when CheckReplicaLimit first started failing.
+	// Zero means the check is currently passing.
+	haFailSince time.Time
 }
 
 // NewScheduler will create a new scheduler.
