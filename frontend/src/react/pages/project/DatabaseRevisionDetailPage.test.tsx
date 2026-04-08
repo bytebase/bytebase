@@ -19,8 +19,6 @@ const mocks = vi.hoisted(() => {
     localStorage,
     routerPush: vi.fn(),
     useProjectDatabaseDetail: vi.fn(),
-    useDatabaseV1Store: vi.fn(),
-    getOrFetchDatabaseByName: vi.fn(),
     extractDatabaseResourceName: vi.fn((name: string) => ({
       instance: "instances/inst1",
       instanceName: "inst1",
@@ -50,6 +48,7 @@ const mocks = vi.hoisted(() => {
 
 type DatabaseRevisionDetailPageComponent =
   typeof import("./DatabaseRevisionDetailPage").DatabaseRevisionDetailPage;
+let DatabaseRevisionDetailPage: DatabaseRevisionDetailPageComponent;
 
 vi.mock("lucide-react", () => ({
   LoaderCircle: mocks.LoaderCircle,
@@ -80,10 +79,6 @@ vi.mock("./database-detail/useProjectDatabaseDetail", () => ({
   useProjectDatabaseDetail: mocks.useProjectDatabaseDetail,
 }));
 
-vi.mock("@/store", () => ({
-  useDatabaseV1Store: mocks.useDatabaseV1Store,
-}));
-
 vi.mock("@/utils/v1/database", () => ({
   extractDatabaseResourceName: mocks.extractDatabaseResourceName,
 }));
@@ -95,12 +90,6 @@ vi.mock("@/utils/v1/instance", () => ({
 vi.mock("@/utils/v1/project", () => ({
   extractProjectResourceName: mocks.extractProjectResourceName,
 }));
-
-const {
-  DatabaseRevisionDetailPage,
-}: {
-  DatabaseRevisionDetailPage: DatabaseRevisionDetailPageComponent;
-} = await import("./DatabaseRevisionDetailPage");
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const container = document.createElement("div");
@@ -128,8 +117,6 @@ beforeEach(() => {
   mocks.localStorage.clear.mockReset();
   mocks.routerPush.mockReset();
   mocks.useProjectDatabaseDetail.mockReset();
-  mocks.useDatabaseV1Store.mockReset();
-  mocks.getOrFetchDatabaseByName.mockReset();
   mocks.extractDatabaseResourceName.mockReset();
   mocks.extractDatabaseResourceName.mockImplementation((name: string) => ({
     instance: "instances/inst1",
@@ -153,6 +140,13 @@ beforeEach(() => {
   mocks.RevisionDetailPanel.mockClear();
 });
 
+beforeEach(async () => {
+  vi.resetModules();
+  ({ DatabaseRevisionDetailPage } = await import(
+    "./DatabaseRevisionDetailPage"
+  ));
+});
+
 describe("DatabaseRevisionDetailPage", () => {
   test("shows a spinner while the shared database hook is loading", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
@@ -166,14 +160,6 @@ describe("DatabaseRevisionDetailPage", () => {
       allowAlterSchema: true,
       isDefaultProject: false,
     });
-    mocks.useDatabaseV1Store.mockReturnValue({
-      getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
-    });
-    mocks.getOrFetchDatabaseByName.mockResolvedValue({
-      name: "instances/inst1/databases/db-from-prop",
-      project: "projects/proj1",
-    });
-
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionDetailPage, {
         project: "projects/proj1",
@@ -208,14 +194,6 @@ describe("DatabaseRevisionDetailPage", () => {
       allowAlterSchema: true,
       isDefaultProject: false,
     });
-    mocks.useDatabaseV1Store.mockReturnValue({
-      getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
-    });
-    mocks.getOrFetchDatabaseByName.mockResolvedValue({
-      name: "instances/inst1/databases/db-from-prop",
-      project: "projects/proj1",
-    });
-
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionDetailPage, {
         project: "projects/proj1",
