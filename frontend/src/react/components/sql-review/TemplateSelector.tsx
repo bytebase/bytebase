@@ -2,7 +2,6 @@ import { CheckCircle } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { rulesToTemplate } from "@/components/SQLReview/components/utils";
-import { t as vueT } from "@/plugins/i18n";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -73,6 +72,7 @@ export function TemplateSelector({
   selectedTemplateId,
   onSelectTemplate,
 }: TemplateSelectorProps) {
+  const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const policyList = useVueState(() => [...sqlReviewStore.reviewPolicyList]);
 
@@ -90,7 +90,7 @@ export function TemplateSelector({
   return (
     <div className="flex flex-col gap-y-2">
       <p className="textlabel">
-        {vueT("sql-review.create.basic-info.choose-template")}
+        {t("sql-review.create.basic-info.choose-template")}
         {required && <span className="text-red-500"> *</span>}
       </p>
 
@@ -116,7 +116,7 @@ export function TemplateSelector({
                   </div>
                   <p className="text-sm">
                     <span className="mr-2">
-                      {vueT("sql-review.enabled-rules")}:
+                      {t("sql-review.enabled-rules")}:
                     </span>
                     <span>{template.ruleList.length}</span>
                   </p>
@@ -143,19 +143,15 @@ export function TemplateSelector({
           >
             <div className="text-left flex flex-col gap-y-2">
               <span className="text-base font-medium">
-                {vueT(
-                  `sql-review.template.${template.id.split(".").join("-")}`
-                )}
+                {t(`sql-review.template.${template.id.split(".").join("-")}`)}
               </span>
               <p className="text-sm text-gray-500">
-                {vueT(
+                {t(
                   `sql-review.template.${template.id.split(".").join("-")}-desc`
                 )}
               </p>
               <p className="text-sm">
-                <span className="mr-2">
-                  {vueT("sql-review.enabled-rules")}:
-                </span>
+                <span className="mr-2">{t("sql-review.enabled-rules")}:</span>
                 <span>{template.ruleList.length}</span>
               </p>
             </div>

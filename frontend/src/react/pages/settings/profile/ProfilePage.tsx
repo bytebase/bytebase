@@ -5,7 +5,6 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { Ellipsis, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { t as vueT } from "@/plugins/i18n";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
@@ -204,7 +203,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
     const removeGuard = router.beforeEach((_to, _from, next) => {
       if (shouldGuard) {
-        if (!window.confirm(vueT("common.leave-without-saving"))) {
+        if (!window.confirm(t("common.leave-without-saving"))) {
           next(false);
           return;
         }

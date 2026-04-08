@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
-import { t as vueT } from "@/plugins/i18n";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -44,6 +44,7 @@ export function RulesSelectPanel({
   onRuleSelect,
   onRuleRemove,
 }: RulesSelectPanelProps) {
+  const { t } = useTranslation();
   useEscapeKey(show, onClose);
 
   const getSelectedRuleKeys = useCallback(
@@ -104,7 +105,7 @@ export function RulesSelectPanel({
       <div className="ml-auto relative bg-white w-[70rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-lg font-medium">
-            {vueT("sql-review.select-review-rules")}
+            {t("sql-review.select-review-rules")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -130,7 +131,7 @@ export function RulesSelectPanel({
         </div>
         <div className="px-4 py-3 border-t flex justify-end gap-x-3">
           <Button variant="outline" onClick={onClose}>
-            {vueT("common.close")}
+            {t("common.close")}
           </Button>
         </div>
       </div>
@@ -153,6 +154,7 @@ export function AttachResourcesPanel({
   review,
   onClose,
 }: AttachResourcesPanelProps) {
+  const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const envStore = useEnvironmentV1Store();
   const projStore = useProjectV1Store();
@@ -242,7 +244,7 @@ export function AttachResourcesPanel({
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: vueT("sql-review.policy-updated"),
+      title: t("sql-review.policy-updated"),
     });
     onClose();
   };
@@ -255,7 +257,7 @@ export function AttachResourcesPanel({
       <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-lg font-medium">
-            {vueT("sql-review.attach-resource.self")}
+            {t("sql-review.attach-resource.self")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -265,14 +267,14 @@ export function AttachResourcesPanel({
         <div className="flex-1 overflow-y-auto p-4">
           <div className="flex flex-col gap-y-6">
             <p className="textinfolabel">
-              {vueT("sql-review.attach-resource.label")}
+              {t("sql-review.attach-resource.label")}
             </p>
 
             {/* Environment section */}
             <div>
-              <div className="textlabel mb-1">{vueT("common.environment")}</div>
+              <div className="textlabel mb-1">{t("common.environment")}</div>
               <p className="textinfolabel">
-                {vueT("sql-review.attach-resource.label-environment")}
+                {t("sql-review.attach-resource.label-environment")}
               </p>
               <div className="mt-3 flex flex-col gap-y-2">
                 {environments.map((env) => {
@@ -304,17 +306,15 @@ export function AttachResourcesPanel({
 
             {/* OR divider */}
             <div className="flex items-center gap-x-2">
-              <div className="textlabel w-10 capitalize">
-                {vueT("common.or")}
-              </div>
+              <div className="textlabel w-10 capitalize">{t("common.or")}</div>
               <hr className="flex-1 border-gray-200" />
             </div>
 
             {/* Project section */}
             <div>
-              <div className="textlabel mb-1">{vueT("common.project")}</div>
+              <div className="textlabel mb-1">{t("common.project")}</div>
               <p className="textinfolabel">
-                {vueT("sql-review.attach-resource.label-project")}
+                {t("sql-review.attach-resource.label-project")}
               </p>
               <div className="mt-3 flex flex-col gap-y-2 max-h-60 overflow-y-auto">
                 {projects.map((proj) => {
@@ -351,8 +351,8 @@ export function AttachResourcesPanel({
             <Alert variant="warning">
               <AlertDescription>
                 <p className="mb-2">
-                  {vueT("sql-review.attach-resource.override-warning", {
-                    button: vueT("common.confirm"),
+                  {t("sql-review.attach-resource.override-warning", {
+                    button: t("common.confirm"),
                   })}
                 </p>
                 <ul className="list-disc list-inside text-sm">
@@ -367,15 +367,15 @@ export function AttachResourcesPanel({
 
         <div className="px-4 py-3 border-t flex justify-end gap-x-2">
           <Button variant="outline" onClick={onClose}>
-            {vueT("common.cancel")}
+            {t("common.cancel")}
           </Button>
           {showOverrideConfirm ? (
             <Button variant="destructive" onClick={doSave}>
-              {vueT("common.confirm")}
+              {t("common.confirm")}
             </Button>
           ) : (
             <Button disabled={!hasPermission} onClick={onConfirm}>
-              {vueT("common.confirm")}
+              {t("common.confirm")}
             </Button>
           )}
         </div>
