@@ -34,16 +34,18 @@ setup("authenticate and discover", async ({ page }) => {
     await page.waitForURL("**/landing**", { timeout: 120000 });
   }
 
-  // Browser auth: navigate and save state
-  if (env.adminEmail && env.adminPassword) {
-    await page.goto(`${env.baseURL}/auth/signin`);
-    // If already authenticated, the server redirects away from /auth
-    if (page.url().includes("/auth")) {
+  // Browser auth: sign in via browser to get auth cookies for subsequent tests
+  await page.goto(`${env.baseURL}/auth/signin`);
+  // If already authenticated, the server redirects away from /auth
+  if (page.url().includes("/auth")) {
+    if (env.adminEmail) {
       await page.getByRole("textbox", { name: /email/i }).fill(env.adminEmail);
+    }
+    if (env.adminPassword) {
       await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
-      await expect(page).not.toHaveURL(/\/auth/);
     }
+    await expect(page).not.toHaveURL(/\/auth/, { timeout: 60000 });
   }
 
   // Dismiss modals

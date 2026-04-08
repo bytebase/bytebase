@@ -59,11 +59,19 @@ export async function startServer(): Promise<{
   adminEmail: string;
   adminPassword: string;
 }> {
-  const binPath = process.env.BYTEBASE_BIN ?? "./bytebase-build/bytebase";
-  if (!fs.existsSync(binPath)) {
+  // Check both CWD-relative and repo-root-relative paths
+  const candidates = [
+    process.env.BYTEBASE_BIN,
+    "./bytebase-build/bytebase",
+    "../bytebase-build/bytebase",
+  ].filter(Boolean) as string[];
+  const binPath = candidates.find((p) => fs.existsSync(p));
+  if (!binPath) {
     throw new Error(
-      `Bytebase binary not found at ${binPath}. Build it with:\n` +
-        `  go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
+      `Bytebase binary not found. Build it with:\n` +
+        `  pnpm --dir frontend build\n` +
+        `  go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go\n` +
+        `Or set BYTEBASE_BIN to the binary path.`
     );
   }
 
