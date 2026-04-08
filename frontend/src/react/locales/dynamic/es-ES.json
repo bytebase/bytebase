@@ -1,23 +1,26 @@
 {
+  "resource": {
+    "instance": "Instancia"
+  },
   "settings": {
     "sensitive-data": {
       "semantic-types": {
         "template": {
           "bb-default": {
-            "title": "Por defecto",
-            "description": "Tipo predeterminado con enmascaramiento completo",
             "algorithm": {
-              "title": "Máscara completa",
-              "description": "Todos los valores se enmascararán como \"******\""
-            }
+              "description": "Todos los valores se enmascararán como \"******\"",
+              "title": "Máscara completa"
+            },
+            "description": "Tipo predeterminado con enmascaramiento completo",
+            "title": "Por defecto"
           },
           "bb-default-partial": {
-            "title": "Predeterminado Parcial",
-            "description": "Tipo parcial predeterminado con enmascaramiento parcial",
             "algorithm": {
-              "title": "Máscara de rango",
-              "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
-            }
+              "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\".",
+              "title": "Máscara de rango"
+            },
+            "description": "Tipo parcial predeterminado con enmascaramiento parcial",
+            "title": "Predeterminado Parcial"
           }
         }
       }
@@ -25,327 +28,324 @@
   },
   "subscription": {
     "features": {
-      "FEATURE_DATABASE_CHANGE": {
-        "title": "Cambio de base de datos",
-        "desc": "Funcionalidad principal de gestión de cambios de base de datos."
-      },
-      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
-        "title": "Control de versiones de esquema basado en Git",
-        "desc": "Revise los cambios de SQL en las solicitudes de extracción de VCS con verificaciones automatizadas."
-      },
-      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
-        "title": "Migración de esquema declarativa",
-        "desc": "Defina el estado de esquema deseado y deje que Bytebase maneje la migración."
-      },
-      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
-        "title": "Comparar y sincronizar esquema",
-        "desc": "Compare esquemas entre bases de datos y sincronice las diferencias."
-      },
-      "FEATURE_ONLINE_SCHEMA_CHANGE": {
-        "title": "Cambio de esquema en línea",
-        "desc": "Realice cambios de esquema en tablas grandes con bloqueo mínimo."
-      },
-      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
-        "title": "Revisión de SQL",
-        "desc": "Aplique las mejores prácticas de SQL con más de 100 reglas de lint y verificaciones de coherencia de esquema."
-      },
-      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
-        "title": "Copia de seguridad automática",
-        "desc": "Realice copias de seguridad automáticas de los datos antes de realizar cambios."
-      },
-      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
-        "title": "Reversión de datos con un clic",
-        "desc": "Revierta rápidamente los cambios de datos con un solo clic."
-      },
-      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
-        "title": "Cambios por lotes en múltiples bases de datos",
-        "desc": "Aplique el mismo cambio a múltiples bases de datos en diferentes inquilinos o particiones."
-      },
-      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
-        "title": "Despliegue progresivo por entornos",
-        "desc": "Despliegue cambios progresivamente a través de diferentes entornos."
-      },
-      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
-        "title": "Tiempo de despliegue programado",
-        "desc": "Programe cambios de base de datos para ejecutarse en un momento específico."
-      },
-      "FEATURE_DATABASE_CHANGELOG": {
-        "title": "Registro de cambios de base de datos",
-        "desc": "Rastree todos los cambios de esquema y datos de la base de datos."
-      },
-      "FEATURE_ROLLOUT_POLICY": {
-        "title": "Política de despliegue",
-        "desc": "Controle si la tarea de cambio de esquema requiere despliegue manual."
-      },
-      "FEATURE_WEB_BASED_SQL_EDITOR": {
-        "title": "Editor SQL basado en web",
-        "desc": "Ejecute consultas SQL directamente desde la interfaz web."
-      },
-      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
-        "title": "Modo administrador del editor SQL",
-        "desc": "Acceda a funciones administrativas en el editor SQL."
-      },
-      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
-        "title": "Lenguaje natural a SQL",
-        "desc": "Convierta consultas en lenguaje natural a SQL usando IA."
-      },
       "FEATURE_AI_QUERY_EXPLANATION": {
-        "title": "Explicación de consultas con IA",
-        "desc": "Obtenga explicaciones impulsadas por IA para consultas SQL complejas."
+        "desc": "Obtenga explicaciones impulsadas por IA para consultas SQL complejas.",
+        "title": "Explicación de consultas con IA"
       },
       "FEATURE_AI_QUERY_SUGGESTIONS": {
-        "title": "Sugerencias de consultas con IA",
-        "desc": "Obtenga sugerencias de consultas y recomendaciones de índices impulsadas por IA."
-      },
-      "FEATURE_AUTO_COMPLETE": {
-        "title": "Autocompletado",
-        "desc": "Autocompletado inteligente de SQL en el editor."
-      },
-      "FEATURE_SCHEMA_DIAGRAM": {
-        "title": "Diagrama de esquema",
-        "desc": "Visualice el esquema de base de datos con diagramas interactivos."
-      },
-      "FEATURE_SCHEMA_EDITOR": {
-        "title": "Editor de esquema",
-        "desc": "Edición visual de esquema con interfaz de arrastrar y soltar."
-      },
-      "FEATURE_DATA_EXPORT": {
-        "title": "Exportación de datos",
-        "desc": "Exporte resultados de consultas en varios formatos."
-      },
-      "FEATURE_DATA_OFFLINE_EXPORT": {
-        "title": "Exportación de datos sin conexión",
-        "desc": "Exporte datos para uso y análisis sin conexión."
-      },
-      "FEATURE_QUERY_HISTORY": {
-        "title": "Historial de consultas",
-        "desc": "Acceda al historial completo de ejecución de consultas con capacidades de búsqueda."
-      },
-      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
-        "title": "Scripts SQL guardados y compartidos",
-        "desc": "Guarde y comparta scripts SQL con miembros del equipo."
-      },
-      "FEATURE_BATCH_QUERY": {
-        "title": "Consulta por lotes",
-        "desc": "Ejecute consultas en múltiples bases de datos simultáneamente."
-      },
-      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
-        "title": "Conexión de solo lectura",
-        "desc": "Conéctese a réplicas de lectura para operaciones de solo lectura."
-      },
-      "FEATURE_QUERY_POLICY": {
-        "title": "Política de consultas",
-        "desc": "Configure restricciones y permisos avanzados de consultas."
-      },
-      "FEATURE_RESTRICT_COPYING_DATA": {
-        "title": "Restringir copia de datos",
-        "desc": "Controle el acceso de usuarios para copiar datos de los resultados de consultas."
-      },
-      "FEATURE_IAM": {
-        "title": "Gestión de identidad y acceso",
-        "desc": "Sistema de control de acceso basado en roles de grano fino."
-      },
-      "FEATURE_INSTANCE_SSL_CONNECTION": {
-        "title": "Conexión SSL",
-        "desc": "Conexiones seguras a bases de datos con cifrado SSL/TLS."
-      },
-      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
-        "title": "Conexión por túnel SSH",
-        "desc": "Conéctese a instancias a través de túneles SSH para mayor seguridad."
-      },
-      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
-        "title": "Autenticación IAM",
-        "desc": "Use IAM del proveedor de nube para la autenticación de base de datos."
-      },
-      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
-        "title": "Tiempo de sincronización de instancia personalizado",
-        "desc": "Personalice los intervalos y configuraciones de sincronización de base de datos."
-      },
-      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
-        "title": "Límite de conexión de instancia personalizado",
-        "desc": "Configure límites máximos de conexión de base de datos."
-      },
-      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
-        "title": "SSO de Google y GitHub",
-        "desc": "Inicie sesión con cuentas de Google o GitHub."
-      },
-      "FEATURE_USER_GROUPS": {
-        "title": "Grupos de usuarios",
-        "desc": "Organice usuarios en grupos para una gestión más fácil."
-      },
-      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
-        "title": "Deshabilitar registro de autoservicio",
-        "desc": "Requiera invitación del administrador para el registro de nuevos usuarios."
-      },
-      "FEATURE_RISK_ASSESSMENT": {
-        "title": "Evaluación de riesgos",
-        "desc": "Evalúe y categorice el nivel de riesgo de los cambios de base de datos."
-      },
-      "FEATURE_APPROVAL_WORKFLOW": {
-        "title": "Flujo de trabajo de aprobación",
-        "desc": "Configure niveles de riesgo y flujos de aprobación para diferentes tareas."
-      },
-      "FEATURE_AUDIT_LOG": {
-        "title": "Registro de auditoría",
-        "desc": "Rastree todas las operaciones realizadas por usuarios en el espacio de trabajo."
-      },
-      "FEATURE_ENTERPRISE_SSO": {
-        "title": "SSO empresarial",
-        "desc": "Inicio de sesión único con proveedores SAML, OIDC y OAuth."
-      },
-      "FEATURE_TWO_FA": {
-        "title": "Autenticación de dos factores",
-        "desc": "Añada una capa extra de seguridad con verificación de aplicación autenticadora."
-      },
-      "FEATURE_PASSWORD_RESTRICTIONS": {
-        "title": "Restricciones de contraseña",
-        "desc": "Aplique requisitos de complejidad y seguridad de contraseña."
-      },
-      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
-        "title": "Deshabilitar inicio de sesión con contraseña",
-        "desc": "Requiera solo autenticación SSO para el inicio de sesión de usuarios."
-      },
-      "FEATURE_CUSTOM_ROLES": {
-        "title": "Roles personalizados",
-        "desc": "Defina roles personalizados con permisos específicos para su organización."
-      },
-      "FEATURE_REQUEST_ROLE_WORKFLOW": {
-        "title": "Flujo de trabajo de solicitud de rol",
-        "desc": "Los usuarios pueden solicitar roles de proyecto con flujo de trabajo de aprobación."
-      },
-      "FEATURE_DATA_MASKING": {
-        "title": "Enmascaramiento de datos",
-        "desc": "Marque columnas de tabla como datos sensibles y enmascare resultados de consultas."
-      },
-      "FEATURE_DATA_CLASSIFICATION": {
-        "title": "Clasificación de datos",
-        "desc": "Clasifique y etiquete datos basándose en niveles de sensibilidad."
-      },
-      "FEATURE_SCIM": {
-        "title": "SCIM",
-        "desc": "Soporte para Sistema de Gestión de Identidad entre Dominios."
-      },
-      "FEATURE_DIRECTORY_SYNC": {
-        "title": "Sincronización de directorios",
-        "desc": "Sincronice usuarios y grupos desde Entra ID a Bytebase."
-      },
-      "FEATURE_TOKEN_DURATION_CONTROL": {
-        "title": "Control de duración de token",
-        "desc": "Configure las duraciones del token de acceso y del token de actualización."
-      },
-      "FEATURE_EXTERNAL_SECRET_MANAGER": {
-        "title": "Gestor de secretos externo",
-        "desc": "Use Vault o una URL personalizada como secreto externo para la contraseña de base de datos."
-      },
-      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
-        "title": "Restricción de dominio de correo electrónico",
-        "desc": "Restrinja el inicio de sesión a usuarios de dominios de correo especificados."
-      },
-      "FEATURE_PROJECT_MANAGEMENT": {
-        "title": "Gestión de proyectos",
-        "desc": "Gestione y organice proyectos con capacidades avanzadas."
-      },
-      "FEATURE_ENVIRONMENT_MANAGEMENT": {
-        "title": "Gestión de entornos",
-        "desc": "Gestione y configure diferentes entornos de despliegue."
-      },
-      "FEATURE_IM_NOTIFICATIONS": {
-        "title": "Notificaciones IM",
-        "desc": "Envíe notificaciones a plataformas IM como Slack y Teams."
-      },
-      "FEATURE_TERRAFORM_PROVIDER": {
-        "title": "Proveedor de Terraform",
-        "desc": "Gestione recursos de Bytebase usando Terraform."
-      },
-      "FEATURE_DATABASE_GROUPS": {
-        "title": "Grupos de bases de datos",
-        "desc": "Agrupe bases de datos para operaciones y gestión por lotes."
-      },
-      "FEATURE_ENVIRONMENT_TIERS": {
-        "title": "Niveles de entorno",
-        "desc": "Defina niveles de entorno como producción y desarrollo."
-      },
-      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
-        "title": "Anuncio del panel",
-        "desc": "Muestre anuncios personalizados en el panel de control."
+        "desc": "Obtenga sugerencias de consultas y recomendaciones de índices impulsadas por IA.",
+        "title": "Sugerencias de consultas con IA"
       },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
-        "title": "Guía de integración API",
-        "desc": "Documentación y orientación para integraciones API."
+        "desc": "Documentación y orientación para integraciones API.",
+        "title": "Guía de integración API"
       },
-      "FEATURE_CUSTOM_LOGO": {
-        "title": "Logo personalizado",
-        "desc": "Personalice el logo para su organización."
+      "FEATURE_APPROVAL_WORKFLOW": {
+        "desc": "Configure niveles de riesgo y flujos de aprobación para diferentes tareas.",
+        "title": "Flujo de trabajo de aprobación"
       },
-      "FEATURE_WATERMARK": {
-        "title": "Marca de agua",
-        "desc": "Muestre marcas de agua visibles con información del usuario en las páginas."
+      "FEATURE_AUDIT_LOG": {
+        "desc": "Rastree todas las operaciones realizadas por usuarios en el espacio de trabajo.",
+        "title": "Registro de auditoría"
       },
-      "FEATURE_ROADMAP_PRIORITIZATION": {
-        "title": "Priorización del roadmap",
-        "desc": "Influya en las prioridades de desarrollo de funciones."
+      "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES": {
+        "desc": "Realice copias de seguridad automáticas de los datos antes de realizar cambios.",
+        "title": "Copia de seguridad automática"
       },
-      "FEATURE_CUSTOM_MSA": {
-        "title": "MSA personalizado",
-        "desc": "Términos personalizados del Acuerdo de Servicio Maestro."
+      "FEATURE_AUTO_COMPLETE": {
+        "desc": "Autocompletado inteligente de SQL en el editor.",
+        "title": "Autocompletado"
+      },
+      "FEATURE_BATCH_QUERY": {
+        "desc": "Ejecute consultas en múltiples bases de datos simultáneamente.",
+        "title": "Consulta por lotes"
       },
       "FEATURE_COMMUNITY_SUPPORT": {
-        "title": "Soporte de la comunidad",
-        "desc": "Obtenga ayuda de la comunidad de Bytebase."
+        "desc": "Obtenga ayuda de la comunidad de Bytebase.",
+        "title": "Soporte de la comunidad"
       },
-      "FEATURE_EMAIL_SUPPORT": {
-        "title": "Soporte por correo electrónico",
-        "desc": "Soporte directo por correo del equipo de Bytebase."
+      "FEATURE_COMPARE_AND_SYNC_SCHEMA": {
+        "desc": "Compare esquemas entre bases de datos y sincronice las diferencias.",
+        "title": "Comparar y sincronizar esquema"
+      },
+      "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT": {
+        "desc": "Configure límites máximos de conexión de base de datos.",
+        "title": "Límite de conexión de instancia personalizado"
+      },
+      "FEATURE_CUSTOM_INSTANCE_SYNC_TIME": {
+        "desc": "Personalice los intervalos y configuraciones de sincronización de base de datos.",
+        "title": "Tiempo de sincronización de instancia personalizado"
+      },
+      "FEATURE_CUSTOM_LOGO": {
+        "desc": "Personalice el logo para su organización.",
+        "title": "Logo personalizado"
+      },
+      "FEATURE_CUSTOM_MSA": {
+        "desc": "Términos personalizados del Acuerdo de Servicio Maestro.",
+        "title": "MSA personalizado"
+      },
+      "FEATURE_CUSTOM_ROLES": {
+        "desc": "Defina roles personalizados con permisos específicos para su organización.",
+        "title": "Roles personalizados"
+      },
+      "FEATURE_DASHBOARD_ANNOUNCEMENT": {
+        "desc": "Muestre anuncios personalizados en el panel de control.",
+        "title": "Anuncio del panel"
+      },
+      "FEATURE_DATABASE_CHANGE": {
+        "desc": "Funcionalidad principal de gestión de cambios de base de datos.",
+        "title": "Cambio de base de datos"
+      },
+      "FEATURE_DATABASE_CHANGELOG": {
+        "desc": "Rastree todos los cambios de esquema y datos de la base de datos.",
+        "title": "Registro de cambios de base de datos"
+      },
+      "FEATURE_DATABASE_GROUPS": {
+        "desc": "Agrupe bases de datos para operaciones y gestión por lotes.",
+        "title": "Grupos de bases de datos"
+      },
+      "FEATURE_DATA_CLASSIFICATION": {
+        "desc": "Clasifique y etiquete datos basándose en niveles de sensibilidad.",
+        "title": "Clasificación de datos"
+      },
+      "FEATURE_DATA_EXPORT": {
+        "desc": "Exporte resultados de consultas en varios formatos.",
+        "title": "Exportación de datos"
+      },
+      "FEATURE_DATA_MASKING": {
+        "desc": "Marque columnas de tabla como datos sensibles y enmascare resultados de consultas.",
+        "title": "Enmascaramiento de datos"
+      },
+      "FEATURE_DATA_OFFLINE_EXPORT": {
+        "desc": "Exporte datos para uso y análisis sin conexión.",
+        "title": "Exportación de datos sin conexión"
+      },
+      "FEATURE_DECLARATIVE_SCHEMA_MIGRATION": {
+        "desc": "Defina el estado de esquema deseado y deje que Bytebase maneje la migración.",
+        "title": "Migración de esquema declarativa"
       },
       "FEATURE_DEDICATED_SUPPORT_WITH_SLA": {
-        "title": "Soporte dedicado con SLA",
-        "desc": "Soporte prioritario con tiempos de respuesta garantizados."
+        "desc": "Soporte prioritario con tiempos de respuesta garantizados.",
+        "title": "Soporte dedicado con SLA"
+      },
+      "FEATURE_DIRECTORY_SYNC": {
+        "desc": "Sincronice usuarios y grupos desde Entra ID a Bytebase.",
+        "title": "Sincronización de directorios"
+      },
+      "FEATURE_DISALLOW_PASSWORD_SIGNIN": {
+        "desc": "Requiera solo autenticación SSO para el inicio de sesión de usuarios.",
+        "title": "Deshabilitar inicio de sesión con contraseña"
+      },
+      "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP": {
+        "desc": "Requiera invitación del administrador para el registro de nuevos usuarios.",
+        "title": "Deshabilitar registro de autoservicio"
+      },
+      "FEATURE_EMAIL_SUPPORT": {
+        "desc": "Soporte directo por correo del equipo de Bytebase.",
+        "title": "Soporte por correo electrónico"
+      },
+      "FEATURE_ENTERPRISE_SSO": {
+        "desc": "Inicio de sesión único con proveedores SAML, OIDC y OAuth.",
+        "title": "SSO empresarial"
+      },
+      "FEATURE_ENVIRONMENT_MANAGEMENT": {
+        "desc": "Gestione y configure diferentes entornos de despliegue.",
+        "title": "Gestión de entornos"
+      },
+      "FEATURE_ENVIRONMENT_TIERS": {
+        "desc": "Defina niveles de entorno como producción y desarrollo.",
+        "title": "Niveles de entorno"
+      },
+      "FEATURE_EXTERNAL_SECRET_MANAGER": {
+        "desc": "Use Vault o una URL personalizada como secreto externo para la contraseña de base de datos.",
+        "title": "Gestor de secretos externo"
+      },
+      "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL": {
+        "desc": "Revise los cambios de SQL en las solicitudes de extracción de VCS con verificaciones automatizadas.",
+        "title": "Control de versiones de esquema basado en Git"
+      },
+      "FEATURE_GOOGLE_AND_GITHUB_SSO": {
+        "desc": "Inicie sesión con cuentas de Google o GitHub.",
+        "title": "SSO de Google y GitHub"
+      },
+      "FEATURE_IAM": {
+        "desc": "Sistema de control de acceso basado en roles de grano fino.",
+        "title": "Gestión de identidad y acceso"
+      },
+      "FEATURE_IM_NOTIFICATIONS": {
+        "desc": "Envíe notificaciones a plataformas IM como Slack y Teams.",
+        "title": "Notificaciones IM"
+      },
+      "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION": {
+        "desc": "Use IAM del proveedor de nube para la autenticación de base de datos.",
+        "title": "Autenticación IAM"
+      },
+      "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL": {
+        "desc": "Conéctese a instancias a través de túneles SSH para mayor seguridad.",
+        "title": "Conexión por túnel SSH"
+      },
+      "FEATURE_INSTANCE_READ_ONLY_CONNECTION": {
+        "desc": "Conéctese a réplicas de lectura para operaciones de solo lectura.",
+        "title": "Conexión de solo lectura"
+      },
+      "FEATURE_INSTANCE_SSL_CONNECTION": {
+        "desc": "Conexiones seguras a bases de datos con cifrado SSL/TLS.",
+        "title": "Conexión SSL"
+      },
+      "FEATURE_MULTI_DATABASE_BATCH_CHANGES": {
+        "desc": "Aplique el mismo cambio a múltiples bases de datos en diferentes inquilinos o particiones.",
+        "title": "Cambios por lotes en múltiples bases de datos"
+      },
+      "FEATURE_NATURAL_LANGUAGE_TO_SQL": {
+        "desc": "Convierta consultas en lenguaje natural a SQL usando IA.",
+        "title": "Lenguaje natural a SQL"
+      },
+      "FEATURE_ONE_CLICK_DATA_ROLLBACK": {
+        "desc": "Revierta rápidamente los cambios de datos con un solo clic.",
+        "title": "Reversión de datos con un clic"
+      },
+      "FEATURE_ONLINE_SCHEMA_CHANGE": {
+        "desc": "Realice cambios de esquema en tablas grandes con bloqueo mínimo.",
+        "title": "Cambio de esquema en línea"
+      },
+      "FEATURE_PASSWORD_RESTRICTIONS": {
+        "desc": "Aplique requisitos de complejidad y seguridad de contraseña.",
+        "title": "Restricciones de contraseña"
+      },
+      "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW": {
+        "desc": "Aplique las mejores prácticas de SQL con más de 100 reglas de lint y verificaciones de coherencia de esquema.",
+        "title": "Revisión de SQL"
+      },
+      "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT": {
+        "desc": "Despliegue cambios progresivamente a través de diferentes entornos.",
+        "title": "Despliegue progresivo por entornos"
+      },
+      "FEATURE_PROJECT_MANAGEMENT": {
+        "desc": "Gestione y organice proyectos con capacidades avanzadas.",
+        "title": "Gestión de proyectos"
+      },
+      "FEATURE_QUERY_HISTORY": {
+        "desc": "Acceda al historial completo de ejecución de consultas con capacidades de búsqueda.",
+        "title": "Historial de consultas"
+      },
+      "FEATURE_QUERY_POLICY": {
+        "desc": "Configure restricciones y permisos avanzados de consultas.",
+        "title": "Política de consultas"
+      },
+      "FEATURE_REQUEST_ROLE_WORKFLOW": {
+        "desc": "Los usuarios pueden solicitar roles de proyecto con flujo de trabajo de aprobación.",
+        "title": "Flujo de trabajo de solicitud de rol"
+      },
+      "FEATURE_RESTRICT_COPYING_DATA": {
+        "desc": "Controle el acceso de usuarios para copiar datos de los resultados de consultas.",
+        "title": "Restringir copia de datos"
+      },
+      "FEATURE_RISK_ASSESSMENT": {
+        "desc": "Evalúe y categorice el nivel de riesgo de los cambios de base de datos.",
+        "title": "Evaluación de riesgos"
+      },
+      "FEATURE_ROADMAP_PRIORITIZATION": {
+        "desc": "Influya en las prioridades de desarrollo de funciones.",
+        "title": "Priorización del roadmap"
+      },
+      "FEATURE_ROLLOUT_POLICY": {
+        "desc": "Controle si la tarea de cambio de esquema requiere despliegue manual.",
+        "title": "Política de despliegue"
+      },
+      "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS": {
+        "desc": "Guarde y comparta scripts SQL con miembros del equipo.",
+        "title": "Scripts SQL guardados y compartidos"
+      },
+      "FEATURE_SCHEDULED_ROLLOUT_TIME": {
+        "desc": "Programe cambios de base de datos para ejecutarse en un momento específico.",
+        "title": "Tiempo de despliegue programado"
+      },
+      "FEATURE_SCHEMA_DIAGRAM": {
+        "desc": "Visualice el esquema de base de datos con diagramas interactivos.",
+        "title": "Diagrama de esquema"
+      },
+      "FEATURE_SCHEMA_EDITOR": {
+        "desc": "Edición visual de esquema con interfaz de arrastrar y soltar.",
+        "title": "Editor de esquema"
+      },
+      "FEATURE_SCIM": {
+        "desc": "Soporte para Sistema de Gestión de Identidad entre Dominios.",
+        "title": "SCIM"
+      },
+      "FEATURE_SQL_EDITOR_ADMIN_MODE": {
+        "desc": "Acceda a funciones administrativas en el editor SQL.",
+        "title": "Modo administrador del editor SQL"
+      },
+      "FEATURE_TERRAFORM_PROVIDER": {
+        "desc": "Gestione recursos de Bytebase usando Terraform.",
+        "title": "Proveedor de Terraform"
+      },
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "desc": "Configure las duraciones del token de acceso y del token de actualización.",
+        "title": "Control de duración de token"
+      },
+      "FEATURE_TWO_FA": {
+        "desc": "Añada una capa extra de seguridad con verificación de aplicación autenticadora.",
+        "title": "Autenticación de dos factores"
+      },
+      "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION": {
+        "desc": "Restrinja el inicio de sesión a usuarios de dominios de correo especificados.",
+        "title": "Restricción de dominio de correo electrónico"
+      },
+      "FEATURE_USER_GROUPS": {
+        "desc": "Organice usuarios en grupos para una gestión más fácil.",
+        "title": "Grupos de usuarios"
+      },
+      "FEATURE_WATERMARK": {
+        "desc": "Muestre marcas de agua visibles con información del usuario en las páginas.",
+        "title": "Marca de agua"
+      },
+      "FEATURE_WEB_BASED_SQL_EDITOR": {
+        "desc": "Ejecute consultas SQL directamente desde la interfaz web.",
+        "title": "Editor SQL basado en web"
       }
     },
     "purchase": {
       "features": {
-        "free": {
-          "limits": "Hasta 20 usuarios y 10 instancias",
-          "dcm": "Gestión completa de cambios de base de datos",
-          "git": "Control de versiones y migración de esquema basado en Git",
-          "sql-review": "Revisión SQL con más de 200 reglas",
-          "backup": "Copias de seguridad automáticas y reversión con un clic",
-          "sql-editor": "Editor SQL web con asistencia de IA",
-          "schema": "Diagramas de esquema y exportación de datos",
-          "iam": "Funciones básicas de IAM y seguridad",
-          "support": "Soporte comunitario"
-        },
-        "pro": {
-          "limits": "Usuarios ilimitados a $20/usuario/mes, 10 instancias",
-          "everything": "Todo en Gratis, más:",
-          "batch-query": "Capacidades de consulta por lotes",
-          "read-only": "Conexiones de solo lectura de instancias",
-          "query-policy": "Políticas de consulta para gobernanza",
-          "sso": "SSO de Google y GitHub",
-          "groups": "Gestión de grupos de usuarios",
-          "db-groups": "Grupos de bases de datos",
-          "audit-log": "Registro de auditoría limitado",
-          "support": "Soporte por correo electrónico"
-        },
         "enterprise": {
-          "limits": "Límites personalizados según necesidades",
-          "everything": "Todo en Pro, más:",
-          "custom-limits": "Límites personalizados de usuarios e instancias",
+          "2fa": "2FA y políticas de autenticación avanzadas",
           "approval": "Evaluación de riesgos y flujos de aprobación",
           "audit-log": "Registro de auditoría completo",
-          "sso": "SSO empresarial (OAuth2, OIDC, LDAP personalizados)",
-          "2fa": "2FA y políticas de autenticación avanzadas",
+          "branding": "Marca personalizada y marca de agua",
+          "custom-limits": "Límites personalizados de usuarios e instancias",
+          "everything": "Todo en Pro, más:",
+          "limits": "Límites personalizados según necesidades",
           "masking": "Enmascaramiento y clasificación de datos",
           "roles": "Roles personalizados y flujos de solicitud de roles",
           "scim": "Aprovisionamiento de usuarios SCIM y sincronización de directorio",
           "secret": "Integración con gestor de secretos externo",
-          "branding": "Marca personalizada y marca de agua",
+          "sso": "SSO empresarial (OAuth2, OIDC, LDAP personalizados)",
           "support": "Soporte dedicado con SLA"
+        },
+        "free": {
+          "backup": "Copias de seguridad automáticas y reversión con un clic",
+          "dcm": "Gestión completa de cambios de base de datos",
+          "git": "Control de versiones y migración de esquema basado en Git",
+          "iam": "Funciones básicas de IAM y seguridad",
+          "limits": "Hasta 20 usuarios y 10 instancias",
+          "schema": "Diagramas de esquema y exportación de datos",
+          "sql-editor": "Editor SQL web con asistencia de IA",
+          "sql-review": "Revisión SQL con más de 200 reglas",
+          "support": "Soporte comunitario"
+        },
+        "pro": {
+          "audit-log": "Registro de auditoría limitado",
+          "batch-query": "Capacidades de consulta por lotes",
+          "db-groups": "Grupos de bases de datos",
+          "everything": "Todo en Gratis, más:",
+          "groups": "Gestión de grupos de usuarios",
+          "limits": "Usuarios ilimitados a $20/usuario/mes, 10 instancias",
+          "query-policy": "Políticas de consulta para gobernanza",
+          "read-only": "Conexiones de solo lectura de instancias",
+          "sso": "SSO de Google y GitHub",
+          "support": "Soporte por correo electrónico"
         }
       }
     }
-  },
-  "resource": {
-    "instance": "Instancia"
   }
 }
