@@ -4,6 +4,9 @@ import { BytebaseApiClient } from "../framework/api-client";
 import { createSnapshot, restoreSnapshot, type Snapshot } from "../framework/snapshot";
 import { MaskingExemptionPage, GrantExemptionPage, SqlEditorPage } from "./masking-exemption.page";
 
+// Give all tests generous timeouts (Mode B's disposable server can be slow)
+test.setTimeout(120_000);
+
 interface MaskingTestData {
   sampleTable: string;
   sampleSchema: string;
@@ -192,7 +195,9 @@ test.describe("Grant and Revoke", () => {
     await expect(grantPage.confirmButton).toBeDisabled();
 
     await grantPage.reasonInput.fill("E2E test grant");
-    await grantPage.selectAccount("Admin");
+    // Select the admin user — name varies by mode (e.g. "Admin", "Demo")
+    const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
+    await grantPage.selectAccount(adminName);
     await expect(grantPage.confirmButton).toBeEnabled();
     await grantPage.submit();
     await page.waitForTimeout(1000);
@@ -319,7 +324,8 @@ test.describe("E2E Masking Verification", () => {
 
     await grantPage.goto(projectId);
     await grantPage.reasonInput.fill("e2e UI grant test");
-    await grantPage.selectAccount("Admin");
+    const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
+    await grantPage.selectAccount(adminName);
     await grantPage.submit();
     await page.waitForTimeout(1000);
 
