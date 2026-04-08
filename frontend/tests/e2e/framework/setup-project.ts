@@ -90,7 +90,7 @@ setup("authenticate and discover", async ({ page }) => {
       }
     }
   } catch (err) {
-    console.warn("Discovery failed (tests may still work with defaults):", err);
+    throw new Error(`Discovery failed: ${err}`);
   }
 
   // 5. Mode A crash recovery check

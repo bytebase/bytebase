@@ -8,7 +8,7 @@ import { BytebaseApiClient } from "./api-client";
 
 const PID_FILE = "/tmp/bytebase-e2e-pid";
 const DEFAULT_PORT = 18234;
-const DEFAULT_TIMEOUT = 60000;
+const DEFAULT_TIMEOUT = 300000; // 5 minutes — server startup includes embedded Postgres + migrations + demo data
 const ADMIN_EMAIL = "e2e-admin@bytebase.com";
 const ADMIN_PASSWORD = "e2e-password-123";
 

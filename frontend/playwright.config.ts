@@ -3,7 +3,6 @@ import * as path from "path";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testIgnore: ["**/framework/**"],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -24,6 +23,7 @@ export default defineConfig({
     },
     {
       name: "chromium",
+      testIgnore: ["**/framework/**"],
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
     },
