@@ -18,47 +18,50 @@ let snapshot: Snapshot | undefined;
 // ── Feature-specific discovery ──
 
 async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  // Use SQL to discover tables and text columns (catalog API only returns configured metadata)
+  // Find text columns in non-empty tables using pg_stat_user_tables for row estimates
   const colResult = await env.api.query(
     env.database,
-    `SELECT table_schema, table_name, column_name FROM information_schema.columns
-     WHERE table_schema = 'public'
-       AND data_type IN ('text', 'character varying')
-       AND column_name NOT LIKE '%id%'
-       AND column_name NOT LIKE '%date%'
-       AND column_name NOT LIKE '%time%'
-     LIMIT 10`
+    `SELECT c.table_schema, c.table_name, c.column_name
+     FROM information_schema.columns c
+     JOIN pg_stat_user_tables s ON c.table_name = s.relname AND c.table_schema = s.schemaname
+     WHERE c.table_schema = 'public'
+       AND c.data_type IN ('text', 'character varying')
+       AND c.column_name NOT LIKE '%id%'
+       AND c.column_name NOT LIKE '%date%'
+       AND c.column_name NOT LIKE '%time%'
+       AND s.n_live_tup > 0
+     ORDER BY s.n_live_tup DESC
+     LIMIT 20`
   );
   const colRows = (colResult.results?.[0] as {
     rows?: { values?: { stringValue?: string }[] }[];
   })?.rows ?? [];
 
   if (colRows.length === 0) {
-    throw new Error(`Could not find a suitable text column to mask in ${env.database}`);
+    throw new Error(`Could not find a suitable text column in a non-empty table in ${env.database}`);
   }
 
-  const sampleSchema = colRows[0].values?.[0]?.stringValue ?? "public";
-  const sampleTable = colRows[0].values?.[1]?.stringValue ?? "";
-  const sampleColumn = colRows[0].values?.[2]?.stringValue ?? "";
+  // Try each candidate until we find one with actual data
+  for (const row of colRows) {
+    const schema = row.values?.[0]?.stringValue ?? "public";
+    const table = row.values?.[1]?.stringValue ?? "";
+    const column = row.values?.[2]?.stringValue ?? "";
+    if (!table || !column) continue;
 
-  if (!sampleTable || !sampleColumn) {
-    throw new Error(`Could not find a suitable column to mask in ${env.database}`);
+    const valueResult = await env.api.query(
+      env.database,
+      `SELECT "${column}" FROM "${schema}"."${table}" WHERE "${column}" IS NOT NULL AND "${column}" != '' LIMIT 1`
+    );
+    const firstResult = valueResult.results?.[0] as {
+      rows?: { values?: { stringValue?: string }[] }[];
+    };
+    const value = firstResult?.rows?.[0]?.values?.[0]?.stringValue ?? "";
+    if (value) {
+      return { sampleTable: table, sampleSchema: schema, sampleColumn: column, knownUnmaskedValue: value };
+    }
   }
 
-  // Query for a known value
-  const valueResult = await env.api.query(
-    env.database,
-    `SELECT "${sampleColumn}" FROM "${sampleSchema}"."${sampleTable}" WHERE "${sampleColumn}" IS NOT NULL LIMIT 1`
-  );
-  const firstResult = valueResult.results?.[0] as {
-    rows?: { values?: { stringValue?: string }[] }[];
-  };
-  const knownUnmaskedValue = firstResult?.rows?.[0]?.values?.[0]?.stringValue ?? "";
-  if (!knownUnmaskedValue) {
-    throw new Error(`Could not get a known value from ${sampleSchema}.${sampleTable}.${sampleColumn}`);
-  }
-
-  return { sampleTable, sampleSchema, sampleColumn, knownUnmaskedValue };
+  throw new Error(`Could not find a column with data to mask in ${env.database}`);
 }
 
 async function configureMasking(env: TestEnv & { api: BytebaseApiClient }, data: MaskingTestData): Promise<void> {
