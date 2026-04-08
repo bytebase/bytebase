@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -29,11 +28,8 @@ const (
 	SpatialName string = "SPATIAL"
 )
 
-func init() {
-	schema.RegisterWalkThrough(storepb.Engine_MYSQL, WalkThrough)
-	schema.RegisterWalkThrough(storepb.Engine_MARIADB, WalkThrough)
-	schema.RegisterWalkThrough(storepb.Engine_OCEANBASE, WalkThrough)
-}
+// Old ANTLR-based WalkThrough registrations removed.
+// WalkThroughOmni is now registered via RegisterWalkThroughWithContext in walk_through_omni.go.
 
 // WalkThrough walks through MySQL AST and updates the database metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
