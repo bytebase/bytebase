@@ -38,11 +38,19 @@ setup("authenticate and discover", async ({ page }) => {
   await page.goto(`${env.baseURL}/auth/signin`);
   // If already authenticated, the server redirects away from /auth
   if (page.url().includes("/auth")) {
-    if (env.adminEmail) {
-      await page.getByRole("textbox", { name: /email/i }).fill(env.adminEmail);
-    }
-    if (env.adminPassword) {
-      await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
+    // Demo mode: login page has a "Demo Account" dropdown instead of email/password
+    const emailField = page.getByRole("textbox", { name: /email/i });
+    const hasDemoLogin = await emailField.count() === 0;
+
+    if (hasDemoLogin) {
+      // Demo mode: just click "Sign in" with the pre-selected demo admin
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    } else {
+      // Standard mode: fill email/password
+      if (env.adminEmail) await emailField.fill(env.adminEmail);
+      if (env.adminPassword) {
+        await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
+      }
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
     }
     await expect(page).not.toHaveURL(/\/auth/, { timeout: 60000 });
