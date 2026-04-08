@@ -82,7 +82,9 @@ setup("authenticate and discover", async ({ page }) => {
     const { instances } = await api.listInstances();
     const pgInstance = instances?.find(
       (i: { engine: string; name: string }) =>
-        i.engine === "POSTGRES" && !i.name.includes("deleted")
+        i.engine === "POSTGRES" &&
+        !i.name.includes("deleted") &&
+        !i.name.includes("bytebase-meta") // Exclude internal metadata instance
     );
     if (pgInstance) {
       instance = pgInstance.name;
