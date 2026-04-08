@@ -1207,7 +1207,7 @@ function ExemptionResourceTable({
 }) {
   const { t } = useTranslation();
 
-  const isSentinel = (value: string): boolean => value === "";
+  const isSentinel = (value: string): boolean => value === "" || value === "-1";
 
   const handleDatabaseClick = (resource: DatabaseResource) => {
     const path = resource.databaseFullName.startsWith("/")
