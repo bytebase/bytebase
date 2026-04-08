@@ -18,19 +18,15 @@ let snapshot: Snapshot | undefined;
 // ── Feature-specific discovery ──
 
 async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  // Find text columns in non-empty tables using pg_stat_user_tables for row estimates
+  // Find text columns, then try each until we find one with actual data
   const colResult = await env.api.query(
     env.database,
-    `SELECT c.table_schema, c.table_name, c.column_name
-     FROM information_schema.columns c
-     JOIN pg_stat_user_tables s ON c.table_name = s.relname AND c.table_schema = s.schemaname
-     WHERE c.table_schema = 'public'
-       AND c.data_type IN ('text', 'character varying')
-       AND c.column_name NOT LIKE '%id%'
-       AND c.column_name NOT LIKE '%date%'
-       AND c.column_name NOT LIKE '%time%'
-       AND s.n_live_tup > 0
-     ORDER BY s.n_live_tup DESC
+    `SELECT table_schema, table_name, column_name FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND data_type IN ('text', 'character varying')
+       AND column_name NOT LIKE '%id%'
+       AND column_name NOT LIKE '%date%'
+       AND column_name NOT LIKE '%time%'
      LIMIT 20`
   );
   const colRows = (colResult.results?.[0] as {
@@ -38,7 +34,7 @@ async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): P
   })?.rows ?? [];
 
   if (colRows.length === 0) {
-    throw new Error(`Could not find a suitable text column in a non-empty table in ${env.database}`);
+    throw new Error(`Could not find a suitable text column in ${env.database}`);
   }
 
   // Try each candidate until we find one with actual data
