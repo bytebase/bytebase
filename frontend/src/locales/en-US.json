@@ -193,7 +193,6 @@
   },
   "changelog": {
     "current-schema-empty": "Current schema is empty",
-    "no-schema-change": "this migration has no schema change",
     "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "self": "Changelog",
