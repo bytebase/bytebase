@@ -23,6 +23,15 @@ const mocks = vi.hoisted(() => {
 
   return {
     localStorage,
+    allowedProjectName: "projects/proj1",
+    allowedProjectPermissions: new Set([
+      "bb.databases.sync",
+      "bb.databases.getSchema",
+      "bb.databases.update",
+      "bb.plans.create",
+      "bb.sheets.create",
+      "bb.databaseCatalogs.get",
+    ]),
     windowOpen: vi.fn(),
     routerReplace: vi.fn(),
     routerPush: vi.fn(),
@@ -84,6 +93,28 @@ const mocks = vi.hoisted(() => {
     DatabaseRevisionPanel: vi.fn(() => (
       <div data-testid="database-revision-panel" />
     )),
+    DatabaseCatalogPanel: vi.fn(() => (
+      <div data-testid="database-catalog-panel" />
+    )),
+    ComponentPermissionGuard: vi.fn(
+      ({
+        project,
+        permissions,
+        children,
+      }: {
+        project?: { name: string };
+        permissions: string[];
+        children: ReactNode;
+      }) =>
+        project?.name === mocks.allowedProjectName &&
+        permissions.every((permission) =>
+          mocks.allowedProjectPermissions.has(permission)
+        ) ? (
+          children
+        ) : (
+          <div data-testid="component-permission-guard" />
+        )
+    ),
     useProjectV1Store: vi.fn(() => ({
       getProjectByName: vi.fn(() => ({
         name: "projects/proj1",
@@ -221,6 +252,24 @@ vi.mock("./database-detail/panels/DatabaseRevisionPanel", () => ({
   DatabaseRevisionPanel: mocks.DatabaseRevisionPanel,
 }));
 
+vi.mock("./database-detail/panels/DatabaseCatalogPanel", () => ({
+  DatabaseCatalogPanel: mocks.DatabaseCatalogPanel,
+}));
+
+vi.mock("@/react/components/ComponentPermissionGuard", () => ({
+  ComponentPermissionGuard: mocks.ComponentPermissionGuard,
+}));
+
+vi.mock("@/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/utils")>();
+  return {
+    ...actual,
+    getDatabaseProject: (database: { project: string }) => ({
+      name: database.project,
+    }),
+  };
+});
+
 vi.mock("@/store", () => ({
   pinia: mocks.pinia,
   pushNotification: mocks.pushNotification,
@@ -317,6 +366,15 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
 
 beforeEach(() => {
   vi.stubGlobal("open", mocks.windowOpen);
+  mocks.allowedProjectName = "projects/proj1";
+  mocks.allowedProjectPermissions = new Set([
+    "bb.databases.sync",
+    "bb.databases.getSchema",
+    "bb.databases.update",
+    "bb.plans.create",
+    "bb.sheets.create",
+    "bb.databaseCatalogs.get",
+  ]);
   mocks.localStorage.getItem.mockReset();
   mocks.localStorage.getItem.mockReturnValue(null);
   mocks.localStorage.setItem.mockReset();
@@ -342,6 +400,8 @@ beforeEach(() => {
   mocks.DatabaseChangelogPanel.mockClear();
   mocks.DatabaseOverviewPanel.mockClear();
   mocks.DatabaseRevisionPanel.mockClear();
+  mocks.DatabaseCatalogPanel.mockClear();
+  mocks.ComponentPermissionGuard.mockClear();
   mocks.useProjectV1Store.mockReset();
   mocks.useProjectV1Store.mockReturnValue({
     getProjectByName: vi.fn(() => ({
@@ -796,6 +856,46 @@ describe("ProjectDatabaseDetailPage", () => {
     ).not.toBeNull();
     expect(
       container.querySelector('[data-testid="database-revision-panel"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("blocks the catalog panel when catalog permission is missing", async () => {
+    mocks.allowedProjectPermissions.delete("bb.databaseCatalogs.get");
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        hash: "#catalog",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="component-permission-guard"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="database-catalog-panel"]')
     ).toBeNull();
 
     unmount();

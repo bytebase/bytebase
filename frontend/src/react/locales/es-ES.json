@@ -225,6 +225,7 @@
     "members_other": "Miembros",
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
+    "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {{resource}}",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
     "name": "Nombre",
@@ -1723,6 +1724,7 @@
         "re-order": "Reordenar"
       },
       "never-expires": "Nunca expira",
+      "grant-access": "Autorizará el acceso",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",

@@ -225,6 +225,7 @@
     "members_other": "メンバー",
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
+    "missing-required-permission-for-resource": "リソース {{resource}} に必要な権限がありません",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
     "name": "名前",
@@ -1723,6 +1724,7 @@
         "re-order": "並び替え"
       },
       "never-expires": "有効期限なし",
+      "grant-access": "許可されたアクセス",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",

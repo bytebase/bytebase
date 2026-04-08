@@ -2,10 +2,12 @@ import { ShieldAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Permission } from "@/types";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 interface ComponentPermissionGuardProps {
   readonly permissions: Permission[];
+  readonly project?: Project;
   readonly children: ReactNode;
   readonly className?: string;
 }
@@ -19,11 +21,14 @@ interface ComponentPermissionGuardProps {
  */
 export function ComponentPermissionGuard({
   permissions,
+  project,
   children,
   className,
 }: ComponentPermissionGuardProps) {
   const { t } = useTranslation();
-  const missed = permissions.filter((p) => !hasWorkspacePermissionV2(p));
+  const missed = project
+    ? permissions.filter((p) => !hasProjectPermissionV2(project, p))
+    : permissions.filter((p) => !hasWorkspacePermissionV2(p));
 
   if (missed.length === 0) {
     return <>{children}</>;
@@ -38,7 +43,11 @@ export function ComponentPermissionGuard({
         <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
         <div className="flex flex-col gap-2">
           <h5 className="font-medium leading-tight">
-            {t("common.missing-required-permission", { permissions: "" })}
+            {project
+              ? t("common.missing-required-permission-for-resource", {
+                  resource: project.name,
+                })
+              : t("common.missing-required-permission", { permissions: "" })}
           </h5>
           <div>
             {t("common.required-permission")}

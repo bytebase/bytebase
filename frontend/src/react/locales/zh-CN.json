@@ -225,6 +225,7 @@
     "members_other": "成员",
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
+    "missing-required-permission-for-resource": "缺少资源 {{resource}} 的必需权限",
     "n-items-selected": "已选 {{n}} 项",
     "n-more": "+{{n}} 更多",
     "name": "名称",
@@ -1723,6 +1724,7 @@
         "re-order": "排序"
       },
       "never-expires": "无过期时间",
+      "grant-access": "授权访问",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",

@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LocationQueryRaw } from "vue-router";
+import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { TransferProjectDrawer } from "@/react/components/database";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -21,8 +22,10 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseProject } from "@/utils";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
+import { DatabaseCatalogPanel } from "./database-detail/panels/DatabaseCatalogPanel";
 import { DatabaseChangelogPanel } from "./database-detail/panels/DatabaseChangelogPanel";
 import { DatabaseOverviewPanel } from "./database-detail/panels/DatabaseOverviewPanel";
 import { DatabaseRevisionPanel } from "./database-detail/panels/DatabaseRevisionPanel";
@@ -240,6 +243,14 @@ export function ProjectDatabaseDetailPage({
       )}
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_REVISION && (
         <DatabaseRevisionPanel database={detail.database} />
+      )}
+      {selectedTab === PROJECT_DATABASE_DETAIL_TAB_CATALOG && (
+        <ComponentPermissionGuard
+          project={getDatabaseProject(detail.database)}
+          permissions={["bb.databaseCatalogs.get"]}
+        >
+          <DatabaseCatalogPanel database={detail.database} />
+        </ComponentPermissionGuard>
       )}
 
       <Dialog
