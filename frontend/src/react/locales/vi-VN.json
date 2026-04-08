@@ -1,4 +1,60 @@
 {
+  "agent": {
+    "active-only-chats": "Chỉ hoạt động",
+    "ai-not-configured": {
+      "configure": "Cấu hình",
+      "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
+      "description": "AI chưa được cấu hình cho không gian làm việc này.",
+      "title": "AI chưa được cấu hình"
+    },
+    "archive-chat": "Lưu trữ cuộc trò chuyện",
+    "archive-chat-confirmation": "Bạn có chắc chắn muốn lưu trữ cuộc trò chuyện này?",
+    "archived-only-chats": "Chỉ đã lưu trữ",
+    "args": "Tham số",
+    "assistant-title": "Trợ lý AI",
+    "cancel": "Hủy",
+    "chat-archived-label": "Đã lưu trữ",
+    "chat-default-title": "Cuộc trò chuyện mới",
+    "chat-list-label": "Cuộc trò chuyện",
+    "chat-status-awaiting-user": "Đang chờ người dùng",
+    "chat-status-error": "Lỗi",
+    "chat-status-idle": "Rảnh",
+    "chat-status-interrupted": "Bị gián đoạn",
+    "chat-status-running": "Đang chạy",
+    "chat-total-tokens": "Tổng số token",
+    "close": "Đóng",
+    "confirm": "Xác nhận",
+    "delete-chat": "Xóa cuộc trò chuyện",
+    "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "input-placeholder": "Hỏi AI bất cứ điều gì...",
+    "interrupted": "Bị gián đoạn",
+    "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
+    "minimize": "Thu nhỏ",
+    "new-chat": "Cuộc trò chuyện mới",
+    "pending-choose-hint": "Vui lòng chọn một tùy chọn ở trên",
+    "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
+    "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
+    "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
+    "reply": "Trả lời",
+    "resize": "Thay đổi kích thước",
+    "result": "Kết quả",
+    "retry-last-chat-turn": "Thử lại",
+    "send": "Gửi",
+    "stop": "Dừng",
+    "tool-answer": "Câu trả lời",
+    "tool-ask-user": "Đang hỏi người dùng",
+    "tool-ask-user-choose": "Chọn một tùy chọn",
+    "tool-ask-user-confirm": "Xác nhận hành động",
+    "tool-ask-user-input": "Cung cấp đầu vào",
+    "tool-completed": "Đã hoàn thành",
+    "tool-default-value": "Mặc định",
+    "tool-failed": "Thất bại",
+    "tool-options": "Tùy chọn",
+    "tool-prompt": "Lời nhắc",
+    "tool-response-submitted": "Phản hồi đã được gửi",
+    "tool-value": "Giá trị",
+    "unarchive-chat": "Bỏ lưu trữ"
+  },
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -60,69 +116,127 @@
       "self": "Điều kiện"
     }
   },
+  "changelog": {
+    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
+    "self": "Changelog"
+  },
   "common": {
+    "activated": "Đã kích hoạt",
+    "active": "Hoạt động",
     "add": "Thêm",
     "add-permissions": "Thêm quyền",
     "added": "Đã thêm",
     "address": "Địa chỉ",
+    "admin": "Quản trị viên",
     "all": "Tất cả",
     "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
+    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
+    "archive-resource": "Archive {{type}}",
     "archived": "Đã lưu trữ",
     "back": "Quay lại",
     "cancel": "Hủy",
     "cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
+    "changelog": "Changelog",
+    "classification-level": "Cấp phân loại",
     "clear": "Xóa",
+    "clear-filters": "Xóa bộ lọc",
     "close": "Đóng",
     "closed": "Đã đóng",
     "columns": "Cột",
+    "comment": "Bình luận",
     "configure": "Cấu hình",
     "configure-now": "Cấu hình ngay",
     "confirm": "Xác nhận",
+    "confirm-and-add": "Confirm and add",
     "confirm-and-update": "Xác nhận và Cập nhật",
+    "confirm-archive": "Archive Resource?",
+    "confirm-delete": "Delete Resource?",
+    "confirm-to-revert": "Confirm to revert your editing?",
+    "continue-anyway": "Tiếp tục",
     "copied": "Đã sao chép",
     "copy": "Sao chép",
+    "copy-failed": "Copy failed",
     "create": "Tạo",
     "created": "Đã tạo",
+    "created-at": "Thời gian tạo",
+    "creating": "Đang tạo...",
+    "creator": "Người tạo",
+    "custom": "Tùy chỉnh",
+    "danger-zone": "Danger Zone",
+    "database": "Cơ sở dữ liệu",
+    "database-group": "Nhóm cơ sở dữ liệu",
+    "databases": "Cơ sở dữ liệu",
+    "default": "Mặc định",
     "delete": "Xóa",
     "delete-resource": "Delete {{type}}",
+    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Đã xóa",
     "description": "Mô tả",
+    "deselect-all": "Deselect all",
+    "detailed-guide": "Hướng dẫn chi tiết",
+    "disable": "Disable",
     "discard-changes": "Hủy thay đổi",
+    "dismiss": "Loại bỏ",
+    "download": "Tải xuống",
+    "draft": "Bản nháp",
     "edit": "Chỉnh sửa",
     "email": "Email",
+    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +).",
+    "empty": "Empty",
+    "enable": "Bật",
+    "enabled": "Enabled",
     "environment": "Môi trường",
     "environment-name": "Tên môi trường",
+    "environments": "Môi trường",
+    "error": "Lỗi",
+    "expiration": "Expiration",
     "export": "Xuất",
     "failed": "Thất bại",
     "file-selector": {
       "size-limit": "Kích thước tệp phải nhỏ hơn {{size}} MiB",
       "type-limit": "Chỉ hỗ trợ tệp {{extension}}"
     },
+    "filter": "Filter",
     "filter-by-name": "Lọc theo tên",
     "from": "Từ",
     "general": "Chung",
     "groups": "Nhóm",
+    "home": "Trang chủ",
     "id": "ID",
     "instance": "Phiên bản",
+    "instances": "Phiên bản",
     "is-required": "is required",
+    "issues": "Vấn đề",
+    "items": "items",
+    "key": "Khóa",
     "labels": "Nhãn",
     "learn-more": "Tìm hiểu thêm",
     "leave-without-saving": "Thoát mà không lưu?",
     "load-more": "Tải thêm",
     "loading": "Đang tải",
+    "manage": "Quản lý",
+    "manually-select": "Manually select",
     "members_one": "Thành viên",
     "members_other": "Thành viên",
+    "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "n-items-selected": "Đã chọn {{n}} mục",
+    "n-more": "+{{n}} nữa",
     "name": "Tên",
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
     "ok": "OK",
     "operations": "Các thao tác",
+    "optional": "Optional",
+    "overview": "Tổng quan",
+    "password": "Mật khẩu",
+    "pending": "Đang chờ",
     "permissions": "Quyền",
+    "previous": "Previous",
     "project": "Dự án",
     "projects": "Dự án",
+    "read-only": "Chỉ đọc",
     "reason": "Reason",
     "regenerate": "Tạo lại",
     "rejected": "Đã từ chối",
@@ -130,111 +244,57 @@
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "resource": "Resource",
     "resource-not-found": "Không tìm thấy tài nguyên",
+    "resources": "Tài nguyên",
     "restore": "Khôi phục",
     "restored": "Restored",
     "revert": "Hoàn tác",
+    "revoke": "Thu hồi",
+    "revoked": "Đã thu hồi",
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
+    "schema": "Schema",
+    "scope": "Phạm vi",
     "search": "Tìm kiếm",
+    "search-for-more": "Tìm kiếm thêm",
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
+    "selected": "selected",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "setting": "Cài đặt",
     "settings": "Cài đặt",
+    "skipped": "Đã bỏ qua",
     "sql": "SQL",
     "state": "Trạng thái",
+    "statement": "Câu lệnh",
+    "status": "Trạng thái",
     "system": "Hệ thống",
+    "table": "Bảng",
     "title": "Tiêu đề",
     "to": "Đến",
+    "total": "Total",
     "total-n-items": "Tổng {{n}} mục",
     "type": "Loại",
+    "type-to-search": "Nhập để tìm kiếm",
     "unassigned": "Chưa gán",
+    "under-review": "Đang xem xét",
     "unlimited": "Không giới hạn",
     "untitled": "Không tiêu đề",
     "update": "Cập nhật",
     "updated": "Đã cập nhật",
+    "updating": "Đang cập nhật...",
     "upload": "Tải lên",
+    "user": "Người dùng",
+    "username": "Tên người dùng",
     "users": "Người dùng",
+    "value": "Giá trị",
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
-    "you": "bạn",
-    "copy-failed": "Copy failed",
-    "dismiss": "Loại bỏ",
-    "activated": "Đã kích hoạt",
-    "active": "Hoạt động",
-    "archive-description": "Mark \"{{name}}\" as archived and read-only.",
-    "archive-resource": "Archive {{type}}",
-    "changelog": "Changelog",
-    "classification-level": "Cấp phân loại",
-    "confirm-and-add": "Confirm and add",
-    "confirm-archive": "Archive Resource?",
-    "confirm-delete": "Delete Resource?",
-    "confirm-to-revert": "Confirm to revert your editing?",
-    "created-at": "Thời gian tạo",
-    "creator": "Người tạo",
-    "danger-zone": "Danger Zone",
-    "database": "Cơ sở dữ liệu",
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "databases": "Cơ sở dữ liệu",
-    "default": "Mặc định",
-    "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
-    "deselect-all": "Deselect all",
-    "disable": "Disable",
-    "download": "Tải xuống",
-    "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +).",
-    "empty": "Empty",
-    "enable": "Bật",
-    "enabled": "Enabled",
-    "environments": "Môi trường",
-    "expiration": "Expiration",
-    "filter": "Filter",
-    "home": "Trang chủ",
-    "instances": "Phiên bản",
-    "issues": "Vấn đề",
-    "items": "items",
-    "key": "Khóa",
-    "manage": "Quản lý",
-    "manually-select": "Manually select",
-    "n-more": "+{{n}} nữa",
-    "optional": "Optional",
-    "pending": "Đang chờ",
-    "previous": "Previous",
-    "resource": "Resource",
-    "resources": "Tài nguyên",
-    "revoke": "Thu hồi",
-    "revoked": "Đã thu hồi",
-    "schema": "Schema",
-    "scope": "Phạm vi",
-    "search-for-more": "Tìm kiếm thêm",
-    "selected": "selected",
-    "statement": "Câu lệnh",
-    "status": "Trạng thái",
-    "table": "Bảng",
-    "total": "Total",
-    "value": "Giá trị",
     "webhooks": "Webhooks",
-    "skipped": "Đã bỏ qua",
-    "under-review": "Đang xem xét",
-    "draft": "Bản nháp",
-    "error": "Lỗi",
-    "type-to-search": "Nhập để tìm kiếm",
-    "comment": "Bình luận",
-    "clear-filters": "Xóa bộ lọc",
-    "admin": "Quản trị viên",
-    "continue-anyway": "Tiếp tục",
-    "creating": "Đang tạo...",
-    "custom": "Tùy chỉnh",
-    "detailed-guide": "Hướng dẫn chi tiết",
-    "minutes": "Phút",
-    "overview": "Tổng quan",
-    "password": "Mật khẩu",
-    "read-only": "Chỉ đọc",
-    "updating": "Đang cập nhật...",
-    "user": "Người dùng",
-    "username": "Tên người dùng",
-    "write-only": "chỉ ghi"
+    "write-only": "chỉ ghi",
+    "you": "bạn"
   },
   "common.add": "Thêm",
   "common.admin": "Quản trị viên",
@@ -352,6 +412,46 @@
     },
     "self": "Phê duyệt tùy chỉnh"
   },
+  "data-source": {
+    "additional-node-addresses": "Địa chỉ nút bổ sung",
+    "connection-string-schema": "Lược đồ chuỗi kết nối",
+    "connection-type": "Loại kết nối",
+    "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
+    "direct-connection": "Kết nối trực tiếp",
+    "extra-params": {
+      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
+      "self": "Thông số bổ sung"
+    },
+    "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
+    "private-key-passphrase": "Mật khẩu khóa riêng",
+    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa",
+    "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
+    "read-replica-host": "Máy chủ bản sao đọc",
+    "read-replica-port": "Cổng bản sao đọc",
+    "replica-set": "Bộ bản sao",
+    "snowflake-keypair-tip": "Xác thực cặp khóa",
+    "ssh": {
+      "host": "Máy chủ",
+      "password": "Mật khẩu",
+      "port": "Cổng",
+      "private-key": "Khóa riêng",
+      "ssh-key": "Khóa SSH",
+      "user": "Người dùng"
+    },
+    "ssh-connection": "Kết nối SSH",
+    "ssh-type": {
+      "none": "Không có",
+      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
+    },
+    "ssl": {
+      "ca-cert": "Chứng chỉ CA",
+      "client-cert": "Chứng chỉ máy khách",
+      "client-key": "Khóa máy khách",
+      "verify-certificate": "Xác minh chứng chỉ TLS",
+      "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
+    },
+    "ssl-connection": "Kết nối SSL"
+  },
   "data-source.additional-node-addresses": "Địa chỉ nút bổ sung",
   "data-source.connection-string-schema": "Lược đồ chuỗi kết nối",
   "data-source.connection-type": "Loại kết nối",
@@ -383,25 +483,22 @@
   "data-source.ssl.verify-certificate": "Xác minh chứng chỉ TLS",
   "data-source.ssl.verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn",
   "database": {
+    "all": "Tất cả cơ sở dữ liệu",
+    "change-database": "Thay đổi cơ sở dữ liệu",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
     "engine": "Engine",
-    "filter-database": "Lọc cơ sở dữ liệu",
-    "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
-    "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
-    "sync-schema-button": "Đồng bộ lược đồ",
-    "sync-status-failed": "Đồng bộ thất bại",
-    "transfer-project": "Chuyển dự án",
-    "unassign": "Hủy gán",
-    "all": "Tất cả cơ sở dữ liệu",
-    "change-database": "Thay đổi cơ sở dữ liệu",
     "expression": "Expression",
+    "filter-database": "Lọc cơ sở dữ liệu",
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "select": "Chọn cơ sở dữ liệu",
+    "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
+    "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
+    "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -424,9 +521,12 @@
       "title": "Đồng bộ lược đồ",
       "with-diff": "With diff"
     },
+    "sync-schema-button": "Đồng bộ lược đồ",
+    "sync-status-failed": "Đồng bộ thất bại",
+    "transfer-project": "Chuyển dự án",
+    "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
   },
   "database-group": {
     "condition": {
@@ -447,9 +547,9 @@
     "collation": "Đối chiếu",
     "encoding": "Mã hóa",
     "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
+    "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "successfully-synced-schema": "Đồng bộ hóa lược đồ thành công",
-    "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}..."
   },
   "db.failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
@@ -462,8 +562,8 @@
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",
-    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'.",
-    "select": "Chọn môi trường"
+    "select": "Chọn môi trường",
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{{name}}'."
   },
   "error-page": {
     "go-back-home": "Về trang chủ",
@@ -526,6 +626,7 @@
     "userinfo-description": "Thông tin người dùng đã khớp."
   },
   "instance": {
+    "account-locator": "Định vị tài khoản",
     "advanced-search": {
       "scope": {
         "host": {
@@ -540,20 +641,6 @@
     },
     "archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
-    "filter-instance-name": "Lọc tên phiên bản",
-    "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
-    "selected-n-instances_one": "{{count}} phiên bản đã chọn",
-    "selected-n-instances_other": "{{count}} phiên bản đã chọn",
-    "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
-    "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{{0}}'.",
-    "sync": {
-      "self": "Đồng bộ phiên bản",
-      "sync-all": "Đồng bộ tất cả cơ sở dữ liệu",
-      "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút",
-      "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
-    },
-    "syncing": "Đang đồng bộ hóa ...",
-    "account-locator": "Định vị tài khoản",
     "authentication-database": "Cơ sở dữ liệu xác thực",
     "connection-info": "Thông tin kết nối",
     "connection-options": "Tùy chọn kết nối",
@@ -564,10 +651,14 @@
     "external-id-description": "ID bên ngoài để bảo mật bổ sung khi đảm nhận vai trò (tùy chọn)",
     "external-id-placeholder": "ID bên ngoài tùy chọn",
     "external-link": "Liên kết ngoài",
+    "external-secret": {
+      "key-name": "Khóa bí mật",
+      "secret-name": "Tên bí mật"
+    },
     "external-secret-azure": {
       "secret-name": "Tên bí mật",
-      "vault-url": "URL Key Vault",
       "secret-name-tips": "Tên của bí mật được lưu trữ trong Azure Key Vault.",
+      "vault-url": "URL Key Vault",
       "vault-url-tips": "URL Key Vault phải giống như \"https://myvault.vault.azure.net/\"."
     },
     "external-secret-gcp": {
@@ -583,41 +674,41 @@
           "secret-plain-text": "Văn bản thuần",
           "self": "AppRole"
         },
+        "self": "Loại xác thực",
         "token": {
           "self": "Mã thông báo"
-        },
-        "self": "Loại xác thực"
+        }
       },
-      "vault-secret-key": "Khóa bí mật",
-      "vault-secret-path": "Đường dẫn bí mật",
       "vault-secret-engine-name": "Tên công cụ bí mật",
       "vault-secret-engine-tips": "Chỉ hỗ trợ công cụ KV v2.",
+      "vault-secret-key": "Khóa bí mật",
+      "vault-secret-path": "Đường dẫn bí mật",
       "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
       "vault-url": "URL Vault"
     },
-    "external-secret": {
-      "key-name": "Khóa bí mật",
-      "secret-name": "Tên bí mật"
-    },
     "failed-to-connect-instance": "Không kết nối được với phiên bản.",
     "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" cho địa chỉ máy chủ.",
+    "filter-instance-name": "Lọc tên phiên bản",
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
+    "force-archive-description": "Buộc lưu trữ. Tất cả cơ sở dữ liệu sẽ bị hủy gán.",
     "grants": "Quyền",
     "host-or-socket": "Máy chủ hoặc Socket",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
       "credential-source": "Credential Source",
+      "saas-default-credential-restriction": "Thông tin xác thực mặc định không khả dụng trong Bytebase Cloud vì lý do bảo mật. Vui lòng cung cấp thông tin xác thực cụ thể.",
       "specific-credential": "Chứng chỉ cụ thể",
-      "tenant-id": "Tenant ID",
-      "saas-default-credential-restriction": "Thông tin xác thực mặc định không khả dụng trong Bytebase Cloud vì lý do bảo mật. Vui lòng cung cấp thông tin xác thực cụ thể."
+      "tenant-id": "Tenant ID"
     },
     "info-panel": {
       "no-info": "Không có thông tin bổ sung cho engine này."
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "new-instance": "Phiên bản mới",
+    "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
     "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
     "no-password": "Không có mật khẩu",
@@ -626,30 +717,41 @@
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
-      "google-iam": "Google Cloud SQL IAM",
-      "password": "Mật khẩu",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP Secret Manager",
-      "external-secret-vault": "Vault (KV v2)"
+      "external-secret-vault": "Vault (KV v2)",
+      "google-iam": "Google Cloud SQL IAM",
+      "password": "Mật khẩu"
     },
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
     "project-id": "ID dự án",
+    "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
     "scan-interval": {
       "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
-      "self": "Khoảng thời gian quét",
-      "min-value": "Giá trị nhỏ nhất {{value}} phút"
+      "min-value": "Giá trị nhỏ nhất {{value}} phút",
+      "self": "Khoảng thời gian quét"
     },
     "section": {
       "basic-info": "Thông tin cơ bản",
       "connection": "Kết nối"
     },
+    "selected-n-instances_one": "{{count}} phiên bản đã chọn",
+    "selected-n-instances_other": "{{count}} phiên bản đã chọn",
     "sentence": {
+      "aws-rds": {
+        "mysql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' và cấp cho người dùng các đặc quyền cần thiết."
+        }
+      },
       "console": {
         "snowflake": "URL bảng điều khiển bên ngoài quản lý phiên bản này (ví dụ: bảng điều khiển AWS RDS, bảng điều khiển phiên bản cơ sở dữ liệu nội bộ của bạn)"
       },
@@ -658,16 +760,16 @@
       "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc như truy vấn SELECT.",
       "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
       "create-user-example": {
-        "postgresql": {
-          "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây, thì SUPERUSER không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển quản trị của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SUPERUSER cụ thể của nhà cung cấp. Bạn nên cấp các đặc quyền Bytebase với 'GRANT role_name TO bytebase;' cho tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được các cơ sở dữ liệu hoặc bảng hiện có.",
-          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER."
-        },
         "clickhouse": {
           "sql-driven-workflow": "Quy trình công việc dựa trên SQL",
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Đầu tiên, bạn cần bật {{link}} quy trình công việc dựa trên SQL và sau đó chạy truy vấn sau để tạo người dùng."
         },
         "mysql": {
           "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "postgresql": {
+          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER.",
+          "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây, thì SUPERUSER không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển quản trị của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SUPERUSER cụ thể của nhà cung cấp. Bạn nên cấp các đặc quyền Bytebase với 'GRANT role_name TO bytebase;' cho tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được các cơ sở dữ liệu hoặc bảng hiện có."
         },
         "redis": {
           "template": "Dưới đây là ví dụ để tạo người dùng {{user}} với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
@@ -677,20 +779,6 @@
         }
       },
       "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase.",
-      "host": {
-        "none-snowflake": "ví dụ: host.docker.internal {{'|'}} địa chỉ IP máy chủ {{'|'}} local socket"
-      },
-      "proxy": {
-        "snowflake": "Đối với máy chủ proxy, thêm {{'@'}}PROXY_HOST và chỉ định PROXY_PORT trong cổng"
-      },
-      "aws-rds": {
-        "mysql": {
-          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% và cấp cho người dùng các đặc quyền cần thiết."
-        },
-        "postgresql": {
-          "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' và cấp cho người dùng các đặc quyền cần thiết."
-        }
-      },
       "google-cloud-sql": {
         "instance-name": "Tên kết nối phiên bản",
         "instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",
@@ -700,11 +788,27 @@
         "postgresql": {
           "template": "Tạo một tài khoản dịch vụ có tên {{user}}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {{user}}@project-id.iam. Cấp cho người dùng các đặc quyền cần thiết."
         }
+      },
+      "host": {
+        "none-snowflake": "ví dụ: host.docker.internal {{'|'}} địa chỉ IP máy chủ {{'|'}} local socket"
+      },
+      "proxy": {
+        "snowflake": "Đối với máy chủ proxy, thêm {{'@'}}PROXY_HOST và chỉ định PROXY_PORT trong cổng"
       }
     },
     "show-how-to-create": "Hiển thị cách tạo",
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
+    "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
     "successfully-connected-instance": "Đã kết nối thành công với phiên bản.",
+    "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{{0}}'.",
+    "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{{0}}'.",
+    "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{{0}}'.",
+    "sync": {
+      "self": "Đồng bộ phiên bản",
+      "sync-all": "Đồng bộ tất cả cơ sở dữ liệu",
+      "sync-all-tip": "Đồng bộ cơ sở dữ liệu không đồng bộ và có thể mất vài giây đến vài phút",
+      "sync-new": "Chỉ đồng bộ cơ sở dữ liệu mới"
+    },
     "sync-databases": {
       "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
       "description": "Chỉ đồng bộ các cơ sở dữ liệu đã chọn.",
@@ -712,17 +816,13 @@
       "self": "Đồng bộ cơ sở dữ liệu",
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu"
     },
+    "syncing": "Đang đồng bộ hóa ...",
     "test-connection": "Kiểm tra kết nối",
+    "testing-connection": "Đang kiểm tra kết nối...",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
     "users": "Người dùng",
-    "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn",
-    "testing-connection": "Đang kiểm tra kết nối...",
-    "new-instance": "Phiên bản mới",
-    "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
-    "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
-    "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{{0}}'.",
-    "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{{0}}'."
+    "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
   "instance.account-locator": "Định vị tài khoản",
   "instance.archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
@@ -847,62 +947,70 @@
   "instance.users": "Người dùng",
   "instance.your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn",
   "issue": {
-    "labels": "Nhãn vấn đề",
     "advanced-search": {
       "filter": "Bộ lọc",
       "scope": {
-        "state": {
-          "description": "Lọc theo trạng thái"
-        },
-        "creator": {
-          "title": "Người tạo",
-          "description": "Tìm kiếm theo người sáng tạo"
-        },
-        "status": {
-          "description": "Tìm kiếm theo trạng thái issue"
-        },
         "approval": {
-          "title": "Trạng thái phê duyệt",
           "description": "Tìm kiếm theo trạng thái phê duyệt của vấn đề",
+          "title": "Trạng thái phê duyệt",
           "value": {
+            "approved": "Đã phê duyệt",
             "checking": "Đang kiểm tra",
             "pending": "Đang chờ phê duyệt",
-            "approved": "Đã phê duyệt",
             "rejected": "Đã từ chối",
             "skipped": "Đã bỏ qua"
           }
         },
-        "issue-type": {
-          "title": "Type",
-          "description": "Filter by issue type",
-          "value": {
-            "database-change": "Database Change",
-            "role-grant": "Role Grant",
-            "database-export": "Database Export",
-            "access-grant": "Access Grant"
-          }
+        "creator": {
+          "description": "Tìm kiếm theo người sáng tạo",
+          "title": "Người tạo"
         },
         "current-approver": {
-          "title": "Người phê duyệt hiện tại",
-          "description": "Tìm kiếm theo người phê duyệt hiện tại"
+          "description": "Tìm kiếm theo người phê duyệt hiện tại",
+          "title": "Người phê duyệt hiện tại"
         },
         "issue-label": {
-          "title": "Nhãn vấn đề",
-          "description": "Lọc theo nhãn vấn đề"
+          "description": "Lọc theo nhãn vấn đề",
+          "title": "Nhãn vấn đề"
+        },
+        "issue-type": {
+          "description": "Filter by issue type",
+          "title": "Type",
+          "value": {
+            "access-grant": "Access Grant",
+            "database-change": "Database Change",
+            "database-export": "Database Export",
+            "role-grant": "Role Grant"
+          }
+        },
+        "state": {
+          "description": "Lọc theo trạng thái"
+        },
+        "status": {
+          "description": "Tìm kiếm theo trạng thái issue"
         }
       }
+    },
+    "batch-transition": {
+      "close": "Đóng",
+      "closed": "đã đóng",
+      "not-allowed-tips": "Một số vấn đề đã chọn không thể {{}}",
+      "reopen": "Mở lại",
+      "reopened": "đã mở lại"
     },
     "data-export": {
       "format": "Định dạng",
       "limits": "Giới hạn",
       "options": "Tùy chọn"
     },
+    "labels": "Nhãn vấn đề",
+    "leave-a-comment": "Để lại bình luận...",
     "risk-level": {
-      "high": "Cao",
-      "moderate": "Trung bình",
-      "self": "Mức độ rủi ro",
       "filter": "Lọc theo mức độ rủi ro",
-      "low": "Thấp"
+      "high": "Cao",
+      "low": "Thấp",
+      "moderate": "Trung bình",
+      "self": "Mức độ rủi ro"
     },
     "role-grant": {
       "all-databases": "Tất cả",
@@ -910,44 +1018,36 @@
       "manually-select": "Chọn thủ công",
       "use-cel": "Sử dụng biểu thức CEL"
     },
+    "sort": {
+      "ascending": "Tăng dần",
+      "created": "Thời gian tạo",
+      "descending": "Giảm dần",
+      "sort": "Sắp xếp",
+      "updated": "Thời gian cập nhật"
+    },
+    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
     "table": {
       "approval-progress": "{{approved}}/{{total}} Approvals",
       "approved": "Approved",
-      "open": "Mở",
-      "waiting-role": "Waiting: {{role}}",
-      "name": "Tên",
-      "updated": "Đã cập nhật",
+      "closed": "Đã đóng",
       "creator": "Người tạo",
-      "closed": "Đã đóng"
+      "name": "Tên",
+      "open": "Mở",
+      "updated": "Đã cập nhật",
+      "waiting-role": "Waiting: {{role}}"
     },
     "upload-sql": "Upload SQL",
-    "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
-    "waiting-approval": "Đang chờ phê duyệt",
-    "sort": {
-      "sort": "Sắp xếp",
-      "created": "Thời gian tạo",
-      "updated": "Thời gian cập nhật",
-      "descending": "Giảm dần",
-      "ascending": "Tăng dần"
-    },
-    "batch-transition": {
-      "close": "Đóng",
-      "reopen": "Mở lại",
-      "not-allowed-tips": "Một số vấn đề đã chọn không thể {{}}",
-      "closed": "đã đóng",
-      "reopened": "đã mở lại"
-    },
-    "leave-a-comment": "Để lại bình luận..."
+    "waiting-approval": "Đang chờ phê duyệt"
   },
   "label": {
+    "add-label": "Thêm nhãn",
+    "empty-label-value": "Trống",
     "error": {
       "key-duplicated": "Khóa trùng lặp",
       "key-necessary": "Khóa là bắt buộc",
       "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {{length}} ký tự",
       "value-necessary": "Giá trị là bắt buộc"
-    },
-    "add-label": "Thêm nhãn",
-    "empty-label-value": "Trống"
+    }
   },
   "label.add-label": "Thêm nhãn",
   "label.empty-label-value": "Trống",
@@ -966,17 +1066,17 @@
     }
   },
   "plan": {
-    "plans": "Kế hoạch",
-    "targets": {
-      "title": "Mục tiêu"
-    },
-    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
-    "new-plan": "Kế hoạch mới",
     "checks": {
       "self": "Kiểm tra"
     },
     "navigator": {
       "review": "Xem xét"
+    },
+    "new-plan": "Kế hoạch mới",
+    "plans": "Kế hoạch",
+    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
+    "targets": {
+      "title": "Mục tiêu"
     }
   },
   "policy": {
@@ -1020,9 +1120,6 @@
       "success-prompt": "Đã tạo thành công dự án {{name}}."
     },
     "filter-projects": "Lọc dự án",
-    "table": {
-      "name": "Tên"
-    },
     "masking-exemption": {
       "all-levels": "Tất cả các cấp",
       "expires-in-days_one": "Hết hạn sau {{days}} ngày",
@@ -1119,6 +1216,9 @@
       "success-updated": "Đã cập nhật thành công cài đặt dự án.",
       "update-failed": "Không cập nhật được cài đặt dự án."
     },
+    "table": {
+      "name": "Tên"
+    },
     "webhook": {
       "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
       "add-a-webhook": "Thêm một webhook",
@@ -1156,10 +1256,10 @@
   },
   "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
-    "releases": "Bản phát hành",
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
     "files": "Tệp",
-    "total-files": "Tổng số {{}} tệp"
+    "releases": "Bản phát hành",
+    "total-files": "Tổng số {{}} tệp",
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
   },
   "remind": {
     "release": {
@@ -1167,9 +1267,9 @@
     }
   },
   "resource": {
-    "delete-warning-with-resources": "\"{{name}}\" được sử dụng bởi các tài nguyên sau:",
+    "delete-warning": "\"{{name}}\" sẽ bị xóa. Hành động này không thể hoàn tác.",
     "delete-warning-retry": "Vui lòng xóa nó khỏi các tài nguyên này rồi thử lại.",
-    "delete-warning": "\"{{name}}\" sẽ bị xóa. Hành động này không thể hoàn tác."
+    "delete-warning-with-resources": "\"{{name}}\" được sử dụng bởi các tài nguyên sau:"
   },
   "resource-id": {
     "cannot-be-changed-later": "Nó không thể được thay đổi sau này.",
@@ -1211,9 +1311,24 @@
       "self": "Vai trò không gian làm việc"
     }
   },
+  "rollout": {
+    "stage": {
+      "self_one": "Giai đoạn",
+      "self_other": "Các giai đoạn"
+    }
+  },
+  "schema-editor": {
+    "raw-sql": "Raw SQL"
+  },
   "schema-template": {
     "classification": {
       "search": "Tìm kiếm phân loại"
+    }
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "Khóa nhãn...",
+      "value-placeholder": "Giá trị nhãn..."
     }
   },
   "setting.label.key-placeholder": "Khóa nhãn...",
@@ -1436,8 +1551,13 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
+      "add-service-account": "Thêm tài khoản dịch vụ",
       "add-user": "Thêm người dùng",
+      "add-workload-identity": "Thêm danh tính Workload",
+      "all-users": "Tất cả người dùng",
+      "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
+      "copy-service-key": "Sao chép Khóa Dịch vụ",
       "entra-sync": {
         "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
@@ -1467,7 +1587,11 @@
         "update-group": "Cập nhật nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
+      "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
+      "inactive-workload-identities": "Danh tính Workload không hoạt động",
+      "reset-service-key": "Đặt lại Khóa Dịch vụ",
+      "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoke-access": "Thu hồi Quyền truy cập",
       "revoke-access-alert": "Bạn có chắc muốn thu hồi quyền truy cập?",
       "revoke-allusers-alert": "Thu hồi \"Tất cả người dùng\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
@@ -1479,30 +1603,21 @@
       "select-role_one": "Chọn vai trò",
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
+      "service-accounts": "Tài khoản dịch vụ",
+      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
       "table": {
         "account": "Tài khoản",
         "groups": "Nhóm",
         "roles": "Vai trò"
       },
+      "update-service-account": "Cập nhật tài khoản dịch vụ",
       "update-user": "Cập nhật người dùng",
+      "update-workload-identity": "Cập nhật danh tính Workload",
       "view-by-members": "Xem theo thành viên",
       "view-by-roles": "Xem theo vai trò",
-      "workload-identity": "Workload Identity",
-      "add-service-account": "Thêm tài khoản dịch vụ",
-      "add-workload-identity": "Thêm danh tính Workload",
-      "all-users": "Tất cả người dùng",
-      "assign-role": "Assign role",
-      "copy-service-key": "Sao chép Khóa Dịch vụ",
-      "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
-      "inactive-workload-identities": "Danh tính Workload không hoạt động",
-      "reset-service-key": "Đặt lại Khóa Dịch vụ",
-      "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
-      "service-accounts": "Tài khoản dịch vụ",
-      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
-      "update-service-account": "Cập nhật tài khoản dịch vụ",
-      "update-workload-identity": "Cập nhật danh tính Workload",
       "workload-identities": "Danh tính Workload",
+      "workload-identity": "Workload Identity",
       "workload-identity-advanced": "Advanced Settings",
       "workload-identity-all-branches-tags": "All branches and tags",
       "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
@@ -1526,6 +1641,7 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "email": "Email",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
@@ -1533,7 +1649,6 @@
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
-      "email": "Email",
       "role": "Vai trò",
       "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
     },
@@ -1600,10 +1715,12 @@
         },
         "re-order": "Sắp xếp lại"
       },
+      "never-expires": "Không bao giờ hết hạn",
       "semantic-types": {
         "add-from-template": "Thêm từ mẫu",
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
+        "self": "Loại ngữ nghĩa",
         "table": {
           "delete": "Xóa loại ngữ nghĩa này?",
           "description": "Mô tả",
@@ -1615,29 +1732,27 @@
           "description": "Bạn có thể áp dụng các loại ngữ nghĩa tích hợp từ mẫu. Mẫu tích hợp không thể thay đổi.",
           "duplicate-warning": "Loại ngữ nghĩa \"{{title}}\" đã tồn tại"
         },
-        "use-predefined-type": "Sử dụng Loại định nghĩa trước",
-        "self": "Loại ngữ nghĩa"
-      },
-      "never-expires": "Không bao giờ hết hạn"
+        "use-predefined-type": "Sử dụng Loại định nghĩa trước"
+      }
     },
     "sidebar": {
       "audit-log": "Nhật ký kiểm tra",
       "custom-roles": "Vai trò tùy chỉnh",
+      "data-access": "Truy cập dữ liệu",
       "data-classification": "Phân loại dữ liệu",
       "general": "Chung",
       "global-masking": "Che giấu toàn cục",
+      "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
+      "integration": "Tích hợp",
       "mcp": "MCP",
       "members": "Thành viên",
       "members-and-groups": "Thành viên & Nhóm",
+      "profile": "Hồ sơ",
+      "security-and-policy": "Bảo mật & Chính sách",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
-      "users-and-groups": "Người dùng & Nhóm",
-      "data-access": "Truy cập dữ liệu",
-      "iam-and-admin": "IAM & Quản trị",
-      "integration": "Tích hợp",
-      "profile": "Hồ sơ",
-      "security-and-policy": "Bảo mật & Chính sách"
+      "users-and-groups": "Người dùng & Nhóm"
     },
     "sso": {
       "create": "Tạo SSO",
@@ -1726,7 +1841,6 @@
     }
   },
   "sql-editor": {
-    "self": "Trình soạn thảo SQL",
     "access-grants": "Access Grants",
     "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "activate-access": "Activate",
@@ -1735,11 +1849,10 @@
     "grant-type-unmask": "Unmask",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "self": "Trình soạn thảo SQL",
     "view-issue": "View Issue"
   },
   "sql-review": {
-    "configure-policy": "Configure policy",
-    "title": "SQL Review",
     "add-or-remove-rules": "Add or remove rules",
     "add-rules": "Add rules",
     "attach-resource": {
@@ -1748,6 +1861,7 @@
       "no-linked-resources": "No attached resources",
       "self": "Attach to resources"
     },
+    "configure-policy": "Configure policy",
     "create": {
       "basic-info": {
         "display-name": "Display name",
@@ -1772,12 +1886,14 @@
     "policy-removed": "Successfully removed the review policy.",
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
-    "review-policy": "Review policy"
+    "review-policy": "Review policy",
+    "title": "SQL Review"
   },
   "subscription": {
     "contact-us": "Liên hệ chúng tôi",
     "current": "Gói hiện tại",
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
+    "disabled-feature": "Tính năng bị vô hiệu hóa",
     "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {{days}} ngày",
     "expired": "đã hết hạn",
     "expires-at": "Hết hạn vào",
@@ -1786,9 +1902,9 @@
       "assign-license": "Gán giấy phép",
       "license": "Giấy phép",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
+      "n-license-remain": "còn lại {{n}}",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
-      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
-      "n-license-remain": "còn lại {{n}}"
+      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"
     },
     "max-instance-count": "Số lượng phiên bản tối đa",
     "plan": {
@@ -1869,20 +1985,25 @@
         "title": "Giới hạn số lượng người dùng",
         "upgrade": "Nâng cấp để có thêm hạn ngạch người dùng."
       }
-    },
-    "disabled-feature": "Tính năng bị vô hiệu hóa"
+    }
   },
   "subscription.instance-assignment.assign-license": "Gán giấy phép",
   "subscription.instance-assignment.n-license-remain": "còn lại {{n}}",
   "subscription.usage.instance-count.runoutof": "Bạn đã hết hạn ngạch {{total}} phiên bản của mình.",
   "subscription.usage.instance-count.title": "Giới hạn số lượng phiên bản",
+  "task": {
+    "checking": "Đang kiểm tra...",
+    "status": {
+      "running": "Đang chạy"
+    }
+  },
   "two-factor": {
-    "enabled": "Đã bật 2FA",
     "description": "Xác thực hai yếu tố cung cấp một lớp bảo mật bổ sung cho các tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng xác thực của bạn tạo.",
     "disable": {
       "description": "Bạn sắp tắt xác thực hai yếu tố cho tài khoản của mình. Bạn sẽ không còn phải nhập mã bảo mật do Ứng dụng xác thực của bạn tạo khi đăng nhập.",
       "self": "Tắt xác thực hai yếu tố"
     },
+    "enabled": "Đã bật 2FA",
     "messages": {
       "2fa-disabled": "Xác thực hai yếu tố bị tắt.",
       "2fa-enabled": "Xác thực hai yếu tố được bật.",
@@ -1922,127 +2043,6 @@
       "copy-succeed": "Bí mật đã được sao chép vào khay nhớ tạm. Dán nó vào ứng dụng của bạn.",
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
-    }
-  },
-  "agent": {
-    "assistant-title": "Trợ lý AI",
-    "resize": "Thay đổi kích thước",
-    "minimize": "Thu nhỏ",
-    "close": "Đóng",
-    "input-placeholder": "Hỏi AI bất cứ điều gì...",
-    "send": "Gửi",
-    "args": "Tham số",
-    "result": "Kết quả",
-    "stop": "Dừng",
-    "interrupted": "Bị gián đoạn",
-    "retry-last-chat-turn": "Thử lại",
-    "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
-    "new-chat": "Cuộc trò chuyện mới",
-    "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
-    "archive-chat": "Lưu trữ cuộc trò chuyện",
-    "unarchive-chat": "Bỏ lưu trữ",
-    "delete-chat": "Xóa cuộc trò chuyện",
-    "active-only-chats": "Chỉ hoạt động",
-    "archived-only-chats": "Chỉ đã lưu trữ",
-    "archive-chat-confirmation": "Bạn có chắc chắn muốn lưu trữ cuộc trò chuyện này?",
-    "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
-    "chat-list-label": "Cuộc trò chuyện",
-    "chat-default-title": "Cuộc trò chuyện mới",
-    "chat-archived-label": "Đã lưu trữ",
-    "chat-status-idle": "Rảnh",
-    "chat-status-running": "Đang chạy",
-    "chat-status-awaiting-user": "Đang chờ người dùng",
-    "chat-status-error": "Lỗi",
-    "chat-status-interrupted": "Bị gián đoạn",
-    "chat-total-tokens": "Tổng số token",
-    "reply": "Trả lời",
-    "confirm": "Xác nhận",
-    "cancel": "Hủy",
-    "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
-    "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
-    "pending-choose-hint": "Vui lòng chọn một tùy chọn ở trên",
-    "tool-ask-user": "Đang hỏi người dùng",
-    "tool-ask-user-input": "Cung cấp đầu vào",
-    "tool-ask-user-confirm": "Xác nhận hành động",
-    "tool-ask-user-choose": "Chọn một tùy chọn",
-    "tool-response-submitted": "Phản hồi đã được gửi",
-    "tool-prompt": "Lời nhắc",
-    "tool-default-value": "Mặc định",
-    "tool-options": "Tùy chọn",
-    "tool-answer": "Câu trả lời",
-    "tool-value": "Giá trị",
-    "tool-completed": "Đã hoàn thành",
-    "tool-failed": "Thất bại",
-    "ai-not-configured": {
-      "title": "AI chưa được cấu hình",
-      "description": "AI chưa được cấu hình cho không gian làm việc này.",
-      "configure": "Cấu hình",
-      "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI."
-    }
-  },
-  "changelog": {
-    "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
-  },
-  "schema-editor": {
-    "raw-sql": "Raw SQL"
-  },
-  "task": {
-    "checking": "Đang kiểm tra...",
-    "status": {
-      "running": "Đang chạy"
-    }
-  },
-  "rollout": {
-    "stage": {
-      "self_one": "Giai đoạn",
-      "self_other": "Các giai đoạn"
-    }
-  },
-  "data-source": {
-    "additional-node-addresses": "Địa chỉ nút bổ sung",
-    "connection-string-schema": "Lược đồ chuỗi kết nối",
-    "connection-type": "Loại kết nối",
-    "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
-    "direct-connection": "Kết nối trực tiếp",
-    "extra-params": {
-      "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
-      "self": "Thông số bổ sung"
-    },
-    "private-key-passphrase": "Mật khẩu khóa riêng",
-    "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
-    "read-replica-host": "Máy chủ bản sao đọc",
-    "read-replica-port": "Cổng bản sao đọc",
-    "replica-set": "Bộ bản sao",
-    "snowflake-keypair-tip": "Xác thực cặp khóa",
-    "ssh-connection": "Kết nối SSH",
-    "ssh-type": {
-      "none": "Không có",
-      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
-    },
-    "ssh": {
-      "host": "Máy chủ",
-      "password": "Mật khẩu",
-      "port": "Cổng",
-      "private-key": "Khóa riêng",
-      "ssh-key": "Khóa SSH",
-      "user": "Người dùng"
-    },
-    "ssl-connection": "Kết nối SSL",
-    "ssl": {
-      "ca-cert": "Chứng chỉ CA",
-      "client-cert": "Chứng chỉ máy khách",
-      "client-key": "Khóa máy khách",
-      "verify-certificate": "Xác minh chứng chỉ TLS",
-      "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
-    },
-    "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
-    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa"
-  },
-  "setting": {
-    "label": {
-      "key-placeholder": "Khóa nhãn...",
-      "value-placeholder": "Giá trị nhãn..."
     }
   }
 }

@@ -1,53 +1,53 @@
 {
-  "current": "当前版本",
-  "unlimited": "无限制",
-  "max-instance-count": "最多实例数",
-  "user-count": "用户数",
-  "expires-at": "过期时间",
-  "start-free-trial": "开始免费试用",
-  "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
-  "purchase-license": "购买证书",
-  "update-license": "更新证书",
-  "sensitive-placeholder": "粘贴您的证书 - 仅写入",
-  "plan-compare": "比较不同版本的功能，寻找适合您的方案",
-  "disabled-feature": "这是一个订阅版高级功能",
-  "upgrade": "升级订阅",
-  "per-month": "/ 月",
-  "price-unit-for-instance": "/ 实例 / 月",
-  "price-unit-for-user": "/ 用户 / 月",
+  "announcement": "您可以随时升级、降级或{cancel}。没有任何隐藏费用。",
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
-  "per-instance": "每个实例",
-  "free-price-intro": "最多 {users} 个用户，{instances} 个实例",
-  "team-price-intro": "{instances} 个免费实例，最多购买 {users} 个用户",
-  "enterprise-price-intro": "自定义，按年付费",
-  "deploy": "部署",
-  "contact-us": "联系我们",
-  "start-trial": "免费试用",
-  "subscribe": "开始订阅",
-  "current-plan": "当前订阅",
   "buy": "购买{plan}",
   "cancel": "取消订阅",
-  "announcement": "您可以随时升级、降级或{cancel}。没有任何隐藏费用。",
-  "trialing": "试用期",
+  "contact-us": "联系我们",
+  "current": "当前版本",
+  "current-plan": "当前订阅",
+  "deploy": "部署",
+  "disabled-feature": "这是一个订阅版高级功能",
+  "enterprise-price-intro": "自定义，按年付费",
   "expired": "已过期",
+  "expires-at": "过期时间",
+  "free-price-intro": "最多 {users} 个用户，{instances} 个实例",
+  "free-trial": "您可以免费试用 14 天 - 无需信用卡或预付费",
+  "max-instance-count": "最多实例数",
+  "per-instance": "每个实例",
+  "per-month": "/ 月",
   "plan": {
-    "title": "版本",
-    "try": "免费试用",
-    "free": {
-      "title": "社区版",
+    "enterprise": {
+      "desc": "额外的安全，合规，权限功能，SLA 支持。",
       "label": "",
-      "desc": "团队中心化管理数据库生命周期的核心能力。"
+      "title": "企业版"
+    },
+    "free": {
+      "desc": "团队中心化管理数据库生命周期的核心能力。",
+      "label": "",
+      "title": "社区版"
     },
     "team": {
-      "title": "专业版",
+      "desc": "更多协同和管控能力，进阶的数据库生命周期管理。",
       "label": "",
-      "desc": "更多协同和管控能力，进阶的数据库生命周期管理。"
+      "title": "专业版"
     },
-    "enterprise": {
-      "title": "企业版",
-      "label": "",
-      "desc": "额外的安全，合规，权限功能，SLA 支持。"
-    }
-  }
+    "title": "版本",
+    "try": "免费试用"
+  },
+  "plan-compare": "比较不同版本的功能，寻找适合您的方案",
+  "price-unit-for-instance": "/ 实例 / 月",
+  "price-unit-for-user": "/ 用户 / 月",
+  "purchase-license": "购买证书",
+  "sensitive-placeholder": "粘贴您的证书 - 仅写入",
+  "start-free-trial": "开始免费试用",
+  "start-trial": "免费试用",
+  "subscribe": "开始订阅",
+  "team-price-intro": "{instances} 个免费实例，最多购买 {users} 个用户",
+  "trialing": "试用期",
+  "unlimited": "无限制",
+  "update-license": "更新证书",
+  "upgrade": "升级订阅",
+  "user-count": "用户数"
 }
