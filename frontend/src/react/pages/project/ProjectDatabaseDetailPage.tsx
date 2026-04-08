@@ -23,6 +23,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
+import { DatabaseSettingsPanel } from "./database-detail/panels/DatabaseSettingsPanel";
 import {
   PROJECT_DATABASE_DETAIL_TAB_CATALOG,
   PROJECT_DATABASE_DETAIL_TAB_CHANGELOG,
@@ -224,6 +225,10 @@ export function ProjectDatabaseDetailPage({
           </TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {selectedTab === PROJECT_DATABASE_DETAIL_TAB_SETTING && (
+        <DatabaseSettingsPanel database={detail.database} />
+      )}
 
       <Dialog
         open={showIncorrectProjectModal}

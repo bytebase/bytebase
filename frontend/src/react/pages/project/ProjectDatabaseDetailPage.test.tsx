@@ -46,6 +46,7 @@ const mocks = vi.hoisted(() => {
         </button>
       )
     ),
+    EnvironmentSelect: vi.fn(() => <div data-testid="environment-select" />),
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
@@ -191,6 +192,10 @@ vi.mock("@/react/components/ui/tabs", () => ({
   TabsTrigger: mocks.TabsTrigger,
 }));
 
+vi.mock("@/react/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: mocks.EnvironmentSelect,
+}));
+
 vi.mock("./database-detail/useProjectDatabaseDetail", () => ({
   useProjectDatabaseDetail: mocks.useProjectDatabaseDetail,
 }));
@@ -306,6 +311,7 @@ beforeEach(() => {
   mocks.LoaderCircle.mockClear();
   mocks.TabsList.mockClear();
   mocks.TabsTrigger.mockClear();
+  mocks.EnvironmentSelect.mockClear();
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
