@@ -1,53 +1,53 @@
 {
-  "current": "Plan actual",
-  "unlimited": "Ilimitado",
-  "max-instance-count": "Recuento máximo de instancias",
-  "user-count": "Conteo de usuarios",
-  "expires-at": "Expira el",
-  "start-free-trial": "Comience la prueba gratuita",
-  "free-trial": "Puede comenzar una prueba gratuita durante 14 días - no se requiere tarjeta de crédito",
-  "purchase-license": "Comprar una Licencia",
-  "update-license": "Actualizar licencia",
-  "sensitive-placeholder": "Pegue su licencia aquí - solo escritura",
-  "plan-compare": "Compara características entre los diferentes planes",
-  "disabled-feature": "Esta es una función premium en el plan de suscripción",
-  "upgrade": "Actualizar suscripción",
-  "per-month": "/ mes",
-  "price-unit-for-instance": "/instancia/mes",
-  "price-unit-for-user": "/ usuario / mes",
+  "announcement": "Puedes mejorar, degradar, o {cancel} en cualquier momento. Sin cargos ocultos.",
   "billed-annually": "Facturado anualmente",
   "billed-monthly": "Facturado mensualmente",
-  "per-instance": "Por instancia",
-  "free-price-intro": "Hasta {users} usuarios y {instances} instancias",
-  "team-price-intro": "{instances} instancias gratuitas, compre hasta {users} usuarios",
-  "enterprise-price-intro": "Personalizado, facturado anualmente",
-  "deploy": "Desplegar",
-  "contact-us": "Contáctenos",
-  "start-trial": "Comience la prueba gratuita",
-  "subscribe": "Suscribirse ahora",
-  "current-plan": "Plan actual",
   "buy": "Comprar plan {plan}",
   "cancel": "cancelar su suscripción",
-  "announcement": "Puedes mejorar, degradar, o {cancel} en cualquier momento. Sin cargos ocultos.",
-  "trialing": "probando",
+  "contact-us": "Contáctenos",
+  "current": "Plan actual",
+  "current-plan": "Plan actual",
+  "deploy": "Desplegar",
+  "disabled-feature": "Esta es una función premium en el plan de suscripción",
+  "enterprise-price-intro": "Personalizado, facturado anualmente",
   "expired": "expirado",
+  "expires-at": "Expira el",
+  "free-price-intro": "Hasta {users} usuarios y {instances} instancias",
+  "free-trial": "Puede comenzar una prueba gratuita durante 14 días - no se requiere tarjeta de crédito",
+  "max-instance-count": "Recuento máximo de instancias",
+  "per-instance": "Por instancia",
+  "per-month": "/ mes",
   "plan": {
-    "title": "Plan",
-    "try": "Empezar la prueba gratuita",
-    "free": {
-      "title": "Comunitario",
+    "enterprise": {
+      "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA.",
       "label": "",
-      "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos."
+      "title": "Empresarial"
+    },
+    "free": {
+      "desc": "Elementos esenciales del equipo para centralizar la gestión del ciclo de vida de la base de datos.",
+      "label": "",
+      "title": "Comunitario"
     },
     "team": {
-      "title": "Pro",
+      "desc": "Más políticas para estandarizar y facilitar la colaboración entre equipos.",
       "label": "",
-      "desc": "Más políticas para estandarizar y facilitar la colaboración entre equipos."
+      "title": "Pro"
     },
-    "enterprise": {
-      "title": "Empresarial",
-      "label": "",
-      "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA."
-    }
-  }
+    "title": "Plan",
+    "try": "Empezar la prueba gratuita"
+  },
+  "plan-compare": "Compara características entre los diferentes planes",
+  "price-unit-for-instance": "/instancia/mes",
+  "price-unit-for-user": "/ usuario / mes",
+  "purchase-license": "Comprar una Licencia",
+  "sensitive-placeholder": "Pegue su licencia aquí - solo escritura",
+  "start-free-trial": "Comience la prueba gratuita",
+  "start-trial": "Comience la prueba gratuita",
+  "subscribe": "Suscribirse ahora",
+  "team-price-intro": "{instances} instancias gratuitas, compre hasta {users} usuarios",
+  "trialing": "probando",
+  "unlimited": "Ilimitado",
+  "update-license": "Actualizar licencia",
+  "upgrade": "Actualizar suscripción",
+  "user-count": "Conteo de usuarios"
 }

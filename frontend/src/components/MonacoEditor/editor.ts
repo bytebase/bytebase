@@ -1,4 +1,5 @@
 import type * as MonacoType from "monaco-editor";
+import type { Language } from "@/types";
 import { defer } from "@/utils";
 import { loadMonacoEditor } from "./lazy-editor";
 import { initializeMonacoServices } from "./services";
@@ -75,6 +76,14 @@ export const createMonacoDiffEditor = async (config: {
   MonacoEditorReadyDefer.resolve();
 
   return editor;
+};
+
+export const setMonacoModelLanguage = async (
+  model: MonacoType.editor.ITextModel,
+  language: Language
+): Promise<void> => {
+  const monaco = await loadMonacoEditor();
+  monaco.editor.setModelLanguage(model, language);
 };
 
 export const defaultEditorOptions =

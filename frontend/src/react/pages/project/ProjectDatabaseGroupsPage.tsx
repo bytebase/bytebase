@@ -120,12 +120,12 @@ export function ProjectDatabaseGroupsPage({
             onChange={(e) => setSearchText(e.target.value)}
           />
           <Button disabled={!canCreate} onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-1" />
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATABASE_GROUPS}
               className="text-white"
             />
-            {t("database-group.create")}
+            <Plus className="w-4 h-4 mr-1" />
+            {t("common.create")}
           </Button>
         </div>
       </div>

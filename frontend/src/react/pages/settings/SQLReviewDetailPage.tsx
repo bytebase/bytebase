@@ -356,9 +356,7 @@ export function SQLReviewDetailPage({
           <Button variant="outline" onClick={onCancelChanges}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={onApplyChanges}>
-            {t("common.confirm-and-update")}
-          </Button>
+          <Button onClick={onApplyChanges}>{t("common.update")}</Button>
         </div>
       )}
 

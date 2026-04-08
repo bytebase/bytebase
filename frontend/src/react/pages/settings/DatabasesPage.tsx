@@ -425,7 +425,7 @@ export function DatabasesPage() {
             onClick={() => setShowCreateDrawer(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
-            {t("quick-action.new-db")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>

@@ -1462,7 +1462,7 @@ function EditMemberRoleDrawer({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
-            {t("settings.members.grant-access")}
+            {t("common.members", { count: 1 })}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -1533,7 +1533,7 @@ function EditMemberRoleDrawer({
               disabled={!allowConfirm || isRequesting}
               onClick={handleSubmit}
             >
-              {t("common.confirm")}
+              {isEditMode ? t("common.update") : t("common.create")}
             </Button>
           </div>
         </div>

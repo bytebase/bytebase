@@ -373,7 +373,7 @@ export function SemanticTypesPage() {
           </Button>
           <Button disabled={isReadonly} onClick={onAdd}>
             <Plus className="h-4 w-4" />
-            {t("common.add")}
+            {t("common.create")}
           </Button>
         </div>
       </div>
@@ -681,9 +681,9 @@ function MaskingAlgorithmDrawer({
       <div className="relative w-[40rem] max-w-[calc(100vw-5rem)] bg-white shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-medium">
-            {algorithm
-              ? t("settings.sensitive-data.algorithms.edit")
-              : t("settings.sensitive-data.algorithms.add")}
+            {t(
+              "settings.sensitive-data.semantic-types.table.masking-algorithm"
+            )}
           </h2>
           <button
             className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
@@ -983,7 +983,7 @@ function MaskingAlgorithmDrawer({
             onClick={() => onApply(buildAlgorithm())}
             title={errorMessage || undefined}
           >
-            {t("common.confirm")}
+            {algorithm ? t("common.update") : t("common.create")}
           </Button>
         </div>
       </div>
@@ -1012,7 +1012,7 @@ function SemanticTemplateDrawer({
       <div className="relative w-2xl max-w-[100vw] bg-white shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-medium">
-            {t("settings.sensitive-data.semantic-types.add-from-template")}
+            {t("settings.sensitive-data.semantic-types.table.semantic-type")}
           </h2>
           <button
             className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
@@ -1388,7 +1388,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
                 setOpen(false);
               }}
             >
-              {t("common.confirm")}
+              {t("common.update")}
             </Button>
           </div>
         </div>
@@ -1444,7 +1444,7 @@ function DeleteConfirmButton({
                 onShowChange(false);
               }}
             >
-              {t("common.confirm")}
+              {t("common.delete")}
             </Button>
           </div>
         </div>

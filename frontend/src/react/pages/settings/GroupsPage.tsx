@@ -678,11 +678,7 @@ function CreateGroupDrawer({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {isEditMode
-              ? t("settings.members.groups.update-group")
-              : t("settings.members.groups.add-group")}
-          </h2>
+          <h2 className="text-lg font-medium">{t("common.group")}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -850,7 +846,7 @@ function CreateGroupDrawer({
                       onClick={handleDelete}
                       disabled={isRequesting}
                     >
-                      {t("common.confirm")}
+                      {t("common.deactivate")}
                     </Button>
                     <Button
                       variant="outline"
@@ -881,7 +877,7 @@ function CreateGroupDrawer({
               disabled={!allowEdit || !allowConfirm || isRequesting}
               onClick={handleSubmit}
             >
-              {isEditMode ? t("common.update") : t("common.confirm")}
+              {isEditMode ? t("common.update") : t("common.create")}
             </Button>
           </div>
         </div>
@@ -1027,7 +1023,7 @@ export function GroupsPage() {
                   feature={PlanFeature.FEATURE_USER_GROUPS}
                   clickable={false}
                 />
-                {t("settings.members.groups.add-group")}
+                {t("common.create")}
               </Button>
             </Tooltip>
           ) : (
@@ -1046,7 +1042,7 @@ export function GroupsPage() {
                 feature={PlanFeature.FEATURE_USER_GROUPS}
                 clickable={false}
               />
-              {t("settings.members.groups.add-group")}
+              {t("common.create")}
             </Button>
           )}
         </div>

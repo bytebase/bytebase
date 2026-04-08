@@ -353,9 +353,7 @@ export function CreateWorkloadIdentityDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">
-            {isEditMode
-              ? t("settings.members.update-workload-identity")
-              : t("settings.members.add-workload-identity")}
+            {t("settings.members.workload-identity")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -614,7 +612,7 @@ export function CreateWorkloadIdentityDrawer({
             disabled={!allowConfirm || !hasPermission || isRequesting}
             onClick={handleSubmit}
           >
-            {isEditMode ? t("common.update") : t("common.confirm")}
+            {isEditMode ? t("common.update") : t("common.create")}
           </Button>
         </div>
       </div>

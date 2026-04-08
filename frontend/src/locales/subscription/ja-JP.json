@@ -1,53 +1,53 @@
 {
-  "current": "現在のプラン",
-  "unlimited": "無制限",
-  "max-instance-count": "最大インスタンス数",
-  "user-count": "ユーザー数",
-  "expires-at": "有効期限",
-  "start-free-trial": "無料トライアルを開始する",
-  "free-trial": "14日間の無料トライアルを開始できます - クレジットカードは必要ありません",
-  "purchase-license": "ライセンスを購入する",
-  "update-license": "ライセンスの更新",
-  "sensitive-placeholder": "ここにライセンスを貼り付けてください - 書き込みのみ",
-  "plan-compare": "異なるプラン間の機能を比較する",
-  "disabled-feature": "これはサブスクリプションプランのプレミアム機能です",
-  "upgrade": "サブスクリプションをアップグレードする",
-  "per-month": "/ 月",
-  "price-unit-for-instance": "/ インスタンス / 月",
-  "price-unit-for-user": "/ ユーザー / 月",
+  "announcement": "いつでもアップグレード、ダウングレード、または{cancel}できます。隠れた料金はありません。",
   "billed-annually": "年間請求",
   "billed-monthly": "月額請求",
-  "per-instance": "インスタンスごと",
-  "free-price-intro": "最大{users}ユーザーと{instances}インスタンスまで",
-  "team-price-intro": "{instances} インスタンスは無料、最大 {users} ユーザーまで購入可能",
-  "enterprise-price-intro": "カスタマイズされ、年間請求",
-  "deploy": "デプロイ",
-  "contact-us": "お問い合わせ",
-  "start-trial": "今すぐ無料でお試しください",
-  "subscribe": "今すぐ購読する",
-  "current-plan": "現在のプラン",
   "buy": "{plan}プランを購入する",
   "cancel": "サブスクリプションをキャンセルする",
-  "announcement": "いつでもアップグレード、ダウングレード、または{cancel}できます。隠れた料金はありません。",
-  "trialing": "トライアル中",
+  "contact-us": "お問い合わせ",
+  "current": "現在のプラン",
+  "current-plan": "現在のプラン",
+  "deploy": "デプロイ",
+  "disabled-feature": "これはサブスクリプションプランのプレミアム機能です",
+  "enterprise-price-intro": "カスタマイズされ、年間請求",
   "expired": "期限切れ",
+  "expires-at": "有効期限",
+  "free-price-intro": "最大{users}ユーザーと{instances}インスタンスまで",
+  "free-trial": "14日間の無料トライアルを開始できます - クレジットカードは必要ありません",
+  "max-instance-count": "最大インスタンス数",
+  "per-instance": "インスタンスごと",
+  "per-month": "/ 月",
   "plan": {
-    "title": "コミュニティ",
-    "try": "無料トライアルを開始する",
-    "free": {
-      "title": "コミュニティ",
+    "enterprise": {
+      "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。",
       "label": "",
-      "desc": "データベース開発ライフサイクルを管理するためのチームの基本機能。"
+      "title": "エンタープライズ"
+    },
+    "free": {
+      "desc": "データベース開発ライフサイクルを管理するためのチームの基本機能。",
+      "label": "",
+      "title": "コミュニティ"
     },
     "team": {
-      "title": "プロ",
+      "desc": "チーム間のコラボレーションを標準化し、促進するためのさらなるポリシー。",
       "label": "",
-      "desc": "チーム間のコラボレーションを標準化し、促進するためのさらなるポリシー。"
+      "title": "プロ"
     },
-    "enterprise": {
-      "title": "エンタープライズ",
-      "label": "",
-      "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。"
-    }
-  }
+    "title": "コミュニティ",
+    "try": "無料トライアルを開始する"
+  },
+  "plan-compare": "異なるプラン間の機能を比較する",
+  "price-unit-for-instance": "/ インスタンス / 月",
+  "price-unit-for-user": "/ ユーザー / 月",
+  "purchase-license": "ライセンスを購入する",
+  "sensitive-placeholder": "ここにライセンスを貼り付けてください - 書き込みのみ",
+  "start-free-trial": "無料トライアルを開始する",
+  "start-trial": "今すぐ無料でお試しください",
+  "subscribe": "今すぐ購読する",
+  "team-price-intro": "{instances} インスタンスは無料、最大 {users} ユーザーまで購入可能",
+  "trialing": "トライアル中",
+  "unlimited": "無制限",
+  "update-license": "ライセンスの更新",
+  "upgrade": "サブスクリプションをアップグレードする",
+  "user-count": "ユーザー数"
 }

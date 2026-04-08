@@ -1,0 +1,1 @@
+export { RevisionDetailPanel } from "./RevisionDetailPanel";

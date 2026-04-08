@@ -1,17 +1,31 @@
 package mysql
 
 import (
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+func isTopLevel(ctx antlr.Tree) bool {
+	if ctx == nil {
+		return true
+	}
+	switch ctx := ctx.(type) {
+	case *mysql.SimpleStatementContext:
+		return isTopLevel(ctx.GetParent())
+	case *mysql.QueryContext, *mysql.ScriptContext:
+		return true
+	default:
+		return false
+	}
+}
+
 type queryTypeListener struct {
 	*mysql.BaseMySQLParserListener
 
-	allSystems bool
-	result     base.QueryType
-	// This is for skipping the query span.
+	allSystems       bool
+	result           base.QueryType
 	isExplainAnalyze bool
 }
 
@@ -42,7 +56,6 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 		l.result = base.DML
 	case ctx.SetStatement() != nil:
 		if len(ctx.SetStatement().StartOptionValueList().AllPASSWORD_SYMBOL()) == 0 {
-			// Treat SAFE SET as select statement.
 			l.result = base.Select
 		}
 	case ctx.ShowStatement() != nil:
@@ -68,7 +81,6 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 			}
 		}
 	default:
-		// For any other statement type, default to Select
 		l.result = base.Select
 	}
 }
@@ -77,9 +89,6 @@ func (l *queryTypeListener) EnterSelectStatement(ctx *mysql.SelectStatementConte
 	if !isTopLevel(ctx.GetParent()) {
 		return
 	}
-
-	// MySQL cannot use SELECT ... INTO .. FROM ... syntax to create a new table or insert into an existing table.
-	// So we can safely assume it's a SELECT statement.
 
 	if l.allSystems {
 		l.result = base.SelectInfoSchema

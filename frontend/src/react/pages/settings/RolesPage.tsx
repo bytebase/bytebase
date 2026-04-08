@@ -276,7 +276,7 @@ function ImportPermissionModal({
               disabled={!selectedRole}
               onClick={() => onImport(permissions)}
             >
-              {t("common.confirm")}
+              {t("common.import")}
             </Button>
           </div>
         </div>
@@ -543,9 +543,7 @@ function RoleDrawer({
       <div className="fixed inset-y-0 right-0 z-50 w-[44rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {mode === "ADD" ? t("role.setting.add") : t("role.setting.edit")}
-          </h2>
+          <h2 className="text-lg font-medium">{t("common.role.self")}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -671,7 +669,7 @@ function RoleDrawer({
               }
               onClick={handleSave}
             >
-              {mode === "ADD" ? t("common.add") : t("common.update")}
+              {mode === "ADD" ? t("common.create") : t("common.update")}
             </Button>
           </div>
         )}
@@ -821,7 +819,7 @@ export function RolesPage() {
               className="mr-1 text-white inline-flex"
             />
             <Plus className="h-4 w-4 mr-1" />
-            {t("common.add")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>

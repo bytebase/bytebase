@@ -1,53 +1,53 @@
 {
-  "current": "Current plan",
-  "unlimited": "Unlimited",
-  "max-instance-count": "Max instance count",
-  "user-count": "User count",
-  "expires-at": "Expires at",
-  "start-free-trial": "Start free trial",
-  "free-trial": "You can start a free trial for 14 days - no credit card required",
-  "purchase-license": "Purchase a License",
-  "update-license": "Update license",
-  "sensitive-placeholder": "Paste your license here - write only",
-  "plan-compare": "Compare features between different plans",
-  "disabled-feature": "This is a premium feature in subscription plan",
-  "upgrade": "Upgrade subscription",
-  "per-month": "/ month",
-  "price-unit-for-instance": "/ instance / month",
-  "price-unit-for-user": "/ user / month",
+  "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
   "billed-annually": "Billed annually",
   "billed-monthly": "Billed monthly",
-  "per-instance": "Per instance",
-  "free-price-intro": "Up to {users} users and {instances} instances",
-  "team-price-intro": "{instances} free instances, purchase up to {users} users",
-  "enterprise-price-intro": "Customized, billed annually",
-  "deploy": "Deploy",
-  "contact-us": "Contact us",
-  "start-trial": "Try free now",
-  "subscribe": "Subscribe now",
-  "current-plan": "Current plan",
   "buy": "Buy {plan} plan",
   "cancel": "cancel your subscription",
-  "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
-  "trialing": "trialing",
+  "contact-us": "Contact us",
+  "current": "Current plan",
+  "current-plan": "Current plan",
+  "deploy": "Deploy",
+  "disabled-feature": "This is a premium feature in subscription plan",
+  "enterprise-price-intro": "Customized, billed annually",
   "expired": "expired",
+  "expires-at": "Expires at",
+  "free-price-intro": "Up to {users} users and {instances} instances",
+  "free-trial": "You can start a free trial for 14 days - no credit card required",
+  "max-instance-count": "Max instance count",
+  "per-instance": "Per instance",
+  "per-month": "/ month",
   "plan": {
-    "title": "Community",
-    "try": "Start free trial",
-    "free": {
-      "title": "Community",
+    "enterprise": {
+      "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
       "label": "",
-      "desc": "Team essentials to manage database development lifecycle."
+      "title": "Enterprise"
+    },
+    "free": {
+      "desc": "Team essentials to manage database development lifecycle.",
+      "label": "",
+      "title": "Community"
     },
     "team": {
-      "title": "Pro",
+      "desc": "More policies to standardize and facilitate collaboration across teams.",
       "label": "",
-      "desc": "More policies to standardize and facilitate collaboration across teams."
+      "title": "Pro"
     },
-    "enterprise": {
-      "title": "Enterprise",
-      "label": "",
-      "desc": "Extra security, compliance, and permission features. Dedicated support with SLA."
-    }
-  }
+    "title": "Community",
+    "try": "Start free trial"
+  },
+  "plan-compare": "Compare features between different plans",
+  "price-unit-for-instance": "/ instance / month",
+  "price-unit-for-user": "/ user / month",
+  "purchase-license": "Purchase a License",
+  "sensitive-placeholder": "Paste your license here - write only",
+  "start-free-trial": "Start free trial",
+  "start-trial": "Try free now",
+  "subscribe": "Subscribe now",
+  "team-price-intro": "{instances} free instances, purchase up to {users} users",
+  "trialing": "trialing",
+  "unlimited": "Unlimited",
+  "update-license": "Update license",
+  "upgrade": "Upgrade subscription",
+  "user-count": "User count"
 }

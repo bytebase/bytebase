@@ -577,7 +577,7 @@ export function DataClassificationPage() {
                           size="sm"
                           onClick={onClear}
                         >
-                          {t("common.confirm")}
+                          {t("common.clear")}
                         </Button>
                         <Button
                           variant="outline"
