@@ -131,3 +131,130 @@ Treat these as part of the migration, not cleanup after it:
 - Add React-native replacements for the embedded shared pieces
 - Delete only the Vue files whose callers were gone
 - Leave still-live Vue shared components alone until their remaining callers are migrated
+
+---
+
+## UX Patterns
+
+These patterns must be followed in all React UI to maintain visual consistency.
+
+### Border Radius
+
+Use only these Tailwind classes:
+
+- **`rounded-xs`** (2px) — inputs, buttons, tags, badges, alerts, checkboxes, small inline elements
+- **`rounded-sm`** (4px) — modals, dialogs, dropdowns, popovers, tooltips, bordered card/section containers, list containers with overflow
+- **`rounded-full`** — pills, avatars
+
+**Never use**: `rounded`, `rounded-md`, `rounded-lg`, `rounded-xl`, or any other radius value.
+
+### Input Component
+
+Always use `<Input>` (`@/react/components/ui/input`) instead of raw `<input>` for `type="text"`, `type="number"`, `type="password"`, `type="email"`, `type="date"`, etc.
+
+The only exception is when an input is **intentionally borderless** inside a custom wrapper (e.g., a search input inside a combo trigger, or an email prefix input inside a bordered div with a suffix).
+
+```tsx
+import { Input } from "@/react/components/ui/input";
+
+<Input type="number" value={count} onChange={...} className="w-24" />
+```
+
+### SearchInput (`@/react/components/ui/search-input`)
+
+Use `SearchInput` for all filter/search inputs. Do NOT build inline search inputs with `<Input>` + `<Search>` icon.
+
+```tsx
+import { SearchInput } from "@/react/components/ui/search-input";
+
+<SearchInput
+  placeholder={t("common.filter-by-name")}
+  value={searchText}
+  onChange={(e) => setSearchText(e.target.value)}
+/>
+```
+
+- Icon is always on the left
+- Default height `h-9`, default placeholder `t("common.type-to-search")`
+- Default wrapper `flex-1` (full width); override with `wrapperClassName`
+- Override input styles with `className` (e.g., `className="h-7"` inside dropdowns)
+
+### PagedTableFooter (`@/react/hooks/usePagedData`)
+
+Use `PagedTableFooter` for all paginated tables. Do NOT build inline pagination.
+
+```tsx
+import { PagedTableFooter } from "@/react/hooks/usePagedData";
+
+<PagedTableFooter
+  pageSize={pageSize}
+  pageSizeOptions={pageSizeOptions}
+  onPageSizeChange={setPageSize}
+  hasMore={hasMore}
+  isFetchingMore={isFetchingMore}
+  onLoadMore={loadMore}
+/>
+```
+
+### Combobox (`@/react/components/ui/combobox`)
+
+Generic select supporting single-select, multi-select, grouped options, search, and portal rendering.
+
+```tsx
+import { Combobox } from "@/react/components/ui/combobox";
+
+// Single-select
+<Combobox value={selected} onChange={setSelected} options={options} />
+
+// Multi-select
+<Combobox multiple value={list} onChange={setList} options={options} />
+
+// Inside modals
+<Combobox value={val} onChange={setVal} options={options} portal />
+```
+
+### RoleSelect (`@/react/components/RoleSelect`)
+
+Built on `Combobox`. Use for all role selection.
+
+```tsx
+import { RoleSelect } from "@/react/components/RoleSelect";
+
+<RoleSelect value={roles} onChange={setRoles} />                    // multi
+<RoleSelect value={[role]} onChange={(r) => set(r[0])} multiple={false} />  // single
+<RoleSelect value={roles} onChange={setRoles} scope="project" />    // project only
+```
+
+### AccountMultiSelect (`@/react/components/AccountMultiSelect`)
+
+Multi-select for users, groups, and special accounts with server-side search.
+
+### UserAvatar (`@/react/components/UserAvatar`)
+
+Renders a user avatar with color-coded initials.
+
+### Permission & Feature Guards
+
+| Component | Purpose | Usage |
+|-----------|---------|-------|
+| `FeatureBadge` | Sparkles icon + tooltip for plan-gated features | Next to labels; inside buttons with `clickable={false} className="mr-1 text-white inline-flex"` |
+| `FeatureAttention` | Full-width banner for plan requirements | Top of page/section |
+| `PermissionGuard` | Tooltip wrapper for missing permissions | Inline (buttons): default; Block (sections): `display="block"` |
+| `ComponentPermissionGuard` | Error alert for gated components | Replaces content with permission error |
+
+### Input Heights
+
+All inputs and buttons in the same row: **`h-9`**.
+
+### Focus Styles
+
+- Custom selectors/dropdowns: `border-accent` for active state, NOT `ring-2 ring-accent`
+- Inputs inside custom selectors: `outline-hidden border-none shadow-none`
+
+### Scrollbars
+
+Global thin scrollbars via CSS in `tailwind.css`. No per-component styling needed.
+
+### Dropdowns in Modals
+
+Use `createPortal` or pass `portal` prop to `Combobox` when inside `overflow: hidden/auto` containers.

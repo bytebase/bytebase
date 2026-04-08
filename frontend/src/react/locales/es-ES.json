@@ -1517,7 +1517,6 @@
         }
       }
     },
-    "im": {},
     "im-integration": {
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },

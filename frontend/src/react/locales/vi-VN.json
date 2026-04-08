@@ -1517,7 +1517,6 @@
         }
       }
     },
-    "im": {},
     "im-integration": {
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
