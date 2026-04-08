@@ -7,7 +7,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
-import { isDefaultProject } from "@/types";
+import { isDefaultProject } from "@/types/v1/project";
 import { getInstanceResource, instanceV1HasAlterSchema } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
