@@ -2,7 +2,6 @@ import { ChevronDown, ChevronRight, ExternalLink, Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
-import { t as vueT } from "@/plugins/i18n";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
@@ -146,12 +145,12 @@ export function RuleFilter({
 
   const tabItemList = useMemo(() => {
     const list: RuleListWithCategory[] = [
-      { value: "all", label: vueT("common.all"), ruleList: [] },
+      { value: "all", label: t("common.all"), ruleList: [] },
     ];
     for (const [category, rules] of convertToCategoryMap(ruleList).entries()) {
       list.push({
         value: category,
-        label: vueT(`sql-review.category.${category.toLowerCase()}`),
+        label: t(`sql-review.category.${category.toLowerCase()}`),
         ruleList: rules,
       });
     }
@@ -212,7 +211,7 @@ export function RuleFilter({
                 onChange={(e) => onToggleSelectAll?.(e.target.checked)}
               />
               <span className="text-xl text-main font-medium">
-                {vueT("sql-review.select-all")}
+                {t("sql-review.select-all")}
               </span>
             </div>
           )}
@@ -332,7 +331,7 @@ export function RuleTable({
                   </th>
                   {!hideLevel && (
                     <th className="text-left px-4 py-2 font-medium whitespace-nowrap w-[12rem]">
-                      {vueT("sql-review.level.name")}
+                      {t("sql-review.level.name")}
                     </th>
                   )}
                   {!supportSelect && (

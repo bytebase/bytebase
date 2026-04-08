@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import type { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents/types";
 import { getRulePayload } from "@/components/SQLReview/components/RuleConfigComponents/utils";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components/utils";
-import { t as vueT, te as vueTe } from "@/plugins/i18n";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import i18n from "@/react/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type {
@@ -50,11 +50,12 @@ export function RuleLevelSwitch({
   editable = true,
   onLevelChange,
 }: RuleLevelSwitchProps) {
+  const { t } = useTranslation();
   const levelOptions = [
-    { level: SQLReviewRule_Level.ERROR, label: vueT("sql-review.level.error") },
+    { level: SQLReviewRule_Level.ERROR, label: t("sql-review.level.error") },
     {
       level: SQLReviewRule_Level.WARNING,
-      label: vueT("sql-review.level.warning"),
+      label: t("sql-review.level.warning"),
     },
   ];
 
@@ -99,12 +100,13 @@ interface RuleLevelBadgeProps {
 }
 
 export function RuleLevelBadge({ level, suffix }: RuleLevelBadgeProps) {
+  const { t } = useTranslation();
   const variant =
     level === SQLReviewRule_Level.ERROR ? "destructive" : "warning";
   const label =
     level === SQLReviewRule_Level.ERROR
-      ? vueT("sql-review.level.error")
-      : vueT("sql-review.level.warning");
+      ? t("sql-review.level.error")
+      : t("sql-review.level.warning");
 
   return (
     <Badge variant={variant}>
@@ -128,7 +130,7 @@ function configTitle(
   config: RuleConfigComponent
 ): string {
   const key = `sql-review.rule.${getRuleLocalizationKey(ruleTypeToString(rule.type))}.component.${config.key}.title`;
-  return vueT(key);
+  return i18n.t(key);
 }
 
 function configTooltip(
@@ -136,7 +138,7 @@ function configTooltip(
   config: RuleConfigComponent
 ): string {
   const key = `sql-review.rule.${getRuleLocalizationKey(ruleTypeToString(rule.type))}.component.${config.key}.tooltip`;
-  return vueTe(key) ? vueT(key) : "";
+  return i18n.exists(key) ? i18n.t(key) : "";
 }
 
 export function RuleConfig({
@@ -258,6 +260,7 @@ function StringArrayInput({
   disabled: boolean;
   onChange: (value: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -279,7 +282,7 @@ function StringArrayInput({
     <div>
       {!disabled && (
         <p className="text-sm text-control-placeholder mb-1">
-          {vueT("sql-review.input-then-press-enter")}
+          {t("sql-review.input-then-press-enter")}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-1">
@@ -328,10 +331,11 @@ function TemplateSelect({
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   const payload = config.payload as TemplatePayload;
   const options = payload.templateList.map((id) => ({
     id,
-    description: vueT(
+    description: t(
       `sql-review.rule.${getRuleLocalizationKey(ruleType)}.component.${config.key}.template.${id}`
     ),
   }));
