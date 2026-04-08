@@ -26,9 +26,11 @@ type Candidate struct {
 type resolvedDatabase struct {
 	resourceName  string
 	dataSourceID  string
+	engine        string
 	ambiguous     bool
 	candidates    []Candidate
 	dataSourceIDs map[string]string // resourceName -> dataSourceID (populated when ambiguous)
+	engines       map[string]string // resourceName -> engine (populated when ambiguous)
 }
 
 // listDatabasesResponse is the typed response from ListDatabases API.
@@ -153,6 +155,7 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 	return &resolvedDatabase{
 		resourceName: db.Name,
 		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
+		engine:       db.InstanceResource.Engine,
 	}, nil
 }
 
@@ -160,6 +163,7 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 	candidates := make([]Candidate, 0, len(matches))
 	dsIDs := make(map[string]string, len(matches))
+	engines := make(map[string]string, len(matches))
 	for _, db := range matches {
 		candidates = append(candidates, Candidate{
 			Database: db.Name,
@@ -168,8 +172,14 @@ func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 			Engine:   db.InstanceResource.Engine,
 		})
 		dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
+		engines[db.Name] = db.InstanceResource.Engine
 	}
-	return &resolvedDatabase{ambiguous: true, candidates: candidates, dataSourceIDs: dsIDs}
+	return &resolvedDatabase{
+		ambiguous:     true,
+		candidates:    candidates,
+		dataSourceIDs: dsIDs,
+		engines:       engines,
+	}
 }
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
@@ -185,6 +195,10 @@ func (s *Server) resolveDatabase(ctx context.Context, database, instance, projec
 // using MCP elicitation. Returns an error if elicitation is unsupported, the user
 // cancels/declines, or the selection is invalid.
 func (*Server) elicitDatabaseChoice(ctx context.Context, req *mcp.CallToolRequest, resolved *resolvedDatabase) (*resolvedDatabase, error) {
+	if req == nil || req.Session == nil {
+		return nil, errors.New("elicitation unsupported: no session")
+	}
+
 	// Build enum values and a lookup map from display label to resource name.
 	enumValues := make([]any, 0, len(resolved.candidates))
 	resourceByLabel := make(map[string]string, len(resolved.candidates))
@@ -229,6 +243,7 @@ func (*Server) elicitDatabaseChoice(ctx context.Context, req *mcp.CallToolReques
 	return &resolvedDatabase{
 		resourceName: resourceName,
 		dataSourceID: resolved.dataSourceIDs[resourceName],
+		engine:       resolved.engines[resourceName],
 	}, nil
 }
 
