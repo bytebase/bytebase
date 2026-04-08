@@ -1857,8 +1857,7 @@
       "no-statement": "Declaración sin SQL",
       "no-tasks": "No hay tareas en esta etapa",
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
-      "statement-truncated-hint": "Declaración truncada debido al gran tamaño.",
-      "view-full-details": "Ver detalles"
+      "statement-truncated-hint": "Declaración truncada debido al gran tamaño."
     },
     "task-execution-errors": "Errores de ejecución de tareas"
   },

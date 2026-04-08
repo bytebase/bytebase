@@ -135,6 +135,13 @@ const getRolloutStatusInfo = (): StatusInfo => {
     return getReviewStatusInfo();
   }
 
+  const hasCompletedTasks = rollout.value.stages
+    .flatMap((stage) => stage.tasks)
+    .some(
+      (task) =>
+        task.status === Task_Status.DONE || task.status === Task_Status.SKIPPED
+    );
+
   switch (getRolloutStatus(rollout.value)) {
     case Task_Status.DONE:
     case Task_Status.SKIPPED:
@@ -150,6 +157,13 @@ const getRolloutStatusInfo = (): StatusInfo => {
         dotClass: "bg-control-placeholder",
       };
     case Task_Status.NOT_STARTED:
+      if (hasCompletedTasks) {
+        return { label: t("common.deploying"), dotClass: "bg-accent" };
+      }
+      return {
+        label: t("common.not-started"),
+        dotClass: "bg-control-placeholder",
+      };
     default:
       return {
         label: t("common.not-started"),

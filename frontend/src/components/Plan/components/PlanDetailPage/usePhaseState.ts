@@ -110,9 +110,20 @@ export const usePhaseState = (
   const deployBadge = computed<PhaseBadge | undefined>(() => {
     if (statusMap.value.deploy !== "active" || !rollout.value) return undefined;
     const allTasks = rollout.value.stages.flatMap((s) => s.tasks);
+    const hasCompletedTasks = allTasks.some(
+      (task) =>
+        task.status === Task_Status.DONE || task.status === Task_Status.SKIPPED
+    );
     if (allTasks.some((task) => task.status === Task_Status.FAILED))
       return { label: t("common.failed"), type: "error" };
-    if (allTasks.some((task) => task.status === Task_Status.RUNNING))
+    if (
+      allTasks.some(
+        (task) =>
+          task.status === Task_Status.RUNNING ||
+          task.status === Task_Status.PENDING
+      ) ||
+      hasCompletedTasks
+    )
       return { label: t("common.in-progress"), type: "info" };
     return { label: t("common.not-started"), type: "default" };
   });

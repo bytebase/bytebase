@@ -19,26 +19,38 @@
             @update:checked="emit('toggle-select')"
           />
           <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
-          <RouterLink
-            v-if="!readonly"
-            :to="taskDetailRoute"
-            active-class=""
-            exact-active-class=""
-            class="shrink-0 hover:opacity-80 transition-opacity"
-          >
+          <div class="flex items-center gap-x-2 min-w-0">
+            <RouterLink
+              v-if="!readonly"
+              :to="taskDetailRoute"
+              active-class=""
+              exact-active-class=""
+              class="min-w-0 hover:opacity-80 transition-opacity"
+            >
+              <DatabaseDisplay
+                :database="task.target"
+                :size="isExpanded ? 'large' : 'medium'"
+                :show-external-link="false"
+              />
+            </RouterLink>
             <DatabaseDisplay
+              v-else
               :database="task.target"
               :size="isExpanded ? 'large' : 'medium'"
-              :link="false"
+              :show-external-link="false"
+              class="shrink-0"
             />
-          </RouterLink>
-          <DatabaseDisplay
-            v-else
-            :database="task.target"
-            :size="isExpanded ? 'large' : 'medium'"
-            :link="false"
-            class="shrink-0"
-          />
+            <RouterLink
+              v-if="!readonly && isExpanded"
+              :to="taskDetailRoute"
+              active-class=""
+              exact-active-class=""
+              class="shrink-0 flex items-center gap-x-1 text-xs text-info hover:opacity-80 transition-opacity"
+            >
+              <ArrowUpRightIcon class="w-4 h-4" />
+              <span>{{ t("common.view-details") }}</span>
+            </RouterLink>
+          </div>
           <!-- Collapsed view: contextual info + type -->
           <div v-if="!isExpanded" class="flex items-center gap-x-1.5 ml-auto shrink-0 text-xs text-gray-500">
             <!-- Status-contextual info first -->
@@ -47,23 +59,16 @@
                 :time="scheduledTime"
                 :title="t('task.scheduled-time')"
               />
-              <span class="text-gray-300">·</span>
             </template>
             <template v-else-if="timingType === 'running'">
               <span class="flex items-center gap-x-1 text-blue-600">
                 <LoaderCircleIcon class="w-3 h-3 animate-spin" />
                 {{ timingDisplay }}
               </span>
-              <span class="text-gray-300">·</span>
             </template>
             <template v-else-if="collapsedContextInfo">
               <span>{{ collapsedContextInfo }}</span>
-              <span class="text-gray-300">·</span>
             </template>
-            <!-- Task type last -->
-            <NTag round size="tiny" class="opacity-80">
-              {{ taskTypeDisplay }}
-            </NTag>
           </div>
         </div>
 
@@ -100,10 +105,11 @@
       <div v-if="isExpanded" class="space-y-3">
         <!-- Task information line with quick actions -->
         <div class="flex items-center justify-between gap-x-2">
-          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">
-            <span>{{ t("common.type") }}: {{ taskTypeDisplay }}</span>
-            <template v-if="timingType === 'scheduled'">
-              <span class="text-gray-400">·</span>
+          <div
+            v-if="timingType === 'scheduled'"
+            class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600"
+          >
+            <template>
               <ScheduledTimeIndicator
                 :time="scheduledTime"
                 :label="t('task.scheduled-time')"
@@ -150,19 +156,6 @@
         <div v-if="!isReleaseTask">
           <div class="flex items-center justify-between mb-1">
             <span class="text-sm font-medium text-gray-700">{{ t("common.statement") }}</span>
-            <RouterLink
-              v-if="!readonly"
-              :to="taskDetailRoute"
-              active-class=""
-              exact-active-class=""
-            >
-            <NButton text icon-placement="right" size="tiny" type="info">
-              <template #icon>
-                <ArrowUpRightIcon />
-              </template>
-              {{ t("rollout.task.view-full-details") }}
-            </NButton>
-            </RouterLink>
           </div>
 
           <BBSpin v-if="loading" />
@@ -338,15 +331,11 @@ const affectedRowsDisplay = computed(() => {
 });
 
 // Task display formatting (type, executor, messages, collapsed view info)
-const {
-  taskTypeDisplay,
-  executorEmail,
-  collapsedContextInfo,
-  collapsedStatusText,
-} = useTaskDisplay(
-  () => props.task,
-  () => latestTaskRun.value,
-  () => timingDisplay.value,
-  () => affectedRowsDisplay.value
-);
+const { executorEmail, collapsedContextInfo, collapsedStatusText } =
+  useTaskDisplay(
+    () => props.task,
+    () => latestTaskRun.value,
+    () => timingDisplay.value,
+    () => affectedRowsDisplay.value
+  );
 </script>

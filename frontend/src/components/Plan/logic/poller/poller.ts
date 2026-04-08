@@ -22,7 +22,10 @@ import { getRouteQueryString } from "@/router/dashboard/projectV1RouteHelpers";
 import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
-import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  RolloutSchema,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   getRolloutFromPlan,
   isValidIssueName,
@@ -195,6 +198,19 @@ export const provideResourcePoller = () => {
 
   const resourcesToPolled = computed(() => uniq([...resourcesFromRoute.value]));
 
+  const isPlanDone = computed(() => {
+    if (!rollout.value) return false;
+    const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
+    return (
+      allTasks.length > 0 &&
+      allTasks.every(
+        (task) =>
+          task.status === Task_Status.DONE ||
+          task.status === Task_Status.SKIPPED
+      )
+    );
+  });
+
   // Initialize existing resources that are already on the plan
   const initializeExistingResources = async () => {
     if (
@@ -313,7 +329,10 @@ export const provideResourcePoller = () => {
 
   // Restart poller with clean state
   const restartPoller = () => {
-    const shouldPoll = !isCreating.value && resourcesToPolled.value.length > 0;
+    const shouldPoll =
+      !isCreating.value &&
+      !isPlanDone.value &&
+      resourcesToPolled.value.length > 0;
     if (!shouldPoll) return;
 
     resourcePoller.stop();
@@ -431,14 +450,18 @@ export const provideResourcePoller = () => {
   // Main poller lifecycle management
   watchEffect(async () => {
     const activeResources = resourcesToPolled.value;
-    const shouldPoll = !isCreating.value && activeResources.length > 0;
+    const shouldLoadResources = !isCreating.value && activeResources.length > 0;
+    const shouldPoll = shouldLoadResources && !isPlanDone.value;
 
-    if (shouldPoll) {
+    if (shouldLoadResources) {
       await initializeExistingResources();
 
-      if (!pollerState.value.isPollerRunning) {
+      if (shouldPoll && !pollerState.value.isPollerRunning) {
         resourcePoller.start();
         pollerState.value.isPollerRunning = true;
+      } else if (!shouldPoll && pollerState.value.isPollerRunning) {
+        resourcePoller.stop();
+        pollerState.value.isPollerRunning = false;
       }
 
       if (!pollerState.value.hasInitialRefresh) {

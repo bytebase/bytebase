@@ -20,6 +20,7 @@
       {{ databaseDisplayName }}
     </span>
     <router-link
+      v-if="props.showExternalLink"
       class="pl-1 opacity-60 hover:opacity-100"
       :to="`/${database}`"
       target="_blank"
@@ -45,11 +46,17 @@ import {
   extractInstanceResourceName,
 } from "@/utils";
 
-const props = defineProps<{
-  database: string;
-  showEnvironment?: boolean;
-  size?: "small" | "medium" | "large";
-}>();
+const props = withDefaults(
+  defineProps<{
+    database: string;
+    showEnvironment?: boolean;
+    showExternalLink?: boolean;
+    size?: "small" | "medium" | "large";
+  }>(),
+  {
+    showExternalLink: true,
+  }
+);
 
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
