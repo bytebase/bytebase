@@ -278,25 +278,8 @@ func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out ma
 // MySQL's UPDATE/DELETE CTEs are not in the omni AST, so we parse the prefix.
 func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	result := make(map[string]bool)
-	if stmtLoc.Start <= 0 {
-		return result
-	}
-	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
-	if !strings.HasPrefix(strings.ToUpper(prefix), "WITH") {
-		return result
-	}
-	// Parse "prefix SELECT 1" to extract CTE names via omni.
-	tempSQL := prefix + " SELECT 1"
-	parsed, err := ParseMySQLOmni(tempSQL)
-	if err != nil || parsed == nil {
-		return result
-	}
-	for _, item := range parsed.Items {
-		if sel, ok := item.(*ast.SelectStmt); ok {
-			for _, cte := range sel.CTEs {
-				result[cte.Name] = true
-			}
-		}
+	for _, cte := range parseCTEPrefix(fullSQL, stmtLoc) {
+		result[cte.Name] = true
 	}
 	return result
 }
@@ -306,11 +289,34 @@ func extractCTE(fullSQL string, stmtLoc ast.Loc) string {
 	if stmtLoc.Start <= 0 {
 		return ""
 	}
-	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
-	if !strings.HasPrefix(strings.ToUpper(prefix), "WITH") {
+	ctes := parseCTEPrefix(fullSQL, stmtLoc)
+	if len(ctes) == 0 {
 		return ""
 	}
-	return prefix
+	return strings.TrimSpace(fullSQL[:stmtLoc.Start])
+}
+
+// parseCTEPrefix parses the SQL text before stmtLoc as a WITH clause.
+// Returns the CTE list if the prefix contains a valid WITH clause, nil otherwise.
+func parseCTEPrefix(fullSQL string, stmtLoc ast.Loc) []*ast.CommonTableExpr {
+	if stmtLoc.Start <= 0 {
+		return nil
+	}
+	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
+	if prefix == "" {
+		return nil
+	}
+	// Wrap the prefix with a dummy SELECT to make it parseable.
+	parsed, err := ParseMySQLOmni(prefix + " SELECT 1")
+	if err != nil || parsed == nil {
+		return nil
+	}
+	for _, item := range parsed.Items {
+		if sel, ok := item.(*ast.SelectStmt); ok && len(sel.CTEs) > 0 {
+			return sel.CTEs
+		}
+	}
+	return nil
 }
 
 func extractStatementText(fullSQL string, loc ast.Loc) string {
