@@ -1,4 +1,7 @@
+import { readdirSync, readFileSync } from "fs";
 import { isEqual } from "lodash-es";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
@@ -130,6 +133,52 @@ const sqlReviewRuleLevelToString = (level: SQLReviewRule_Level): string => {
       return "UNKNOWN";
   }
 };
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const checkKeysSorted = (
+  obj: Record<string, unknown>,
+  path: string
+): string[] => {
+  const keys = Object.keys(obj);
+  const sorted = [...keys].sort();
+  const errors: string[] = [];
+  for (let i = 0; i < keys.length; i++) {
+    if (keys[i] !== sorted[i]) {
+      errors.push(
+        `${path}: key "${keys[i]}" is out of order (expected "${sorted[i]}")`
+      );
+      break;
+    }
+  }
+  for (const key of keys) {
+    const val = obj[key];
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      errors.push(
+        ...checkKeysSorted(val as Record<string, unknown>, `${path}.${key}`)
+      );
+    }
+  }
+  return errors;
+};
+
+describe("Locale keys are sorted alphabetically", () => {
+  const localesDirs = [
+    resolve(__dirname, "../locales"),
+    resolve(__dirname, "../react/locales"),
+  ];
+
+  for (const dir of localesDirs) {
+    const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
+    for (const file of files) {
+      test(`${dir.includes("react") ? "react/" : ""}locales/${file}`, () => {
+        const content = JSON.parse(readFileSync(resolve(dir, file), "utf-8"));
+        const errors = checkKeysSorted(content, file);
+        expect(errors, errors.join("\n")).toHaveLength(0);
+      });
+    }
+  }
+});
 
 const compareMessages = (
   localA: LocaleMessageObject,

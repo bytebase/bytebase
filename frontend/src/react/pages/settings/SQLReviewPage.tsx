@@ -315,7 +315,7 @@ export function SQLReviewPage() {
         {hasCreatePermission && (
           <Button onClick={navigateToCreate}>
             <Plus className="w-4 h-4 mr-1" />
-            {t("sql-review.create-policy")}
+            {t("common.create")}
           </Button>
         )}
       </div>
@@ -332,7 +332,7 @@ export function SQLReviewPage() {
           {hasCreatePermission && (
             <Button size="sm" onClick={navigateToCreate}>
               <Plus className="w-4 h-4 mr-1" />
-              {t("sql-review.create-policy")}
+              {t("common.create")}
             </Button>
           )}
         </div>

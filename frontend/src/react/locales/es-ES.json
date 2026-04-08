@@ -148,8 +148,6 @@
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
     "confirm": "Confirmar",
-    "confirm-and-add": "Confirm and add",
-    "confirm-and-update": "Confirmar y actualizar",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "Confirm to revert your editing?",
@@ -167,6 +165,7 @@
     "database": "Base de datos",
     "database-group": "Grupo de bases de datos",
     "databases": "Bases de datos",
+    "deactivate": "Desactivar",
     "default": "Predeterminado",
     "delete": "Eliminar",
     "delete-resource": "Delete {{type}}",
@@ -201,9 +200,11 @@
     "filter-by-name": "Filtrar por nombre",
     "from": "Desde",
     "general": "General",
+    "group": "Grupo",
     "groups": "Grupos",
     "home": "Inicio",
     "id": "ID",
+    "import": "Importar",
     "instance": "Instancia",
     "instances": "Instancias",
     "is-required": "is required",
@@ -244,6 +245,7 @@
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
+    "reset": "Restablecer",
     "resource": "Resource",
     "resource-not-found": "Recurso no encontrado",
     "resources": "Recursos",
@@ -252,6 +254,9 @@
     "revert": "Revertir",
     "revoke": "Revocar",
     "revoked": "Revocado",
+    "role": {
+      "self": "Rol"
+    },
     "rows-per-page": "Filas por página",
     "save": "Guardar",
     "schema": "Esquema",
@@ -275,6 +280,7 @@
     "to": "Hasta",
     "total": "Total",
     "total-n-items": "Total {{n}} elementos",
+    "transfer": "Transferir",
     "type": "Tipo",
     "type-to-search": "Escriba para buscar",
     "unassigned": "No asignado",
@@ -302,7 +308,6 @@
   "common.archived": "Archivada",
   "common.cancel": "Cancelar",
   "common.cannot-undo-this-action": "No se puede deshacer esta acción",
-  "common.confirm-and-update": "Confirmar y actualizar",
   "common.continue-anyway": "De todas maneras, continúe",
   "common.create": "Crear",
   "common.creating": "Creando...",
@@ -346,9 +351,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Agregar regla",
-      "create-approval-flow": "Crear flujo de aprobación",
-      "edit-rule": "Editar regla",
       "fallback-rules": "Reglas de respaldo",
       "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
       "node": {
@@ -408,7 +410,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
+      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
+      "self": "Regla de aprobación personalizada"
     },
     "self": "Aprobación personalizada"
   },
@@ -532,7 +535,6 @@
     "condition": {
       "self": "Condition"
     },
-    "create": "New database group",
     "delete-group": "Delete the database group {{name}}",
     "matched-database": "Matched database",
     "no-matched-databases": "No matched databases",
@@ -558,7 +560,6 @@
   "db.syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
   "dynamic.resource.instance": "ID de instancia",
   "environment": {
-    "create": "Crear entorno",
     "delete": "Eliminar este entorno",
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "reorder": "Reordenar entornos",
@@ -621,6 +622,7 @@
     "identity-provider-permission-denied": "Permiso denegado",
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
     "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
+    "self": "Proveedor de identidad",
     "test-connection": "Probar conexión",
     "test-connection-success": "Conexión de prueba exitosa",
     "userinfo-description": "La información del usuario coincidente."
@@ -1221,10 +1223,8 @@
     },
     "webhook": {
       "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
-      "add-a-webhook": "Agregar un webhook",
       "creation": {
         "desc": "Cree el webhook correspondiente para el canal {{destination}} que reciba el mensaje.",
-        "title": "Crear webhook",
         "view-doc": "Ver documentación de {{destination}}"
       },
       "deletion": {
@@ -1237,6 +1237,7 @@
       "direct-messages-warning": "Debes configurar la integración IM para que funcione.",
       "enable-direct-messages": "Habilitar mensajes directos",
       "fail-tested-title": "La prueba de evento de webhook falló.",
+      "self": "Webhook",
       "success-created-prompt": "Webhook {{name}} creado exitosamente.",
       "success-deleted-prompt": "Webhook {{name}} eliminado exitosamente.",
       "success-tested-prompt": "Prueba de evento de webhook OK.",
@@ -1247,14 +1248,9 @@
     }
   },
   "quick-action": {
-    "add-instance": "Agregar Instancia",
     "create-db": "Crear base de datos",
-    "create-project": "Crear Proyecto",
-    "new-db": "Nueva BD",
-    "new-project": "Nuevo Proyecto",
     "request-export-data": "Solicitar exportación"
   },
-  "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
     "files": "Archivos",
     "releases": "Lanzamientos",
@@ -1300,10 +1296,8 @@
     "select-role": "Seleccionar rol",
     "self": "Rol",
     "setting": {
-      "add": "Agregar rol",
       "description": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "description-placeholder": "Ingrese la descripción del rol",
-      "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol"
     },
     "title": "Título",
@@ -1515,10 +1509,7 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Añadir otro IM",
-      "add-im-integration": "Agregar integración de mensajería instantánea"
-    },
+    "im": {},
     "im-integration": {
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
@@ -1551,9 +1542,6 @@
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
       },
       "add-member": "Agregar miembro",
-      "add-service-account": "Añadir Cuenta de Servicio",
-      "add-user": "Agregar usuario",
-      "add-workload-identity": "Añadir Identidad de Carga de Trabajo",
       "all-users": "Todos los usuarios",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
@@ -1570,7 +1558,6 @@
       },
       "grant-access": "Conceder acceso",
       "groups": {
-        "add-group": "Añadir grupo",
         "external-readonly": "External group is read-only.",
         "form": {
           "description": "Descripción",
@@ -1584,7 +1571,6 @@
         },
         "n-members": "{{n}} miembros",
         "self": "Grupos",
-        "update-group": "Grupo de actualización",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
       "inactive-service-accounts": "Cuentas de servicio inactivas",
@@ -1611,9 +1597,6 @@
         "groups": "Grupos",
         "roles": "Roles"
       },
-      "update-service-account": "Actualizar Cuenta de Servicio",
-      "update-user": "Actualizar usuario",
-      "update-workload-identity": "Actualizar Identidad de Carga de Trabajo",
       "view-by-members": "Ver por miembros",
       "view-by-roles": "Ver por roles",
       "workload-identities": "Identidades de Carga de Trabajo",
@@ -1717,7 +1700,6 @@
       },
       "never-expires": "Nunca expira",
       "semantic-types": {
-        "add-from-template": "Agregar desde plantilla",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
@@ -1755,7 +1737,6 @@
       "users-and-groups": "Usuarios y grupos"
     },
     "sso": {
-      "create": "Crear SSO",
       "delete": "Eliminar este SSO",
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
       "form": {
@@ -1875,7 +1856,6 @@
         "name": "Configure rule"
       }
     },
-    "create-policy": "Create SQL review",
     "delete": "Delete SQL review policy",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
@@ -1887,6 +1867,9 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
+    "rule": {
+      "self": "Regla de revisión SQL"
+    },
     "title": "SQL Review"
   },
   "subscription": {

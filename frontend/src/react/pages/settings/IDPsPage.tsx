@@ -1646,7 +1646,7 @@ function CreateWizardDrawer({
       <div className="fixed inset-y-0 right-0 z-50 w-[64rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("settings.sso.create")}</h2>
+          <h2 className="text-lg font-medium">{t("identity-provider.self")}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -2041,7 +2041,7 @@ export function IDPsPage() {
               className="mr-1 text-white inline-flex"
             />
             <Plus className="h-4 w-4 mr-1" />
-            {t("settings.sso.create")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>

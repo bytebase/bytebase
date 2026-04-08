@@ -167,9 +167,7 @@ export function RuleEditDialog({
         {/* Header */}
         <div className="border-b px-6 py-4">
           <DialogTitle className="text-lg font-medium text-control">
-            {mode === "create"
-              ? t("custom-approval.approval-flow.create-approval-flow")
-              : t("custom-approval.approval-flow.edit-rule")}
+            {t("custom-approval.rule.self")}
           </DialogTitle>
         </div>
 

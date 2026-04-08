@@ -321,7 +321,7 @@ export function ProjectWebhookForm({
         {create ? (
           <>
             <div className="text-lg leading-6 font-medium text-main pt-4">
-              {t("project.webhook.creation.title")}
+              {t("project.webhook.self")}
             </div>
             <hr className="my-4" />
           </>

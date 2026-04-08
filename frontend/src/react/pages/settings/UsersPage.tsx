@@ -648,11 +648,7 @@ function CreateUserDrawer({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {isEditMode
-              ? t("settings.members.update-user")
-              : t("settings.members.add-user")}
-          </h2>
+          <h2 className="text-lg font-medium">{t("common.user")}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -824,7 +820,7 @@ function CreateUserDrawer({
             disabled={!allowConfirm || !hasPermission || isRequesting}
             onClick={handleSubmit}
           >
-            {isEditMode ? t("common.update") : t("common.confirm")}
+            {isEditMode ? t("common.update") : t("common.create")}
           </Button>
         </div>
       </div>
@@ -952,7 +948,7 @@ export function UsersPage() {
             }}
           >
             <Plus className="h-4 w-4 mr-1" />
-            {t("settings.members.add-user")}
+            {t("common.create")}
           </Button>
         </div>
       </div>

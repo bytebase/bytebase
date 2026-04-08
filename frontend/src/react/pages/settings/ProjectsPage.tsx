@@ -302,9 +302,7 @@ function CreateProjectDrawer({
       <div className="fixed inset-0 bg-black/50" onClick={closeDrawer} />
       <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">
-            {t("quick-action.create-project")}
-          </h2>
+          <h2 className="text-lg font-semibold">{t("common.project")}</h2>
           <button
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={closeDrawer}
@@ -1054,7 +1052,7 @@ export function ProjectsPage() {
             onClick={() => setShowCreateDrawer(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
-            {t("quick-action.new-project")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>

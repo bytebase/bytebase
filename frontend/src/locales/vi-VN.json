@@ -242,8 +242,6 @@
     "configure": "Cấu hình",
     "configure-now": "Cấu hình ngay",
     "confirm": "Xác nhận",
-    "confirm-and-add": "Xác nhận và Thêm",
-    "confirm-and-update": "Xác nhận và Cập nhật",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
@@ -267,6 +265,7 @@
       "week": "1 tuần",
       "year": "1 năm"
     },
+    "deactivate": "Hủy kích hoạt",
     "default": "Mặc định",
     "definition": "Định nghĩa",
     "delete": "Xóa",
@@ -316,7 +315,7 @@
     "go-back": "Quay lại",
     "groups": "Nhóm",
     "hard-delete": {
-      "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. @:common.cannot-undo-this-action",
+      "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. Bạn không thể hoàn tác hành động này.",
       "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
       "notification": "Xóa thành công tài nguyên '{name}'.",
       "self": "Xóa cứng",
@@ -354,7 +353,6 @@
     "n-items-selected": "Đã chọn {n} mục",
     "n-more": "+{n} nữa",
     "name": "Tên",
-    "new": "Mới",
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
     "no-license": "Không có giấy phép",
@@ -392,6 +390,7 @@
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "reset": "Đặt lại",
     "resource": "Tài nguyên",
     "resource-not-found": "Không tìm thấy tài nguyên",
     "resources": "Tài nguyên",
@@ -472,7 +471,6 @@
     "view-details": "Xem chi tiết",
     "view-doc": "Xem tài liệu",
     "visibility": "Hiển thị",
-    "visit": "Truy cập",
     "want-help": "Cần trợ giúp",
     "warehouse": "Kho",
     "warning": "Cảnh báo",
@@ -491,9 +489,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Thêm quy tắc",
-      "create-approval-flow": "Tạo quy trình phê duyệt",
-      "edit-rule": "Chỉnh sửa quy tắc",
       "fallback-rules": "Quy tắc dự phòng",
       "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
       "node": {
@@ -567,7 +562,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
+      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng.",
+      "self": "Quy tắc phê duyệt tùy chỉnh"
     },
     "self": "Phê duyệt tùy chỉnh"
   },
@@ -598,13 +594,12 @@
       "port": "Cổng",
       "private-key": "Khóa riêng",
       "ssh-key": "Khóa SSH",
-      "tunnel": "Đường hầm",
       "user": "Người dùng"
     },
     "ssh-connection": "Kết nối SSH",
     "ssh-type": {
       "none": "Không có",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}"
+      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
     },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
@@ -756,7 +751,6 @@
     "condition": {
       "self": "Điều kiện"
     },
-    "create": "Nhóm cơ sở dữ liệu mới",
     "delete-group": "Xóa nhóm cơ sở dữ liệu {name}",
     "deleted": "Nhóm cơ sở dữ liệu đã xóa",
     "matched-database": "Cơ sở dữ liệu phù hợp",
@@ -812,9 +806,8 @@
     "views": "Khung nhìn"
   },
   "environment": {
-    "create": "Tạo môi trường",
     "delete": "Xóa môi trường này",
-    "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. @:common.cannot-undo-this-action",
+    "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "production-environment": "Môi trường sản xuất",
     "reorder": "Sắp xếp lại môi trường",
     "select": "Chọn môi trường",
@@ -885,6 +878,7 @@
     "identity-provider-permission-denied": "Quyền bị từ chối",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
     "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
+    "self": "Nhà cung cấp danh tính",
     "test-connection": "Kiểm tra kết nối",
     "test-connection-success": "Kiểm tra kết nối thành công",
     "userinfo-description": "Thông tin người dùng đã khớp."
@@ -1545,7 +1539,7 @@
       "selected": "{count} dự án đã chọn | {count} dự án đã chọn"
     },
     "create-modal": {
-      "project-name": "@:common.project @:common.name",
+      "project-name": "Dự án Tên",
       "success-prompt": "Đã tạo thành công dự án {name}."
     },
     "filter-projects": "Lọc dự án",
@@ -1650,7 +1644,7 @@
       "update-failed": "Không cập nhật được cài đặt dự án."
     },
     "table": {
-      "name": "@:common.name"
+      "name": "Tên"
     },
     "webhook": {
       "activity-item": {
@@ -1680,11 +1674,9 @@
         }
       },
       "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
-      "add-a-webhook": "Thêm một webhook",
       "create-webhook": "Tạo webhook",
       "creation": {
         "desc": "Tạo webhook tương ứng cho kênh {destination} nhận tin nhắn.",
-        "title": "Tạo webhook",
         "view-doc": "Xem tài liệu của {destination}"
       },
       "deletion": {
@@ -1697,6 +1689,7 @@
       "direct-messages-warning": "Bạn cần định cấu hình {im} để làm cho nó hoạt động.",
       "enable-direct-messages": "Bật tin nhắn trực tiếp",
       "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "self": "Webhook",
       "success-created-prompt": "Đã tạo thành công webhook {name}.",
       "success-deleted-prompt": "Đã xóa thành công webhook {name}.",
       "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
@@ -1707,13 +1700,11 @@
     }
   },
   "quick-action": {
-    "add-instance": "@:common.add @:common.instance",
     "create-db": "Tạo cơ sở dữ liệu",
-    "create-project": "@:common.create @:common.project",
+    "create-project": "Tạo Dự án",
     "from-projects": "Từ các dự án khác",
     "from-unassigned-databases": "Cơ sở dữ liệu chưa được gán",
-    "new-db": "Cơ sở dữ liệu mới",
-    "new-project": "@:common.new @:common.project",
+    "new-project": "Mới Dự án",
     "request-export-data": "Yêu cầu Xuất",
     "transfer-in-db-title": "Chuyển vào cơ sở dữ liệu",
     "unassigned-db-hint": "Các cơ sở dữ liệu mới được đồng bộ hóa bắt đầu chưa được gán và phải được chuyển đến một dự án để sử dụng."
@@ -1727,11 +1718,11 @@
     "query-data": "Truy vấn dữ liệu",
     "self": "Bắt đầu nhanh",
     "view-an-issue": "Xem một vấn đề",
-    "visit-database": "@:common.visit @:common.databases",
-    "visit-environment": "@:common.visit @:common.environments",
-    "visit-instance": "@:common.visit @:common.instances",
-    "visit-member": "@:common.visit @:common.members",
-    "visit-project": "@:common.visit @:common.projects"
+    "visit-database": "Truy cập Cơ sở dữ liệu",
+    "visit-environment": "Truy cập Môi trường",
+    "visit-instance": "Truy cập Phiên bản",
+    "visit-member": "Truy cập Thành viên | Thành viên",
+    "visit-project": "Truy cập Dự án"
   },
   "refresh-remind": {
     "description": "Đã phát hiện phiên bản lỗi thời. Vui lòng làm mới trang.",
@@ -1819,10 +1810,8 @@
     "select-role": "Chọn vai trò",
     "self": "Vai trò",
     "setting": {
-      "add": "Thêm vai trò",
       "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và được sử dụng trong phê duyệt tùy chỉnh.",
       "description-placeholder": "Nhập mô tả vai trò",
-      "edit": "Chỉnh sửa vai trò",
       "title-placeholder": "Nhập tiêu đề vai trò"
     },
     "sql-editor-read-user": {
@@ -2167,10 +2156,6 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Thêm tin nhắn tức thời khác",
-      "add-im-integration": "Thêm tích hợp IM"
-    },
     "im-integration": {
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
@@ -2203,9 +2188,6 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
-      "add-service-account": "Thêm tài khoản dịch vụ",
-      "add-user": "Thêm người dùng",
-      "add-workload-identity": "Thêm danh tính Workload",
       "all-users": "Tất cả người dùng",
       "assign-role": "Gán vai trò | Gán vai trò",
       "copy-service-key": "Sao chép Khóa Dịch vụ",
@@ -2221,7 +2203,6 @@
       },
       "grant-access": "Cấp Quyền truy cập",
       "groups": {
-        "add-group": "Thêm nhóm",
         "form": {
           "description": "Mô tả",
           "email": "Email",
@@ -2234,7 +2215,6 @@
         },
         "n-members": "{n} thành viên",
         "self": "Nhóm",
-        "update-group": "Cập nhật nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
@@ -2245,7 +2225,7 @@
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoke-access": "Thu hồi Quyền truy cập",
       "revoke-access-alert": "Bạn có chắc muốn thu hồi quyền truy cập?",
-      "revoke-allusers-alert": "Thu hồi \"@:{'settings.members.all-users'}\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
+      "revoke-allusers-alert": "Thu hồi \"Tất cả người dùng\" sẽ thu hồi các vai trò liên quan từ tất cả người dùng khác trong không gian làm việc của bạn. Bạn có chắc chắn muốn tiếp tục không?",
       "revoked": "Đã thu hồi",
       "search-member": "Tìm kiếm thành viên",
       "select-account": "Chọn tài khoản | Chọn tài khoản",
@@ -2262,9 +2242,6 @@
         "groups": "Nhóm",
         "roles": "Vai trò"
       },
-      "update-service-account": "Cập nhật tài khoản dịch vụ",
-      "update-user": "Cập nhật người dùng",
-      "update-workload-identity": "Cập nhật danh tính Workload",
       "view-by-members": "Xem theo thành viên",
       "view-by-roles": "Xem theo vai trò",
       "workload-identities": "Danh tính Workload",
@@ -2305,8 +2282,6 @@
     },
     "sensitive-data": {
       "algorithms": {
-        "add": "Thêm thuật toán",
-        "edit": "Chỉnh sửa thuật toán",
         "error": {
           "salt-required": "Yêu cầu muối",
           "slice-invalid-number": "Lát cắt bắt đầu hoặc kết thúc không phải là một số hợp lệ",
@@ -2372,7 +2347,6 @@
       "remove-semantic-type-tips": "Xóa loại ngữ nghĩa cho cột này?",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
       "semantic-types": {
-        "add-from-template": "Thêm từ mẫu",
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
@@ -2408,7 +2382,6 @@
       "subscription": "Gói đăng ký"
     },
     "sso": {
-      "create": "Tạo SSO",
       "delete": "xóa SSO này đi",
       "description": "Đăng nhập một lần (SSO) là một phương thức xác thực cho phép người dùng xác thực với nhiều ứng dụng và trang web bằng một thông tin đăng nhập duy nhất.",
       "form": {
@@ -2746,7 +2719,6 @@
         "name": "Định cấu hình quy tắc"
       }
     },
-    "create-policy": "Tạo chính sách đánh giá SQL",
     "delete": "Xóa chính sách đánh giá SQL",
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
@@ -2870,7 +2842,7 @@
         "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
         "runoutof": "Bạn đã hết hạn ngạch {total} người dùng của mình.",
         "title": "Giới hạn số lượng người dùng",
-        "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch người dùng."
+        "upgrade": "Nâng cấp để có thêm hạn ngạch người dùng."
       }
     }
   },

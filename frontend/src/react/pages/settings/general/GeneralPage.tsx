@@ -233,9 +233,7 @@ export function GeneralPage() {
             <Button variant="outline" onClick={handleRevert}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleUpdate}>
-              {t("common.confirm-and-update")}
-            </Button>
+            <Button onClick={handleUpdate}>{t("common.update")}</Button>
           </div>
         </div>
       )}

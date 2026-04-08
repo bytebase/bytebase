@@ -914,7 +914,7 @@ function EnvironmentDetail({
           <Button variant="outline" onClick={revert}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={save}>{t("common.confirm-and-update")}</Button>
+          <Button onClick={save}>{t("common.update")}</Button>
         </div>
       )}
 
@@ -1074,7 +1074,7 @@ function CreateDrawer({
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
       <div className="fixed inset-y-0 right-0 z-50 w-xl max-w-[100vw] bg-white shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("environment.create")}</h2>
+          <h2 className="text-lg font-medium">{t("common.environment")}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -1246,7 +1246,7 @@ function ReorderDrawer({
             {t("common.cancel")}
           </Button>
           <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
-            {t("common.confirm")}
+            {t("common.update")}
           </Button>
         </div>
       </div>
@@ -1462,7 +1462,7 @@ export function EnvironmentsPage() {
               onClick={() => setShowCreate(true)}
             >
               <Plus className="h-4 w-4 mr-1" />
-              {t("environment.create")}
+              {t("common.create")}
             </Button>
           </div>
         </PermissionGuard>

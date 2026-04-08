@@ -242,8 +242,6 @@
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
     "confirm": "Confirmar",
-    "confirm-and-add": "Confirmar y agregar",
-    "confirm-and-update": "Confirmar y actualizar",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "¿Confirmar para revertir la edición?",
@@ -267,6 +265,7 @@
       "week": "1 semana",
       "year": "1 año"
     },
+    "deactivate": "Desactivar",
     "default": "predeterminado",
     "definition": "Definición",
     "delete": "Eliminar",
@@ -316,7 +315,7 @@
     "go-back": "Volver",
     "groups": "Grupos",
     "hard-delete": {
-      "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. @:common.cannot-undo-this-action",
+      "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. No se puede deshacer esta acción",
       "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
       "notification": "Se eliminó exitosamente el recurso '{name}'.",
       "self": "Eliminación permanente",
@@ -354,7 +353,6 @@
     "n-items-selected": "{n} elementos seleccionados",
     "n-more": "+{n} más",
     "name": "Nombre",
-    "new": "Nuevo",
     "next": "Siguiente",
     "no-data": "Sin datos",
     "no-license": "Sin licencia",
@@ -392,6 +390,7 @@
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
+    "reset": "Restablecer",
     "resource": "Recurso",
     "resource-not-found": "Recurso no encontrado",
     "resources": "Recursos",
@@ -472,7 +471,6 @@
     "view-details": "Ver detalles",
     "view-doc": "Ver doc",
     "visibility": "Visibilidad",
-    "visit": "Visitar",
     "want-help": "Buscar Ayuda",
     "warehouse": "Almacén",
     "warning": "Advertencia",
@@ -491,9 +489,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Agregar regla",
-      "create-approval-flow": "Crear flujo de aprobación",
-      "edit-rule": "Editar regla",
       "fallback-rules": "Reglas de respaldo",
       "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
       "node": {
@@ -567,7 +562,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
+      "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
+      "self": "Regla de aprobación personalizada"
     },
     "self": "Aprobación personalizada"
   },
@@ -598,13 +594,12 @@
       "port": "Puerto",
       "private-key": "Clave Privada",
       "ssh-key": "Clave del SSH",
-      "tunnel": "Túnel",
       "user": "Nombre de usuario"
     },
     "ssh-connection": "Conexión SSH",
     "ssh-type": {
       "none": "Ninguno",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}"
+      "tunnel-and-private-key": "Túnel + Clave Privada"
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
@@ -756,7 +751,6 @@
     "condition": {
       "self": "Condición"
     },
-    "create": "Crear grupo de bases de datos",
     "delete-group": "Eliminar el grupo de bases de datos {name}",
     "deleted": "Grupo de bases de datos eliminado",
     "matched-database": "Base de datos coincidente",
@@ -812,9 +806,8 @@
     "views": "Vistas"
   },
   "environment": {
-    "create": "Crear entorno",
     "delete": "Eliminar este entorno",
-    "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. @:common.cannot-undo-this-action",
+    "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "production-environment": "Entorno de producción",
     "reorder": "Reordenar entornos",
     "select": "Seleccionar entorno",
@@ -885,6 +878,7 @@
     "identity-provider-permission-denied": "Permiso denegado",
     "identity-provider-update-failed": "No se pudo actualizar el proveedor de identidad",
     "no-claims": "El proveedor de identidad no devolvió ninguna reclamación.",
+    "self": "Proveedor de identidad",
     "test-connection": "Probar conexión",
     "test-connection-success": "Conexión de prueba exitosa",
     "userinfo-description": "La información del usuario coincidente."
@@ -1545,7 +1539,7 @@
       "selected": "{count} proyecto seleccionado | {count} proyectos seleccionados"
     },
     "create-modal": {
-      "project-name": "@:common.project @:common.name",
+      "project-name": "Proyecto Nombre",
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "filter-projects": "Filtrar proyectos",
@@ -1650,7 +1644,7 @@
       "update-failed": "No se pudo actualizar la configuración del proyecto."
     },
     "table": {
-      "name": "@:common.name"
+      "name": "Nombre"
     },
     "webhook": {
       "activity-item": {
@@ -1680,11 +1674,9 @@
         }
       },
       "activity-support-direct-message": "Soporte para enviar mensajes directos a usuarios relacionados.",
-      "add-a-webhook": "Agregar un webhook",
       "create-webhook": "Crear webhook",
       "creation": {
         "desc": "Cree el webhook correspondiente para el canal {destination} que reciba el mensaje.",
-        "title": "Crear webhook",
         "view-doc": "Ver documentación de {destination}"
       },
       "deletion": {
@@ -1697,6 +1689,7 @@
       "direct-messages-warning": "Debes configurar {im} para que funcione.",
       "enable-direct-messages": "Habilitar mensajes directos",
       "fail-tested-title": "La prueba de evento de webhook falló.",
+      "self": "Webhook",
       "success-created-prompt": "Webhook {name} creado exitosamente.",
       "success-deleted-prompt": "Webhook {name} eliminado exitosamente.",
       "success-tested-prompt": "Prueba de evento de webhook OK.",
@@ -1707,13 +1700,11 @@
     }
   },
   "quick-action": {
-    "add-instance": "@:common.add @:common.instance",
     "create-db": "Crear base de datos",
-    "create-project": "@:common.create @:common.project",
+    "create-project": "Crear Proyecto",
     "from-projects": "De otro proyecto",
     "from-unassigned-databases": "Bases de datos no asignadas",
-    "new-db": "Nueva BD",
-    "new-project": "@:common.new @:common.project",
+    "new-project": "Nuevo Proyecto",
     "request-export-data": "Solicitar exportación",
     "transfer-in-db-title": "Transferir base de datos",
     "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso."
@@ -1727,11 +1718,11 @@
     "query-data": "Consultar datos",
     "self": "Inicio rápido",
     "view-an-issue": "Ver una incidencia",
-    "visit-database": "@:common.visit @:common.databases",
-    "visit-environment": "@:common.visit @:common.environments",
-    "visit-instance": "@:common.visit @:common.instances",
-    "visit-member": "@:common.visit @:common.members",
-    "visit-project": "@:common.visit @:common.projects"
+    "visit-database": "Visitar Bases de datos",
+    "visit-environment": "Visitar Entornos",
+    "visit-instance": "Visitar Instancias",
+    "visit-member": "Visitar Miembro | Miembros",
+    "visit-project": "Visitar Proyectos"
   },
   "refresh-remind": {
     "description": "Se ha detectado una versión obsoleta. Por favor, actualice la página.",
@@ -1819,10 +1810,8 @@
     "select-role": "Seleccionar rol",
     "self": "Rol",
     "setting": {
-      "add": "Agregar rol",
       "description": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "description-placeholder": "Ingrese la descripción del rol",
-      "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol"
     },
     "sql-editor-read-user": {
@@ -2167,10 +2156,6 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Añadir otro IM",
-      "add-im-integration": "Agregar integración de mensajería instantánea"
-    },
     "im-integration": {
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
@@ -2203,9 +2188,6 @@
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
       },
       "add-member": "Agregar miembro",
-      "add-service-account": "Añadir Cuenta de Servicio",
-      "add-user": "Agregar usuario",
-      "add-workload-identity": "Añadir Identidad de Carga de Trabajo",
       "all-users": "Todos los usuarios",
       "assign-role": "Asignar rol | Asignar roles",
       "copy-service-key": "Copiar Clave de Servicio",
@@ -2221,7 +2203,6 @@
       },
       "grant-access": "Conceder acceso",
       "groups": {
-        "add-group": "Añadir grupo",
         "form": {
           "description": "Descripción",
           "email": "Correo electrónico",
@@ -2234,7 +2215,6 @@
         },
         "n-members": "{n} miembros",
         "self": "Grupos",
-        "update-group": "Grupo de actualización",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
       "inactive-service-accounts": "Cuentas de servicio inactivas",
@@ -2245,7 +2225,7 @@
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "revoke-access": "Revocar acceso",
       "revoke-access-alert": "¿Está seguro de revocar el acceso?",
-      "revoke-allusers-alert": "Revocar \"@:{'settings.members.all-users'}\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
+      "revoke-allusers-alert": "Revocar \"Todos los usuarios\" revocará los roles relacionados de todos los demás usuarios de su espacio de trabajo. ¿Desea continuar?",
       "revoked": "Revocado",
       "search-member": "Buscar miembro",
       "select-account": "Seleccionar cuenta | Seleccionar cuentas",
@@ -2262,9 +2242,6 @@
         "groups": "Grupos",
         "roles": "Roles"
       },
-      "update-service-account": "Actualizar Cuenta de Servicio",
-      "update-user": "Actualizar usuario",
-      "update-workload-identity": "Actualizar Identidad de Carga de Trabajo",
       "view-by-members": "Ver por miembros",
       "view-by-roles": "Ver por roles",
       "workload-identities": "Identidades de Carga de Trabajo",
@@ -2305,8 +2282,6 @@
     },
     "sensitive-data": {
       "algorithms": {
-        "add": "Agregar algoritmo",
-        "edit": "Editar algoritmo",
         "error": {
           "salt-required": "Se requiere sal",
           "slice-invalid-number": "El inicio o el final del segmento no es un número válido",
@@ -2372,7 +2347,6 @@
       "remove-semantic-type-tips": "¿Eliminar el tipo semántico de esta columna?",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "semantic-types": {
-        "add-from-template": "Agregar desde plantilla",
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
@@ -2408,7 +2382,6 @@
       "subscription": "Suscripción"
     },
     "sso": {
-      "create": "Crear SSO",
       "delete": "Eliminar este SSO",
       "description": "Inicio de Sesión Único (SSO) es un método de autenticación que permite a los usuarios autenticarse en múltiples aplicaciones y sitios web a través de un solo conjunto de credenciales.",
       "form": {
@@ -2746,7 +2719,6 @@
         "name": "Configurar regla"
       }
     },
-    "create-policy": "Crear política",
     "delete": "Eliminar política de revisión SQL",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
     "disabled": "La revisión de SQL está deshabilitada",
@@ -2870,7 +2842,7 @@
         "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
         "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
         "title": "Límite de conteo de usuarios",
-        "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de usuario."
+        "upgrade": "Actualizar para obtener más cuota de usuario."
       }
     }
   },

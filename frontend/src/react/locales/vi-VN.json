@@ -148,8 +148,6 @@
     "configure": "Cấu hình",
     "configure-now": "Cấu hình ngay",
     "confirm": "Xác nhận",
-    "confirm-and-add": "Confirm and add",
-    "confirm-and-update": "Xác nhận và Cập nhật",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "Confirm to revert your editing?",
@@ -167,6 +165,7 @@
     "database": "Cơ sở dữ liệu",
     "database-group": "Nhóm cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
+    "deactivate": "Hủy kích hoạt",
     "default": "Mặc định",
     "delete": "Xóa",
     "delete-resource": "Delete {{type}}",
@@ -201,9 +200,11 @@
     "filter-by-name": "Lọc theo tên",
     "from": "Từ",
     "general": "Chung",
+    "group": "Nhóm",
     "groups": "Nhóm",
     "home": "Trang chủ",
     "id": "ID",
+    "import": "Nhập",
     "instance": "Phiên bản",
     "instances": "Phiên bản",
     "is-required": "is required",
@@ -244,6 +245,7 @@
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
+    "reset": "Đặt lại",
     "resource": "Resource",
     "resource-not-found": "Không tìm thấy tài nguyên",
     "resources": "Tài nguyên",
@@ -252,6 +254,9 @@
     "revert": "Hoàn tác",
     "revoke": "Thu hồi",
     "revoked": "Đã thu hồi",
+    "role": {
+      "self": "Vai trò"
+    },
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
     "schema": "Schema",
@@ -275,6 +280,7 @@
     "to": "Đến",
     "total": "Total",
     "total-n-items": "Tổng {{n}} mục",
+    "transfer": "Chuyển",
     "type": "Loại",
     "type-to-search": "Nhập để tìm kiếm",
     "unassigned": "Chưa gán",
@@ -302,7 +308,6 @@
   "common.archived": "Đã lưu trữ",
   "common.cancel": "Hủy",
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
-  "common.confirm-and-update": "Xác nhận và Cập nhật",
   "common.continue-anyway": "Tiếp tục",
   "common.create": "Tạo",
   "common.creating": "Đang tạo...",
@@ -346,9 +351,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Thêm quy tắc",
-      "create-approval-flow": "Tạo quy trình phê duyệt",
-      "edit-rule": "Chỉnh sửa quy tắc",
       "fallback-rules": "Quy tắc dự phòng",
       "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
       "node": {
@@ -408,7 +410,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
+      "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng.",
+      "self": "Quy tắc phê duyệt tùy chỉnh"
     },
     "self": "Phê duyệt tùy chỉnh"
   },
@@ -532,7 +535,6 @@
     "condition": {
       "self": "Condition"
     },
-    "create": "New database group",
     "delete-group": "Delete the database group {{name}}",
     "matched-database": "Matched database",
     "no-matched-databases": "No matched databases",
@@ -558,7 +560,6 @@
   "db.syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
   "dynamic.resource.instance": "ID phiên bản",
   "environment": {
-    "create": "Tạo môi trường",
     "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",
@@ -621,6 +622,7 @@
     "identity-provider-permission-denied": "Quyền bị từ chối",
     "identity-provider-update-failed": "Không cập nhật được nhà cung cấp danh tính",
     "no-claims": "Nhà cung cấp danh tính không trả lại bất kỳ khiếu nại nào.",
+    "self": "Nhà cung cấp danh tính",
     "test-connection": "Kiểm tra kết nối",
     "test-connection-success": "Kiểm tra kết nối thành công",
     "userinfo-description": "Thông tin người dùng đã khớp."
@@ -1221,10 +1223,8 @@
     },
     "webhook": {
       "activity-support-direct-message": "Hỗ trợ gửi tin nhắn trực tiếp đến người dùng liên quan",
-      "add-a-webhook": "Thêm một webhook",
       "creation": {
         "desc": "Tạo webhook tương ứng cho kênh {{destination}} nhận tin nhắn.",
-        "title": "Tạo webhook",
         "view-doc": "Xem tài liệu của {{destination}}"
       },
       "deletion": {
@@ -1237,6 +1237,7 @@
       "direct-messages-warning": "Bạn cần định cấu hình tích hợp IM để làm cho nó hoạt động.",
       "enable-direct-messages": "Bật tin nhắn trực tiếp",
       "fail-tested-title": "Kiểm tra sự kiện webhook không thành công.",
+      "self": "Webhook",
       "success-created-prompt": "Đã tạo thành công webhook {{name}}.",
       "success-deleted-prompt": "Đã xóa thành công webhook {{name}}.",
       "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
@@ -1247,14 +1248,9 @@
     }
   },
   "quick-action": {
-    "add-instance": "Thêm Phiên bản",
     "create-db": "Tạo cơ sở dữ liệu",
-    "create-project": "Tạo Dự án",
-    "new-db": "Cơ sở dữ liệu mới",
-    "new-project": "Mới Dự án",
     "request-export-data": "Yêu cầu Xuất"
   },
-  "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
     "files": "Tệp",
     "releases": "Bản phát hành",
@@ -1300,10 +1296,8 @@
     "select-role": "Chọn vai trò",
     "self": "Vai trò",
     "setting": {
-      "add": "Thêm vai trò",
       "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và được sử dụng trong phê duyệt tùy chỉnh.",
       "description-placeholder": "Nhập mô tả vai trò",
-      "edit": "Chỉnh sửa vai trò",
       "title-placeholder": "Nhập tiêu đề vai trò"
     },
     "title": "Tiêu đề",
@@ -1515,10 +1509,7 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Thêm tin nhắn tức thời khác",
-      "add-im-integration": "Thêm tích hợp IM"
-    },
+    "im": {},
     "im-integration": {
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
@@ -1551,9 +1542,6 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
-      "add-service-account": "Thêm tài khoản dịch vụ",
-      "add-user": "Thêm người dùng",
-      "add-workload-identity": "Thêm danh tính Workload",
       "all-users": "Tất cả người dùng",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
@@ -1570,7 +1558,6 @@
       },
       "grant-access": "Cấp Quyền truy cập",
       "groups": {
-        "add-group": "Thêm nhóm",
         "external-readonly": "External group is read-only.",
         "form": {
           "description": "Mô tả",
@@ -1584,7 +1571,6 @@
         },
         "n-members": "{{n}} thành viên",
         "self": "Nhóm",
-        "update-group": "Cập nhật nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
@@ -1611,9 +1597,6 @@
         "groups": "Nhóm",
         "roles": "Vai trò"
       },
-      "update-service-account": "Cập nhật tài khoản dịch vụ",
-      "update-user": "Cập nhật người dùng",
-      "update-workload-identity": "Cập nhật danh tính Workload",
       "view-by-members": "Xem theo thành viên",
       "view-by-roles": "Xem theo vai trò",
       "workload-identities": "Danh tính Workload",
@@ -1717,7 +1700,6 @@
       },
       "never-expires": "Không bao giờ hết hạn",
       "semantic-types": {
-        "add-from-template": "Thêm từ mẫu",
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
@@ -1755,7 +1737,6 @@
       "users-and-groups": "Người dùng & Nhóm"
     },
     "sso": {
-      "create": "Tạo SSO",
       "delete": "xóa SSO này đi",
       "description": "Đăng nhập một lần (SSO) là một phương thức xác thực cho phép người dùng xác thực với nhiều ứng dụng và trang web bằng một thông tin đăng nhập duy nhất.",
       "form": {
@@ -1875,7 +1856,6 @@
         "name": "Configure rule"
       }
     },
-    "create-policy": "Create SQL review",
     "delete": "Delete SQL review policy",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
@@ -1887,6 +1867,9 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
+    "rule": {
+      "self": "Quy tắc đánh giá SQL"
+    },
     "title": "SQL Review"
   },
   "subscription": {

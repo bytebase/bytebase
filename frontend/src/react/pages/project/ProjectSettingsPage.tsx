@@ -1213,7 +1213,7 @@ export function ProjectSettingsPage() {
                 onClick={handleSave}
                 disabled={labelErrors.length > 0 || saving || !title.trim()}
               >
-                {t("common.confirm-and-update")}
+                {t("common.update")}
               </Button>
             </div>
           </div>
@@ -1245,7 +1245,7 @@ export function ProjectSettingsPage() {
                       });
                     }}
                   >
-                    {t("sql-review.create-policy")}
+                    {t("common.create")}
                   </Button>
                 )}
               </div>
