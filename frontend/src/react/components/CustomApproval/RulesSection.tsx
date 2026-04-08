@@ -309,7 +309,7 @@ export function RulesSection({
           {approvalSourceText(source)}
         </div>
         <PermissionGuard permissions={["bb.settings.set"]}>
-          <Button size="sm" disabled={!canEdit} onClick={handleAddRule}>
+          <Button variant="outline" disabled={!canEdit} onClick={handleAddRule}>
             <Plus className="h-4 w-4" />
             {t("common.create")}
           </Button>

@@ -806,7 +806,6 @@
     "views": "视图"
   },
   "environment": {
-    "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "production-environment": "生产环境",
     "reorder": "重新排序环境",

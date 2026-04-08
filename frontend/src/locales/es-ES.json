@@ -806,7 +806,6 @@
     "views": "Vistas"
   },
   "environment": {
-    "delete": "Eliminar este entorno",
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "production-environment": "Entorno de producción",
     "reorder": "Reordenar entornos",

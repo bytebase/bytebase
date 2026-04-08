@@ -568,7 +568,6 @@
   "db.syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
   "dynamic.resource.instance": "实例 ID",
   "environment": {
-    "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "reorder": "重新排序环境",
     "select": "选择环境",
