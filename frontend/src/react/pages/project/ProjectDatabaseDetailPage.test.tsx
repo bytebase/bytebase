@@ -78,6 +78,9 @@ const mocks = vi.hoisted(() => {
     DatabaseChangelogPanel: vi.fn(() => (
       <div data-testid="database-changelog-panel" />
     )),
+    DatabaseOverviewPanel: vi.fn(() => (
+      <div data-testid="database-overview-panel" />
+    )),
     DatabaseRevisionPanel: vi.fn(() => (
       <div data-testid="database-revision-panel" />
     )),
@@ -210,6 +213,10 @@ vi.mock("./database-detail/panels/DatabaseChangelogPanel", () => ({
   DatabaseChangelogPanel: mocks.DatabaseChangelogPanel,
 }));
 
+vi.mock("./database-detail/panels/DatabaseOverviewPanel", () => ({
+  DatabaseOverviewPanel: mocks.DatabaseOverviewPanel,
+}));
+
 vi.mock("./database-detail/panels/DatabaseRevisionPanel", () => ({
   DatabaseRevisionPanel: mocks.DatabaseRevisionPanel,
 }));
@@ -333,6 +340,7 @@ beforeEach(() => {
   mocks.pushNotification.mockReset();
   mocks.transferProjectDrawer.mockClear();
   mocks.DatabaseChangelogPanel.mockClear();
+  mocks.DatabaseOverviewPanel.mockClear();
   mocks.DatabaseRevisionPanel.mockClear();
   mocks.useProjectV1Store.mockReset();
   mocks.useProjectV1Store.mockReturnValue({

@@ -24,6 +24,7 @@ import {
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
 import { DatabaseChangelogPanel } from "./database-detail/panels/DatabaseChangelogPanel";
+import { DatabaseOverviewPanel } from "./database-detail/panels/DatabaseOverviewPanel";
 import { DatabaseRevisionPanel } from "./database-detail/panels/DatabaseRevisionPanel";
 import { DatabaseSettingsPanel } from "./database-detail/panels/DatabaseSettingsPanel";
 import {
@@ -230,6 +231,9 @@ export function ProjectDatabaseDetailPage({
 
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_SETTING && (
         <DatabaseSettingsPanel database={detail.database} />
+      )}
+      {selectedTab === PROJECT_DATABASE_DETAIL_TAB_OVERVIEW && (
+        <DatabaseOverviewPanel database={detail.database} />
       )}
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_CHANGELOG && (
         <DatabaseChangelogPanel database={detail.database} />
