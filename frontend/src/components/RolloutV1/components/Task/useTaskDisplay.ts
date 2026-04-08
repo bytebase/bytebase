@@ -1,11 +1,9 @@
 import type { ComputedRef } from "vue";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
 export interface UseTaskDisplayReturn {
-  taskTypeDisplay: ComputedRef<string>;
   executorEmail: ComputedRef<string>;
   collapsedContextInfo: ComputedRef<string>;
   collapsedStatusText: ComputedRef<string>;
@@ -21,23 +19,6 @@ export const useTaskDisplay = (
   timingDisplay: () => string,
   affectedRowsDisplay: () => string
 ): UseTaskDisplayReturn => {
-  const { t } = useI18n();
-
-  const taskTypeDisplay = computed(() => {
-    switch (task().type) {
-      case Task_Type.DATABASE_CREATE:
-        return t("task.type.database-create");
-      case Task_Type.DATABASE_MIGRATE:
-        return t("task.type.migrate");
-      case Task_Type.DATABASE_EXPORT:
-        return t("task.type.database-export");
-      case Task_Type.GENERAL:
-        return t("task.type.general");
-      default:
-        return "";
-    }
-  });
-
   const executorEmail = computed(() => {
     const creator = latestTaskRun()?.creator || "";
     const match = creator.match(/users\/([^/]+)/);
@@ -73,7 +54,6 @@ export const useTaskDisplay = (
   });
 
   return {
-    taskTypeDisplay,
     executorEmail,
     collapsedContextInfo,
     collapsedStatusText,

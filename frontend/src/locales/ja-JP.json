@@ -1857,8 +1857,7 @@
       "no-statement": "SQL文なし",
       "no-tasks": "このステージにはタスクはありません",
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
-      "statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。",
-      "view-full-details": "詳細を表示"
+      "statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。"
     },
     "task-execution-errors": "タスク実行エラー"
   },

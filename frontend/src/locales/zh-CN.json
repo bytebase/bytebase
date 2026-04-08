@@ -1857,8 +1857,7 @@
       "no-statement": "没有 SQL 语句",
       "no-tasks": "此阶段没有任务",
       "selected-count": "已选择 {count} 个任务",
-      "statement-truncated-hint": "由于语句过长，已被截断。",
-      "view-full-details": "查看详情"
+      "statement-truncated-hint": "由于语句过长，已被截断。"
     },
     "task-execution-errors": "任务执行错误"
   },
