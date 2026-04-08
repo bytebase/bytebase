@@ -1434,7 +1434,8 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               style={{
                 gridTemplateRows: !isEngineSelectorCollapsed ? "1fr" : "0fr",
               }}
-              {...(isEngineSelectorCollapsed ? { inert: "" } : {})}
+              // @ts-expect-error -- inert is a valid HTML attribute but not yet in React's type definitions
+              inert={isEngineSelectorCollapsed ? "" : undefined}
             >
               <div className="overflow-hidden">
                 <div className="px-4 py-4">
@@ -2001,7 +2002,8 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               style={{
                 gridTemplateRows: !isConnectionOptionsCollapsed ? "1fr" : "0fr",
               }}
-              {...(isConnectionOptionsCollapsed ? { inert: "" } : {})}
+              // @ts-expect-error -- inert is a valid HTML attribute but not yet in React's type definitions
+              inert={isConnectionOptionsCollapsed ? "" : undefined}
             >
               <div className="overflow-hidden">
                 <div className="px-5 py-4">
