@@ -12,13 +12,10 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_MYSQL, GetDatabaseMetadata)
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadata)
-}
+// Old ANTLR-based GetDatabaseMetadata registrations removed.
+// GetDatabaseMetadataOmni is now registered in get_database_metadata_omni.go.
 
 // GetDatabaseMetadata parses the MySQL schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
