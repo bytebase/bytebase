@@ -60,6 +60,76 @@ func (s *Scheduler) Register(taskType storepb.Task_Type, executorGetter Executor
 	s.executorMap[taskType] = executorGetter
 }
 
+// failTaskRunsForHA fails all PENDING and AVAILABLE task runs because HA is not licensed.
+func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
+	taskRuns, err := s.store.ListTaskRunsByStatus(ctx, []storepb.TaskRun_Status{storepb.TaskRun_PENDING, storepb.TaskRun_AVAILABLE})
+	if err != nil {
+		slog.Error("failed to list task runs for HA limit check", log.BBError(err))
+		return
+	}
+	if len(taskRuns) == 0 {
+		return
+	}
+
+	// Track affected plans to send failure webhooks.
+	type planKey struct {
+		projectID   string
+		planID      int64
+		environment string
+	}
+	affectedPlans := map[planKey]bool{}
+
+	for _, taskRun := range taskRuns {
+		if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
+			ID:        taskRun.ID,
+			ProjectID: taskRun.ProjectID,
+			Status:    storepb.TaskRun_FAILED,
+			ResultProto: &storepb.TaskRunResult{
+				Detail: haErr.Error(),
+			},
+		}); err != nil {
+			slog.Error("failed to fail task run for HA limit",
+				slog.Int64("taskRunID", taskRun.ID),
+				log.BBError(err),
+			)
+			continue
+		}
+		affectedPlans[planKey{projectID: taskRun.ProjectID, planID: taskRun.PlanUID, environment: taskRun.Environment}] = true
+	}
+
+	slog.Warn("Failed task runs due to HA license restriction", slog.Int64("count", int64(len(taskRuns))), log.BBError(haErr))
+
+	// Send PIPELINE_FAILED webhook for each affected plan.
+	for key := range affectedPlans {
+		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, key.projectID, key.planID)
+		if err != nil {
+			slog.Error("failed to claim pipeline failure notification", log.BBError(err))
+			continue
+		}
+		if !claimed {
+			continue
+		}
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: key.projectID, UID: &key.planID})
+		if err != nil || plan == nil {
+			slog.Error("failed to get plan for HA failure webhook", log.BBError(err))
+			continue
+		}
+		project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
+		if err != nil || project == nil {
+			slog.Error("failed to get project for HA failure webhook", log.BBError(err))
+			continue
+		}
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Type:    storepb.Activity_PIPELINE_FAILED,
+			Project: webhook.NewProject(project),
+			RolloutFailed: &webhook.EventRolloutFailed{
+				Rollout:     webhook.NewRollout(plan),
+				Environment: key.environment,
+			},
+		})
+	}
+}
+
 // Run will start the scheduler.
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()

@@ -144,7 +144,6 @@
     "cloud": "Cloud",
     "deploy": "Auto Hospedaje",
     "external-url": "Bytebase no ha configurado --external-url",
-    "ha-not-licensed": "Se detectaron múltiples réplicas sin licencia HA. Los ejecutores del backend están deshabilitados.",
     "license-expired": "Su licencia para {plan} ha expirado el {expireAt}.",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
     "request-demo": "Reserva una demo de producto de 30 minutos.",

@@ -144,7 +144,6 @@
     "cloud": "云服务",
     "deploy": "本地部署",
     "external-url": "Bytebase 还没有配置 --external-url",
-    "ha-not-licensed": "检测到多个副本但没有 HA 许可证。后端任务运行器已禁用。",
     "license-expired": "您的{plan}证书已在 {expireAt} 过期",
     "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
     "request-demo": "预约一个 30 分钟的产品演示。",
