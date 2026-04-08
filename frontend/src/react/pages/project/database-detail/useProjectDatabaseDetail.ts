@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { LocationQueryRaw } from "vue-router";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -17,7 +18,7 @@ export interface UseProjectDatabaseDetailOptions {
   databaseName: string;
   routeName?: string;
   hash?: string;
-  query?: Record<string, unknown>;
+  query?: LocationQueryRaw;
   changelogId?: string;
   revisionId?: string;
 }

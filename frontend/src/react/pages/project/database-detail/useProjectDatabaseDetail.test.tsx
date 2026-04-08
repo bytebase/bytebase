@@ -1,13 +1,6 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  test,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { UseProjectDatabaseDetailOptions } from "./useProjectDatabaseDetail";
 import { useProjectDatabaseDetail } from "./useProjectDatabaseDetail";
 
@@ -153,7 +146,8 @@ beforeEach(() => {
   mocks.getDatabaseByName.mockReset();
   mocks.getInstanceResource.mockReset();
   mocks.getInstanceResource.mockImplementation(
-    (database: { instanceResource?: unknown }) => database.instanceResource ?? {}
+    (database: { instanceResource?: unknown }) =>
+      database.instanceResource ?? {}
   );
   mocks.instanceV1HasAlterSchema.mockReset();
   mocks.instanceV1HasAlterSchema.mockReturnValue(true);
@@ -179,9 +173,7 @@ describe("useProjectDatabaseDetail", () => {
     mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
     mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
 
-    let latest:
-      | ReturnType<typeof useProjectDatabaseDetail>
-      | undefined;
+    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
 
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
@@ -225,9 +217,7 @@ describe("useProjectDatabaseDetail", () => {
       new Error("permission denied")
     );
 
-    let latest:
-      | ReturnType<typeof useProjectDatabaseDetail>
-      | undefined;
+    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
 
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {

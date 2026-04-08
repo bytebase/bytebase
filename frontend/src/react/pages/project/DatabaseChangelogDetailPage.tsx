@@ -1,5 +1,12 @@
-import { ArrowUpRight, LoaderCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  CircleAlert,
+  CircleDot,
+  Copy,
+  LoaderCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
@@ -13,16 +20,19 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/router/dashboard/projectV1";
-import { useChangelogStore } from "@/store";
+import { pushNotification, useChangelogStore } from "@/store";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
+  bytesToString,
   extractDatabaseResourceName,
+  formatAbsoluteDateTime,
   getInstanceResource,
-} from "@/utils/v1/database";
+} from "@/utils";
 import {
   extractInstanceResourceName,
   instanceV1SupportsSchemaRollback,
@@ -36,6 +46,108 @@ export interface DatabaseChangelogDetailPageProps {
   instance: string;
   database: string;
   changelogId: string;
+}
+
+function execCommandCopy(text: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to execCommand fallback.
+    }
+  }
+  return execCommandCopy(text);
+}
+
+function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
+  const { t } = useTranslation();
+
+  switch (status) {
+    case Changelog_Status.PENDING:
+      return (
+        <span
+          aria-label={t("common.status")}
+          className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-info bg-white text-info"
+        >
+          <CircleDot className="h-3 w-3" />
+        </span>
+      );
+    case Changelog_Status.DONE:
+      return (
+        <span
+          aria-label={t("common.status")}
+          className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-white"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+        </span>
+      );
+    case Changelog_Status.FAILED:
+      return (
+        <span
+          aria-label={t("common.status")}
+          className="flex h-5 w-5 items-center justify-center rounded-full bg-error text-white"
+        >
+          <CircleAlert className="h-4 w-4" />
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
+function CopyButton({ content }: { content: string }) {
+  const { t } = useTranslation();
+
+  const handleCopy = useCallback(async () => {
+    if (!content) {
+      return;
+    }
+
+    if (await copyToClipboard(content)) {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.copied"),
+      });
+      return;
+    }
+
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.copy-failed"),
+    });
+  }, [content, t]);
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={t("common.copy")}
+      title={t("common.copy")}
+      disabled={!content}
+      onClick={handleCopy}
+    >
+      <Copy className="h-4 w-4" />
+    </Button>
+  );
 }
 
 export function DatabaseChangelogDetailPage({
@@ -54,7 +166,6 @@ export function DatabaseChangelogDetailPage({
   const projectId = extractProjectResourceName(project);
   const instanceId = extractInstanceResourceName(instance);
   const databaseName = extractDatabaseResourceName(database).databaseName;
-  const changelogName = `${database}/changelogs/${changelogId}`;
 
   const detail = useProjectDatabaseDetail({
     projectId,
@@ -63,6 +174,7 @@ export function DatabaseChangelogDetailPage({
     routeName: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
     changelogId,
   });
+  const changelogName = `${detail.databaseName}/changelogs/${changelogId}`;
 
   const changelog = useVueState(() =>
     changelogStore.getChangelogByName(changelogName, ChangelogView.FULL)
@@ -84,6 +196,7 @@ export function DatabaseChangelogDetailPage({
 
     setLoading(true);
     setShowDiff(true);
+    setResolvedChangelog(undefined);
     setPreviousChangelog(undefined);
 
     void Promise.all([
@@ -158,6 +271,20 @@ export function DatabaseChangelogDetailPage({
   const databaseDisplayName =
     extractDatabaseResourceName(detail.database?.name ?? database)
       .databaseName || databaseName;
+  const formattedCreateTime = useMemo(() => {
+    if (!resolvedChangelog?.createTime) {
+      return "";
+    }
+    return formatAbsoluteDateTime(
+      getTimeForPbTimestampProtoEs(resolvedChangelog.createTime)
+    );
+  }, [resolvedChangelog?.createTime]);
+  const formattedSchemaSize = useMemo(() => {
+    if (!resolvedChangelog?.schemaSize) {
+      return "";
+    }
+    return bytesToString(Number(resolvedChangelog.schemaSize));
+  }, [resolvedChangelog?.schemaSize]);
 
   const handleProjectBreadcrumbClick = () => {
     router.push({
@@ -258,6 +385,23 @@ export function DatabaseChangelogDetailPage({
       </nav>
 
       <div className="flex flex-col gap-y-6">
+        <div className="flex flex-col gap-y-4">
+          {resolvedChangelog.planTitle ? (
+            <h2 className="text-2xl font-semibold text-main">
+              {resolvedChangelog.planTitle}
+            </h2>
+          ) : null}
+          <div className="flex items-center gap-x-3 text-sm text-control-light">
+            <ChangelogStatusIndicator status={resolvedChangelog.status} />
+            {formattedCreateTime ? (
+              <>
+                <span aria-hidden="true">•</span>
+                <span>{formattedCreateTime}</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+
         {resolvedChangelog.taskRun ? (
           <div className="flex flex-col gap-y-2">
             <div className="flex items-center justify-between">
@@ -305,6 +449,18 @@ export function DatabaseChangelogDetailPage({
             {t("changelog.schema-snapshot-after-change")}
           </div>
 
+          <p className="flex items-center gap-x-2 text-lg text-main">
+            <span>
+              {t("common.schema")} {t("common.snapshot")}
+            </span>
+            {formattedSchemaSize ? (
+              <span className="text-sm font-normal text-control-light">
+                ({formattedSchemaSize})
+              </span>
+            ) : null}
+            <CopyButton content={resolvedChangelog.schema} />
+          </p>
+
           {showDiff ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <ReadonlyMonaco
@@ -316,11 +472,15 @@ export function DatabaseChangelogDetailPage({
                 className="relative h-auto max-h-[600px] min-h-[120px]"
               />
             </div>
-          ) : (
+          ) : resolvedChangelog.schema ? (
             <ReadonlyMonaco
               content={resolvedChangelog.schema}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
+              className="relative h-auto min-h-[120px] max-h-[600px]"
             />
+          ) : (
+            <div className="text-sm text-control-light">
+              {t("changelog.current-schema-empty")}
+            </div>
           )}
         </div>
       </div>

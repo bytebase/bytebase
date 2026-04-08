@@ -117,8 +117,11 @@
     }
   },
   "changelog": {
+    "current-schema-empty": "現在のスキーマは空です",
+    "schema-snapshot-after-change": "この変更を完了した後のスキーマのスナップショット",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
+    "self": "Changelog",
+    "show-diff": "違いを表示"
   },
   "common": {
     "activated": "有効化しました",
@@ -257,6 +260,7 @@
     "role": {
       "self": "ロール"
     },
+    "rollback": "ロールバック",
     "rows-per-page": "ページあたりの行数",
     "save": "保存",
     "schema": "スキーマ",
@@ -270,6 +274,7 @@
     "setting": "設定",
     "settings": "設定",
     "skipped": "スキップ",
+    "snapshot": "スナップショット",
     "sql": "SQL",
     "state": "ステート",
     "statement": "ステートメント",

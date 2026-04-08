@@ -117,8 +117,11 @@
     }
   },
   "changelog": {
+    "current-schema-empty": "Lược đồ hiện tại trống",
+    "schema-snapshot-after-change": "Ảnh chụp nhanh lược đồ được ghi lại sau khi áp dụng thay đổi này",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
-    "self": "Changelog"
+    "self": "Changelog",
+    "show-diff": "Hiển thị khác biệt"
   },
   "common": {
     "activated": "Đã kích hoạt",
@@ -257,6 +260,7 @@
     "role": {
       "self": "Vai trò"
     },
+    "rollback": "Hoàn tác",
     "rows-per-page": "Số dòng mỗi trang",
     "save": "Lưu",
     "schema": "Schema",
@@ -270,6 +274,7 @@
     "setting": "Cài đặt",
     "settings": "Cài đặt",
     "skipped": "Đã bỏ qua",
+    "snapshot": "Ảnh chụp nhanh",
     "sql": "SQL",
     "state": "Trạng thái",
     "statement": "Câu lệnh",
