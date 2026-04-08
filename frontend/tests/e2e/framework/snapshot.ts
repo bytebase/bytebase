@@ -55,7 +55,8 @@ export async function createSnapshot(api: BytebaseApiClient, scope: SnapshotScop
       for (const query of entry.captureQueries) {
         const key = `${entry.instance}/${entry.database}:${query}`;
         try {
-          const result = await api.query(entry.instance, entry.database, query);
+          const dbFullName = `${entry.instance}/databases/${entry.database}`;
+          const result = await api.query(dbFullName, query);
           snapshot.instanceData[key] = result.results;
         } catch {
           snapshot.instanceData[key] = [];

@@ -18,53 +18,39 @@ let snapshot: Snapshot | undefined;
 // ── Feature-specific discovery ──
 
 async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  const catalog = await env.api.getCatalog(env.database) as {
-    schemas: {
-      name: string;
-      tables: {
-        name: string;
-        columns?: { columns: { name: string; semanticType: string }[] };
-      }[];
-    }[];
-  };
+  // Use SQL to discover tables and text columns (catalog API only returns configured metadata)
+  const colResult = await env.api.query(
+    env.database,
+    `SELECT table_schema, table_name, column_name FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND data_type IN ('text', 'character varying')
+       AND column_name NOT LIKE '%id%'
+       AND column_name NOT LIKE '%date%'
+       AND column_name NOT LIKE '%time%'
+     LIMIT 10`
+  );
+  const colRows = (colResult.results?.[0] as {
+    rows?: { values?: { stringValue?: string }[] }[];
+  })?.rows ?? [];
 
-  let sampleTable = "";
-  let sampleSchema = "";
-  let sampleColumn = "";
-
-  for (const schema of catalog.schemas) {
-    for (const table of schema.tables) {
-      const cols = table.columns?.columns ?? [];
-      const textCol = cols.find(
-        (c) =>
-          !c.name.toLowerCase().includes("id") &&
-          !c.name.toLowerCase().endsWith("_no") &&
-          !c.name.toLowerCase().includes("date") &&
-          !c.name.toLowerCase().includes("time") &&
-          c.name.length > 0
-      );
-      if (textCol) {
-        sampleTable = table.name;
-        sampleColumn = textCol.name;
-        sampleSchema = schema.name;
-        break;
-      }
-    }
-    if (sampleTable) break;
+  if (colRows.length === 0) {
+    throw new Error(`Could not find a suitable text column to mask in ${env.database}`);
   }
+
+  const sampleSchema = colRows[0].values?.[0]?.stringValue ?? "public";
+  const sampleTable = colRows[0].values?.[1]?.stringValue ?? "";
+  const sampleColumn = colRows[0].values?.[2]?.stringValue ?? "";
 
   if (!sampleTable || !sampleColumn) {
     throw new Error(`Could not find a suitable column to mask in ${env.database}`);
   }
 
   // Query for a known value
-  const dbId = env.database.split("/").pop()!;
-  const queryResult = await env.api.query(
-    env.instance,
-    dbId,
-    `SELECT "${sampleColumn}" FROM "${sampleSchema}"."${sampleTable}" LIMIT 1`
+  const valueResult = await env.api.query(
+    env.database,
+    `SELECT "${sampleColumn}" FROM "${sampleSchema}"."${sampleTable}" WHERE "${sampleColumn}" IS NOT NULL LIMIT 1`
   );
-  const firstResult = queryResult.results?.[0] as {
+  const firstResult = valueResult.results?.[0] as {
     rows?: { values?: { stringValue?: string }[] }[];
   };
   const knownUnmaskedValue = firstResult?.rows?.[0]?.values?.[0]?.stringValue ?? "";
@@ -76,17 +62,21 @@ async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): P
 }
 
 async function configureMasking(env: TestEnv & { api: BytebaseApiClient }, data: MaskingTestData): Promise<void> {
-  const catalog = await env.api.getCatalog(env.database) as Record<string, unknown>;
-  const schemas = (catalog as { schemas: { name: string; tables: { name: string; columns?: { columns: { name: string; semanticType: string }[] } }[] }[] }).schemas;
-  for (const schema of schemas) {
-    for (const table of schema.tables) {
-      if (table.name === data.sampleTable) {
-        const cols = table.columns?.columns ?? [];
-        const col = cols.find((c) => c.name === data.sampleColumn);
-        if (col) col.semanticType = "bb.default-partial";
-      }
-    }
-  }
+  // Construct catalog payload to set masking on the discovered column
+  const catalog = {
+    schemas: [{
+      name: data.sampleSchema,
+      tables: [{
+        name: data.sampleTable,
+        columns: {
+          columns: [{
+            name: data.sampleColumn,
+            semanticType: "bb.default-partial",
+          }],
+        },
+      }],
+    }],
+  };
   await env.api.updateCatalog(env.database, catalog);
 }
 

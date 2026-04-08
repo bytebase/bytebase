@@ -103,13 +103,12 @@ export class BytebaseApiClient {
     return this.request<unknown>("PATCH", `/v1/${dbName}/catalog`, catalog);
   }
 
-  // Query
-  async query(instanceName: string, databaseName: string, statement: string) {
-    return this.request<{ results: unknown[] }>("POST", `/v1/${instanceName}:query`, {
-      name: instanceName,
-      connectionDatabase: databaseName,
+  // Query — endpoint is /v1/instances/{instance}/databases/{database}:query
+  async query(databaseFullName: string, statement: string) {
+    return this.request<{ results: unknown[] }>("POST", `/v1/${databaseFullName}:query`, {
+      name: databaseFullName,
       statement,
-      limit: 10,
+      limit: 100,
     });
   }
 }
