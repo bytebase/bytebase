@@ -117,8 +117,11 @@
     }
   },
   "changelog": {
+    "current-schema-empty": "当前 schema 为空",
+    "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
-    "self": "变更历史"
+    "self": "变更历史",
+    "show-diff": "显示差异"
   },
   "common": {
     "activated": "已激活",
@@ -257,6 +260,7 @@
     "role": {
       "self": "角色"
     },
+    "rollback": "回滚",
     "rows-per-page": "每页行数",
     "save": "保存",
     "schema": "模式",
@@ -270,6 +274,7 @@
     "setting": "设置",
     "settings": "设置",
     "skipped": "已跳过",
+    "snapshot": "快照",
     "sql": "SQL",
     "state": "状态",
     "statement": "语句",
