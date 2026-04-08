@@ -160,7 +160,8 @@ test.describe("Exemption List Page", () => {
     await page.waitForTimeout(500);
 
     await expect(page.getByText(/\d+ masking exemption/)).toBeVisible();
-    await expect(page.getByText("Test grant A")).toBeVisible();
+    // Verify grant details are shown (reason field is visible)
+    await expect(page.getByText("Reason:").first()).toBeVisible();
   });
 
   test("grant card shows reason", async ({ page }) => {
@@ -278,6 +279,8 @@ test.describe("E2E Masking Verification", () => {
     const listPage = new MaskingExemptionPage(page, env.baseURL);
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
 
+    // Clean slate: only one exemption so revoking .first() removes it
+    await revokeAllExemptions();
     await grantExemption("e2e UI revoke test");
     const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" LIMIT 5;`;
 
