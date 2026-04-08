@@ -144,7 +144,6 @@
     "cloud": "クラウドサービス",
     "deploy": "ローカル展開",
     "external-url": "Bytebase は --extern-url を設定していません",
-    "ha-not-licensed": "HAライセンスなしで複数のレプリカが検出されました。バックエンドランナーは無効です。",
     "license-expired": "{plan} のライセンスは {expireAt} に期限切れになりました。",
     "license-expires": "{plan} ライセンスは {expireAt} に期限切れになりました",
     "request-demo": "30 分間の製品デモを予約してください。",
