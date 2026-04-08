@@ -98,8 +98,9 @@ interface LocalState {
   selectedTab: LocalTabType;
 }
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "on-create"): void;
+  (event: "close"): void;
 }>();
 
 const { t } = useI18n();
@@ -164,14 +165,21 @@ const actualSelectedTab = computed((): LocalState["selectedTab"] => {
   return state.selectedTab;
 });
 
-const onProjectSelect = (project: Project) => {
+const onProjectSelect = (selected: Project) => {
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_DETAIL,
     params: {
-      projectId: getProjectName(project.name),
+      projectId: getProjectName(selected.name),
     },
   });
   record(route.fullPath);
+  if (selected.name === project.value.name) {
+    // Same project — just close the popover.
+    emit("close");
+  } else {
+    // Different project — navigate (watcher closes the popover).
+    router.push(route.fullPath);
+  }
 };
 
 const gotoWorkspace = (e: MouseEvent) => {

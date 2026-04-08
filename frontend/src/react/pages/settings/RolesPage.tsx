@@ -22,6 +22,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Textarea } from "@/react/components/ui/textarea";
+import { BlockTooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -827,7 +828,12 @@ export function RolesPage() {
       {/* Roles Table */}
       {ready ? (
         <div className="border rounded-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col className="w-1/3" />
+              <col />
+              <col className="w-24" />
+            </colgroup>
             <thead>
               <tr className="border-b bg-control-bg">
                 <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
@@ -853,8 +859,12 @@ export function RolesPage() {
                       </Badge>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-control-light">
-                    {displayRoleDescription(role.name)}
+                  <td className="px-4 py-2 text-control-light overflow-hidden">
+                    <BlockTooltip content={displayRoleDescription(role.name)}>
+                      <span className="block truncate">
+                        {displayRoleDescription(role.name)}
+                      </span>
+                    </BlockTooltip>
                   </td>
                   <td className="px-4 py-2">
                     {isCustomRole(role.name) && (

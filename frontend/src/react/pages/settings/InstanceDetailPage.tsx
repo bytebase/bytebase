@@ -183,10 +183,8 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
         <TabsPanel value="overview">
           <InstanceFormProvider instance={instance}>
-            <div className="-mt-2">
-              <InstanceFormBody />
-              <InstanceFormButtons className="sticky bottom-0 z-10" />
-            </div>
+            <InstanceFormBody />
+            <InstanceFormButtons className="sticky bottom-0 z-10" />
           </InstanceFormProvider>
         </TabsPanel>
 

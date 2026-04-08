@@ -37,6 +37,7 @@
           state.showPopover = false;
         }
       "
+      @close="state.showPopover = false"
     />
   </NPopover>
   <Drawer

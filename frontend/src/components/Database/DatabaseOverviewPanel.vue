@@ -1,13 +1,15 @@
 <template>
   <div>
     <!-- Description list -->
-    <DatabaseOverviewInfo :database="database" class="pb-6" />
+    <div class="border border-block-border rounded-lg px-5 py-4">
+      <DatabaseOverviewInfo :database="database" />
+    </div>
 
     <ComponentPermissionGuard
       :project="getDatabaseProject(database)"
       :permissions="['bb.databases.getSchema']"
     >
-      <div class="border-t border-block-border pt-6">
+      <div class="pt-6">
         <div
           v-if="hasSchemaPropertyV1"
           class="flex flex-row justify-start items-center mb-4"

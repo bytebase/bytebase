@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -1198,14 +1199,19 @@ function SemanticTypeRow({
                   `dynamic.settings.sensitive-data.semantic-types.template.${row.item.id.split(".").join("-")}.title`
                 )}
               </span>
-              <span
-                className="text-gray-400 cursor-help"
-                title={t(
-                  `dynamic.settings.sensitive-data.semantic-types.template.${row.item.id.split(".").join("-")}.algorithm.description`
-                )}
+              <Tooltip
+                content={
+                  <div className="whitespace-pre-line">
+                    {t(
+                      `dynamic.settings.sensitive-data.semantic-types.template.${row.item.id.split(".").join("-")}.algorithm.description`
+                    )}
+                  </div>
+                }
               >
-                <Info className="w-4 h-4" />
-              </span>
+                <span className="text-gray-400 cursor-help">
+                  <Info className="w-4 h-4" />
+                </span>
+              </Tooltip>
             </>
           ) : (
             <span>

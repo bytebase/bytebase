@@ -1,8 +1,11 @@
 import { create } from "@bufbuild/protobuf";
+import { Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
+import { useSubscriptionV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
@@ -16,7 +19,10 @@ import {
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
@@ -42,6 +48,8 @@ export function DataSourceForm({
   onOpenInfoPanel,
 }: DataSourceFormProps) {
   const { t } = useTranslation();
+  const subscriptionStore = useSubscriptionV1Store();
+  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
   const ctx = useInstanceFormContext();
   const {
     instance,
@@ -669,10 +677,10 @@ export function DataSourceForm({
                         hasAuthenticationInfo && (
                           <button
                             type="button"
-                            className="text-accent text-xs hover:underline"
+                            className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                             onClick={() => onOpenInfoPanel("authentication")}
                           >
-                            ⓘ
+                            <Info className="w-3.5 h-3.5" />
                           </button>
                         )}
                     </label>
@@ -770,22 +778,23 @@ export function DataSourceForm({
                               />
                               {item.label}
                               {item.value !==
-                                DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
-                                <span className="text-xs bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full">
-                                  Pro
-                                </span>
-                              )}
+                                DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
+                                currentPlan === PlanType.FREE && (
+                                  <span className="text-xs bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full">
+                                    Pro
+                                  </span>
+                                )}
                             </label>
                           ))}
+                          <a
+                            href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-accent hover:underline"
+                          >
+                            {t("common.learn-more")}
+                          </a>
                         </div>
-                        <a
-                          href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-accent hover:underline"
-                        >
-                          {t("common.learn-more")}
-                        </a>
                       </div>
                     )}
 
@@ -1605,10 +1614,10 @@ export function DataSourceForm({
                 {isCreating && onOpenInfoPanel && hasSslInfo && (
                   <button
                     type="button"
-                    className="text-accent text-xs hover:underline"
+                    className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                     onClick={() => onOpenInfoPanel("ssl")}
                   >
-                    ⓘ
+                    <Info className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -1660,10 +1669,10 @@ export function DataSourceForm({
                 {isCreating && onOpenInfoPanel && hasSshInfo && (
                   <button
                     type="button"
-                    className="text-accent text-xs hover:underline"
+                    className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                     onClick={() => onOpenInfoPanel("ssh")}
                   >
-                    ⓘ
+                    <Info className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
