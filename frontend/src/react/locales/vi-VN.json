@@ -314,6 +314,7 @@
   "common.archived": "Đã lưu trữ",
   "common.cancel": "Hủy",
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
+  "common.catalog": "Danh mục",
   "common.close": "Đóng",
   "common.confirm": "Xác nhận",
   "common.continue-anyway": "Tiếp tục",
@@ -554,8 +555,15 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "Engine",
+  "database.export-schema": "Xuất schema",
+  "database.export-schema-multi-file": "Nhiều tệp (ZIP)",
+  "database.export-schema-single-file": "Tệp đơn",
+  "database.failed-to-export-schema": "Không thể xuất schema",
   "database.filter-database": "Lọc cơ sở dữ liệu",
+  "database.labels": "Nhãn cơ sở dữ liệu",
   "database.revision.self": "Phiên bản",
+  "database.successfully-exported-schema": "Đã xuất schema thành công",
+  "database.sync-database": "Đồng bộ cơ sở dữ liệu",
   "database.sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
   "db": {
     "character-set": "Bộ ký tự",
@@ -568,8 +576,10 @@
     "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}..."
   },
   "db.failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
+  "db.failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
   "db.start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
+  "db.successfully-synced-schema-for-database-database-value-name": "Đồng bộ hóa lược đồ thành công cho cơ sở dữ liệu '{{0}}'.",
   "db.syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
   "dynamic.resource.instance": "ID phiên bản",
   "environment": {
@@ -1324,6 +1334,7 @@
       "self_other": "Các giai đoạn"
     }
   },
+  "schema-diagram.self": "Sơ đồ Lược đồ",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },

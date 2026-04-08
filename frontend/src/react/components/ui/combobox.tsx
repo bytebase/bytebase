@@ -46,6 +46,7 @@ type ComboboxBaseProps = {
   onSearch?: (query: string) => void;
   className?: string;
   disabled?: boolean;
+  clearable?: boolean;
   /** Render dropdown via portal (use when inside overflow:hidden containers like modals) */
   portal?: boolean;
 };
@@ -77,6 +78,7 @@ export function Combobox(props: ComboboxProps) {
     onSearch,
     className,
     disabled,
+    clearable = true,
     portal,
   } = props;
   const multiple = props.multiple === true;
@@ -372,7 +374,7 @@ export function Combobox(props: ComboboxProps) {
       >
         {renderTrigger()}
         <div className="flex items-center gap-1 shrink-0 ml-auto">
-          {hasValue && !disabled && (
+          {clearable && hasValue && !disabled && (
             <span
               className="rounded-full p-0.5 hover:bg-gray-100 transition-colors"
               onClick={handleClear}

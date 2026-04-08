@@ -313,6 +313,7 @@
   "common.archive": "Archive",
   "common.archived": "Archived",
   "common.cancel": "Cancel",
+  "common.catalog": "Catalog",
   "common.cannot-undo-this-action": "You cannot undo this action",
   "common.close": "Close",
   "common.confirm": "Confirm",
@@ -554,8 +555,15 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "Engine",
+  "database.export-schema": "Export Schema",
+  "database.export-schema-multi-file": "Multi-File (ZIP)",
+  "database.export-schema-single-file": "Single File",
+  "database.failed-to-export-schema": "Failed to export schema",
   "database.filter-database": "Filter database",
+  "database.labels": "Database Labels",
   "database.revision.self": "Revision",
+  "database.successfully-exported-schema": "Successfully exported schema",
+  "database.sync-database": "Sync Database",
   "database.sync-complete-for-instance": "Sync complete for instance '{{0}}'",
   "db": {
     "character-set": "Character set",
@@ -568,8 +576,10 @@
     "syncing-databases-for-instance": "Syncing databases for {{0}}..."
   },
   "db.failed-to-sync-schema": "Failed to sync schema",
+  "db.failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
   "db.start-to-sync-schema": "Start to sync schema",
+  "db.successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{{0}}'.",
   "db.syncing-databases-for-instance": "Syncing databases for {{0}}...",
   "dynamic.resource.instance": "Instance ID",
   "environment": {
@@ -1324,6 +1334,7 @@
       "self_other": "Stages"
     }
   },
+  "schema-diagram.self": "Schema Diagram",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },

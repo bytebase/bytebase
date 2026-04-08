@@ -5,6 +5,7 @@ import { Combobox } from "@/react/components/ui/combobox";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
+import type { Environment } from "@/types/v1/environment";
 
 export interface EnvironmentSelectProps {
   value: string;
@@ -12,6 +13,8 @@ export interface EnvironmentSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  clearable?: boolean;
+  renderSuffix?: (environment: Environment) => React.ReactNode;
 }
 
 export function EnvironmentSelect({
@@ -20,6 +23,8 @@ export function EnvironmentSelect({
   placeholder,
   disabled,
   className,
+  clearable = true,
+  renderSuffix,
 }: EnvironmentSelectProps) {
   const { t } = useTranslation();
   const environmentStore = useEnvironmentV1Store();
@@ -35,14 +40,17 @@ export function EnvironmentSelect({
         label: env.title,
         render: () => (
           <div className="flex flex-col gap-0.5">
-            <EnvironmentLabel environment={env} />
+            <div className="flex items-center gap-x-1">
+              <EnvironmentLabel environment={env} />
+              {renderSuffix?.(env)}
+            </div>
             <span className="text-xs text-control-placeholder">
               {formatEnvironmentName(env.id)}
             </span>
           </div>
         ),
       })),
-    [environments]
+    [environments, renderSuffix]
   );
 
   return (
@@ -53,12 +61,18 @@ export function EnvironmentSelect({
       noResultsText={t("common.no-data")}
       disabled={disabled}
       className={className}
+      clearable={clearable}
       renderValue={(opt) => {
         const env = environments.find(
           (e) => formatEnvironmentName(e.id) === opt.value
         );
         if (!env) return opt.label;
-        return <EnvironmentLabel environment={env} />;
+        return (
+          <div className="flex items-center gap-x-1">
+            <EnvironmentLabel environment={env} />
+            {renderSuffix?.(env)}
+          </div>
+        );
       }}
       options={options}
     />
