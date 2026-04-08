@@ -718,3 +718,103 @@ Expected: Server starts, tests pass, server stops, temp dir deleted.
 git add -A
 git commit -m "feat(e2e): complete e2e test framework with both modes verified"
 ```
+
+---
+
+## Chunk 6: Bug fixes discovered during PR #19743 review
+
+These bugs were found during exploratory QA of the masking exemption redesign (PR #19743). Fix them and add regression tests.
+
+### Task 16: Fix stale expiry timer in ExemptionGrantSection
+
+**Bug:** `isExpired` and `expiryLabel` in `ExemptionGrantSection` use `Date.now()` inside `useMemo` but don't include it in the dependency array. A grant showing "expires in 2 days" will display that label forever until page reload, even after it actually expires. The `isExpired` flag also won't flip from `false` to `true` when the expiration time is reached.
+
+**Location:** `frontend/src/react/pages/project/ProjectMaskingExemptionPage.tsx` — the `ExemptionGrantSection` component, approximately lines 1098-1119.
+
+**Files:**
+- Modify: `frontend/src/react/pages/project/ProjectMaskingExemptionPage.tsx`
+
+- [ ] **Step 1: Investigate the current code**
+
+Read `ExemptionGrantSection` in `ProjectMaskingExemptionPage.tsx`. Find the two `useMemo` calls that use `Date.now()`:
+```typescript
+const isExpired = useMemo(
+  () => !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now(),
+  [grant.expirationTimestamp]  // <-- Date.now() not in deps
+);
+const expiryLabel = useMemo(() => {
+  // ...
+  const msRemaining = grant.expirationTimestamp - Date.now();  // <-- stale
+  // ...
+}, [grant.expirationTimestamp, t]);  // <-- Date.now() not in deps
+```
+
+- [ ] **Step 2: Fix — remove useMemo wrappers**
+
+These are cheap computations (subtraction + comparison). Remove the `useMemo` wrappers so they recompute on every render. This is the simplest fix — no interval timers needed since the values will update whenever any state change triggers a re-render.
+
+```typescript
+const isExpired = !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now();
+
+const expiryLabel = (() => {
+  if (!grant.expirationTimestamp) return "";
+  const msRemaining = grant.expirationTimestamp - Date.now();
+  // ... rest of computation
+})();
+```
+
+- [ ] **Step 3: Run type check and lint**
+
+```bash
+pnpm --dir frontend type-check
+pnpm --dir frontend check
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/react/pages/project/ProjectMaskingExemptionPage.tsx
+git commit -m "fix(masking-exemption): remove stale useMemo on expiry timer
+
+isExpired and expiryLabel used Date.now() inside useMemo without
+including it in the dependency array, causing the expiry display
+to freeze until page reload. These are cheap computations —
+remove useMemo so they recompute on every render."
+```
+
+### Task 17: Fix "-1" display for instances/databases in exemption resource table
+
+**Bug:** In the masking exemption detail panel, some grants show instance and database names as "-1" in the resource table. This appears when a grant has `databaseResources` with `databaseFullName` set to a path that doesn't match the expected `instances/{instance}/databases/{database}` pattern.
+
+**Files:**
+- Investigate: `frontend/src/react/pages/project/ProjectMaskingExemptionPage.tsx` (ExemptionResourceTable)
+- Investigate: `frontend/src/components/SensitiveData/exemptionDataUtils.ts` (extractDatabaseName)
+- Investigate: Backend policy storage to understand how "-1" gets into `databaseFullName`
+
+- [ ] **Step 1: Trace the "-1" value**
+
+1. In `ProjectMaskingExemptionPage.tsx`, find `ExemptionResourceTable` and look at how it calls `extractDatabaseResourceName(resource.databaseFullName)`.
+2. In the API, query the masking exemption policy for the project and find the exemption that produces "-1": `curl -s -H "Authorization: Bearer $TOKEN" "http://localhost:3000/v1/projects/project-sample/policies/masking_exemption"` — search for "-1" in the response.
+3. Check if "-1" is a sentinel value in the database (meaning "all instances" or "all databases") or if it's a data corruption issue from a previous version.
+4. Check `extractDatabaseResourceName` from `@/utils/v1/database` — what does it return when the input doesn't match the `instances/{instance}/databases/{database}` pattern?
+
+- [ ] **Step 2: Fix the display**
+
+Based on findings:
+- **If "-1" is a sentinel for "all"**: Show "All" instead of "-1" in the resource table (similar to how empty string is already handled with `isSentinel`).
+- **If "-1" is invalid data**: Consider filtering it out or showing a more descriptive placeholder.
+- **If it can be prevented at write time**: Fix the code that creates the exemption to avoid writing "-1".
+
+- [ ] **Step 3: Run type check and lint**
+
+```bash
+pnpm --dir frontend type-check
+pnpm --dir frontend check
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/react/pages/project/ProjectMaskingExemptionPage.tsx
+git commit -m "fix(masking-exemption): fix -1 display in exemption resource table"
+```
