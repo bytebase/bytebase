@@ -1,16 +1,16 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RevisionDetailPanel } from "@/react/components/revision";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store } from "@/store";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { extractProjectResourceName } from "@/utils/v1/project";
+import { useProjectDatabaseDetail } from "./database-detail/useProjectDatabaseDetail";
 
 export function DatabaseRevisionDetailPage({
   project,
@@ -24,33 +24,17 @@ export function DatabaseRevisionDetailPage({
   revisionId: string;
 }) {
   const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
-  const [loading, setLoading] = useState(true);
   const projectId = extractProjectResourceName(project);
-  const databaseFullName = database;
   const { databaseName } = extractDatabaseResourceName(database);
   const instanceId = extractInstanceResourceName(instance);
-  const revisionName = `${databaseFullName}/revisions/${revisionId}`;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    setLoading(true);
-    void databaseStore
-      .getOrFetchDatabaseByName(databaseFullName)
-      .catch((error) => {
-        console.error("Failed to fetch database details", error);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [databaseFullName, databaseStore]);
+  const detail = useProjectDatabaseDetail({
+    projectId,
+    instanceId,
+    databaseName,
+    routeName: PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL,
+    revisionId,
+  });
+  const revisionName = `${detail.databaseName}/revisions/${revisionId}`;
 
   const handleProjectBreadcrumbClick = () => {
     router.push({
@@ -120,7 +104,7 @@ export function DatabaseRevisionDetailPage({
         </ol>
       </nav>
 
-      {loading ? (
+      {detail.loading ? (
         <div className="flex items-center justify-center py-10">
           <LoaderCircle className="h-4 w-4 animate-spin text-control-light" />
         </div>
