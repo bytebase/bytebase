@@ -542,7 +542,7 @@
       "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
       "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
       "risk-levels": "Các Mức độ Rủi ro",
-      "self": "Trung tâm Rủi ro"
+      "self": "Đánh giá Rủi ro"
     },
     "risk-rule": {
       "risk": {
@@ -806,7 +806,6 @@
     "views": "Khung nhìn"
   },
   "environment": {
-    "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "production-environment": "Môi trường sản xuất",
     "reorder": "Sắp xếp lại môi trường",

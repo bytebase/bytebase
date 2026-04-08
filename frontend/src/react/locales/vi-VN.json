@@ -304,10 +304,13 @@
   },
   "common.add": "Thêm",
   "common.admin": "Quản trị viên",
+  "common.all": "Tất cả",
   "common.archive": "Lưu trữ",
   "common.archived": "Đã lưu trữ",
   "common.cancel": "Hủy",
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
+  "common.close": "Đóng",
+  "common.confirm": "Xác nhận",
   "common.continue-anyway": "Tiếp tục",
   "common.create": "Tạo",
   "common.creating": "Đang tạo...",
@@ -329,6 +332,7 @@
   "common.minutes": "Phút",
   "common.no-data": "Không có dữ liệu",
   "common.optional": "Tùy chọn",
+  "common.or": "hoặc",
   "common.overview": "Tổng quan",
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
@@ -393,7 +397,7 @@
       "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
       "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
       "risk-levels": "Các Mức độ Rủi ro",
-      "self": "Trung tâm Rủi ro"
+      "self": "Đánh giá Rủi ro"
     },
     "risk-rule": {
       "risk": {
@@ -564,7 +568,6 @@
   "db.syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
   "dynamic.resource.instance": "ID phiên bản",
   "environment": {
-    "delete": "Xóa môi trường này",
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",
     "select": "Chọn môi trường",
@@ -1838,43 +1841,758 @@
     "view-issue": "View Issue"
   },
   "sql-review": {
-    "add-or-remove-rules": "Add or remove rules",
-    "add-rules": "Add rules",
+    "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
+    "add-rules": "Thêm quy tắc",
     "attach-resource": {
-      "change-resources": "Change attached resources",
-      "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",
-      "no-linked-resources": "No attached resources",
-      "self": "Attach to resources"
+      "change-resources": "Thay đổi tài nguyên đính kèm",
+      "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
+      "label-environment": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc môi trường đã chọn.",
+      "label-project": "Chính sách đánh giá SQL sẽ ảnh hưởng đến tất cả cơ sở dữ liệu thuộc dự án đã chọn. Điều này sẽ thay thế chính sách cấp môi trường của cơ sở dữ liệu.",
+      "no-linked-resources": "Không có tài nguyên nào được đính kèm",
+      "override-warning": "Các tài nguyên sau đã được liên kết với các chính sách đánh giá SQL khác. Nhấp vào \"{{button}}\" sẽ ghi đè cấu hình.",
+      "self": "Đính kèm vào tài nguyên"
     },
-    "configure-policy": "Configure policy",
+    "category": {
+      "advice": "Lời khuyên",
+      "builtin": "Tích hợp sẵn",
+      "column": "Cột",
+      "database": "Cơ sở dữ liệu",
+      "engine": "Engine",
+      "index": "Chỉ mục",
+      "naming": "Đặt tên",
+      "schema": "Lược đồ",
+      "statement": "Câu lệnh",
+      "system": "Hệ thống",
+      "table": "Bảng"
+    },
+    "configure-policy": "Định cấu hình chính sách",
     "create": {
       "basic-info": {
-        "display-name": "Display name",
-        "display-name-default": "SQL review policy",
-        "display-name-label": "A display name to help identifying among different review policies.",
-        "name": "Basic info"
+        "choose-template": "Chọn mẫu",
+        "display-name": "Tên hiển thị",
+        "display-name-default": "Chính sách đánh giá SQL",
+        "display-name-label": "Tên hiển thị để giúp nhận dạng trong số các chính sách đánh giá khác nhau.",
+        "name": "Thông tin cơ bản"
       },
       "configure-rule": {
-        "change-template": "Change the template",
-        "confirm-override-description": "Your rules will be overridden",
-        "name": "Configure rule"
+        "change-template": "Thay đổi mẫu",
+        "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè",
+        "name": "Định cấu hình quy tắc"
       }
     },
-    "delete": "Delete SQL review policy",
-    "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
-    "disabled": "SQL review is disabled",
-    "enabled-rules": "Enabled rules",
-    "no-permission": "Only DBA or Admin has permission to create or update review policy.",
-    "policy-create-failed": "Failed to create the review policy.",
-    "policy-created": "Successfully created the review policy.",
-    "policy-removed": "Successfully removed the review policy.",
-    "policy-update-failed": "Failed to update the review policy.",
-    "policy-updated": "Successfully updated the review policy.",
+    "delete": "Xóa chính sách đánh giá SQL",
+    "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+    "disabled": "Đánh giá SQL bị vô hiệu hóa",
+    "enabled-rules": "Quy tắc được bật",
+    "engine": {
+      "mariadb": "MariaDB",
+      "mssql": "SQL Server",
+      "mysql": "MySQL",
+      "oceanbase": "OceanBase",
+      "oracle": "Oracle",
+      "postgres": "PostgreSQL",
+      "snowflake": "Snowflake",
+      "tidb": "TiDB"
+    },
+    "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
+    "level": {
+      "disabled": "Đã tắt",
+      "error": "Lỗi",
+      "name": "Cấp độ",
+      "warning": "Cảnh báo"
+    },
+    "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
+    "policy-create-failed": "Không tạo được chính sách đánh giá.",
+    "policy-created": "Đã tạo thành công chính sách đánh giá.",
+    "policy-removed": "Đã xóa thành công chính sách đánh giá.",
+    "policy-update-failed": "Không cập nhật được chính sách đánh giá.",
+    "policy-updated": "Đã cập nhật thành công chính sách đánh giá.",
     "review-policy": "Review policy",
     "rule": {
+      "ADVICE_ONLINE_MIGRATION": {
+        "component": {
+          "number": {
+            "title": "Giá trị ngưỡng"
+          }
+        },
+        "description": "Đề nghị bật di chuyển trực tuyến nếu số lượng hàng của bảng được di chuyển vượt quá cài đặt của bạn. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Di chuyển trực tuyến"
+      },
+      "BUILTIN_PRIOR_BACKUP_CHECK": {
+        "description": "Quy tắc này kiểm tra xem có thể tạo bản sao lưu trước khi thay đổi dữ liệu hay không. Nó xác minh sự tồn tại của cơ sở dữ liệu đích sao lưu và không cho phép các kịch bản không được hỗ trợ. Nó được tích hợp sẵn và không thể bỏ qua.",
+        "title": "Kiểm tra tính khả thi của sao lưu trước"
+      },
+      "BUILTIN_WALK_THROUGH_CHECK": {
+        "description": "Xác thực các câu lệnh SQL với schema cơ sở dữ liệu hiện tại bằng cách mô phỏng việc thực thi. Phát hiện các vấn đề như tham chiếu đến bảng, cột hoặc chỉ mục không tồn tại.",
+        "title": "Kiểm tra mô phỏng schema"
+      },
+      "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
+        "component": {
+          "number": {
+            "title": "Giá trị ban đầu"
+          }
+        },
+        "description": "dựa trên các yêu cầu quản lý để giới hạn giá trị ban đầu của cột tự tăng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế giá trị ban đầu của cột tự tăng"
+      },
+      "COLUMN_AUTO_INCREMENT_MUST_INTEGER": {
+        "description": "Cột tự tăng của MySQL thường được sử dụng làm khóa chính độc lập với nghiệp vụ. Sử dụng kiểu số nguyên chiếm ít không gian lưu trữ hơn và làm cho cấu trúc chỉ mục khóa chính gọn hơn, mang lại hiệu suất truy vấn và DML tốt hơn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc sử dụng kiểu dữ liệu \"INTEGER\" cho các cột tự tăng"
+      },
+      "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED": {
+        "description": "Kiểu không dấu không lưu trữ số âm và phạm vi giá trị có thể được lưu trữ bởi cùng một kiểu được nhân đôi, có thể tránh tràn cột tự tăng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc sử dụng kiểu dữ liệu \"UNSIGNED\" cho các cột tự tăng"
+      },
+      "COLUMN_COMMENT": {
+        "component": {
+          "maxLength": {
+            "title": "Độ dài tối đa"
+          },
+          "required": {
+            "title": "Yêu cầu bình luận"
+          }
+        },
+        "description": "Thêm bình luận vào cột là một phương pháp phát triển tốt, nhưng bình luận quá dài có thể làm giảm khả năng đọc của lược đồ. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Quy ước bình luận cột"
+      },
+      "COLUMN_CURRENT_TIME_COUNT_LIMIT": {
+        "description": "Chỉ các cột ghi lại thời gian tạo bản ghi với \"DEFAULT NOW()\" và ghi lại thời gian cập nhật bản ghi với \"DEFAULT NOW() ON UPDATE\" cần gọi hàm để lấy thời gian hệ thống. Việc ghi lại thời gian hệ thống trong các cột khác là vô nghĩa và sẽ làm tăng chi phí tài nguyên. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Hạn chế số lượng cột trong bảng lấy thời gian hệ thống"
+      },
+      "COLUMN_DEFAULT_DISALLOW_VOLATILE": {
+        "description": "Các hàm không ổn định (ví dụ: clock_timestamp()) cập nhật từng hàng với giá trị tại thời điểm thực hiện ALTER TABLE ADD COLUMN, có khả năng gây ra các bản cập nhật kéo dài.",
+        "title": "Không cho phép đặt giá trị mặc định không ổn định trên các cột"
+      },
+      "COLUMN_DISALLOW_CHANGE": {
+        "description": "\"CHANGE COLUMN\" là cú pháp riêng của MySQL và có thể được sử dụng để sửa đổi tên cột và các thuộc tính khác cùng một lúc. Tuy nhiên, nó có thể khiến tên cột bị thay đổi nhầm khi sửa đổi thuộc tính. Khuyến nghị vẫn sử dụng các câu lệnh \"RENAME\" và \"MODIFY\" tiêu chuẩn để phân biệt giữa hai loại thay đổi. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng câu lệnh \"CHANGE COLUMN\""
+      },
+      "COLUMN_DISALLOW_CHANGE_TYPE": {
+        "description": "Sửa đổi loại cột có thể ảnh hưởng đến hiệu suất hệ thống, khả năng bảo trì và thậm chí dẫn đến mất dữ liệu. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sửa đổi loại cột"
+      },
+      "COLUMN_DISALLOW_CHANGING_ORDER": {
+        "description": "Sửa đổi thứ tự của các cột có thể làm cho một số ứng dụng hoặc khung nhìn phụ thuộc vào thứ tự mặc định của bảng gốc tạo ra các kết quả không mong muốn, chẳng hạn như \"select *\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm thay đổi thứ tự của các cột trong bảng"
+      },
+      "COLUMN_DISALLOW_DROP": {
+        "description": "Cấm xóa cột. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm xóa cột"
+      },
+      "COLUMN_DISALLOW_DROP_IN_INDEX": {
+        "description": "Cấm xóa cột trong chỉ mục. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm xóa cột trong chỉ mục"
+      },
+      "COLUMN_DISALLOW_SET_CHARSET": {
+        "description": "Khuyến nghị nên đặt charset ở cấp cơ sở dữ liệu hoặc cấp bảng. Đặt charset ở mức độ chi tiết hơn có thể mang lại những phức tạp không cần thiết. Mức độ lỗi gợi ý: Lỗi.",
+        "title": "Cấm xác định bộ ký tự trong thuộc tính cột"
+      },
+      "COLUMN_MAXIMUM_CHARACTER_LENGTH": {
+        "component": {
+          "number": {
+            "title": "Độ dài tối đa"
+          }
+        },
+        "description": "\"CHAR\" là một loại có độ dài cố định. Ví dụ: cột CHAR(20) sẽ chiếm 20 khoảng trống ký tự ngay cả khi chỉ có một ký tự được lưu trữ, gây lãng phí. Khi chuỗi quá dài và độ dài không cố định, hãy xem xét sử dụng VARCHAR cho MySQL và sử dụng TEXT cho PostgreSQL. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Hạn chế độ dài của kiểu dữ liệu \"CHAR\""
+      },
+      "COLUMN_MAXIMUM_VARCHAR_LENGTH": {
+        "component": {
+          "number": {
+            "title": "Độ dài tối đa"
+          }
+        },
+        "description": "",
+        "title": "Hạn chế độ dài của kiểu dữ liệu \"VARCHAR\""
+      },
+      "COLUMN_NO_NULL": {
+        "description": "Cột không được phép có giá trị NULL.",
+        "title": "Bắt buộc ràng buộc \"NOT NULL\" trên các cột"
+      },
+      "COLUMN_REQUIRED": {
+        "component": {
+          "list": {
+            "title": "Tên cột bắt buộc"
+          }
+        },
+        "description": "Một số cột chung rất hữu ích cho việc bảo trì ứng dụng tốt hơn. Ví dụ: thêm cột \"ID\" độc lập với nghiệp vụ làm khóa chính tránh được xung đột khóa chính do thay đổi nghiệp vụ (chẳng hạn như sáp nhập nghiệp vụ) và trong một số trường hợp cũng có thể mang lại hiệu suất chèn dữ liệu tốt hơn. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc bao gồm các cột cụ thể trong bảng"
+      },
+      "COLUMN_REQUIRE_CHARSET": {
+        "description": "Charset của các cột có kiểu dữ liệu text phải được chỉ định. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Yêu cầu charset cho cột kiểu text"
+      },
+      "COLUMN_REQUIRE_COLLATION": {
+        "description": "Đối chiếu của các cột có kiểu dữ liệu text phải được chỉ định. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Yêu cầu đối chiếu (collation) cho các cột kiểu text"
+      },
+      "COLUMN_REQUIRE_DEFAULT": {
+        "description": "Đặt giá trị mặc định thỏa mãn logic nghiệp vụ có thể cải thiện hiệu quả chất lượng dữ liệu của quy trình phân tích xuôi dòng. Quy tắc này không kiểm tra các loại \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc đặt giá trị mặc định trên các cột"
+      },
+      "COLUMN_SET_DEFAULT_FOR_NOT_NULL": {
+        "description": "Đối với cột 'NOT NULL', nếu giá trị không được gán cho cột khi chèn một hàng mới và cột không có giá trị mặc định, cơ sở dữ liệu sẽ từ chối việc chèn hàng đó. Đặt giá trị mặc định cho một cột mới cũng có thể đảm bảo khả năng tương thích với ứng dụng cũ. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc giá trị mặc định trên cột \"NOT NULL\""
+      },
+      "COLUMN_TYPE_DISALLOW_LIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách không cho phép"
+          }
+        },
+        "description": "Lạm dụng các loại cột có thể có tác động tiêu cực nghiêm trọng đến khả năng bảo trì và hiệu suất của hệ thống. Ví dụ: sử dụng cột \"LOB\" để lưu trữ một lượng lớn dữ liệu âm thanh và video có thể khiến hiệu suất cơ sở dữ liệu giảm, thời gian sao lưu và phục hồi kéo dài và các công cụ đồng bộ hóa dữ liệu không tương thích. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng một số loại dữ liệu cột nhất định"
+      },
+      "DATABASE_DROP_EMPTY_DATABASE": {
+        "description": "Chỉ được phép xóa khi không có bảng nào trong cơ sở dữ liệu, điều này có thể tránh được việc xóa do nhầm lẫn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm xóa cơ sở dữ liệu không trống"
+      },
+      "ENGINE_MYSQL_USE_INNODB": {
+        "description": "InnoDB là engine lưu trữ mặc định cho MySQL, cung cấp hỗ trợ giao dịch. Nó cũng cung cấp hiệu suất tốt hơn cho các tình huống có tính đồng thời cao và độ trễ thấp, đồng thời hỗ trợ sao lưu và phục hồi dữ liệu trực tuyến. Đây là lựa chọn ưu tiên cho các doanh nghiệp OLTP. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc sử dụng engine lưu trữ InnoDB"
+      },
+      "INDEX_CREATE_CONCURRENTLY": {
+        "description": "Trong PostgreSQL 11 trở lên, sử dụng câu lệnh tiêu chuẩn để tạo chỉ mục sẽ gây ra khóa bảng và không thể ghi. Sử dụng chế độ \"CONCURRENTLY\" có thể tránh được vấn đề này. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc tạo chỉ mục đồng thời"
+      },
+      "INDEX_KEY_NUMBER_LIMIT": {
+        "component": {
+          "number": {
+            "title": "Số lượng cột tối đa"
+          }
+        },
+        "description": "Một chỉ mục tổng hợp có hơn 5 cột không cải thiện đáng kể hiệu suất truy vấn, nhưng nó chiếm rất nhiều không gian và làm giảm hiệu suất DML. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế số lượng cột trong một chỉ mục duy nhất"
+      },
+      "INDEX_NOT_REDUNDANT": {
+        "description": "Chỉ mục dư thừa có thể dẫn đến mất hiệu suất và chiếm thêm dung lượng. Ví dụ: chỉ mục trên các cột (c1, c2) sẽ được coi là chỉ mục dư thừa nếu đã có chỉ mục trên cột (c1). Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Không cho phép chỉ mục dư thừa"
+      },
+      "INDEX_NO_DUPLICATE_COLUMN": {
+        "description": "Tạo một chỉ mục với các cột trùng lặp sẽ dẫn đến lỗi. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm chỉ mục chứa các cột trùng lặp"
+      },
+      "INDEX_PK_TYPE_LIMIT": {
+        "description": "Bắt buộc loại khóa chính là INT hoặc BIGINT.",
+        "title": "Giới hạn loại khóa chính"
+      },
+      "INDEX_PRIMARY_KEY_TYPE_ALLOWLIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách cho phép"
+          }
+        },
+        "description": "Loại khóa chính thích hợp có thể tối ưu hóa cấu trúc lưu trữ, giảm mức sử dụng không gian và có lợi cho hiệu suất chèn và truy vấn. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Danh sách loại khóa chính được phép"
+      },
+      "INDEX_TOTAL_NUMBER_LIMIT": {
+        "component": {
+          "number": {
+            "title": "Số lượng chỉ mục tối đa"
+          }
+        },
+        "description": "Mặc dù các chỉ mục có thể cải thiện hiệu suất truy vấn, chúng cũng chiếm rất nhiều không gian và làm giảm hiệu suất DML. Do đó, không nên tạo quá 5 chỉ mục trong một bảng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế số lượng chỉ mục trên một bảng duy nhất"
+      },
+      "INDEX_TYPE_ALLOW_LIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách cho phép"
+          }
+        },
+        "description": "Các loại chỉ mục khác nhau có các đặc điểm hiệu suất khác nhau. Ví dụ: chỉ mục B-tree phù hợp cho các truy vấn phạm vi, trong khi chỉ mục băm phù hợp cho các truy vấn bằng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Danh sách loại chỉ mục được phép"
+      },
+      "INDEX_TYPE_NO_BLOB": {
+        "description": "Loại \"BLOB\" thường được sử dụng để lưu trữ dữ liệu nhị phân và không nên được sử dụng làm điều kiện truy vấn. Nếu một chỉ mục được tạo trên loại cột này do nhầm lẫn, nó sẽ tiêu tốn rất nhiều tài nguyên và gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm tạo chỉ mục trên các cột loại \"BLOB\" và \"TEXT\""
+      },
+      "NAMING_COLUMN": {
+        "component": {
+          "format": {
+            "title": "Định dạng tên cột (biểu thức chính quy)"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Định dạng mặc định là tất cả các chữ cái viết thường, được phân tách bằng dấu gạch dưới giữa các từ, không quá 63 ký tự, chẳng hạn như \"abc\" và \"abc_def\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên cột"
+      },
+      "NAMING_COLUMN_AUTO_INCREMENT": {
+        "component": {
+          "format": {
+            "title": "Định dạng tên cột tự tăng (biểu thức chính quy)"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Tên cột mặc định là \"ID\" và không quá 63 ký tự.",
+        "title": " Bắt buộc định dạng đặt tên cột tự tăng"
+      },
+      "NAMING_FULLY_QUALIFIED": {
+        "description": "Bắt buộc sử dụng tên đối tượng đủ điều kiện. Ví dụ: “schema.table”, mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Tên đối tượng đủ điều kiện"
+      },
+      "NAMING_IDENTIFIER_CASE": {
+        "component": {
+          "upper": {
+            "title": "Chữ hoa"
+          }
+        },
+        "description": "",
+        "title": "Bắt buộc kiểu chữ của định danh"
+      },
+      "NAMING_IDENTIFIER_NO_KEYWORD": {
+        "description": "",
+        "title": "Cấm sử dụng từ khóa làm định danh"
+      },
+      "NAMING_INDEX_FK": {
+        "component": {
+          "format": {
+            "template": {
+              "referenced_column": "Tên cột được tham chiếu",
+              "referenced_table": "Tên bảng được tham chiếu",
+              "referencing_column": "Tên cột tham chiếu",
+              "referencing_table": "Tên bảng tham chiếu"
+            },
+            "title": "Định dạng tên khóa ngoại"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Tên được phép để trống và được đặt tên bởi cơ sở dữ liệu. Nếu không để trống, định dạng mặc định là \"fk_<tên bảng>_<tổ hợp tên cột khóa duy nhất>\", không quá 63 ký tự, chẳng hạn như \"fk_my_table_id_name\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên khóa ngoại"
+      },
+      "NAMING_INDEX_IDX": {
+        "component": {
+          "format": {
+            "template": {
+              "column_list": "Tên cột chỉ mục, được nối bằng dấu gạch dưới (_)",
+              "table": "Tên bảng"
+            },
+            "title": "Định dạng tên chỉ mục"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Tên được phép để trống và được đặt tên bởi cơ sở dữ liệu. Nếu không để trống, định dạng mặc định là \"idx_<tên bảng>_<tổ hợp tên cột khóa duy nhất>\", không quá 63 ký tự, chẳng hạn như \"idx_my_table_id_name\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên chỉ mục"
+      },
+      "NAMING_INDEX_PK": {
+        "component": {
+          "format": {
+            "template": {
+              "column_list": "Tên cột chỉ mục, được nối bằng dấu gạch dưới (_)",
+              "table": "Tên bảng"
+            },
+            "title": "Định dạng tên khóa chính"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Tên được phép để trống và được đặt tên bởi cơ sở dữ liệu. Nếu không để trống, định dạng mặc định là \"pk_<tên bảng>_<tổ hợp tên cột khóa duy nhất>\", không quá 63 ký tự, chẳng hạn như \"pk_my_table_id_name\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên khóa chính"
+      },
+      "NAMING_INDEX_UK": {
+        "component": {
+          "format": {
+            "template": {
+              "column_list": "Tên cột chỉ mục, được nối bằng dấu gạch dưới (_)",
+              "table": "Tên bảng"
+            },
+            "title": "Định dạng tên khóa duy nhất"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Tên được phép để trống và được đặt tên bởi cơ sở dữ liệu. Nếu không để trống, định dạng mặc định là \"uk_<tên bảng>_<tổ hợp tên cột khóa duy nhất>\", không quá 63 ký tự, chẳng hạn như \"uk_my_table_id_name\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên khóa duy nhất"
+      },
+      "NAMING_TABLE": {
+        "component": {
+          "format": {
+            "title": "Định dạng tên bảng (biểu thức chính quy)"
+          },
+          "maxLength": {
+            "title": "Giới hạn độ dài"
+          }
+        },
+        "description": "Định dạng mặc định là tất cả các chữ cái viết thường, được phân tách bằng dấu gạch dưới giữa các từ và không quá 63 ký tự, chẳng hạn như \"abc\" và \"abc_def\". Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc định dạng đặt tên bảng"
+      },
+      "NAMING_TABLE_NO_KEYWORD": {
+        "description": "",
+        "title": "Cấm sử dụng từ khóa làm tên bảng"
+      },
+      "SCHEMA_BACKWARD_COMPATIBILITY": {
+        "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên của đối tượng cơ sở dữ liệu, thêm ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Kiểm tra khả năng tương thích ngược của ứng dụng"
+      },
+      "STATEMENT_ADD_CHECK_NOT_VALID": {
+        "description": "Thêm ràng buộc CHECK cần xác minh dữ liệu hiện có và yêu cầu khóa bảng ACCESS EXCLUSIVE. Điều này chặn đọc và ghi, có thể gây gián đoạn kinh doanh. Bạn nên thêm tùy chọn \"NOT VALID\" để xác thực dữ liệu mới và xác thực thủ công dữ liệu hiện có sau khi thay đổi hoàn tất. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc bao gồm tùy chọn \"NOT VALID\" khi thêm ràng buộc \"CHECK\""
+      },
+      "STATEMENT_ADD_COLUMN_WITHOUT_POSITION": {
+        "description": "Trong một số trường hợp, sử dụng FIRST/AFTER để thêm cột sẽ gây ra việc tổ chức lại dữ liệu (ghi lại tất cả dữ liệu). Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Kiểm tra không có vị trí trong mệnh đề ADD COLUMN"
+      },
+      "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID": {
+        "description": "Thêm khóa ngoại cần xác minh dữ liệu hiện có và yêu cầu khóa bảng SHARE ROW EXCLUSIVE. Điều này chặn ghi, có thể gây gián đoạn kinh doanh. Bạn nên thêm tùy chọn \"NOT VALID\" để xác thực dữ liệu mới và xác thực thủ công dữ liệu hiện có sau khi thay đổi hoàn tất. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Bắt buộc bao gồm tùy chọn \"NOT VALID\" khi thêm khóa ngoại"
+      },
+      "STATEMENT_AFFECTED_ROW_LIMIT": {
+        "component": {
+          "number": {
+            "title": "Số hàng bị ảnh hưởng tối đa"
+          }
+        },
+        "description": "Tiết lộ số lượng hàng sẽ được cập nhật hoặc xóa có thể giúp xác định xem câu lệnh có đáp ứng mong đợi của doanh nghiệp hay không. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế số lượng hàng được cập nhật hoặc xóa tối đa (ước tính)."
+      },
+      "STATEMENT_CHECK_SET_ROLE_VARIABLE": {
+        "description": "Không đặt đúng câu lệnh vai trò ở đầu phiên có thể dẫn đến truy cập trái phép hoặc gán quyền không phù hợp, có khả năng ảnh hưởng đến bảo mật và tính toàn vẹn dữ liệu. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Kiểm tra xem câu lệnh Set Role ở đầu"
+      },
+      "STATEMENT_CREATE_SPECIFY_SCHEMA": {
+        "description": "Nếu lược đồ không được chỉ định, đối tượng sẽ được tạo trong lược đồ mặc định, điều này có thể gây ra kết quả không mong muốn.",
+        "title": "Cấm tạo đối tượng mà không chỉ định lược đồ"
+      },
+      "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT": {
+        "description": "Trước PostgreSQL 11, việc thêm một cột có giá trị mặc định gây ra khóa bảng và không thể đọc và ghi, điều này có thể gây gián đoạn kinh doanh. Trong PostgreSQL 11 trở lên, vấn đề này đã được tối ưu hóa và không cần phải chú ý đến quy tắc này. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế thêm cột có giá trị mặc định vào bảng"
+      },
+      "STATEMENT_DISALLOW_ADD_NOT_NULL": {
+        "description": "Thêm ràng buộc NOT NULL với giá trị mặc định trước PostgreSQL 11 hoặc thêm ràng buộc NOT NULL mà không có giá trị mặc định yêu cầu xác minh dữ liệu hiện có. Điều này chặn đọc và ghi, có thể gây gián đoạn kinh doanh. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế thêm ràng buộc \"NOT NULL\" vào các cột hiện có"
+      },
+      "STATEMENT_DISALLOW_COMMIT": {
+        "description": "Trong một số trường hợp, nhiều câu lệnh được yêu cầu phải được đưa vào một giao dịch do hệ thống cam kết, để nhanh chóng chạy lại trong trường hợp lỗi một phần. Do đó, \"COMMIT\" rõ ràng không được phép. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm câu lệnh \"COMMIT\" rõ ràng"
+      },
+      "STATEMENT_DISALLOW_CROSS_DB_QUERIES": {
+        "description": "Truy vấn chéo cơ sở dữ liệu làm tăng sự kết hợp hệ thống và có thể dẫn đến các vấn đề về hiệu quả. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Không cho phép truy vấn chéo cơ sở dữ liệu"
+      },
+      "STATEMENT_DISALLOW_LIMIT": {
+        "description": "Nếu LIMIT được sử dụng trong câu lệnh DML mà không có mệnh đề ORDER BY, thứ tự các hàng bị ảnh hưởng không cố định, điều này có thể gây ra sự không nhất quán dữ liệu giữa cơ sở dữ liệu chính và cơ sở dữ liệu sao chép trong một số chế độ sao chép. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng mệnh đề \"LIMIT\" trong câu lệnh DML"
+      },
+      "STATEMENT_DISALLOW_OFFLINE_DDL": {
+        "description": "Để ngăn các thay đổi cơ sở dữ liệu ảnh hưởng đến doanh nghiệp của bạn, hãy tránh sử dụng DDL ngoại tuyến.",
+        "title": "Không cho phép DDL ngoại tuyến"
+      },
+      "STATEMENT_DISALLOW_ON_DEL_CASCADE": {
+        "description": "Tùy chọn \"CASCADE\" trong 'ON DELETE' có thể khiến một số lượng lớn các đối tượng phụ thuộc bị xóa hoặc sửa đổi, điều này có thể gây ra kết quả không mong muốn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng tùy chọn CASCADE cho mệnh đề ON DELETE"
+      },
+      "STATEMENT_DISALLOW_ORDER_BY": {
+        "description": "Các hoạt động sắp xếp cực kỳ tốn tài nguyên, vì vậy đối với các hoạt động cập nhật và xóa, bạn nên sử dụng một điều kiện lọc xác định càng nhiều càng tốt thay vì sử dụng ORDER BY và LIMIT. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng mệnh đề \"ORDER BY\" trong câu lệnh \"UPDATE\" và \"DELETE\""
+      },
+      "STATEMENT_DISALLOW_RM_TBL_CASCADE": {
+        "description": "Sử dụng tùy chọn \"CASCADE\" khi xóa bảng có thể khiến một số lượng lớn các đối tượng phụ thuộc bị xóa hoặc sửa đổi, điều này có thể gây ra kết quả không mong muốn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng CASCADE khi xóa bảng"
+      },
+      "STATEMENT_DISALLOW_USING_FILESORT": {
+        "description": "Filesort là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sử dụng filesort"
+      },
+      "STATEMENT_DISALLOW_USING_TEMPORARY": {
+        "description": "Bảng tạm không được khuyến nghị sử dụng trong môi trường sản xuất. Chúng có thể gây ra tranh chấp tài nguyên và các vấn đề hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sử dụng bảng tạm"
+      },
+      "STATEMENT_DML_DRY_RUN": {
+        "description": "Khi cú pháp chính xác, nhưng tên bảng không chính xác hoặc không đủ quyền, nó có thể được phát hiện bằng cách chạy thử trước khi thực hiện thực tế. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Xác thực khả năng thực thi của câu lệnh DML"
+      },
+      "STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND": {
+        "description": "Sắp xếp ngẫu nhiên dữ liệu sẽ được chèn là vô nghĩa và sẽ chỉ tiêu tốn tài nguyên không cần thiết. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng \"ORDER BY rand()\" trong câu lệnh \"INSERT\""
+      },
+      "STATEMENT_INSERT_MUST_SPECIFY_COLUMN": {
+        "description": "Câu lệnh \"INSERT INTO table VALUES (...)\" không liệt kê rõ ràng tên cột. Khi thứ tự cột thay đổi hoặc cột được thêm hoặc bớt, câu lệnh có thể thất bại hoặc tạo ra dữ liệu không mong muốn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc chỉ định tên cột trong câu lệnh \"INSERT\""
+      },
+      "STATEMENT_INSERT_ROW_LIMIT": {
+        "component": {
+          "number": {
+            "title": "Số lượng chèn tối đa"
+          }
+        },
+        "description": "Tiết lộ số lượng hàng sẽ được chèn có thể giúp xác định xem câu lệnh có đáp ứng mong đợi của doanh nghiệp hay không. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Hạn chế số lượng hàng được chèn tối đa"
+      },
+      "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
+        "description": "Nếu kiểu dữ liệu, bộ ký tự của các cột nối không giống hệt nhau, cơ sở dữ liệu có thể không xác định chính xác các hàng phù hợp, dẫn đến kết quả không chính xác hoặc không đầy đủ.",
+        "title": "Các trường được nối phải có kiểu dữ liệu, bộ ký tự giống hệt nhau"
+      },
+      "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
+        "component": {
+          "number": {
+            "title": "Giá trị tối đa"
+          }
+        },
+        "description": "Bạn càng nối nhiều bảng, truy vấn càng trở nên phức tạp và thời gian thực hiện càng lâu. Nói chung, tốt nhất là giữ số lượng phép nối ở mức tối thiểu.",
+        "title": "Hạn chế số lượng bảng được nối"
+      },
+      "STATEMENT_MAXIMUM_LIMIT_VALUE": {
+        "component": {
+          "number": {
+            "title": "Giá trị tối đa"
+          }
+        },
+        "description": "Giới hạn số lượng hàng thông qua LIMIT đảm bảo cơ sở dữ liệu xử lý các phần có thể quản lý được, cải thiện tốc độ thực hiện truy vấn. Giá trị LIMIT được giới hạn ngăn chặn việc sử dụng bộ nhớ quá mức, bảo vệ sự ổn định tổng thể của hệ thống và ngăn chặn sự suy giảm hiệu suất.",
+        "title": "Hạn chế số lượng tối đa của mệnh đề LIMIT"
+      },
+      "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
+        "component": {
+          "number": {
+            "title": "Giá trị tối đa"
+          }
+        },
+        "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh có liên quan và một câu lệnh thất bại, việc khôi phục toàn bộ giao dịch trở nên phức tạp. Giới hạn số lượng câu lệnh giảm thiểu thiệt hại tiềm ẩn do một lỗi duy nhất gây ra và đơn giản hóa các quy trình khôi phục.",
+        "title": "Hạn chế số lượng câu lệnh trong một giao dịch"
+      },
+      "STATEMENT_MAX_EXECUTION_TIME": {
+        "description": "Đặt thời gian thực hiện tối đa cho các câu lệnh SQL. Nếu thời gian thực hiện vượt quá giới hạn, câu lệnh sẽ bị chấm dứt. Mức độ lỗi gợi ý: Cảnh báo",
+        "mariadb": {
+          "description": "Đặt tham số MAX_STATEMENT_TIME trong tập lệnh thay đổi để kiểm soát rõ ràng thời gian thực hiện tối đa của câu lệnh. Mức độ lỗi gợi ý: Cảnh báo",
+          "title": "Bắt buộc đặt tham số MAX_STATEMENT_TIME một cách rõ ràng"
+        },
+        "mysql": {
+          "description": "Đặt tham số MAX_EXECUTION_TIME trong tập lệnh thay đổi để kiểm soát rõ ràng thời gian thực hiện tối đa của câu lệnh. Mức độ lỗi gợi ý: Cảnh báo",
+          "title": "Bắt buộc đặt tham số MAX_EXECUTION_TIME một cách rõ ràng"
+        },
+        "title": "Bắt buộc đặt tham số thời gian thực hiện tối đa"
+      },
+      "STATEMENT_MERGE_ALTER_TABLE": {
+        "description": "Mỗi thay đổi đối với một bảng có thể gây ra khóa cấp bảng và tiêu tốn một lượng lớn tài nguyên. Nếu có nhiều thay đổi đối với cùng một bảng, chúng nên được hợp nhất thành một câu lệnh thay đổi duy nhất. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm phát hành nhiều thay đổi độc lập trên cùng một bảng"
+      },
+      "STATEMENT_NON_TRANSACTIONAL": {
+        "description": "",
+        "title": "Phát hiện và báo cáo các câu lệnh không giao dịch"
+      },
+      "STATEMENT_OBJECT_OWNER_CHECK": {
+        "description": "Quy tắc này kiểm tra xem chủ sở hữu đối tượng cho DDL có giống với người dùng hiện tại không.",
+        "title": "Kiểm tra chủ sở hữu đối tượng"
+      },
+      "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
+        "component": {
+          "level": {
+            "title": "Mức tối đa"
+          }
+        },
+        "description": "Tối ưu hóa hiệu suất SQL cố gắng truy cập không đổi (const), nhắm mục tiêu mức tham chiếu (ref) làm đường cơ sở, với hiệu suất chấp nhận được ở mức phạm vi.",
+        "title": "Hạn chế mức tối đa của phương thức truy cập truy vấn"
+      },
+      "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
+        "description": "Chỉ định tùy chọn ALGORITHM trong câu lệnh ALTER TABLE đảm bảo kiểm soát nhiều hơn về cách áp dụng các thay đổi bảng, giảm thiểu các gián đoạn tiềm ẩn bằng cách tránh sao chép hoặc khóa toàn bộ bảng. Nó giúp tối ưu hóa hiệu suất và giảm thời gian chết trong quá trình sửa đổi lược đồ. Mức độ lỗi đề xuất: Cảnh báo.",
+        "title": "Yêu cầu chỉ định tùy chọn ALGORITHM trong câu lệnh ALTER TABLE"
+      },
+      "STATEMENT_REQUIRE_LOCK_OPTION": {
+        "description": "Tùy chọn LOCK trong câu lệnh ALTER TABLE cho phép bạn kiểm soát mức độ khóa trong quá trình thay đổi lược đồ, giúp ngăn chặn khóa bảng không cần thiết và đảm bảo tính đồng thời tốt hơn. Sử dụng tùy chọn này đúng cách có thể giảm đáng kể tác động của các hoạt động DDL đối với các truy vấn đang hoạt động. Mức độ lỗi đề xuất: Cảnh báo.",
+        "title": "Yêu cầu chỉ định tùy chọn LOCK trong câu lệnh ALTER TABLE"
+      },
+      "STATEMENT_SELECT_FULL_TABLE_SCAN": {
+        "description": "Quét toàn bộ bảng là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Kiểm tra quét toàn bộ bảng cho các truy vấn"
+      },
+      "STATEMENT_SELECT_NO_SELECT_ALL": {
+        "description": "SELECT * để tìm nạp toàn bộ dữ liệu hàng có thể gây ra chi phí tài nguyên không cần thiết và cũng có thể gây ra kết quả không mong muốn trong các ứng dụng khi bảng thêm hoặc xóa cột. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng \"SELECT *\""
+      },
+      "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
+        "description": "Nếu bạn áp dụng một hàm hoặc thực hiện một phép tính trên trường được lập chỉ mục, cơ sở dữ liệu không thể sử dụng chỉ mục và phải quét toàn bộ bảng thay thế.",
+        "title": "Không áp dụng hàm hoặc thực hiện tính toán trên các trường được lập chỉ mục trong mệnh đề WHERE"
+      },
+      "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
+        "component": {
+          "number": {
+            "title": "Số lượng tối đa"
+          }
+        },
+        "description": "Điều này ngăn chặn sự suy giảm hiệu suất do so sánh quá nhiều và giới hạn tài nguyên.",
+        "title": "Hạn chế số lượng toán tử logic trong mệnh đề WHERE"
+      },
+      "STATEMENT_WHERE_NO_EQUAL_NULL": {
+        "description": "Kết quả của so sánh bằng NULL luôn là NULL, điều này có thể gây ra kết quả không mong muốn. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sử dụng so sánh bằng NULL trong mệnh đề WHERE"
+      },
+      "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
+        "description": "Khi sử dụng ký tự đại diện đứng đầu, chẳng hạn như \"LIKE '%ABC'\", trình tối ưu hóa cơ sở dữ liệu không thể sử dụng quét chỉ mục nhanh và quay trở lại quét toàn bộ bảng hoặc quét toàn bộ chỉ mục, điều này có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Cấm sử dụng ký tự đại diện đứng đầu trong điều kiện lọc"
+      },
+      "STATEMENT_WHERE_REQUIRE_SELECT": {
+        "description": "Các truy vấn không có mệnh đề WHERE có thể gây ra chi phí tài nguyên rất lớn không cần thiết. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc phải có điều kiện \"WHERE\" trong câu lệnh SELECT"
+      },
+      "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
+        "description": "DML không có mệnh đề WHERE có thể gây ra mất dữ liệu lớn do tai nạn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc phải có điều kiện \"WHERE\" trong câu lệnh UPDATE/DELETE"
+      },
+      "SYSTEM_CHARSET_ALLOWLIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách cho phép"
+          }
+        },
+        "description": "Bộ ký tự xác định những ký tự nào có thể được lưu trữ trong bảng. Sử dụng bộ ký tự sai có thể dẫn đến một số ký tự trong ứng dụng không thể được lưu trữ và hiển thị chính xác, chẳng hạn như CJK và Emoji. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Danh sách Charset được phép"
+      },
+      "SYSTEM_COLLATION_ALLOWLIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách cho phép"
+          }
+        },
+        "description": "Đối chiếu xác định các quy tắc so sánh và sắp xếp ký tự. Ví dụ: khi sử dụng đối chiếu không phân biệt chữ hoa chữ thường, \"ABC\" và \"abc\" sẽ được coi là cùng một chuỗi trong các truy vấn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Danh sách đối chiếu được phép"
+      },
+      "SYSTEM_COMMENT_LENGTH": {
+        "component": {
+          "number": {
+            "title": "Độ dài bình luận tối đa"
+          }
+        },
+        "description": "",
+        "title": "Hạn chế độ dài của bình luận"
+      },
+      "SYSTEM_EVENT_DISALLOW_CREATE": {
+        "description": "Quy tắc này cấm tạo sự kiện trong cơ sở dữ liệu. Các sự kiện hệ thống thường thực hiện các tác vụ tự động có thể ảnh hưởng đến môi trường cơ sở dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì quyền kiểm soát đối với các hoạt động của cơ sở dữ liệu và ngăn chặn sự gián đoạn tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Không cho phép tạo sự kiện"
+      },
+      "SYSTEM_FUNCTION_DISALLOWED_LIST": {
+        "component": {
+          "list": {
+            "title": "Danh sách không cho phép"
+          }
+        },
+        "description": "Quy tắc này hạn chế việc sử dụng các hàm cụ thể trong cơ sở dữ liệu. Bằng cách không cho phép sử dụng các hàm này, nó giúp duy trì tính nhất quán và bảo mật dữ liệu. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Cấm sử dụng một số hàm nhất định"
+      },
+      "SYSTEM_FUNCTION_DISALLOW_CREATE": {
+        "description": "Quy tắc này cấm tạo các hàm trong cơ sở dữ liệu. Các hàm cung cấp logic có thể sử dụng lại có thể đơn giản hóa các truy vấn và tăng cường tính toàn vẹn dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì quyền kiểm soát đối với lược đồ cơ sở dữ liệu và ngăn chặn các rủi ro bảo mật tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Không cho phép tạo hàm"
+      },
+      "SYSTEM_PROCEDURE_DISALLOW_CREATE": {
+        "description": "Quy tắc này cấm thực hiện các thủ tục trong cơ sở dữ liệu. Các thủ tục hệ thống thường thực hiện các hoạt động quan trọng có thể ảnh hưởng đến tính ổn định và bảo mật của môi trường cơ sở dữ liệu. Bằng cách không cho phép thực hiện chúng, nó giúp ngăn ngừa những thay đổi không mong muốn và các lỗ hổng tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Không cho phép tạo thủ tục"
+      },
+      "SYSTEM_VIEW_DISALLOW_CREATE": {
+        "description": "Quy tắc này cấm tạo khung nhìn trong cơ sở dữ liệu. Khung nhìn cung cấp một bản trình bày ảo của dữ liệu có thể đơn giản hóa các truy vấn và tăng cường bảo mật dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì quyền kiểm soát đối với lược đồ cơ sở dữ liệu và ngăn chặn các rủi ro bảo mật tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Không cho phép tạo khung nhìn"
+      },
+      "TABLE_COMMENT": {
+        "component": {
+          "maxLength": {
+            "title": "Độ dài tối đa"
+          },
+          "required": {
+            "title": "Yêu cầu bình luận"
+          }
+        },
+        "description": "Định cấu hình xem bảng có yêu cầu bình luận hay không và độ dài bình luận tối đa.",
+        "title": "Quy ước bình luận bảng"
+      },
+      "TABLE_DISALLOW_DDL": {
+        "component": {
+          "list": {
+            "title": "Tên bảng"
+          }
+        },
+        "description": "Định cấu hình bảng nào bị cấm thực hiện DDL. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Không cho phép DDL"
+      },
+      "TABLE_DISALLOW_DML": {
+        "component": {
+          "list": {
+            "title": "Tên bảng"
+          }
+        },
+        "description": "Định cấu hình bảng nào bị cấm thực hiện DML. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Không cho phép DML"
+      },
+      "TABLE_DISALLOW_PARTITION": {
+        "description": "Trong một số engine cơ sở dữ liệu, các bảng phân vùng chưa hoàn thiện, việc sử dụng và bảo trì không thuận tiện. Do đó, người ta có xu hướng sử dụng các phương pháp phân vùng dữ liệu thủ công như phân mảnh cơ sở dữ liệu và bảng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sử dụng bảng phân vùng"
+      },
+      "TABLE_DISALLOW_SET_CHARSET": {
+        "description": "Khuyến nghị nên đặt charset ở cấp cơ sở dữ liệu. Đặt charset ở mức độ chi tiết hơn có thể mang lại những phức tạp không cần thiết. Mức độ lỗi gợi ý: Lỗi.",
+        "title": "Cấm xác định bộ ký tự trong thuộc tính bảng"
+      },
+      "TABLE_DISALLOW_TRIGGER": {
+        "description": "Quy tắc này hạn chế việc sử dụng trigger trên bảng. Trigger có thể gây ra sự phức tạp và các vấn đề hiệu suất tiềm ẩn cho các hoạt động cơ sở dữ liệu. Bằng cách không cho phép trigger, hệ thống có thể duy trì hành vi đơn giản và dễ đoán hơn. Mức độ lỗi đề xuất: Cảnh báo",
+        "title": "Ngăn chặn việc sử dụng trigger trên bảng"
+      },
+      "TABLE_DROP_NAMING_CONVENTION": {
+        "component": {
+          "format": {
+            "title": "Định dạng tên bảng (biểu thức chính quy)"
+          }
+        },
+        "description": "Ví dụ: bằng cách yêu cầu hậu tố \"_del\", nó có thể ngăn chặn hiệu quả việc xóa do nhầm lẫn. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Hạn chế định dạng đặt tên của các bảng sẽ bị xóa"
+      },
+      "TABLE_LIMIT_SIZE": {
+        "component": {
+          "number": {
+            "title": "Số lượng hàng tối đa"
+          }
+        },
+        "description": "Định cấu hình số lượng hàng tối đa trong các bảng mà DDL có thể được thực thi. Mức độ lỗi được khuyến nghị: cảnh báo",
+        "title": "Giới hạn hoạt động DDL trên các bảng có số lượng hàng lớn"
+      },
+      "TABLE_NO_DUPLICATE_INDEX": {
+        "description": "Quy tắc này yêu cầu một bảng không có chỉ mục trùng lặp. Các chỉ mục trùng lặp tiêu tốn thêm không gian lưu trữ và có khả năng làm giảm hiệu suất truy vấn. Mức lỗi được đề xuất: Cảnh báo.",
+        "title": "Cấm các chỉ mục trùng lặp trên bảng"
+      },
+      "TABLE_NO_FOREIGN_KEY": {
+        "description": "Ưu điểm và nhược điểm của khóa ngoại rất gây tranh cãi. Sử dụng khóa ngoại có thể làm tăng đáng kể độ khó của việc thay đổi cơ sở dữ liệu, khả năng mở rộng (chẳng hạn như phân mảnh), v.v. Và thậm chí có thể ngăn cản việc sử dụng một số công cụ. Do đó, một tùy chọn khác là triển khai các ràng buộc khóa ngoại ở lớp ứng dụng. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Cấm sử dụng ràng buộc khóa ngoại"
+      },
+      "TABLE_REQUIRE_CHARSET": {
+        "description": "Charset của bảng phải được chỉ định. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Yêu cầu charset"
+      },
+      "TABLE_REQUIRE_COLLATION": {
+        "description": "Đối chiếu (collation) của bảng phải được chỉ định. Mức độ lỗi gợi ý: Cảnh báo",
+        "title": "Yêu cầu đối chiếu"
+      },
+      "TABLE_REQUIRE_PK": {
+        "description": "Các công cụ đồng bộ hóa, so sánh và hoàn tác dữ liệu khác nhau yêu cầu bảng phải có khóa chính. Mức độ lỗi gợi ý: Lỗi",
+        "title": "Bắt buộc bảng phải có khóa chính"
+      },
+      "TABLE_TEXT_FIELDS_TOTAL_LENGTH": {
+        "component": {
+          "number": {
+            "title": "Độ dài tối đa"
+          }
+        },
+        "description": "Quy tắc này giới hạn lượng dữ liệu mà một bảng có thể chứa, ngăn chặn việc sử dụng quá nhiều bộ nhớ.",
+        "title": "Hạn chế tổng độ dài của các trường văn bản trong bảng"
+      },
       "self": "Quy tắc đánh giá SQL"
     },
-    "title": "SQL Review"
+    "select-all": "Chọn tất cả",
+    "select-review-rules": "Chọn quy tắc đánh giá SQL",
+    "template": {
+      "bb-sql-review-dev": "Mẫu Cơ bản",
+      "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",
+      "bb-sql-review-empty": "Bắt đầu lại từ đầu",
+      "bb-sql-review-empty-desc": "Một mẫu trống. Bạn cần tự thêm các quy tắc cần thiết.",
+      "bb-sql-review-prod": "Mẫu Nâng cao",
+      "bb-sql-review-prod-desc": "Chính sách toàn diện, nơi bạn có sự bảo vệ và các phương pháp tốt nhất cho cơ sở dữ liệu.",
+      "bb-sql-review-sample": "Mẫu Ví dụ",
+      "bb-sql-review-sample-desc": "Một mẫu tối thiểu với bảo vệ DROP và không cho phép cột nullable."
+    },
+    "title": "Đánh giá SQL"
   },
   "subscription": {
     "contact-us": "Liên hệ chúng tôi",

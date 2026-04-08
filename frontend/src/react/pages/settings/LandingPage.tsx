@@ -38,7 +38,7 @@ import {
   WORKSPACE_ROUTE_MCP,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_RISK_CENTER,
+  WORKSPACE_ROUTE_RISK_ASSESSMENT,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
@@ -170,7 +170,7 @@ function useFullQuickLinkList(): QuickLinkDef[] {
         icon: Workflow,
       },
       {
-        id: WORKSPACE_ROUTE_RISK_CENTER,
+        id: WORKSPACE_ROUTE_RISK_ASSESSMENT,
         titleKey: "custom-approval.risk.self",
         icon: Workflow,
       },

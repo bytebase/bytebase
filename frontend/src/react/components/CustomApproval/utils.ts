@@ -4,7 +4,7 @@ import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { ExprType, type Factor, SQLTypeList, wrapAsGroup } from "@/plugins/cel";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { useRoleStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import { PRESET_WORKSPACE_ROLES, PresetRoleType } from "@/types";
@@ -44,13 +44,13 @@ export { formatApprovalFlow } from "@/utils/workspaceApprovalSetting";
 export const levelText = (level: RiskLevel) => {
   switch (level) {
     case RiskLevel.RISK_LEVEL_UNSPECIFIED:
-      return t("custom-approval.risk-rule.risk.risk-level.default");
+      return i18n.t("custom-approval.risk-rule.risk.risk-level.default");
     case RiskLevel.LOW:
-      return t("custom-approval.risk-rule.risk.risk-level.low");
+      return i18n.t("custom-approval.risk-rule.risk.risk-level.low");
     case RiskLevel.MODERATE:
-      return t("custom-approval.risk-rule.risk.risk-level.moderate");
+      return i18n.t("custom-approval.risk-rule.risk.risk-level.moderate");
     case RiskLevel.HIGH:
-      return t("custom-approval.risk-rule.risk.risk-level.high");
+      return i18n.t("custom-approval.risk-rule.risk.risk-level.high");
     default:
       return String(level);
   }
@@ -63,17 +63,17 @@ export const approvalSourceText = (
 ) => {
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.SOURCE_UNSPECIFIED:
-      return t("custom-approval.approval-flow.fallback-rules");
+      return i18n.t("custom-approval.approval-flow.fallback-rules");
     case WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE:
-      return t("custom-approval.risk-rule.risk.namespace.change_database");
+      return i18n.t("custom-approval.risk-rule.risk.namespace.change_database");
     case WorkspaceApprovalSetting_Rule_Source.CREATE_DATABASE:
-      return t("custom-approval.risk-rule.risk.namespace.create_database");
+      return i18n.t("custom-approval.risk-rule.risk.namespace.create_database");
     case WorkspaceApprovalSetting_Rule_Source.EXPORT_DATA:
-      return t("custom-approval.risk-rule.risk.namespace.data_export");
+      return i18n.t("custom-approval.risk-rule.risk.namespace.data_export");
     case WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE:
-      return t("custom-approval.risk-rule.risk.namespace.request-role");
+      return i18n.t("custom-approval.risk-rule.risk.namespace.request-role");
     case WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS:
-      return t("custom-approval.risk-rule.risk.namespace.request-access");
+      return i18n.t("custom-approval.risk-rule.risk.namespace.request-access");
     default:
       return "UNRECOGNIZED";
   }
@@ -177,13 +177,16 @@ const getDBEndingOptions = () => {
 
 const getRiskLevelOptions = () => {
   const levels = [
-    { label: t("custom-approval.risk-rule.risk.risk-level.low"), value: "LOW" },
     {
-      label: t("custom-approval.risk-rule.risk.risk-level.moderate"),
+      label: i18n.t("custom-approval.risk-rule.risk.risk-level.low"),
+      value: "LOW",
+    },
+    {
+      label: i18n.t("custom-approval.risk-rule.risk.risk-level.moderate"),
       value: "MODERATE",
     },
     {
-      label: t("custom-approval.risk-rule.risk.risk-level.high"),
+      label: i18n.t("custom-approval.risk-rule.risk.risk-level.high"),
       value: "HIGH",
     },
   ];
@@ -278,9 +281,9 @@ export type ApprovalRuleTemplate = {
 export const approvalRuleTemplates: ApprovalRuleTemplate[] = [
   {
     title: () =>
-      t("custom-approval.approval-flow.template.presets.drop-or-truncate"),
+      i18n.t("custom-approval.approval-flow.template.presets.drop-or-truncate"),
     description: () =>
-      t(
+      i18n.t(
         "custom-approval.approval-flow.template.preset-descriptions.drop-or-truncate"
       ),
     // statement.sql_type in ["DROP_TABLE", "TRUNCATE"]
@@ -294,9 +297,11 @@ export const approvalRuleTemplates: ApprovalRuleTemplate[] = [
   },
   {
     title: () =>
-      t("custom-approval.approval-flow.template.presets.high-affected-rows"),
+      i18n.t(
+        "custom-approval.approval-flow.template.presets.high-affected-rows"
+      ),
     description: () =>
-      t(
+      i18n.t(
         "custom-approval.approval-flow.template.preset-descriptions.high-affected-rows"
       ),
     // statement.affected_rows > 100
@@ -309,9 +314,12 @@ export const approvalRuleTemplates: ApprovalRuleTemplate[] = [
     sources: [WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE],
   },
   {
-    title: () => t("custom-approval.approval-flow.template.presets.fallback"),
+    title: () =>
+      i18n.t("custom-approval.approval-flow.template.presets.fallback"),
     description: () =>
-      t("custom-approval.approval-flow.template.preset-descriptions.fallback"),
+      i18n.t(
+        "custom-approval.approval-flow.template.preset-descriptions.fallback"
+      ),
     // The condition "true" matches all requests not matched by other rules.
     expr: wrapAsGroup({
       type: ExprType.RawString,

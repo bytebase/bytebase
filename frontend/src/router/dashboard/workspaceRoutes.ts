@@ -1,7 +1,7 @@
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
-export const WORKSPACE_ROUTE_EXPORT_CENTER = "workspace.export-center";
+export const WORKSPACE_ROUTE_DATA_EXPORT = "workspace.data-export";
 export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
 
 export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
@@ -13,7 +13,7 @@ export const WORKSPACE_ROUTE_SQL_REVIEW = "workspace.sql-review";
 export const WORKSPACE_ROUTE_SQL_REVIEW_CREATE = `${WORKSPACE_ROUTE_SQL_REVIEW}.create`;
 export const WORKSPACE_ROUTE_SQL_REVIEW_DETAIL = `${WORKSPACE_ROUTE_SQL_REVIEW}.detail`;
 
-export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
+export const WORKSPACE_ROUTE_RISK_ASSESSMENT = "workspace.risk-assessment";
 export const WORKSPACE_ROUTE_CUSTOM_APPROVAL = "workspace.custom-approval";
 export const WORKSPACE_ROUTE_GLOBAL_MASKING = "workspace.global-masking";
 export const WORKSPACE_ROUTE_SEMANTIC_TYPES = "workspace.semantic-types";

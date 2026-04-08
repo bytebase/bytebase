@@ -542,7 +542,7 @@
       "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
       "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
       "risk-levels": "风险等级",
-      "self": "风险中心"
+      "self": "风险评估"
     },
     "risk-rule": {
       "risk": {
@@ -806,7 +806,6 @@
     "views": "视图"
   },
   "environment": {
-    "delete": "删除此环境",
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "production-environment": "生产环境",
     "reorder": "重新排序环境",

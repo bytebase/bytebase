@@ -1,5 +1,5 @@
 import { cloneDeep, first } from "lodash-es";
-import { t } from "@/plugins/i18n";
+import i18n from "@/react/i18n";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { UNKNOWN_INSTANCE_NAME, unknownDataSource } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
@@ -68,7 +68,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   return {
     name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
     state: instance?.state ?? State.ACTIVE,
-    title: instance?.title ?? t("instance.new-instance"),
+    title: instance?.title ?? i18n.t("instance.new-instance"),
     engine: instance?.engine ?? Engine.MYSQL,
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment,

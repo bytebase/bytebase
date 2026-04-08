@@ -18,10 +18,10 @@ import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_ACCESS_GRANTS,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
+  PROJECT_V1_ROUTE_DATA_EXPORT,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MASKING_EXEMPTION,
@@ -161,7 +161,7 @@ function useSidebarItems(): SidebarItem[] {
           },
           {
             title: t("export-center.data-export"),
-            path: PROJECT_V1_ROUTE_EXPORT_CENTER,
+            path: PROJECT_V1_ROUTE_DATA_EXPORT,
             type: "div",
           },
         ],
