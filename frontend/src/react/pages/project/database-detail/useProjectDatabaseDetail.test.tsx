@@ -106,16 +106,6 @@ function HookProbe(
   return null;
 }
 
-const createDeferred = <T,>() => {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-};
-
 const waitFor = async (condition: () => boolean, timeoutMs = 1000) => {
   const start = Date.now();
   while (!condition()) {
@@ -185,12 +175,9 @@ describe("useProjectDatabaseDetail", () => {
       name: "instances/inst1/databases/db1",
       project: "projects/proj1",
     };
-    const databaseDeferred = createDeferred<typeof database>();
-    const metadataDeferred = createDeferred<Record<string, never>>();
-
     mocks.getDatabaseByName.mockReturnValue(database);
-    mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
-    mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
+    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
 
     let latest:
       | ReturnType<typeof useProjectDatabaseDetail>
@@ -210,10 +197,7 @@ describe("useProjectDatabaseDetail", () => {
     act(() => {
       render();
     });
-    await act(async () => {
-      databaseDeferred.resolve(database);
-      metadataDeferred.resolve({});
-    });
+    await waitFor(() => latest?.ready === true);
 
     expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledWith(
       "instances/inst1/databases/db1"
@@ -235,12 +219,11 @@ describe("useProjectDatabaseDetail", () => {
       name: "instances/inst1/databases/db1",
       project: "projects/proj1",
     };
-    const databaseDeferred = createDeferred<typeof database>();
-    const metadataDeferred = createDeferred<never>();
-
     mocks.getDatabaseByName.mockReturnValue(database);
-    mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
-    mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
+    mocks.getOrFetchDatabaseMetadata.mockRejectedValue(
+      new Error("permission denied")
+    );
 
     let latest:
       | ReturnType<typeof useProjectDatabaseDetail>
@@ -257,17 +240,10 @@ describe("useProjectDatabaseDetail", () => {
       })
     );
 
-    void metadataDeferred.promise.catch(() => {
-      // The hook swallows metadata permission failures.
-    });
-
     act(() => {
       render();
     });
-    await act(async () => {
-      databaseDeferred.resolve(database);
-      metadataDeferred.reject(new Error("permission denied"));
-    });
+    await waitFor(() => latest?.loading === false);
 
     expect(latest?.databaseName).toBe("instances/inst1/databases/db1");
     expect(mocks.replace).not.toHaveBeenCalled();
@@ -280,12 +256,9 @@ describe("useProjectDatabaseDetail", () => {
       name: "instances/inst1/databases/db1",
       project: "projects/proj2",
     };
-    const databaseDeferred = createDeferred<typeof database>();
-    const metadataDeferred = createDeferred<Record<string, never>>();
-
     mocks.getDatabaseByName.mockReturnValue(database);
-    mocks.getOrFetchDatabaseByName.mockReturnValue(databaseDeferred.promise);
-    mocks.getOrFetchDatabaseMetadata.mockReturnValue(metadataDeferred.promise);
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
+    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
 
     const { render, unmount } = renderIntoContainer(
       createElement(HookProbe, {
@@ -303,10 +276,7 @@ describe("useProjectDatabaseDetail", () => {
     act(() => {
       render();
     });
-    await act(async () => {
-      databaseDeferred.resolve(database);
-      metadataDeferred.resolve({});
-    });
+    await waitFor(() => mocks.replace.mock.calls.length > 0);
 
     expect(mocks.replace).toHaveBeenCalledWith({
       name: mocks.routeNames.databaseRevisionDetail,
