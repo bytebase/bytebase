@@ -11,7 +11,6 @@ export default defineConfig({
   globalSetup: path.resolve(__dirname, "tests/e2e/framework/global-setup.ts"),
   globalTeardown: path.resolve(__dirname, "tests/e2e/framework/global-teardown.ts"),
   use: {
-    storageState: ".auth/state.json",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -19,12 +18,11 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /framework\/setup-project\.ts/,
-      use: { storageState: undefined },
     },
     {
       name: "chromium",
       testIgnore: ["**/framework/**"],
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], storageState: ".auth/state.json" },
       dependencies: ["setup"],
     },
   ],
