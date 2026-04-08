@@ -1857,8 +1857,7 @@
       "no-statement": "Không có câu lệnh SQL",
       "no-tasks": "Không có nhiệm vụ nào ở giai đoạn này",
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
-      "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn.",
-      "view-full-details": "Xem chi tiết đầy đủ"
+      "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn."
     },
     "task-execution-errors": "Lỗi thực hiện tác vụ"
   },

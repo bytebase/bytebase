@@ -1857,8 +1857,7 @@
       "no-statement": "No SQL statement",
       "no-tasks": "No tasks in this stage",
       "selected-count": "{count} task selected | {count} tasks selected",
-      "statement-truncated-hint": "Statement truncated due to large size.",
-      "view-full-details": "View Details"
+      "statement-truncated-hint": "Statement truncated due to large size."
     },
     "task-execution-errors": "Task execution errors"
   },
