@@ -160,10 +160,10 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
               {t("settings.sso.form.redirect-url")}
             </label>
             <div className="flex items-center gap-x-2">
-              <input
+              <Input
                 value={redirectUrl}
                 readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-sm bg-white text-sm font-mono text-gray-700"
+                className="flex-1 font-mono"
               />
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {t("common.copy")}
@@ -826,7 +826,7 @@ function ProviderConfigForm({
             <label className="block text-base font-semibold text-gray-800 mb-2">
               Port <span className="text-error">*</span>
             </label>
-            <input
+            <Input
               type="number"
               value={configForLDAP.port}
               onChange={(e) =>
@@ -838,7 +838,6 @@ function ProviderConfigForm({
               min={1}
               max={65535}
               placeholder="389"
-              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm"
             />
           </div>
         </div>

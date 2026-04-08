@@ -460,9 +460,8 @@ export function DataExportPrepDrawer({
                       </span>
                     </div>
                     {passwordEnabled && (
-                      <input
+                      <Input
                         type="password"
-                        className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent"
                         value={password}
                         placeholder={t("export-data.password-optional")}
                         onChange={(e) => setPassword(e.target.value)}

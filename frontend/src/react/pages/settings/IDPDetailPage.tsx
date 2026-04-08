@@ -753,7 +753,7 @@ function ProviderConfigForm({
             <label className="block text-base font-semibold text-gray-800 mb-2">
               Port <span className="text-error">*</span>
             </label>
-            <input
+            <Input
               type="number"
               value={configForLDAP.port}
               onChange={(e) =>
@@ -765,7 +765,6 @@ function ProviderConfigForm({
               min={1}
               max={65535}
               placeholder="389"
-              className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm"
             />
           </div>
         </div>

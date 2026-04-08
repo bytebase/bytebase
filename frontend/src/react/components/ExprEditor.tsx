@@ -39,6 +39,7 @@ import {
 } from "@/plugins/cel";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Input } from "@/react/components/ui/input";
+import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Select,
   SelectContent,
@@ -383,12 +384,13 @@ function SearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          className="w-56 bg-white border border-control-border rounded-sm shadow-md"
+          matchAnchorWidth
+          className="bg-white border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
-            <input
+            <SearchInput
               autoFocus
-              className="w-full h-8 px-2 text-sm rounded-xs border border-control-border outline-none"
+              className="h-8"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -581,12 +583,13 @@ function MultiSearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          className="w-56 bg-white border border-control-border rounded-sm shadow-md"
+          matchAnchorWidth
+          className="bg-white border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
-            <input
+            <SearchInput
               autoFocus
-              className="w-full h-8 px-2 text-sm rounded-xs border border-control-border outline-none"
+              className="h-8"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -1075,9 +1078,9 @@ function ValueInput({
   if (inputType === "INPUT") {
     if (isNumberValue) {
       return (
-        <input
+        <Input
           type="number"
-          className="h-8 px-2 text-sm rounded-xs border border-control-border bg-white disabled:opacity-50 max-w-20"
+          className="h-8 max-w-20"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}

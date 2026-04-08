@@ -219,9 +219,22 @@
     "under-review": "Under review",
     "draft": "Draft",
     "error": "Error",
-    "type-to-search": "Type to search...",
+    "type-to-search": "Type to search",
     "comment": "Comment",
-    "clear-filters": "Clear filters"
+    "clear-filters": "Clear filters",
+    "admin": "Admin",
+    "continue-anyway": "Continue anyway",
+    "creating": "Creating",
+    "custom": "Custom",
+    "detailed-guide": "detailed guide",
+    "minutes": "Minutes",
+    "overview": "Overview",
+    "password": "Password",
+    "read-only": "Read-only",
+    "updating": "Updating",
+    "user": "User",
+    "username": "Username",
+    "write-only": "write only"
   },
   "common.add": "Add",
   "common.admin": "Admin",
@@ -412,7 +425,8 @@
       "with-diff": "With diff"
     },
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases"
+    "unassign-alert-title": "Unassign databases",
+    "sync-complete-for-instance": "Sync complete for instance '{{0}}'"
   },
   "database-group": {
     "condition": {
@@ -434,7 +448,9 @@
     "encoding": "Encoding",
     "failed-to-sync-schema": "Failed to sync schema",
     "start-to-sync-schema": "Start to sync schema",
-    "successfully-synced-schema": "Successfully synced schema"
+    "successfully-synced-schema": "Successfully synced schema",
+    "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
+    "syncing-databases-for-instance": "Syncing databases for {{0}}..."
   },
   "db.failed-to-sync-schema": "Failed to sync schema",
   "db.n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
@@ -536,7 +552,177 @@
       "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes",
       "sync-new": "Only sync new databases"
     },
-    "syncing": "Syncing ..."
+    "syncing": "Syncing ...",
+    "account-locator": "Account Locator",
+    "authentication-database": "Authentication Database",
+    "connection-info": "Connection info",
+    "connection-options": "Connection Options",
+    "create-gcp-credentials": "To create credentials, see",
+    "database-region": "Database Region",
+    "endpoint": "Endpoint",
+    "external-id": "External ID",
+    "external-id-description": "External ID for additional security when assuming role (optional)",
+    "external-id-placeholder": "optional-external-id",
+    "external-link": "External Link",
+    "external-secret-azure": {
+      "secret-name": "Secret name",
+      "vault-url": "Key Vault URL",
+      "secret-name-tips": "The name of the secret stored in Azure Key Vault.",
+      "vault-url-tips": "The Key Vault URL should be like \"https://myvault.vault.azure.net/\"."
+    },
+    "external-secret-gcp": {
+      "secret-name": "Secret full name",
+      "secret-name-tips": "The secret name should be like \"projects/project-id/secrets/secret-id\"."
+    },
+    "external-secret-vault": {
+      "vault-auth-type": {
+        "approle": {
+          "role-id": "Auth role id",
+          "secret-env-name": "Environment name",
+          "secret-id": "Auth secret id",
+          "secret-plain-text": "Plain text",
+          "self": "AppRole"
+        },
+        "token": {
+          "self": "Token"
+        },
+        "self": "Auth type"
+      },
+      "vault-secret-key": "Secret key",
+      "vault-secret-path": "Secret path",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-engine-tips": "Only support KV v2 engine.",
+      "vault-tls-config": "Vault TLS Configuration (Optional)",
+      "vault-url": "Vault URL"
+    },
+    "external-secret": {
+      "key-name": "Secret key",
+      "secret-name": "Secret name"
+    },
+    "failed-to-connect-instance": "Failed to connect instance.",
+    "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
+    "find-gcp-project-id": "To find GCP Project ID, see",
+    "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
+    "grants": "Grants",
+    "host-or-socket": "Host or Socket",
+    "iam-extension": {
+      "client-id": "Client ID",
+      "client-secret": "Client Secret",
+      "credential-source": "Credential Source",
+      "specific-credential": "Specific Credential",
+      "tenant-id": "Tenant ID",
+      "saas-default-credential-restriction": "Default credentials are not available in Bytebase Cloud for security. Please provide specific credentials."
+    },
+    "info-panel": {
+      "no-info": "No additional information available for this engine."
+    },
+    "instance-id": "Instance ID",
+    "instance-name": "Instance Name",
+    "no-extra-params-configured": "No extra connection parameters configured",
+    "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
+    "no-password": "No password",
+    "parameter-name-placeholder": "Parameter name",
+    "parameter-value-placeholder": "Parameter value",
+    "password-type": {
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "password": "Password",
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-azure": "Azure Key Vault",
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-vault": "Vault (KV v2)"
+    },
+    "password-write-only": "YOUR_DB_PWD - write only",
+    "port": "Port",
+    "project-id": "Project ID",
+    "role-arn": "Role ARN",
+    "role-arn-description": "IAM role to assume for cross-account access. Leave empty for same-account access.",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "scan-interval": {
+      "default-never": "Default (never)",
+      "description": "Bytebase periodically syncs instance schema and detects anomalies.",
+      "self": "Scan Interval",
+      "min-value": "Min value {{value}} minutes"
+    },
+    "section": {
+      "basic-info": "Basic Info",
+      "connection": "Connection"
+    },
+    "sentence": {
+      "console": {
+        "snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)"
+      },
+      "create-admin-user": "This is the connection user used by Bytebase to perform DDL and DML (non-SELECT) operations.",
+      "create-admin-user-non-sql": "This is the connection user used by Bytebase to perform write and admin operations.",
+      "create-readonly-user": "This is the connection used by Bytebase to perform read-only operations such as SELECT query.",
+      "create-readonly-user-non-sql": "This is the connection used by Bytebase to perform read-only operations.",
+      "create-user-example": {
+        "postgresql": {
+          "warn": "If the connecting instance is managed by the cloud provider, then SUPERUSER is not available and you should create the user via that provider's admin console. The created user will have provider specific semi-SUPERUSER privileges. You should grant Bytebase privileges with 'GRANT role_name TO bytebase;' for all existing roles, otherwise Bytebase may not access existing databases or tables.",
+          "template": "Below is an example to create user '{{user}}' with password {{password}} and grant the user with the needed privileges. If the connecting instance is self-hosted, then you can grant SUPERUSER."
+        },
+        "clickhouse": {
+          "sql-driven-workflow": "SQL-driven workflow",
+          "template": "Below is an example to create user '{{user}}' with password {{password}} and grant the user with the needed privileges. First you need to enable ClickHouse SQL-driven workflow {{link}} and then run the following query to create the user."
+        },
+        "mysql": {
+          "template": "Below is an example to create user {{user}}@% with password {{password}} and grant the user with the needed privileges."
+        },
+        "redis": {
+          "template": "Below is an example to create user {{user}} with password {{password}} and grant the user with the needed privileges."
+        },
+        "snowflake": {
+          "template": "Below is an example to create user '{{user}}' with password {{password}} for {{warehouse}} and grant the user with the needed privileges."
+        }
+      },
+      "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
+      "host": {
+        "none-snowflake": "e.g. host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+      },
+      "proxy": {
+        "snowflake": "For proxy server, append {{'@'}}PROXY_HOST and specify PROXY_PORT in the port"
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "Below is an example to create user {{user}}@% and grant the user with the needed privileges."
+        },
+        "postgresql": {
+          "template": "Below is an example to create user '{{user}}' and grant the user with the needed privileges."
+        }
+      },
+      "google-cloud-sql": {
+        "instance-name": "Instance Connection Name",
+        "instance-name-tips": "The instance connection name should like {{instance}}.",
+        "mysql": {
+          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user with the needed privileges."
+        },
+        "postgresql": {
+          "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@project-id.iam. Grant the user with the needed privileges."
+        }
+      }
+    },
+    "show-how-to-create": "Show how to create",
+    "snowflake-web-console": "Snowflake Web Console",
+    "successfully-connected-instance": "Successfully connected instance.",
+    "sync-databases": {
+      "add-database": "+ Add database, press enter to submit",
+      "description": "Only sync selected databases.",
+      "search-database": "Search database",
+      "self": "Sync Databases",
+      "sync-all": "Sync all databases"
+    },
+    "test-connection": "Test Connection",
+    "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
+    "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {{0}}",
+    "users": "Users",
+    "your-snowflake-account-locator": "Your Snowflake account locator",
+    "testing-connection": "Testing Connection...",
+    "new-instance": "New Instance",
+    "no-environment": "This instance has not been bound to the environment",
+    "restore-instance-instance-name-to-normal-state": "Restore instance '{{0}}' to normal state?",
+    "successfully-created-instance-createdinstance-name": "Successfully created instance '{{0}}'.",
+    "successfully-updated-instance-instance-name": "Successfully updated instance '{{0}}'."
   },
   "instance.account-locator": "Account Locator",
   "instance.archive-instance-instance-name": "Archive instance '{{0}}'?",
@@ -757,8 +943,11 @@
     "error": {
       "key-duplicated": "Duplicated keys",
       "key-necessary": "Key is required",
-      "max-value-length-exceeded": "Value's length cannot exceed {{length}} characters"
-    }
+      "max-value-length-exceeded": "Value's length cannot exceed {{length}} characters",
+      "value-necessary": "Value is required"
+    },
+    "add-label": "Add label",
+    "empty-label-value": "Empty"
   },
   "label.add-label": "Add label",
   "label.empty-label-value": "Empty",
@@ -1598,7 +1787,8 @@
       "license": "License",
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "used-and-total-license": "Assigned / Total Instance License",
-      "used-and-total-user": "Active / Total User Limit"
+      "used-and-total-user": "Active / Total User Limit",
+      "n-license-remain": "{{n}} remaining"
     },
     "max-instance-count": "Max instance count",
     "plan": {
@@ -1735,59 +1925,59 @@
     }
   },
   "agent": {
-    "assistant-title": "Bytebase Assistant",
+    "assistant-title": "AI Assistant",
     "resize": "Resize",
     "minimize": "Minimize",
     "close": "Close",
-    "input-placeholder": "Ask anything...",
+    "input-placeholder": "Ask AI anything...",
     "send": "Send",
-    "args": "Args:",
-    "result": "Result:",
+    "args": "Args",
+    "result": "Result",
     "stop": "Stop",
     "interrupted": "Interrupted",
-    "retry-last-chat-turn": "Retry last turn",
-    "interrupted-retry-hint": "Retry reruns the interrupted turn with the current page state.",
-    "new-chat": "New chat",
-    "rename-chat-placeholder": "Enter a chat name",
-    "archive-chat": "Archive",
-    "unarchive-chat": "Unarchive",
-    "delete-chat": "Delete",
+    "retry-last-chat-turn": "Retry",
+    "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
+    "new-chat": "New Chat",
+    "rename-chat-placeholder": "Enter chat name",
+    "archive-chat": "Archive chat",
+    "unarchive-chat": "Unarchive chat",
+    "delete-chat": "Delete chat",
     "active-only-chats": "Active only",
     "archived-only-chats": "Archived only",
-    "archive-chat-confirmation": "Archive this chat?",
-    "delete-chat-confirmation": "Delete this chat?",
+    "archive-chat-confirmation": "Are you sure you want to archive this chat?",
+    "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
     "chat-list-label": "Chats",
-    "chat-default-title": "New chat",
+    "chat-default-title": "New Chat",
     "chat-archived-label": "Archived",
     "chat-status-idle": "Idle",
     "chat-status-running": "Running",
-    "chat-status-awaiting-user": "Awaiting input",
+    "chat-status-awaiting-user": "Awaiting user",
     "chat-status-error": "Error",
     "chat-status-interrupted": "Interrupted",
-    "chat-total-tokens": "Tokens used: {{count}}",
+    "chat-total-tokens": "Total tokens",
     "reply": "Reply",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "pending-input-hint": "Reply below to continue this chat.",
-    "pending-confirm-hint": "Choose confirm or cancel to continue this chat.",
-    "pending-choose-hint": "Choose an option to continue this chat.",
-    "tool-ask-user": "Awaiting your response",
-    "tool-ask-user-input": "Input requested",
-    "tool-ask-user-confirm": "Confirmation requested",
-    "tool-ask-user-choose": "Choice requested",
+    "pending-input-hint": "Please provide input above",
+    "pending-confirm-hint": "Please confirm or cancel above",
+    "pending-choose-hint": "Please select an option above",
+    "tool-ask-user": "Asking user",
+    "tool-ask-user-input": "Provide input",
+    "tool-ask-user-confirm": "Confirm action",
+    "tool-ask-user-choose": "Choose an option",
     "tool-response-submitted": "Response submitted",
-    "tool-prompt": "Prompt:",
-    "tool-default-value": "Default:",
-    "tool-options": "Options:",
-    "tool-answer": "Answer:",
-    "tool-value": "Value:",
+    "tool-prompt": "Prompt",
+    "tool-default-value": "Default",
+    "tool-options": "Options",
+    "tool-answer": "Answer",
+    "tool-value": "Value",
     "tool-completed": "Completed",
-    "tool-failed": "Completed with issues",
+    "tool-failed": "Failed",
     "ai-not-configured": {
-      "title": "AI Assistant isn’t configured for this workspace",
-      "description": "To continue with the page agent, enable AI Assistant in workspace settings.",
-      "configure": "Configure AI",
-      "contact-admin": "Please contact your org administrator to configure AI Assistant."
+      "title": "AI Not Configured",
+      "description": "AI is not configured for this workspace.",
+      "configure": "Configure",
+      "contact-admin": "Contact your workspace admin to configure AI."
     }
   },
   "changelog": {
@@ -1807,6 +1997,52 @@
     "stage": {
       "self_one": "Stage",
       "self_other": "Stages"
+    }
+  },
+  "data-source": {
+    "additional-node-addresses": "Additional Node Addresses",
+    "connection-string-schema": "Connection String Schema",
+    "connection-type": "Connection Type",
+    "delete-read-only-data-source": "Delete read-only data source",
+    "direct-connection": "Direct Connection",
+    "extra-params": {
+      "description": "Additional parameters for database connection string",
+      "self": "Extra Parameters"
+    },
+    "private-key-passphrase": "Private Key Passphrase",
+    "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
+    "read-replica-host": "Read-replica Host",
+    "read-replica-port": "Read-replica Port",
+    "replica-set": "Replica Set",
+    "snowflake-keypair-tip": "Key-pair authentication",
+    "ssh-connection": "SSH Connection",
+    "ssh-type": {
+      "none": "None",
+      "tunnel-and-private-key": "Tunnel + Private Key"
+    },
+    "ssh": {
+      "host": "Server",
+      "password": "Password",
+      "port": "Port",
+      "private-key": "Private Key",
+      "ssh-key": "SSH Key",
+      "user": "User"
+    },
+    "ssl-connection": "SSL Connection",
+    "ssl": {
+      "ca-cert": "CA Certificate",
+      "client-cert": "Client Certificate",
+      "client-key": "Client Key",
+      "verify-certificate": "Verify TLS certificate",
+      "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
+    },
+    "no-read-only-data-source": "No read-only data source",
+    "private-key-passphrase-placeholder": "Leave empty if your private key is not encrypted"
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "Label key...",
+      "value-placeholder": "Label value..."
     }
   }
 }

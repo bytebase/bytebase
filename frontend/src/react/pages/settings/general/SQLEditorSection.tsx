@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
@@ -303,13 +304,13 @@ export const SQLEditorSection = forwardRef<
               </p>
               <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
                 <div className="relative w-60">
-                  <input
+                  <Input
                     type="number"
                     value={state.maximumResultSize}
                     min={1}
                     disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
                     onChange={(e) => handleNumberInput("maximumResultSize", e)}
-                    className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-12 text-sm disabled:opacity-50"
+                    className="pr-12"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                     MB
@@ -339,13 +340,13 @@ export const SQLEditorSection = forwardRef<
             </p>
             <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
               <div className="relative w-60">
-                <input
+                <Input
                   type="number"
                   value={state.maximumResultRows}
                   min={0}
                   disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
                   onChange={(e) => handleNumberInput("maximumResultRows", e)}
-                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-16 text-sm disabled:opacity-50"
+                  className="pr-16"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                   {t("settings.general.workspace.maximum-sql-result.rows.rows")}
@@ -377,7 +378,7 @@ export const SQLEditorSection = forwardRef<
             </p>
             <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
               <div className="relative w-60">
-                <input
+                <Input
                   type="number"
                   value={state.maxQueryTimeInSeconds}
                   min={0}
@@ -385,7 +386,7 @@ export const SQLEditorSection = forwardRef<
                   onChange={(e) =>
                     handleNumberInput("maxQueryTimeInSeconds", e)
                   }
-                  className="w-full rounded-xs border border-control-border px-3 py-1.5 pr-20 text-sm disabled:opacity-50"
+                  className="pr-20"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                   {t("settings.general.workspace.query-data-policy.seconds")}

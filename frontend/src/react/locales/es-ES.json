@@ -219,9 +219,22 @@
     "under-review": "En revisión",
     "draft": "Borrador",
     "error": "Error",
-    "type-to-search": "Escriba para buscar...",
+    "type-to-search": "Escriba para buscar",
     "comment": "Comentario",
-    "clear-filters": "Limpiar filtros"
+    "clear-filters": "Limpiar filtros",
+    "admin": "Admin",
+    "continue-anyway": "De todas maneras, continúe",
+    "creating": "Creando...",
+    "custom": "Personalizado",
+    "detailed-guide": "guía detallada",
+    "minutes": "Minutos",
+    "overview": "Resumen",
+    "password": "Contraseña",
+    "read-only": "Solo lectura",
+    "updating": "Actualizando...",
+    "user": "Usuario",
+    "username": "Nombre de usuario",
+    "write-only": "solo escritura"
   },
   "common.add": "Agregar",
   "common.admin": "Admin",
@@ -412,7 +425,8 @@
       "with-diff": "With diff"
     },
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
-    "unassign-alert-title": "Desasignar bases de datos"
+    "unassign-alert-title": "Desasignar bases de datos",
+    "sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'"
   },
   "database-group": {
     "condition": {
@@ -434,7 +448,9 @@
     "encoding": "Codificación",
     "failed-to-sync-schema": "Error al sincronizar el esquema",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
-    "successfully-synced-schema": "Esquema sincronizado exitosamente"
+    "successfully-synced-schema": "Esquema sincronizado exitosamente",
+    "n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
+    "syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}..."
   },
   "db.failed-to-sync-schema": "No se pudo sincronizar el esquema",
   "db.n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
@@ -536,7 +552,177 @@
       "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos.",
       "sync-new": "Sincronizar únicamente bases de datos nuevas"
     },
-    "syncing": "Sincronizando..."
+    "syncing": "Sincronizando...",
+    "account-locator": "Localizadora de cuentas",
+    "authentication-database": "Base de datos de autenticación",
+    "connection-info": "Información de conexión",
+    "connection-options": "Opciones de conexión",
+    "create-gcp-credentials": "Para crear credenciales, consulte",
+    "database-region": "Región de la base de datos",
+    "endpoint": "Punto final",
+    "external-id": "ID externo",
+    "external-id-description": "ID externo para seguridad adicional al asumir el rol (opcional)",
+    "external-id-placeholder": "ID externo opcional",
+    "external-link": "Enlace externo",
+    "external-secret-azure": {
+      "secret-name": "Nombre del secreto",
+      "vault-url": "URL del Key Vault",
+      "secret-name-tips": "El nombre del secreto almacenado en Azure Key Vault.",
+      "vault-url-tips": "La URL del Key Vault debe ser similar a \"https://myvault.vault.azure.net/\"."
+    },
+    "external-secret-gcp": {
+      "secret-name": "nombre completo secreto",
+      "secret-name-tips": "El nombre secreto debería ser similar a \"projects/project-id/secrets/secret-id\"."
+    },
+    "external-secret-vault": {
+      "vault-auth-type": {
+        "approle": {
+          "role-id": "Auth role id",
+          "secret-env-name": "Nombre del entorno",
+          "secret-id": "Auth secret id",
+          "secret-plain-text": "Texto sin formato",
+          "self": "AppRole"
+        },
+        "token": {
+          "self": "Token"
+        },
+        "self": "Tipo de autenticación"
+      },
+      "vault-secret-key": "Secret key",
+      "vault-secret-path": "Secret path",
+      "vault-secret-engine-name": "Secret engine name",
+      "vault-secret-engine-tips": "Solo admite motor KV v2.",
+      "vault-tls-config": "Configuración TLS de Vault (opcional)",
+      "vault-url": "Vault URL"
+    },
+    "external-secret": {
+      "key-name": "Clave secreta",
+      "secret-name": "Nombre secreto"
+    },
+    "failed-to-connect-instance": "Error al conectar la instancia.",
+    "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
+    "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
+    "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
+    "grants": "Concesiones",
+    "host-or-socket": "Host o Socket",
+    "iam-extension": {
+      "client-id": "Client ID",
+      "client-secret": "Client Secret",
+      "credential-source": "Credential Source",
+      "specific-credential": "Credencial específica",
+      "tenant-id": "Tenant ID",
+      "saas-default-credential-restriction": "Las credenciales predeterminadas no están disponibles en Bytebase Cloud por seguridad. Proporcione credenciales específicas."
+    },
+    "info-panel": {
+      "no-info": "No hay información adicional disponible para este motor."
+    },
+    "instance-id": "ID de la instancia",
+    "instance-name": "Nombre de la instancia",
+    "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
+    "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
+    "no-password": "Sin contraseña",
+    "parameter-name-placeholder": "Nombre de parámetro",
+    "parameter-value-placeholder": "Valor de parámetro",
+    "password-type": {
+      "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
+      "google-iam": "Google Cloud SQL IAM",
+      "password": "Contraseña",
+      "external-secret-aws": "AWS Secrets Manager",
+      "external-secret-azure": "Azure Key Vault",
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-vault": "Vault (KV v2)"
+    },
+    "password-write-only": "SU_DB_PWD - solo escritura",
+    "port": "Puerto",
+    "project-id": "ID del proyecto",
+    "role-arn": "ARN del rol",
+    "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
+    "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "scan-interval": {
+      "default-never": "Predeterminado (nunca)",
+      "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
+      "self": "Intervalo de escaneo",
+      "min-value": "Valor mínimo {{value}} minutos"
+    },
+    "section": {
+      "basic-info": "Información básica",
+      "connection": "Conexión"
+    },
+    "sentence": {
+      "console": {
+        "snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)"
+      },
+      "create-admin-user": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones DDL y DML (no SELECT).",
+      "create-admin-user-non-sql": "Este es el usuario de conexión utilizado por Bytebase para realizar operaciones de escritura y administración.",
+      "create-readonly-user": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura como la consulta SELECT.",
+      "create-readonly-user-non-sql": "Esta es la conexión utilizada por Bytebase para realizar operaciones de solo lectura.",
+      "create-user-example": {
+        "postgresql": {
+          "warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER."
+        },
+        "clickhouse": {
+          "sql-driven-workflow": "Flujo de trabajo impulsado por SQL",
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {{link}} y luego ejecutar la siguiente consulta para crear el usuario."
+        },
+        "mysql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios."
+        },
+        "redis": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}} con la contraseña {{password}} y otorgar al usuario los privilegios necesarios."
+        },
+        "snowflake": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios."
+        }
+      },
+      "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
+      "host": {
+        "none-snowflake": "por ejemplo, host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+      },
+      "proxy": {
+        "snowflake": "Para el servidor proxy, agregue {{'@'}}PROXY_HOST y especifique PROXY_PORT en el puerto"
+      },
+      "aws-rds": {
+        "mysql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% y otorgarle los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' y otorgarle los privilegios necesarios."
+        }
+      },
+      "google-cloud-sql": {
+        "instance-name": "Nombre de conexión de instancia",
+        "instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
+        "mysql": {
+          "template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@'%'. Otorgue a este usuario los privilegios necesarios."
+        },
+        "postgresql": {
+          "template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@project-id.iam. Otorgue al usuario los privilegios necesarios."
+        }
+      }
+    },
+    "show-how-to-create": "Mostrar cómo crear",
+    "snowflake-web-console": "Consola web de Snowflake",
+    "successfully-connected-instance": "Instancia conectada correctamente.",
+    "sync-databases": {
+      "add-database": "+ Agregar base de datos, presione enter para enviar",
+      "description": "Sincronizar sólo bases de datos seleccionadas.",
+      "search-database": "Buscar en la base de datos",
+      "self": "Sincronizar bases de datos",
+      "sync-all": "Sincronizar todas las bases de datos"
+    },
+    "test-connection": "Probar conexión",
+    "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
+    "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
+    "users": "Usuarios",
+    "your-snowflake-account-locator": "Su localizador de cuentas Snowflake",
+    "testing-connection": "Probando conexión...",
+    "new-instance": "Nueva instancia",
+    "no-environment": "Esta instancia no ha sido ligada al entorno.",
+    "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
+    "successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{{0}}'.",
+    "successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{{0}}'."
   },
   "instance.account-locator": "Localizadora de cuentas",
   "instance.archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
@@ -757,8 +943,11 @@
     "error": {
       "key-duplicated": "Claves duplicadas",
       "key-necessary": "Se requiere una clave",
-      "max-value-length-exceeded": "La longitud del valor no puede exceder {{length}} caracteres"
-    }
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {{length}} caracteres",
+      "value-necessary": "Se requiere un valor"
+    },
+    "add-label": "Agregar etiqueta",
+    "empty-label-value": "Valor"
   },
   "label.add-label": "Agregar etiqueta",
   "label.empty-label-value": "Valor",
@@ -1598,7 +1787,8 @@
       "license": "Licencia",
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "used-and-total-license": "Licencia asignada / total",
-      "used-and-total-user": "Límite de usuarios activos/totales"
+      "used-and-total-user": "Límite de usuarios activos/totales",
+      "n-license-remain": "permanecer {{n}}"
     },
     "max-instance-count": "Recuento máximo de instancias",
     "plan": {
@@ -1735,59 +1925,59 @@
     }
   },
   "agent": {
-    "assistant-title": "Asistente de Bytebase",
-    "resize": "Resize",
+    "assistant-title": "Asistente de IA",
+    "resize": "Redimensionar",
     "minimize": "Minimizar",
     "close": "Cerrar",
-    "input-placeholder": "Pregunta lo que sea...",
+    "input-placeholder": "Pregunta algo a la IA...",
     "send": "Enviar",
-    "args": "Argumentos:",
-    "result": "Resultado:",
+    "args": "Argumentos",
+    "result": "Resultado",
     "stop": "Detener",
     "interrupted": "Interrumpido",
-    "retry-last-chat-turn": "Reintentar el último turno",
-    "interrupted-retry-hint": "Reintentar vuelve a ejecutar el turno interrumpido con el estado actual de la página.",
+    "retry-last-chat-turn": "Reintentar",
+    "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
     "new-chat": "Nuevo chat",
-    "rename-chat-placeholder": "Introduce un nombre para el chat",
-    "archive-chat": "Archivar",
-    "unarchive-chat": "Desarchivar",
-    "delete-chat": "Eliminar",
-    "active-only-chats": "Solo activas",
-    "archived-only-chats": "Solo archivadas",
-    "archive-chat-confirmation": "¿Archivar este chat?",
-    "delete-chat-confirmation": "¿Eliminar este chat?",
+    "rename-chat-placeholder": "Ingrese el nombre del chat",
+    "archive-chat": "Archivar chat",
+    "unarchive-chat": "Desarchivar chat",
+    "delete-chat": "Eliminar chat",
+    "active-only-chats": "Solo activos",
+    "archived-only-chats": "Solo archivados",
+    "archive-chat-confirmation": "¿Está seguro de que desea archivar este chat?",
+    "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
     "chat-list-label": "Chats",
     "chat-default-title": "Nuevo chat",
     "chat-archived-label": "Archivado",
     "chat-status-idle": "Inactivo",
-    "chat-status-running": "En ejecución",
-    "chat-status-awaiting-user": "Esperando entrada",
+    "chat-status-running": "Ejecutando",
+    "chat-status-awaiting-user": "Esperando usuario",
     "chat-status-error": "Error",
     "chat-status-interrupted": "Interrumpido",
-    "chat-total-tokens": "Tokens usados: {{count}}",
+    "chat-total-tokens": "Tokens totales",
     "reply": "Responder",
     "confirm": "Confirmar",
     "cancel": "Cancelar",
-    "pending-input-hint": "Responde abajo para continuar este chat.",
-    "pending-confirm-hint": "Elige confirmar o cancelar para continuar este chat.",
-    "pending-choose-hint": "Elige una opción para continuar este chat.",
-    "tool-ask-user": "Esperando tu respuesta",
-    "tool-ask-user-input": "Se requiere una entrada",
-    "tool-ask-user-confirm": "Se requiere confirmación",
-    "tool-ask-user-choose": "Se requiere una selección",
+    "pending-input-hint": "Proporcione la entrada arriba",
+    "pending-confirm-hint": "Confirme o cancele arriba",
+    "pending-choose-hint": "Seleccione una opción arriba",
+    "tool-ask-user": "Preguntando al usuario",
+    "tool-ask-user-input": "Proporcionar entrada",
+    "tool-ask-user-confirm": "Confirmar acción",
+    "tool-ask-user-choose": "Elija una opción",
     "tool-response-submitted": "Respuesta enviada",
-    "tool-prompt": "Pregunta:",
-    "tool-default-value": "Valor predeterminado:",
-    "tool-options": "Opciones:",
-    "tool-answer": "Respuesta:",
-    "tool-value": "Valor:",
+    "tool-prompt": "Indicación",
+    "tool-default-value": "Predeterminado",
+    "tool-options": "Opciones",
+    "tool-answer": "Respuesta",
+    "tool-value": "Valor",
     "tool-completed": "Completado",
-    "tool-failed": "Completado con problemas",
+    "tool-failed": "Fallido",
     "ai-not-configured": {
-      "title": "El asistente de IA no está configurado para este espacio de trabajo",
-      "description": "Para continuar con el agente de página, habilita el asistente de IA en la configuración del espacio de trabajo.",
-      "configure": "Configurar IA",
-      "contact-admin": "Ponte en contacto con el administrador de tu organización para configurar el asistente de IA."
+      "title": "IA no configurada",
+      "description": "La IA no está configurada para este espacio de trabajo.",
+      "configure": "Configurar",
+      "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA."
     }
   },
   "changelog": {
@@ -1807,6 +1997,52 @@
     "stage": {
       "self_one": "Etapa",
       "self_other": "Etapas"
+    }
+  },
+  "data-source": {
+    "additional-node-addresses": "Direcciones de nodos adicionales",
+    "connection-string-schema": "Esquema de cadena de conexión",
+    "connection-type": "Tipo de conección",
+    "delete-read-only-data-source": "Eliminar origen de datos de solo lectura",
+    "direct-connection": "Direct Connection",
+    "extra-params": {
+      "description": "Parámetros adicionales para la cadena de conexión de la base de datos",
+      "self": "Parámetros adicionales"
+    },
+    "private-key-passphrase": "Frase de contraseña de clave privada",
+    "private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
+    "read-replica-host": "Anfitrión de réplica de lectura",
+    "read-replica-port": "Puerto de réplica de lectura",
+    "replica-set": "Conjunto de réplicas",
+    "snowflake-keypair-tip": "Autenticación de par de claves",
+    "ssh-connection": "Conexión SSH",
+    "ssh-type": {
+      "none": "Ninguno",
+      "tunnel-and-private-key": "Túnel + Clave Privada"
+    },
+    "ssh": {
+      "host": "Anfitrión",
+      "password": "Contraseña",
+      "port": "Puerto",
+      "private-key": "Clave Privada",
+      "ssh-key": "Clave del SSH",
+      "user": "Nombre de usuario"
+    },
+    "ssl-connection": "Conexión SSL",
+    "ssl": {
+      "ca-cert": "Certificado de CA",
+      "client-cert": "Certificado del cliente",
+      "client-key": "Clave del cliente",
+      "verify-certificate": "Verificar certificado TLS",
+      "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
+    },
+    "no-read-only-data-source": "Sin fuente de datos de solo lectura",
+    "private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada"
+  },
+  "setting": {
+    "label": {
+      "key-placeholder": "Clave de etiqueta...",
+      "value-placeholder": "Valor de etiqueta..."
     }
   }
 }

@@ -21,6 +21,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Button } from "@/react/components/ui/button";
+import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -1038,9 +1039,7 @@ function DatabaseSelector({
 
   return (
     <div className="flex flex-col gap-y-2">
-      <input
-        type="text"
-        className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent"
+      <SearchInput
         placeholder={t("database.filter-database")}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
