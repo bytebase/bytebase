@@ -93,7 +93,7 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 		return &storepb.Advice{
 			Status:  storepb.Advice_ERROR,
 			Code:    errCode.Int32(),
-			Title:   "DDL simulation failed",
+			Title:   content,
 			Content: content,
 			StartPosition: &storepb.Position{
 				Line: int32(r.Line),
