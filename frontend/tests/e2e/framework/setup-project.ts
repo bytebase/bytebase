@@ -5,7 +5,7 @@ import { BytebaseApiClient } from "./api-client";
 import { loadTestEnv, saveTestEnv, type TestEnv } from "./env";
 import { checkCrashRecovery } from "./mode-use-local-bytebase";
 
-const AUTH_FILE = path.join(__dirname, "../../.auth/state.json");
+const AUTH_FILE = path.join(__dirname, "../../../.auth/state.json");
 
 setup("authenticate and discover", async ({ page }) => {
   // 1. Read partial TestEnv from globalSetup
