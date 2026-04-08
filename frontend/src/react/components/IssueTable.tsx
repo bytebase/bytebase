@@ -12,6 +12,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Button } from "@/react/components/ui/button";
+import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -178,17 +179,15 @@ function TimeRangePicker({
           <label className="text-xs text-control-light">
             {t("common.from")}
           </label>
-          <input
+          <Input
             type="date"
-            className="border border-control-border rounded-sm px-2 py-1 text-sm"
             value={from}
             max={dayjs().format("YYYY-MM-DD")}
             onChange={(e) => setFrom(e.target.value)}
           />
           <label className="text-xs text-control-light">{t("common.to")}</label>
-          <input
+          <Input
             type="date"
-            className="border border-control-border rounded-sm px-2 py-1 text-sm"
             value={to}
             max={dayjs().format("YYYY-MM-DD")}
             onChange={(e) => setTo(e.target.value)}

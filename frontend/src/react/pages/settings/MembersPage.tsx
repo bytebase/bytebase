@@ -564,7 +564,7 @@ function EnvironmentMultiSelect({
       <div
         className={cn(
           "flex items-center flex-wrap gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
-          open && "ring-2 ring-accent border-accent"
+          open && "border-accent"
         )}
         onClick={() => setOpen(!open)}
       >
