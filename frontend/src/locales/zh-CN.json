@@ -242,8 +242,6 @@
     "configure": "配置",
     "configure-now": "现在配置",
     "confirm": "确认",
-    "confirm-and-add": "确认并添加",
-    "confirm-and-update": "确认并更新",
     "confirm-archive": "确定归档资源？",
     "confirm-delete": "确定删除资源？",
     "confirm-to-revert": "确定撤销编辑？",
@@ -267,6 +265,7 @@
       "week": "1 周",
       "year": "1 年"
     },
+    "deactivate": "禁用",
     "default": "默认",
     "definition": "定义",
     "delete": "删除",
@@ -316,7 +315,7 @@
     "go-back": "返回",
     "groups": "分组",
     "hard-delete": {
-      "description": "此资源和其他相关资源将被硬删除。@:common.cannot-undo-this-action",
+      "description": "此资源和其他相关资源将被硬删除。这个操作无法撤销",
       "double-comfirm": "要确认删除，请输入：{name}",
       "notification": "成功删除资源“{name}”。",
       "self": "彻底删除",
@@ -354,7 +353,6 @@
     "n-items-selected": "已选 {n} 项",
     "n-more": "+{n} 更多",
     "name": "名称",
-    "new": "创建",
     "next": "下一步",
     "no-data": "无数据",
     "no-license": "无证书",
@@ -392,6 +390,7 @@
     "reorder": "排序",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
+    "reset": "重置",
     "resource": "资源",
     "resource-not-found": "未找到请求的资源",
     "resources": "资源",
@@ -472,7 +471,6 @@
     "view-details": "查看详情",
     "view-doc": "查看文档",
     "visibility": "可见性",
-    "visit": "访问",
     "want-help": "加入用户群",
     "warehouse": "仓库",
     "warning": "警告",
@@ -491,9 +489,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "添加规则",
-      "create-approval-flow": "创建审批流",
-      "edit-rule": "编辑规则",
       "fallback-rules": "兜底规则",
       "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
       "node": {
@@ -567,7 +562,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
+      "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。",
+      "self": "自定义审批规则"
     },
     "self": "自定义审批"
   },
@@ -598,13 +594,12 @@
       "port": "端口",
       "private-key": "私钥",
       "ssh-key": "SSH 密钥",
-      "tunnel": "隧道",
       "user": "用户名"
     },
     "ssh-connection": "SSH 连接",
     "ssh-type": {
       "none": "不使用",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}"
+      "tunnel-and-private-key": "隧道 + 私钥"
     },
     "ssl": {
       "ca-cert": "CA 证书",
@@ -756,7 +751,6 @@
     "condition": {
       "self": "条件"
     },
-    "create": "新建数据库分组",
     "delete-group": "删除数据库组 {name}",
     "deleted": "已删除的数据库组",
     "matched-database": "相匹配的数据库",
@@ -812,9 +806,8 @@
     "views": "视图"
   },
   "environment": {
-    "create": "创建环境",
     "delete": "删除此环境",
-    "delete-description": "删除环境也会将其从相关实例和数据库中删除。@:common.cannot-undo-this-action",
+    "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "production-environment": "生产环境",
     "reorder": "重新排序环境",
     "select": "选择环境",
@@ -885,6 +878,7 @@
     "identity-provider-permission-denied": "没有权限",
     "identity-provider-update-failed": "无法更新身份提供商",
     "no-claims": "身份提供商未返回 claims。",
+    "self": "身份提供商",
     "test-connection": "测试连接",
     "test-connection-success": "测试连接成功",
     "userinfo-description": "匹配到的用户信息。"
@@ -1021,7 +1015,7 @@
         }
       },
       "console": {
-        "snowflake": "\b管理该@:{'common.instance'}的外部控制台 URL（如 AWS RDS 控制台，您的@:{'common.database'}控制台）"
+        "snowflake": "\b管理该实例的外部控制台 URL（如 AWS RDS 控制台，您的数据库控制台）"
       },
       "create-admin-user": "这是 Bytebase 用于连接数据库，执行 DDL 和 DML (非 SELECT) 操作的用户。",
       "create-admin-user-non-sql": "这是 Bytebase 用于连接数据库，执行写和管理操作的用户。",
@@ -1545,7 +1539,7 @@
       "selected": "已选择 {count} 个项目 | 已选择 {count} 个项目"
     },
     "create-modal": {
-      "project-name": "@:{'common.project'}@:{'common.name'}",
+      "project-name": "项目名称",
       "success-prompt": "成功创建 {name}."
     },
     "filter-projects": "过滤项目",
@@ -1643,14 +1637,14 @@
         "self": "项目标签"
       },
       "restore": {
-        "btn-text": "恢复这个@:common.project",
+        "btn-text": "恢复这个项目",
         "title": "恢复项目"
       },
       "success-updated": "项目设置更新成功",
       "update-failed": "无法更新项目设置。"
     },
     "table": {
-      "name": "@:common.name"
+      "name": "名称"
     },
     "webhook": {
       "activity-item": {
@@ -1664,7 +1658,7 @@
         },
         "issue-creation": {
           "label": "当一个新的工单被创建",
-          "title": "创建@:common.issue"
+          "title": "创建工单"
         },
         "issue-sent-back": {
           "label": "当工单被审批人退回",
@@ -1680,11 +1674,9 @@
         }
       },
       "activity-support-direct-message": "支持向相关用户发送私信通知",
-      "add-a-webhook": "添加 webhook",
       "create-webhook": "创建 webhook",
       "creation": {
         "desc": "为 {destination} 创建一个 webhook",
-        "title": "创建 webhook",
         "view-doc": "{destination} 的官方文档"
       },
       "deletion": {
@@ -1697,6 +1689,7 @@
       "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
       "enable-direct-messages": "启用私信通知",
       "fail-tested-title": "测试 webhook 事件失败.",
+      "self": "Webhook",
       "success-created-prompt": "成功创建 {name} webhook.",
       "success-deleted-prompt": "成功删除 {name} webhook.",
       "success-tested-prompt": "测试 webhook 事件成功.",
@@ -1707,13 +1700,11 @@
     }
   },
   "quick-action": {
-    "add-instance": "@:common.add@:common.instance",
     "create-db": "创建数据库",
-    "create-project": "@:common.create@:common.project",
+    "create-project": "创建项目",
     "from-projects": "从其他项目",
     "from-unassigned-databases": "未分配的数据库",
-    "new-db": "创建数据库",
-    "new-project": "@:common.new@:common.project",
+    "new-project": "创建项目",
     "request-export-data": "申请导出数据",
     "transfer-in-db-title": "转进数据库",
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。"
@@ -1727,11 +1718,11 @@
     "query-data": "查询数据",
     "self": "新手任务",
     "view-an-issue": "查看工单",
-    "visit-database": "@:common.visit@:common.databases",
-    "visit-environment": "@:common.visit@:common.environments",
-    "visit-instance": "@:common.visit@:common.instances",
-    "visit-member": "@:common.visit@:common.members",
-    "visit-project": "@:common.visit@:common.projects"
+    "visit-database": "访问数据库",
+    "visit-environment": "访问环境",
+    "visit-instance": "访问实例",
+    "visit-member": "访问成员 | 成员",
+    "visit-project": "访问项目"
   },
   "refresh-remind": {
     "description": "检测到过时版本。请刷新页面。",
@@ -1819,10 +1810,8 @@
     "select-role": "选择角色",
     "self": "角色",
     "setting": {
-      "add": "添加角色",
       "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
       "description-placeholder": "输入角色描述",
-      "edit": "编辑角色",
       "title-placeholder": "输入角色称谓"
     },
     "sql-editor-read-user": {
@@ -2167,10 +2156,6 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "添加另一个即时通讯工具",
-      "add-im-integration": "添加即时通讯集成"
-    },
     "im-integration": {
       "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
@@ -2203,9 +2188,6 @@
         "reactivate-confirm-title": "确定启用"
       },
       "add-member": "添加成员",
-      "add-service-account": "添加服务账号",
-      "add-user": "添加用户",
-      "add-workload-identity": "添加工作负载身份",
       "all-users": "全部用户",
       "assign-role": "分配角色 | 分配角色",
       "copy-service-key": "复制 Service Key",
@@ -2221,7 +2203,6 @@
       },
       "grant-access": "授予访问权限",
       "groups": {
-        "add-group": "添加组",
         "form": {
           "description": "描述",
           "email": "邮箱",
@@ -2234,7 +2215,6 @@
         },
         "n-members": "{n} 位成员",
         "self": "群组",
-        "update-group": "更新组",
         "workspace-domain-required": "请先设置工作空间的域名。"
       },
       "inactive-service-accounts": "未激活服务账号",
@@ -2245,7 +2225,7 @@
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "revoke-access": "撤销访问权限",
       "revoke-access-alert": "您确定要撤销访问权限吗？",
-      "revoke-allusers-alert": "撤销“@:{'settings.members.all-users'}”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
+      "revoke-allusers-alert": "撤销“全部用户”将撤销您工作区中所有其他用户的相关角色。您确定要继续吗？",
       "revoked": "已撤销",
       "search-member": "搜索成员",
       "select-account": "选择账户 | 选择账户",
@@ -2262,9 +2242,6 @@
         "groups": "群组",
         "roles": "角色"
       },
-      "update-service-account": "更新服务账号",
-      "update-user": "更新用户",
-      "update-workload-identity": "更新工作负载身份",
       "view-by-members": "按成员查看",
       "view-by-roles": "按角色查看",
       "workload-identities": "工作负载身份",
@@ -2305,8 +2282,6 @@
     },
     "sensitive-data": {
       "algorithms": {
-        "add": "添加算法",
-        "edit": "编辑算法",
         "error": {
           "salt-required": "请填写盐值",
           "slice-invalid-number": "遮掩范围起始值和结束值必须是数字",
@@ -2372,7 +2347,6 @@
       "remove-semantic-type-tips": "删除此列的语义类型吗？",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "semantic-types": {
-        "add-from-template": "从模板添加",
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
         "self": "语义类型",
@@ -2408,7 +2382,6 @@
       "subscription": "订阅"
     },
     "sso": {
-      "create": "创建 SSO",
       "delete": "删除该 SSO",
       "description": "单点登录（SSO）是一种认证方法，使用户能够通过其他应用程序和网站来进行登录。",
       "form": {
@@ -2746,7 +2719,6 @@
         "name": "配置规则"
       }
     },
-    "create-policy": "创建审核策略",
     "delete": "删除审核策略",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
     "disabled": "SQL 审核策略已禁用",
@@ -2870,7 +2842,7 @@
         "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
         "runoutof": "已用尽全部 {total} 个用户额度。",
         "title": "用户数量限制",
-        "upgrade": "@:{'subscription.upgrade'}来获取更多用户额度。"
+        "upgrade": "升级来获取更多用户额度。"
       }
     }
   },

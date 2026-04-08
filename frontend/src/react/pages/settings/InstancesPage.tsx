@@ -518,9 +518,7 @@ function EditEnvironmentDrawer({
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="ml-auto relative bg-white w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">
-            {t("database.edit-environment")}
-          </h2>
+          <h2 className="text-lg font-semibold">{t("common.environment")}</h2>
           <button
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
@@ -571,7 +569,7 @@ function EditEnvironmentDrawer({
               onClose();
             }}
           >
-            {t("common.confirm")}
+            {t("common.update")}
           </Button>
         </div>
       </div>
@@ -1062,7 +1060,7 @@ export function InstancesPage() {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
-          title: t("database.edit-environment"),
+          title: t("common.environment"),
           description: (error as { message?: string }).message,
         });
       }
@@ -1166,7 +1164,7 @@ export function InstancesPage() {
         <PermissionGuard permissions={["bb.instances.create"]}>
           <Button disabled={!canCreate} onClick={navigateToCreate}>
             <Plus className="h-4 w-4 mr-1" />
-            {t("quick-action.add-instance")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>
@@ -1213,7 +1211,7 @@ export function InstancesPage() {
                 className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
                 onClick={() => toggleSort("environment")}
               >
-                <div className="flex items-center gap-x-1">
+                <div className="flex items-center gap-x-2 text-sm text-main">
                   {t("common.environment")}
                   {renderSortIndicator("environment")}
                 </div>

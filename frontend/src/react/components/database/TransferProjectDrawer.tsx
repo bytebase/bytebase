@@ -206,7 +206,7 @@ export function TransferProjectDrawer({
               }
             }}
           >
-            {t("common.confirm")}
+            {t("common.transfer")}
           </Button>
         </div>
       </div>

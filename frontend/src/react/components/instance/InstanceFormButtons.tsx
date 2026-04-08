@@ -486,9 +486,7 @@ export function InstanceFormButtons({
           }
           onClick={doUpdate}
         >
-          {state.isRequesting
-            ? t("common.updating")
-            : t("common.confirm-and-update")}
+          {state.isRequesting ? t("common.updating") : t("common.update")}
         </Button>
       </div>
     </div>

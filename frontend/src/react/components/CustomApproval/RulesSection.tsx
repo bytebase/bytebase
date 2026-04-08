@@ -99,7 +99,7 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-[40px_200px_1fr_280px_96px] border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
+      className={`grid grid-cols-[40px_200px_1fr_280px_140px] border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
         index % 2 === 1 ? "bg-gray-50/50" : ""
       }`}
     >
@@ -124,25 +124,28 @@ function SortableRow({
       </div>
       <div className="flex items-center gap-x-1 px-3 py-2">
         {confirmingDelete ? (
-          <>
+          <div className="flex items-center gap-x-1">
             <Button
               variant="destructive"
               size="sm"
+              className="h-6 px-2 text-xs"
               onClick={handleConfirmDelete}
             >
-              {t("common.confirm")}
+              {t("common.delete")}
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="h-6 px-2 text-xs"
               onClick={() => setConfirmingDelete(false)}
             >
               {t("common.cancel")}
             </Button>
-          </>
+          </div>
         ) : (
           <>
             <button
+              type="button"
               className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
               onClick={handleEditClick}
             >
@@ -150,6 +153,7 @@ function SortableRow({
             </button>
             {allowAdmin && (
               <button
+                type="button"
                 className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
                 onClick={handleDeleteClick}
               >
@@ -165,7 +169,7 @@ function SortableRow({
 
 function RuleRowOverlay({ rule }: { rule: LocalApprovalRule }) {
   return (
-    <div className="grid grid-cols-[40px_200px_1fr_280px_96px] border border-gray-200 bg-blue-50 opacity-50">
+    <div className="grid grid-cols-[40px_200px_1fr_280px_140px] border border-gray-200 bg-blue-50 opacity-50">
       <div className="flex items-center justify-center px-2 py-2">
         <GripVertical className="h-4 w-4 text-gray-400" />
       </div>
@@ -307,21 +311,21 @@ export function RulesSection({
         <PermissionGuard permissions={["bb.settings.set"]}>
           <Button size="sm" disabled={!canEdit} onClick={handleAddRule}>
             <Plus className="h-4 w-4" />
-            {t("custom-approval.approval-flow.add-rule")}
+            {t("common.create")}
           </Button>
         </PermissionGuard>
       </div>
 
       <div className="rounded-sm border border-gray-200 text-sm">
         {/* Table Header */}
-        <div className="grid grid-cols-[40px_200px_1fr_280px_96px] border-b border-gray-200 bg-gray-50 font-medium text-gray-600">
+        <div className="grid grid-cols-[40px_200px_1fr_280px_140px] border-b border-gray-200 bg-gray-50 font-medium text-gray-600">
           <div className="w-10 px-2 py-2" />
           <div className="px-3 py-2">{t("common.title")}</div>
           <div className="px-3 py-2">{t("cel.condition.self")}</div>
           <div className="px-3 py-2">
             {t("custom-approval.approval-flow.self")}
           </div>
-          <div className="w-24 px-3 py-2">{t("common.operations")}</div>
+          <div className="w-[140px] px-3 py-2">{t("common.operations")}</div>
         </div>
 
         {/* Draggable Body */}

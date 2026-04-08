@@ -242,8 +242,6 @@
     "configure": "設定",
     "configure-now": "今すぐ設定する",
     "confirm": "確認する",
-    "confirm-and-add": "確認して追加する",
-    "confirm-and-update": "確認して更新する",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
@@ -267,6 +265,7 @@
       "week": "1 週間",
       "year": "1 年"
     },
+    "deactivate": "無効化",
     "default": "デフォルト",
     "definition": "意味",
     "delete": "消去",
@@ -316,7 +315,7 @@
     "go-back": "戻る",
     "groups": "グループ",
     "hard-delete": {
-      "description": "このリソースとその他の関連リソースは物理的に削除されます。@:common.cannot-undo-this-action",
+      "description": "このリソースとその他の関連リソースは物理的に削除されます。この操作は元に戻せません",
       "double-comfirm": "削除を確認するには、{name} と入力してください。",
       "notification": "リソース '{name}' を正常に削除しました。",
       "self": "ハード削除",
@@ -354,7 +353,6 @@
     "n-items-selected": "{n} 件選択済み",
     "n-more": "+{n} もっと",
     "name": "名前",
-    "new": "作成する",
     "next": "次のステップ",
     "no-data": "データなし",
     "no-license": "ライセンスがありません",
@@ -392,6 +390,7 @@
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
+    "reset": "リセット",
     "resource": "リソース",
     "resource-not-found": "リソースが見つかりません",
     "resources": "リソース",
@@ -472,7 +471,6 @@
     "view-details": "詳細を確認する",
     "view-doc": "ドキュメントを見る",
     "visibility": "可視性",
-    "visit": "アクセス",
     "want-help": "ユーザーグループに参加する",
     "warehouse": "倉庫",
     "warning": "警告する",
@@ -491,9 +489,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "ルールを追加",
-      "create-approval-flow": "承認フローの作成",
-      "edit-rule": "ルールを編集",
       "fallback-rules": "フォールバックルール",
       "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
       "node": {
@@ -567,7 +562,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
+      "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。",
+      "self": "カスタム承認ルール"
     },
     "self": "カスタム承認"
   },
@@ -598,13 +594,12 @@
       "port": "ポート",
       "private-key": "秘密鍵",
       "ssh-key": "SSHキー",
-      "tunnel": "トンネル",
       "user": "ユーザー名"
     },
     "ssh-connection": "SSH接続",
     "ssh-type": {
       "none": "なし",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}"
+      "tunnel-and-private-key": "トンネル + 秘密鍵"
     },
     "ssl": {
       "ca-cert": "CA証明書",
@@ -756,7 +751,6 @@
     "condition": {
       "self": "状態"
     },
-    "create": "新しいデータベースグループを作成する",
     "delete-group": "データベースグループを削除する",
     "deleted": "削除されたデータベースグループ",
     "matched-database": "マッチングデータベース",
@@ -812,9 +806,8 @@
     "views": "ビュー"
   },
   "environment": {
-    "create": "環境を作成する",
     "delete": "この環境を削除します",
-    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。@:common.cannot-undo-this-action",
+    "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "production-environment": "本番環境",
     "reorder": "環境の並べ替え",
     "select": "環境を選ぶ",
@@ -885,6 +878,7 @@
     "identity-provider-permission-denied": "許可が拒否されました",
     "identity-provider-update-failed": "IDプロバイダの更新に失敗しました",
     "no-claims": "アイデンティティ プロバイダーから返されるクレームはありません。",
+    "self": "ID プロバイダー",
     "test-connection": "テスト接続",
     "test-connection-success": "テスト接続に成功しました",
     "userinfo-description": "一致したユーザー情報。"
@@ -971,7 +965,7 @@
       "no-info": "このエンジンの追加情報はありません。"
     },
     "instance-id": "インスタンスID",
-    "instance-name": "@:common.instance@:instance.name",
+    "instance-name": "インスタンス名",
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
@@ -1021,7 +1015,7 @@
         }
       },
       "console": {
-        "snowflake": "この @:{'common.instance'} を管理する外部コンソール URL (AWS RDS コンソール、@:{'common.database'} コンソールなど)"
+        "snowflake": "この インスタンス を管理する外部コンソール URL (AWS RDS コンソール、データベース コンソールなど)"
       },
       "create-admin-user": "これは、データベースに接続し、DDL および DML (非 SELECT) 操作を実行するために Bytebase によって使用されるユーザーです。",
       "create-admin-user-non-sql": "これは、データベースに接続し、書き込みおよび管理操作を実行するために Bytebase によって使用されるユーザーです。",
@@ -1545,7 +1539,7 @@
       "selected": "{count} 件のプロジェクトが選択されました | {count} 件のプロジェクトが選択されました"
     },
     "create-modal": {
-      "project-name": "@:{'common.project'}@:{'common.name'}",
+      "project-name": "プロジェクト名前",
       "success-prompt": "{name} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
@@ -1643,14 +1637,14 @@
         "self": "プロジェクトラベル"
       },
       "restore": {
-        "btn-text": "この @:common.project を復元します",
+        "btn-text": "この プロジェクト を復元します",
         "title": "アイテムを復元する"
       },
       "success-updated": "プロジェクト設定が正常に更新されました",
       "update-failed": "プロジェクト設定の更新に失敗しました。"
     },
     "table": {
-      "name": "@:common.name"
+      "name": "名前"
     },
     "webhook": {
       "activity-item": {
@@ -1664,7 +1658,7 @@
         },
         "issue-creation": {
           "label": "新しいイシューが作成されたとき",
-          "title": "@:common.issue を作成する"
+          "title": "イシュー を作成する"
         },
         "issue-sent-back": {
           "label": "承認者がイシューを差し戻したとき",
@@ -1680,11 +1674,9 @@
         }
       },
       "activity-support-direct-message": "関連するユーザーへのプライベート メッセージ通知の送信のサポート",
-      "add-a-webhook": "Webhook を追加する",
       "create-webhook": "Webhook の作成",
       "creation": {
         "desc": "{destination} の Webhook を作成します",
-        "title": "Webhook の作成",
         "view-doc": "{destination} の公式ドキュメント"
       },
       "deletion": {
@@ -1697,6 +1689,7 @@
       "direct-messages-warning": "これを機能させるには、{im} を設定する必要があります。",
       "enable-direct-messages": "プライベートメッセージ通知を有効にする",
       "fail-tested-title": "Webhook イベントのテストに失敗しました。",
+      "self": "Webhook",
       "success-created-prompt": "{name} Webhook が正常に作成されました。",
       "success-deleted-prompt": "{name} Webhook が正常に削除されました。",
       "success-tested-prompt": "Webhook イベントのテストが成功しました。",
@@ -1707,13 +1700,11 @@
     }
   },
   "quick-action": {
-    "add-instance": "@:common.instance@:common.add",
     "create-db": "データベースの作成",
-    "create-project": "@:common.create@:common.project",
+    "create-project": "作成するプロジェクト",
     "from-projects": "他のプロジェクトから",
     "from-unassigned-databases": "割り当てられていないデータベース",
-    "new-db": "データベースの作成",
-    "new-project": "@:common.new@:common.project",
+    "new-project": "作成するプロジェクト",
     "request-export-data": "データ出力を申請する",
     "transfer-in-db-title": "データベースへの転送",
     "unassigned-db-hint": "新しく同期されたデータベースは最初は割り当てられていないため、使用するにはプロジェクトに移動する必要があります。"
@@ -1727,11 +1718,11 @@
     "query-data": "クエリデータ",
     "self": "クイックスタート",
     "view-an-issue": "イシューを表示する",
-    "visit-database": "@:{'common.databases'}に@:{'common.visit'}する",
-    "visit-environment": "@:{'common.environments'}に@:{'common.visit'}する",
-    "visit-instance": "@:{'common.instances'}に@:{'common.visit'}する",
-    "visit-member": "@:{'common.members'}に@:{'common.visit'}する",
-    "visit-project": "@:{'common.projects'}に@:{'common.visit'}する"
+    "visit-database": "データベースにアクセスする",
+    "visit-environment": "環境にアクセスする",
+    "visit-instance": "インスタンスにアクセスする",
+    "visit-member": "メンバー | メンバーにアクセスする",
+    "visit-project": "プロジェクトにアクセスする"
   },
   "refresh-remind": {
     "description": "古いバージョンが検出されました。ページを更新してください。",
@@ -1819,10 +1810,8 @@
     "select-role": "ロールの選択",
     "self": "ロール",
     "setting": {
-      "add": "ロールの追加",
       "description": "プロジェクトメンバーとカスタム承認に適用できるカスタムロールを定義します。",
       "description-placeholder": "ロールの説明を入力してください",
-      "edit": "ロールの編集",
       "title-placeholder": "ロールのタイトルを入力してください"
     },
     "sql-editor-read-user": {
@@ -2167,10 +2156,6 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "別のIMを追加",
-      "add-im-integration": "IM 連携の追加"
-    },
     "im-integration": {
       "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
     },
@@ -2203,9 +2188,6 @@
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "add-member": "メンバーを追加",
-      "add-service-account": "サービスアカウントを追加",
-      "add-user": "ユーザーを追加",
-      "add-workload-identity": "ワークロードIDを追加",
       "all-users": "すべてのユーザー",
       "assign-role": "ロールの割り当て | ロールの割り当て",
       "copy-service-key": "サービスキーをコピーする",
@@ -2221,7 +2203,6 @@
       },
       "grant-access": "アクセスを許可する",
       "groups": {
-        "add-group": "グループを追加",
         "form": {
           "description": "説明",
           "email": "Eメール",
@@ -2234,7 +2215,6 @@
         },
         "n-members": "{n} 人のメンバー",
         "self": "グループ",
-        "update-group": "更新グループ",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
       "inactive-service-accounts": "非アクティブサービスアカウント",
@@ -2245,7 +2225,7 @@
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoke-access": "アクセスを取り消す",
       "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
-      "revoke-allusers-alert": "「@:{'settings.members.all-users'}」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
+      "revoke-allusers-alert": "「すべてのユーザー」を取り消すと、ワークスペース内の他のすべてのユーザーの関連ロールが取り消されます。続行しますか?",
       "revoked": "取り消されました",
       "search-member": "メンバーを検索",
       "select-account": "アカウントを選択 | アカウントを選択",
@@ -2262,9 +2242,6 @@
         "groups": "グループ",
         "roles": "ロール"
       },
-      "update-service-account": "サービスアカウントを更新",
-      "update-user": "ユーザーを更新",
-      "update-workload-identity": "ワークロードIDを更新",
       "view-by-members": "メンバー別に表示",
       "view-by-roles": "ロールごとに表示",
       "workload-identities": "ワークロードID",
@@ -2305,8 +2282,6 @@
     },
     "sensitive-data": {
       "algorithms": {
-        "add": "アルゴリズムを追加",
-        "edit": "アルゴリズムを編集",
         "error": {
           "salt-required": "塩分値を入力してください",
           "slice-invalid-number": "マスク範囲の開始値と終了値は数値である必要があります",
@@ -2372,7 +2347,6 @@
       "remove-semantic-type-tips": "この列のセマンティック タイプを削除しますか?",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
       "semantic-types": {
-        "add-from-template": "テンプレートから追加",
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",
         "self": "セマンティックタイプ",
@@ -2408,7 +2382,6 @@
       "subscription": "サブスクリプション"
     },
     "sso": {
-      "create": "SSOの作成",
       "delete": "この SSO を削除する",
       "description": "シングル サインオン (SSO) は、ユーザーが他のアプリケーションや Web サイトからログインできるようにする認証方法です。",
       "form": {
@@ -2746,7 +2719,6 @@
         "name": "ルールを設定する"
       }
     },
-    "create-policy": "SQL レビューポリシーを作成する",
     "delete": "SQL レビューポリシーの削除",
     "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
     "disabled": "SQL レビューポリシーが無効になっています",
@@ -2870,7 +2842,7 @@
         "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
         "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
         "title": "ユーザー制限",
-        "upgrade": "@:{'subscription.upgrade'} でユーザークォータをさらに取得します。"
+        "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
     }
   },

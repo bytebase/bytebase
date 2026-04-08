@@ -333,7 +333,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
           }}
         >
           <Plus className="h-4 w-4 mr-1" />
-          {t("settings.members.add-workload-identity")}
+          {t("common.create")}
         </Button>
       </div>
 

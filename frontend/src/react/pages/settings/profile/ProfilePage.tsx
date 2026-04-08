@@ -694,7 +694,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
               {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDisable2FA}>
-              {t("common.confirm")}
+              {t("common.disable")}
             </Button>
           </div>
         </DialogContent>

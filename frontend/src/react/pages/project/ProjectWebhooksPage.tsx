@@ -95,7 +95,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
       <div className="px-4 pb-2 flex items-center justify-end">
         <Button disabled={!allowEdit} onClick={handleAdd}>
           <Plus className="w-4 h-4 mr-1" />
-          {t("project.webhook.add-a-webhook")}
+          {t("common.create")}
         </Button>
       </div>
 

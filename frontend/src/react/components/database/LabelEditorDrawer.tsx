@@ -160,7 +160,7 @@ export function LabelEditorDrawer({
               }
             }}
           >
-            {t("common.confirm")}
+            {t("common.update")}
           </Button>
         </div>
       </div>

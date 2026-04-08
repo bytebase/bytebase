@@ -389,7 +389,7 @@ export function RuleEditDialog({
       <DialogContent>
         <div className="p-6 flex flex-col gap-y-4">
           <div className="flex items-center justify-between">
-            <DialogTitle>{localization.title}</DialogTitle>
+            <DialogTitle>{t("sql-review.rule.self")}</DialogTitle>
             <span className="text-sm text-control-placeholder">
               {Engine[rule.engine]}
             </span>
@@ -422,7 +422,7 @@ export function RuleEditDialog({
               {t("common.cancel")}
             </Button>
             <Button disabled={disabled} onClick={handleConfirm}>
-              {t("common.confirm")}
+              {t("common.update")}
             </Button>
           </div>
         </div>

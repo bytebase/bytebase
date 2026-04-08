@@ -148,8 +148,6 @@
     "configure": "Configure",
     "configure-now": "Configure now",
     "confirm": "Confirm",
-    "confirm-and-add": "Confirm and add",
-    "confirm-and-update": "Confirm and update",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "Confirm to revert your editing?",
@@ -167,6 +165,7 @@
     "database": "Database",
     "database-group": "Database Group",
     "databases": "Databases",
+    "deactivate": "Deactivate",
     "default": "Default",
     "delete": "Delete",
     "delete-resource": "Delete {{type}}",
@@ -201,9 +200,11 @@
     "filter-by-name": "Filter by name",
     "from": "From",
     "general": "General",
+    "group": "Group",
     "groups": "Groups",
     "home": "Home",
     "id": "ID",
+    "import": "Import",
     "instance": "Instance",
     "instances": "Instances",
     "is-required": "is required",
@@ -244,6 +245,7 @@
     "reorder": "Reorder",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "reset": "Reset",
     "resource": "Resource",
     "resource-not-found": "Resource not found",
     "resources": "Resources",
@@ -252,6 +254,9 @@
     "revert": "Revert",
     "revoke": "Revoke",
     "revoked": "Revoked",
+    "role": {
+      "self": "Role"
+    },
     "rows-per-page": "Rows per page",
     "save": "Save",
     "schema": "Schema",
@@ -275,6 +280,7 @@
     "to": "To",
     "total": "Total",
     "total-n-items": "Total {{n}} items",
+    "transfer": "Transfer",
     "type": "Type",
     "type-to-search": "Type to search",
     "unassigned": "Unassigned",
@@ -302,7 +308,6 @@
   "common.archived": "Archived",
   "common.cancel": "Cancel",
   "common.cannot-undo-this-action": "You cannot undo this action",
-  "common.confirm-and-update": "Confirm and update",
   "common.continue-anyway": "Continue anyway",
   "common.create": "Create",
   "common.creating": "Creating",
@@ -346,9 +351,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Add rule",
-      "create-approval-flow": "Create approval flow",
-      "edit-rule": "Edit rule",
       "fallback-rules": "Fallback Rules",
       "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
       "node": {
@@ -408,7 +410,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Rules are evaluated in order. First matching rule applies."
+      "first-match-wins": "Rules are evaluated in order. First matching rule applies.",
+      "self": "Custom Approval Rule"
     },
     "self": "Custom Approval"
   },
@@ -532,7 +535,6 @@
     "condition": {
       "self": "Condition"
     },
-    "create": "New database group",
     "delete-group": "Delete the database group {{name}}",
     "matched-database": "Matched database",
     "no-matched-databases": "No matched databases",
@@ -558,7 +560,6 @@
   "db.syncing-databases-for-instance": "Syncing databases for {{0}}...",
   "dynamic.resource.instance": "Instance ID",
   "environment": {
-    "create": "Create Environment",
     "delete": "Delete this environment",
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "reorder": "Reorder Environments",
@@ -621,6 +622,7 @@
     "identity-provider-permission-denied": "Permission denied",
     "identity-provider-update-failed": "Failed to update identity provider",
     "no-claims": "No claims returned by the identity provider.",
+    "self": "Identity Provider",
     "test-connection": "Test Connection",
     "test-connection-success": "Test Connection Successful",
     "userinfo-description": "The matched user information."
@@ -1221,10 +1223,8 @@
     },
     "webhook": {
       "activity-support-direct-message": "Support send direct messages to related users",
-      "add-a-webhook": "Add a webhook",
       "creation": {
         "desc": "Create the corresponding webhook for the {{destination}} channel receiving the message.",
-        "title": "Create webhook",
         "view-doc": "View {{destination}}'s doc"
       },
       "deletion": {
@@ -1237,6 +1237,7 @@
       "direct-messages-warning": "You need to configure IM integration to make it work.",
       "enable-direct-messages": "Enable direct messages",
       "fail-tested-title": "Test webhook event failed.",
+      "self": "Webhook",
       "success-created-prompt": "Successfully created webhook {{name}}.",
       "success-deleted-prompt": "Successfully deleted webhook {{name}}.",
       "success-tested-prompt": "Test webhook event OK.",
@@ -1247,14 +1248,9 @@
     }
   },
   "quick-action": {
-    "add-instance": "Add Instance",
     "create-db": "Create database",
-    "create-project": "Create Project",
-    "new-db": "New DB",
-    "new-project": "New Project",
     "request-export-data": "Request Export"
   },
-  "quick-action.add-instance": "@:common.add @:common.instance",
   "release": {
     "files": "Files",
     "releases": "Releases",
@@ -1300,10 +1296,8 @@
     "select-role": "Select role",
     "self": "Role",
     "setting": {
-      "add": "Add role",
       "description": "Defining custom roles. You may apply them to project members and used in custom approval.",
       "description-placeholder": "Input role description",
-      "edit": "Edit role",
       "title-placeholder": "Input role title"
     },
     "title": "Title",
@@ -1515,10 +1509,7 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Add Another IM",
-      "add-im-integration": "Add IM Integration"
-    },
+    "im": {},
     "im-integration": {
       "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
@@ -1551,9 +1542,6 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
-      "add-service-account": "Add Service Account",
-      "add-user": "Add user",
-      "add-workload-identity": "Add Workload Identity",
       "all-users": "All users",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
@@ -1570,7 +1558,6 @@
       },
       "grant-access": "Grant Access",
       "groups": {
-        "add-group": "Add Group",
         "external-readonly": "External group is read-only.",
         "form": {
           "description": "Description",
@@ -1584,7 +1571,6 @@
         },
         "n-members": "{{n}} members",
         "self": "Groups",
-        "update-group": "Update Group",
         "workspace-domain-required": "Please set a workspace domain first."
       },
       "inactive-service-accounts": "Inactive service accounts",
@@ -1611,9 +1597,6 @@
         "groups": "Groups",
         "roles": "Roles"
       },
-      "update-service-account": "Update Service Account",
-      "update-user": "Update User",
-      "update-workload-identity": "Update Workload Identity",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
       "workload-identities": "Workload Identities",
@@ -1717,7 +1700,6 @@
       },
       "never-expires": "Never expires",
       "semantic-types": {
-        "add-from-template": "Add from template",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",
         "self": "Semantic Types",
@@ -1755,7 +1737,6 @@
       "users-and-groups": "Users & Groups"
     },
     "sso": {
-      "create": "Create SSO",
       "delete": "Delete this SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "form": {
@@ -1875,7 +1856,6 @@
         "name": "Configure rule"
       }
     },
-    "create-policy": "Create SQL review",
     "delete": "Delete SQL review policy",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
@@ -1887,6 +1867,9 @@
     "policy-update-failed": "Failed to update the review policy.",
     "policy-updated": "Successfully updated the review policy.",
     "review-policy": "Review policy",
+    "rule": {
+      "self": "SQL Review Rule"
+    },
     "title": "SQL Review"
   },
   "subscription": {

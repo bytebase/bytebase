@@ -397,7 +397,7 @@ export function IMPage() {
                 onClick={() => handleAdd(availableTypes[0].type)}
               >
                 <Plus className="h-4 w-4 mr-1" />
-                {t("settings.im.add-im-integration")}
+                {t("common.create")}
               </Button>
             </PermissionGuard>
           )}
@@ -491,7 +491,7 @@ export function IMPage() {
               onClick={() => handleAdd(availableTypes[0].type)}
             >
               <Plus className="h-4 w-4 mr-1" />
-              {t("settings.im.add-another-im")}
+              {t("common.create")}
             </Button>
           </PermissionGuard>
         </div>

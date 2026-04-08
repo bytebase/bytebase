@@ -242,8 +242,6 @@
     "configure": "Configure",
     "configure-now": "Configure now",
     "confirm": "Confirm",
-    "confirm-and-add": "Confirm and add",
-    "confirm-and-update": "Confirm and update",
     "confirm-archive": "Archive Resource?",
     "confirm-delete": "Delete Resource?",
     "confirm-to-revert": "Confirm to revert your editing?",
@@ -267,6 +265,7 @@
       "week": "1 week",
       "year": "1 year"
     },
+    "deactivate": "Deactivate",
     "default": "default",
     "definition": "Definition",
     "delete": "Delete",
@@ -316,7 +315,7 @@
     "go-back": "Go back",
     "groups": "Groups",
     "hard-delete": {
-      "description": "This resource and other related resources will be hard-deleted. @:common.cannot-undo-this-action",
+      "description": "This resource and other related resources will be hard-deleted. You cannot undo this action",
       "double-comfirm": "To confirm deletion, please type: {name}",
       "notification": "Successfully delete the resource '{name}'.",
       "self": "Hard-delete",
@@ -354,7 +353,6 @@
     "n-items-selected": "{n} items selected",
     "n-more": "+{n} more",
     "name": "Name",
-    "new": "New",
     "next": "Next",
     "no-data": "No data",
     "no-license": "No license",
@@ -392,6 +390,7 @@
     "reorder": "Reorder",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
+    "reset": "Reset",
     "resource": "Resource",
     "resource-not-found": "Resource not found",
     "resources": "Resources",
@@ -472,7 +471,6 @@
     "view-details": "View details",
     "view-doc": "View doc",
     "visibility": "Visibility",
-    "visit": "Visit",
     "want-help": "Want help",
     "warehouse": "Warehouse",
     "warning": "Warning",
@@ -491,9 +489,6 @@
   },
   "custom-approval": {
     "approval-flow": {
-      "add-rule": "Add rule",
-      "create-approval-flow": "Create approval flow",
-      "edit-rule": "Edit rule",
       "fallback-rules": "Fallback Rules",
       "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
       "node": {
@@ -567,7 +562,8 @@
       }
     },
     "rule": {
-      "first-match-wins": "Rules are evaluated in order. First matching rule applies."
+      "first-match-wins": "Rules are evaluated in order. First matching rule applies.",
+      "self": "Custom Approval Rule"
     },
     "self": "Custom Approval"
   },
@@ -598,13 +594,12 @@
       "port": "Port",
       "private-key": "Private Key",
       "ssh-key": "SSH Key",
-      "tunnel": "Tunnel",
       "user": "User"
     },
     "ssh-connection": "SSH Connection",
     "ssh-type": {
       "none": "None",
-      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}"
+      "tunnel-and-private-key": "Tunnel + Private Key"
     },
     "ssl": {
       "ca-cert": "CA Certificate",
@@ -756,7 +751,6 @@
     "condition": {
       "self": "Condition"
     },
-    "create": "New database group",
     "delete-group": "Delete the database group {name}",
     "deleted": "Deleted database group",
     "matched-database": "Matched database",
@@ -812,9 +806,8 @@
     "views": "Views"
   },
   "environment": {
-    "create": "Create Environment",
     "delete": "Delete this environment",
-    "delete-description": "Delete environment will also remove it from related instances and databases. @:common.cannot-undo-this-action",
+    "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
     "production-environment": "Production environment",
     "reorder": "Reorder Environments",
     "select": "Select environment",
@@ -885,6 +878,7 @@
     "identity-provider-permission-denied": "Permission denied",
     "identity-provider-update-failed": "Failed to update identity provider",
     "no-claims": "No claims returned by the identity provider.",
+    "self": "Identity provider",
     "test-connection": "Test Connection",
     "test-connection-success": "Test Connection Successful",
     "userinfo-description": "The matched user information."
@@ -1545,7 +1539,7 @@
       "selected": "{count} project selected | {count} projects selected"
     },
     "create-modal": {
-      "project-name": "@:common.project @:common.name",
+      "project-name": "Project Name",
       "success-prompt": "Successfully created project {name}."
     },
     "filter-projects": "Filter projects",
@@ -1650,7 +1644,7 @@
       "update-failed": "Failed to update the project setting."
     },
     "table": {
-      "name": "@:common.name"
+      "name": "Name"
     },
     "webhook": {
       "activity-item": {
@@ -1680,11 +1674,9 @@
         }
       },
       "activity-support-direct-message": "Support send direct messages to related users",
-      "add-a-webhook": "Add a webhook",
       "create-webhook": "Create webhook",
       "creation": {
         "desc": "Create the corresponding webhook for the {destination} channel receiving the message.",
-        "title": "Create webhook",
         "view-doc": "View {destination}'s doc"
       },
       "deletion": {
@@ -1697,6 +1689,7 @@
       "direct-messages-warning": "You need to configure {im} to make it work.",
       "enable-direct-messages": "Enable direct messages",
       "fail-tested-title": "Test webhook event failed.",
+      "self": "Webhook",
       "success-created-prompt": "Successfully created webhook {name}.",
       "success-deleted-prompt": "Successfully deleted webhook {name}.",
       "success-tested-prompt": "Test webhook event OK.",
@@ -1707,13 +1700,11 @@
     }
   },
   "quick-action": {
-    "add-instance": "@:common.add @:common.instance",
     "create-db": "Create database",
-    "create-project": "@:common.create @:common.project",
+    "create-project": "Create Project",
     "from-projects": "From other projects",
     "from-unassigned-databases": "Unassigned databases",
-    "new-db": "New DB",
-    "new-project": "@:common.new @:common.project",
+    "new-project": "New Project",
     "request-export-data": "Request Export",
     "transfer-in-db-title": "Transfer in database",
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use."
@@ -1727,11 +1718,11 @@
     "query-data": "Query data",
     "self": "Quickstart",
     "view-an-issue": "View an issue",
-    "visit-database": "@:common.visit @:common.databases",
-    "visit-environment": "@:common.visit @:common.environments",
-    "visit-instance": "@:common.visit @:common.instances",
-    "visit-member": "@:common.visit @:common.members",
-    "visit-project": "@:common.visit @:common.projects"
+    "visit-database": "Visit Databases",
+    "visit-environment": "Visit Environments",
+    "visit-instance": "Visit Instances",
+    "visit-member": "Visit Member | Members",
+    "visit-project": "Visit Projects"
   },
   "refresh-remind": {
     "description": "Detect outdated version. Please refresh the page.",
@@ -1819,10 +1810,8 @@
     "select-role": "Select role",
     "self": "Role",
     "setting": {
-      "add": "Add role",
       "description": "Defining custom roles. You may apply them to project members and used in custom approval.",
       "description-placeholder": "Input role description",
-      "edit": "Edit role",
       "title-placeholder": "Input role title"
     },
     "sql-editor-read-user": {
@@ -2167,10 +2156,6 @@
         }
       }
     },
-    "im": {
-      "add-another-im": "Add Another IM",
-      "add-im-integration": "Add IM Integration"
-    },
     "im-integration": {
       "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
@@ -2203,9 +2188,6 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
-      "add-service-account": "Add Service Account",
-      "add-user": "Add user",
-      "add-workload-identity": "Add Workload Identity",
       "all-users": "All users",
       "assign-role": "Assign role | Assign roles",
       "copy-service-key": "Copy Service Key",
@@ -2221,7 +2203,6 @@
       },
       "grant-access": "Grant Access",
       "groups": {
-        "add-group": "Add Group",
         "form": {
           "description": "Description",
           "email": "Email",
@@ -2234,7 +2215,6 @@
         },
         "n-members": "{n} members",
         "self": "Groups",
-        "update-group": "Update Group",
         "workspace-domain-required": "Please set a workspace domain first."
       },
       "inactive-service-accounts": "Inactive service accounts",
@@ -2245,7 +2225,7 @@
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",
       "revoke-access-alert": "Are you sure to revoke access?",
-      "revoke-allusers-alert": "Revoke \"@:{'settings.members.all-users'}\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
+      "revoke-allusers-alert": "Revoke \"All users\" will revoke related roles from all other users in your workspace. Are you sure to continue?",
       "revoked": "Revoked",
       "search-member": "Search member",
       "select-account": "Select account | Select accounts",
@@ -2262,9 +2242,6 @@
         "groups": "Groups",
         "roles": "Roles"
       },
-      "update-service-account": "Update Service Account",
-      "update-user": "Update User",
-      "update-workload-identity": "Update Workload Identity",
       "view-by-members": "View by members",
       "view-by-roles": "View by roles",
       "workload-identities": "Workload Identities",
@@ -2305,8 +2282,6 @@
     },
     "sensitive-data": {
       "algorithms": {
-        "add": "Add algorithm",
-        "edit": "Edit algorithm",
         "error": {
           "salt-required": "Salt is required",
           "slice-invalid-number": "Slice start or end is not a valid number",
@@ -2372,7 +2347,6 @@
       "remove-semantic-type-tips": "Remove the semantic type for this column?",
       "remove-sensitive-column-tips": "Expose this column?",
       "semantic-types": {
-        "add-from-template": "Add from template",
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",
         "self": "Semantic Types",
@@ -2408,7 +2382,6 @@
       "subscription": "Subscription"
     },
     "sso": {
-      "create": "Create SSO",
       "delete": "Delete this SSO",
       "description": "Single Sign-On (SSO) is an authentication method that enables users to authenticate with multiple applications and websites via a single set of credentials.",
       "form": {
@@ -2746,7 +2719,6 @@
         "name": "Configure rule"
       }
     },
-    "create-policy": "Create SQL review",
     "delete": "Delete SQL review policy",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
     "disabled": "SQL review is disabled",
@@ -2870,7 +2842,7 @@
         "remaining": "Your total user quota is {total}, with only {count} users remaining.",
         "runoutof": "You have run out of your {total} user quota.",
         "title": "User count limit",
-        "upgrade": "@:{'subscription.upgrade'} to get more user quota."
+        "upgrade": "Upgrade to get more user quota."
       }
     }
   },

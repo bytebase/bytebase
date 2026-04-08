@@ -85,9 +85,7 @@ export function ReviewCreation({
 
   const isUpdate = !!policy;
 
-  const finishTitle = isUpdate
-    ? t("common.confirm-and-update")
-    : t("common.confirm-and-add");
+  const finishTitle = isUpdate ? t("common.update") : t("common.create");
 
   const allowNext =
     currentStep === STEP_BASIC_INFO

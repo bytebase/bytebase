@@ -252,7 +252,7 @@ export function DatabaseGroupForm({
               {t("common.cancel")}
             </Button>
             <Button disabled={!allowConfirm} onClick={doConfirm}>
-              {isCreating ? t("common.save") : t("common.confirm")}
+              {isCreating ? t("common.create") : t("common.update")}
             </Button>
           </div>
         </div>

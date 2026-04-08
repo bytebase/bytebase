@@ -91,9 +91,8 @@ interface MaskingRuleItem {
 
 function MaskingRuleConfig({
   index,
-  readonly,
   disabled,
-  allowDelete,
+  mode,
   factorList,
   optionConfigMap,
   maskingRule,
@@ -102,9 +101,8 @@ function MaskingRuleConfig({
   onConfirm,
 }: {
   index: number;
-  readonly: boolean;
   disabled: boolean;
-  allowDelete: boolean;
+  mode: MaskingRuleMode;
   factorList: Factor[];
   optionConfigMap: Map<Factor, OptionConfig>;
   maskingRule: MaskingRulePolicy_MaskingRule;
@@ -114,6 +112,8 @@ function MaskingRuleConfig({
 }) {
   const { t } = useTranslation();
   const settingStore = useSettingV1Store();
+
+  const readonly = mode === "NORMAL";
 
   const [title, setTitle] = useState(maskingRule.condition?.title ?? "");
   const [expr, setExpr] = useState<ConditionGroupExpr>(
@@ -276,7 +276,7 @@ function MaskingRuleConfig({
 
       {!readonly && (
         <div className="flex justify-between items-center">
-          {allowDelete ? (
+          {mode === "EDIT" ? (
             <div className="relative">
               {showDeleteConfirm ? (
                 <div className="flex items-center gap-x-2">
@@ -331,7 +331,7 @@ function MaskingRuleConfig({
                 disabled={errorMessages.length !== 0 || disabled || !dirty}
                 onClick={handleConfirm}
               >
-                {t("common.confirm")}
+                {mode === "CREATE" ? t("common.create") : t("common.update")}
               </Button>
               {errorMessages.length > 0 && (
                 <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
@@ -588,7 +588,7 @@ export function GlobalMaskingPage() {
               {t("common.cancel")}
             </Button>
             <Button disabled={processing} onClick={onReorderSubmit}>
-              {t("common.confirm")}
+              {t("common.update")}
             </Button>
           </div>
         ) : (
@@ -608,7 +608,7 @@ export function GlobalMaskingPage() {
               onClick={addNewRule}
             >
               <Plus className="h-4 w-4" />
-              {t("common.add")}
+              {t("common.create")}
             </Button>
           </div>
         )}
@@ -685,11 +685,10 @@ export function GlobalMaskingPage() {
               key={`expr-${item.rule.id}`}
               index={index + 1}
               disabled={processing}
+              mode={reorderRules ? "NORMAL" : item.mode}
               maskingRule={item.rule}
-              readonly={item.mode === "NORMAL" || reorderRules}
               factorList={factorList}
               optionConfigMap={factorOptionsMap}
-              allowDelete={item.mode === "EDIT"}
               onCancel={() => onCancel(index)}
               onDelete={() => onRuleDelete(index)}
               onConfirm={(rule) => onConfirm(rule)}

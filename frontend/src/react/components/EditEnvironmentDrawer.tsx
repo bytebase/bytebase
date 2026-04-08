@@ -89,7 +89,7 @@ export function EditEnvironmentDrawer({
               }
             }}
           >
-            {t("common.confirm")}
+            {t("common.update")}
           </Button>
         </div>
       </div>
