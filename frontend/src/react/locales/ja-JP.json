@@ -324,6 +324,7 @@
   "common.key": "キー",
   "common.labels": "ラベル",
   "common.learn-more": "もっと詳しく知る",
+  "common.load-more": "さらに読み込む",
   "common.loading": "読み込み中",
   "common.minutes": "分",
   "common.no-data": "データなし",
@@ -334,6 +335,8 @@
   "common.read-only": "読み取り専用",
   "common.restore": "復元する",
   "common.sensitive-placeholder": "機密データ - 書き込みのみ",
+  "common.show-more": "もっと見る",
+  "common.unknown": "不明",
   "common.unlimited": "無制限",
   "common.updated": "更新しました",
   "common.updating": "更新中",
@@ -543,6 +546,7 @@
   },
   "database.engine": "エンジン",
   "database.filter-database": "フィルターデータベース",
+  "database.revision.self": "リビジョン",
   "database.sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
   "db": {
     "character-set": "文字セット",
@@ -1041,6 +1045,7 @@
     "upload-sql": "Upload SQL",
     "waiting-approval": "承認待ち"
   },
+  "issue.task-run.logs": "ログ",
   "label": {
     "add-label": "タグ付けする",
     "empty-label-value": "ヌル",
@@ -1980,6 +1985,27 @@
       "running": "ランニング"
     }
   },
+  "task-run.log-detail.backing-up": "バックアップ中...",
+  "task-run.log-detail.backup-completed": "完了しました（{{count}} テーブル）",
+  "task-run.log-detail.completed": "完了しました",
+  "task-run.log-detail.computing": "コンピューティング...",
+  "task-run.log-detail.dumping": "ダンピング...",
+  "task-run.log-detail.retry-attempt": "試行 {{current}}/{{max}}",
+  "task-run.log-detail.syncing": "同期中...",
+  "task-run.log-type.command-execute": "コマンド実行",
+  "task-run.log-type.compute-diff": "差分計算",
+  "task-run.log-type.database-sync": "データベース同期",
+  "task-run.log-type.prior-backup": "事前のバックアップ",
+  "task-run.log-type.release-file-execute": "リリースファイル",
+  "task-run.log-type.retry": "リトライ",
+  "task-run.log-type.schema-dump": "スキーマダンプ",
+  "task-run.log-type.transaction": "取引",
+  "task-run.log-viewer.collapse-all": "すべて折りたたむ",
+  "task-run.log-viewer.expand-all": "すべて展開",
+  "task-run.log-viewer.multiple-replicas-notice": "実行中にサーバーの再起動が検出されました。ログはレプリカごとにグループ化されています。",
+  "task-run.log-viewer.replica-n": "レプリカ #{n}",
+  "task-run.log-viewer.summary": "{sections} セクション · {entries} エントリ",
+  "task.affected-rows": "影響を受けた行数",
   "two-factor": {
     "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
     "disable": {

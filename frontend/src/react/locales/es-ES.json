@@ -324,6 +324,7 @@
   "common.key": "Clave",
   "common.labels": "Etiquetas",
   "common.learn-more": "Aprender más",
+  "common.load-more": "Cargar más",
   "common.loading": "Cargando",
   "common.minutes": "Minutos",
   "common.no-data": "Sin datos",
@@ -334,6 +335,8 @@
   "common.read-only": "Solo lectura",
   "common.restore": "Restaurar",
   "common.sensitive-placeholder": "Sensible - solo escritura",
+  "common.show-more": "Mostrar más",
+  "common.unknown": "Desconocido",
   "common.unlimited": "Ilimitado",
   "common.updated": "Actualizado",
   "common.updating": "Actualizando",
@@ -543,6 +546,7 @@
   },
   "database.engine": "Motor",
   "database.filter-database": "Filtrar base de datos",
+  "database.revision.self": "Revisión",
   "database.sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
   "db": {
     "character-set": "Juego de caracteres",
@@ -1041,6 +1045,7 @@
     "upload-sql": "Upload SQL",
     "waiting-approval": "A la espera de la aprobación"
   },
+  "issue.task-run.logs": "Registros",
   "label": {
     "add-label": "Agregar etiqueta",
     "empty-label-value": "Valor",
@@ -1980,6 +1985,27 @@
       "running": "Ejecutándose"
     }
   },
+  "task-run.log-detail.backing-up": "haciendo copia de seguridad...",
+  "task-run.log-detail.backup-completed": "completadas ({{count}} tablas)",
+  "task-run.log-detail.completed": "Completado",
+  "task-run.log-detail.computing": "computación...",
+  "task-run.log-detail.dumping": "dumping...",
+  "task-run.log-detail.retry-attempt": "intento {{current}}/{{max}}",
+  "task-run.log-detail.syncing": "sincronizando...",
+  "task-run.log-type.command-execute": "Comando Ejecutar",
+  "task-run.log-type.compute-diff": "Calcular diferencia",
+  "task-run.log-type.database-sync": "Sincronización de bases de datos",
+  "task-run.log-type.prior-backup": "Copia de seguridad previa",
+  "task-run.log-type.release-file-execute": "Archivo de lanzamiento",
+  "task-run.log-type.retry": "Reintentar",
+  "task-run.log-type.schema-dump": "Volcado de esquema",
+  "task-run.log-type.transaction": "Transacción",
+  "task-run.log-viewer.collapse-all": "Contraer todo",
+  "task-run.log-viewer.expand-all": "Expandir todo",
+  "task-run.log-viewer.multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
+  "task-run.log-viewer.replica-n": "Réplica #{n}",
+  "task-run.log-viewer.summary": "{sections} secciones · {entries} entradas",
+  "task.affected-rows": "Filas afectadas",
   "two-factor": {
     "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
     "disable": {
