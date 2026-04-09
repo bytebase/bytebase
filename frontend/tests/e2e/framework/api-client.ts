@@ -98,4 +98,26 @@ export class BytebaseApiClient {
       limit: 100,
     });
   }
+
+  // Service Accounts
+  async createServiceAccount(parent: string, serviceAccountId: string, title: string) {
+    return this.request<{ name: string; email: string }>("POST",
+      `/v1/${parent}/serviceAccounts?serviceAccountId=${serviceAccountId}`,
+      { title });
+  }
+
+  async deleteServiceAccount(email: string) {
+    try { await this.request<unknown>("DELETE", `/v1/serviceAccounts/${email}`); } catch { /* ignore */ }
+  }
+
+  // Workload Identities
+  async createWorkloadIdentity(parent: string, workloadIdentityId: string, title: string, provider: string, issuer: string, subject: string) {
+    return this.request<{ name: string; email: string }>("POST",
+      `/v1/${parent}/workloadIdentities?workloadIdentityId=${workloadIdentityId}`,
+      { title, provider, attestationAuthority: { oidcAuthority: { issuer } }, subjectAttributes: { subject } });
+  }
+
+  async deleteWorkloadIdentity(email: string) {
+    try { await this.request<unknown>("DELETE", `/v1/workloadIdentities/${email}`); } catch { /* ignore */ }
+  }
 }

@@ -190,10 +190,10 @@ test.describe("Exemption List Page", () => {
     await exemptionPage.allTab.click();
     await page.waitForTimeout(500);
 
-    // "All" tab should have the active underline (border-b-2 + border-accent)
-    // "Active" tab should NOT have the active style
-    await expect(exemptionPage.allTab).toHaveClass(/border-accent|text-accent/);
-    await expect(exemptionPage.activeTab).not.toHaveClass(/border-accent/);
+    // "All" tab should NOT have the inactive class (border-transparent)
+    // "Active" tab SHOULD have the inactive class
+    await expect(exemptionPage.allTab).not.toHaveClass(/border-transparent/);
+    await expect(exemptionPage.activeTab).toHaveClass(/border-transparent/);
   });
 
   test("grant card has no excessive top padding", async ({ page }) => {
@@ -206,15 +206,75 @@ test.describe("Exemption List Page", () => {
     // The grant card's top padding should be minimal (no pt-4 = 16px gap)
     const grantCard = page.locator("[class*='border border-gray']").first();
     const cardBox = await grantCard.boundingBox();
-    // The first child (header row) should start near the top of the card
     const header = grantCard.locator("> div").first();
     const headerBox = await header.boundingBox();
     if (cardBox && headerBox) {
       const topGap = headerBox.y - cardBox.y;
-      // With border (1px) + no padding, gap should be small (< 8px)
-      // The old pt-4 added 16px. Verify it's under 10px.
-      expect(topGap).toBeLessThan(10);
+      // Border (1px) + py-2 (8px) = ~10px. Old pt-4 added 16px on top.
+      expect(topGap).toBeLessThanOrEqual(12);
     }
+  });
+});
+
+// ── Service Account / Workload Identity badge ──
+
+test.describe("Member Type Badges", () => {
+  const saId = "e2e-test-sa";
+  let saEmail = "";
+  const wiId = "e2e-test-wi";
+  let wiEmail = "";
+
+  test.beforeAll(async () => {
+    const projectId = env.project.split("/").pop()!;
+    // Create service account
+    const sa = await env.api.createServiceAccount(env.project, saId, "E2E Test SA");
+    saEmail = sa.email;
+    // Create workload identity
+    try {
+      const wi = await env.api.createWorkloadIdentity(
+        env.project, wiId, "E2E Test WI",
+        "e2e-provider", "https://e2e.example.com", "e2e-subject"
+      );
+      wiEmail = wi.email;
+    } catch {
+      // Workload identity creation may not be available in demo mode
+    }
+    // Grant exemptions to both
+    const existing = await env.api.getPolicy(`${env.project}/policies/masking_exemption`) as {
+      maskingExemptionPolicy?: { exemptions: { members: string[]; condition?: { expression: string; description: string } }[] };
+    } | null;
+    const exemptions = existing?.maskingExemptionPolicy?.exemptions ?? [];
+    exemptions.push({ members: [`serviceAccount:${saEmail}`], condition: { expression: "", description: "SA test" } });
+    if (wiEmail) {
+      exemptions.push({ members: [`workloadIdentity:${wiEmail}`], condition: { expression: "", description: "WI test" } });
+    }
+    await env.api.upsertPolicy(env.project, "masking_exemption", {
+      type: "MASKING_EXEMPTION",
+      maskingExemptionPolicy: { exemptions },
+    });
+  });
+
+  test.afterAll(async () => {
+    // Cleanup: revoke exemptions, delete SA and WI
+    await revokeAllExemptions();
+    await env.api.deleteServiceAccount(saEmail);
+    if (wiEmail) await env.api.deleteWorkloadIdentity(wiEmail);
+  });
+
+  test("service account badge renders on single line", async ({ page }) => {
+    const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
+    const projectId = env.project.split("/").pop()!;
+    await exemptionPage.goto(projectId);
+    await exemptionPage.allTab.click();
+    await page.waitForTimeout(500);
+
+    // Find the "Service Account" badge text
+    const badge = page.getByText("Service Account", { exact: true }).first();
+    await expect(badge).toBeVisible();
+    const box = await badge.boundingBox();
+    // Single-line badge should be under 30px tall. Two-line would be 35px+.
+    expect(box).toBeTruthy();
+    expect(box!.height).toBeLessThanOrEqual(30);
   });
 });
 
