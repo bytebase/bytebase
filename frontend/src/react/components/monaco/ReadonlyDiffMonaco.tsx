@@ -81,12 +81,17 @@ export function ReadonlyDiffMonaco({
       );
 
       const { editor: monacoEditor } = await import("monaco-editor");
+
+      if (disposed) {
+        return;
+      }
+
       const originalModel = monacoEditor.createModel(
-        normalizedOriginal,
+        originalRef.current.replace(/\r\n?/g, "\n"),
         languageRef.current
       );
       const modifiedModel = monacoEditor.createModel(
-        normalizedModified,
+        modifiedRef.current.replace(/\r\n?/g, "\n"),
         languageRef.current
       );
 
@@ -96,12 +101,6 @@ export function ReadonlyDiffMonaco({
       });
 
       setContentHeight(modifiedEditor.getContentHeight());
-
-      if (disposed) {
-        contentSizeSubscription?.dispose();
-        editor.dispose();
-        return;
-      }
     })();
 
     return () => {
