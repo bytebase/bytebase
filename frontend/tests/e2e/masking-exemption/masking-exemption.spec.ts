@@ -10,6 +10,8 @@ interface MaskingTestData {
   sampleTable: string;
   sampleSchema: string;
   sampleColumn: string;
+  primaryKeyColumn: string;
+  primaryKeyValue: string;
   knownUnmaskedValue: string;
 }
 
@@ -19,42 +21,57 @@ let maskingData: MaskingTestData;
 // ── Feature-specific discovery ──
 
 async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  // Find text columns, then try each until we find one with actual data
+  type Row = { values?: { stringValue?: string; int64Value?: string }[] };
+  const getStr = (row: Row, idx: number) => row.values?.[idx]?.stringValue ?? row.values?.[idx]?.int64Value ?? "";
+  const getRows = (result: { results: unknown[] }) =>
+    ((result.results?.[0] as { rows?: Row[] })?.rows ?? []);
+
+  // Find text columns in tables that have a primary key
   const colResult = await env.api.query(
     env.database,
-    `SELECT table_schema, table_name, column_name FROM information_schema.columns
-     WHERE table_schema = 'public'
-       AND data_type IN ('text', 'character varying')
-       AND column_name NOT LIKE '%id%'
-       AND column_name NOT LIKE '%date%'
-       AND column_name NOT LIKE '%time%'
+    `SELECT c.table_schema, c.table_name, c.column_name, pk.pk_column
+     FROM information_schema.columns c
+     JOIN (
+       SELECT kcu.table_schema, kcu.table_name, kcu.column_name AS pk_column
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu
+         ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+       WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
+     ) pk ON c.table_schema = pk.table_schema AND c.table_name = pk.table_name
+     WHERE c.table_schema = 'public'
+       AND c.data_type IN ('text', 'character varying')
+       AND c.column_name NOT LIKE '%id%'
+       AND c.column_name NOT LIKE '%date%'
+       AND c.column_name NOT LIKE '%time%'
+       AND c.column_name != pk.pk_column
      LIMIT 20`
   );
-  const colRows = (colResult.results?.[0] as {
-    rows?: { values?: { stringValue?: string }[] }[];
-  })?.rows ?? [];
-
+  const colRows = getRows(colResult);
   if (colRows.length === 0) {
     throw new Error(`Could not find a suitable text column in ${env.database}`);
   }
 
-  // Try each candidate until we find one with actual data
+  // Try each candidate — get PK value + text value for a row with data
   for (const row of colRows) {
-    const schema = row.values?.[0]?.stringValue ?? "public";
-    const table = row.values?.[1]?.stringValue ?? "";
-    const column = row.values?.[2]?.stringValue ?? "";
-    if (!table || !column) continue;
+    const schema = getStr(row, 0);
+    const table = getStr(row, 1);
+    const column = getStr(row, 2);
+    const pkColumn = getStr(row, 3);
+    if (!table || !column || !pkColumn) continue;
 
-    const valueResult = await env.api.query(
+    const dataResult = await env.api.query(
       env.database,
-      `SELECT "${column}" FROM "${schema}"."${table}" WHERE "${column}" IS NOT NULL AND "${column}" != '' ORDER BY 1 LIMIT 1`
+      `SELECT "${pkColumn}", "${column}" FROM "${schema}"."${table}" WHERE "${column}" IS NOT NULL AND "${column}" != '' LIMIT 1`
     );
-    const firstResult = valueResult.results?.[0] as {
-      rows?: { values?: { stringValue?: string }[] }[];
-    };
-    const value = firstResult?.rows?.[0]?.values?.[0]?.stringValue ?? "";
-    if (value) {
-      return { sampleTable: table, sampleSchema: schema, sampleColumn: column, knownUnmaskedValue: value };
+    const dataRows = getRows(dataResult);
+    const pkValue = getStr(dataRows[0], 0);
+    const textValue = getStr(dataRows[0], 1);
+    if (pkValue && textValue) {
+      return {
+        sampleTable: table, sampleSchema: schema, sampleColumn: column,
+        primaryKeyColumn: pkColumn, primaryKeyValue: pkValue,
+        knownUnmaskedValue: textValue,
+      };
     }
   }
 
@@ -243,7 +260,7 @@ test.describe("E2E Masking Verification", () => {
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
 
     // Clean slate from prior test blocks
     await revokeAllExemptions();
@@ -277,7 +294,7 @@ test.describe("E2E Masking Verification", () => {
     // Clean slate: only one exemption so revoking .first() removes it
     await revokeAllExemptions();
     await grantExemption("e2e UI revoke test");
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
@@ -306,7 +323,7 @@ test.describe("E2E Masking Verification", () => {
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
 
     await revokeAllExemptions();
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
