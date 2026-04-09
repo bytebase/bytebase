@@ -35,6 +35,32 @@ const (
 	schemaIncludeDetails = "details"
 )
 
+// multiSchemaEngines lists database engines that expose multiple user-visible
+// schemas under a single database. On all other engines the schema name is
+// empty (MySQL/TiDB/etc.), so a non-empty `schema == "..."` server-side filter
+// would produce an exact-match failure and return zero tables. For those
+// engines we drop the schema filter client-side before calling the backend.
+//
+// The backend enforces `schema == "X"` as an exact match in
+// convertStoreDatabaseMetadata (see database_converter.go). Adding a new
+// multi-schema engine requires updating this set.
+var multiSchemaEngines = map[string]bool{
+	"POSTGRES":    true,
+	"COCKROACHDB": true,
+	"MSSQL":       true,
+	"ORACLE":      true,
+	"SNOWFLAKE":   true,
+	"REDSHIFT":    true,
+}
+
+// engineSupportsSchemas reports whether the given engine exposes named schemas
+// to users. An empty engine string (unknown) is treated as single-schema for
+// safety — it's better to silently ignore the filter than to silently return
+// zero tables.
+func engineSupportsSchemas(engine string) bool {
+	return multiSchemaEngines[engine]
+}
+
 // SchemaInput is the input for the get_schema tool.
 type SchemaInput struct {
 	// Database is the database name or substring to match (same rules as query_database).
@@ -177,7 +203,7 @@ const getSchemaDescription = `Inspect a Bytebase database's schema.
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
 | instance  | No       | Instance name to narrow resolution |
 | project   | No       | Project name to narrow resolution |
-| schema    | No       | PostgreSQL/MSSQL schema (e.g., "public") |
+| schema    | No       | Schema name for multi-schema engines (PG/MSSQL/Oracle/Snowflake/Redshift/CockroachDB); silently ignored on MySQL/TiDB/etc. |
 | table     | No       | Drill into a single table; implies include="details" |
 | include   | No       | Detail level: "summary" (default), "columns", "details" |
 
@@ -205,83 +231,119 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 		return nil, nil, errors.New("database is required")
 	}
 
-	// Default include based on whether a specific table was requested.
-	include := input.Include
-	if include == "" {
-		if input.Table != "" {
-			include = schemaIncludeDetails
-		} else {
-			include = schemaIncludeSummary
-		}
-	}
-	if include != schemaIncludeSummary && include != schemaIncludeColumns && include != schemaIncludeDetails {
-		return nil, nil, errors.Errorf("invalid include value %q (must be summary|columns|details)", input.Include)
-	}
-
-	// Resolve database (shared resolver with query_database).
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
+	include, err := resolveIncludeLevel(input)
 	if err != nil {
-		return formatToolError(err), nil, nil
+		return nil, nil, err
 	}
-	if resolved.ambiguous {
-		picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-		if elicitErr != nil {
-			return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
-		}
-		resolved = picked
+
+	resolved, resolveResult := s.resolveSchemaTarget(ctx, req, input)
+	if resolveResult != nil {
+		return resolveResult, nil, nil
+	}
+
+	// On engines that don't expose named schemas (MySQL, TiDB, ClickHouse, etc.),
+	// drop the schema filter. The backend applies `schema == "..."` as an exact
+	// match, so passing a non-empty hint like "public" on MySQL would filter out
+	// every table. Documented behavior: schema is ignored on engines without schemas.
+	schemaHint := input.Schema
+	if schemaHint != "" && !engineSupportsSchemas(resolved.engine) {
+		schemaHint = ""
 	}
 
 	// Fetch metadata with server-side filter + limit.
 	fetchCtx, fetchCancel := context.WithTimeout(ctx, schemaFetchTimeout)
 	defer fetchCancel()
 
-	metadata, err := s.fetchMetadata(fetchCtx, resolved.resourceName, buildMetadataFilter(input.Schema, input.Table), limitForInclude(include, input.Table))
+	metadata, err := s.fetchMetadata(fetchCtx, resolved.resourceName, buildMetadataFilter(schemaHint, input.Table), limitForInclude(include, input.Table))
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
 
-	// Transform → SchemaOutput.
 	if input.Table != "" {
-		matches := findTableMatches(metadata, input.Table)
-		switch {
-		case len(matches) == 0:
-			// Re-fetch without table filter to surface candidates.
-			candidates := s.lookupTableCandidates(fetchCtx, resolved.resourceName, input.Schema, input.Table)
-			return formatTableNotFound(input.Database, input.Table, candidates), nil, nil
-		case len(matches) > 1:
-			// Same table name in multiple schemas. Don't silently pick one.
-			schemas := make([]string, 0, len(matches))
-			for _, m := range matches {
-				schemas = append(schemas, m.schema)
-			}
-			return formatAmbiguousTable(input.Database, input.Table, schemas), nil, nil
-		}
-		match := matches[0]
-		entry := buildTableEntry(match.table, schemaIncludeDetails)
-		output := &SchemaOutput{
-			Database: resolved.resourceName,
-			Engine:   resolved.engine,
-			Table:    &entry,
-		}
-		text := formatSchemaOutput(output, include)
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: text}},
-		}, output, nil
+		result, output := s.renderTableResult(fetchCtx, resolved, input, schemaHint, metadata, include)
+		return result, output, nil
 	}
+	result, output := renderSchemasResult(resolved, metadata, include)
+	return result, output, nil
+}
 
-	sections := transformSchemas(metadata, include)
+// resolveIncludeLevel normalizes and validates the `include` parameter.
+// When empty, it defaults to "details" if a table was requested and "summary" otherwise.
+func resolveIncludeLevel(input SchemaInput) (string, error) {
+	include := input.Include
+	if include == "" {
+		if input.Table != "" {
+			return schemaIncludeDetails, nil
+		}
+		return schemaIncludeSummary, nil
+	}
+	if include != schemaIncludeSummary && include != schemaIncludeColumns && include != schemaIncludeDetails {
+		return "", errors.Errorf("invalid include value %q (must be summary|columns|details)", input.Include)
+	}
+	return include, nil
+}
+
+// resolveSchemaTarget runs the shared database resolver and handles the ambiguous
+// case with elicitation fallback. Returns either a resolved database (on success)
+// or a non-nil CallToolResult describing the error for the caller to return.
+func (s *Server) resolveSchemaTarget(ctx context.Context, req *mcp.CallToolRequest, input SchemaInput) (*resolvedDatabase, *mcp.CallToolResult) {
+	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
+	defer resolveCancel()
+
+	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
+	if err != nil {
+		return nil, formatToolError(err)
+	}
+	if !resolved.ambiguous {
+		return resolved, nil
+	}
+	picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
+	if elicitErr != nil {
+		return nil, formatAmbiguousResult(input.Database, resolved.candidates)
+	}
+	return picked, nil
+}
+
+// renderTableResult dispatches the `table=` drill-down path: it picks the unique
+// match (or returns an appropriate error result) and renders it as TableDetail.
+// schemaHint is the engine-adjusted schema filter (empty when dropped for
+// single-schema engines) and is used for the candidate-lookup refetch too.
+func (s *Server) renderTableResult(ctx context.Context, resolved *resolvedDatabase, input SchemaInput, schemaHint string, metadata *databaseMetadata, include string) (*mcp.CallToolResult, any) {
+	matches := findTableMatches(metadata, input.Table)
+	switch {
+	case len(matches) == 0:
+		// Re-fetch without table filter to surface candidates.
+		candidates := s.lookupTableCandidates(ctx, resolved.resourceName, schemaHint, input.Table)
+		return formatTableNotFound(input.Database, input.Table, candidates), nil
+	case len(matches) > 1:
+		// Same table name in multiple schemas. Don't silently pick one.
+		schemas := make([]string, 0, len(matches))
+		for _, m := range matches {
+			schemas = append(schemas, m.schema)
+		}
+		return formatAmbiguousTable(input.Database, input.Table, schemas), nil
+	}
+	entry := buildTableEntry(matches[0].table, schemaIncludeDetails)
 	output := &SchemaOutput{
 		Database: resolved.resourceName,
 		Engine:   resolved.engine,
-		Schemas:  sections,
+		Table:    &entry,
 	}
-	text := formatSchemaOutput(output, include)
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{&mcp.TextContent{Text: text}},
-	}, output, nil
+		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include)}},
+	}, output
+}
+
+// renderSchemasResult handles the bulk schema listing path (no table drill-down).
+func renderSchemasResult(resolved *resolvedDatabase, metadata *databaseMetadata, include string) (*mcp.CallToolResult, any) {
+	output := &SchemaOutput{
+		Database: resolved.resourceName,
+		Engine:   resolved.engine,
+		Schemas:  transformSchemas(metadata, include),
+	}
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include)}},
+	}, output
 }
 
 // buildMetadataFilter builds a CEL filter string for GetDatabaseMetadataRequest.
@@ -571,12 +633,12 @@ func buildTableEntry(t *tableMetadata, include string) TableEntry {
 // primaryKeyColumns scans indexes for the primary-key index and returns the set
 // of column names it covers.
 //
-// IndexMetadata.expressions may contain expressions rather than column names for
-// expression indexes (e.g. PostgreSQL CREATE INDEX ON users (LOWER(email))). PostgreSQL
-// does not currently allow expression indexes as primary keys (PK columns must be real
-// NOT NULL columns), so matching expression text against column name is correct today.
-// Silent misses are preferred over flagging the wrong column.
-// TODO: revisit if PG ever allows expression PKs.
+// Note: IndexMetadata.expressions may contain expressions rather than column
+// names for expression indexes (e.g. PostgreSQL CREATE INDEX ON users
+// (LOWER(email))). PostgreSQL does not currently allow expression indexes as
+// primary keys (PK columns must be real NOT NULL columns), so matching
+// expression text against column name is correct today. Revisit if PG ever
+// allows expression PKs; silent misses are preferred over flagging the wrong column.
 func primaryKeyColumns(indexes []indexMetadata) map[string]bool {
 	result := map[string]bool{}
 	for _, idx := range indexes {
@@ -597,40 +659,9 @@ func formatSchemaOutput(output *SchemaOutput, include string) string {
 	fmt.Fprintf(&sb, "Database: %s (%s)\n", output.Database, output.Engine)
 
 	if output.Table != nil {
-		t := output.Table
-		fmt.Fprintf(&sb, "Table: %s (%d rows, %d columns, %d indexes, %d foreign keys)\n",
-			t.Name, t.RowCount, len(t.Columns), len(t.Indexes), len(t.ForeignKeys))
+		writeTableHeader(&sb, output.Table)
 	} else {
-		schemaNames := make([]string, 0, len(output.Schemas))
-		totalTables := 0
-		totalViews := 0
-		totalFunctions := 0
-		truncatedAny := false
-		for _, section := range output.Schemas {
-			if section.Name != "" {
-				schemaNames = append(schemaNames, section.Name)
-			}
-			totalTables += len(section.Tables)
-			totalViews += len(section.Views)
-			totalFunctions += section.FunctionCount
-			if section.Truncated {
-				truncatedAny = true
-			}
-		}
-		if len(schemaNames) > 0 {
-			fmt.Fprintf(&sb, "Schemas: %d (%s)\n", len(output.Schemas), strings.Join(schemaNames, ", "))
-		}
-		switch include {
-		case schemaIncludeColumns:
-			fmt.Fprintf(&sb, "Tables: %d (showing columns) | Views: %d\n", totalTables, totalViews)
-		case schemaIncludeDetails:
-			fmt.Fprintf(&sb, "Tables: %d (showing details) | Views: %d\n", totalTables, totalViews)
-		default:
-			fmt.Fprintf(&sb, "Tables: %d | Views: %d | Functions: %d\n", totalTables, totalViews, totalFunctions)
-		}
-		if truncatedAny {
-			fmt.Fprintf(&sb, "Truncated: some schemas hit the %d-table limit per schema. Use schema= or table= to narrow.\n", schemaTableLimit)
-		}
+		writeSchemasHeader(&sb, output.Schemas, include)
 	}
 
 	sb.WriteString("\n")
@@ -638,6 +669,56 @@ func formatSchemaOutput(output *SchemaOutput, include string) string {
 	sb.Write(jsonBytes)
 
 	return sb.String()
+}
+
+// writeTableHeader writes the single-table header line.
+func writeTableHeader(sb *strings.Builder, t *TableDetail) {
+	fmt.Fprintf(sb, "Table: %s (%d rows, %d columns, %d indexes, %d foreign keys)\n",
+		t.Name, t.RowCount, len(t.Columns), len(t.Indexes), len(t.ForeignKeys))
+}
+
+// writeSchemasHeader writes the multi-schema overview header lines.
+func writeSchemasHeader(sb *strings.Builder, sections []SchemaSection, include string) {
+	stats := summarizeSchemas(sections)
+	if len(stats.schemaNames) > 0 {
+		fmt.Fprintf(sb, "Schemas: %d (%s)\n", len(sections), strings.Join(stats.schemaNames, ", "))
+	}
+	switch include {
+	case schemaIncludeColumns:
+		fmt.Fprintf(sb, "Tables: %d (showing columns) | Views: %d\n", stats.totalTables, stats.totalViews)
+	case schemaIncludeDetails:
+		fmt.Fprintf(sb, "Tables: %d (showing details) | Views: %d\n", stats.totalTables, stats.totalViews)
+	default:
+		fmt.Fprintf(sb, "Tables: %d | Views: %d | Functions: %d\n", stats.totalTables, stats.totalViews, stats.totalFunctions)
+	}
+	if stats.truncatedAny {
+		fmt.Fprintf(sb, "Truncated: some schemas hit the %d-table limit per schema. Use schema= or table= to narrow.\n", schemaTableLimit)
+	}
+}
+
+// schemaStats aggregates per-schema counters for header rendering.
+type schemaStats struct {
+	schemaNames    []string
+	totalTables    int
+	totalViews     int
+	totalFunctions int
+	truncatedAny   bool
+}
+
+func summarizeSchemas(sections []SchemaSection) schemaStats {
+	stats := schemaStats{schemaNames: make([]string, 0, len(sections))}
+	for _, section := range sections {
+		if section.Name != "" {
+			stats.schemaNames = append(stats.schemaNames, section.Name)
+		}
+		stats.totalTables += len(section.Tables)
+		stats.totalViews += len(section.Views)
+		stats.totalFunctions += section.FunctionCount
+		if section.Truncated {
+			stats.truncatedAny = true
+		}
+	}
+	return stats
 }
 
 // formatTableNotFound returns an MCP result for the TABLE_NOT_FOUND error path.

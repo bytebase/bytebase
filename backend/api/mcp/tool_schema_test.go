@@ -453,9 +453,10 @@ func TestGetSchema_SchemaAndTableFilter(t *testing.T) {
 	require.Equal(t, `schema == "public" && table == "orders"`, mock.lastCall().Filter)
 }
 
-func TestGetSchema_SchemaFilter_MySQL_NoOp(t *testing.T) {
-	// MySQL has an empty schema name; the backend is a no-op for schema filters
-	// on such engines — we just pass through whatever the user provides.
+func TestGetSchema_SchemaFilter_MySQL_DroppedClientSide(t *testing.T) {
+	// MySQL has an empty schema name. The backend applies `schema == "X"` as an
+	// exact match, which would filter out every table. The MCP layer must drop
+	// the schema filter before calling the backend on single-schema engines.
 	databases := []map[string]any{
 		makeDatabase("instances/prod-mysql/databases/employee_db", "instances/prod-mysql", "projects/hr-system", "MYSQL", "ds-admin-1"),
 	}
@@ -464,13 +465,62 @@ func TestGetSchema_SchemaFilter_MySQL_NoOp(t *testing.T) {
 	))
 	s, mock := mockMetadataServer(t, databases, resp)
 
-	_, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+	_, structured, err := s.handleGetSchema(testContext(), nil, SchemaInput{
 		Database: "employee_db",
 		Schema:   "anything",
 	})
 	require.NoError(t, err)
-	// Filter is passed through untouched; backend decides what to do with it.
-	require.Equal(t, `schema == "anything"`, mock.lastCall().Filter)
+	// The schema filter is dropped client-side — the backend sees an empty filter.
+	require.Equal(t, "", mock.lastCall().Filter)
+
+	output, ok := structured.(*SchemaOutput)
+	require.True(t, ok)
+	require.Len(t, output.Schemas, 1)
+	require.Len(t, output.Schemas[0].Tables, 1)
+}
+
+func TestGetSchema_SchemaFilter_PassedThroughOnMultiSchemaEngines(t *testing.T) {
+	// Spot-check a few known multi-schema engines to confirm the allowlist.
+	for _, engine := range []string{"POSTGRES", "MSSQL", "ORACLE", "SNOWFLAKE", "REDSHIFT", "COCKROACHDB"} {
+		t.Run(engine, func(t *testing.T) {
+			databases := []map[string]any{
+				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", engine, "ds-1"),
+			}
+			resp := makeMetadataResponse(makeSchema("public",
+				makeTable("users", 10, []map[string]any{makeColumn("id", "int4", false)}, nil),
+			))
+			s, mock := mockMetadataServer(t, databases, resp)
+
+			_, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+				Database: "employee_db",
+				Schema:   "public",
+			})
+			require.NoError(t, err)
+			require.Equal(t, `schema == "public"`, mock.lastCall().Filter)
+		})
+	}
+}
+
+func TestGetSchema_SchemaFilter_DroppedOnSingleSchemaEngines(t *testing.T) {
+	// Spot-check a few known single-schema engines.
+	for _, engine := range []string{"MYSQL", "TIDB", "MARIADB", "CLICKHOUSE", "SQLITE", "SPANNER"} {
+		t.Run(engine, func(t *testing.T) {
+			databases := []map[string]any{
+				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", engine, "ds-1"),
+			}
+			resp := makeMetadataResponse(makeSchema("",
+				makeTable("users", 10, []map[string]any{makeColumn("id", "int4", false)}, nil),
+			))
+			s, mock := mockMetadataServer(t, databases, resp)
+
+			_, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+				Database: "employee_db",
+				Schema:   "something",
+			})
+			require.NoError(t, err)
+			require.Equal(t, "", mock.lastCall().Filter, "engine %s should drop the schema filter", engine)
+		})
+	}
 }
 
 func TestGetSchema_PrimaryKeyDerivation(t *testing.T) {
