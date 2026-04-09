@@ -9,6 +9,8 @@ description: Use when running SQL queries, executing SELECT/INSERT/UPDATE/DELETE
 
 Run SQL queries against databases managed by Bytebase.
 
+**Before writing SQL, call `get_schema(database=...)` to see the current shape.**
+
 ## Prerequisites
 
 - Know the instance and database name
