@@ -165,25 +165,10 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 
 	candidates := mysqlparser.Collect(c.sql, c.cursorByteOffset)
 
-	// Retry at adjusted positions if no candidates found.
-	if len(candidates.Rules) == 0 && len(candidates.Tokens) == 0 {
-		// Try at cursor-1 for cases where cursor is right after a context boundary.
-		if c.cursorByteOffset > 0 {
-			if retry := mysqlparser.Collect(c.sql, c.cursorByteOffset-1); len(retry.Rules) > 0 || len(retry.Tokens) > 0 {
-				candidates = retry
-			}
-		}
-	}
-
 	if len(candidates.Rules) == 0 {
 		if prefixTok, ok := c.prefixToken(); ok {
 			candidates = mysqlparser.Collect(c.sql, prefixTok.Loc)
 		}
-	}
-
-	// If cursor is right after a dot (table.| pattern), synthesize a columnref rule.
-	if len(candidates.Rules) == 0 && c.caretTokenIndex > 0 && c.tokens[c.caretTokenIndex-1].Type == '.' {
-		candidates.Rules = append(candidates.Rules, mysqlparser.RuleCandidate{Rule: "columnref"})
 	}
 
 	for _, rc := range candidates.Rules {
@@ -934,7 +919,9 @@ func (c *Completer) extractFromItem(item ast.TableExpr, wrappedSQL string) {
 		virtualRef := &base.VirtualTableReference{
 			Table: v.Alias,
 		}
-		if v.Select != nil {
+		if len(v.Columns) > 0 {
+			virtualRef.Columns = v.Columns
+		} else if v.Select != nil {
 			loc := v.Select.Loc
 			if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(wrappedSQL) {
 				subqueryText := wrappedSQL[loc.Start:loc.End]

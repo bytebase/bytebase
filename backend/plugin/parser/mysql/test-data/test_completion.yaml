@@ -188,11 +188,9 @@
       type: VIEW
       definition: ""
       comment: ""
-# TODO: derived table column aliases cc1(cc1c1) not yet supported by omni parser.
-# Falls back to subquery column extraction (c1 instead of cc1c1).
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1(cc1c1)
   want:
-    - text: c1
+    - text: cc1c1
       type: COLUMN
       definition: ""
       comment: ""
