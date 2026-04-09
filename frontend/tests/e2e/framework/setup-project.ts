@@ -1,20 +1,13 @@
 import { test as setup, expect } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
-import { BytebaseApiClient } from "./api-client";
 import { loadTestEnv, saveTestEnv } from "./env";
 
 const AUTH_FILE = path.join(__dirname, "../../../.auth/state.json");
 
 setup("authenticate and discover", async ({ page }) => {
   const env = loadTestEnv();
-  const api = new BytebaseApiClient({
-    baseURL: env.baseURL,
-    credentials: { email: env.adminEmail, password: env.adminPassword },
-  });
-
-  // API login
-  await api.login(env.adminEmail, env.adminPassword);
+  await env.api.login(env.adminEmail, env.adminPassword);
 
   // Browser login for auth cookies
   await page.goto(`${env.baseURL}/auth/signin`);
@@ -46,40 +39,34 @@ setup("authenticate and discover", async ({ page }) => {
   });
 
   // Discovery: find first Postgres instance, database, and project
-  let project = "";
-  let instance = "";
-  let instanceId = "";
-  let database = "";
-  let databaseId = "";
-
-  const { instances } = await api.listInstances();
+  const { instances } = await env.api.listInstances();
   const pgInstance = instances?.find(
     (i: { engine: string; name: string }) =>
       i.engine === "POSTGRES" &&
       !i.name.includes("deleted") &&
       !i.name.includes("bytebase-meta")
   );
-  if (pgInstance) {
-    instance = pgInstance.name;
-    instanceId = instance.split("/").pop()!;
-
-    const { databases } = await api.listDatabases(instance);
-    const db = databases?.find(
-      (d: { name: string }) =>
-        !d.name.includes("/postgres") &&
-        !d.name.includes("/template") &&
-        !d.name.includes("/bbdev")
-    ) ?? databases?.[0];
-    if (db) {
-      database = db.name;
-      databaseId = database.split("/").pop()!;
-      project = (db as { project?: string }).project ?? "";
-    }
+  if (!pgInstance) {
+    throw new Error("Discovery failed: no Postgres instance found");
   }
 
-  if (!database) {
-    throw new Error("Discovery failed: no suitable Postgres database found");
+  const instance = pgInstance.name;
+  const instanceId = instance.split("/").pop()!;
+
+  const { databases } = await env.api.listDatabases(instance);
+  const db = databases?.find(
+    (d: { name: string }) =>
+      !d.name.includes("/postgres") &&
+      !d.name.includes("/template") &&
+      !d.name.includes("/bbdev")
+  ) ?? databases?.[0];
+  if (!db) {
+    throw new Error(`Discovery failed: no suitable database in ${instance}`);
   }
+
+  const database = db.name;
+  const databaseId = database.split("/").pop()!;
+  const project = (db as { project?: string }).project ?? "";
 
   saveTestEnv({ ...env, project, instance, instanceId, database, databaseId });
 

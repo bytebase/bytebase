@@ -1,6 +1,6 @@
 export interface ApiClientOptions {
   baseURL: string;
-  credentials?: { email: string; password: string };
+  credentials?: { email: string; password: string }; // Optional only during server startup before credentials are known
 }
 
 export class BytebaseApiClient {
@@ -48,16 +48,6 @@ export class BytebaseApiClient {
     return token;
   }
 
-  // Health
-  async healthCheck(): Promise<boolean> {
-    try {
-      const resp = await fetch(`${this.baseURL}/healthz`);
-      return resp.ok;
-    } catch {
-      return false;
-    }
-  }
-
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
@@ -65,10 +55,6 @@ export class BytebaseApiClient {
 
   async listDatabases(parent: string) {
     return this.request<{ databases: { name: string; project: string }[] }>("GET", `/v1/${parent}/databases?pageSize=100`);
-  }
-
-  async listProjects() {
-    return this.request<{ projects: { name: string; title: string }[] }>("GET", "/v1/projects?pageSize=100&showDeleted=false");
   }
 
   // Policies

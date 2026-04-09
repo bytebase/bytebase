@@ -211,15 +211,14 @@ export class SqlEditorPage {
     return (await this.page.getByText(/\d+ rows?/).count()) > 0;
   }
 
-  async resultContainsText(text: string, timeout = 10000): Promise<boolean> {
-    // Poll for text in the page — the result grid uses virtual scrolling
-    // and renders asynchronously after query execution.
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-      const content = await this.page.textContent("body") ?? "";
-      if (content.includes(text)) return true;
-      await this.page.waitForTimeout(500);
+  async resultContainsText(text: string, timeout = 5000): Promise<boolean> {
+    // Use Playwright's getByText which searches the accessibility tree —
+    // more reliable than textContent("body") for virtual-scrolled grids.
+    try {
+      await this.page.getByText(text, { exact: false }).first().waitFor({ state: "attached", timeout });
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 }
