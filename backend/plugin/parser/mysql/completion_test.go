@@ -142,15 +142,6 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 	}, nil, nil, storepb.Engine_MYSQL, true /* isObjectCaseSensitive */), nil
 }
 
-func catchCaret(s string) (string, int) {
-	for i, c := range s {
-		if c == '|' {
-			return s[:i] + s[i+1:], i
-		}
-	}
-	return s, -1
-}
-
 // catchCaretLineColumn returns the SQL without the caret marker and the
 // 1-based line + 0-based column of the caret position. Handles multiline input.
 func catchCaretLineColumn(s string) (string, int, int) {
