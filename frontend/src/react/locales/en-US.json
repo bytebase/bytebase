@@ -521,11 +521,14 @@
     "expression": "Expression",
     "filter-database": "Filter database",
     "index-size": "Index size",
+    "indexes": "Indexes",
     "last-sync": "Last sync",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "nullable": "Nullable",
     "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
+    "row-count-estimate": "Row count estimate",
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -556,10 +559,11 @@
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
-    "type": "Type",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases"
+    "unassign-alert-title": "Unassign databases",
+    "unique": "Unique",
+    "visible": "Visible"
   },
   "database-group": {
     "condition": {

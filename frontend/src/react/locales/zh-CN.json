@@ -521,11 +521,14 @@
     "expression": "Expression",
     "filter-database": "筛选数据库",
     "index-size": "索引大小",
+    "indexes": "索引",
     "last-sync": "最后一次同步",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
+    "nullable": "可为空",
     "partitioned": "分区",
     "row-count-est": "估算行数",
+    "row-count-estimate": "估计行数",
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
@@ -556,10 +559,11 @@
     "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
-    "type": "类型",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库"
+    "unassign-alert-title": "取消分配数据库",
+    "unique": "唯一",
+    "visible": "Visible"
   },
   "database-group": {
     "condition": {
