@@ -1,8 +1,11 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import {
+  type Database,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -30,9 +33,11 @@ const mocks = vi.hoisted(() => ({
   ),
   getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
   hasSchemaProperty: vi.fn(() => true),
+  instanceV1HasCollationAndCharacterSet: vi.fn(() => true),
   instanceV1SupportsPackage: vi.fn(() => false),
   instanceV1SupportsSequence: vi.fn(() => false),
   bytesToString: vi.fn((size: number) => `${size} B`),
+  humanizeDate: vi.fn(() => "5 minutes ago"),
 }));
 
 vi.stubGlobal("localStorage", mocks.localStorage);
@@ -66,8 +71,11 @@ vi.mock("@/utils", () => ({
   bytesToString: mocks.bytesToString,
   getDatabaseEngine: mocks.getDatabaseEngine,
   getDatabaseProject: mocks.getDatabaseProject,
+  humanizeDate: mocks.humanizeDate,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
   hasSchemaProperty: mocks.hasSchemaProperty,
+  instanceV1HasCollationAndCharacterSet:
+    mocks.instanceV1HasCollationAndCharacterSet,
   instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
   instanceV1SupportsSequence: mocks.instanceV1SupportsSequence,
 }));
@@ -131,6 +139,13 @@ const makeDatabase = (): Database =>
     name: "instances/inst1/databases/db",
     project: "projects/proj1",
     effectiveEnvironment: "environments/prod",
+    state: State.ACTIVE,
+    syncStatus: SyncStatus.OK,
+    syncError: "",
+    successfulSyncTime: {
+      seconds: 1n,
+      nanos: 0,
+    },
     instanceResource: {
       name: "instances/inst1",
       title: "Primary",
@@ -161,12 +176,16 @@ beforeEach(async () => {
   mocks.getDatabaseEngine.mockReturnValue(Engine.POSTGRES);
   mocks.hasSchemaProperty.mockReset();
   mocks.hasSchemaProperty.mockReturnValue(true);
+  mocks.instanceV1HasCollationAndCharacterSet.mockReset();
+  mocks.instanceV1HasCollationAndCharacterSet.mockReturnValue(true);
   mocks.instanceV1SupportsPackage.mockReset();
   mocks.instanceV1SupportsPackage.mockReturnValue(false);
   mocks.instanceV1SupportsSequence.mockReset();
   mocks.instanceV1SupportsSequence.mockReturnValue(false);
   mocks.bytesToString.mockReset();
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
+  mocks.humanizeDate.mockReset();
+  mocks.humanizeDate.mockReturnValue("5 minutes ago");
   mocks.useDBSchemaV1Store.mockReset();
   mocks.useDBSchemaV1Store.mockReturnValue({
     getSchemaList: vi.fn(() => mocks.schemaList),
@@ -175,7 +194,11 @@ beforeEach(async () => {
     getExtensionList: vi.fn(() => []),
     getExternalTableList: vi.fn(() => []),
     getFunctionList: vi.fn(() => []),
-    getDatabaseMetadata: vi.fn(() => ({ schemas: [] })),
+    getDatabaseMetadata: vi.fn(() => ({
+      characterSet: "UTF8",
+      collation: "en_US.UTF-8",
+      schemas: [],
+    })),
   });
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
@@ -185,7 +208,7 @@ beforeEach(async () => {
 });
 
 describe("DatabaseOverviewPanel", () => {
-  test("renders overview info and schema selector without legacy bridge mocks", async () => {
+  test("renders legacy overview info fields and schema selector", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseOverviewPanel, {
         database: makeDatabase(),
@@ -196,11 +219,39 @@ describe("DatabaseOverviewPanel", () => {
     render();
     await flush();
 
-    expect(container.textContent).toContain("db");
+    expect(container.textContent).toContain("db.encoding");
+    expect(container.textContent).toContain("UTF8");
+    expect(container.textContent).toContain("db.collation");
+    expect(container.textContent).toContain("en_US.UTF-8");
+    expect(container.textContent).toContain("database.sync-status");
+    expect(container.textContent).toContain("OK");
+    expect(container.textContent).toContain("database.last-sync");
+    expect(container.textContent).toContain("5 minutes ago");
     expect(container.querySelector("select")).not.toBeNull();
     expect(
       container.querySelector('input[placeholder="common.filter-by-name"]')
     ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("renders failed sync status and error from the legacy overview behavior", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: {
+          ...makeDatabase(),
+          syncStatus: SyncStatus.FAILED,
+          syncError: "sync failed hard",
+        },
+        hasSchemaPermission: false,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("database.sync-status-failed");
+    expect(container.textContent).toContain("sync failed hard");
 
     unmount();
   });
@@ -275,5 +326,58 @@ describe("DatabaseOverviewPanel", () => {
 
     unmount();
     router.currentRoute.value.query = {};
+  });
+
+  test("flattens package objects across schemas when the engine has no schema property", async () => {
+    mocks.getDatabaseEngine.mockReturnValue(Engine.ORACLE);
+    mocks.hasSchemaProperty.mockReturnValue(false);
+    mocks.instanceV1HasCollationAndCharacterSet.mockReturnValue(true);
+    mocks.instanceV1SupportsPackage.mockReturnValue(true);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => []),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "AL32UTF8",
+        collation: "",
+        schemas: [
+          {
+            name: "alpha",
+            packages: [{ name: "pkg_a", definition: "a" }],
+            sequences: [],
+            streams: [],
+            tasks: [],
+          },
+          {
+            name: "beta",
+            packages: [{ name: "pkg_b", definition: "b" }],
+            sequences: [],
+            streams: [],
+            tasks: [],
+          },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("pkg_a");
+    expect(container.textContent).toContain("pkg_b");
+
+    unmount();
   });
 });

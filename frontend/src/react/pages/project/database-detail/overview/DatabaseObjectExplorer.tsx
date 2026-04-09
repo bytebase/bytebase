@@ -6,7 +6,11 @@ import { useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
+  PackageMetadata,
+  SequenceMetadata,
+  StreamMetadata,
   TableMetadata,
+  TaskMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   bytesToString,
@@ -83,10 +87,22 @@ export function DatabaseObjectExplorer({
   );
   const [selectedTable, setSelectedTable] = useState<TableMetadata>();
 
-  const currentSchema =
+  const selectedSchemaMetadata =
     databaseMetadata.schemas.find(
       (schema) => schema.name === selectedSchemaName
     ) || databaseMetadata.schemas[0];
+  const sequenceList: SequenceMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.sequences ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.sequences ?? []);
+  const streamList: StreamMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.streams ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.streams ?? []);
+  const taskList: TaskMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.tasks ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.tasks ?? []);
+  const packageList: PackageMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.packages ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.packages ?? []);
 
   const tableRows: ObjectSectionRow[] = tableList
     .filter((table) => filterByKeyword(table.name, tableSearchKeyword))
@@ -130,40 +146,32 @@ export function DatabaseObjectExplorer({
     comment: fn.comment,
   }));
 
-  const sequenceRows: ObjectSectionRow[] = (currentSchema?.sequences || []).map(
-    (sequence) => ({
-      key: sequence.name,
-      name: sequence.name,
-      description: sequence.dataType || "-",
-      comment: sequence.comment,
-    })
-  );
+  const sequenceRows: ObjectSectionRow[] = sequenceList.map((sequence) => ({
+    key: sequence.name,
+    name: sequence.name,
+    description: sequence.dataType || "-",
+    comment: sequence.comment,
+  }));
 
-  const streamRows: ObjectSectionRow[] = (currentSchema?.streams || []).map(
-    (stream) => ({
+  const streamRows: ObjectSectionRow[] = streamList.map((stream) => ({
       key: stream.name,
       name: stream.name,
       description: stream.tableName || "-",
       comment: stream.comment,
-    })
-  );
+    }));
 
-  const taskRows: ObjectSectionRow[] = (currentSchema?.tasks || []).map(
-    (task) => ({
+  const taskRows: ObjectSectionRow[] = taskList.map((task) => ({
       key: task.name,
       name: task.name,
       description: task.schedule || task.id || "-",
       comment: task.comment,
-    })
-  );
+    }));
 
-  const packageRows: ObjectSectionRow[] = (currentSchema?.packages || []).map(
-    (pkg) => ({
+  const packageRows: ObjectSectionRow[] = packageList.map((pkg) => ({
       key: pkg.name,
       name: pkg.name,
       description: pkg.definition || "-",
-    })
-  );
+    }));
 
   return (
     <div className="space-y-6 pt-6">
