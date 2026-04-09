@@ -211,11 +211,15 @@ export class SqlEditorPage {
     return (await this.page.getByText(/\d+ rows?/).count()) > 0;
   }
 
-  async resultContainsText(text: string): Promise<boolean> {
-    // Check if the page content contains specific text (e.g., actual names).
-    // This is algorithm-agnostic: we verify against known unmasked values
-    // rather than guessing the masking format.
-    const pageContent = await this.page.textContent("body") ?? "";
-    return pageContent.includes(text);
+  async resultContainsText(text: string, timeout = 10000): Promise<boolean> {
+    // Poll for text in the page — the result grid uses virtual scrolling
+    // and renders asynchronously after query execution.
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const content = await this.page.textContent("body") ?? "";
+      if (content.includes(text)) return true;
+      await this.page.waitForTimeout(500);
+    }
+    return false;
   }
 }
