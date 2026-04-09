@@ -33,11 +33,6 @@ const mocks = vi.hoisted(() => ({
   instanceV1SupportsPackage: vi.fn(() => false),
   instanceV1SupportsSequence: vi.fn(() => false),
   bytesToString: vi.fn((size: number) => `${size} B`),
-  createApp: vi.fn(),
-  h: vi.fn((component: unknown, props: Record<string, unknown>) => ({
-    component,
-    props,
-  })),
 }));
 
 vi.stubGlobal("localStorage", mocks.localStorage);
@@ -47,15 +42,6 @@ let DatabaseOverviewPanel: typeof import("./DatabaseOverviewPanel").DatabaseOver
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
-
-vi.mock("vue", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("vue")>();
-  return {
-    ...actual,
-    createApp: mocks.createApp,
-    h: mocks.h,
-  };
-});
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
@@ -72,22 +58,7 @@ vi.mock("@/router", () => ({
   },
 }));
 
-vi.mock("@/plugins/i18n", () => ({
-  default: {
-    install: vi.fn(),
-  },
-}));
-
-vi.mock("@/plugins/naive-ui", () => ({
-  default: {
-    install: vi.fn(),
-  },
-}));
-
 vi.mock("@/store", () => ({
-  pinia: {
-    install: vi.fn(),
-  },
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
 }));
 
@@ -208,14 +179,6 @@ beforeEach(async () => {
   });
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
-  mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation(() => ({
-    use() {
-      return this;
-    },
-    mount() {},
-    unmount: vi.fn(),
-  }));
 
   vi.resetModules();
   ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
