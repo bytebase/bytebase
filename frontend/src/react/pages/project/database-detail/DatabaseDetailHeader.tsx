@@ -1,11 +1,27 @@
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/router";
+import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
+import { featureToRef, useEnvironmentV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  formatEnvironmentName,
+  isValidEnvironmentName,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "@/types/v1/environment";
+import {
+  extractInstanceResourceName,
+  getInstanceResource,
+  hasWorkspacePermissionV2,
+  hexToRgb,
+  instanceV1Name,
+} from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { DatabaseSQLEditorButton } from "./DatabaseSQLEditorButton";
-import { SchemaBrowserButton } from "./schema-browser/SchemaBrowserButton";
 
 const extractDatabaseParts = (resource: string) => {
   const matches = resource.match(
@@ -31,23 +47,69 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 export function DatabaseDetailHeader({
   database,
-  allowAlterSchema,
   onSQLEditorFailed,
 }: {
   database: Database;
-  allowAlterSchema: boolean;
   onSQLEditorFailed?: (database: Database) => void;
 }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const environmentStore = useEnvironmentV1Store();
   const { databaseName } = useMemo(
     () => extractDatabaseParts(database.name),
     [database.name]
   );
-  const instanceLabel =
-    database.instanceResource?.title ||
-    database.instanceResource?.name ||
-    `instances/${extractDatabaseParts(database.name).instanceName}`;
+
+  const instanceResource = getInstanceResource(database);
+  const instanceLabel = instanceV1Name(instanceResource);
+  const instanceId = extractInstanceResourceName(instanceResource.name);
+  const canViewInstance = hasWorkspacePermissionV2("bb.instances.get");
+  const engineIconSrc = EngineIconPath[String(instanceResource.engine)];
+
+  const environment = useVueState(() =>
+    environmentStore.getEnvironmentByName(database.effectiveEnvironment ?? "")
+  );
+
+  const hasEnvironmentTierFeature = useVueState(
+    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
+  );
+
+  const isValidEnv =
+    !!environment &&
+    isValidEnvironmentName(environment.name) &&
+    environment.name !== UNKNOWN_ENVIRONMENT_NAME;
+
+  const environmentTitle = useMemo(() => {
+    if (!isValidEnv) {
+      return t("common.unassigned");
+    }
+    return environment.title || environment.id;
+  }, [environment, isValidEnv, t]);
+
+  const isProductionEnv =
+    isValidEnv &&
+    hasEnvironmentTierFeature &&
+    environment.tags?.protected === "protected";
+
+  const environmentColorRgb = useMemo(() => {
+    if (!isValidEnv || !environment.color) {
+      return "";
+    }
+    return hexToRgb(environment.color).join(", ");
+  }, [environment, isValidEnv]);
+
+  const environmentBadgeStyle: React.CSSProperties | undefined = useMemo(() => {
+    if (!environmentColorRgb) {
+      return undefined;
+    }
+    return {
+      backgroundColor: `rgba(${environmentColorRgb}, 0.1)`,
+      borderTopColor: `rgb(${environmentColorRgb})`,
+      color: `rgb(${environmentColorRgb})`,
+      padding: "0 6px",
+      borderRadius: "4px",
+    };
+  }, [environmentColorRgb]);
 
   const handleCopy = useCallback(async () => {
     const success = await copyToClipboard(database.name);
@@ -57,47 +119,113 @@ export function DatabaseDetailHeader({
     }
   }, [database.name]);
 
+  const handleEnvironmentClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isValidEnv) {
+        void router.push({
+          path: `/${formatEnvironmentName(environment.id)}`,
+        });
+      }
+    },
+    [environment, isValidEnv]
+  );
+
+  const handleInstanceClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (canViewInstance && instanceId) {
+        void router.push({
+          name: INSTANCE_ROUTE_DETAIL,
+          params: { instanceId },
+        });
+      }
+    },
+    [canViewInstance, instanceId]
+  );
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-y-3">
-      <div className="min-w-0">
-        <div className="truncate text-xl font-bold text-main">
+    <div className="flex min-w-0 flex-1 shrink-0 flex-col gap-y-2">
+      <div className="flex w-full min-w-0 flex-col">
+        <div className="flex items-center gap-x-2 truncate text-xl font-bold text-main">
           {databaseName}
         </div>
-        <div className="mt-1 flex min-w-0 items-center gap-x-2 text-sm text-control-light">
+        <div className="mt-1 flex w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
           <span className="truncate">{database.name}</span>
-          <Button variant="ghost" size="icon" onClick={() => void handleCopy()}>
+          <button
+            type="button"
+            className="inline-flex shrink-0 items-center p-0.5 text-control-light hover:text-main"
+            onClick={() => void handleCopy()}
+          >
             {copied ? (
-              <Check className="h-4 w-4" />
+              <Check className="h-3.5 w-3.5" />
             ) : (
-              <Copy className="h-4 w-4" />
+              <Copy className="h-3.5 w-3.5" />
             )}
-          </Button>
+          </button>
         </div>
       </div>
 
-      <dl className="flex flex-col gap-2 text-sm md:flex-row md:flex-wrap">
-        <div className="flex items-center gap-x-1">
-          <dt className="text-control-light">{t("common.environment")}</dt>
-          <dd>{database.effectiveEnvironment || t("common.unassigned")}</dd>
+      <div
+        className="flex flex-col gap-y-1 text-sm md:flex-row md:flex-wrap md:items-center md:gap-x-4"
+        data-label="bb-database-detail-info-block"
+      >
+        <div className="flex items-center gap-x-1.5">
+          <span className="text-control-light">{t("common.environment")}</span>
+          {isValidEnv ? (
+            <a
+              className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
+              style={environmentBadgeStyle}
+              onClick={handleEnvironmentClick}
+            >
+              <span>{environmentTitle}</span>
+              {isProductionEnv && <ShieldAlert className="h-4 w-4 shrink-0" />}
+            </a>
+          ) : (
+            <span className="italic text-control-light">
+              {environmentTitle}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-x-1">
-          <dt className="text-control-light">{t("common.instance")}</dt>
-          <dd>{instanceLabel}</dd>
+        <div className="flex items-center gap-x-1.5">
+          <span className="text-control-light">{t("common.instance")}</span>
+          {canViewInstance && instanceId ? (
+            <a
+              className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
+              onClick={handleInstanceClick}
+            >
+              {engineIconSrc && (
+                <img
+                  src={engineIconSrc}
+                  className="h-4 w-4 shrink-0 object-contain"
+                  alt=""
+                />
+              )}
+              {instanceLabel}
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-x-1">
+              {engineIconSrc && (
+                <img
+                  src={engineIconSrc}
+                  className="h-4 w-4 shrink-0 object-contain"
+                  alt=""
+                />
+              )}
+              {instanceLabel}
+            </span>
+          )}
         </div>
         {database.release && (
-          <div className="flex items-center gap-x-1">
-            <dt className="text-control-light">{t("common.release")}</dt>
-            <dd>{extractReleaseUID(database.release)}</dd>
+          <div className="flex items-center gap-x-1.5">
+            <span className="text-control-light">{t("common.release")}</span>
+            <span>{extractReleaseUID(database.release)}</span>
           </div>
         )}
-      </dl>
-
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         <DatabaseSQLEditorButton
           database={database}
           onFailed={onSQLEditorFailed}
         />
-        {allowAlterSchema && <SchemaBrowserButton database={database} />}
       </div>
     </div>
   );

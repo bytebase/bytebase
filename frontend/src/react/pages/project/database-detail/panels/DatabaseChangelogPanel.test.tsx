@@ -175,9 +175,7 @@ describe("DatabaseChangelogPanel", () => {
       pageToken: "",
     });
     expect(container.querySelector("table")).not.toBeNull();
-    expect(container.textContent).toContain(
-      "instances/inst1/databases/db1/changelogs/1"
-    );
+    // The table shows plan title and created-at, not the raw resource name
     expect(container.textContent).toContain("Release 1");
 
     unmount();

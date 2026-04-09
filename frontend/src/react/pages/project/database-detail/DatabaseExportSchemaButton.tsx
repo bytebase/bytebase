@@ -106,6 +106,7 @@ export function DatabaseExportSchemaButton({
   return (
     <div className="relative" ref={containerRef}>
       <Button
+        variant="outline"
         disabled={disabled || exporting}
         onClick={() => setOpen((value) => !value)}
       >

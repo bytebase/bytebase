@@ -199,10 +199,9 @@ export function ProjectDatabaseDetailPage({
         </Alert>
       )}
 
-      <div className="flex flex-col items-start gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col items-start gap-y-2 xl:flex-row xl:items-center xl:justify-between xl:gap-x-2">
         <DatabaseDetailHeader
           database={detail.database}
-          allowAlterSchema={detail.allowAlterSchema}
           onSQLEditorFailed={handleSQLEditorFailed}
         />
         <DatabaseDetailActions

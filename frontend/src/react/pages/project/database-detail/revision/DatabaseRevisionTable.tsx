@@ -69,6 +69,16 @@ export function DatabaseRevisionTable({
               </td>
             </tr>
           ))}
+          {revisions.length === 0 && (
+            <tr>
+              <td
+                className="px-4 py-6 text-center text-sm text-control-light"
+                colSpan={4}
+              >
+                {t("common.no-data")}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
