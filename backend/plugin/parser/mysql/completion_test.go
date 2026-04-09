@@ -40,13 +40,13 @@ func TestCompletion(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		text, caretOffset := catchCaret(t.Input)
+		text, caretLine, caretCol := catchCaretLineColumn(t.Input)
 		result, err := base.Completion(context.Background(), storepb.Engine_MYSQL, base.CompletionContext{
 			Scene:             base.SceneTypeAll,
 			DefaultDatabase:   "db",
 			Metadata:          getMetadataForTest,
 			ListDatabaseNames: listDatabaseNamesForTest,
-		}, text, 1, caretOffset)
+		}, text, caretLine, caretCol)
 		a.NoError(err)
 		var filteredResult []base.Candidate
 		for _, r := range result {
@@ -149,4 +149,26 @@ func catchCaret(s string) (string, int) {
 		}
 	}
 	return s, -1
+}
+
+// catchCaretLineColumn returns the SQL without the caret marker and the
+// 1-based line + 0-based column of the caret position. Handles multiline input.
+func catchCaretLineColumn(s string) (string, int, int) {
+	for i, c := range s {
+		if c == '|' {
+			text := s[:i] + s[i+1:]
+			line := 1
+			col := 0
+			for _, ch := range s[:i] {
+				if ch == '\n' {
+					line++
+					col = 0
+				} else {
+					col++
+				}
+			}
+			return text, line, col
+		}
+	}
+	return s, 1, -1
 }
