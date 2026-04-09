@@ -1,52 +1,11 @@
-import { useCallback, useEffect, useRef } from "react";
-import { createApp, h } from "vue";
-import { ChangelogDataTable } from "@/components/Changelog";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
+import { useCallback } from "react";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { router } from "@/router";
-import { pinia, useChangelogStore } from "@/store";
+import { useChangelogStore } from "@/store";
 import type {
   Changelog,
   Database,
 } from "@/types/proto-es/v1/database_service_pb";
-
-function VueChangelogTableMount({
-  changelogs,
-  loading,
-}: {
-  changelogs: Changelog[];
-  loading: boolean;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const app = createApp({
-      render() {
-        return h(ChangelogDataTable as never, {
-          key: `changelog-table.${changelogs
-            .map((changelog) => changelog.name)
-            .join(",")}`,
-          changelogs,
-          loading,
-          showSelection: false,
-        });
-      },
-    });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
-    app.mount(containerRef.current);
-
-    return () => {
-      app.unmount();
-    };
-  }, [changelogs, loading]);
-
-  return <div ref={containerRef} />;
-}
+import { DatabaseChangelogTable } from "../changelog/DatabaseChangelogTable";
 
 export function DatabaseChangelogPanel({ database }: { database: Database }) {
   const changelogStore = useChangelogStore();
@@ -78,7 +37,7 @@ export function DatabaseChangelogPanel({ database }: { database: Database }) {
 
   return (
     <div className="flex flex-col gap-y-4">
-      <VueChangelogTableMount
+      <DatabaseChangelogTable
         changelogs={paged.dataList}
         loading={paged.isLoading}
       />

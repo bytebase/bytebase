@@ -2,17 +2,31 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
+import {
+  type Revision,
+  Revision_Type,
+} from "@/types/proto-es/v1/revision_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(() => true),
+  localStorage: {
+    clear: vi.fn(),
+    getItem: vi.fn(() => null),
+    removeItem: vi.fn(),
+    setItem: vi.fn(),
+  },
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
   listRevisions: vi.fn(),
+  batchCreateRevisions: vi.fn(),
+  createSheet: vi.fn(),
+  deleteRevision: vi.fn(),
+  pushNotification: vi.fn(),
   currentUser: {
     value: {
       email: "test@example.com",
@@ -26,6 +40,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let DatabaseRevisionPanel: typeof import("./DatabaseRevisionPanel").DatabaseRevisionPanel;
+
+vi.stubGlobal("localStorage", mocks.localStorage);
+vi.stubGlobal("confirm", mocks.confirm);
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -60,6 +77,12 @@ vi.mock("@/plugins/naive-ui", () => ({
   },
 }));
 
+vi.mock("@/react/components/ui/button", () => ({
+  Button: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props} />
+  ),
+}));
+
 vi.mock("@/router", () => ({
   router: {
     install: vi.fn(),
@@ -67,27 +90,41 @@ vi.mock("@/router", () => ({
   },
 }));
 
-vi.mock("@/react/components/ui/button", () => ({
-  Button: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button {...props} />
+vi.mock("@/react/components/ui/dialog", () => ({
+  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
+    open ? <div data-testid="dialog-root">{children}</div> : null,
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h1>{children}</h1>
   ),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
+vi.mock("@/connect", () => ({
+  revisionServiceClientConnect: {
+    listRevisions: mocks.listRevisions,
+    batchCreateRevisions: mocks.batchCreateRevisions,
+  },
 }));
 
 vi.mock("@/store", () => ({
   pinia: {
     install: vi.fn(),
   },
+  pushNotification: mocks.pushNotification,
   useCurrentUserV1: () => mocks.currentUser,
+  useRevisionStore: () => ({
+    deleteRevision: mocks.deleteRevision,
+  }),
+  useSheetV1Store: () => ({
+    createSheet: mocks.createSheet,
+  }),
 }));
 
-vi.mock("@/connect", () => ({
-  revisionServiceClientConnect: {
-    listRevisions: mocks.listRevisions,
-  },
+vi.mock("@/utils/v1/revision", () => ({
+  getRevisionType: (type: number) => `type-${type}`,
+  revisionLink: (revision: { name: string }) => `/revisions/${revision.name}`,
 }));
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
@@ -123,6 +160,21 @@ const click = (element: HTMLElement) => {
   });
 };
 
+const inputValue = (
+  element: HTMLInputElement | HTMLTextAreaElement,
+  value: string
+) => {
+  act(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(element),
+      "value"
+    );
+    descriptor?.set?.call(element, value);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+};
+
 const makeDatabase = (): Database =>
   ({
     name: "instances/inst1/databases/db1",
@@ -134,53 +186,47 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
+  mocks.confirm.mockReset();
+  mocks.confirm.mockReturnValue(true);
+  mocks.localStorage.clear.mockReset();
+  mocks.localStorage.getItem.mockReset();
+  mocks.localStorage.getItem.mockReturnValue(null);
+  mocks.localStorage.removeItem.mockReset();
+  mocks.localStorage.setItem.mockReset();
   mocks.listRevisions.mockReset();
   mocks.listRevisions.mockResolvedValue({
     nextPageToken: "",
     revisions: [
       {
         name: "instances/inst1/databases/db1/revisions/1",
+        version: "1.0.0",
+        type: Revision_Type.VERSIONED,
       } as Revision,
     ],
   });
+  mocks.batchCreateRevisions.mockReset();
+  mocks.batchCreateRevisions.mockResolvedValue({
+    revisions: [
+      {
+        name: "instances/inst1/databases/db1/revisions/2",
+        version: "2.0.0",
+        type: Revision_Type.VERSIONED,
+      } as Revision,
+    ],
+  });
+  mocks.createSheet.mockReset();
+  mocks.createSheet.mockResolvedValue({
+    name: "projects/proj1/sheets/sheet-1",
+  });
+  mocks.deleteRevision.mockReset();
+  mocks.deleteRevision.mockResolvedValue(undefined);
+  mocks.pushNotification.mockReset();
   mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation((options: { render: () => unknown }) => ({
+  mocks.createApp.mockImplementation(() => ({
     use() {
       return this;
     },
-    mount(element: Element) {
-      const vnode = options.render() as {
-        props?: Record<string, unknown>;
-      };
-      if (Array.isArray(vnode.props?.revisions)) {
-        const deleteButton = document.createElement("button");
-        deleteButton.dataset.testid = "revision-delete";
-        deleteButton.addEventListener("click", () => {
-          (vnode.props?.onDelete as (() => void) | undefined)?.();
-        });
-        element.replaceChildren(deleteButton);
-        return;
-      }
-      if (vnode.props?.show) {
-        const drawer = document.createElement("div");
-        drawer.dataset.testid = "create-revision-drawer";
-        const createButton = document.createElement("button");
-        createButton.dataset.testid = "create-revision-created";
-        createButton.addEventListener("click", () => {
-          (
-            vnode.props?.onCreated as
-              | ((revisions: Revision[]) => void)
-              | undefined
-          )?.([
-            { name: "instances/inst1/databases/db1/revisions/2" } as Revision,
-          ]);
-        });
-        drawer.appendChild(createButton);
-        element.replaceChildren(drawer);
-        return;
-      }
-      element.replaceChildren();
-    },
+    mount() {},
     unmount: vi.fn(),
   }));
 
@@ -189,7 +235,7 @@ beforeEach(async () => {
 });
 
 describe("DatabaseRevisionPanel", () => {
-  test("opens the revision import flow and refreshes after create", async () => {
+  test("opens the revision import dialog and refreshes after create", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionPanel, {
         database: makeDatabase(),
@@ -207,14 +253,32 @@ describe("DatabaseRevisionPanel", () => {
     click(importButton as HTMLButtonElement);
     await flush();
 
-    const createButton = container.querySelector(
-      '[data-testid="create-revision-created"]'
-    ) as HTMLButtonElement | null;
-    expect(createButton).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="dialog-root"]')
+    ).not.toBeNull();
+
+    const versionInput = container.querySelector(
+      'input[name="version"]'
+    ) as HTMLInputElement | null;
+    const statementInput = container.querySelector(
+      'textarea[name="statement"]'
+    ) as HTMLTextAreaElement | null;
+    expect(versionInput).not.toBeNull();
+    expect(statementInput).not.toBeNull();
+
+    inputValue(versionInput as HTMLInputElement, "2.0.0");
+    inputValue(statementInput as HTMLTextAreaElement, "select 1;");
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement | undefined;
+    expect(createButton).toBeDefined();
 
     click(createButton as HTMLButtonElement);
     await flush();
 
+    expect(mocks.createSheet).toHaveBeenCalledTimes(1);
+    expect(mocks.batchCreateRevisions).toHaveBeenCalledTimes(1);
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
 
     unmount();
@@ -230,14 +294,24 @@ describe("DatabaseRevisionPanel", () => {
     render();
     await flush();
 
-    const deleteButton = container.querySelector(
-      '[data-testid="revision-delete"]'
-    ) as HTMLButtonElement | null;
-    expect(deleteButton).not.toBeNull();
+    expect(container.querySelector("table")).not.toBeNull();
+    expect(container.textContent).toContain("1.0.0");
+
+    const deleteButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.dataset.name === "instances/inst1/databases/db1/revisions/1"
+    ) as HTMLButtonElement | undefined;
+    expect(deleteButton).toBeDefined();
 
     click(deleteButton as HTMLButtonElement);
     await flush();
 
+    expect(mocks.confirm).toHaveBeenCalledWith(
+      "database.revision.delete-confirm-dialog"
+    );
+    expect(mocks.deleteRevision).toHaveBeenCalledWith(
+      "instances/inst1/databases/db1/revisions/1"
+    );
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
 
     unmount();

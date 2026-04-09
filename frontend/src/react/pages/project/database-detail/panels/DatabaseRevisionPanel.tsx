@@ -1,104 +1,22 @@
 import { create } from "@bufbuild/protobuf";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h } from "vue";
-import { RevisionDataTable } from "@/components/Revision";
-import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { router } from "@/router";
-import { pinia } from "@/store";
+import { useRevisionStore } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import {
   ListRevisionsRequestSchema,
   type Revision as RevisionMessage,
 } from "@/types/proto-es/v1/revision_service_pb";
-
-function VueRevisionTableMount({
-  revisions,
-  loading,
-  onDelete,
-}: {
-  revisions: Revision[];
-  loading: boolean;
-  onDelete: () => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const app = createApp({
-      render() {
-        return h(RevisionDataTable as never, {
-          key: `revision-table.${revisions
-            .map((revision) => revision.name)
-            .join(",")}`,
-          revisions,
-          loading,
-          showSelection: true,
-          onDelete,
-        });
-      },
-    });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
-    app.mount(containerRef.current);
-
-    return () => {
-      app.unmount();
-    };
-  }, [loading, onDelete, revisions]);
-
-  return <div ref={containerRef} />;
-}
-
-function VueCreateRevisionDrawerMount({
-  databaseName,
-  open,
-  onOpenChange,
-  onCreated,
-}: {
-  databaseName: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreated: (revisions: RevisionMessage[]) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const app = createApp({
-      render() {
-        return h(CreateRevisionDrawer as never, {
-          database: databaseName,
-          show: open,
-          "onUpdate:show": onOpenChange,
-          onCreated,
-        });
-      },
-    });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
-    app.mount(containerRef.current);
-
-    return () => {
-      app.unmount();
-    };
-  }, [databaseName, onCreated, onOpenChange, open]);
-
-  return <div ref={containerRef} />;
-}
+import { CreateRevisionDialog } from "../revision/CreateRevisionDialog";
+import { DatabaseRevisionTable } from "../revision/DatabaseRevisionTable";
 
 export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
+  const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
   const fetchRevisionList = useCallback(
@@ -140,6 +58,17 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     paged.refresh();
   }, [paged.refresh]);
 
+  const handleDelete = useCallback(
+    async (name: string) => {
+      if (!window.confirm(t("database.revision.delete-confirm-dialog"))) {
+        return;
+      }
+      await revisionStore.deleteRevision(name);
+      handleRevisionDeleted();
+    },
+    [handleRevisionDeleted, revisionStore, t]
+  );
+
   return (
     <>
       <div className="flex flex-col gap-y-2">
@@ -149,10 +78,10 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
             {t("common.import")}
           </Button>
         </div>
-        <VueRevisionTableMount
+        <DatabaseRevisionTable
           revisions={paged.dataList}
           loading={paged.isLoading}
-          onDelete={handleRevisionDeleted}
+          onDelete={handleDelete}
         />
         <PagedTableFooter
           pageSize={paged.pageSize}
@@ -163,9 +92,13 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           onLoadMore={paged.loadMore}
         />
       </div>
-      <VueCreateRevisionDrawerMount
+      <CreateRevisionDialog
         databaseName={database.name}
+        existingVersions={paged.dataList
+          .map((revision) => revision.version)
+          .filter((version): version is string => !!version)}
         open={showCreateRevisionDrawer}
+        projectName={database.project}
         onOpenChange={setShowCreateRevisionDrawer}
         onCreated={handleRevisionCreated}
       />
