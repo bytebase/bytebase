@@ -2,63 +2,100 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(() => true),
+  localStorage: {
+    clear: vi.fn(),
+    getItem: vi.fn(() => null),
+    removeItem: vi.fn(),
+    setItem: vi.fn(),
+  },
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
   useVueState: vi.fn((getter: () => unknown) => getter()),
   featureToRef: vi.fn(() => ({ value: true })),
   useDatabaseCatalog: vi.fn(() => ({
-    value: { schemas: [] } as { schemas: unknown[] } | undefined,
+    value: {
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "book",
+              kind: {
+                case: "columns",
+                value: {
+                  columns: [
+                    {
+                      name: "email",
+                      semanticType: "EMAIL",
+                      classification: "",
+                    },
+                  ],
+                },
+              },
+              classification: "",
+            },
+          ],
+        },
+      ],
+    } as unknown,
   })),
   usePolicyV1Store: vi.fn(() => ({
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
   })),
+  useDatabaseCatalogV1Store: vi.fn(() => ({
+    updateDatabaseCatalog: vi.fn(),
+  })),
+  useSettingV1Store: vi.fn(() => ({
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => ({
+      id: "classification-config",
+      classification: {
+        PII: {
+          id: "PII",
+          title: "PII",
+        },
+      },
+    })),
+    getSettingByName: vi.fn(() => ({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "EMAIL",
+                title: "Email",
+              },
+              {
+                id: "PHONE",
+                title: "Phone",
+              },
+            ],
+          },
+        },
+      },
+    })),
+  })),
+  pushNotification: vi.fn(),
   hasProjectPermissionV2: vi.fn(
     (_project?: unknown, _permission?: string) => true
   ),
   getDatabaseProject: vi.fn((database: { project: string }) => ({
     name: database.project,
+    dataClassificationConfigId: "classification-config",
   })),
   getInstanceResource: vi.fn(() => ({ name: "instances/inst1", engine: 1 })),
   instanceV1MaskingForNoSQL: vi.fn(() => false),
-  SensitiveColumnTableBridge: vi.fn(
-    ({
-      onCheckedColumnListChange,
-    }: {
-      onCheckedColumnListChange: (list: unknown[]) => void;
-    }) => (
-      <div data-testid="sensitive-column-table-bridge">
-        <button
-          type="button"
-          data-testid="select-sensitive-row"
-          onClick={() =>
-            onCheckedColumnListChange([
-              {
-                schema: "public",
-                table: "book",
-                column: "email",
-                semanticTypeId: "EMAIL",
-                classificationId: "",
-                target: {},
-              },
-            ])
-          }
-        >
-          select
-        </button>
-      </div>
-    )
-  ),
-  GrantAccessDrawerBridge: vi.fn(() => (
-    <div data-testid="grant-access-drawer" />
-  )),
   FeatureAttention: vi.fn(() => <div data-testid="feature-attention" />),
   FeatureBadge: vi.fn(() => <div data-testid="feature-badge" />),
   PermissionGuard: vi.fn(
@@ -67,6 +104,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let DatabaseCatalogPanel: typeof import("./DatabaseCatalogPanel").DatabaseCatalogPanel;
+
+vi.stubGlobal("confirm", mocks.confirm);
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -78,8 +117,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   featureToRef: mocks.featureToRef,
+  pushNotification: mocks.pushNotification,
   useDatabaseCatalog: mocks.useDatabaseCatalog,
+  useDatabaseCatalogV1Store: mocks.useDatabaseCatalogV1Store,
   usePolicyV1Store: mocks.usePolicyV1Store,
+  useSettingV1Store: mocks.useSettingV1Store,
 }));
 
 vi.mock("@/utils", () => ({
@@ -113,6 +155,37 @@ vi.mock("@/react/components/ui/input", () => ({
   ),
 }));
 
+vi.mock("@/react/components/ui/select", () => ({
+  Select: ({
+    value,
+    onValueChange,
+    children,
+  }: {
+    value?: string;
+    onValueChange?: (value: string) => void;
+    children: React.ReactNode;
+  }) => (
+    <select
+      value={value}
+      onChange={(event) => onValueChange?.(event.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => children,
+  SelectValue: ({ placeholder }: { placeholder?: string }) => (
+    <option value="">{placeholder}</option>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => children,
+  SelectItem: ({
+    value,
+    children,
+  }: {
+    value: string;
+    children: React.ReactNode;
+  }) => <option value={value}>{children}</option>,
+}));
+
 vi.mock("@/react/components/ui/dialog", () => ({
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div data-testid="dialog-root">{children}</div> : null,
@@ -124,12 +197,56 @@ vi.mock("@/react/components/ui/dialog", () => ({
   ),
 }));
 
-vi.mock("../legacy/SensitiveColumnTableBridge", () => ({
-  SensitiveColumnTableBridge: mocks.SensitiveColumnTableBridge,
+vi.mock("@/react/components/AccountMultiSelect", () => ({
+  AccountMultiSelect: ({
+    value,
+    onChange,
+  }: {
+    value: string[];
+    onChange: (value: string[]) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="member-select"
+      onClick={() => onChange([...value, "user:test@example.com"])}
+    >
+      member-select
+    </button>
+  ),
 }));
 
-vi.mock("../legacy/GrantAccessDrawerBridge", () => ({
-  GrantAccessDrawerBridge: mocks.GrantAccessDrawerBridge,
+vi.mock("@/react/components/DatabaseResourceSelector", () => ({
+  DatabaseResourceSelector: ({
+    value,
+    onChange,
+  }: {
+    value: unknown[];
+    onChange: (value: unknown[]) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="resource-select"
+      onClick={() => onChange(value)}
+    >
+      resource-select
+    </button>
+  ),
+}));
+
+vi.mock("@/react/components/ui/expiration-picker", () => ({
+  ExpirationPicker: ({
+    value,
+    onChange,
+  }: {
+    value: string | undefined;
+    onChange: (value: string | undefined) => void;
+  }) => (
+    <input
+      data-testid="expiration-picker"
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value || undefined)}
+    />
+  ),
 }));
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
@@ -171,6 +288,9 @@ const makeDatabase = (): Database =>
   }) as Database;
 
 beforeEach(async () => {
+  mocks.confirm.mockReset();
+  mocks.confirm.mockReturnValue(true);
+  vi.stubGlobal("localStorage", mocks.localStorage);
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
@@ -181,19 +301,81 @@ beforeEach(async () => {
   mocks.featureToRef.mockReturnValue({ value: true });
   mocks.useDatabaseCatalog.mockReset();
   mocks.useDatabaseCatalog.mockReturnValue({
-    value: { schemas: [] } as { schemas: unknown[] } | undefined,
+    value: {
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "book",
+              kind: {
+                case: "columns",
+                value: {
+                  columns: [
+                    {
+                      name: "email",
+                      semanticType: "EMAIL",
+                      classification: "",
+                    },
+                  ],
+                },
+              },
+              classification: "",
+            },
+          ],
+        },
+      ],
+    } as unknown,
   });
   mocks.usePolicyV1Store.mockReset();
   mocks.usePolicyV1Store.mockReturnValue({
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
   });
+  mocks.useDatabaseCatalogV1Store.mockReset();
+  mocks.useDatabaseCatalogV1Store.mockReturnValue({
+    updateDatabaseCatalog: vi.fn(),
+  });
+  mocks.useSettingV1Store.mockReset();
+  mocks.useSettingV1Store.mockReturnValue({
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => ({
+      id: "classification-config",
+      classification: {
+        PII: {
+          id: "PII",
+          title: "PII",
+        },
+      },
+    })),
+    getSettingByName: vi.fn(() => ({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "EMAIL",
+                title: "Email",
+              },
+              {
+                id: "PHONE",
+                title: "Phone",
+              },
+            ],
+          },
+        },
+      },
+    })),
+  });
+  mocks.pushNotification.mockReset();
   mocks.hasProjectPermissionV2.mockReset();
   mocks.hasProjectPermissionV2.mockReturnValue(true);
   mocks.getDatabaseProject.mockReset();
   mocks.getDatabaseProject.mockImplementation(
     (database: { project: string }) => ({
       name: database.project,
+      dataClassificationConfigId: "classification-config",
     })
   );
   mocks.getInstanceResource.mockReset();
@@ -203,8 +385,6 @@ beforeEach(async () => {
   });
   mocks.instanceV1MaskingForNoSQL.mockReset();
   mocks.instanceV1MaskingForNoSQL.mockReturnValue(false);
-  mocks.SensitiveColumnTableBridge.mockClear();
-  mocks.GrantAccessDrawerBridge.mockClear();
   mocks.FeatureAttention.mockClear();
   mocks.FeatureBadge.mockClear();
   mocks.PermissionGuard.mockClear();
@@ -214,7 +394,7 @@ beforeEach(async () => {
 });
 
 describe("DatabaseCatalogPanel", () => {
-  test("keeps grant access disabled until at least one row is selected", async () => {
+  test("renders catalog rows and opens the react grant-access dialog after selection", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {
         database: makeDatabase(),
@@ -222,6 +402,9 @@ describe("DatabaseCatalogPanel", () => {
     );
     render();
     await flush();
+
+    expect(container.textContent).toContain("public.book");
+    expect(container.textContent).toContain("email");
 
     const grantAccessButton = Array.from(
       container.querySelectorAll("button")
@@ -231,25 +414,35 @@ describe("DatabaseCatalogPanel", () => {
     expect(grantAccessButton).toBeDefined();
     expect(grantAccessButton?.hasAttribute("disabled")).toBe(true);
 
-    const selectRowButton = container.querySelector(
-      '[data-testid="select-sensitive-row"]'
-    );
-    expect(selectRowButton).not.toBeNull();
-    click(selectRowButton as HTMLElement);
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    expect(checkbox).not.toBeNull();
+    click(checkbox as HTMLElement);
     await flush();
 
-    const updatedGrantAccessButton = Array.from(
+    const enabledGrantAccessButton = Array.from(
       container.querySelectorAll("button")
     ).find(
       (button) => button.textContent === "settings.sensitive-data.grant-access"
     );
-    expect(updatedGrantAccessButton?.hasAttribute("disabled")).toBe(false);
+    expect(enabledGrantAccessButton?.hasAttribute("disabled")).toBe(false);
+
+    click(enabledGrantAccessButton as HTMLElement);
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="dialog-root"]')
+    ).not.toBeNull();
+    expect(container.textContent).toContain(
+      "settings.sensitive-data.grant-access"
+    );
 
     unmount();
   });
 
-  test("passes the database instance into feature attention", async () => {
-    const { render, unmount } = renderIntoContainer(
+  test("opens the feature dialog instead of grant access when masking feature is missing", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {
         database: makeDatabase(),
       })
@@ -257,36 +450,27 @@ describe("DatabaseCatalogPanel", () => {
     render();
     await flush();
 
-    expect(mocks.FeatureAttention).toHaveBeenCalledWith(
-      expect.objectContaining({
-        feature: expect.any(Number),
-        instance: expect.objectContaining({
-          name: "instances/inst1",
-        }),
-      }),
-      undefined
-    );
-
-    unmount();
-  });
-
-  test("passes showOperation=false when catalog update permission is missing", async () => {
-    mocks.hasProjectPermissionV2.mockImplementation(
-      (_project?: unknown, permission?: string) =>
-        permission !== "bb.databaseCatalogs.update"
-    );
-
-    const { render, unmount } = renderIntoContainer(
-      createElement(DatabaseCatalogPanel, {
-        database: makeDatabase(),
-      })
-    );
-    render();
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    expect(checkbox).not.toBeNull();
+    click(checkbox as HTMLElement);
     await flush();
 
-    expect(mocks.SensitiveColumnTableBridge).toHaveBeenCalledWith(
+    const grantAccessButton = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "settings.sensitive-data.grant-access"
+    );
+    expect(grantAccessButton?.hasAttribute("disabled")).toBe(false);
+
+    click(grantAccessButton as HTMLElement);
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="dialog-root"]')
+    ).not.toBeNull();
+    expect(mocks.FeatureBadge).toHaveBeenCalledWith(
       expect.objectContaining({
-        showOperation: false,
+        clickable: false,
       }),
       undefined
     );
@@ -320,10 +504,13 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
-  test("handles undefined catalog state before data is loaded", async () => {
-    mocks.useDatabaseCatalog.mockReturnValue({ value: undefined });
+  test("clears deleted columns from the checked selection", async () => {
+    const updateDatabaseCatalog = vi.fn().mockResolvedValue(undefined);
+    mocks.useDatabaseCatalogV1Store.mockReturnValue({
+      updateDatabaseCatalog,
+    });
 
-    const { render, unmount } = renderIntoContainer(
+    const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {
         database: makeDatabase(),
       })
@@ -331,20 +518,134 @@ describe("DatabaseCatalogPanel", () => {
     render();
     await flush();
 
-    expect(mocks.SensitiveColumnTableBridge).toHaveBeenCalledWith(
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    expect(checkbox).not.toBeNull();
+    click(checkbox as HTMLElement);
+    await flush();
+
+    const grantAccessButtonBeforeDelete = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "settings.sensitive-data.grant-access"
+    );
+    expect(grantAccessButtonBeforeDelete?.hasAttribute("disabled")).toBe(false);
+
+    const deleteButton = container.querySelector(
+      'button[aria-label="common.remove"]'
+    );
+    expect(deleteButton).not.toBeNull();
+    click(deleteButton as HTMLElement);
+    await flush();
+
+    expect(updateDatabaseCatalog).toHaveBeenCalledTimes(1);
+
+    const grantAccessButtonAfterDelete = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "settings.sensitive-data.grant-access"
+    );
+    expect(grantAccessButtonAfterDelete?.hasAttribute("disabled")).toBe(true);
+
+    unmount();
+  });
+
+  test("updates semantic type and classification inline", async () => {
+    const updateDatabaseCatalog = vi.fn().mockResolvedValue(undefined);
+    const getOrFetchSettingByName = vi.fn();
+    mocks.useDatabaseCatalogV1Store.mockReturnValue({
+      updateDatabaseCatalog,
+    });
+    mocks.useSettingV1Store.mockReturnValue({
+      getOrFetchSettingByName,
+      getProjectClassification: vi.fn(() => ({
+        id: "classification-config",
+        classification: {
+          PII: {
+            id: "PII",
+            title: "PII",
+          },
+          CONFIDENTIAL: {
+            id: "CONFIDENTIAL",
+            title: "Confidential",
+          },
+        },
+      })),
+      getSettingByName: vi.fn(() => ({
+        value: {
+          value: {
+            case: "semanticType",
+            value: {
+              types: [
+                {
+                  id: "EMAIL",
+                  title: "Email",
+                },
+                {
+                  id: "PHONE",
+                  title: "Phone",
+                },
+              ],
+            },
+          },
+        },
+      })),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+    render();
+    await flush();
+
+    expect(getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.SEMANTIC_TYPES,
+      true
+    );
+    expect(getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+
+    const selects = Array.from(container.querySelectorAll("select"));
+    expect(selects).toHaveLength(2);
+
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLSelectElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(selects[0], "PHONE");
+      selects[0].dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLSelectElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(selects[1], "CONFIDENTIAL");
+      selects[1].dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    expect(updateDatabaseCatalog).toHaveBeenCalledTimes(2);
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
       expect.objectContaining({
-        columnList: [],
-      }),
-      undefined
+        style: "SUCCESS",
+        title: "common.updated",
+      })
     );
 
     unmount();
   });
 
-  test("renders feature badge as non-clickable icon when feature is missing", async () => {
-    mocks.featureToRef.mockReturnValue({ value: false });
+  test("handles undefined catalog state before data is loaded", async () => {
+    mocks.useDatabaseCatalog.mockReturnValue({ value: undefined as unknown });
 
-    const { render, unmount } = renderIntoContainer(
+    const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {
         database: makeDatabase(),
       })
@@ -352,12 +653,8 @@ describe("DatabaseCatalogPanel", () => {
     render();
     await flush();
 
-    expect(mocks.FeatureBadge).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clickable: false,
-      }),
-      undefined
-    );
+    expect(container.textContent).not.toContain("public.book");
+    expect(container.textContent).not.toContain("email");
 
     unmount();
   });

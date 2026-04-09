@@ -1,0 +1,372 @@
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/router";
+import { useDBSchemaV1Store } from "@/store";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type {
+  Database,
+  PackageMetadata,
+  SequenceMetadata,
+  StreamMetadata,
+  TaskMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import {
+  bytesToString,
+  getDatabaseEngine,
+  hasSchemaProperty,
+  instanceV1SupportsPackage,
+  instanceV1SupportsSequence,
+} from "@/utils";
+import {
+  type ObjectSectionRow,
+  ObjectSectionTable,
+} from "./ObjectSectionTable";
+import {
+  TableDetailDialog,
+  type TableDetailDialogData,
+} from "./TableDetailDialog";
+import { TableMetadataTable } from "./TableMetadataTable";
+
+function filterByKeyword(name: string, keyword: string) {
+  return name.toLowerCase().includes(keyword.trim().toLowerCase());
+}
+
+export function DatabaseObjectExplorer({
+  database,
+  loading,
+  selectedSchemaName,
+  tableSearchKeyword,
+  externalTableSearchKeyword,
+  onSelectedSchemaNameChange,
+  onTableSearchKeywordChange,
+  onExternalTableSearchKeywordChange,
+}: {
+  database: Database;
+  loading: boolean;
+  selectedSchemaName: string;
+  tableSearchKeyword: string;
+  externalTableSearchKeyword: string;
+  onSelectedSchemaNameChange: (value: string) => void;
+  onTableSearchKeywordChange: (value: string) => void;
+  onExternalTableSearchKeywordChange: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+  const dbSchemaStore = useDBSchemaV1Store();
+  const databaseEngine = getDatabaseEngine(database);
+  const supportsSchema = hasSchemaProperty(databaseEngine);
+  const schemaList = useVueState(() =>
+    dbSchemaStore.getSchemaList(database.name)
+  );
+  const tableList = useVueState(() =>
+    dbSchemaStore.getTableList({
+      database: database.name,
+      schema: selectedSchemaName,
+    })
+  );
+  const viewList = useVueState(() =>
+    dbSchemaStore.getViewList({
+      database: database.name,
+      schema: selectedSchemaName,
+    })
+  );
+  const extensionList = useVueState(() =>
+    dbSchemaStore.getExtensionList(database.name)
+  );
+  const externalTableList = useVueState(() =>
+    dbSchemaStore.getExternalTableList({
+      database: database.name,
+      schema: selectedSchemaName,
+    })
+  );
+  const functionList = useVueState(() =>
+    dbSchemaStore.getFunctionList({
+      database: database.name,
+      schema: selectedSchemaName,
+    })
+  );
+  const routeTable = useVueState(() => {
+    const table = router.currentRoute.value.query.table;
+    return typeof table === "string" ? table : "";
+  });
+  const databaseMetadata = useVueState(() =>
+    dbSchemaStore.getDatabaseMetadata(database.name)
+  );
+  const [selectedTableName, setSelectedTableName] = useState(routeTable);
+
+  const selectedSchemaMetadata = databaseMetadata.schemas.find(
+    (schema) => schema.name === selectedSchemaName
+  );
+  const sequenceList: SequenceMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.sequences ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.sequences ?? []);
+  const streamList: StreamMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.streams ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.streams ?? []);
+  const taskList: TaskMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.tasks ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.tasks ?? []);
+  const packageList: PackageMetadata[] = supportsSchema
+    ? (selectedSchemaMetadata?.packages ?? [])
+    : databaseMetadata.schemas.flatMap((schema) => schema.packages ?? []);
+
+  const selectedTable = tableList.find(
+    (table) => table.name === selectedTableName
+  );
+  const selectedTableDetail: TableDetailDialogData | undefined = selectedTable
+    ? {
+        name: selectedTable.name,
+        rowCount: String(selectedTable.rowCount),
+        dataSize: bytesToString(Number(selectedTable.dataSize)),
+        indexSize: bytesToString(Number(selectedTable.indexSize)),
+        columns: selectedTable.columns.map((column) => ({
+          name: column.name,
+          type: column.type,
+          comment: column.comment,
+        })),
+      }
+    : undefined;
+
+  useEffect(() => {
+    setSelectedTableName((current) =>
+      current === routeTable ? current : routeTable
+    );
+  }, [routeTable]);
+
+  useEffect(() => {
+    if (!selectedTableName || loading || selectedTable) {
+      return;
+    }
+
+    setSelectedTableName("");
+  }, [loading, selectedTable, selectedTableName]);
+
+  useEffect(() => {
+    const currentQuery = router.currentRoute.value.query;
+    const currentTable =
+      typeof currentQuery.table === "string" ? currentQuery.table : "";
+
+    if (currentTable === selectedTableName) {
+      return;
+    }
+
+    void router.replace({
+      query: {
+        ...currentQuery,
+        table: selectedTableName || undefined,
+      },
+    });
+  }, [selectedTableName]);
+
+  const viewRows: ObjectSectionRow[] = viewList.map((view) => ({
+    key: view.name,
+    name: view.name,
+    description: view.definition || "-",
+    comment: view.comment,
+  }));
+
+  const externalTableRows: ObjectSectionRow[] = externalTableList
+    .filter((table) => filterByKeyword(table.name, externalTableSearchKeyword))
+    .map((table) => ({
+      key: table.name,
+      name: table.name,
+      description:
+        [table.externalServerName, table.externalDatabaseName]
+          .filter(Boolean)
+          .join(" / ") || "-",
+    }));
+
+  const extensionRows: ObjectSectionRow[] = extensionList.map((extension) => ({
+    key: extension.name,
+    name: extension.name,
+    description: extension.version || "-",
+    comment: extension.description,
+  }));
+
+  const functionRows: ObjectSectionRow[] = functionList.map((fn) => ({
+    key: fn.signature || fn.name,
+    name: fn.signature || fn.name,
+    description: fn.definition || "-",
+    comment: fn.comment,
+  }));
+
+  const sequenceRows: ObjectSectionRow[] = sequenceList.map((sequence) => ({
+    key: sequence.name,
+    name: sequence.name,
+    description: sequence.dataType || "-",
+    comment: sequence.comment,
+  }));
+
+  const streamRows: ObjectSectionRow[] = streamList.map((stream) => ({
+    key: stream.name,
+    name: stream.name,
+    description: stream.tableName || "-",
+    comment: stream.comment,
+  }));
+
+  const taskRows: ObjectSectionRow[] = taskList.map((task) => ({
+    key: task.name,
+    name: task.name,
+    description: task.schedule || task.id || "-",
+    comment: task.comment,
+  }));
+
+  const packageRows: ObjectSectionRow[] = packageList.map((pkg) => ({
+    key: pkg.name,
+    name: pkg.name,
+    description: pkg.definition || "-",
+  }));
+
+  return (
+    <div className="space-y-6 pt-6">
+      {supportsSchema && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+          <label
+            className="text-lg font-medium text-main"
+            htmlFor="schema-select"
+          >
+            {t("common.schema")}
+          </label>
+          <select
+            id="schema-select"
+            className="min-w-48 rounded-xs border border-control-border bg-white px-3 py-2 text-sm text-main"
+            disabled={loading}
+            value={selectedSchemaName}
+            onChange={(event) =>
+              onSelectedSchemaNameChange(event.target.value.trim())
+            }
+          >
+            {schemaList.map((schema) => (
+              <option key={schema.name} value={schema.name}>
+                {schema.name || t("db.schema.default")}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {databaseEngine !== Engine.REDIS && (
+        <>
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-lg font-medium text-main">
+                {databaseEngine === Engine.MONGODB
+                  ? t("db.collections")
+                  : t("db.tables")}
+              </div>
+              <Input
+                className="w-full max-w-sm"
+                disabled={loading}
+                placeholder={t("common.filter-by-name")}
+                value={tableSearchKeyword}
+                onChange={(event) =>
+                  onTableSearchKeywordChange(event.target.value)
+                }
+              />
+            </div>
+            <TableMetadataTable
+              database={database}
+              loading={loading}
+              rows={tableList.filter((table) =>
+                filterByKeyword(table.name, tableSearchKeyword)
+              )}
+              schemaName={selectedSchemaName}
+              onRowClick={(table) => setSelectedTableName(table.name)}
+            />
+          </section>
+
+          <section className="space-y-4">
+            <div className="text-lg font-medium text-main">{t("db.views")}</div>
+            <ObjectSectionTable loading={loading} rows={viewRows} />
+          </section>
+
+          {(databaseEngine === Engine.POSTGRES ||
+            databaseEngine === Engine.HIVE) && (
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-lg font-medium text-main">
+                  {t("db.external-tables")}
+                </div>
+                <Input
+                  className="w-full max-w-sm"
+                  disabled={loading}
+                  placeholder={t("common.filter-by-name")}
+                  value={externalTableSearchKeyword}
+                  onChange={(event) =>
+                    onExternalTableSearchKeywordChange(event.target.value)
+                  }
+                />
+              </div>
+              <ObjectSectionTable loading={loading} rows={externalTableRows} />
+            </section>
+          )}
+
+          {databaseEngine === Engine.POSTGRES && (
+            <section className="space-y-4">
+              <div className="text-lg font-medium text-main">
+                {t("db.extensions")}
+              </div>
+              <ObjectSectionTable loading={loading} rows={extensionRows} />
+            </section>
+          )}
+
+          {(databaseEngine === Engine.POSTGRES ||
+            databaseEngine === Engine.MSSQL) && (
+            <section className="space-y-4">
+              <div className="text-lg font-medium text-main">
+                {t("db.functions")}
+              </div>
+              <ObjectSectionTable loading={loading} rows={functionRows} />
+            </section>
+          )}
+
+          {instanceV1SupportsSequence(databaseEngine) && (
+            <section className="space-y-4">
+              <div className="text-lg font-medium text-main">
+                {t("db.sequences")}
+              </div>
+              <ObjectSectionTable loading={loading} rows={sequenceRows} />
+            </section>
+          )}
+
+          {databaseEngine === Engine.SNOWFLAKE && (
+            <>
+              <section className="space-y-4">
+                <div className="text-lg font-medium text-main">
+                  {t("db.streams")}
+                </div>
+                <ObjectSectionTable loading={loading} rows={streamRows} />
+              </section>
+              <section className="space-y-4">
+                <div className="text-lg font-medium text-main">
+                  {t("db.tasks")}
+                </div>
+                <ObjectSectionTable loading={loading} rows={taskRows} />
+              </section>
+            </>
+          )}
+
+          {instanceV1SupportsPackage(databaseEngine) && (
+            <section className="space-y-4">
+              <div className="text-lg font-medium text-main">
+                {t("db.packages")}
+              </div>
+              <ObjectSectionTable loading={loading} rows={packageRows} />
+            </section>
+          )}
+        </>
+      )}
+
+      <TableDetailDialog
+        open={!!selectedTableName}
+        table={selectedTableDetail}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTableName("");
+          }
+        }}
+      />
+    </div>
+  );
+}

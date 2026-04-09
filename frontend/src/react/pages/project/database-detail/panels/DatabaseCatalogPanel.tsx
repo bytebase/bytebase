@@ -2,8 +2,14 @@ import { create } from "@bufbuild/protobuf";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { MaskData } from "@/components/SensitiveData/types";
-import { isCurrentColumnException } from "@/components/SensitiveData/utils";
+import type {
+  MaskData,
+  MaskDataTarget,
+} from "@/components/SensitiveData/types";
+import {
+  getMaskDataIdentifier,
+  isCurrentColumnException,
+} from "@/components/SensitiveData/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -15,11 +21,20 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
-import { featureToRef, useDatabaseCatalog, usePolicyV1Store } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useDatabaseCatalog,
+  useDatabaseCatalogV1Store,
+  usePolicyV1Store,
+  useSettingV1Store,
+} from "@/store";
 import type { Permission } from "@/types";
 import type {
+  ColumnCatalog,
   DatabaseCatalog,
   ObjectSchema,
+  TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { ObjectSchema_Type } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -27,6 +42,10 @@ import {
   MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  type SemanticTypeSetting_SemanticType,
+  Setting_SettingName,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
@@ -34,8 +53,8 @@ import {
   hasProjectPermissionV2,
   instanceV1MaskingForNoSQL,
 } from "@/utils";
-import { GrantAccessDrawerBridge } from "../legacy/GrantAccessDrawerBridge";
-import { SensitiveColumnTableBridge } from "../legacy/SensitiveColumnTableBridge";
+import { GrantAccessDialog } from "../catalog/GrantAccessDialog";
+import { SensitiveColumnTable } from "../catalog/SensitiveColumnTable";
 
 const GRANT_ACCESS_PERMISSIONS: Permission[] = [
   "bb.policies.createMaskingExemptionPolicy",
@@ -142,12 +161,35 @@ const flattenSensitiveColumnList = (catalog?: DatabaseCatalog): MaskData[] => {
   return sensitiveList;
 };
 
+const hasSemanticType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | ObjectSchema => {
+  return "semanticType" in target;
+};
+
+const hasClassificationType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | TableCatalog => {
+  return "classification" in target;
+};
+
 export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
+  const databaseCatalogStore = useDatabaseCatalogV1Store();
+  const settingStore = useSettingV1Store();
 
   const databaseCatalog = useDatabaseCatalog(database.name, false);
   const catalog = useVueState(() => databaseCatalog.value);
+  const semanticTypeList = useVueState(() => {
+    const setting = settingStore.getSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES
+    );
+    return setting?.value?.value.case === "semanticType"
+      ? ((setting.value.value.value.types ??
+          []) as SemanticTypeSetting_SemanticType[])
+      : [];
+  });
   const hasSensitiveDataFeature = useVueState(
     () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
   );
@@ -160,6 +202,11 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const instance = getInstanceResource(database);
   const isMaskingForNoSQL = instanceV1MaskingForNoSQL(instance);
   const project = getDatabaseProject(database);
+  const classificationConfig = useVueState(() =>
+    settingStore.getProjectClassification(
+      project.dataClassificationConfigId ?? ""
+    )
+  );
   const hasUpdateCatalogPermission = hasProjectPermissionV2(
     project,
     "bb.databaseCatalogs.update"
@@ -179,9 +226,9 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     }
     return columnList.filter((item) => {
       return (
-        item.schema.includes(normalizedSearchText) ||
-        item.table.includes(normalizedSearchText) ||
-        item.column.includes(normalizedSearchText)
+        item.schema.toLowerCase().includes(normalizedSearchText) ||
+        item.table.toLowerCase().includes(normalizedSearchText) ||
+        item.column.toLowerCase().includes(normalizedSearchText)
       );
     });
   }, [columnList, normalizedSearchText]);
@@ -189,12 +236,42 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const openGrantAccessDrawer =
     showGrantAccessDrawer && checkedColumnList.length > 0;
 
+  const semanticTypeOptions = useMemo(
+    () =>
+      semanticTypeList.map((semanticType) => ({
+        label: semanticType.title || semanticType.id,
+        value: semanticType.id,
+      })),
+    [semanticTypeList]
+  );
+  const classificationOptions = useMemo(
+    () =>
+      Object.values(classificationConfig?.classification ?? {}).map(
+        (classification) => ({
+          label: classification.title || classification.id,
+          value: classification.id,
+        })
+      ),
+    [classificationConfig]
+  );
+
   useEffect(() => {
     setSearchText("");
     setCheckedColumnList([]);
     setShowFeatureDialog(false);
     setShowGrantAccessDrawer(false);
   }, [database.name]);
+
+  useEffect(() => {
+    void settingStore.getOrFetchSettingByName(
+      Setting_SettingName.SEMANTIC_TYPES,
+      true
+    );
+    void settingStore.getOrFetchSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+  }, [settingStore]);
 
   const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
     const policy = await policyStore.getOrFetchPolicyByParentAndType({
@@ -231,7 +308,62 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   };
 
   const handleDelete = async (item: MaskData) => {
+    const deletedColumnId = getMaskDataIdentifier(item);
+    setCheckedColumnList((current) =>
+      current.filter(
+        (selectedColumn) =>
+          getMaskDataIdentifier(selectedColumn) !== deletedColumnId
+      )
+    );
+    if (hasSemanticType(item.target)) {
+      item.target.semanticType = "";
+    }
+    if (hasClassificationType(item.target)) {
+      item.target.classification = "";
+    }
+    if (databaseCatalog.value) {
+      await databaseCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.removed"),
+      });
+    }
     await removeMaskingExceptions(item);
+  };
+
+  const handleSemanticTypeChange = async (
+    item: MaskData,
+    semanticTypeId: string
+  ) => {
+    if (!hasSemanticType(item.target) || !databaseCatalog.value) {
+      return;
+    }
+    item.target.semanticType = semanticTypeId;
+    item.semanticTypeId = semanticTypeId;
+    await databaseCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  };
+
+  const handleClassificationChange = async (
+    item: MaskData,
+    classificationId: string
+  ) => {
+    if (!hasClassificationType(item.target) || !databaseCatalog.value) {
+      return;
+    }
+    item.target.classification = classificationId;
+    item.classificationId = classificationId;
+    await databaseCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   };
 
   const handleGrantAccessClick = () => {
@@ -284,15 +416,17 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
         )}
       </div>
 
-      <SensitiveColumnTableBridge
-        database={database}
-        rowClickable={false}
+      <SensitiveColumnTable
+        classificationOptions={classificationOptions}
         rowSelectable={!isMaskingForNoSQL}
+        semanticTypeOptions={semanticTypeOptions}
         showOperation={hasUpdateCatalogPermission && hasSensitiveDataFeature}
         columnList={filteredColumnList}
         checkedColumnList={checkedColumnList}
+        onClassificationChange={handleClassificationChange}
         onCheckedColumnListChange={setCheckedColumnList}
         onDelete={handleDelete}
+        onSemanticTypeChange={handleSemanticTypeChange}
       />
 
       <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
@@ -316,7 +450,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       </Dialog>
 
       {openGrantAccessDrawer && (
-        <GrantAccessDrawerBridge
+        <GrantAccessDialog
           open={openGrantAccessDrawer}
           columnList={checkedColumnList.map((maskData) => ({
             database,

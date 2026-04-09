@@ -133,7 +133,9 @@ const mocks = vi.hoisted(() => {
     })),
     useDBSchemaV1Store: vi.fn(() => ({
       getOrFetchDatabaseMetadata: vi.fn(),
-      getDatabaseMetadata: vi.fn(() => undefined),
+      getDatabaseMetadata: vi.fn(() => undefined as unknown),
+      getSchemaList: vi.fn(() => [] as unknown[]),
+      getTableList: vi.fn(() => [] as unknown[]),
     })),
     usePermissionStore: vi.fn(() => ({
       currentPermissions: new Set([
@@ -478,7 +480,9 @@ beforeEach(() => {
   mocks.useDBSchemaV1Store.mockReset();
   mocks.useDBSchemaV1Store.mockReturnValue({
     getOrFetchDatabaseMetadata: vi.fn(),
-    getDatabaseMetadata: vi.fn(() => undefined),
+    getDatabaseMetadata: vi.fn(() => undefined as unknown),
+    getSchemaList: vi.fn(() => [] as unknown[]),
+    getTableList: vi.fn(() => [] as unknown[]),
   });
   mocks.usePermissionStore.mockReset();
   mocks.usePermissionStore.mockReturnValue({
@@ -781,6 +785,18 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("renders the header metadata and top-level action cluster", async () => {
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getOrFetchDatabaseMetadata: vi.fn(),
+      getDatabaseMetadata: vi.fn(() => ({
+        schemas: [
+          {
+            name: "public",
+          },
+        ],
+      })),
+      getSchemaList: vi.fn(() => [{ name: "public" }]),
+      getTableList: vi.fn(() => [{ name: "book" }, { name: "orders" }]),
+    });
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
