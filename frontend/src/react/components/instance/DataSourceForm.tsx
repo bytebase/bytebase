@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -786,14 +787,10 @@ export function DataSourceForm({
                                 )}
                             </label>
                           ))}
-                          <a
+                          <LearnMoreLink
                             href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-accent hover:underline"
-                          >
-                            {t("common.learn-more")}
-                          </a>
+                            className="text-sm text-accent"
+                          />
                         </div>
                       </div>
                     )}
@@ -1441,14 +1438,10 @@ export function DataSourceForm({
                   <span className="textinfolabel">
                     {t("data-source.snowflake-keypair-tip")}
                   </span>
-                  <a
+                  <LearnMoreLink
                     href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-accent hover:underline"
-                  >
-                    {t("common.learn-more")}
-                  </a>
+                    className="text-sm text-accent"
+                  />
                 </div>
                 <textarea
                   value={dataSource.authenticationPrivateKey ?? ""}

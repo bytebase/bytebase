@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { releaseServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -89,15 +90,10 @@ export function ProjectReleaseDashboardPage({
       <div className="px-4 flex flex-col gap-y-2 pb-2">
         <Alert variant="info">
           <span>{t("release.usage-description")}</span>
-          <a
+          <LearnMoreLink
             href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-1 inline-flex items-center gap-x-0.5 hover:underline"
-          >
-            {t("common.learn-more")}
-            <ExternalLink className="w-3 h-3" />
-          </a>
+            className="ml-1"
+          />
         </Alert>
 
         {/* Category filter */}

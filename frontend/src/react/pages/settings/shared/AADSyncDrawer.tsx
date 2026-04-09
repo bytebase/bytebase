@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -119,14 +120,10 @@ export function AADSyncDrawer({ onClose }: { onClose: () => void }) {
             {/* Description */}
             <p className="text-sm text-control-light">
               {t("settings.members.entra-sync.description")}{" "}
-              <a
+              <LearnMoreLink
                 href="https://docs.bytebase.com/administration/scim/overview?source=console"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                {t("common.learn-more")}
-              </a>
+                className="text-accent"
+              />
             </p>
 
             {/* Missing external URL warning */}

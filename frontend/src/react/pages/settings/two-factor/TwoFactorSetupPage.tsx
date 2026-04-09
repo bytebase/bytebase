@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
-import { Check, ExternalLink } from "lucide-react";
+import { Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -213,15 +214,10 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     <div className="px-4 py-4">
       <p className="text-sm text-gray-500 mb-4">
         {t("two-factor.description")}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/administration/2fa?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-1 inline-flex items-center gap-x-0.5 text-accent hover:underline"
-        >
-          {t("common.learn-more")}
-          <ExternalLink className="w-3 h-3" />
-        </a>
+          className="ml-1 text-accent"
+        />
       </p>
 
       {/* Step indicator */}

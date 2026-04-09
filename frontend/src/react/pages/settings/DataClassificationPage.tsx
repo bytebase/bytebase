@@ -1,13 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
-import {
-  ChevronRight,
-  ExternalLink,
-  Pencil,
-  Trash2,
-  Undo2,
-  X,
-} from "lucide-react";
+import { ChevronRight, Pencil, Trash2, Undo2, X } from "lucide-react";
 import {
   type JSX,
   useCallback,
@@ -20,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import classificationExample from "@/components/SensitiveData/classification-example.json";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -529,15 +523,10 @@ export function DataClassificationPage() {
       <div className="flex items-center justify-between">
         <div className="text-sm text-control-light">
           {t("database.classification.description")}
-          <a
+          <LearnMoreLink
             href="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-1 inline-flex items-center gap-0.5 text-accent hover:underline"
-          >
-            {t("common.learn-more")}
-            <ExternalLink className="w-3 h-3" />
-          </a>
+            className="ml-1 text-accent"
+          />
         </div>
 
         {allowEdit && (

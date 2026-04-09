@@ -1,6 +1,7 @@
-import { Check, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -293,15 +294,10 @@ export function SQLReviewPage() {
     <div className="px-4 py-4 mx-auto flex flex-col gap-y-4">
       <div className="textinfolabel">
         {t("sql-review.description")}{" "}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="normal-link inline-flex items-center gap-x-1"
-        >
-          {t("common.learn-more")}
-          <ExternalLink className="w-4 h-4" />
-        </a>
+          className="normal-link"
+        />
       </div>
 
       <div className="flex justify-end items-center gap-x-2">

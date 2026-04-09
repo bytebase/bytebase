@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { identityProviderServiceClientConnect } from "@/connect";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
@@ -1902,14 +1903,10 @@ function CreateWizardDrawer({
                       {t(
                         "settings.sso.form.user-information-mapping-description"
                       )}{" "}
-                      <a
+                      <LearnMoreLink
                         href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent hover:underline ml-1"
-                      >
-                        {t("common.learn-more")}
-                      </a>
+                        className="text-accent ml-1"
+                      />
                     </p>
                   </div>
                   <div className="max-w-2xl mx-auto flex flex-col gap-y-6 w-full">
@@ -2022,14 +2019,10 @@ export function IDPsPage() {
 
       <div className="textinfolabel">
         {t("settings.sso.description")}{" "}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/administration/sso/overview?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline"
-        >
-          {t("common.learn-more")}
-        </a>
+          className="text-accent"
+        />
       </div>
 
       <div className="w-full flex justify-end">

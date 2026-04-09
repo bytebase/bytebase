@@ -6,6 +6,7 @@ import { Ellipsis, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -588,14 +589,10 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
             </div>
             <p className="mt-4 text-sm text-gray-500">
               {t("two-factor.description")}{" "}
-              <a
+              <LearnMoreLink
                 href="https://docs.bytebase.com/administration/2fa?source=console"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline ml-1"
-              >
-                {t("common.learn-more")}
-              </a>
+                className="text-accent ml-1"
+              />
             </p>
 
             {showRegenerateRecoveryCodes && (

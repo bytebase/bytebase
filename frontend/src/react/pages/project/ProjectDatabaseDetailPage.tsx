@@ -191,11 +191,13 @@ export function ProjectDatabaseDetailPage({
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
       {!detail.database.effectiveEnvironment && (
-        <Alert variant="warning" className="items-center justify-between">
-          <div>{t("instance.no-environment")}</div>
-          <Button variant="link" size="sm" onClick={handleSetEnvironment}>
-            {t("database.edit-environment")}
-          </Button>
+        <Alert variant="warning">
+          <div className="flex flex-row items-center justify-between gap-x-2">
+            <div>{t("instance.no-environment")}</div>
+            <Button variant="link" size="sm" onClick={handleSetEnvironment}>
+              {t("database.edit-environment")}
+            </Button>
+          </div>
         </Alert>
       )}
 
