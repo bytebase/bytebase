@@ -25,6 +25,13 @@ const mocks = vi.hoisted(() => {
     getOrFetchDatabaseByName: vi.fn(),
     getOrFetchDatabaseMetadata: vi.fn(),
     getDatabaseByName: vi.fn(),
+    databaseStore: {
+      getOrFetchDatabaseByName: vi.fn(),
+      getDatabaseByName: vi.fn(),
+    },
+    dbSchemaStore: {
+      getOrFetchDatabaseMetadata: vi.fn(),
+    },
     getInstanceResource: vi.fn((database: { instanceResource?: unknown }) => {
       return database.instanceResource ?? {};
     }),
@@ -54,13 +61,8 @@ vi.mock("@/router/dashboard/projectV1", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => ({
-    getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
-    getDatabaseByName: mocks.getDatabaseByName,
-  }),
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-  }),
+  useDatabaseV1Store: () => mocks.databaseStore,
+  useDBSchemaV1Store: () => mocks.dbSchemaStore,
 }));
 
 vi.mock("@/utils", () => ({
@@ -117,8 +119,8 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const root = createRoot(container);
 
   return {
-    render: () => {
-      root.render(element);
+    render: (nextElement = element) => {
+      root.render(nextElement);
     },
     unmount: () =>
       act(() => {
@@ -144,6 +146,10 @@ beforeEach(() => {
   mocks.getOrFetchDatabaseByName.mockReset();
   mocks.getOrFetchDatabaseMetadata.mockReset();
   mocks.getDatabaseByName.mockReset();
+  mocks.databaseStore.getOrFetchDatabaseByName = mocks.getOrFetchDatabaseByName;
+  mocks.databaseStore.getDatabaseByName = mocks.getDatabaseByName;
+  mocks.dbSchemaStore.getOrFetchDatabaseMetadata =
+    mocks.getOrFetchDatabaseMetadata;
   mocks.getInstanceResource.mockReset();
   mocks.getInstanceResource.mockImplementation(
     (database: { instanceResource?: unknown }) =>
@@ -279,6 +285,70 @@ describe("useProjectDatabaseDetail", () => {
       hash: "#revision",
       query: { foo: "bar" },
     });
+
+    unmount();
+  });
+
+  test("does not refetch database detail when only hash or query changes", async () => {
+    const database = {
+      name: "instances/inst1/databases/db1",
+      project: "projects/proj1",
+    };
+    mocks.getDatabaseByName.mockReturnValue(database);
+    mocks.getOrFetchDatabaseByName.mockResolvedValue(database);
+    mocks.getOrFetchDatabaseMetadata.mockResolvedValue({});
+
+    let latest: ReturnType<typeof useProjectDatabaseDetail> | undefined;
+
+    const initialElement = createElement(HookProbe, {
+      projectId: "proj1",
+      instanceId: "inst1",
+      databaseName: "db1",
+      hash: "#overview",
+      query: { schema: "public" },
+      onValue: (value) => {
+        latest = value;
+      },
+    });
+    const { render, unmount } = renderIntoContainer(initialElement);
+
+    act(() => {
+      render();
+    });
+    await waitFor(() => mocks.getOrFetchDatabaseByName.mock.calls.length > 0);
+    await waitFor(() => mocks.getOrFetchDatabaseMetadata.mock.calls.length > 0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const initialDatabaseFetchCount =
+      mocks.getOrFetchDatabaseByName.mock.calls.length;
+    const initialMetadataFetchCount =
+      mocks.getOrFetchDatabaseMetadata.mock.calls.length;
+
+    act(() => {
+      render(
+        createElement(HookProbe, {
+          projectId: "proj1",
+          instanceId: "inst1",
+          databaseName: "db1",
+          hash: "#revision",
+          query: { schema: "archive" },
+          onValue: (value) => {
+            latest = value;
+          },
+        })
+      );
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledTimes(
+      initialDatabaseFetchCount
+    );
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledTimes(
+      initialMetadataFetchCount
+    );
+    expect(latest?.databaseName).toBe("instances/inst1/databases/db1");
 
     unmount();
   });

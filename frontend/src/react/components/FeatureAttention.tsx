@@ -1,29 +1,41 @@
 import { CircleAlert, Info } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { router } from "@/router";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto-es/v1/instance_service_pb";
 import {
   PlanFeature,
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { useVueState } from "../hooks/useVueState";
+import { InstanceAssignmentBridge } from "./InstanceAssignmentBridge";
 
 export function FeatureAttention({
   feature,
   description: descriptionProp,
+  instance,
 }: {
   feature: PlanFeature;
   description?: string;
+  instance?: Instance | InstanceResource;
 }) {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
   const actuatorStore = useActuatorV1Store();
+  const [showInstanceAssignment, setShowInstanceAssignment] = useState(false);
 
   const hasFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(feature)
+  );
+  const instanceMissingLicense = useVueState(() =>
+    subscriptionStore.instanceMissingLicense(feature, instance)
   );
   const existInstanceWithoutLicense = useVueState(
     () =>
@@ -31,7 +43,10 @@ export function FeatureAttention({
       instanceLimitFeature.has(feature)
   );
 
-  const show = !hasFeature || existInstanceWithoutLicense;
+  const show =
+    !hasFeature ||
+    instanceMissingLicense ||
+    (!instance && existInstanceWithoutLicense);
   if (!show) return null;
 
   const isWarning = !hasFeature;
@@ -89,57 +104,65 @@ export function FeatureAttention({
       window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
       return;
     }
-    // Vue version opens InstanceAssignment drawer here, which is a Vue
-    // component not yet migrated. Navigate to the subscription page instead,
-    // matching the Vue fallback behavior.
+    if (instanceMissingLicense || existInstanceWithoutLicense) {
+      setShowInstanceAssignment(true);
+      return;
+    }
     router.push(autoSubscriptionRoute());
   };
 
   const Icon = isWarning ? CircleAlert : Info;
 
   return (
-    <div
-      className={`flex items-start gap-3 rounded-xs border px-4 py-3 ${
-        isWarning
-          ? "border-yellow-300 bg-yellow-50"
-          : "border-blue-200 bg-blue-50"
-      }`}
-    >
-      <Icon
-        className={`w-5 h-5 mt-0.5 shrink-0 ${
-          isWarning ? "text-yellow-600" : "text-blue-600"
+    <>
+      <div
+        className={`flex items-start gap-3 rounded-xs border px-4 py-3 ${
+          isWarning
+            ? "border-yellow-300 bg-yellow-50"
+            : "border-blue-200 bg-blue-50"
         }`}
-      />
-      <div className="flex-1 flex flex-col gap-3">
-        <div>
-          <p
-            className={`font-medium text-sm ${
-              isWarning ? "text-yellow-800" : "text-blue-800"
-            }`}
-          >
-            {title}
-          </p>
-          <p
-            className={`text-sm whitespace-pre-line mt-1 ${
-              isWarning ? "text-yellow-700" : "text-blue-700"
-            }`}
-          >
-            {descriptionText}
-          </p>
-        </div>
-        {actionText && (
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 whitespace-nowrap"
-              onClick={onAction}
+      >
+        <Icon
+          className={`w-5 h-5 mt-0.5 shrink-0 ${
+            isWarning ? "text-yellow-600" : "text-blue-600"
+          }`}
+        />
+        <div className="flex-1 flex flex-col gap-3">
+          <div>
+            <p
+              className={`font-medium text-sm ${
+                isWarning ? "text-yellow-800" : "text-blue-800"
+              }`}
             >
-              {actionText}
-            </Button>
+              {title}
+            </p>
+            <p
+              className={`text-sm whitespace-pre-line mt-1 ${
+                isWarning ? "text-yellow-700" : "text-blue-700"
+              }`}
+            >
+              {descriptionText}
+            </p>
           </div>
-        )}
+          {actionText && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 whitespace-nowrap"
+                onClick={onAction}
+              >
+                {actionText}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      <InstanceAssignmentBridge
+        open={showInstanceAssignment}
+        selectedInstanceList={instance ? [instance.name] : []}
+        onDismiss={() => setShowInstanceAssignment(false)}
+      />
+    </>
   );
 }
