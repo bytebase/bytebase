@@ -338,6 +338,8 @@
   "common.learn-more": "Aprender más",
   "common.load-more": "Cargar más",
   "common.loading": "Cargando",
+  "common.members": "Miembros",
+  "common.operation": "Operación",
   "common.rollout": "Implementar",
   "common.minutes": "Minutos",
   "common.no-data": "Sin datos",
@@ -347,6 +349,8 @@
   "common.password": "Contraseña",
   "common.project": "Proyecto",
   "common.read-only": "Solo lectura",
+  "common.remove": "Eliminar",
+  "common.removed": "Eliminado",
   "common.restore": "Restaurar",
   "common.sensitive-placeholder": "Sensible - solo escritura",
   "common.show-more": "Mostrar más",
@@ -566,6 +570,8 @@
     "select": "Select database group",
     "unmatched-database": "Unmatched database"
   },
+  "database.classification.self": "Clasificación",
+  "database.column": "Columna",
   "database.engine": "Motor",
   "database.export-schema": "Exportar esquema",
   "database.export-schema-multi-file": "Multi-archivo (ZIP)",
@@ -1753,6 +1759,7 @@
         "re-order": "Reordenar"
       },
       "grant-access": "Autorizará el acceso",
+      "remove-sensitive-column-tips": "¿Eliminar la configuración de enmascaramiento de esta columna sensible?",
       "never-expires": "Nunca expira",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",

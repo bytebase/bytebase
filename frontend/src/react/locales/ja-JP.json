@@ -338,6 +338,8 @@
   "common.learn-more": "もっと詳しく知る",
   "common.load-more": "さらに読み込む",
   "common.loading": "読み込み中",
+  "common.members": "メンバー",
+  "common.operation": "操作",
   "common.rollout": "リリース",
   "common.minutes": "分",
   "common.no-data": "データなし",
@@ -347,6 +349,8 @@
   "common.password": "パスワード",
   "common.project": "プロジェクト",
   "common.read-only": "読み取り専用",
+  "common.remove": "削除",
+  "common.removed": "削除しました",
   "common.restore": "復元する",
   "common.sensitive-placeholder": "機密データ - 書き込みのみ",
   "common.show-more": "もっと見る",
@@ -566,6 +570,8 @@
     "select": "Select database group",
     "unmatched-database": "Unmatched database"
   },
+  "database.classification.self": "分類",
+  "database.column": "列",
   "database.engine": "エンジン",
   "database.export-schema": "スキーマをエクスポート",
   "database.export-schema-multi-file": "複数ファイル (ZIP)",
@@ -1753,6 +1759,7 @@
         "re-order": "並び替え"
       },
       "grant-access": "許可されたアクセス",
+      "remove-sensitive-column-tips": "この機密列からマスキング設定を削除しますか？",
       "never-expires": "有効期限なし",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",

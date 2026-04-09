@@ -338,6 +338,8 @@
   "common.learn-more": "Learn more",
   "common.load-more": "Load more",
   "common.loading": "Loading",
+  "common.members": "Members",
+  "common.operation": "Operation",
   "common.rollout": "Rollout",
   "common.minutes": "Minutes",
   "common.no-data": "No data",
@@ -347,6 +349,8 @@
   "common.password": "Password",
   "common.project": "Project",
   "common.read-only": "Read-only",
+  "common.remove": "Remove",
+  "common.removed": "Removed",
   "common.restore": "Restore",
   "common.sensitive-placeholder": "Sensitive - write only",
   "common.show-more": "Show more",
@@ -566,6 +570,8 @@
     "select": "Select database group",
     "unmatched-database": "Unmatched database"
   },
+  "database.classification.self": "Classification",
+  "database.column": "Column",
   "database.engine": "Engine",
   "database.export-schema": "Export Schema",
   "database.export-schema-multi-file": "Multi-File (ZIP)",
@@ -1753,6 +1759,7 @@
         "re-order": "Re-order"
       },
       "grant-access": "Grant Access",
+      "remove-sensitive-column-tips": "Remove the masking configuration from this sensitive column?",
       "never-expires": "Never expires",
       "semantic-types": {
         "label": "Columns having the same semantic type will use the same masking algorithms.",

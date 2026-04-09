@@ -338,6 +338,8 @@
   "common.learn-more": "Tìm hiểu thêm",
   "common.load-more": "Tải thêm",
   "common.loading": "Đang tải",
+  "common.members": "Thành viên",
+  "common.operation": "Thao tác",
   "common.rollout": "Triển khai",
   "common.minutes": "Phút",
   "common.no-data": "Không có dữ liệu",
@@ -347,6 +349,8 @@
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
   "common.read-only": "Chỉ đọc",
+  "common.remove": "Xóa",
+  "common.removed": "Đã xóa",
   "common.restore": "Khôi phục",
   "common.sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
   "common.show-more": "Hiển thị thêm",
@@ -566,6 +570,8 @@
     "select": "Select database group",
     "unmatched-database": "Unmatched database"
   },
+  "database.classification.self": "Phân loại",
+  "database.column": "Cột",
   "database.engine": "Engine",
   "database.export-schema": "Xuất schema",
   "database.export-schema-multi-file": "Nhiều tệp (ZIP)",
@@ -1753,6 +1759,7 @@
         "re-order": "Sắp xếp lại"
       },
       "grant-access": "Cấp quyền truy cập",
+      "remove-sensitive-column-tips": "Xóa cấu hình che dữ liệu khỏi cột nhạy cảm này?",
       "never-expires": "Không bao giờ hết hạn",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",

@@ -338,6 +338,8 @@
   "common.learn-more": "了解更多",
   "common.load-more": "加载更多",
   "common.loading": "加载中",
+  "common.members": "成员",
+  "common.operation": "操作",
   "common.rollout": "发布",
   "common.minutes": "分钟",
   "common.no-data": "无数据",
@@ -347,6 +349,8 @@
   "common.password": "密码",
   "common.project": "项目",
   "common.read-only": "只读",
+  "common.remove": "移除",
+  "common.removed": "已移除",
   "common.restore": "恢复",
   "common.sensitive-placeholder": "敏感数据 - 仅写入",
   "common.show-more": "显示更多",
@@ -566,6 +570,8 @@
     "select": "Select database group",
     "unmatched-database": "Unmatched database"
   },
+  "database.classification.self": "分类",
+  "database.column": "列",
   "database.engine": "引擎",
   "database.export-schema": "导出 Schema",
   "database.export-schema-multi-file": "多文件 (ZIP)",
@@ -1753,6 +1759,7 @@
         "re-order": "排序"
       },
       "grant-access": "授权访问",
+      "remove-sensitive-column-tips": "要移除此敏感列上的脱敏配置吗？",
       "never-expires": "无过期时间",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",

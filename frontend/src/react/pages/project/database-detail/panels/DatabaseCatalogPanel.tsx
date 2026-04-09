@@ -2,7 +2,10 @@ import { create } from "@bufbuild/protobuf";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { MaskData } from "@/components/SensitiveData/types";
+import type {
+  MaskData,
+  MaskDataTarget,
+} from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
@@ -15,11 +18,19 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
-import { featureToRef, useDatabaseCatalog, usePolicyV1Store } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  useDatabaseCatalog,
+  useDatabaseCatalogV1Store,
+  usePolicyV1Store,
+} from "@/store";
 import type { Permission } from "@/types";
 import type {
+  ColumnCatalog,
   DatabaseCatalog,
   ObjectSchema,
+  TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { ObjectSchema_Type } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -34,8 +45,8 @@ import {
   hasProjectPermissionV2,
   instanceV1MaskingForNoSQL,
 } from "@/utils";
-import { GrantAccessDrawerBridge } from "../legacy/GrantAccessDrawerBridge";
-import { SensitiveColumnTableBridge } from "../legacy/SensitiveColumnTableBridge";
+import { GrantAccessDialog } from "../catalog/GrantAccessDialog";
+import { SensitiveColumnTable } from "../catalog/SensitiveColumnTable";
 
 const GRANT_ACCESS_PERMISSIONS: Permission[] = [
   "bb.policies.createMaskingExemptionPolicy",
@@ -142,9 +153,22 @@ const flattenSensitiveColumnList = (catalog?: DatabaseCatalog): MaskData[] => {
   return sensitiveList;
 };
 
+const hasSemanticType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | ObjectSchema => {
+  return "semanticType" in target;
+};
+
+const hasClassificationType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | TableCatalog => {
+  return "classification" in target;
+};
+
 export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
+  const databaseCatalogStore = useDatabaseCatalogV1Store();
 
   const databaseCatalog = useDatabaseCatalog(database.name, false);
   const catalog = useVueState(() => databaseCatalog.value);
@@ -179,9 +203,9 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     }
     return columnList.filter((item) => {
       return (
-        item.schema.includes(normalizedSearchText) ||
-        item.table.includes(normalizedSearchText) ||
-        item.column.includes(normalizedSearchText)
+        item.schema.toLowerCase().includes(normalizedSearchText) ||
+        item.table.toLowerCase().includes(normalizedSearchText) ||
+        item.column.toLowerCase().includes(normalizedSearchText)
       );
     });
   }, [columnList, normalizedSearchText]);
@@ -231,6 +255,20 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   };
 
   const handleDelete = async (item: MaskData) => {
+    if (hasSemanticType(item.target)) {
+      item.target.semanticType = "";
+    }
+    if (hasClassificationType(item.target)) {
+      item.target.classification = "";
+    }
+    if (databaseCatalog.value) {
+      await databaseCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.removed"),
+      });
+    }
     await removeMaskingExceptions(item);
   };
 
@@ -284,9 +322,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
         )}
       </div>
 
-      <SensitiveColumnTableBridge
-        database={database}
-        rowClickable={false}
+      <SensitiveColumnTable
         rowSelectable={!isMaskingForNoSQL}
         showOperation={hasUpdateCatalogPermission && hasSensitiveDataFeature}
         columnList={filteredColumnList}
@@ -316,7 +352,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       </Dialog>
 
       {openGrantAccessDrawer && (
-        <GrantAccessDrawerBridge
+        <GrantAccessDialog
           open={openGrantAccessDrawer}
           columnList={checkedColumnList.map((maskData) => ({
             database,
