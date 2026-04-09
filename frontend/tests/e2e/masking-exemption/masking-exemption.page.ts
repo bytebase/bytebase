@@ -213,13 +213,13 @@ export class SqlEditorPage {
   }
 
   async resultContainsText(text: string, timeout = 15000): Promise<boolean> {
-    // Poll page text for the value. Safe with ORDER BY LIMIT queries
-    // because the SQL text itself doesn't contain the expected value.
-    // The result grid uses virtual scrolling and renders asynchronously.
+    // Use Playwright's locator text matching — more reliable than textContent
+    // for virtual-scrolled grids. Safe with PK-based queries because the SQL
+    // text uses the PK value, not the expected text value.
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
-      const content = await this.page.textContent("body") ?? "";
-      if (content.includes(text)) return true;
+      const count = await this.page.locator(`text=${text}`).count();
+      if (count > 0) return true;
       await this.page.waitForTimeout(500);
     }
     return false;
