@@ -12,11 +12,21 @@ export interface ObjectSectionRow {
 export function ObjectSectionTable({
   rows,
   emptyText,
+  loading = false,
 }: {
   rows: ObjectSectionRow[];
   emptyText?: string;
+  loading?: boolean;
 }) {
   const { t } = useTranslation();
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
+        {t("common.loading")}
+      </div>
+    );
+  }
 
   if (rows.length === 0) {
     return (
@@ -43,7 +53,19 @@ export function ObjectSectionTable({
               className={
                 row.onClick ? "cursor-pointer hover:bg-control-bg" : ""
               }
+              role={row.onClick ? "button" : undefined}
+              tabIndex={row.onClick ? 0 : undefined}
               onClick={row.onClick}
+              onKeyDown={
+                row.onClick
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        row.onClick?.();
+                      }
+                    }
+                  : undefined
+              }
             >
               <td className="px-4 py-3 text-sm text-main">{row.name}</td>
               <td className="px-4 py-3 text-sm text-control">

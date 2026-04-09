@@ -515,6 +515,7 @@
     "expression": "Expression",
     "filter-database": "筛选数据库",
     "index-size": "索引大小",
+    "last-sync": "最后一次同步",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "row-count-est": "估算行数",
@@ -545,6 +546,7 @@
       "with-diff": "有差异"
     },
     "sync-schema-button": "同步 Schema",
+    "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
     "type": "类型",

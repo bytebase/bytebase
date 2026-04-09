@@ -64,12 +64,14 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
                 <span className="text-error">
                   {t("database.sync-status-failed")}
                 </span>
-                <p className="mt-1 text-xs text-gray-500">{database.syncError}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  {database.syncError}
+                </p>
               </>
             ) : database.state === State.ACTIVE ? (
-              "OK"
+              t("common.ok")
             ) : (
-              "NOT_FOUND"
+              t("error-page.not-found")
             )}
           </dd>
         </div>

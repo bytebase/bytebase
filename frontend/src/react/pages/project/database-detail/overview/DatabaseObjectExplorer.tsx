@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { router } from "@/router";
 import { useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
@@ -9,7 +10,6 @@ import type {
   PackageMetadata,
   SequenceMetadata,
   StreamMetadata,
-  TableMetadata,
   TaskMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -82,10 +82,14 @@ export function DatabaseObjectExplorer({
       schema: selectedSchemaName,
     })
   );
+  const routeTable = useVueState(() => {
+    const table = router.currentRoute.value.query.table;
+    return typeof table === "string" ? table : "";
+  });
   const databaseMetadata = useVueState(() =>
     dbSchemaStore.getDatabaseMetadata(database.name)
   );
-  const [selectedTable, setSelectedTable] = useState<TableMetadata>();
+  const [selectedTableName, setSelectedTableName] = useState(routeTable);
 
   const selectedSchemaMetadata = databaseMetadata.schemas.find(
     (schema) => schema.name === selectedSchemaName
@@ -103,14 +107,41 @@ export function DatabaseObjectExplorer({
     ? (selectedSchemaMetadata?.packages ?? [])
     : databaseMetadata.schemas.flatMap((schema) => schema.packages ?? []);
 
+  const selectedTable = tableList.find(
+    (table) => table.name === selectedTableName
+  );
+
+  useEffect(() => {
+    setSelectedTableName((current) =>
+      current === routeTable ? current : routeTable
+    );
+  }, [routeTable]);
+
+  useEffect(() => {
+    const currentQuery = router.currentRoute.value.query;
+    const currentTable =
+      typeof currentQuery.table === "string" ? currentQuery.table : "";
+
+    if (currentTable === selectedTableName) {
+      return;
+    }
+
+    void router.replace({
+      query: {
+        ...currentQuery,
+        table: selectedTableName || undefined,
+      },
+    });
+  }, [selectedTableName]);
+
   const tableRows: ObjectSectionRow[] = tableList
     .filter((table) => filterByKeyword(table.name, tableSearchKeyword))
     .map((table) => ({
       key: table.name,
       name: table.name,
-      description: `${String(table.rowCount)} rows, ${bytesToString(Number(table.dataSize))}`,
+      description: `${t("database.row-count-est")}: ${String(table.rowCount)}, ${t("database.data-size")}: ${bytesToString(Number(table.dataSize))}`,
       comment: table.comment,
-      onClick: () => setSelectedTable(table),
+      onClick: () => setSelectedTableName(table.name),
     }));
 
   const viewRows: ObjectSectionRow[] = viewList.map((view) => ({
@@ -139,9 +170,9 @@ export function DatabaseObjectExplorer({
   }));
 
   const functionRows: ObjectSectionRow[] = functionList.map((fn) => ({
-    key: fn.name,
-    name: fn.name,
-    description: fn.signature || fn.definition || "-",
+    key: fn.signature || fn.name,
+    name: fn.signature || fn.name,
+    description: fn.definition || "-",
     comment: fn.comment,
   }));
 
@@ -153,23 +184,23 @@ export function DatabaseObjectExplorer({
   }));
 
   const streamRows: ObjectSectionRow[] = streamList.map((stream) => ({
-      key: stream.name,
-      name: stream.name,
-      description: stream.tableName || "-",
-      comment: stream.comment,
+    key: stream.name,
+    name: stream.name,
+    description: stream.tableName || "-",
+    comment: stream.comment,
   }));
 
   const taskRows: ObjectSectionRow[] = taskList.map((task) => ({
-      key: task.name,
-      name: task.name,
-      description: task.schedule || task.id || "-",
-      comment: task.comment,
+    key: task.name,
+    name: task.name,
+    description: task.schedule || task.id || "-",
+    comment: task.comment,
   }));
 
   const packageRows: ObjectSectionRow[] = packageList.map((pkg) => ({
-      key: pkg.name,
-      name: pkg.name,
-      description: pkg.definition || "-",
+    key: pkg.name,
+    name: pkg.name,
+    description: pkg.definition || "-",
   }));
 
   return (
@@ -219,12 +250,12 @@ export function DatabaseObjectExplorer({
                 }
               />
             </div>
-            <ObjectSectionTable rows={tableRows} />
+            <ObjectSectionTable loading={loading} rows={tableRows} />
           </section>
 
           <section className="space-y-4">
             <div className="text-lg font-medium text-main">{t("db.views")}</div>
-            <ObjectSectionTable rows={viewRows} />
+            <ObjectSectionTable loading={loading} rows={viewRows} />
           </section>
 
           {(databaseEngine === Engine.POSTGRES ||
@@ -244,7 +275,7 @@ export function DatabaseObjectExplorer({
                   }
                 />
               </div>
-              <ObjectSectionTable rows={externalTableRows} />
+              <ObjectSectionTable loading={loading} rows={externalTableRows} />
             </section>
           )}
 
@@ -253,7 +284,7 @@ export function DatabaseObjectExplorer({
               <div className="text-lg font-medium text-main">
                 {t("db.extensions")}
               </div>
-              <ObjectSectionTable rows={extensionRows} />
+              <ObjectSectionTable loading={loading} rows={extensionRows} />
             </section>
           )}
 
@@ -263,7 +294,7 @@ export function DatabaseObjectExplorer({
               <div className="text-lg font-medium text-main">
                 {t("db.functions")}
               </div>
-              <ObjectSectionTable rows={functionRows} />
+              <ObjectSectionTable loading={loading} rows={functionRows} />
             </section>
           )}
 
@@ -272,7 +303,7 @@ export function DatabaseObjectExplorer({
               <div className="text-lg font-medium text-main">
                 {t("db.sequences")}
               </div>
-              <ObjectSectionTable rows={sequenceRows} />
+              <ObjectSectionTable loading={loading} rows={sequenceRows} />
             </section>
           )}
 
@@ -282,13 +313,13 @@ export function DatabaseObjectExplorer({
                 <div className="text-lg font-medium text-main">
                   {t("db.streams")}
                 </div>
-                <ObjectSectionTable rows={streamRows} />
+                <ObjectSectionTable loading={loading} rows={streamRows} />
               </section>
               <section className="space-y-4">
                 <div className="text-lg font-medium text-main">
                   {t("db.tasks")}
                 </div>
-                <ObjectSectionTable rows={taskRows} />
+                <ObjectSectionTable loading={loading} rows={taskRows} />
               </section>
             </>
           )}
@@ -298,18 +329,18 @@ export function DatabaseObjectExplorer({
               <div className="text-lg font-medium text-main">
                 {t("db.packages")}
               </div>
-              <ObjectSectionTable rows={packageRows} />
+              <ObjectSectionTable loading={loading} rows={packageRows} />
             </section>
           )}
         </>
       )}
 
       <TableDetailDialog
-        open={!!selectedTable}
+        open={!!selectedTableName}
         table={selectedTable}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedTable(undefined);
+            setSelectedTableName("");
           }
         }}
       />

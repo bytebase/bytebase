@@ -515,6 +515,7 @@
     "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
     "index-size": "Kích thước chỉ mục",
+    "last-sync": "Lần đồng bộ cuối cùng",
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "row-count-est": "Ước tính số hàng",
@@ -545,6 +546,7 @@
       "with-diff": "With diff"
     },
     "sync-schema-button": "Đồng bộ lược đồ",
+    "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
     "type": "Loại",

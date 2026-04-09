@@ -515,6 +515,7 @@
     "expression": "Expression",
     "filter-database": "データベースをフィルター",
     "index-size": "インデックスサイズ",
+    "last-sync": "最後の同期",
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "row-count-est": "推定行数",
@@ -545,6 +546,7 @@
       "with-diff": "With diff"
     },
     "sync-schema-button": "スキーマを同期",
+    "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
     "transfer-project": "プロジェクトの転送",
     "type": "タイプ",

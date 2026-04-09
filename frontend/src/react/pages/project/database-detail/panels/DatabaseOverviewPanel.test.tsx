@@ -11,34 +11,43 @@ import {
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const mocks = vi.hoisted(() => ({
-  localStorage: {
-    clear: vi.fn(),
-    getItem: vi.fn(() => null),
-    removeItem: vi.fn(),
-    setItem: vi.fn(),
-  },
-  useTranslation: vi.fn(() => ({
-    t: (key: string) => key,
-  })),
-  schemaList: [{ name: "public" }, { name: "sales" }],
-  routerReplace: vi.fn(),
-  useVueState: vi.fn(),
-  useDBSchemaV1Store: vi.fn(),
-  getDatabaseProject: vi.fn((database: { project: string }) => ({
-    name: database.project,
-  })),
-  hasProjectPermissionV2: vi.fn(
-    (_project?: unknown, _permission?: string) => true
-  ),
-  getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
-  hasSchemaProperty: vi.fn(() => true),
-  instanceV1HasCollationAndCharacterSet: vi.fn(() => true),
-  instanceV1SupportsPackage: vi.fn(() => false),
-  instanceV1SupportsSequence: vi.fn(() => false),
-  bytesToString: vi.fn((size: number) => `${size} B`),
-  humanizeDate: vi.fn(() => "5 minutes ago"),
-}));
+const mocks = vi.hoisted(() => {
+  const currentRoute = {
+    value: {
+      query: {},
+    },
+  };
+
+  return {
+    localStorage: {
+      clear: vi.fn(),
+      getItem: vi.fn(() => null),
+      removeItem: vi.fn(),
+      setItem: vi.fn(),
+    },
+    useTranslation: vi.fn(() => ({
+      t: (key: string) => key,
+    })),
+    schemaList: [{ name: "public" }, { name: "sales" }],
+    currentRoute,
+    routerReplace: vi.fn(() => Promise.resolve()),
+    useVueState: vi.fn(),
+    useDBSchemaV1Store: vi.fn(),
+    getDatabaseProject: vi.fn((database: { project: string }) => ({
+      name: database.project,
+    })),
+    hasProjectPermissionV2: vi.fn(
+      (_project?: unknown, _permission?: string) => true
+    ),
+    getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
+    hasSchemaProperty: vi.fn(() => true),
+    instanceV1HasCollationAndCharacterSet: vi.fn(() => true),
+    instanceV1SupportsPackage: vi.fn(() => false),
+    instanceV1SupportsSequence: vi.fn(() => false),
+    bytesToString: vi.fn((size: number) => `${size} B`),
+    humanizeDate: vi.fn(() => "5 minutes ago"),
+  };
+});
 
 vi.stubGlobal("localStorage", mocks.localStorage);
 
@@ -55,11 +64,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/router", () => ({
   router: {
     replace: mocks.routerReplace,
-    currentRoute: {
-      value: {
-        query: {},
-      },
-    },
+    currentRoute: mocks.currentRoute,
   },
 }));
 
@@ -87,8 +92,23 @@ vi.mock("@/react/components/ui/input", () => ({
 }));
 
 vi.mock("@/react/components/ui/dialog", () => ({
-  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
-    open ? <div data-testid="dialog-root">{children}</div> : null,
+  Dialog: ({
+    open,
+    onOpenChange,
+    children,
+  }: {
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+    children: React.ReactNode;
+  }) =>
+    open ? (
+      <div data-testid="dialog-root">
+        <button type="button" onClick={() => onOpenChange?.(false)}>
+          close-dialog
+        </button>
+        {children}
+      </div>
+    ) : null,
   DialogContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -134,6 +154,28 @@ const setSelectValue = (select: HTMLSelectElement, value: string) => {
   });
 };
 
+const clickElement = (element: Element) => {
+  act(() => {
+    element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+};
+
+const makeTable = (name: string) =>
+  ({
+    name,
+    rowCount: 7,
+    dataSize: 64n,
+    indexSize: 32n,
+    comment: `${name} comment`,
+    columns: [
+      {
+        name: "id",
+        type: "INT",
+        comment: "",
+      },
+    ],
+  }) as never;
+
 const makeDatabase = (): Database =>
   ({
     name: "instances/inst1/databases/db",
@@ -154,6 +196,7 @@ const makeDatabase = (): Database =>
   }) as Database;
 
 beforeEach(async () => {
+  mocks.schemaList = [{ name: "public" }, { name: "sales" }];
   mocks.localStorage.clear.mockReset();
   mocks.localStorage.getItem.mockReset();
   mocks.localStorage.getItem.mockReturnValue(null);
@@ -163,7 +206,9 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
+  mocks.currentRoute.value.query = {};
   mocks.routerReplace.mockReset();
+  mocks.routerReplace.mockImplementation(() => Promise.resolve());
   mocks.getDatabaseProject.mockReset();
   mocks.getDatabaseProject.mockImplementation(
     (database: { project: string }) => ({
@@ -189,7 +234,7 @@ beforeEach(async () => {
   mocks.useDBSchemaV1Store.mockReset();
   mocks.useDBSchemaV1Store.mockReturnValue({
     getSchemaList: vi.fn(() => mocks.schemaList),
-    getTableList: vi.fn(() => []),
+    getTableList: vi.fn(() => [makeTable("orders")]),
     getViewList: vi.fn(() => []),
     getExtensionList: vi.fn(() => []),
     getExternalTableList: vi.fn(() => []),
@@ -224,7 +269,7 @@ describe("DatabaseOverviewPanel", () => {
     expect(container.textContent).toContain("db.collation");
     expect(container.textContent).toContain("en_US.UTF-8");
     expect(container.textContent).toContain("database.sync-status");
-    expect(container.textContent).toContain("OK");
+    expect(container.textContent).toContain("common.ok");
     expect(container.textContent).toContain("database.last-sync");
     expect(container.textContent).toContain("5 minutes ago");
     expect(container.querySelector("select")).not.toBeNull();
@@ -305,6 +350,62 @@ describe("DatabaseOverviewPanel", () => {
     unmount();
   });
 
+  test("syncs selected table to the route query and restores it from the route", async () => {
+    const { router } = await import("@/router");
+    router.currentRoute.value.query = { schema: "public", table: "orders" };
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("orders");
+    expect(
+      container.querySelector('[data-testid="dialog-root"]')
+    ).not.toBeNull();
+
+    const closeButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "close-dialog"
+    );
+    expect(closeButton).toBeTruthy();
+    clickElement(closeButton as HTMLButtonElement);
+    await flush();
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          schema: "public",
+          table: undefined,
+        }),
+      })
+    );
+    router.currentRoute.value.query = { schema: "public" };
+
+    const ordersCell = Array.from(container.querySelectorAll("td")).find(
+      (cell) => cell.textContent === "orders"
+    );
+    expect(ordersCell?.closest("tr")).toBeTruthy();
+    clickElement(ordersCell?.closest("tr") as HTMLTableRowElement);
+    await flush();
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          schema: "public",
+          table: "orders",
+        }),
+      })
+    );
+
+    unmount();
+    router.currentRoute.value.query = {};
+  });
+
   test("hides the schema explorer when schema permission is missing", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseOverviewPanel, {
@@ -318,6 +419,42 @@ describe("DatabaseOverviewPanel", () => {
 
     expect(container.textContent).toContain("db");
     expect(container.querySelector("select")).toBeNull();
+
+    unmount();
+  });
+
+  test("renders loading states for object sections before the schema selection resolves", async () => {
+    mocks.schemaList = [{ name: "" }];
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "en_US.UTF-8",
+        schemas: [],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+
+    expect(container.textContent).toContain("common.loading");
+    expect(container.textContent).not.toContain(
+      "common.namecommon.definitioncommon.comment-"
+    );
 
     unmount();
   });
@@ -400,6 +537,216 @@ describe("DatabaseOverviewPanel", () => {
     expect(container.textContent).toContain("pkg_b");
 
     unmount();
+  });
+
+  test("uses function signatures for overloaded function identity and display", async () => {
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(() => [makeTable("orders")]),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => [
+        { name: "compute", signature: "compute(int)", definition: "sql 1" },
+        { name: "compute", signature: "compute(text)", definition: "sql 2" },
+      ]),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "en_US.UTF-8",
+        schemas: [],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("compute(int)");
+    expect(container.textContent).toContain("compute(text)");
+
+    unmount();
+  });
+
+  test("flattens sequences across schemas when schema properties are unsupported", async () => {
+    mocks.hasSchemaProperty.mockReturnValue(false);
+    mocks.instanceV1SupportsSequence.mockReturnValue(true);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => []),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "",
+        schemas: [
+          { name: "alpha", sequences: [{ name: "seq_a", dataType: "BIGINT" }] },
+          { name: "beta", sequences: [{ name: "seq_b", dataType: "BIGINT" }] },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("seq_a");
+    expect(container.textContent).toContain("seq_b");
+
+    unmount();
+  });
+
+  test("does not fall back to the first schema for schema-scoped sequences", async () => {
+    const { router } = await import("@/router");
+    router.currentRoute.value.query = { schema: "sales" };
+
+    mocks.instanceV1SupportsSequence.mockReturnValue(true);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "",
+        schemas: [
+          { name: "alpha", sequences: [{ name: "seq_a", dataType: "BIGINT" }] },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).not.toContain("seq_a");
+
+    unmount();
+    router.currentRoute.value.query = {};
+  });
+
+  test("flattens streams and tasks across schemas when schema properties are unsupported", async () => {
+    mocks.getDatabaseEngine.mockReturnValue(Engine.SNOWFLAKE);
+    mocks.hasSchemaProperty.mockReturnValue(false);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => []),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "",
+        schemas: [
+          {
+            name: "alpha",
+            streams: [{ name: "stream_a", tableName: "orders" }],
+            tasks: [{ name: "task_a", schedule: "cron_a" }],
+          },
+          {
+            name: "beta",
+            streams: [{ name: "stream_b", tableName: "users" }],
+            tasks: [{ name: "task_b", schedule: "cron_b" }],
+          },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("stream_a");
+    expect(container.textContent).toContain("stream_b");
+    expect(container.textContent).toContain("task_a");
+    expect(container.textContent).toContain("task_b");
+
+    unmount();
+  });
+
+  test("does not fall back to the first schema for schema-scoped streams and tasks", async () => {
+    const { router } = await import("@/router");
+    router.currentRoute.value.query = { schema: "sales" };
+
+    mocks.getDatabaseEngine.mockReturnValue(Engine.SNOWFLAKE);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "UTF8",
+        collation: "",
+        schemas: [
+          {
+            name: "alpha",
+            streams: [{ name: "stream_a", tableName: "orders" }],
+            tasks: [{ name: "task_a", schedule: "cron_a" }],
+          },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).not.toContain("stream_a");
+    expect(container.textContent).not.toContain("task_a");
+
+    unmount();
+    router.currentRoute.value.query = {};
   });
 
   test("does not fall back to the first schema for schema-scoped package objects", async () => {

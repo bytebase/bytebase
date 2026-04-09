@@ -515,6 +515,7 @@
     "expression": "Expression",
     "filter-database": "Filter database",
     "index-size": "Index size",
+    "last-sync": "Last sync",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "row-count-est": "Row count est.",
@@ -545,6 +546,7 @@
       "with-diff": "With diff"
     },
     "sync-schema-button": "Sync Schema",
+    "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
     "type": "Type",
