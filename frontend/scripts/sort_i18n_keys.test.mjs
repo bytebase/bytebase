@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import {
+  checkLocaleFiles,
   normalizeLocaleFile,
   sortLocaleFiles,
   sortObjectKeys,
@@ -123,6 +124,32 @@ describe("normalizeLocaleFile", () => {
           writeFileSync: writeStub,
         })
     ).toThrow(/Failed to parse locale file .*locale-sorter-invalid\.json/);
+    expect(writes).toEqual([]);
+  });
+
+  test("checkLocaleFiles reports unsorted files without writing", () => {
+    const sortedPath = "/tmp/locale-sorter-sorted.json";
+    const unsortedPath = "/tmp/locale-sorter-unsorted.json";
+    const writes = [];
+    const readStub = (filePath) => {
+      if (filePath === sortedPath) {
+        return '{\n  "a": 1,\n  "b": 2\n}\n';
+      }
+      if (filePath === unsortedPath) {
+        return '{"b":2,"a":1}';
+      }
+      throw new Error(`Unexpected file read: ${String(filePath)}`);
+    };
+    const writeStub = (...args) => {
+      writes.push(args);
+    };
+
+    expect(
+      checkLocaleFiles([sortedPath, unsortedPath], {
+        readFileSync: readStub,
+        writeFileSync: writeStub,
+      })
+    ).toEqual([unsortedPath]);
     expect(writes).toEqual([]);
   });
 

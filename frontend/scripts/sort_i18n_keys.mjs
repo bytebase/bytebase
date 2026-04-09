@@ -70,6 +70,18 @@ export function normalizeLocaleFile(filePath) {
   return true;
 }
 
+export function checkLocaleFiles(files, io = {}) {
+  const read = io.readFileSync ?? readFileSync;
+  const preparedFiles = files.map((filePath) => ({
+    filePath,
+    ...prepareLocaleFile(filePath, read),
+  }));
+
+  return preparedFiles
+    .filter((file) => file.normalized !== file.current)
+    .map((file) => file.filePath);
+}
+
 export function sortLocaleFiles(files, io = {}) {
   const read = io.readFileSync ?? readFileSync;
   const write = io.writeFileSync ?? writeFileSync;
@@ -124,8 +136,23 @@ export function sortLocaleFiles(files, io = {}) {
 }
 
 function main() {
+  const checkOnly = process.argv.includes("--check");
   const files = LOCALE_ROOTS.flatMap((root) => findJsonFiles(root));
-  const updated = sortLocaleFiles(files);
+  const updated = checkOnly ? checkLocaleFiles(files) : sortLocaleFiles(files);
+
+  if (checkOnly) {
+    if (updated.length === 0) {
+      console.log(`Locale sorter: all ${files.length} file(s) are normalized.`);
+      return;
+    }
+
+    console.error(
+      `Locale sorter: ${updated.length} file(s) need sorting:\n` +
+        updated.map((filePath) => `  - ${filePath}`).join("\n")
+    );
+    process.exitCode = 1;
+    return;
+  }
 
   const unchanged = files.length - updated.length;
   if (updated.length === 0) {
