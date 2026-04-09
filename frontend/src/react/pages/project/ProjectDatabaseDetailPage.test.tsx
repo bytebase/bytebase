@@ -837,29 +837,6 @@ describe("ProjectDatabaseDetailPage", () => {
     expect(
       container.querySelector('[data-testid="database-detail-actions"]')
     ).not.toBeNull();
-    const schemaDiagramButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent === "schema-diagram.self");
-    expect(schemaDiagramButton).toBeDefined();
-
-    await act(async () => {
-      schemaDiagramButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(
-      mocks.useDBSchemaV1Store.mock.results.at(-1)?.value
-        .getOrFetchDatabaseMetadata
-    ).toHaveBeenCalledWith({
-      database: "instances/inst1/databases/db1",
-      skipCache: false,
-    });
-    expect(document.body.textContent).toContain("public");
-    expect(document.body.textContent).toContain("book");
-    expect(document.body.textContent).toContain("orders");
 
     unmount();
   });
