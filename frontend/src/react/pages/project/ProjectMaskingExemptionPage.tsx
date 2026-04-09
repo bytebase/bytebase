@@ -32,7 +32,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { Tooltip } from "@/react/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -406,24 +406,20 @@ export function ProjectMaskingExemptionPage({
         </div>
 
         {/* Preset tabs */}
-        <div className="shrink-0">
-          <div className="flex border-b border-gray-200">
+        <Tabs
+          value={activePreset}
+          onValueChange={(v) => {
+            if (typeof v === "string") selectPreset(v);
+          }}
+        >
+          <TabsList>
             {presets.map((preset) => (
-              <button
-                key={preset.id}
-                className={cn(
-                  "px-3 py-1.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-                  activePreset === preset.id
-                    ? "border-accent text-accent"
-                    : "border-transparent text-control-light hover:text-control hover:border-gray-300"
-                )}
-                onClick={() => selectPreset(preset.id)}
-              >
+              <TabsTrigger key={preset.id} value={preset.id}>
                 {preset.label}
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
-        </div>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Wide view: side-by-side */}
@@ -1203,8 +1199,6 @@ function ExemptionGrantSection({
 // ExemptionResourceTable
 // ============================================================
 
-const COLUMN_VISIBLE_LIMIT = 3;
-
 function ExemptionResourceTable({
   databaseResources,
   classificationLevel,
@@ -1218,13 +1212,6 @@ function ExemptionResourceTable({
 
   const isSentinel = (value: string): boolean => value === "";
 
-  const displayInstance = (resource: DatabaseResource): string => {
-    const { instanceName } = extractDatabaseResourceName(
-      resource.databaseFullName
-    );
-    return isSentinel(instanceName) ? t("database.all") : instanceName;
-  };
-
   const handleDatabaseClick = (resource: DatabaseResource) => {
     const path = resource.databaseFullName.startsWith("/")
       ? resource.databaseFullName
@@ -1234,40 +1221,32 @@ function ExemptionResourceTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm table-fixed min-w-[600px]">
-        <colgroup>
-          <col style={{ width: "16%" }} />
-          <col style={{ width: "16%" }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: "18%" }} />
-          <col style={{ width: "20%" }} />
-          <col style={{ width: "16%" }} />
-        </colgroup>
+      <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200">
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.instance")}
             </th>
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.database")}
             </th>
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.schema")}
             </th>
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.table")}
             </th>
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
-              {t("common.columns")}
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+              {t("database.columns")}
             </th>
-            <th className="textinfolabel font-medium uppercase text-xs tracking-wider py-2 px-2 text-left">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.classification-level")}
             </th>
           </tr>
         </thead>
         <tbody>
           {databaseResources.map((resource, idx) => {
-            const { databaseName } = extractDatabaseResourceName(
+            const { instanceName, databaseName } = extractDatabaseResourceName(
               resource.databaseFullName
             );
             return (
@@ -1275,55 +1254,35 @@ function ExemptionResourceTable({
                 key={idx}
                 className="border-b border-gray-200 last:border-b-0"
               >
-                <td className="py-2 px-2 text-control-light">
-                  <Tooltip content={displayInstance(resource)}>
-                    <span className="block truncate">
-                      {displayInstance(resource)}
-                    </span>
-                  </Tooltip>
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+                  {isSentinel(instanceName) ? t("database.all") : instanceName}
                 </td>
-                <td className="py-2 px-2">
+                <td className="py-2 px-2 whitespace-nowrap">
                   {isSentinel(databaseName) ? (
                     <span className="text-control-placeholder">
                       {t("database.all")}
                     </span>
                   ) : showDatabaseLink ? (
-                    <Tooltip content={databaseName}>
-                      <span
-                        className="block truncate normal-link cursor-pointer"
-                        onClick={() => handleDatabaseClick(resource)}
-                      >
-                        {databaseName}
-                      </span>
-                    </Tooltip>
+                    <span
+                      className="normal-link cursor-pointer"
+                      onClick={() => handleDatabaseClick(resource)}
+                    >
+                      {databaseName}
+                    </span>
                   ) : (
-                    <Tooltip content={databaseName}>
-                      <span className="block truncate text-control-light">
-                        {databaseName}
-                      </span>
-                    </Tooltip>
+                    <span className="text-control-light">{databaseName}</span>
                   )}
                 </td>
-                <td className="py-2 px-2 text-control-light">
-                  {resource.schema ? (
-                    <Tooltip content={resource.schema}>
-                      <span className="block truncate">{resource.schema}</span>
-                    </Tooltip>
-                  ) : (
-                    <span>-</span>
-                  )}
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+                  {resource.schema || "-"}
                 </td>
-                <td className="py-2 px-2 text-control-light">
-                  {resource.table ? (
-                    <Tooltip content={resource.table}>
-                      <span className="block truncate">{resource.table}</span>
-                    </Tooltip>
-                  ) : (
-                    <span>-</span>
-                  )}
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+                  {resource.table || "-"}
                 </td>
                 <td className="py-2 px-2">
-                  <ColumnCell columns={resource.columns} />
+                  {resource.columns && resource.columns.length > 0
+                    ? resource.columns.join(", ")
+                    : "-"}
                 </td>
                 <td className="py-2 px-2">
                   <LevelBadge
@@ -1338,45 +1297,6 @@ function ExemptionResourceTable({
         </tbody>
       </table>
     </div>
-  );
-}
-
-// ============================================================
-// ColumnCell
-// ============================================================
-
-function ColumnCell({ columns }: { columns?: string[] }) {
-  const { t } = useTranslation();
-
-  if (!columns || columns.length === 0) {
-    return <span className="text-control-placeholder">-</span>;
-  }
-
-  const visible = columns.slice(0, COLUMN_VISIBLE_LIMIT);
-  const rest = columns.length - visible.length;
-  const text = visible.join(", ");
-
-  if (rest <= 0) {
-    return <span className="text-control-light">{text}</span>;
-  }
-
-  return (
-    <Tooltip
-      content={
-        <div className="flex flex-col gap-y-0.5">
-          {columns.map((col) => (
-            <span key={col}>{col}</span>
-          ))}
-        </div>
-      }
-    >
-      <span className="text-control-light">
-        {text}
-        <span className="text-control-placeholder ml-1">
-          {t("common.n-more", { n: rest })}
-        </span>
-      </span>
-    </Tooltip>
   );
 }
 

@@ -329,7 +329,7 @@ function RolloutPolicyConfig({
               <div className="relative" ref={dropdownRef}>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="xs"
                   onClick={() => setShowRoleDropdown(!showRoleDropdown)}
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" />
@@ -1456,19 +1456,17 @@ export function EnvironmentsPage() {
         onValueChange={(v) => selectTab(v as string)}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <div className="flex items-center border-b border-control-border">
-          <TabsList className="flex-1 overflow-x-auto overflow-y-hidden gap-x-0 border-none">
-            {environmentList.map((env, index) => (
-              <TabsTrigger key={env.id} value={env.id} className="px-4 pt-1">
-                <span className="text-opacity-60 mr-1">{index + 1}.</span>
-                <EnvironmentName environment={env} />
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
+        <TabsList className="flex-wrap">
+          {environmentList.map((env, index) => (
+            <TabsTrigger key={env.id} value={env.id} className="px-4">
+              <span className="opacity-60 mr-1">{index + 1}.</span>
+              <EnvironmentName environment={env} />
+            </TabsTrigger>
+          ))}
+          <div className="flex-1" />
           {/* Toolbar */}
           <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
-            <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
+            <div className="flex items-center gap-x-2 pb-2 mr-2 shrink-0">
               <Button
                 variant="outline"
                 disabled={!canEdit || environmentList.length <= 1}
@@ -1483,14 +1481,14 @@ export function EnvironmentsPage() {
               </Button>
             </div>
           </PermissionGuard>
-        </div>
+        </TabsList>
 
         {/* Tab content */}
         {environmentList.map((env) => (
           <TabsPanel
             key={env.id}
             value={env.id}
-            className="flex-1 overflow-auto mt-0"
+            className="flex-1 overflow-auto"
             keepMounted={false}
           >
             <EnvironmentDetail
