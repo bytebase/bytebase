@@ -39,7 +39,7 @@ func NewGroupService(store *store.Store, iamManager *iam.Manager, licenseService
 
 // GetGroup gets a group.
 func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.GetGroupRequest]) (*connect.Response[v1pb.Group], error) {
-	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
+	group, err := s.store.GetGroupByName(ctx, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -159,7 +159,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
-	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Group.Name)
+	group, err := s.store.GetGroupByName(ctx, common.GetWorkspaceIDFromContext(ctx), req.Msg.Group.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -236,7 +236,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 
 // DeleteGroup deletes a group.
 func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1pb.DeleteGroupRequest]) (*connect.Response[emptypb.Empty], error) {
-	group, err := utils.GetGroupByName(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
+	group, err := s.store.GetGroupByName(ctx, common.GetWorkspaceIDFromContext(ctx), req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

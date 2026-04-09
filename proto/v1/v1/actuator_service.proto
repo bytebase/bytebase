@@ -144,4 +144,7 @@ message ActuatorInfo {
   // The default project for unassigned databases.
   // Format: projects/{id}
   string default_project = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The number of users in the workspace IAM (for seat limit display).
+  int32 user_count_in_iam = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

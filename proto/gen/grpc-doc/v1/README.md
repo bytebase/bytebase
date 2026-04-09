@@ -2583,6 +2583,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
 | default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
+| user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
 
 
 

@@ -1611,11 +1611,11 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 
-  const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
+  const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
   const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
   const remainingUserCount = useMemo(
-    () => Math.max(0, userCountLimit - activeUserCount),
-    [userCountLimit, activeUserCount]
+    () => Math.max(0, userCountLimit - userCountInIam),
+    [userCountLimit, userCountInIam]
   );
 
   const projectName = projectId
