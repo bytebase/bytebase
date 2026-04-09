@@ -85,7 +85,6 @@ func GetUsersByRoleInIAMPolicy(
 	return users
 }
 
-
 // GetUsersByMember gets user messages by member.
 // The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
 func GetUsersByMember(ctx context.Context, stores *store.Store, workspace string, member string) []*store.UserMessage {
