@@ -79,16 +79,41 @@ export function sortLocaleFiles(files, io = {}) {
   }));
 
   const updated = [];
+  const originalContents = new Map();
   for (const file of preparedFiles) {
     if (file.normalized === file.current) {
       continue;
     }
 
+    originalContents.set(file.filePath, file.current);
     try {
       write(file.filePath, file.normalized);
     } catch (error) {
+      const writeError = error instanceof Error ? error : new Error(String(error));
+      const rollbackErrors = [];
+      for (let i = updated.length - 1; i >= 0; i -= 1) {
+        const updatedFile = updated[i];
+        try {
+          write(updatedFile, originalContents.get(updatedFile));
+        } catch (rollbackError) {
+          rollbackErrors.push(
+            `Failed to restore locale file ${updatedFile}: ${
+              rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+            }`
+          );
+        }
+      }
+
+      if (rollbackErrors.length > 0) {
+        throw new Error(
+          `Failed to write locale file ${file.filePath}: ${writeError.message}. ` +
+            `Rollback also failed: ${rollbackErrors.join("; ")}`
+        );
+      }
+
       throw new Error(
-        `Failed to write locale file ${file.filePath}: ${error.message}`
+        `Failed to write locale file ${file.filePath}: ${writeError.message}. ` +
+          `Rolled back ${updated.length} earlier file(s).`
       );
     }
     updated.push(file.filePath);
