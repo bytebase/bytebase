@@ -5,6 +5,7 @@ import { ArrowRight, Database, Info, Key, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { identityProviderServiceClientConnect } from "@/connect";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -1606,27 +1607,31 @@ export function IDPDetailPage() {
         {/* Actions Section */}
         <div className="py-6">
           <div className="flex flex-row justify-between items-center">
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={
-                !hasWorkspacePermissionV2("bb.identityProviders.delete")
-              }
-            >
-              {t("settings.sso.delete")}
-            </Button>
+            <PermissionGuard permissions={["bb.identityProviders.delete"]}>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={
+                  !hasWorkspacePermissionV2("bb.identityProviders.delete")
+                }
+              >
+                {t("settings.sso.delete")}
+              </Button>
+            </PermissionGuard>
             <div className="gap-x-2 flex flex-row justify-end items-center">
               {hasChanges && (
                 <Button variant="outline" onClick={handleDiscard}>
                   {t("common.discard-changes")}
                 </Button>
               )}
-              <Button
-                disabled={!canUpdate || isUpdating}
-                onClick={handleUpdate}
-              >
-                {t("common.update")}
-              </Button>
+              <PermissionGuard permissions={["bb.identityProviders.update"]}>
+                <Button
+                  disabled={!canUpdate || isUpdating}
+                  onClick={handleUpdate}
+                >
+                  {t("common.update")}
+                </Button>
+              </PermissionGuard>
             </div>
           </div>
         </div>

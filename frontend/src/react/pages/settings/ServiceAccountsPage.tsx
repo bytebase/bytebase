@@ -3,6 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
@@ -702,21 +703,26 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         <h2 className="text-lg font-medium leading-7 text-main">
           {t("settings.members.service-accounts")}
         </h2>
-        <Button
-          disabled={
-            project
-              ? project.state !== State.ACTIVE ||
-                !hasProjectPermissionV2(project, "bb.serviceAccounts.create")
-              : !hasWorkspacePermissionV2("bb.serviceAccounts.create")
-          }
-          onClick={() => {
-            setEditingSa(undefined);
-            setShowDrawer(true);
-          }}
+        <PermissionGuard
+          permissions={["bb.serviceAccounts.create"]}
+          project={project}
         >
-          <Plus className="h-4 w-4 mr-1" />
-          {t("common.create")}
-        </Button>
+          <Button
+            disabled={
+              project
+                ? project.state !== State.ACTIVE ||
+                  !hasProjectPermissionV2(project, "bb.serviceAccounts.create")
+                : !hasWorkspacePermissionV2("bb.serviceAccounts.create")
+            }
+            onClick={() => {
+              setEditingSa(undefined);
+              setShowDrawer(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       <div className="flex flex-col gap-y-4">

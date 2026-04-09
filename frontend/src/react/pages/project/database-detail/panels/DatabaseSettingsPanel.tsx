@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -119,20 +120,25 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
           <p className="text-lg font-medium leading-7 text-main">
             {t("common.environment")}
           </p>
-          <EnvironmentSelect
-            className="mt-1 max-w-md"
-            value={database.effectiveEnvironment || ""}
-            clearable={allowClearEnvironment}
-            disabled={!allowUpdateDatabase}
-            renderSuffix={(environment) =>
-              instanceEnvironment === environment.name ? (
-                <span className="text-xs text-control-placeholder">
-                  ({t("common.default")})
-                </span>
-              ) : null
-            }
-            onChange={handleSelectEnvironment}
-          />
+          <PermissionGuard
+            permissions={["bb.databases.update"]}
+            project={getDatabaseProject(database)}
+          >
+            <EnvironmentSelect
+              className="mt-1 max-w-md"
+              value={database.effectiveEnvironment || ""}
+              clearable={allowClearEnvironment}
+              disabled={!allowUpdateDatabase}
+              renderSuffix={(environment) =>
+                instanceEnvironment === environment.name ? (
+                  <span className="text-xs text-control-placeholder">
+                    ({t("common.default")})
+                  </span>
+                ) : null
+              }
+              onChange={handleSelectEnvironment}
+            />
+          </PermissionGuard>
         </div>
       </div>
       <div className="flex flex-col gap-y-4 pt-7">
@@ -159,9 +165,14 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
             <Button variant="outline" onClick={handleCancel}>
               {t("common.revert")}
             </Button>
-            <Button disabled={!allowSave} onClick={() => void handleSave()}>
-              {t("common.save")}
-            </Button>
+            <PermissionGuard
+              permissions={["bb.databases.update"]}
+              project={getDatabaseProject(database)}
+            >
+              <Button disabled={!allowSave} onClick={() => void handleSave()}>
+                {t("common.save")}
+              </Button>
+            </PermissionGuard>
           </div>
         )}
       </div>

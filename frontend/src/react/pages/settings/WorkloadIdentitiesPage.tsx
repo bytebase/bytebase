@@ -2,6 +2,7 @@ import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -320,21 +321,29 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         <p className="text-lg font-medium leading-7 text-main">
           {t("settings.members.workload-identities")}
         </p>
-        <Button
-          disabled={
-            project
-              ? project.state !== State.ACTIVE ||
-                !hasProjectPermissionV2(project, "bb.workloadIdentities.create")
-              : !hasWorkspacePermissionV2("bb.workloadIdentities.create")
-          }
-          onClick={() => {
-            setEditingWI(undefined);
-            setShowDrawer(true);
-          }}
+        <PermissionGuard
+          permissions={["bb.workloadIdentities.create"]}
+          project={project}
         >
-          <Plus className="h-4 w-4 mr-1" />
-          {t("common.create")}
-        </Button>
+          <Button
+            disabled={
+              project
+                ? project.state !== State.ACTIVE ||
+                  !hasProjectPermissionV2(
+                    project,
+                    "bb.workloadIdentities.create"
+                  )
+                : !hasWorkspacePermissionV2("bb.workloadIdentities.create")
+            }
+            onClick={() => {
+              setEditingWI(undefined);
+              setShowDrawer(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       <div className="flex flex-col gap-y-4">
