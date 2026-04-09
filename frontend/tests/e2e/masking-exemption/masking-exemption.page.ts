@@ -213,15 +213,14 @@ export class SqlEditorPage {
   }
 
   async resultContainsText(text: string, timeout = 15000): Promise<boolean> {
-    // Use Playwright's locator text matching — more reliable than textContent
-    // for virtual-scrolled grids. Safe with PK-based queries because the SQL
-    // text uses the PK value, not the expected text value.
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-      const count = await this.page.locator(`text=${text}`).count();
-      if (count > 0) return true;
-      await this.page.waitForTimeout(500);
+    // Use Playwright's waitFor with DOM mutation observation — more reliable
+    // than polling for virtual-scrolled grids. Safe with PK-based queries
+    // because the SQL text uses the PK value, not the expected text value.
+    try {
+      await this.page.locator(`text=${text}`).first().waitFor({ state: "attached", timeout });
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 }
