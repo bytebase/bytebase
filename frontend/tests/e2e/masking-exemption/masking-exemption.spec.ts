@@ -361,9 +361,10 @@ test.describe("E2E Masking Verification", () => {
       const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
       await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
       await sqlEditor.runQuery(sql);
-      // Extra wait for virtual list to fully render after query execution
-      await page.waitForTimeout(2000);
-      expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(expectUnmasked);
+      // Wait for virtual list render — innerText needs layout computation
+      // which may be delayed on first SQL editor use in the session
+      await page.waitForTimeout(3000);
+      expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue, 30000)).toBe(expectUnmasked);
     };
 
     // Clean slate from prior test blocks
