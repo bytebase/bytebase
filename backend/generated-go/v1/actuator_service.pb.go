@@ -289,6 +289,8 @@ type ActuatorInfo struct {
 	// The default project for unassigned databases.
 	// Format: projects/{id}
 	DefaultProject string `protobuf:"bytes,26,opt,name=default_project,json=defaultProject,proto3" json:"default_project,omitempty"`
+	// The number of users in the workspace IAM (for seat limit display).
+	UserCountInIam int32 `protobuf:"varint,27,opt,name=user_count_in_iam,json=userCountInIam,proto3" json:"user_count_in_iam,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -463,6 +465,13 @@ func (x *ActuatorInfo) GetDefaultProject() string {
 	return ""
 }
 
+func (x *ActuatorInfo) GetUserCountInIam() int32 {
+	if x != nil {
+		return x.UserCountInIam
+	}
+	return 0
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
@@ -477,7 +486,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vRestriction\x12,\n" +
 	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\x8d\a\n" +
+	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\xbd\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -499,7 +508,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
 	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x12,\n" +
-	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProjectJ\x04\b\t\x10\n" +
+	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
+	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIamJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\xb6\x04\n" +
 	"\x0fActuatorService\x12s\n" +

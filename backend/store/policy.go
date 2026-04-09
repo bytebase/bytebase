@@ -104,7 +104,6 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 
 	// Invalidate caches after mutation.
 	s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, storepb.Policy_WORKSPACE, workspaceResource))
-	s.userCountCache.Remove(patch.Workspace)
 
 	return s.GetWorkspaceIamPolicy(ctx, patch.Workspace)
 }

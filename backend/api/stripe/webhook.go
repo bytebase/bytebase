@@ -348,7 +348,10 @@ func (h *WebhookHandler) updateLicense(ctx context.Context, workspace string, pa
 	if payload.Status == storepb.SubscriptionPayload_ACTIVE {
 		var expiresAt time.Time
 		if payload.ExpiresAt != nil {
-			expiresAt = payload.ExpiresAt.AsTime()
+			// Add 24h grace period to the license to avoid service disruption
+			// from billing cycle delays. The subscription stores the real Stripe
+			// expiry; only the license JWT gets the extended time.
+			expiresAt = payload.ExpiresAt.AsTime().Add(24 * time.Hour)
 		}
 
 		var err error

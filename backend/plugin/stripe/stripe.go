@@ -199,6 +199,7 @@ func CreateSubscriptionDirect(params *DirectSubscriptionParams) (*stripego.Subsc
 			{
 				Price:    stripego.String(newPrice.ID),
 				Quantity: stripego.Int64(1),
+				Metadata: params.Metadata,
 			},
 		},
 		Metadata:        params.Metadata,

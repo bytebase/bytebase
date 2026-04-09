@@ -7748,6 +7748,11 @@ components:
           description: |-
             The default project for unassigned databases.
              Format: projects/{id}
+        userCountInIam:
+          type: integer
+          title: user_count_in_iam
+          format: int32
+          description: The number of users in the workspace IAM (for seat limit display).
       title: ActuatorInfo
       additionalProperties: false
       description: |-

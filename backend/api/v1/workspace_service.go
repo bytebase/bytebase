@@ -215,6 +215,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, err
 	}
+
 	users := utils.GetUsersByRoleInIAMPolicy(
 		ctx,
 		s.store,
@@ -225,6 +226,11 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	)
 	if !containsActiveEndUser(users) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workspace must have at least one admin"))
+	}
+
+	// Guard: count members in the new policy BEFORE saving.
+	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, iamPolicy); err != nil {
+		return nil, err
 	}
 
 	payloadBytes, err := protojson.Marshal(iamPolicy)

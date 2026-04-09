@@ -252,6 +252,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: string default_project = 26;
    */
   defaultProject: string;
+
+  /**
+   * The number of users in the workspace IAM (for seat limit display).
+   *
+   * @generated from field: int32 user_count_in_iam = 27;
+   */
+  userCountInIam: number;
 };
 
 /**

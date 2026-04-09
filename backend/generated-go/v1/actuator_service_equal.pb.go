@@ -137,5 +137,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.DefaultProject != y.DefaultProject {
 		return false
 	}
+	if x.UserCountInIam != y.UserCountInIam {
+		return false
+	}
 	return true
 }

@@ -226,10 +226,6 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	email := request.Msg.User.Email
 
-	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
-		return nil, err
-	}
-
 	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, email, false); err != nil {
 		return nil, err
 	}
@@ -631,16 +627,12 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if !user.MemberDeleted {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
-	if user.Type == storepb.PrincipalType_END_USER {
-		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID); err != nil {
-			return nil, err
-		}
-	}
 
 	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	v1User, err := convertToUser(ctx, s.iamManager, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
@@ -859,15 +851,45 @@ func generateRecoveryCodes(n int) ([]string, error) {
 	return recoveryCodes, nil
 }
 
-func userCountGuard(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService, workspaceID string) error {
-	userLimit := licenseService.GetUserLimit(ctx, workspaceID)
-
-	count, err := store.CountActiveEndUsersPerWorkspace(ctx, workspaceID)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, err)
+// countUsersInIamPolicy counts distinct user members in an IAM policy,
+// expanding group memberships. Returns the count of unique user emails.
+func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID string, policy *storepb.IamPolicy) int {
+	emails := make(map[string]struct{})
+	var groupRefs []string
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if strings.HasPrefix(member, "users/") {
+				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+			} else if strings.HasPrefix(member, "groups/") {
+				groupRefs = append(groupRefs, strings.TrimPrefix(member, "groups/"))
+			}
+		}
 	}
-	if count >= userLimit {
-		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("reached the maximum user count %d", userLimit))
+	for _, ref := range groupRefs {
+		members, _ := s.GetGroupMembersSnapshot(ctx, workspaceID, "groups/"+ref)
+		for member := range members {
+			if strings.HasPrefix(member, "users/") {
+				emails[strings.TrimPrefix(member, "users/")] = struct{}{}
+			}
+		}
+	}
+	return len(emails)
+}
+
+// userCountGuard checks the seat limit against an IAM policy. If policy is nil,
+// reads the current workspace IAM policy.
+func userCountGuard(ctx context.Context, s *store.Store, licenseService *enterprise.LicenseService, workspaceID string, policy *storepb.IamPolicy) error {
+	if policy == nil {
+		p, err := s.GetWorkspaceIamPolicy(ctx, workspaceID)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
+		}
+		policy = p.Policy
+	}
+	userLimit := licenseService.GetUserLimit(ctx, workspaceID)
+	count := countUsersInIamPolicy(ctx, s, workspaceID, policy)
+	if count > userLimit {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", count, userLimit))
 	}
 	return nil
 }

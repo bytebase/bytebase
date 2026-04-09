@@ -163,11 +163,17 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.UnlicensedFeatures = unlicensedFeaturesString
 
-		activeEndUserCount, err := s.store.CountActiveEndUsersPerWorkspace(ctx, workspaceID)
+		activePrincipalCount, err := s.store.CountActivePrincipals(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
-		serverInfo.ActivatedUserCount = int32(activeEndUserCount)
+		serverInfo.ActivatedUserCount = int32(activePrincipalCount)
+
+		iamPolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		serverInfo.UserCountInIam = int32(countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy))
 
 		// Check if sample instances are available
 		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)

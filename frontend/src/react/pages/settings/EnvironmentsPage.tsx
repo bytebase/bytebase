@@ -1487,6 +1487,7 @@ export function EnvironmentsPage() {
             key={env.id}
             value={env.id}
             className="flex-1 overflow-auto mt-0"
+            keepMounted={false}
           >
             <EnvironmentDetail
               environment={env}

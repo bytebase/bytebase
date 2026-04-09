@@ -102,6 +102,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     () => serverInfo.value?.activatedUserCount ?? 0
   );
 
+  const userCountInIam = computed(() => serverInfo.value?.userCountInIam ?? 0);
+
   const enableOnboarding = computed(() => {
     return activeUserCount.value === 1 && !isSaaSMode.value;
   });
@@ -242,6 +244,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     quickStartEnabled,
     enableOnboarding,
     activeUserCount,
+    userCountInIam,
     // Actions
     updateUserStat,
     setServerInfo,

@@ -33,7 +33,6 @@ type Store struct {
 	memberGroupsCache *expirable.LRU[string, []string]
 	dbSchemaCache     *expirable.LRU[string, *model.DatabaseMetadata]
 	iamPolicyCache    *expirable.LRU[string, *IamPolicyMessage]
-	userCountCache    *expirable.LRU[string, int]
 
 	// Large objects.
 	sheetFullCache *lru.Cache[string, *SheetMessage]
@@ -76,7 +75,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	memberGroupsCache := expirable.NewLRU[string, []string](4096, nil, time.Minute)
 	dbSchemaCache := expirable.NewLRU[string, *model.DatabaseMetadata](128, nil, 5*time.Minute)
 	iamPolicyCache := expirable.NewLRU[string, *IamPolicyMessage](1024, nil, time.Minute)
-	userCountCache := expirable.NewLRU[string, int](128, nil, time.Minute)
 
 	// Initialize database connection (handles both direct URL and file-based)
 	dbConnManager := NewDBConnectionManager(pgURL)
@@ -102,7 +100,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		memberGroupsCache: memberGroupsCache,
 		dbSchemaCache:     dbSchemaCache,
 		iamPolicyCache:    iamPolicyCache,
-		userCountCache:    userCountCache,
 	}
 
 	return s, nil

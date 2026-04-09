@@ -52,7 +52,7 @@ export function SubscriptionPage({
     () => subscriptionStore.instanceLicenseCount
   );
   const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
-  const activeUserCount = useVueState(() => actuatorStore.activeUserCount);
+  const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
   const activatedInstanceCount = useVueState(
     () => actuatorStore.activatedInstanceCount
   );
@@ -197,7 +197,7 @@ export function SubscriptionPage({
             {t("subscription.instance-assignment.used-and-total-user")}
           </div>
           <div className="mt-1 text-4xl flex items-center gap-2">
-            {activeUserCount}
+            {userCountInIam}
             <span className="font-mono text-control-light">/</span>
             {userLimit}
           </div>
