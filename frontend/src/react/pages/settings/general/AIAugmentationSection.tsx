@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Input } from "@/react/components/ui/input";
@@ -246,14 +247,10 @@ export const AIAugmentationSection = forwardRef<
                   </div>
                   <div className="mt-1 mb-3 text-sm text-gray-400">
                     {t("settings.general.workspace.ai-assistant.description")}{" "}
-                    <a
+                    <LearnMoreLink
                       href="https://docs.bytebase.com/ai-assistant?source=console"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline text-sm ml-1"
-                    >
-                      {t("common.learn-more")}
-                    </a>
+                      className="text-accent text-sm ml-1"
+                    />
                   </div>
                 </div>
 

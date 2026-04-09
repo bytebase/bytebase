@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   ResourceIdField,
@@ -801,14 +802,10 @@ export function RolesPage() {
 
       <div className="textinfolabel">
         {t("role.setting.description")}{" "}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/administration/roles?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline"
-        >
-          {t("common.learn-more")}
-        </a>
+          className="text-accent"
+        />
       </div>
 
       <div className="w-full flex justify-end">

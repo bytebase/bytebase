@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import {
   PermissionGuard,
   usePermissionCheck,
@@ -205,14 +206,10 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                 </label>
                 <div className="mb-3 text-sm text-gray-400">
                   {t("settings.general.workspace.external-url.description")}{" "}
-                  <a
+                  <LearnMoreLink
                     href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-accent hover:underline"
-                  >
-                    {t("common.learn-more")}
-                  </a>
+                    className="text-accent"
+                  />
                 </div>
                 {externalUrlFromFlag && (
                   <Alert variant="info" className="mb-3">

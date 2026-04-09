@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -1564,14 +1565,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       <>
                         {t("instance.account-locator")}
                         <span className="mr-2 text-error"> *</span>
-                        <a
+                        <LearnMoreLink
                           href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="text-sm normal-link"
-                        >
-                          {t("common.learn-more")}
-                        </a>
+                        />
                       </>
                     ) : basicInfo.engine === Engine.COSMOSDB ? (
                       <>

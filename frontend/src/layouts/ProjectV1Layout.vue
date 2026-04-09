@@ -1,14 +1,14 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2 mb-4" />
-    <template v-if="isDefaultProject">
+    <div v-if="isDefaultProject" class="m-4">
       <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
         {{ $t("database.unassigned-databases") }}
       </h1>
       <BBAttention class="mb-4" type="info">
         {{ $t("project.overview.info-slot-content") }}
       </BBAttention>
-    </template>
+    </div>
 
     <RoutePermissionGuard
       class="m-4"

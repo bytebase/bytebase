@@ -28,6 +28,7 @@ import {
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
@@ -1767,14 +1768,10 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       {projectName && (
         <div className="textinfolabel mb-4">
           {t("project.members.description")}{" "}
-          <a
+          <LearnMoreLink
             href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent hover:underline"
-          >
-            {t("common.learn-more")}
-          </a>
+            className="text-accent"
+          />
         </div>
       )}
 

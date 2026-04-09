@@ -5,6 +5,7 @@ import { ArrowRight, Database, Info, Key, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { identityProviderServiceClientConnect } from "@/connect";
+import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
@@ -1479,14 +1480,10 @@ export function IDPDetailPage() {
     <div className="w-full px-4 py-4 flex flex-col gap-y-6">
       <div className="textinfolabel">
         {t("settings.sso.description")}{" "}
-        <a
+        <LearnMoreLink
           href="https://docs.bytebase.com/administration/sso/overview?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline"
-        >
-          {t("common.learn-more")}
-        </a>
+          className="text-accent"
+        />
       </div>
 
       <div className="divide-y divide-block-border">
