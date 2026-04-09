@@ -381,14 +381,17 @@ test.describe("E2E Masking Verification", () => {
 
     // Step 1: Grant → unmasked
     await grantExemption("e2e test exemption");
+    await page.waitForTimeout(1000); // Wait for policy to propagate to masking engine
     await queryAndCheck(true);
 
     // Step 2: Revoke → masked
     await revokeAllExemptions();
+    await page.waitForTimeout(1000);
     await queryAndCheck(false);
 
     // Step 3: Re-grant → unmasked
     await grantExemption("e2e test re-grant");
+    await page.waitForTimeout(1000);
     await queryAndCheck(true);
   });
 
