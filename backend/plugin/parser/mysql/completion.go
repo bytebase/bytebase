@@ -150,9 +150,21 @@ func findCaretTokenIndex(tokens []mysqlparser.Token, byteOffset int) int {
 }
 
 func (c *Completer) completion() ([]base.Candidate, error) {
-	if c.caretTokenIndex < len(c.tokens) {
-		tok := c.tokens[c.caretTokenIndex]
-		if mysqlparser.IsIdentTokenType(tok.Type) && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '`' {
+	// Check if the caret is inside or at the start of a backtick-quoted identifier.
+	// caretTokenIndex points to the first token at or after cursorByteOffset, so
+	// the containing token (when the cursor is inside one) is at index-1.
+	checkTokenQuoted := func(idx int) bool {
+		if idx < 0 || idx >= len(c.tokens) {
+			return false
+		}
+		tok := c.tokens[idx]
+		return mysqlparser.IsIdentTokenType(tok.Type) && tok.Loc < len(c.sql) && c.sql[tok.Loc] == '`'
+	}
+	if checkTokenQuoted(c.caretTokenIndex) {
+		c.caretTokenIsQuoted = true
+	} else if c.caretTokenIndex > 0 {
+		prev := c.tokens[c.caretTokenIndex-1]
+		if prev.End >= c.cursorByteOffset && checkTokenQuoted(c.caretTokenIndex-1) {
 			c.caretTokenIsQuoted = true
 		}
 	}
@@ -409,12 +421,34 @@ func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]b
 				viewEntries.insertViews(c, schemas)
 			}
 		case "view_ref":
-			schemas := map[string]bool{c.defaultDatabase: true}
-			viewEntries.insertViews(c, schemas)
+			qualifier, flags := c.determineQualifier()
+			if flags&ObjectFlagsShowFirst != 0 {
+				databaseEntries.insertDatabases(c)
+			}
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(qualifier) == 0 {
+					schemas[c.defaultDatabase] = true
+				} else {
+					schemas[qualifier] = true
+				}
+				viewEntries.insertViews(c, schemas)
+			}
 		case "index_ref":
 			// Indexes are scoped to tables; without table context just suggest tables.
-			schemas := map[string]bool{c.defaultDatabase: true}
-			tableEntries.insertTables(c, schemas)
+			qualifier, flags := c.determineQualifier()
+			if flags&ObjectFlagsShowFirst != 0 {
+				databaseEntries.insertDatabases(c)
+			}
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(qualifier) == 0 {
+					schemas[c.defaultDatabase] = true
+				} else {
+					schemas[qualifier] = true
+				}
+				tableEntries.insertTables(c, schemas)
+			}
 		case "columnref":
 			schema, table, flags := c.determineColumnRef()
 
@@ -486,12 +520,12 @@ func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]b
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
-							if reference.Alias == table {
+							if strings.EqualFold(reference.Alias, table) {
 								tables[reference.Table] = true
 								databases[reference.Database] = true
 							}
 						case *base.VirtualTableReference:
-							if reference.Table == table {
+							if strings.EqualFold(reference.Table, table) {
 								for _, column := range reference.Columns {
 									columnEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeColumn,
@@ -693,10 +727,24 @@ func (c *Completer) extractAliasText(pos int) string {
 	if tokens[0].Type == mysqlparser.AS && len(tokens) > 1 {
 		idx = 1
 	}
-	if idx >= len(tokens) || !mysqlparser.IsIdentTokenType(tokens[idx].Type) {
+	if idx >= len(tokens) {
 		return ""
 	}
-	return unquote(tokens[idx].Str)
+	tok := tokens[idx]
+	// Accept identifier tokens (IDENT, backtick-quoted, non-reserved keyword).
+	if mysqlparser.IsIdentTokenType(tok.Type) {
+		return unquote(tok.Str)
+	}
+	// Accept string literal aliases (e.g., AS 'eid' or AS "eid"). The omni
+	// tokenizer strips the quotes from Str for string literals; detect by
+	// checking the raw source text starts with a quote.
+	if tok.Loc < len(followingText) {
+		ch := followingText[tok.Loc]
+		if ch == '\'' || ch == '"' {
+			return tok.Str
+		}
+	}
+	return ""
 }
 
 type ObjectFlags int
@@ -831,8 +879,40 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int) {
 		case mysqlparser.INSERT, mysqlparser.INTO:
 			c.parseInsertTableReferences(c.sql[c.tokens[i].Loc:])
 		default:
+			// ALTER TABLE / TRUNCATE TABLE / DROP TABLE / UPDATE / DELETE FROM
+			// — bind the target table for column completion in DDL/DML contexts.
+			if name := mysqlparser.TokenName(c.tokens[i].Type); name == "ALTER" || name == "TRUNCATE" {
+				c.parseDDLTableReference(i)
+			}
 		}
 	}
+}
+
+// parseDDLTableReference extracts the target table from a DDL statement
+// like "ALTER TABLE t1 ..." or "TRUNCATE TABLE t1".
+func (c *Completer) parseDDLTableReference(startIdx int) {
+	// Skip the ALTER/TRUNCATE keyword.
+	idx := startIdx + 1
+	// Skip optional TABLE keyword.
+	if idx < len(c.tokens) && mysqlparser.TokenName(c.tokens[idx].Type) == "TABLE" {
+		idx++
+	}
+	// Expect the table name (identifier).
+	if idx >= len(c.tokens) || !mysqlparser.IsIdentTokenType(c.tokens[idx].Type) {
+		return
+	}
+	ref := &base.PhysicalTableReference{}
+	ref.Table = unquote(c.tokens[idx].Str)
+	idx++
+	// Check for db.table pattern.
+	if idx+1 < len(c.tokens) && c.tokens[idx].Type == '.' && mysqlparser.IsIdentTokenType(c.tokens[idx+1].Type) {
+		ref.Database = ref.Table
+		ref.Table = unquote(c.tokens[idx+1].Str)
+	}
+	if ref.Database == "" {
+		ref.Database = c.defaultDatabase
+	}
+	c.referencesStack[0] = append(c.referencesStack[0], ref)
 }
 
 func (c *Completer) parseTableReferences(fromClause string) {
@@ -871,11 +951,20 @@ func (c *Completer) parseInsertTableReferences(insertClause string) {
 	tokens := mysqlparser.Tokenize(insertClause)
 	idx := 0
 
-	// Skip INSERT keyword.
-	if idx < len(tokens) && tokens[idx].Type == mysqlparser.INSERT {
+	// Skip INSERT or REPLACE keyword.
+	if idx < len(tokens) && (tokens[idx].Type == mysqlparser.INSERT || tokens[idx].Type == mysqlparser.REPLACE) {
 		idx++
 	}
-	// Skip INTO keyword.
+	// Skip optional INSERT modifiers: LOW_PRIORITY, DELAYED, HIGH_PRIORITY, IGNORE.
+	for idx < len(tokens) {
+		name := mysqlparser.TokenName(tokens[idx].Type)
+		if name == "LOW_PRIORITY" || name == "DELAYED" || name == "HIGH_PRIORITY" || name == "IGNORE" {
+			idx++
+			continue
+		}
+		break
+	}
+	// Skip optional INTO keyword.
 	if idx < len(tokens) && tokens[idx].Type == mysqlparser.INTO {
 		idx++
 	}

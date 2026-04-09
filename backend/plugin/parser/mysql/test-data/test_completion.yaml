@@ -3356,16 +3356,6 @@
       definition: t1 | , NOT NULL
       comment: ""
       priority: 0
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
     - text: db
       type: DATABASE
       definition: ""
@@ -3391,16 +3381,6 @@
     - text: c1
       type: COLUMN
       definition: t1 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
       comment: ""
       priority: 0
     - text: db
@@ -3430,16 +3410,6 @@
       definition: t1 | , NOT NULL
       comment: ""
       priority: 0
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
     - text: db
       type: DATABASE
       definition: ""
@@ -3467,16 +3437,6 @@
       definition: t1 | , NOT NULL
       comment: ""
       priority: 0
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
     - text: db
       type: DATABASE
       definition: ""
@@ -3502,16 +3462,6 @@
     - text: c1
       type: COLUMN
       definition: t1 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
       comment: ""
       priority: 0
     - text: db
@@ -3575,6 +3525,11 @@
       priority: 0
 - input: DROP VIEW |
   want:
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: v1
       type: VIEW
       definition: ""
@@ -3582,6 +3537,11 @@
       priority: 0
 - input: DROP INDEX |
   want:
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: t1
       type: TABLE
       definition: ""
@@ -5067,6 +5027,203 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: SELECT c1 as 'eid' FROM t1 ORDER BY |
+  want:
+- input: SELECT c1 as "xid" FROM t1 ORDER BY |
+  want:
+- input: SELECT * FROM t2 AS Foo WHERE foo.|
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: c2
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+      priority: 0
+- input: WITH Foo AS (SELECT c1 FROM t1) SELECT foo.| FROM Foo
+  want:
+- input: ALTER TABLE t1 DROP COLUMN |
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: ALTER TABLE t1 RENAME COLUMN | TO new_name
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: ALTER TABLE db.t1 DROP COLUMN |
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: INSERT IGNORE t1 (|) VALUES (1)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: INSERT IGNORE INTO t1 (|) VALUES (1)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: REPLACE INTO t1 (|) VALUES (1)
+  want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
+      priority: 0
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+      priority: 0
+- input: DROP VIEW db.|
+  want:
     - text: t1
       type: TABLE
       definition: ""
