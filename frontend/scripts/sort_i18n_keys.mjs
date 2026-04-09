@@ -91,8 +91,9 @@ export function sortLocaleFiles(files, io = {}) {
     } catch (error) {
       const writeError = error instanceof Error ? error : new Error(String(error));
       const rollbackErrors = [];
-      for (let i = updated.length - 1; i >= 0; i -= 1) {
-        const updatedFile = updated[i];
+      const rollbackTargets = [...updated].reverse();
+      rollbackTargets.push(file.filePath);
+      for (const updatedFile of rollbackTargets) {
         try {
           write(updatedFile, originalContents.get(updatedFile));
         } catch (rollbackError) {
@@ -113,7 +114,7 @@ export function sortLocaleFiles(files, io = {}) {
 
       throw new Error(
         `Failed to write locale file ${file.filePath}: ${writeError.message}. ` +
-          `Rolled back ${updated.length} earlier file(s).`
+          `Rolled back ${updated.length} earlier file(s) and restored the current file.`
       );
     }
     updated.push(file.filePath);

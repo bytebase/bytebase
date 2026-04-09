@@ -155,13 +155,59 @@ describe("normalizeLocaleFile", () => {
           readFileSync: readStub,
           writeFileSync: writeStub,
         })
-    ).toThrow(/Failed to write locale file .*locale-sorter-second\.json: disk full\. Rolled back 1 earlier file\(s\)\./);
+    ).toThrow(
+      /Failed to write locale file .*locale-sorter-second\.json: disk full\. Rolled back 1 earlier file\(s\) and restored the current file\./
+    );
     expect(contents.get(firstPath)).toBe('{"z":1,"a":2}');
     expect(contents.get(secondPath)).toBe('{"y":1,"b":2}');
     expect(writes).toEqual([
       [firstPath, '{\n  "a": 2,\n  "z": 1\n}\n'],
       [secondPath, '{\n  "b": 2,\n  "y": 1\n}\n'],
       [firstPath, '{"z":1,"a":2}'],
+      [secondPath, '{"y":1,"b":2}'],
+    ]);
+  });
+
+  test("sortLocaleFiles restores the current file after a partial write failure", () => {
+    const firstPath = "/tmp/locale-sorter-first.json";
+    const secondPath = "/tmp/locale-sorter-second.json";
+    const contents = new Map([
+      [firstPath, '{"z":1,"a":2}'],
+      [secondPath, '{"y":1,"b":2}'],
+    ]);
+    const writes = [];
+    const readStub = (filePath) => {
+      const content = contents.get(filePath);
+      if (content === undefined) {
+        throw new Error(`Unexpected file read: ${String(filePath)}`);
+      }
+      return content;
+    };
+    const writeStub = (filePath, content) => {
+      writes.push([filePath, content]);
+      if (filePath === secondPath && content.includes('"b": 2')) {
+        contents.set(filePath, '{"y":1');
+        throw new Error("write interrupted after partial flush");
+      }
+      contents.set(filePath, content);
+    };
+
+    expect(
+      () =>
+        sortLocaleFiles([firstPath, secondPath], {
+          readFileSync: readStub,
+          writeFileSync: writeStub,
+        })
+    ).toThrow(
+      /Failed to write locale file .*locale-sorter-second\.json: write interrupted after partial flush\. Rolled back 1 earlier file\(s\) and restored the current file\./
+    );
+    expect(contents.get(firstPath)).toBe('{"z":1,"a":2}');
+    expect(contents.get(secondPath)).toBe('{"y":1,"b":2}');
+    expect(writes).toEqual([
+      [firstPath, '{\n  "a": 2,\n  "z": 1\n}\n'],
+      [secondPath, '{\n  "b": 2,\n  "y": 1\n}\n'],
+      [firstPath, '{"z":1,"a":2}'],
+      [secondPath, '{"y":1,"b":2}'],
     ]);
   });
 });
