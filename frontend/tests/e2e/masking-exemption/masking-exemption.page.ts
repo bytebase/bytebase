@@ -213,18 +213,18 @@ export class SqlEditorPage {
   }
 
   async resultContainsText(text: string, timeout = 15000): Promise<boolean> {
-    // Poll using in-browser innerText check — avoids Playwright locator
-    // timing issues with virtual-scrolled grids (NVirtualList).
-    // Safe with PK-based queries since the SQL text doesn't contain
-    // the expected value.
-    const deadline = Date.now() + timeout;
-    while (Date.now() < deadline) {
-      const found = await this.page.evaluate(
-        (t) => document.body.innerText.includes(t), text
-      );
-      if (found) return true;
-      await this.page.waitForTimeout(500);
+    // Scope to result grid rows via [data-row-index] attribute set by
+    // VirtualDataTable. This avoids matching text in the SQL editor,
+    // query history, or overflow-hidden ancestor containers.
+    try {
+      await this.page
+        .locator("[data-row-index]")
+        .filter({ hasText: text })
+        .first()
+        .waitFor({ state: "visible", timeout });
+      return true;
+    } catch {
+      return false;
     }
-    return false;
   }
 }
