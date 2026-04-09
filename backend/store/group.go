@@ -316,12 +316,12 @@ func (s *Store) DeleteGroup(ctx context.Context, workspace string, id string) er
 		return err
 	}
 
-	group := &GroupMessage{ID: id}
+	group := &GroupMessage{ID: id, Workspace: workspace}
 	if email.Valid {
 		group.Email = email.String
 	}
 	s.groupCache.Remove(getGroupCacheKey(workspace, group))
-	s.removeGroupMembersCache(group.Workspace, group)
+	s.removeGroupMembersCache(workspace, group)
 	return nil
 }
 

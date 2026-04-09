@@ -256,6 +256,10 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 	}
 
+	if err := s.preAddUserGuard(ctx, workspaceID); err != nil {
+		return nil, err
+	}
+
 	user, err := s.store.CreateUser(ctx, &store.UserMessage{
 		Email:        email,
 		Name:         request.Msg.User.Title,
@@ -628,6 +632,10 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
 
+	if err := s.preAddUserGuard(ctx, workspaceID); err != nil {
+		return nil, err
+	}
+
 	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -883,8 +891,9 @@ func countUsersInIamPolicy(ctx context.Context, s *store.Store, workspaceID stri
 	return len(emails), nil
 }
 
-// userCountGuard checks the seat limit against an IAM policy. If policy is nil,
-// reads the current workspace IAM policy.
+// userCountGuard checks seat limits before adding a new IAM member (e.g. SSO login).
+// Uses >= because the new user has not been counted yet.
+// If policy is nil, reads the current workspace IAM policy.
 func userCountGuard(ctx context.Context, s *store.Store, licenseService *enterprise.LicenseService, workspaceID string, policy *storepb.IamPolicy, saas bool) error {
 	if policy == nil {
 		p, err := s.GetWorkspaceIamPolicy(ctx, workspaceID)
@@ -898,10 +907,35 @@ func userCountGuard(ctx context.Context, s *store.Store, licenseService *enterpr
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
 	}
-	if count > userLimit {
-		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", count, userLimit))
+	if count >= userLimit {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, reaching the limit of %d", count, userLimit))
 	}
 	return nil
+}
+
+// preAddUserGuard checks seat limits before creating or undeleting a principal.
+// Only enforces when the IAM policy contains allUsers, because without allUsers
+// a new principal does not occupy a seat until explicitly added to IAM.
+func (s *UserService) preAddUserGuard(ctx context.Context, workspaceID string) error {
+	p, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
+	}
+	if !policyContainsAllUsers(p.Policy) {
+		return nil
+	}
+	return userCountGuard(ctx, s.store, s.licenseService, workspaceID, p.Policy, s.profile.SaaS)
+}
+
+func policyContainsAllUsers(policy *storepb.IamPolicy) bool {
+	for _, binding := range policy.Bindings {
+		for _, member := range binding.Members {
+			if member == common.AllUsers {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isUserWorkspaceAdmin(ctx context.Context, stores *store.Store, user *store.UserMessage, workspaceID string) (bool, error) {
