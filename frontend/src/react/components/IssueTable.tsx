@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import dayjs from "dayjs";
-import { ArrowUpDown, Calendar, Check, Loader2, X } from "lucide-react";
+import { ArrowUpDown, Check, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
@@ -11,8 +10,8 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
-import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -47,7 +46,6 @@ import {
   extractProjectResourceName,
   getHighlightHTMLByRegExp,
   getIssueRoute,
-  getTsRangeFromSearchParams,
   getValueFromSearchParams,
   getValuesFromSearchParams,
   projectOfIssue,
@@ -84,126 +82,6 @@ export function IssueSearchBar({
       </div>
       <TimeRangePicker params={params} onParamsChange={onParamsChange} />
       <IssueSortDropdown orderBy={orderBy} onOrderByChange={onOrderByChange} />
-    </div>
-  );
-}
-
-// ===========================================================================
-// TimeRangePicker
-// ===========================================================================
-
-function TimeRangePicker({
-  params,
-  onParamsChange,
-}: {
-  params: SearchParams;
-  onParamsChange: (p: SearchParams) => void;
-}) {
-  const { t } = useTranslation();
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  useClickOutside(containerRef, open, () => setOpen(false));
-
-  const timeRange = useMemo(
-    () => getTsRangeFromSearchParams(params as VueSearchParams, "created"),
-    [params]
-  );
-
-  const hasRange = !!timeRange;
-
-  useEffect(() => {
-    if (timeRange) {
-      setFrom(dayjs(timeRange[0]).format("YYYY-MM-DD"));
-      setTo(dayjs(timeRange[1]).format("YYYY-MM-DD"));
-    } else {
-      setFrom("");
-      setTo("");
-    }
-  }, [timeRange]);
-
-  const applyRange = useCallback(() => {
-    const fromTs = from ? dayjs(from).startOf("day").valueOf() : null;
-    const toTs = to ? dayjs(to).endOf("day").valueOf() : null;
-    const updated = upsertScope({
-      params: params as VueSearchParams,
-      scopes: {
-        id: "created",
-        value: fromTs && toTs ? `${fromTs},${toTs}` : "",
-      },
-    });
-    onParamsChange({
-      query: updated.query,
-      scopes: updated.scopes.map((s) => ({
-        id: s.id,
-        value: s.value,
-        readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
-      })),
-    });
-    setOpen(false);
-  }, [from, to, params, onParamsChange]);
-
-  const clearRange = useCallback(() => {
-    const updated = upsertScope({
-      params: params as VueSearchParams,
-      scopes: { id: "created", value: "" },
-    });
-    onParamsChange({
-      query: updated.query,
-      scopes: updated.scopes.map((s) => ({
-        id: s.id,
-        value: s.value,
-        readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
-      })),
-    });
-    setOpen(false);
-  }, [params, onParamsChange]);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <Button
-        variant="ghost"
-        size="sm"
-        className={cn(
-          hasRange
-            ? "text-accent! hover:text-accent"
-            : "text-control-placeholder hover:text-control"
-        )}
-        onClick={() => setOpen(!open)}
-      >
-        <Calendar className="w-4 h-4" />
-      </Button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-sm shadow-lg p-3 flex flex-col gap-2 min-w-[240px]">
-          <label className="text-xs text-control-light">
-            {t("common.from")}
-          </label>
-          <Input
-            type="date"
-            value={from}
-            max={dayjs().format("YYYY-MM-DD")}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-          <label className="text-xs text-control-light">{t("common.to")}</label>
-          <Input
-            type="date"
-            value={to}
-            max={dayjs().format("YYYY-MM-DD")}
-            onChange={(e) => setTo(e.target.value)}
-          />
-          <div className="flex items-center gap-x-2 mt-1">
-            <Button size="sm" onClick={applyRange} disabled={!from || !to}>
-              {t("common.confirm")}
-            </Button>
-            {hasRange && (
-              <Button variant="ghost" size="sm" onClick={clearRange}>
-                {t("common.clear")}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

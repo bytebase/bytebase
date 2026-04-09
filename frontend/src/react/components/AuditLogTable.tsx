@@ -4,8 +4,6 @@ import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import {
-  ArrowRight,
-  Calendar,
   ChevronDown,
   Download,
   ExternalLink,
@@ -22,8 +20,8 @@ import {
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
-import { Input } from "@/react/components/ui/input";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -231,116 +229,6 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
         </div>
       )}
     </>
-  );
-}
-
-// ============================================================
-// TimeRangePicker
-// ============================================================
-
-function TimeRangePicker({
-  params,
-  onParamsChange,
-}: {
-  params: SearchParams;
-  onParamsChange: (params: SearchParams) => void;
-}) {
-  const { t } = useTranslation();
-  const [showPicker, setShowPicker] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setShowPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const createdScope = params.scopes.find((s) => s.id === "created");
-  const [fromTs, toTs] = useMemo(() => {
-    if (!createdScope) return [undefined, undefined];
-    const parts = createdScope.value.split(",");
-    if (parts.length !== 2) return [undefined, undefined];
-    return [parseInt(parts[0], 10), parseInt(parts[1], 10)];
-  }, [createdScope]);
-
-  const fromDatetime = fromTs
-    ? dayjs(fromTs).format("YYYY-MM-DDTHH:mm:ss")
-    : "";
-  const toDatetime = toTs ? dayjs(toTs).format("YYYY-MM-DDTHH:mm:ss") : "";
-
-  const displayFrom = fromTs ? dayjs(fromTs).format("YYYY-MM-DD HH:mm:ss") : "";
-  const displayTo = toTs ? dayjs(toTs).format("YYYY-MM-DD HH:mm:ss") : "";
-
-  const updateRange = useCallback(
-    (from: string, to: string) => {
-      const fromVal = from ? dayjs(from).valueOf() : undefined;
-      const toVal = to ? dayjs(to).valueOf() : undefined;
-      const scopes = params.scopes.filter((s) => s.id !== "created");
-      if (fromVal !== undefined && toVal !== undefined) {
-        scopes.push({
-          id: "created",
-          value: `${fromVal},${toVal}`,
-          readonly: true,
-        });
-      }
-      onParamsChange({ ...params, scopes });
-    },
-    [params, onParamsChange]
-  );
-
-  return (
-    <div ref={containerRef} className="relative shrink-0">
-      <button
-        className="h-9 flex items-center gap-x-2 border border-control-border rounded-xs px-3 text-sm hover:bg-control-bg whitespace-nowrap"
-        onClick={() => setShowPicker(!showPicker)}
-      >
-        {displayFrom && displayTo ? (
-          <>
-            <span>{displayFrom}</span>
-            <ArrowRight className="w-3.5 h-3.5 text-control-light shrink-0" />
-            <span>{displayTo}</span>
-          </>
-        ) : (
-          <span className="text-control-placeholder">{t("common.select")}</span>
-        )}
-        <Calendar className="w-4 h-4 text-control-light ml-1 shrink-0" />
-      </button>
-      {showPicker && (
-        <div className="absolute right-0 top-[42px] bg-white border border-control-border rounded-sm shadow-lg z-50 p-3 flex flex-col gap-y-2 min-w-[300px]">
-          <div className="flex items-center gap-x-2">
-            <label className="text-sm text-control-light whitespace-nowrap w-10">
-              {t("common.from")}
-            </label>
-            <Input
-              type="datetime-local"
-              step="1"
-              className="flex-1"
-              value={fromDatetime}
-              onChange={(e) => updateRange(e.target.value, toDatetime)}
-            />
-          </div>
-          <div className="flex items-center gap-x-2">
-            <label className="text-sm text-control-light whitespace-nowrap w-10">
-              {t("common.to")}
-            </label>
-            <Input
-              type="datetime-local"
-              step="1"
-              className="flex-1"
-              value={toDatetime}
-              onChange={(e) => updateRange(fromDatetime, e.target.value)}
-            />
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 

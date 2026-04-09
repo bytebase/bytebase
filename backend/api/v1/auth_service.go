@@ -680,9 +680,10 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	if user.MemberDeleted {
-		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, nil, s.profile.SaaS); err != nil {
-			return nil, err
-		}
+		// No seat guard needed here: the user is already counted in IAM bindings
+		// (they were a member before being deleted). Undeleting just restores the
+		// principal flag without adding a new IAM member.
+
 		// Undelete the user when login via SSO.
 		user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 		if err != nil {
