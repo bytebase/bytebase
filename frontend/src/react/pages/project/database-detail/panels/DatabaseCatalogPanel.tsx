@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { createApp, h, reactive } from "vue";
+import { createApp, h } from "vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
 import OverlayStackManager from "@/components/misc/OverlayStackManager.vue";
 import i18n from "@/plugins/i18n";
@@ -10,29 +10,18 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const bridgeStateRef = useRef(
-    reactive({
-      database,
-    })
-  );
-
-  useEffect(() => {
-    bridgeStateRef.current.database = database;
-  }, [database]);
 
   useEffect(() => {
     if (!containerRef.current) {
       return;
     }
 
-    const bridgeState = bridgeStateRef.current;
-
     const app = createApp({
       render() {
         return h(OverlayStackManager as never, null, {
           default: () =>
             h(DatabaseSensitiveDataPanel as never, {
-              database: bridgeState.database,
+              database,
             }),
         });
       },
@@ -43,7 +32,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     return () => {
       app.unmount();
     };
-  }, []);
+  }, [database.name]);
 
   return <div ref={containerRef} />;
 }

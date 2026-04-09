@@ -82,7 +82,7 @@ export function VueTableDetailDrawerMount({
     return () => {
       app.unmount();
     };
-  }, []);
+  }, [databaseName]);
 
   return <div ref={containerRef} />;
 }
