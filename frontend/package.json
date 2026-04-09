@@ -9,8 +9,8 @@
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare:artifacts && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare:artifacts && vite build --mode release-aws",
     "precheck": "pnpm run prepare:artifacts",
-    "check": "eslint --cache src && biome ci . && node scripts/check-react-i18n.mjs",
-    "fix": "eslint --cache --fix src && biome check --write .",
+    "check": "eslint --cache src && biome ci . && node scripts/check-react-i18n.mjs && node scripts/sort_i18n_keys.mjs --check",
+    "fix": "pnpm run sort:i18n && eslint --cache --fix src && biome check --write .",
     "bundle-visualize": "export NODE_OPTIONS=--max_old_space_size=80000 && vite-bundle-visualizer -c vite.config.ts",
     "pretype-check": "pnpm run prepare:artifacts",
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && vue-tsc --build --force && tsc --project tsconfig.react.json --noEmit",
@@ -19,6 +19,7 @@
     "precoverage": "pnpm run prepare:artifacts",
     "coverage": "vitest --coverage",
     "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts && pnpm fix",
+    "sort:i18n": "node scripts/sort_i18n_keys.mjs",
     "generate:openapi-index": "node scripts/generate_openapi_index.js"
   },
   "dependencies": {

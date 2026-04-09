@@ -1,8 +1,8 @@
 <template>
   <CreateButton v-if="isCreating" />
   <div v-else class="flex items-center gap-x-2">
-    <!-- Rollout ready link for database change issues -->
-    <RolloutReadyLink v-if="shouldShowRolloutReadyLink" />
+    <!-- Plan link for database change issues -->
+    <PlanLink v-if="shouldShowPlanLink" />
 
     <!-- Primary action: special components for specific actions -->
     <CreateIssueButton
@@ -60,7 +60,7 @@ import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { usePlanContext, useRolloutReadyLink } from "@/components/Plan/logic";
+import { usePlanContext, usePlanLink } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import TaskRolloutActionPanel from "@/components/RolloutV1/components/Task/TaskRolloutActionPanel.vue";
 import {
@@ -82,7 +82,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { CreateButton, CreateIssueButton } from "./create";
 import { ExportArchiveDownloadAction } from "./export";
-import RolloutReadyLink from "./RolloutReadyLink.vue";
+import PlanLink from "./PlanLink.vue";
 import {
   ActionButton,
   ActionDropdown,
@@ -103,7 +103,7 @@ const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const planStore = usePlanStore();
 const creatingRollout = ref(false);
-const { shouldShow: shouldShowRolloutReadyLink } = useRolloutReadyLink();
+const { shouldShow: shouldShowPlanLink } = usePlanLink();
 
 // Use the action registry
 const {

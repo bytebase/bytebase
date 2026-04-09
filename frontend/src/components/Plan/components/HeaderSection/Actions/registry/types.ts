@@ -73,7 +73,7 @@ export interface ActionContext {
   // Plans where rollout is created on-demand (export, create database)
   hasDeferredRollout: boolean;
   isCreator: boolean;
-  issueApproved: boolean; // approval is APPROVED or SKIPPED
+  issueApproved: boolean; // approval is finalized or not required
   exportArchiveReady: boolean;
   allTasksFinished: boolean;
   hasDatabaseCreateOrExportTasks: boolean;

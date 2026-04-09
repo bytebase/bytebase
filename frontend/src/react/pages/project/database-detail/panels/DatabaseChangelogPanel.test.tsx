@@ -11,6 +11,12 @@ import type {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  localStorage: {
+    clear: vi.fn(),
+    getItem: vi.fn(() => null),
+    removeItem: vi.fn(),
+    setItem: vi.fn(),
+  },
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
@@ -28,6 +34,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let DatabaseChangelogPanel: typeof import("./DatabaseChangelogPanel").DatabaseChangelogPanel;
+
+vi.stubGlobal("localStorage", mocks.localStorage);
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -60,8 +68,8 @@ vi.mock("@/plugins/naive-ui", () => ({
 
 vi.mock("@/router", () => ({
   router: {
-    install: vi.fn(),
     push: vi.fn(),
+    install: vi.fn(),
   },
 }));
 
@@ -69,10 +77,6 @@ vi.mock("@/react/components/ui/button", () => ({
   Button: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props} />
   ),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
 }));
 
 vi.mock("@/store", () => ({
@@ -83,6 +87,11 @@ vi.mock("@/store", () => ({
   useChangelogStore: () => ({
     fetchChangelogList: mocks.fetchChangelogList,
   }),
+}));
+
+vi.mock("@/utils/v1/changelog", () => ({
+  changelogLink: (changelog: { name: string }) =>
+    `/changelogs/${changelog.name}`,
 }));
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
@@ -121,30 +130,27 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
+  mocks.localStorage.clear.mockReset();
+  mocks.localStorage.getItem.mockReset();
+  mocks.localStorage.getItem.mockReturnValue(null);
+  mocks.localStorage.removeItem.mockReset();
+  mocks.localStorage.setItem.mockReset();
   mocks.fetchChangelogList.mockReset();
   mocks.fetchChangelogList.mockResolvedValue({
     nextPageToken: "",
     changelogs: [
       {
         name: "instances/inst1/databases/db1/changelogs/1",
+        planTitle: "Release 1",
       } as Changelog,
     ],
   });
   mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation((options: { render: () => unknown }) => ({
+  mocks.createApp.mockImplementation(() => ({
     use() {
       return this;
     },
-    mount(element: Element) {
-      const vnode = options.render() as {
-        props?: {
-          changelogs?: Changelog[];
-        };
-      };
-      element.innerHTML = (vnode.props?.changelogs ?? [])
-        .map((changelog) => `<div>${changelog.name}</div>`)
-        .join("");
-    },
+    mount() {},
     unmount: vi.fn(),
   }));
 
@@ -153,7 +159,7 @@ beforeEach(async () => {
 });
 
 describe("DatabaseChangelogPanel", () => {
-  test("loads changelog rows through the paged fetcher", async () => {
+  test("renders changelog rows in a React table", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseChangelogPanel, {
         database: makeDatabase(),
@@ -168,9 +174,11 @@ describe("DatabaseChangelogPanel", () => {
       pageSize: expect.any(Number),
       pageToken: "",
     });
+    expect(container.querySelector("table")).not.toBeNull();
     expect(container.textContent).toContain(
       "instances/inst1/databases/db1/changelogs/1"
     );
+    expect(container.textContent).toContain("Release 1");
 
     unmount();
   });

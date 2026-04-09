@@ -1,8 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h } from "vue";
-import { RevisionDataTable } from "@/components/Revision";
+import { createApp, h, reactive } from "vue";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import i18n from "@/plugins/i18n";
@@ -10,79 +9,55 @@ import NaiveUI from "@/plugins/naive-ui";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { router } from "@/router";
-import { pinia } from "@/store";
+import { pinia, useRevisionStore } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import {
-  ListRevisionsRequestSchema,
-  type Revision as RevisionMessage,
-} from "@/types/proto-es/v1/revision_service_pb";
-
-function VueRevisionTableMount({
-  revisions,
-  loading,
-  onDelete,
-}: {
-  revisions: Revision[];
-  loading: boolean;
-  onDelete: () => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const app = createApp({
-      render() {
-        return h(RevisionDataTable as never, {
-          key: `revision-table.${revisions
-            .map((revision) => revision.name)
-            .join(",")}`,
-          revisions,
-          loading,
-          showSelection: true,
-          onDelete,
-        });
-      },
-    });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
-    app.mount(containerRef.current);
-
-    return () => {
-      app.unmount();
-    };
-  }, [loading, onDelete, revisions]);
-
-  return <div ref={containerRef} />;
-}
+import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
+import { DatabaseRevisionTable } from "../revision/DatabaseRevisionTable";
 
 function VueCreateRevisionDrawerMount({
   databaseName,
   open,
-  onOpenChange,
   onCreated,
+  onOpenChange,
 }: {
   databaseName: string;
   open: boolean;
+  onCreated: (revisions: Revision[]) => void;
   onOpenChange: (open: boolean) => void;
-  onCreated: (revisions: RevisionMessage[]) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const bridgeStateRef = useRef(
+    reactive({
+      databaseName,
+      onCreated,
+      onOpenChange,
+      open,
+    })
+  );
+
+  useEffect(() => {
+    const bridgeState = bridgeStateRef.current;
+    bridgeState.databaseName = databaseName;
+    bridgeState.onCreated = onCreated;
+    bridgeState.onOpenChange = onOpenChange;
+    bridgeState.open = open;
+  }, [databaseName, onCreated, onOpenChange, open]);
 
   useEffect(() => {
     if (!containerRef.current) {
       return;
     }
 
+    const bridgeState = bridgeStateRef.current;
+
     const app = createApp({
       render() {
         return h(CreateRevisionDrawer as never, {
-          database: databaseName,
-          show: open,
-          "onUpdate:show": onOpenChange,
-          onCreated,
+          database: bridgeState.databaseName,
+          show: bridgeState.open,
+          "onUpdate:show": bridgeState.onOpenChange,
+          onCreated: bridgeState.onCreated,
         });
       },
     });
@@ -92,13 +67,14 @@ function VueCreateRevisionDrawerMount({
     return () => {
       app.unmount();
     };
-  }, [databaseName, onCreated, onOpenChange, open]);
+  }, []);
 
   return <div ref={containerRef} />;
 }
 
 export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
+  const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
   const fetchRevisionList = useCallback(
@@ -129,7 +105,7 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
   });
 
   const handleRevisionCreated = useCallback(
-    (_revisions: RevisionMessage[]) => {
+    (_revisions: Revision[]) => {
       setShowCreateRevisionDrawer(false);
       paged.refresh();
     },
@@ -140,6 +116,17 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     paged.refresh();
   }, [paged.refresh]);
 
+  const handleDelete = useCallback(
+    async (name: string) => {
+      if (!window.confirm(t("database.revision.delete-confirm-dialog"))) {
+        return;
+      }
+      await revisionStore.deleteRevision(name);
+      handleRevisionDeleted();
+    },
+    [handleRevisionDeleted, revisionStore, t]
+  );
+
   return (
     <>
       <div className="flex flex-col gap-y-2">
@@ -149,10 +136,10 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
             {t("common.import")}
           </Button>
         </div>
-        <VueRevisionTableMount
+        <DatabaseRevisionTable
           revisions={paged.dataList}
           loading={paged.isLoading}
-          onDelete={handleRevisionDeleted}
+          onDelete={handleDelete}
         />
         <PagedTableFooter
           pageSize={paged.pageSize}
@@ -166,8 +153,8 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
       <VueCreateRevisionDrawerMount
         databaseName={database.name}
         open={showCreateRevisionDrawer}
-        onOpenChange={setShowCreateRevisionDrawer}
         onCreated={handleRevisionCreated}
+        onOpenChange={setShowCreateRevisionDrawer}
       />
     </>
   );
