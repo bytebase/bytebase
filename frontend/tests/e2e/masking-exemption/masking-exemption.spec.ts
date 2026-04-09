@@ -1,7 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
-import { createSnapshot, restoreSnapshot, type Snapshot } from "../framework/snapshot";
 import { MaskingExemptionPage, GrantExemptionPage, SqlEditorPage } from "./masking-exemption.page";
 
 // Give all tests generous timeouts (Mode B's disposable server can be slow)
@@ -16,7 +15,6 @@ interface MaskingTestData {
 
 let env: TestEnv & { api: BytebaseApiClient };
 let maskingData: MaskingTestData;
-let snapshot: Snapshot | undefined;
 
 // ── Feature-specific discovery ──
 
@@ -108,20 +106,9 @@ async function revokeAllExemptions(): Promise<void> {
 
 test.beforeAll(async () => {
   env = loadTestEnv();
-  await env.api.login(env.adminEmail, env.adminPassword!);
+  await env.api.login(env.adminEmail, env.adminPassword);
   maskingData = await discoverMaskingData(env);
   await configureMasking(env, maskingData);
-
-  if (env.mode === "local") {
-    snapshot = await createSnapshot(env.api, {
-      policies: [`${env.project}/policies/masking_exemption`],
-      catalogs: [env.database],
-    });
-  }
-});
-
-test.afterAll(async () => {
-  if (snapshot) await restoreSnapshot(env.api, snapshot);
 });
 
 // ── Tests from masking-exemption-list.spec.ts ──

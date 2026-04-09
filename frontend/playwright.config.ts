@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import * as path from "path";
 
+const headed = !!process.env.BYTEBASE_HEADED;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -11,6 +13,7 @@ export default defineConfig({
   globalSetup: path.resolve(__dirname, "tests/e2e/framework/global-setup.ts"),
   globalTeardown: path.resolve(__dirname, "tests/e2e/framework/global-teardown.ts"),
   use: {
+    headless: !headed,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },

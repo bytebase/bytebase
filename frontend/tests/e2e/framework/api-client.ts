@@ -48,12 +48,6 @@ export class BytebaseApiClient {
     return token;
   }
 
-  async signup(email: string, password: string, title: string): Promise<string> {
-    const resp = await this.request<{ token?: string }>("POST", "/v1/auth/signup", { email, password, title });
-    if (resp.token) this.token = resp.token;
-    return this.token;
-  }
-
   // Health
   async healthCheck(): Promise<boolean> {
     try {

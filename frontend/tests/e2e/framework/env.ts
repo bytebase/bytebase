@@ -7,8 +7,7 @@ const ENV_FILE = path.join(__dirname, "../../.e2e-env.json");
 export interface TestEnv {
   baseURL: string;
   adminEmail: string;
-  adminPassword?: string;
-  mode: "local" | "new";
+  adminPassword: string;
   project: string;
   instance: string;
   instanceId: string;
@@ -16,23 +15,9 @@ export interface TestEnv {
   databaseId: string;
 }
 
-type SerializedTestEnv = Omit<TestEnv, "api">;
-
-export function detectMode(): "local" | "new" {
-  return process.env.BYTEBASE_URL ? "local" : "new";
-}
-
-export function getBaseURL(): string {
-  return process.env.BYTEBASE_URL ?? `http://localhost:${getPort()}`;
-}
-
-export function getPort(): number {
-  return 18234;
-}
-
 export function saveTestEnv(env: TestEnv): void {
-  const serialized: SerializedTestEnv = { ...env };
-  delete (serialized as Record<string, unknown>)["api"];
+  const serialized = { ...env } as Record<string, unknown>;
+  delete serialized["api"];
   fs.writeFileSync(ENV_FILE, JSON.stringify(serialized, null, 2));
 }
 
@@ -42,12 +27,10 @@ export function loadTestEnv(): TestEnv & { api: BytebaseApiClient } {
       ".e2e-env.json not found. Run the setup project first (npx playwright test)."
     );
   }
-  const raw: SerializedTestEnv = JSON.parse(fs.readFileSync(ENV_FILE, "utf-8"));
+  const raw = JSON.parse(fs.readFileSync(ENV_FILE, "utf-8")) as TestEnv;
   const api = new BytebaseApiClient({
     baseURL: raw.baseURL,
-    credentials: raw.adminPassword
-      ? { email: raw.adminEmail, password: raw.adminPassword }
-      : undefined,
+    credentials: { email: raw.adminEmail, password: raw.adminPassword },
   });
   return { ...raw, api };
 }

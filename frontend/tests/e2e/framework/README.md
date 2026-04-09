@@ -1,177 +1,68 @@
-# Bytebase E2E Test Framework
+# E2E Test Framework
 
-Playwright-based end-to-end test framework for Bytebase. Supports two modes: spinning up a disposable server (Mode B) or connecting to one you already have running (Mode A).
+Playwright-based e2e tests for Bytebase. Starts a disposable Bytebase server with `--demo` data, runs tests, tears down.
 
----
+## Prerequisites
 
-## Quick Start
-
-### Mode B — Disposable server (no existing Bytebase required)
-
-Build the binary, then run tests. The framework starts and stops the server automatically.
+Build the binary with embedded frontend:
 
 ```bash
-go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
-npx playwright test
+pnpm --dir frontend release
+go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
 ```
 
-### Mode A — Use an existing server (automated login)
-
-Set `BYTEBASE_URL` to point at your running instance and provide credentials.
+## Running Tests
 
 ```bash
-BYTEBASE_URL=http://localhost:3000 \
-BYTEBASE_USER=admin@bytebase.com \
-BYTEBASE_PASS=secret \
-npx playwright test
+# Headless (default)
+cd frontend && pnpm exec playwright test
+
+# Headed (watch tests run in browser)
+cd frontend && BYTEBASE_HEADED=1 pnpm exec playwright test
+
+# With list reporter
+cd frontend && pnpm exec playwright test --reporter=list
 ```
 
-### Mode A — Use an existing server (browser login)
+## Environment Variables
 
-Omit credentials to be prompted to log in via the browser during the setup step.
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `BYTEBASE_BIN` | No | `./bytebase-build/bytebase` | Path to pre-built binary |
+| `BYTEBASE_STARTUP_TIMEOUT` | No | `300000` (5 min) | Server startup timeout in ms |
+| `BYTEBASE_HEADED` | No | — | Set to `1` for headed browser |
+| `CI` | No | — | Enables CI-specific reporter |
 
-```bash
-BYTEBASE_URL=http://localhost:3000 npx playwright test
-```
+## How It Works
 
----
+1. **globalSetup**: Cleans orphaned processes, starts Bytebase with `--demo` + embedded Postgres on a random port
+2. **Setup project**: Logs in as demo admin, discovers instances/databases/projects, saves auth state
+3. **Tests run**: Each test reads `TestEnv` via `loadTestEnv()`, uses API for setup and browser for verification
+4. **globalTeardown**: Kills server, removes temp dir and PID file
 
-## Environment Variable Reference
-
-| Variable | Mode | Required | Default | Description |
-|---|---|---|---|---|
-| `BYTEBASE_URL` | A | Yes (triggers Mode A) | — | Base URL of the running Bytebase instance |
-| `BYTEBASE_USER` | A | No | `admin@bytebase.com` | Admin email for API login |
-| `BYTEBASE_PASS` | A | No | — | Admin password; omit for browser login |
-| `BYTEBASE_BIN` | B | No | `./bytebase-build/bytebase` | Path to the Bytebase binary |
-| `BYTEBASE_STARTUP_TIMEOUT` | B | No | `60000` | Milliseconds to wait for the server to become healthy |
-| `CI` | Both | No | — | When set, enables automatic restore on crash recovery without prompting |
-
----
-
-## How to Write a New Feature Test Suite
-
-### 1. Create the spec file
+## Writing a New Test Suite
 
 ```typescript
-// frontend/tests/e2e/my-feature/my-feature.spec.ts
 import { test, expect } from "@playwright/test";
 import { loadTestEnv } from "../framework/env";
-import {
-  createSnapshot,
-  restoreSnapshot,
-  deletePersistedSnapshot,
-  type SnapshotScope,
-  type Snapshot,
-} from "../framework/snapshot";
 
-test.describe("My Feature", () => {
-  let env: ReturnType<typeof loadTestEnv>;
-  let snapshot: Snapshot;
+let env: ReturnType<typeof loadTestEnv>;
 
-  // Define what state to capture and restore
-  const scope: SnapshotScope = {
-    policies: ["projects/my-project/policies/some_policy"],
-    catalogs: ["instances/my-instance/databases/my-db"],
-  };
+test.beforeAll(async () => {
+  env = loadTestEnv();
+  await env.api.login(env.adminEmail, env.adminPassword);
+  // Feature-specific setup via API
+});
 
-  test.beforeAll(async () => {
-    // Load shared environment (base URL, API client, discovered resources)
-    env = loadTestEnv();
-
-    // Feature-specific discovery: find or create what your tests need
-    // e.g. locate the project, instance, database your tests will use
-
-    // For Mode A: capture state before the test suite runs so it can be
-    // restored afterward, leaving the server clean for the next run
-    if (env.mode === "local") {
-      snapshot = await createSnapshot(env.api, scope);
-    }
-
-    // Use env.api for API-based setup (faster and more reliable than UI)
-    // e.g. await env.api.upsertPolicy(...)
-  });
-
-  test.afterAll(async () => {
-    if (env?.mode === "local" && snapshot) {
-      await restoreSnapshot(env.api, snapshot);
-      deletePersistedSnapshot();
-    }
-  });
-
-  test("verifies the feature in the browser", async ({ page }) => {
-    // Use env.baseURL or the Playwright baseURL config for navigation
-    await page.goto(`/my-feature-path`);
-
-    // Assert using page objects or direct locators
-    await expect(page.getByRole("heading", { name: "My Feature" })).toBeVisible();
-  });
+test("example", async ({ page }) => {
+  await page.goto(`${env.baseURL}/projects/...`);
+  await expect(page.getByText("expected")).toBeVisible();
 });
 ```
 
-### 2. Separate API setup from browser verification
-
-- **API** (`env.api`): create projects, configure policies, seed data — anything that doesn't need the browser.
-- **Browser** (`page`): verify the UI renders correctly and interactions work.
-
-This keeps tests fast and makes failures easier to diagnose.
-
----
-
-## How Snapshot/Restore Works
-
-The snapshot system protects a pre-existing Bytebase server from accumulating test state.
-
-1. **`SnapshotScope`** — describes what to capture: policy paths, catalog paths, and optional SQL queries for raw instance data.
-2. **`createSnapshot(api, scope)`** — reads the current state of each item in the scope and writes it to `.e2e-snapshot.json` on disk.
-3. **`restoreSnapshot(api, snapshot)`** — writes the captured state back via the API, returning the server to the exact condition it was in before the test suite ran.
-4. **`deletePersistedSnapshot()`** — removes the on-disk file once restore succeeds.
-
-**Crash recovery**: if a test run is interrupted before `afterAll` runs, the snapshot file remains on disk. On the next run:
-- In CI (`CI` env var set): the framework automatically restores and deletes the snapshot.
-- Locally: the framework prompts you to confirm before restoring.
-
-Mode B (disposable server) does not need snapshots — the server and its data are discarded after the run.
-
----
-
 ## Troubleshooting
 
-### Port already in use
-
-Mode B uses port `18234` by default. Kill whatever is holding it:
-
-```bash
-lsof -ti:18234 | xargs kill
-```
-
-### Binary not found
-
-Build the binary before running Mode B tests:
-
-```bash
-go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
-```
-
-Or point `BYTEBASE_BIN` at an existing binary:
-
-```bash
-BYTEBASE_BIN=/path/to/bytebase npx playwright test
-```
-
-### Stale PID file from a crashed run
-
-If Mode B left a stale PID file, delete it manually:
-
-```bash
-rm /tmp/bytebase-e2e-pid
-```
-
-### Stale auth state
-
-If the browser session is rejected (login loops, 401 errors), delete the saved auth state and re-authenticate:
-
-```bash
-rm -rf frontend/.auth/
-npx playwright test
-```
+- **Port in use**: `lsof -ti:18234 | xargs kill`
+- **Binary not found**: Run the build commands above. Or set `BYTEBASE_BIN`.
+- **Stale PID**: `rm /tmp/bytebase-e2e-pid`
+- **Stale auth**: `rm -rf frontend/.auth/`
