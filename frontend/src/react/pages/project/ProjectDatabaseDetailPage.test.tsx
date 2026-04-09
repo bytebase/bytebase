@@ -202,6 +202,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/router", () => ({
   router: {
+    install: vi.fn(),
     replace: mocks.routerReplace,
     push: mocks.routerPush,
     resolve: mocks.routerResolve,

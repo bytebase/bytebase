@@ -1,11 +1,8 @@
 import { useEffect, useRef } from "react";
-import { createApp, h } from "vue";
+import { h } from "vue";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import type { SensitiveColumn } from "@/components/SensitiveData/types";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
-import { router } from "@/router";
-import { pinia } from "@/store";
+import { createLegacyVueApp } from "@/react/legacy/mountLegacyVueApp";
 
 export interface GrantAccessDrawerBridgeProps {
   open: boolean;
@@ -27,7 +24,7 @@ export function GrantAccessDrawerBridge({
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
       render() {
         return h(GrantAccessDrawer as never, {
           columnList,
@@ -36,8 +33,6 @@ export function GrantAccessDrawerBridge({
         });
       },
     });
-
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {

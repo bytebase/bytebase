@@ -1,11 +1,8 @@
 import { useEffect, useRef } from "react";
-import { createApp, h } from "vue";
+import { h } from "vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
-import { router } from "@/router";
-import { pinia } from "@/store";
+import { createLegacyVueApp } from "@/react/legacy/mountLegacyVueApp";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 export interface SensitiveColumnTableBridgeProps {
@@ -36,7 +33,7 @@ export function SensitiveColumnTableBridge({
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
       render() {
         return h(SensitiveColumnTable as never, {
           database,
@@ -50,8 +47,6 @@ export function SensitiveColumnTableBridge({
         });
       },
     });
-
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {

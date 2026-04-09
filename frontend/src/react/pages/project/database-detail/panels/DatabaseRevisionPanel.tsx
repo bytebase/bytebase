@@ -1,16 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h } from "vue";
+import { h } from "vue";
 import { RevisionDataTable } from "@/components/Revision";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { router } from "@/router";
-import { pinia } from "@/store";
+import { createLegacyVueApp } from "@/react/legacy/mountLegacyVueApp";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import {
@@ -34,7 +31,7 @@ function VueRevisionTableMount({
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
       render() {
         return h(RevisionDataTable as never, {
           key: `revision-table.${revisions
@@ -47,7 +44,6 @@ function VueRevisionTableMount({
         });
       },
     });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {
@@ -76,7 +72,7 @@ function VueCreateRevisionDrawerMount({
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
       render() {
         return h(CreateRevisionDrawer as never, {
           database: databaseName,
@@ -86,7 +82,6 @@ function VueCreateRevisionDrawerMount({
         });
       },
     });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {

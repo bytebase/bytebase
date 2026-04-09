@@ -73,6 +73,45 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/react/legacy/mountLegacyVueApp", () => ({
+  createLegacyVueApp: ({ render }: { render: () => unknown }) => ({
+    mount(element: Element) {
+      const vnode = render() as {
+        props?: Record<string, unknown>;
+      };
+      if (Array.isArray(vnode.props?.revisions)) {
+        const deleteButton = document.createElement("button");
+        deleteButton.dataset.testid = "revision-delete";
+        deleteButton.addEventListener("click", () => {
+          (vnode.props?.onDelete as (() => void) | undefined)?.();
+        });
+        element.replaceChildren(deleteButton);
+        return;
+      }
+      if (vnode.props?.show) {
+        const drawer = document.createElement("div");
+        drawer.dataset.testid = "create-revision-drawer";
+        const createButton = document.createElement("button");
+        createButton.dataset.testid = "create-revision-created";
+        createButton.addEventListener("click", () => {
+          (
+            vnode.props?.onCreated as
+              | ((revisions: Revision[]) => void)
+              | undefined
+          )?.([
+            { name: "instances/inst1/databases/db1/revisions/2" } as Revision,
+          ]);
+        });
+        drawer.appendChild(createButton);
+        element.replaceChildren(drawer);
+        return;
+      }
+      element.replaceChildren();
+    },
+    unmount: vi.fn(),
+  }),
+}));
+
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: <T,>(getter: () => T) => getter(),
 }));
@@ -143,46 +182,6 @@ beforeEach(async () => {
       } as Revision,
     ],
   });
-  mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation((options: { render: () => unknown }) => ({
-    use() {
-      return this;
-    },
-    mount(element: Element) {
-      const vnode = options.render() as {
-        props?: Record<string, unknown>;
-      };
-      if (Array.isArray(vnode.props?.revisions)) {
-        const deleteButton = document.createElement("button");
-        deleteButton.dataset.testid = "revision-delete";
-        deleteButton.addEventListener("click", () => {
-          (vnode.props?.onDelete as (() => void) | undefined)?.();
-        });
-        element.replaceChildren(deleteButton);
-        return;
-      }
-      if (vnode.props?.show) {
-        const drawer = document.createElement("div");
-        drawer.dataset.testid = "create-revision-drawer";
-        const createButton = document.createElement("button");
-        createButton.dataset.testid = "create-revision-created";
-        createButton.addEventListener("click", () => {
-          (
-            vnode.props?.onCreated as
-              | ((revisions: Revision[]) => void)
-              | undefined
-          )?.([
-            { name: "instances/inst1/databases/db1/revisions/2" } as Revision,
-          ]);
-        });
-        drawer.appendChild(createButton);
-        element.replaceChildren(drawer);
-        return;
-      }
-      element.replaceChildren();
-    },
-    unmount: vi.fn(),
-  }));
 
   vi.resetModules();
   ({ DatabaseRevisionPanel } = await import("./DatabaseRevisionPanel"));

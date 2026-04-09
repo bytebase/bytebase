@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
-import { createApp, h } from "vue";
+import { h } from "vue";
 import { ChangelogDataTable } from "@/components/Changelog";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { router } from "@/router";
-import { pinia, useChangelogStore } from "@/store";
+import { createLegacyVueApp } from "@/react/legacy/mountLegacyVueApp";
+import { useChangelogStore } from "@/store";
 import type {
   Changelog,
   Database,
@@ -25,7 +23,7 @@ function VueChangelogTableMount({
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
       render() {
         return h(ChangelogDataTable as never, {
           key: `changelog-table.${changelogs
@@ -37,7 +35,6 @@ function VueChangelogTableMount({
         });
       },
     });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {

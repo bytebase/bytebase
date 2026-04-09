@@ -71,6 +71,22 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/react/legacy/mountLegacyVueApp", () => ({
+  createLegacyVueApp: ({ render }: { render: () => unknown }) => ({
+    mount(element: Element) {
+      const vnode = render() as {
+        props?: {
+          changelogs?: Changelog[];
+        };
+      };
+      element.innerHTML = (vnode.props?.changelogs ?? [])
+        .map((changelog) => `<div>${changelog.name}</div>`)
+        .join("");
+    },
+    unmount: vi.fn(),
+  }),
+}));
+
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: <T,>(getter: () => T) => getter(),
 }));
@@ -130,23 +146,6 @@ beforeEach(async () => {
       } as Changelog,
     ],
   });
-  mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation((options: { render: () => unknown }) => ({
-    use() {
-      return this;
-    },
-    mount(element: Element) {
-      const vnode = options.render() as {
-        props?: {
-          changelogs?: Changelog[];
-        };
-      };
-      element.innerHTML = (vnode.props?.changelogs ?? [])
-        .map((changelog) => `<div>${changelog.name}</div>`)
-        .join("");
-    },
-    unmount: vi.fn(),
-  }));
 
   vi.resetModules();
   ({ DatabaseChangelogPanel } = await import("./DatabaseChangelogPanel"));

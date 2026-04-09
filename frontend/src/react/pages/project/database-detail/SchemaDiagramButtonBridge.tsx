@@ -1,18 +1,17 @@
 import { Workflow } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h } from "vue";
+import { h } from "vue";
 import SchemaDiagram from "@/components/SchemaDiagram";
 import highlight from "@/plugins/highlight";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { pinia, useDBSchemaV1Store } from "@/store";
+import { createLegacyVueApp } from "@/react/legacy/mountLegacyVueApp";
+import { useDBSchemaV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 function VueSchemaDiagramMount({ database }: { database: Database }) {
@@ -24,7 +23,8 @@ function VueSchemaDiagramMount({ database }: { database: Database }) {
       return;
     }
 
-    const app = createApp({
+    const app = createLegacyVueApp({
+      extraPlugins: [highlight],
       render() {
         return h(SchemaDiagram as never, {
           database,
@@ -32,7 +32,6 @@ function VueSchemaDiagramMount({ database }: { database: Database }) {
         });
       },
     });
-    app.use(pinia).use(highlight).use(i18n).use(NaiveUI);
     app.mount(containerRef.current);
 
     return () => {
