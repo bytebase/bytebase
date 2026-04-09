@@ -351,6 +351,18 @@ test.describe("Grant and Revoke", () => {
 test.describe("E2E Masking Verification", () => {
   test.setTimeout(120_000);
 
+  // Warm up the SQL editor on first use — Monaco editor + DB connection
+  // initialization can delay the first query result render significantly
+  test("warm up SQL editor", async ({ page }) => {
+    const projectId = env.project.split("/").pop()!;
+    const instanceId = env.instance.split("/").pop()!;
+    const dbId = env.database.split("/").pop()!;
+    const sqlEditor = new SqlEditorPage(page, env.baseURL);
+    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.runQuery("SELECT 1;");
+    await page.waitForTimeout(2000);
+  });
+
   test("grant → unmasked, revoke → masked, re-grant → unmasked", async ({ page }) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
@@ -361,10 +373,7 @@ test.describe("E2E Masking Verification", () => {
       const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
       await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
       await sqlEditor.runQuery(sql);
-      // Wait for virtual list render — innerText needs layout computation
-      // which may be delayed on first SQL editor use in the session
-      await page.waitForTimeout(3000);
-      expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue, 30000)).toBe(expectUnmasked);
+      expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(expectUnmasked);
     };
 
     // Clean slate from prior test blocks
