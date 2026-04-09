@@ -304,82 +304,86 @@ function RolloutPolicyConfig({
 
   return (
     <div className="flex flex-col items-start gap-y-2">
-      <div className="flex flex-col gap-y-2">
-        {/* Role select */}
-        <div className="flex flex-wrap items-center gap-2">
-          {rolloutPolicy.roles.map((role) => (
-            <span
-              key={role}
-              className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
-            >
-              {displayRoleTitle(role)}
-              {canUpdatePolicy && (
-                <button
-                  type="button"
-                  className="text-gray-400 hover:text-gray-600"
-                  onClick={() => removeRole(role)}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </span>
-          ))}
-          {canUpdatePolicy && (
-            <div className="relative" ref={dropdownRef}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+      <PermissionGuard permissions={["bb.policies.update"]} display="block">
+        <div className="flex flex-col gap-y-2">
+          {/* Role select */}
+          <div className="flex flex-wrap items-center gap-2">
+            {rolloutPolicy.roles.map((role) => (
+              <span
+                key={role}
+                className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                {t("common.add")}
-              </Button>
-              {showRoleDropdown && (
-                <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
-                  {availableRoles.map((group) => (
-                    <div key={group.label}>
-                      <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
-                        {group.label}
+                {displayRoleTitle(role)}
+                {canUpdatePolicy && (
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-600"
+                    onClick={() => removeRole(role)}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </span>
+            ))}
+            {canUpdatePolicy && (
+              <div className="relative" ref={dropdownRef}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  {t("common.add")}
+                </Button>
+                {showRoleDropdown && (
+                  <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
+                    {availableRoles.map((group) => (
+                      <div key={group.label}>
+                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
+                          {group.label}
+                        </div>
+                        {group.roles.map((role) => (
+                          <button
+                            key={role.name}
+                            type="button"
+                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
+                            onClick={() => {
+                              addRole(role.name);
+                              setShowRoleDropdown(false);
+                            }}
+                          >
+                            {role.title}
+                          </button>
+                        ))}
                       </div>
-                      {group.roles.map((role) => (
-                        <button
-                          key={role.name}
-                          type="button"
-                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
-                          onClick={() => {
-                            addRole(role.name);
-                            setShowRoleDropdown(false);
-                          }}
-                        >
-                          {role.title}
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                  {availableRoles.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-400">
-                      {t("common.no-data")}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                    ))}
+                    {availableRoles.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-400">
+                        {t("common.no-data")}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-        {/* Auto rollout toggle */}
-        <div className="w-full inline-flex items-start gap-x-2">
-          <ToggleSwitch
-            checked={rolloutPolicy.automatic}
-            disabled={!canUpdatePolicy}
-            onChange={toggleAutomatic}
-          />
-          <div className="flex flex-col">
-            <span className="textlabel">{t("policy.rollout.auto")}</span>
-            <div className="textinfolabel">{t("policy.rollout.auto-info")}</div>
+          {/* Auto rollout toggle */}
+          <div className="w-full inline-flex items-start gap-x-2">
+            <ToggleSwitch
+              checked={rolloutPolicy.automatic}
+              disabled={!canUpdatePolicy}
+              onChange={toggleAutomatic}
+            />
+            <div className="flex flex-col">
+              <span className="textlabel">{t("policy.rollout.auto")}</span>
+              <div className="textinfolabel">
+                {t("policy.rollout.auto-info")}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </PermissionGuard>
     </div>
   );
 }

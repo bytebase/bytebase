@@ -1849,7 +1849,6 @@
   },
   "sql-editor": {
     "access-grants": "访问授权",
-    "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
     "expired": "已过期",

@@ -28,6 +28,7 @@ import {
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import {
@@ -1783,27 +1784,29 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           value={memberSearchText}
           onChange={(e) => setMemberSearchText(e.target.value)}
         />
-        <div className="flex items-center gap-x-2">
-          {memberViewTab === "MEMBERS" && (
+        <PermissionGuard permissions={["bb.workspaces.setIamPolicy"]}>
+          <div className="flex items-center gap-x-2">
+            {memberViewTab === "MEMBERS" && (
+              <Button
+                variant="outline"
+                disabled={!canSetIamPolicy || selectedMembers.length === 0}
+                onClick={handleRevokeSelected}
+              >
+                {t("settings.members.revoke-access")}
+              </Button>
+            )}
             <Button
-              variant="outline"
-              disabled={!canSetIamPolicy || selectedMembers.length === 0}
-              onClick={handleRevokeSelected}
+              disabled={!canSetIamPolicy}
+              onClick={() => {
+                setEditingMember(undefined);
+                setShowEditMemberDrawer(true);
+              }}
             >
-              {t("settings.members.revoke-access")}
+              <Plus className="h-4 w-4 mr-1" />
+              {t("settings.members.grant-access")}
             </Button>
-          )}
-          <Button
-            disabled={!canSetIamPolicy}
-            onClick={() => {
-              setEditingMember(undefined);
-              setShowEditMemberDrawer(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("settings.members.grant-access")}
-          </Button>
-        </div>
+          </div>
+        </PermissionGuard>
       </div>
 
       <Tabs

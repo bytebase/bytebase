@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -35,7 +36,10 @@ import {
   DataSource_RedisType,
   DataSourceType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   extractInstanceResourceName,
@@ -579,6 +583,7 @@ function ScanIntervalInput({
     <div className="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2">
       <div className="flex items-center gap-x-2">
         <label className="textlabel">{t("instance.scan-interval.self")}</label>
+        <FeatureBadge feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME} />
       </div>
       <div className="textinfolabel">
         {t("instance.scan-interval.description")}

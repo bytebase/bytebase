@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { DatabaseGroupForm } from "@/react/components/DatabaseGroupForm";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -108,23 +109,33 @@ export function ProjectDatabaseGroupDetailPage({
 
       {hasDatabaseGroupFeature && !editing && (
         <div className="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2">
-          <Button
-            variant="outline"
-            disabled={!canChangeDatabase || !hasMatchedDatabases}
-            onClick={() => preCreateIssue(project.name, [resourceName])}
-            title={
-              !hasMatchedDatabases
-                ? t("database-group.no-matched-databases")
-                : undefined
-            }
+          <PermissionGuard
+            permissions={["bb.plans.create", "bb.sheets.create"]}
+            project={project}
           >
-            {t("database.change-database")}
-          </Button>
+            <Button
+              variant="outline"
+              disabled={!canChangeDatabase || !hasMatchedDatabases}
+              onClick={() => preCreateIssue(project.name, [resourceName])}
+              title={
+                !hasMatchedDatabases
+                  ? t("database-group.no-matched-databases")
+                  : undefined
+              }
+            >
+              {t("database.change-database")}
+            </Button>
+          </PermissionGuard>
 
-          <Button disabled={!canUpdate} onClick={() => setEditing(true)}>
-            <Edit className="w-4 h-4 mr-1" />
-            {t("common.configure")}
-          </Button>
+          <PermissionGuard
+            permissions={["bb.databaseGroups.update"]}
+            project={project}
+          >
+            <Button disabled={!canUpdate} onClick={() => setEditing(true)}>
+              <Edit className="w-4 h-4 mr-1" />
+              {t("common.configure")}
+            </Button>
+          </PermissionGuard>
 
           {canDelete && (
             <div className="relative">

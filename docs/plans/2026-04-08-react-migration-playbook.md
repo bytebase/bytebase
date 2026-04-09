@@ -235,12 +235,41 @@ Renders a user avatar with color-coded initials.
 
 ### Permission & Feature Guards
 
+**IMPORTANT**: When migrating Vue pages to React, always check the Vue 3.16.1 source for `FeatureBadge`, `FeatureAttention`, `PermissionGuardWrapper`, and `ComponentPermissionGuard` usage. React pages must have feature parity — never just `disabled={!canX}` without the guard wrapper.
+
 | Component | Purpose | Usage |
 |-----------|---------|-------|
 | `FeatureBadge` | Sparkles icon + tooltip for plan-gated features | Next to labels; inside buttons with `clickable={false} className="mr-1 text-white inline-flex"` |
 | `FeatureAttention` | Full-width banner for plan requirements | Top of page/section |
 | `PermissionGuard` | Tooltip wrapper for missing permissions | Inline (buttons): default; Block (sections): `display="block"` |
 | `ComponentPermissionGuard` | Error alert for gated components | Replaces content with permission error |
+
+**PermissionGuard** supports two patterns:
+
+```tsx
+// 1. Static children — use usePermissionCheck for disabled state
+const [canEdit] = usePermissionCheck(["bb.settings.set"]);
+<PermissionGuard permissions={["bb.settings.set"]}>
+  <Button disabled={!canEdit}>Edit</Button>
+</PermissionGuard>
+
+// 2. Render-prop children — like Vue PermissionGuardWrapper slot props
+<PermissionGuard permissions={["bb.projects.update"]} project={project}>
+  {({ disabled }) => <Button disabled={disabled}>Save</Button>}
+</PermissionGuard>
+```
+
+**ComponentPermissionGuard** replaces entire sections when permissions are missing:
+
+```tsx
+<ComponentPermissionGuard
+  permissions={["bb.accessGrants.list"]}
+  project={project}
+  className="mx-4"
+>
+  <AccessGrantsTable />
+</ComponentPermissionGuard>
+```
 
 ### Input Heights
 

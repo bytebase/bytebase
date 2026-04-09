@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, ShieldAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
@@ -9,6 +9,7 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
+import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -385,7 +386,11 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         <FeatureAttention feature={PlanFeature.FEATURE_JIT} />
       </div>
 
-      {canList ? (
+      <ComponentPermissionGuard
+        permissions={["bb.accessGrants.list"]}
+        project={project}
+        className="mx-4"
+      >
         <>
           <div className="px-4 pb-2 flex items-center gap-x-2">
             <AdvancedSearch
@@ -497,59 +502,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </div>
           )}
         </>
-      ) : (
-        <div className="mx-4 mt-2 flex flex-col gap-y-3">
-          {/* Permission guard fallback */}
-          <div
-            role="alert"
-            className="relative w-full rounded-xs border border-error/30 bg-error/5 text-error px-4 py-3 text-sm flex gap-x-3"
-          >
-            <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-2">
-              <h5 className="font-medium leading-tight">
-                {t("common.missing-required-permission", { permissions: "" })}
-              </h5>
-              <div>
-                {t("common.required-permission")}
-                <ul className="list-disc pl-4">
-                  <li>bb.accessGrants.list</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Redirect hint */}
-          <div className="flex items-start gap-3 rounded-xs border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            <span>
-              {t("sql-editor.access-grants-redirect-hint")
-                .split("{link}")
-                .map((part, i) =>
-                  i === 0 ? (
-                    <span key={i}>{part}</span>
-                  ) : (
-                    <span key={i}>
-                      <a
-                        className="normal-link"
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push({
-                            name: "sql-editor.project",
-                            params: { project: projectId },
-                            query: { panel: "access" },
-                          });
-                        }}
-                      >
-                        {t("sql-editor.self")}
-                      </a>
-                      {part}
-                    </span>
-                  )
-                )}
-            </span>
-          </div>
-        </div>
-      )}
+      </ComponentPermissionGuard>
 
       {/* Activate / Revoke confirmation dialog */}
       <Dialog
