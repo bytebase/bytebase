@@ -1,14 +1,65 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
-import { featureToRef, getTableCatalog, useDatabaseCatalog } from "@/store";
+import {
+  featureToRef,
+  getTableCatalog,
+  useDatabaseCatalog,
+  useSettingV1Store,
+} from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { bytesToString, getDatabaseEngine, hasSchemaProperty } from "@/utils";
+import {
+  bytesToString,
+  getDatabaseEngine,
+  getDatabaseProject,
+  hasSchemaProperty,
+} from "@/utils";
+
+const BG_COLORS = [
+  "bg-green-200",
+  "bg-yellow-200",
+  "bg-orange-300",
+  "bg-amber-500",
+  "bg-red-500",
+];
+
+function ClassificationBadge({
+  classificationId,
+  classificationConfig,
+}: {
+  classificationId: string | undefined;
+  classificationConfig:
+    | DataClassificationSetting_DataClassificationConfig
+    | undefined;
+}) {
+  if (!classificationId || !classificationConfig) {
+    return <span>-</span>;
+  }
+  const entry = classificationConfig.classification[classificationId];
+  if (!entry) {
+    return <span>{classificationId}</span>;
+  }
+  const level = (classificationConfig.levels ?? []).find(
+    (l) => l.level === entry.level
+  );
+  const levelColor = BG_COLORS[(entry.level ?? 0) - 1] ?? "bg-gray-200";
+  return (
+    <span className="inline-flex items-center gap-x-1">
+      <span className="truncate">{entry.title}</span>
+      {level && (
+        <span className={`shrink-0 rounded px-1 py-0.5 text-xs ${levelColor}`}>
+          {level.title}
+        </span>
+      )}
+    </span>
+  );
+}
 
 export function TableMetadataTable({
   database,
@@ -24,6 +75,7 @@ export function TableMetadataTable({
   onRowClick?: (table: TableMetadata) => void;
 }) {
   const { t } = useTranslation();
+  const settingStore = useSettingV1Store();
   const databaseEngine = getDatabaseEngine(database);
   const showSchemaColumn = hasSchemaProperty(databaseEngine);
   const showClassificationColumn = useVueState(
@@ -31,6 +83,12 @@ export function TableMetadataTable({
   );
   const databaseCatalog = useDatabaseCatalog(database.name, false);
   const catalog = useVueState(() => databaseCatalog.value);
+  const project = getDatabaseProject(database);
+  const classificationConfig = useVueState(() =>
+    settingStore.getProjectClassification(
+      project.dataClassificationConfigId ?? ""
+    )
+  );
 
   const showEngineColumn = databaseEngine !== Engine.POSTGRES;
   const showPartitionedColumn = databaseEngine === Engine.POSTGRES;
@@ -137,7 +195,10 @@ export function TableMetadataTable({
                 <td className="px-4 py-3 text-sm text-main">{table.name}</td>
                 {showClassificationColumn && (
                   <td className="px-4 py-3 text-sm text-control">
-                    {classification || "-"}
+                    <ClassificationBadge
+                      classificationId={classification}
+                      classificationConfig={classificationConfig}
+                    />
                   </td>
                 )}
                 {showEngineColumn && (
