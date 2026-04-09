@@ -340,15 +340,12 @@
   "common.members": "Members",
   "common.minutes": "Minutes",
   "common.no-data": "No data",
-  "common.operation": "Operation",
   "common.optional": "Optional",
   "common.or": "or",
   "common.overview": "Overview",
   "common.password": "Password",
   "common.project": "Project",
   "common.read-only": "Read-only",
-  "common.remove": "Remove",
-  "common.removed": "Removed",
   "common.restore": "Restore",
   "common.rollout": "Rollout",
   "common.sensitive-placeholder": "Sensitive - write only",
@@ -520,14 +517,11 @@
     "expression": "Expression",
     "filter-database": "Filter database",
     "index-size": "Index size",
-    "indexes": "Indexes",
     "last-sync": "Last sync",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
-    "nullable": "Nullable",
     "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
-    "row-count-estimate": "Row count estimate",
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -560,9 +554,7 @@
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases",
-    "unique": "Unique",
-    "visible": "Visible"
+    "unassign-alert-title": "Unassign databases"
   },
   "database-group": {
     "condition": {
@@ -575,7 +567,6 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Classification",
-  "database.column": "Column",
   "database.engine": "Engine",
   "database.export-schema": "Export Schema",
   "database.export-schema-multi-file": "Multi-File (ZIP)",
@@ -1375,7 +1366,6 @@
       "self_other": "Stages"
     }
   },
-  "schema-diagram.self": "Schema Diagram",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1762,9 +1752,7 @@
         },
         "re-order": "Re-order"
       },
-      "grant-access": "Grant Access",
       "never-expires": "Never expires",
-      "remove-sensitive-column-tips": "Remove the masking configuration from this sensitive column?",
       "semantic-types": {
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",

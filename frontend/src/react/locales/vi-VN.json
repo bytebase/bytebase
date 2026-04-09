@@ -340,15 +340,12 @@
   "common.members": "Thành viên",
   "common.minutes": "Phút",
   "common.no-data": "Không có dữ liệu",
-  "common.operation": "Thao tác",
   "common.optional": "Tùy chọn",
   "common.or": "hoặc",
   "common.overview": "Tổng quan",
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
   "common.read-only": "Chỉ đọc",
-  "common.remove": "Xóa",
-  "common.removed": "Đã xóa",
   "common.restore": "Khôi phục",
   "common.rollout": "Triển khai",
   "common.sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
@@ -520,14 +517,11 @@
     "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
     "index-size": "Kích thước chỉ mục",
-    "indexes": "Chỉ mục",
     "last-sync": "Lần đồng bộ cuối cùng",
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
-    "nullable": "Có thể null",
     "partitioned": "Đã phân vùng",
     "row-count-est": "Ước tính số hàng",
-    "row-count-estimate": "Ước tính số hàng",
     "select": "Chọn cơ sở dữ liệu",
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
@@ -560,9 +554,7 @@
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "unique": "Duy nhất",
-    "visible": "Hiển thị"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
   },
   "database-group": {
     "condition": {
@@ -575,7 +567,6 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Phân loại",
-  "database.column": "Cột",
   "database.engine": "Engine",
   "database.export-schema": "Xuất schema",
   "database.export-schema-multi-file": "Nhiều tệp (ZIP)",
@@ -1375,7 +1366,6 @@
       "self_other": "Các giai đoạn"
     }
   },
-  "schema-diagram.self": "Sơ đồ Lược đồ",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1762,9 +1752,7 @@
         },
         "re-order": "Sắp xếp lại"
       },
-      "grant-access": "Cấp quyền truy cập",
       "never-expires": "Không bao giờ hết hạn",
-      "remove-sensitive-column-tips": "Xóa cấu hình che dữ liệu khỏi cột nhạy cảm này?",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
