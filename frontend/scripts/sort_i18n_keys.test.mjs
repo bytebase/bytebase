@@ -2,7 +2,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
-import { normalizeLocaleFile, sortObjectKeys } from "./sort_i18n_keys.mjs";
+import {
+  normalizeLocaleFile,
+  sortLocaleFiles,
+  sortObjectKeys,
+} from "./sort_i18n_keys.mjs";
 
 let tempDir = "";
 
@@ -93,5 +97,32 @@ describe("normalizeLocaleFile", () => {
     expect(() => normalizeLocaleFile(invalidPath)).toThrow(
       /Failed to parse locale file .*broken\.json/
     );
+  });
+
+  test("sortLocaleFiles validates every file before writing any change", () => {
+    const validPath = "/tmp/locale-sorter-valid.json";
+    const invalidPath = "/tmp/locale-sorter-invalid.json";
+    const writes = [];
+    const readStub = (filePath) => {
+      if (filePath === validPath) {
+        return '{"z":1,"a":2}';
+      }
+      if (filePath === invalidPath) {
+        return '{"a":';
+      }
+      throw new Error(`Unexpected file read: ${String(filePath)}`);
+    };
+    const writeStub = (...args) => {
+      writes.push(args);
+    };
+
+    expect(
+      () =>
+        sortLocaleFiles([validPath, invalidPath], {
+          readFileSync: readStub,
+          writeFileSync: writeStub,
+        })
+    ).toThrow(/Failed to parse locale file .*locale-sorter-invalid\.json/);
+    expect(writes).toEqual([]);
   });
 });

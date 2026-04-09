@@ -36,10 +36,10 @@ function findJsonFiles(dir) {
   return files;
 }
 
-export function normalizeLocaleFile(filePath) {
+function prepareLocaleFile(filePath, read = readFileSync) {
   let current;
   try {
-    current = readFileSync(filePath, "utf-8");
+    current = read(filePath, "utf-8");
   } catch (error) {
     throw new Error(`Failed to read locale file ${filePath}: ${error.message}`);
   }
@@ -51,11 +51,17 @@ export function normalizeLocaleFile(filePath) {
     throw new Error(`Failed to parse locale file ${filePath}: ${error.message}`);
   }
 
-  const normalized = `${JSON.stringify(sortObjectKeys(parsed), null, 2)}\n`;
+  return {
+    current,
+    normalized: `${JSON.stringify(sortObjectKeys(parsed), null, 2)}\n`,
+  };
+}
+
+export function normalizeLocaleFile(filePath) {
+  const { current, normalized } = prepareLocaleFile(filePath);
   if (normalized === current) {
     return false;
   }
-
   try {
     writeFileSync(filePath, normalized);
   } catch (error) {
@@ -64,14 +70,36 @@ export function normalizeLocaleFile(filePath) {
   return true;
 }
 
+export function sortLocaleFiles(files, io = {}) {
+  const read = io.readFileSync ?? readFileSync;
+  const write = io.writeFileSync ?? writeFileSync;
+  const preparedFiles = files.map((filePath) => ({
+    filePath,
+    ...prepareLocaleFile(filePath, read),
+  }));
+
+  const updated = [];
+  for (const file of preparedFiles) {
+    if (file.normalized === file.current) {
+      continue;
+    }
+
+    try {
+      write(file.filePath, file.normalized);
+    } catch (error) {
+      throw new Error(
+        `Failed to write locale file ${file.filePath}: ${error.message}`
+      );
+    }
+    updated.push(file.filePath);
+  }
+
+  return updated;
+}
+
 function main() {
   const files = LOCALE_ROOTS.flatMap((root) => findJsonFiles(root));
-  const updated = [];
-  for (const filePath of files) {
-    if (normalizeLocaleFile(filePath)) {
-      updated.push(filePath);
-    }
-  }
+  const updated = sortLocaleFiles(files);
 
   const unchanged = files.length - updated.length;
   if (updated.length === 0) {
