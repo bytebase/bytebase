@@ -35,7 +35,6 @@ func (s *Store) CountAllActivePrincipals(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-
 // CountActivePrincipals counts non-deleted principals. Used for display purposes
 // (e.g. actuator info) — not for seat limit enforcement.
 func (s *Store) CountActivePrincipals(ctx context.Context) (int, error) {
