@@ -69,7 +69,6 @@ export function InstanceFormButtons({
     testConnection,
     checkDataSource,
     extractDataSourceFromEdit,
-    pendingCreateInstance,
     valueChanged,
     onDismiss,
     emitShowConnectionOptions,
@@ -170,19 +169,34 @@ export function InstanceFormButtons({
     }));
   };
 
+  const buildCreateInstance = (): Instance => {
+    const currentLabels = convertKVListToLabels(labelKVList, false);
+    const inst: Instance = create(InstanceSchema, {
+      ...basicInfo,
+      labels: currentLabels,
+      engineVersion: "",
+      dataSources: [],
+    });
+    if (editingDataSource) {
+      inst.dataSources = [
+        extractDataSourceFromEdit(inst.engine, adminDataSource),
+      ];
+    }
+    return inst;
+  };
+
   const doCreate = async () => {
     if (!isCreating) return;
 
-    if (!checkExternalSecretFeature(pendingCreateInstance.dataSources)) {
+    const payload = buildCreateInstance();
+    if (!checkExternalSecretFeature(payload.dataSources)) {
       setMissingFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER);
       return;
     }
 
     setState((prev) => ({ ...prev, isRequesting: true }));
     try {
-      const createdInstance = await instanceV1Store.createInstance(
-        pendingCreateInstance
-      );
+      const createdInstance = await instanceV1Store.createInstance(payload);
       if (onCreated) {
         onCreated(createdInstance);
       } else {
