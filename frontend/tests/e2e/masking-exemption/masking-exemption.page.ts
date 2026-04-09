@@ -202,8 +202,9 @@ export class SqlEditorPage {
     await this.page.keyboard.type(sql, { delay: 10 });
     await this.page.waitForTimeout(300);
     await this.runButton.click();
-    // Wait for results
-    await this.page.waitForTimeout(3000);
+    // Wait for results to load (look for "N rows" or "N row" indicator)
+    await this.page.getByText(/\d+ rows?/).first().waitFor({ timeout: 15000 }).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
 
   async hasResultsTable(): Promise<boolean> {
