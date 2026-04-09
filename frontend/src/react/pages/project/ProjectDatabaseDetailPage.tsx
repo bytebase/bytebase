@@ -239,10 +239,20 @@ export function ProjectDatabaseDetailPage({
         <DatabaseOverviewPanel database={detail.database} />
       )}
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_CHANGELOG && (
-        <DatabaseChangelogPanel database={detail.database} />
+        <ComponentPermissionGuard
+          project={getDatabaseProject(detail.database)}
+          permissions={["bb.changelogs.list"]}
+        >
+          <DatabaseChangelogPanel database={detail.database} />
+        </ComponentPermissionGuard>
       )}
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_REVISION && (
-        <DatabaseRevisionPanel database={detail.database} />
+        <ComponentPermissionGuard
+          project={getDatabaseProject(detail.database)}
+          permissions={["bb.revisions.list"]}
+        >
+          <DatabaseRevisionPanel database={detail.database} />
+        </ComponentPermissionGuard>
       )}
       {selectedTab === PROJECT_DATABASE_DETAIL_TAB_CATALOG && (
         <ComponentPermissionGuard

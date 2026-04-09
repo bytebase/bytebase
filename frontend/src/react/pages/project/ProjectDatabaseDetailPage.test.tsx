@@ -28,6 +28,8 @@ const mocks = vi.hoisted(() => {
       "bb.databases.sync",
       "bb.databases.getSchema",
       "bb.databases.update",
+      "bb.changelogs.list",
+      "bb.revisions.list",
       "bb.plans.create",
       "bb.sheets.create",
       "bb.databaseCatalogs.get",
@@ -371,6 +373,8 @@ beforeEach(() => {
     "bb.databases.sync",
     "bb.databases.getSchema",
     "bb.databases.update",
+    "bb.changelogs.list",
+    "bb.revisions.list",
     "bb.plans.create",
     "bb.sheets.create",
     "bb.databaseCatalogs.get",
@@ -853,6 +857,86 @@ describe("ProjectDatabaseDetailPage", () => {
 
     expect(
       container.querySelector('[data-testid="database-changelog-panel"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="database-revision-panel"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("blocks the changelog panel when changelog permission is missing", async () => {
+    mocks.allowedProjectPermissions.delete("bb.changelogs.list");
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        hash: "#changelog",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="component-permission-guard"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="database-changelog-panel"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("blocks the revision panel when revision permission is missing", async () => {
+    mocks.allowedProjectPermissions.delete("bb.revisions.list");
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        hash: "#revision",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="component-permission-guard"]')
     ).not.toBeNull();
     expect(
       container.querySelector('[data-testid="database-revision-panel"]')
