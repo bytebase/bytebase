@@ -57,7 +57,10 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Plan,
@@ -1078,6 +1081,9 @@ function DatabaseSelector({
                 <th className="py-2 pr-4 font-medium">
                   {t("common.environment")}
                 </th>
+                <th className="py-2 pr-4 font-medium whitespace-nowrap">
+                  {t("common.status")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1118,6 +1124,19 @@ function DatabaseSelector({
                     <td className="py-2 pr-4">{inst?.title}</td>
                     <td className="py-2 pr-4">
                       {env && <EnvironmentLabel environmentName={env.name} />}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {db.syncStatus === SyncStatus.FAILED ? (
+                        <Tooltip
+                          content={
+                            db.syncError || t("database.sync-status-failed")
+                          }
+                        >
+                          <XCircle className="w-4 h-4 text-error" />
+                        </Tooltip>
+                      ) : (
+                        <CheckCircle className="w-4 h-4 text-success" />
+                      )}
                     </td>
                   </tr>
                 );
