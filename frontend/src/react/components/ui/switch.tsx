@@ -6,6 +6,7 @@ interface SwitchProps {
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
+  size?: "default" | "small";
 }
 
 function Switch({
@@ -13,14 +14,18 @@ function Switch({
   onCheckedChange,
   disabled,
   className,
+  size = "default",
 }: SwitchProps) {
+  const isSmall = size === "small";
+
   return (
     <BaseSwitch.Root
       checked={checked}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
       className={cn(
-        "relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors",
+        "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
+        isSmall ? "h-4 w-7" : "h-5 w-9",
         "bg-gray-300 data-[checked]:bg-blue-600",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -29,8 +34,10 @@ function Switch({
     >
       <BaseSwitch.Thumb
         className={cn(
-          "block h-4 w-4 rounded-full bg-white shadow-sm transition-transform",
-          "translate-x-0.5 data-[checked]:translate-x-[18px]"
+          "block rounded-full bg-white shadow-sm transition-transform",
+          isSmall
+            ? "h-3 w-3 translate-x-0.5 data-[checked]:translate-x-[12px]"
+            : "h-4 w-4 translate-x-0.5 data-[checked]:translate-x-[18px]"
         )}
       />
     </BaseSwitch.Root>

@@ -53,6 +53,24 @@ const mocks = vi.hoisted(() => {
         );
       }
     ),
+    ReadonlyDiffMonaco: vi.fn(
+      ({
+        original,
+        modified,
+        className,
+      }: {
+        original: string;
+        modified: string;
+        className?: string;
+      }) => {
+        return (
+          <div data-testid="readonly-diff-monaco" className={className}>
+            <div data-testid="diff-original">{original}</div>
+            <div data-testid="diff-modified">{modified}</div>
+          </div>
+        );
+      }
+    ),
     TaskRunLogViewer: vi.fn(({ taskRunName }: { taskRunName: string }) => {
       return <div data-testid="task-run-log">{taskRunName}</div>;
     }),
@@ -78,9 +96,7 @@ const mocks = vi.hoisted(() => {
     ),
     LoaderCircle: vi.fn(() => <div data-testid="spinner" />),
     ArrowUpRight: vi.fn(() => <div data-testid="arrow-up-right" />),
-    CheckCircle2: vi.fn(() => <div data-testid="check-circle-2" />),
-    CircleAlert: vi.fn(() => <div data-testid="circle-alert" />),
-    CircleDot: vi.fn(() => <div data-testid="circle-dot" />),
+    Check: vi.fn(() => <div data-testid="check" />),
     Copy: vi.fn(() => <div data-testid="copy-icon" />),
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
@@ -103,9 +119,7 @@ let DatabaseChangelogDetailPage: DatabaseChangelogDetailPageComponent;
 vi.mock("lucide-react", () => ({
   LoaderCircle: mocks.LoaderCircle,
   ArrowUpRight: mocks.ArrowUpRight,
-  CheckCircle2: mocks.CheckCircle2,
-  CircleAlert: mocks.CircleAlert,
-  CircleDot: mocks.CircleDot,
+  Check: mocks.Check,
   Copy: mocks.Copy,
 }));
 
@@ -139,6 +153,7 @@ vi.mock("@/react/components/ui/switch", () => ({
 
 vi.mock("@/react/components/monaco", () => ({
   ReadonlyMonaco: mocks.ReadonlyMonaco,
+  ReadonlyDiffMonaco: mocks.ReadonlyDiffMonaco,
 }));
 
 vi.mock("@/react/components/task-run-log", () => ({
@@ -226,13 +241,12 @@ beforeEach(() => {
   mocks.pushNotification.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.ReadonlyMonaco.mockClear();
+  mocks.ReadonlyDiffMonaco.mockClear();
   mocks.TaskRunLogViewer.mockClear();
   mocks.Switch.mockClear();
   mocks.LoaderCircle.mockClear();
   mocks.ArrowUpRight.mockClear();
-  mocks.CheckCircle2.mockClear();
-  mocks.CircleAlert.mockClear();
-  mocks.CircleDot.mockClear();
+  mocks.Check.mockClear();
   mocks.Copy.mockClear();
   mocks.clipboardWriteText.mockReset();
   Object.defineProperty(globalThis.navigator, "clipboard", {
@@ -450,6 +464,11 @@ describe("DatabaseChangelogDetailPage", () => {
     expect(container.textContent).toContain("common.schema");
     expect(container.textContent).toContain("common.snapshot");
     expect(container.textContent).toContain("31 B");
+    // Should render ReadonlyDiffMonaco by default if there's a diff.
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+
     const copyButton = container.querySelector(
       '[aria-label="common.copy"]'
     ) as HTMLButtonElement | null;
@@ -519,7 +538,61 @@ describe("DatabaseChangelogDetailPage", () => {
     expect(container.textContent).toContain("changelog.current-schema-empty");
     expect(
       container.querySelectorAll('[data-testid="readonly-monaco"]').length
-    ).toBe(0);
+    ).toBe(0); // Should be 0 because it renders the empty text div
+
+    unmount();
+  });
+
+  test("renders the diff viewer by default when the schema has changed", async () => {
+    const changelog = {
+      ...mocks.currentChangelog,
+      schema: "new schema",
+    };
+    const previousChangelog = {
+      ...mocks.previousChangelog,
+      schema: "old schema",
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "MYSQL" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(changelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(previousChangelog);
+    mocks.getChangelogByName.mockReturnValue(undefined);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="diff-original"]')?.textContent
+    ).toBe("old schema");
+    expect(
+      container.querySelector('[data-testid="diff-modified"]')?.textContent
+    ).toBe("new schema");
 
     unmount();
   });

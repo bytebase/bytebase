@@ -1,14 +1,7 @@
-import {
-  ArrowUpRight,
-  CheckCircle2,
-  CircleAlert,
-  CircleDot,
-  Copy,
-  LoaderCircle,
-} from "lucide-react";
+import { ArrowUpRight, Check, Copy, LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ReadonlyMonaco } from "@/react/components/monaco";
+import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
@@ -86,7 +79,12 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
           aria-label={t("common.status")}
           className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-info bg-white text-info"
         >
-          <CircleDot className="h-3 w-3" />
+          <span
+            className="h-2 w-2 rounded-full bg-info"
+            style={{
+              animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            }}
+          />
         </span>
       );
     case Changelog_Status.DONE:
@@ -95,7 +93,7 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
           aria-label={t("common.status")}
           className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-white"
         >
-          <CheckCircle2 className="h-4 w-4" />
+          <Check className="h-4 w-4" />
         </span>
       );
     case Changelog_Status.FAILED:
@@ -104,7 +102,7 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
           aria-label={t("common.status")}
           className="flex h-5 w-5 items-center justify-center rounded-full bg-error text-white"
         >
-          <CircleAlert className="h-4 w-4" />
+          <span className="pb-0.5 text-base font-normal">!</span>
         </span>
       );
     default:
@@ -212,6 +210,10 @@ export function DatabaseChangelogDetailPage({
         }
         setResolvedChangelog(current);
         setPreviousChangelog(previous);
+
+        // Show diff by default only if there is a schema change.
+        const hasDiff = (previous?.schema ?? "") !== (current?.schema ?? "");
+        setShowDiff(hasDiff);
       })
       .catch((error) => {
         console.error("Failed to fetch changelog details", error);
@@ -244,11 +246,21 @@ export function DatabaseChangelogDetailPage({
     );
   }, [resolvedChangelog]);
 
+  const hasSchemaDiff = useMemo(() => {
+    if (!resolvedChangelog) {
+      return false;
+    }
+    return (
+      (previousChangelog?.schema ?? "") !== (resolvedChangelog.schema ?? "")
+    );
+  }, [resolvedChangelog, previousChangelog]);
+
   const allowRollback = useMemo(() => {
     if (
       !detail.database ||
       detail.isDefaultProject ||
-      !detail.allowAlterSchema
+      !detail.allowAlterSchema ||
+      !hasSchemaDiff
     ) {
       return false;
     }
@@ -266,6 +278,7 @@ export function DatabaseChangelogDetailPage({
     detail.database,
     detail.isDefaultProject,
     resolvedChangelog,
+    hasSchemaDiff,
   ]);
 
   const databaseDisplayName =
@@ -431,24 +444,6 @@ export function DatabaseChangelogDetailPage({
         ) : null}
 
         <div className="flex flex-col gap-y-2">
-          <div className="flex items-center justify-between gap-x-2">
-            <div className="flex items-center gap-x-2">
-              <Switch checked={showDiff} onCheckedChange={setShowDiff} />
-              <span className="text-sm font-semibold">
-                {t("changelog.show-diff")}
-              </span>
-            </div>
-            {allowRollback ? (
-              <Button size="sm" onClick={handleRollback}>
-                {t("common.rollback")}
-              </Button>
-            ) : null}
-          </div>
-
-          <div className="textinfolabel">
-            {t("changelog.schema-snapshot-after-change")}
-          </div>
-
           <p className="flex items-center gap-x-2 text-lg text-main">
             <span>
               {t("common.schema")} {t("common.snapshot")}
@@ -461,21 +456,44 @@ export function DatabaseChangelogDetailPage({
             <CopyButton content={resolvedChangelog.schema} />
           </p>
 
-          {showDiff ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <ReadonlyMonaco
-                content={previousChangelog?.schema ?? ""}
-                className="relative h-auto max-h-[600px] min-h-[120px]"
-              />
-              <ReadonlyMonaco
-                content={resolvedChangelog.schema}
-                className="relative h-auto max-h-[600px] min-h-[120px]"
-              />
+          <div className="flex items-center justify-between gap-x-2">
+            <div className="flex items-center gap-x-2">
+              <div className="flex items-center gap-x-1">
+                <Switch
+                  checked={showDiff}
+                  onCheckedChange={setShowDiff}
+                  size="small"
+                />
+                <span className="text-sm font-semibold">
+                  {t("changelog.show-diff")}
+                </span>
+              </div>
+              <div className="textinfolabel">
+                {t("changelog.schema-snapshot-after-change")}
+              </div>
+              {!hasSchemaDiff && (
+                <div className="text-sm font-normal text-accent">
+                  ({t("changelog.no-schema-change")})
+                </div>
+              )}
             </div>
+            {allowRollback ? (
+              <Button size="sm" onClick={handleRollback}>
+                {t("common.rollback")}
+              </Button>
+            ) : null}
+          </div>
+
+          {showDiff ? (
+            <ReadonlyDiffMonaco
+              original={previousChangelog?.schema ?? ""}
+              modified={resolvedChangelog.schema}
+              className="relative h-auto max-h-[600px] min-h-[120px]"
+            />
           ) : resolvedChangelog.schema ? (
             <ReadonlyMonaco
               content={resolvedChangelog.schema}
-              className="relative h-auto min-h-[120px] max-h-[600px]"
+              className="relative h-auto max-h-[600px] min-h-[120px]"
             />
           ) : (
             <div className="text-sm text-control-light">

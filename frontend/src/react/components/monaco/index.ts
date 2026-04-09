@@ -1,2 +1,2 @@
-export { ReadonlyMonaco } from "./ReadonlyMonaco";
-export { clampEditorHeight } from "./height";
+export * from "./ReadonlyMonaco";
+export * from "./ReadonlyDiffMonaco";
