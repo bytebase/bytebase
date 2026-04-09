@@ -81,6 +81,13 @@ describe("Test i18n for SQL review", () => {
       expect(!!templateMessages[key]).toBe(true);
       expect(!!templateMessages[`${key}-desc`]).toBe(true);
 
+      if (template.ruleList.length === 0) {
+        test("has template localization even without rules", () => {
+          expect(!!templateMessages[key]).toBe(true);
+          expect(!!templateMessages[`${key}-desc`]).toBe(true);
+        });
+      }
+
       for (const rule of template.ruleList) {
         test(`check i18n for rule ${ruleTypeToString(rule.type)}`, () => {
           const key = getRuleLocalizationKey(ruleTypeToString(rule.type));

@@ -225,6 +225,7 @@
     "members_other": "メンバー",
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
+    "missing-required-permission-for-resource": "リソース {{resource}} に必要な権限がありません",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
     "name": "名前",
@@ -314,6 +315,7 @@
   "common.archived": "アーカイブ済み",
   "common.cancel": "キャンセル",
   "common.cannot-undo-this-action": "この操作は元に戻せません",
+  "common.catalog": "カタログ",
   "common.close": "閉じる",
   "common.confirm": "確認する",
   "common.continue-anyway": "まだ続けたい",
@@ -329,6 +331,7 @@
   "common.detailed-guide": "詳細ガイド",
   "common.edit": "編集",
   "common.environment": "環境",
+  "common.import": "インポート",
   "common.key": "キー",
   "common.labels": "ラベル",
   "common.learn-more": "もっと詳しく知る",
@@ -554,9 +557,16 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "エンジン",
+  "database.export-schema": "スキーマをエクスポート",
+  "database.export-schema-multi-file": "複数ファイル (ZIP)",
+  "database.export-schema-single-file": "単一ファイル",
+  "database.failed-to-export-schema": "スキーマのエクスポートに失敗しました",
   "database.filter-database": "フィルターデータベース",
+  "database.labels": "データベースラベル",
   "database.revision.self": "リビジョン",
+  "database.successfully-exported-schema": "スキーマのエクスポートに成功しました",
   "database.sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
+  "database.sync-database": "データベースを同期",
   "db": {
     "character-set": "文字セット",
     "collation": "照合順序",
@@ -568,8 +578,10 @@
     "syncing-databases-for-instance": "{{0}} のデータベースを同期中..."
   },
   "db.failed-to-sync-schema": "スキーマの同期に失敗しました",
+  "db.failed-to-sync-schema-for-database-database-value-name": "データベース '{{0}}' のスキーマを同期できませんでした。",
   "db.n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
   "db.start-to-sync-schema": "スキーマの同期を開始します",
+  "db.successfully-synced-schema-for-database-database-value-name": "データベース '{{0}}' のスキーマが正常に同期されました。",
   "db.syncing-databases-for-instance": "{{0}} のデータベースを同期中...",
   "dynamic.resource.instance": "インスタンス ID",
   "environment": {
@@ -1324,6 +1336,7 @@
       "self_other": "ステージ"
     }
   },
+  "schema-diagram.self": "スキーマ図",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1710,6 +1723,7 @@
         },
         "re-order": "並び替え"
       },
+      "grant-access": "許可されたアクセス",
       "never-expires": "有効期限なし",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",

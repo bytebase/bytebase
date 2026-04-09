@@ -94,10 +94,8 @@ export function useProjectDatabaseDetail({
     databaseStore,
     dbSchemaStore,
     fullDatabaseName,
-    hash,
     instanceId,
     projectId,
-    query,
     revisionId,
     routeName,
   ]);

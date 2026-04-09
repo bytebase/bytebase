@@ -483,20 +483,34 @@ export const selectHasRunningChat = (state: AgentState): boolean =>
 
 // --- Store creation ---
 
+const getSafeStorage = (): Storage | null => {
+  const storage = globalThis.localStorage as Partial<Storage> | undefined;
+  if (
+    !storage ||
+    typeof storage.getItem !== "function" ||
+    typeof storage.setItem !== "function" ||
+    typeof storage.removeItem !== "function"
+  ) {
+    return null;
+  }
+  return storage as Storage;
+};
+
 const loadInitialState = (): {
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   currentChatId: string | null;
 } => {
-  const saved = localStorage.getItem(AGENT_STATE_KEY);
+  const storage = getSafeStorage();
+  const saved = storage?.getItem(AGENT_STATE_KEY);
   let state: PersistedAgentState | null = null;
 
   if (saved) {
     try {
       state = normalizePersistedState(JSON.parse(saved));
     } catch {
-      localStorage.removeItem(AGENT_STATE_KEY);
+      storage?.removeItem(AGENT_STATE_KEY);
     }
   }
 
@@ -976,8 +990,10 @@ export const createAgentStore = () => {
 
         // Persistence
         saveWindowState: () => {
+          const storage = getSafeStorage();
+          if (!storage) return;
           const state = get();
-          localStorage.setItem(
+          storage.setItem(
             AGENT_WINDOW_KEY,
             JSON.stringify({
               position: state.position,
@@ -988,7 +1004,8 @@ export const createAgentStore = () => {
         },
 
         loadWindowState: () => {
-          const saved = localStorage.getItem(AGENT_WINDOW_KEY);
+          const storage = getSafeStorage();
+          const saved = storage?.getItem(AGENT_WINDOW_KEY);
           if (!saved) return;
           try {
             const state = JSON.parse(saved) as {
@@ -1020,11 +1037,13 @@ export const createAgentStore = () => {
               }
             });
           } catch {
-            localStorage.removeItem(AGENT_WINDOW_KEY);
+            storage?.removeItem(AGENT_WINDOW_KEY);
           }
         },
 
         saveState: () => {
+          const storage = getSafeStorage();
+          if (!storage) return;
           const state = get();
           const persistedState: PersistedAgentState = {
             currentChatId: state.currentChatId,
@@ -1032,11 +1051,12 @@ export const createAgentStore = () => {
             messagesByChatId: state.messagesByChatId,
             pendingAskByChatId: state.pendingAskByChatId,
           };
-          localStorage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
+          storage.setItem(AGENT_STATE_KEY, JSON.stringify(persistedState));
         },
 
         loadState: () => {
-          const saved = localStorage.getItem(AGENT_STATE_KEY);
+          const storage = getSafeStorage();
+          const saved = storage?.getItem(AGENT_STATE_KEY);
           if (saved) {
             try {
               const state = normalizePersistedState(JSON.parse(saved));
@@ -1047,7 +1067,7 @@ export const createAgentStore = () => {
                 draft.currentChatId = state.currentChatId;
               });
             } catch {
-              localStorage.removeItem(AGENT_STATE_KEY);
+              storage?.removeItem(AGENT_STATE_KEY);
             }
           }
 
@@ -1074,6 +1094,10 @@ export const createAgentStore = () => {
   // drag/resize operations that only change position/size.
   let lastSerialized = "";
   store.subscribe((state) => {
+    const storage = getSafeStorage();
+    if (!storage) {
+      return;
+    }
     const persistedState: PersistedAgentState = {
       currentChatId: state.currentChatId,
       chats: state.chats,
@@ -1083,7 +1107,7 @@ export const createAgentStore = () => {
     const serialized = JSON.stringify(persistedState);
     if (serialized !== lastSerialized) {
       lastSerialized = serialized;
-      localStorage.setItem(AGENT_STATE_KEY, serialized);
+      storage.setItem(AGENT_STATE_KEY, serialized);
     }
   });
 

@@ -225,6 +225,7 @@
     "members_other": "Miembros",
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
+    "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {{resource}}",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
     "name": "Nombre",
@@ -314,6 +315,7 @@
   "common.archived": "Archivada",
   "common.cancel": "Cancelar",
   "common.cannot-undo-this-action": "No se puede deshacer esta acción",
+  "common.catalog": "Catálogo",
   "common.close": "Cerrar",
   "common.confirm": "Confirmar",
   "common.continue-anyway": "De todas maneras, continúe",
@@ -329,6 +331,7 @@
   "common.detailed-guide": "guía detallada",
   "common.edit": "Editar",
   "common.environment": "Entorno",
+  "common.import": "Importar",
   "common.key": "Clave",
   "common.labels": "Etiquetas",
   "common.learn-more": "Aprender más",
@@ -554,9 +557,16 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "Motor",
+  "database.export-schema": "Exportar esquema",
+  "database.export-schema-multi-file": "Multi-archivo (ZIP)",
+  "database.export-schema-single-file": "Archivo único",
+  "database.failed-to-export-schema": "Error al exportar el esquema",
   "database.filter-database": "Filtrar base de datos",
+  "database.labels": "Etiquetas de base de datos",
   "database.revision.self": "Revisión",
+  "database.successfully-exported-schema": "Esquema exportado correctamente",
   "database.sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
+  "database.sync-database": "Sincronizar base de datos",
   "db": {
     "character-set": "Juego de caracteres",
     "collation": "Colación",
@@ -568,8 +578,10 @@
     "syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}..."
   },
   "db.failed-to-sync-schema": "No se pudo sincronizar el esquema",
+  "db.failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
   "db.start-to-sync-schema": "Comenzar a sincronizar el esquema",
+  "db.successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado exitosamente para la base de datos '{{0}}'.",
   "db.syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
   "dynamic.resource.instance": "ID de instancia",
   "environment": {
@@ -1324,6 +1336,7 @@
       "self_other": "Etapas"
     }
   },
+  "schema-diagram.self": "Diagrama de Esquema",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1710,6 +1723,7 @@
         },
         "re-order": "Reordenar"
       },
+      "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",

@@ -225,6 +225,7 @@
     "members_other": "成员",
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
+    "missing-required-permission-for-resource": "缺少资源 {{resource}} 的必需权限",
     "n-items-selected": "已选 {{n}} 项",
     "n-more": "+{{n}} 更多",
     "name": "名称",
@@ -314,6 +315,7 @@
   "common.archived": "已归档",
   "common.cancel": "取消",
   "common.cannot-undo-this-action": "这个操作无法撤销",
+  "common.catalog": "Catalog",
   "common.close": "关闭",
   "common.confirm": "确认",
   "common.continue-anyway": "仍要继续",
@@ -329,6 +331,7 @@
   "common.detailed-guide": "详细指南",
   "common.edit": "编辑",
   "common.environment": "环境",
+  "common.import": "导入",
   "common.key": "键",
   "common.labels": "标签",
   "common.learn-more": "了解更多",
@@ -554,9 +557,16 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "引擎",
+  "database.export-schema": "导出 Schema",
+  "database.export-schema-multi-file": "多文件 (ZIP)",
+  "database.export-schema-single-file": "单文件",
+  "database.failed-to-export-schema": "导出 Schema 失败",
   "database.filter-database": "过滤数据库",
+  "database.labels": "数据库标签",
   "database.revision.self": "版本",
+  "database.successfully-exported-schema": "成功导出 Schema",
   "database.sync-complete-for-instance": "实例 '{{0}}' 同步完成",
+  "database.sync-database": "同步数据库",
   "db": {
     "character-set": "字符集",
     "collation": "排序规则",
@@ -568,8 +578,10 @@
     "syncing-databases-for-instance": "正在同步 {{0}} 的数据库..."
   },
   "db.failed-to-sync-schema": "同步 schema 失败",
+  "db.failed-to-sync-schema-for-database-database-value-name": "为数据库 '{{0}}' 同步 schema 失败。",
   "db.n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
   "db.start-to-sync-schema": "开始同步 schema",
+  "db.successfully-synced-schema-for-database-database-value-name": "成功为数据库 '{{0}}' 同步 schema。",
   "db.syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
   "dynamic.resource.instance": "实例 ID",
   "environment": {
@@ -1324,6 +1336,7 @@
       "self_other": "阶段"
     }
   },
+  "schema-diagram.self": "Schema 关系图",
   "schema-editor": {
     "raw-sql": "SQL 语句"
   },
@@ -1710,6 +1723,7 @@
         },
         "re-order": "排序"
       },
+      "grant-access": "授权访问",
       "never-expires": "无过期时间",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
