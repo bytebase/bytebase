@@ -44,8 +44,10 @@
           <div v-if="canUpgrade" class="whitespace-nowrap">
             {{ $t("remind.release.new-version-available") }}
           </div>
-          <div>BE Git hash: {{ gitCommitBE }}</div>
-          <div>FE Git hash: {{ gitCommitFE }}</div>
+          <template v-if="!isSaaSMode">
+            <div>BE Git hash: {{ gitCommitBE }}</div>
+            <div>FE Git hash: {{ gitCommitFE }}</div>
+          </template>
         </div>
       </template>
     </NTooltip>
@@ -88,7 +90,7 @@ const state = reactive<LocalState>({
   showReleaseModal: false,
 });
 
-const { isDemo } = storeToRefs(actuatorStore);
+const { isDemo, isSaaSMode } = storeToRefs(actuatorStore);
 const canUpgrade = computed(() => {
   return actuatorStore.hasNewRelease;
 });

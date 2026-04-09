@@ -196,36 +196,38 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               </div>
             </div>
 
-            {/* External URL */}
-            <div>
-              <label className="flex items-center gap-x-2">
-                <span className="text-base font-semibold">
-                  {t("settings.general.workspace.external-url.self")}
-                </span>
-              </label>
-              <div className="mb-3 text-sm text-gray-400">
-                {t("settings.general.workspace.external-url.description")}{" "}
-                <LearnMoreLink
-                  href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                  className="text-accent"
+            {/* External URL — hidden in SaaS/cloud mode */}
+            {!isSaaSMode && (
+              <div>
+                <label className="flex items-center gap-x-2">
+                  <span className="text-base font-semibold">
+                    {t("settings.general.workspace.external-url.self")}
+                  </span>
+                </label>
+                <div className="mb-3 text-sm text-gray-400">
+                  {t("settings.general.workspace.external-url.description")}{" "}
+                  <LearnMoreLink
+                    href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
+                    className="text-accent"
+                  />
+                </div>
+                {externalUrlFromFlag && (
+                  <Alert variant="info" className="mb-3">
+                    {t(
+                      "settings.general.workspace.external-url.cannot-edit-flag"
+                    )}
+                  </Alert>
+                )}
+                <Input
+                  value={state.externalUrl}
+                  className="w-full"
+                  disabled={!canEdit || externalUrlFromFlag}
+                  onChange={(e) =>
+                    setState((s) => ({ ...s, externalUrl: e.target.value }))
+                  }
                 />
               </div>
-              {externalUrlFromFlag && !isSaaSMode && (
-                <Alert variant="info" className="mb-3">
-                  {t(
-                    "settings.general.workspace.external-url.cannot-edit-flag"
-                  )}
-                </Alert>
-              )}
-              <Input
-                value={state.externalUrl}
-                className="w-full"
-                disabled={!canEdit || isSaaSMode || externalUrlFromFlag}
-                onChange={(e) =>
-                  setState((s) => ({ ...s, externalUrl: e.target.value }))
-                }
-              />
-            </div>
+            )}
           </div>
         </PermissionGuard>
 
