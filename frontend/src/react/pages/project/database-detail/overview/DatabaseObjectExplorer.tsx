@@ -87,10 +87,9 @@ export function DatabaseObjectExplorer({
   );
   const [selectedTable, setSelectedTable] = useState<TableMetadata>();
 
-  const selectedSchemaMetadata =
-    databaseMetadata.schemas.find(
-      (schema) => schema.name === selectedSchemaName
-    ) || databaseMetadata.schemas[0];
+  const selectedSchemaMetadata = databaseMetadata.schemas.find(
+    (schema) => schema.name === selectedSchemaName
+  );
   const sequenceList: SequenceMetadata[] = supportsSchema
     ? (selectedSchemaMetadata?.sequences ?? [])
     : databaseMetadata.schemas.flatMap((schema) => schema.sequences ?? []);
@@ -158,20 +157,20 @@ export function DatabaseObjectExplorer({
       name: stream.name,
       description: stream.tableName || "-",
       comment: stream.comment,
-    }));
+  }));
 
   const taskRows: ObjectSectionRow[] = taskList.map((task) => ({
       key: task.name,
       name: task.name,
       description: task.schedule || task.id || "-",
       comment: task.comment,
-    }));
+  }));
 
   const packageRows: ObjectSectionRow[] = packageList.map((pkg) => ({
       key: pkg.name,
       name: pkg.name,
       description: pkg.definition || "-",
-    }));
+  }));
 
   return (
     <div className="space-y-6 pt-6">

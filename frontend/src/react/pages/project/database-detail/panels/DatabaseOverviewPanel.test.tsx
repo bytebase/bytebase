@@ -256,6 +256,27 @@ describe("DatabaseOverviewPanel", () => {
     unmount();
   });
 
+  test("renders dash for last sync when the sync timestamp is missing", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: {
+          ...makeDatabase(),
+          successfulSyncTime: undefined,
+        },
+        hasSchemaPermission: false,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("database.last-sync");
+    expect(container.textContent).toContain("-");
+    expect(mocks.humanizeDate).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   test("syncs selected schema back to the route query", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseOverviewPanel, {
@@ -379,5 +400,56 @@ describe("DatabaseOverviewPanel", () => {
     expect(container.textContent).toContain("pkg_b");
 
     unmount();
+  });
+
+  test("does not fall back to the first schema for schema-scoped package objects", async () => {
+    const { router } = await import("@/router");
+    router.currentRoute.value.query = { schema: "sales" };
+
+    mocks.getDatabaseEngine.mockReturnValue(Engine.ORACLE);
+    mocks.hasSchemaProperty.mockReturnValue(true);
+    mocks.instanceV1SupportsPackage.mockReturnValue(true);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "AL32UTF8",
+        collation: "",
+        schemas: [
+          {
+            name: "alpha",
+            packages: [{ name: "pkg_a", definition: "a" }],
+            sequences: [],
+            streams: [],
+            tasks: [],
+          },
+        ],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect((container.querySelector("select") as HTMLSelectElement).value).toBe(
+      "sales"
+    );
+    expect(container.textContent).not.toContain("pkg_a");
+
+    unmount();
+    router.currentRoute.value.query = {};
   });
 });

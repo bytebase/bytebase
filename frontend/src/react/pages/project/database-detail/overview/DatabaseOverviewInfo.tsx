@@ -22,6 +22,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
   const lastSyncDate = database.successfulSyncTime
     ? new Date(Number(database.successfulSyncTime.seconds) * 1000)
     : undefined;
+  const hasLastSyncDate = !!lastSyncDate && lastSyncDate.getTime() !== 0;
 
   return (
     <div className="rounded-lg border border-block-border px-5 py-4">
@@ -77,7 +78,9 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
           <dt className="text-sm font-medium text-control-light">
             {t("database.last-sync")}
           </dt>
-          <dd className="mt-1 text-sm text-main">{humanizeDate(lastSyncDate)}</dd>
+          <dd className="mt-1 text-sm text-main">
+            {hasLastSyncDate ? humanizeDate(lastSyncDate) : "-"}
+          </dd>
         </div>
       </dl>
     </div>
