@@ -481,7 +481,7 @@ func TestGetSchema_SchemaFilter_MySQL_DroppedClientSide(t *testing.T) {
 
 func TestGetSchema_SchemaFilter_PassedThroughOnMultiSchemaEngines(t *testing.T) {
 	// Spot-check a few known multi-schema engines to confirm the allowlist.
-	for _, engine := range []string{"POSTGRES", "MSSQL", "ORACLE", "SNOWFLAKE", "REDSHIFT", "COCKROACHDB"} {
+	for _, engine := range []string{"POSTGRES", "MSSQL", "ORACLE", "SNOWFLAKE", "REDSHIFT", "COCKROACHDB", "DATABRICKS", "TRINO", "SPANNER", "HIVE"} {
 		t.Run(engine, func(t *testing.T) {
 			databases := []map[string]any{
 				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", engine, "ds-1"),
@@ -503,7 +503,7 @@ func TestGetSchema_SchemaFilter_PassedThroughOnMultiSchemaEngines(t *testing.T) 
 
 func TestGetSchema_SchemaFilter_DroppedOnSingleSchemaEngines(t *testing.T) {
 	// Spot-check a few known single-schema engines.
-	for _, engine := range []string{"MYSQL", "TIDB", "MARIADB", "CLICKHOUSE", "SQLITE", "SPANNER"} {
+	for _, engine := range []string{"MYSQL", "TIDB", "MARIADB", "CLICKHOUSE", "SQLITE"} {
 		t.Run(engine, func(t *testing.T) {
 			databases := []map[string]any{
 				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", engine, "ds-1"),
@@ -513,12 +513,17 @@ func TestGetSchema_SchemaFilter_DroppedOnSingleSchemaEngines(t *testing.T) {
 			))
 			s, mock := mockMetadataServer(t, databases, resp)
 
-			_, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+			result, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
 				Database: "employee_db",
 				Schema:   "something",
 			})
 			require.NoError(t, err)
 			require.Equal(t, "", mock.lastCall().Filter, "engine %s should drop the schema filter", engine)
+
+			// The response should include a note about the dropped parameter.
+			text := result.Content[0].(*mcpsdk.TextContent).Text
+			require.Contains(t, text, "schema parameter ignored", "engine %s should annotate the dropped schema filter", engine)
+			require.Contains(t, text, "does not use named schemas", "engine %s note should explain why", engine)
 		})
 	}
 }

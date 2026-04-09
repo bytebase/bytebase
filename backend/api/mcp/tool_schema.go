@@ -51,12 +51,16 @@ var multiSchemaEngines = map[string]bool{
 	"ORACLE":      true,
 	"SNOWFLAKE":   true,
 	"REDSHIFT":    true,
+	"DATABRICKS":  true,
+	"TRINO":       true,
+	"SPANNER":     true,
+	"HIVE":        true,
 }
 
 // engineSupportsSchemas reports whether the given engine exposes named schemas
 // to users. An empty engine string (unknown) is treated as single-schema for
-// safety — it's better to silently ignore the filter than to silently return
-// zero tables.
+// safety — the caller drops the filter and emits a note rather than risking
+// zero tables from an exact-match miss.
 func engineSupportsSchemas(engine string) bool {
 	return multiSchemaEngines[engine]
 }
@@ -203,7 +207,7 @@ const getSchemaDescription = `Inspect a Bytebase database's schema.
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
 | instance  | No       | Instance name to narrow resolution |
 | project   | No       | Project name to narrow resolution |
-| schema    | No       | Schema name for multi-schema engines (PG/MSSQL/Oracle/Snowflake/Redshift/CockroachDB); silently ignored on MySQL/TiDB/etc. |
+| schema    | No       | Schema name for multi-schema engines (PG/MSSQL/Oracle/Snowflake/Redshift/CockroachDB/Databricks/Trino/Spanner/Hive); ignored with a note on MySQL/TiDB/etc. |
 | table     | No       | Drill into a single table; implies include="details" |
 | include   | No       | Detail level: "summary" (default), "columns", "details" |
 
@@ -242,11 +246,14 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 	}
 
 	// On engines that don't expose named schemas (MySQL, TiDB, ClickHouse, etc.),
-	// drop the schema filter. The backend applies `schema == "..."` as an exact
-	// match, so passing a non-empty hint like "public" on MySQL would filter out
-	// every table. Documented behavior: schema is ignored on engines without schemas.
+	// drop the schema filter and note the drop. The backend applies `schema == "..."`
+	// as an exact match, so passing a non-empty hint like "public" on MySQL would
+	// filter out every table. Results are still returned; the note tells the caller
+	// why the parameter was ignored.
+	var warnings []string
 	schemaHint := input.Schema
 	if schemaHint != "" && !engineSupportsSchemas(resolved.engine) {
+		warnings = append(warnings, fmt.Sprintf("schema parameter ignored — %s does not use named schemas", resolved.engine))
 		schemaHint = ""
 	}
 
@@ -260,10 +267,10 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 	}
 
 	if input.Table != "" {
-		result, output := s.renderTableResult(fetchCtx, resolved, input, schemaHint, metadata, include)
+		result, output := s.renderTableResult(fetchCtx, resolved, input, schemaHint, metadata, include, warnings)
 		return result, output, nil
 	}
-	result, output := renderSchemasResult(resolved, metadata, include)
+	result, output := renderSchemasResult(resolved, metadata, include, warnings)
 	return result, output, nil
 }
 
@@ -308,7 +315,7 @@ func (s *Server) resolveSchemaTarget(ctx context.Context, req *mcp.CallToolReque
 // match (or returns an appropriate error result) and renders it as TableDetail.
 // schemaHint is the engine-adjusted schema filter (empty when dropped for
 // single-schema engines) and is used for the candidate-lookup refetch too.
-func (s *Server) renderTableResult(ctx context.Context, resolved *resolvedDatabase, input SchemaInput, schemaHint string, metadata *databaseMetadata, include string) (*mcp.CallToolResult, any) {
+func (s *Server) renderTableResult(ctx context.Context, resolved *resolvedDatabase, input SchemaInput, schemaHint string, metadata *databaseMetadata, include string, warnings []string) (*mcp.CallToolResult, any) {
 	matches := findTableMatches(metadata, input.Table)
 	switch {
 	case len(matches) == 0:
@@ -330,19 +337,19 @@ func (s *Server) renderTableResult(ctx context.Context, resolved *resolvedDataba
 		Table:    &entry,
 	}
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include)}},
+		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include, warnings)}},
 	}, output
 }
 
 // renderSchemasResult handles the bulk schema listing path (no table drill-down).
-func renderSchemasResult(resolved *resolvedDatabase, metadata *databaseMetadata, include string) (*mcp.CallToolResult, any) {
+func renderSchemasResult(resolved *resolvedDatabase, metadata *databaseMetadata, include string, warnings []string) (*mcp.CallToolResult, any) {
 	output := &SchemaOutput{
 		Database: resolved.resourceName,
 		Engine:   resolved.engine,
 		Schemas:  transformSchemas(metadata, include),
 	}
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include)}},
+		Content: []mcp.Content{&mcp.TextContent{Text: formatSchemaOutput(output, include, warnings)}},
 	}, output
 }
 
@@ -653,8 +660,12 @@ func primaryKeyColumns(indexes []indexMetadata) map[string]bool {
 }
 
 // formatSchemaOutput produces a text header + JSON body (same pattern as query_database).
-func formatSchemaOutput(output *SchemaOutput, include string) string {
+func formatSchemaOutput(output *SchemaOutput, include string, warnings []string) string {
 	var sb strings.Builder
+
+	for _, w := range warnings {
+		fmt.Fprintf(&sb, "Note: %s\n", w)
+	}
 
 	fmt.Fprintf(&sb, "Database: %s (%s)\n", output.Database, output.Engine)
 
