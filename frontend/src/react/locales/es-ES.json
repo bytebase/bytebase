@@ -118,6 +118,7 @@
   },
   "changelog": {
     "current-schema-empty": "El esquema actual está vacío",
+    "no-schema-change": "No schema change",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "self": "Changelog",

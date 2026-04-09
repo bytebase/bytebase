@@ -192,6 +192,7 @@
   },
   "changelog": {
     "current-schema-empty": "現在のスキーマは空です",
+    "no-schema-change": "No schema change",
     "schema-snapshot-after-change": "この変更を完了した後のスキーマのスナップショット",
     "select": "スキーマのバージョンは、Bytebase を通じてスキーマの変更が実行されるたびに記録されます。",
     "self": "変更履歴",
