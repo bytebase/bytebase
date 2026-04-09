@@ -155,7 +155,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 			slog.Error("failed to get workspace IAM policy", log.BBError(err))
 			return false
 		}
-		count := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy)
+		count, _ := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy, s.profile.SaaS)
 		// The 1st workspace admin login don't need to reset the password
 		return count > 1
 	}
@@ -614,7 +614,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 				return nil, connect.NewError(connect.CodePermissionDenied, err)
 			}
 
-			if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, nil); err != nil {
+			if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, nil, s.profile.SaaS); err != nil {
 				return nil, err
 			}
 		}
@@ -680,7 +680,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	if user.MemberDeleted {
-		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, nil); err != nil {
+		if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, nil, s.profile.SaaS); err != nil {
 			return nil, err
 		}
 		// Undelete the user when login via SSO.

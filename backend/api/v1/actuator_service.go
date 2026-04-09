@@ -175,7 +175,11 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
-		serverInfo.UserCountInIam = int32(countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy))
+		userCountInIam, err := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy, s.profile.SaaS)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
+		}
+		serverInfo.UserCountInIam = int32(userCountInIam)
 
 		// Check if sample instances are available
 		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)

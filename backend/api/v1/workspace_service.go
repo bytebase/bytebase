@@ -229,7 +229,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	}
 
 	// Guard: count members in the new policy BEFORE saving.
-	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, iamPolicy); err != nil {
+	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, iamPolicy, s.profile.SaaS); err != nil {
 		return nil, err
 	}
 
