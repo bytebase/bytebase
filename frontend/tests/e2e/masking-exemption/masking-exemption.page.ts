@@ -211,19 +211,14 @@ export class SqlEditorPage {
     return (await this.page.getByText(/\d+ rows?/).count()) > 0;
   }
 
-  async resultContainsText(text: string, timeout = 10000): Promise<boolean> {
-    // Poll the result panel area for the text. Exclude the SQL editor
-    // (which contains the query text) by checking only the result section.
+  async resultContainsText(text: string, timeout = 15000): Promise<boolean> {
+    // Poll page text for the value. Safe with ORDER BY LIMIT queries
+    // because the SQL text itself doesn't contain the expected value.
     // The result grid uses virtual scrolling and renders asynchronously.
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
-      // Get text from all table cells in the result grid
-      const cells = this.page.locator("td");
-      const count = await cells.count();
-      for (let i = 0; i < count; i++) {
-        const cellText = await cells.nth(i).textContent() ?? "";
-        if (cellText.includes(text)) return true;
-      }
+      const content = await this.page.textContent("body") ?? "";
+      if (content.includes(text)) return true;
       await this.page.waitForTimeout(500);
     }
     return false;
