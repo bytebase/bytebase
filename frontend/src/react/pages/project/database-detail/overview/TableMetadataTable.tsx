@@ -32,6 +32,7 @@ export function TableMetadataTable({
   const databaseCatalog = useDatabaseCatalog(database.name, false);
   const catalog = useVueState(() => databaseCatalog.value);
 
+  const showEngineColumn = databaseEngine !== Engine.POSTGRES;
   const showPartitionedColumn = databaseEngine === Engine.POSTGRES;
   const columns = useMemo(
     () =>
@@ -46,6 +47,12 @@ export function TableMetadataTable({
               label: t("database.classification.self"),
             }
           : undefined,
+        showEngineColumn
+          ? {
+              key: "engine",
+              label: t("database.engine"),
+            }
+          : undefined,
         showPartitionedColumn
           ? {
               key: "partitioned",
@@ -57,7 +64,13 @@ export function TableMetadataTable({
         { key: "indexSize", label: t("database.index-size") },
         { key: "comment", label: t("common.comment") },
       ].filter((column) => column !== undefined),
-    [showClassificationColumn, showPartitionedColumn, showSchemaColumn, t]
+    [
+      showClassificationColumn,
+      showEngineColumn,
+      showPartitionedColumn,
+      showSchemaColumn,
+      t,
+    ]
   );
 
   if (loading) {
@@ -125,6 +138,11 @@ export function TableMetadataTable({
                 {showClassificationColumn && (
                   <td className="px-4 py-3 text-sm text-control">
                     {classification || "-"}
+                  </td>
+                )}
+                {showEngineColumn && (
+                  <td className="px-4 py-3 text-sm text-control">
+                    {table.engine || "-"}
                   </td>
                 )}
                 {showPartitionedColumn && (

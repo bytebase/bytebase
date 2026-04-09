@@ -1,26 +1,63 @@
 import { create } from "@bufbuild/protobuf";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createApp, h } from "vue";
+import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
+import i18n from "@/plugins/i18n";
+import NaiveUI from "@/plugins/naive-ui";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useRevisionStore } from "@/store";
+import { router } from "@/router";
+import { pinia, useRevisionStore } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import {
-  ListRevisionsRequestSchema,
-  type Revision as RevisionMessage,
-} from "@/types/proto-es/v1/revision_service_pb";
-import { CreateRevisionDialog } from "../revision/CreateRevisionDialog";
+import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { DatabaseRevisionTable } from "../revision/DatabaseRevisionTable";
+
+function VueCreateRevisionDrawerMount({
+  databaseName,
+  open,
+  onCreated,
+  onOpenChange,
+}: {
+  databaseName: string;
+  open: boolean;
+  onCreated: (revisions: Revision[]) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    const app = createApp({
+      render() {
+        return h(CreateRevisionDrawer as never, {
+          database: databaseName,
+          show: open,
+          "onUpdate:show": onOpenChange,
+          onCreated,
+        });
+      },
+    });
+    app.use(router).use(pinia).use(i18n).use(NaiveUI);
+    app.mount(containerRef.current);
+
+    return () => {
+      app.unmount();
+    };
+  }, [databaseName, onCreated, onOpenChange, open]);
+
+  return <div ref={containerRef} />;
+}
 
 export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
   const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
-    useState(false);
-  const [existingVersions, setExistingVersions] = useState<string[]>([]);
-  const [isLoadingExistingVersions, setIsLoadingExistingVersions] =
     useState(false);
   const fetchRevisionList = useCallback(
     async ({
@@ -44,61 +81,13 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     },
     [database.name]
   );
-  const fetchAllRevisionVersions = useCallback(async () => {
-    const versions = new Set<string>();
-    let pageToken = "";
-
-    do {
-      const request = create(ListRevisionsRequestSchema, {
-        parent: database.name,
-        pageSize: 1000,
-        pageToken,
-      });
-      const { nextPageToken, revisions } =
-        await revisionServiceClientConnect.listRevisions(request);
-
-      for (const revision of revisions) {
-        if (revision.version) {
-          versions.add(revision.version);
-        }
-      }
-
-      pageToken = nextPageToken;
-    } while (pageToken);
-
-    return Array.from(versions);
-  }, [database.name]);
   const paged = usePagedData<Revision>({
     sessionKey: `bb.paged-revision-table.${database.name}`,
     fetchList: fetchRevisionList,
   });
 
-  useEffect(() => {
-    if (!showCreateRevisionDrawer) {
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoadingExistingVersions(true);
-    void fetchAllRevisionVersions()
-      .then((versions) => {
-        if (!cancelled) {
-          setExistingVersions(versions);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingExistingVersions(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchAllRevisionVersions, showCreateRevisionDrawer]);
-
   const handleRevisionCreated = useCallback(
-    (_revisions: RevisionMessage[]) => {
+    (_revisions: Revision[]) => {
       setShowCreateRevisionDrawer(false);
       paged.refresh();
     },
@@ -143,14 +132,11 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           onLoadMore={paged.loadMore}
         />
       </div>
-      <CreateRevisionDialog
+      <VueCreateRevisionDrawerMount
         databaseName={database.name}
-        existingVersions={existingVersions}
-        isCheckingExistingVersions={isLoadingExistingVersions}
         open={showCreateRevisionDrawer}
-        projectName={database.project}
-        onOpenChange={setShowCreateRevisionDrawer}
         onCreated={handleRevisionCreated}
+        onOpenChange={setShowCreateRevisionDrawer}
       />
     </>
   );

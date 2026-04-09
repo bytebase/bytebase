@@ -334,6 +334,63 @@ describe("DatabaseOverviewPanel", () => {
     unmount();
   });
 
+  test("restores the table engine column for MySQL overview rows", async () => {
+    mocks.getDatabaseEngine.mockReturnValue(Engine.MYSQL);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(
+        () =>
+          [
+            {
+              name: "orders",
+              engine: "InnoDB",
+              rowCount: 7,
+              dataSize: 64n,
+              indexSize: 32n,
+              comment: "orders comment",
+              columns: [
+                {
+                  name: "id",
+                  type: "INT",
+                  comment: "",
+                },
+              ],
+            },
+          ] as never
+      ),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "utf8mb4",
+        collation: "utf8mb4_0900_ai_ci",
+        schemas: [],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    const tableHeaderText = Array.from(container.querySelectorAll("th")).map(
+      (cell) => cell.textContent
+    );
+    expect(tableHeaderText).toContain("database.engine");
+    expect(container.textContent).toContain("InnoDB");
+
+    unmount();
+  });
+
   test("renders failed sync status and error from the legacy overview behavior", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseOverviewPanel, {
