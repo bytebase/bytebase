@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 import { MaskingExemptionPage, GrantExemptionPage, SqlEditorPage } from "./masking-exemption.page";
@@ -351,56 +351,56 @@ test.describe("Grant and Revoke", () => {
 test.describe("E2E Masking Verification", () => {
   test.setTimeout(120_000);
 
-  // This test runs FIRST: its initial check expects masked data (false),
-  // which avoids the NVirtualList first-render detection issue.
-  test("grant via UI and verify data becomes unmasked", async ({ page }) => {
+  // Share a single browser page across all tests in this block.
+  // NVirtualList has a first-render timing issue where Playwright's locator
+  // can't detect text in the virtual-scrolled result grid on the very first
+  // page load. Reusing the page avoids this.
+  let sharedContext: BrowserContext;
+  let sharedPage: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
+    sharedPage = await sharedContext.newPage();
+  });
+
+  test.afterAll(async () => {
+    await sharedContext.close();
+  });
+
+  test("masked → grant exemption → unmasked → revoke → masked", async () => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
-    const grantPage = new GrantExemptionPage(page, env.baseURL);
-    const sqlEditor = new SqlEditorPage(page, env.baseURL);
-
-    await revokeAllExemptions();
+    const sqlEditor = new SqlEditorPage(sharedPage, env.baseURL);
+    const grantPage = new GrantExemptionPage(sharedPage, env.baseURL);
+    const listPage = new MaskingExemptionPage(sharedPage, env.baseURL);
     const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
+    const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
 
+    // Step 1: No exemption → data is masked
+    await revokeAllExemptions();
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
 
+    // Step 2: Grant exemption via UI → data becomes unmasked
     await grantPage.goto(projectId);
-    await grantPage.reasonInput.fill("e2e UI grant test");
-    const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
+    await grantPage.reasonInput.fill("e2e masking cycle test");
     await grantPage.selectAccount(adminName);
     await grantPage.submit();
-    await page.waitForTimeout(1000);
-
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
-  });
-
-  test("revoke via UI and verify data becomes masked", async ({ page }) => {
-    const projectId = env.project.split("/").pop()!;
-    const instanceId = env.instance.split("/").pop()!;
-    const dbId = env.database.split("/").pop()!;
-    const listPage = new MaskingExemptionPage(page, env.baseURL);
-    const sqlEditor = new SqlEditorPage(page, env.baseURL);
-
-    await revokeAllExemptions();
-    await grantExemption("e2e UI revoke test");
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
+    await sharedPage.waitForTimeout(1000);
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
 
+    // Step 3: Revoke exemption via UI → data becomes masked again
     await listPage.goto(projectId);
     await listPage.selectMember(env.adminEmail);
-    await page.waitForTimeout(500);
-    const revokeBtn = page.getByRole("button", { name: "Revoke" }).first();
-    await revokeBtn.click();
-    await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
-    await page.waitForTimeout(500);
+    await sharedPage.waitForTimeout(500);
+    await sharedPage.getByRole("button", { name: "Revoke" }).first().click();
+    await sharedPage.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
+    await sharedPage.waitForTimeout(500);
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
