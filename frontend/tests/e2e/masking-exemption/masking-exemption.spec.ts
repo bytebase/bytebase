@@ -243,7 +243,10 @@ test.describe("E2E Masking Verification", () => {
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.sampleColumn}" = '${maskingData.knownUnmaskedValue}' LIMIT 1;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
+
+    // Clean slate from prior test blocks
+    await revokeAllExemptions();
 
     // Step 1: Grant → unmasked
     await grantExemption("e2e test exemption");
@@ -274,7 +277,7 @@ test.describe("E2E Masking Verification", () => {
     // Clean slate: only one exemption so revoking .first() removes it
     await revokeAllExemptions();
     await grantExemption("e2e UI revoke test");
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.sampleColumn}" = '${maskingData.knownUnmaskedValue}' LIMIT 1;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
@@ -303,7 +306,7 @@ test.describe("E2E Masking Verification", () => {
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
 
     await revokeAllExemptions();
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.sampleColumn}" = '${maskingData.knownUnmaskedValue}' LIMIT 1;`;
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" ORDER BY 1 LIMIT 5;`;
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
