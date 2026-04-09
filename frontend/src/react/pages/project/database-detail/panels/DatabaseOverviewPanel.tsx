@@ -4,8 +4,8 @@ import { router } from "@/router";
 import { useDBSchemaV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseProject, hasProjectPermissionV2 } from "@/utils";
-import { DatabaseObjectExplorerBridge } from "../legacy/DatabaseObjectExplorerBridge";
-import { DatabaseOverviewInfoBridge } from "../legacy/DatabaseOverviewInfoBridge";
+import { DatabaseObjectExplorer } from "../overview/DatabaseObjectExplorer";
+import { DatabaseOverviewInfo } from "../overview/DatabaseOverviewInfo";
 
 export function DatabaseOverviewPanel({
   database,
@@ -87,11 +87,11 @@ export function DatabaseOverviewPanel({
 
   return (
     <div>
-      <DatabaseOverviewInfoBridge database={database} className="pb-6" />
+      <DatabaseOverviewInfo database={database} />
 
       {allowViewSchema && (
         <div className="border-t border-block-border pt-6">
-          <DatabaseObjectExplorerBridge
+          <DatabaseObjectExplorer
             database={database}
             loading={schemaList.length > 0 && !selectedSchemaName}
             selectedSchemaName={selectedSchemaName}

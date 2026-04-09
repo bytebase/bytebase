@@ -174,6 +174,7 @@
     "delete-resource": "删除{{type}}",
     "delete-resource-description": "删除「{{name}}」后将无法恢复，请确认。",
     "deleted": "已删除",
+    "definition": "定义",
     "description": "描述",
     "deselect-all": "Deselect all",
     "detailed-guide": "详细指南",
@@ -506,13 +507,17 @@
     "classification": {
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
+    "columns": "列",
+    "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
     "engine": "引擎",
     "expression": "Expression",
     "filter-database": "筛选数据库",
+    "index-size": "索引大小",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
+    "row-count-est": "估算行数",
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
@@ -542,6 +547,7 @@
     "sync-schema-button": "同步 Schema",
     "sync-status-failed": "同步失败",
     "transfer-project": "转移项目",
+    "type": "类型",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "unassign-alert-title": "取消分配数据库"
@@ -568,14 +574,27 @@
   "database.sync-complete-for-instance": "实例 '{{0}}' 同步完成",
   "database.sync-database": "同步数据库",
   "db": {
+    "collections": "集合",
     "character-set": "字符集",
     "collation": "排序规则",
     "encoding": "编码",
+    "extensions": "扩展",
+    "external-tables": "外部表",
     "failed-to-sync-schema": "同步 schema 失败",
+    "functions": "函数",
     "n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
+    "packages": "包",
+    "schema": {
+      "default": "默认 Schema"
+    },
+    "sequences": "序列",
     "start-to-sync-schema": "开始同步 schema",
+    "streams": "流",
     "successfully-synced-schema": "成功同步 schema",
-    "syncing-databases-for-instance": "正在同步 {{0}} 的数据库..."
+    "syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
+    "tables": "表",
+    "tasks": "任务",
+    "views": "视图"
   },
   "db.failed-to-sync-schema": "同步 schema 失败",
   "db.failed-to-sync-schema-for-database-database-value-name": "为数据库 '{{0}}' 同步 schema 失败。",

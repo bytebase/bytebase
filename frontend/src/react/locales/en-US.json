@@ -174,6 +174,7 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
+    "definition": "Definition",
     "description": "Description",
     "deselect-all": "Deselect all",
     "detailed-guide": "detailed guide",
@@ -506,13 +507,17 @@
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
+    "columns": "Columns",
+    "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
     "engine": "Engine",
     "expression": "Expression",
     "filter-database": "Filter database",
+    "index-size": "Index size",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "row-count-est": "Row count est.",
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -542,6 +547,7 @@
     "sync-schema-button": "Sync Schema",
     "sync-status-failed": "Sync failed",
     "transfer-project": "Transfer Project",
+    "type": "Type",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases"
@@ -568,14 +574,27 @@
   "database.sync-complete-for-instance": "Sync complete for instance '{{0}}'",
   "database.sync-database": "Sync Database",
   "db": {
+    "collections": "Collections",
     "character-set": "Character set",
     "collation": "Collation",
     "encoding": "Encoding",
+    "extensions": "Extensions",
+    "external-tables": "External tables",
     "failed-to-sync-schema": "Failed to sync schema",
+    "functions": "Functions",
     "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
+    "packages": "Packages",
+    "schema": {
+      "default": "Default schema"
+    },
+    "sequences": "Sequences",
     "start-to-sync-schema": "Start to sync schema",
+    "streams": "Streams",
     "successfully-synced-schema": "Successfully synced schema",
-    "syncing-databases-for-instance": "Syncing databases for {{0}}..."
+    "syncing-databases-for-instance": "Syncing databases for {{0}}...",
+    "tables": "Tables",
+    "tasks": "Tasks",
+    "views": "Views"
   },
   "db.failed-to-sync-schema": "Failed to sync schema",
   "db.failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{{0}}'.",

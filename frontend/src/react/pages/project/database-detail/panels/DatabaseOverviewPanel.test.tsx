@@ -1,6 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 (
@@ -14,47 +15,47 @@ const mocks = vi.hoisted(() => ({
     removeItem: vi.fn(),
     setItem: vi.fn(),
   },
+  useTranslation: vi.fn(() => ({
+    t: (key: string) => key,
+  })),
   schemaList: [{ name: "public" }, { name: "sales" }],
   routerReplace: vi.fn(),
-  overviewInfoBridge: vi.fn(() => <div data-testid="overview-info-bridge" />),
-  objectExplorerBridge: vi.fn(
-    ({
-      selectedSchemaName,
-      tableSearchKeyword,
-      onSelectedSchemaNameChange,
-      onTableSearchKeywordChange,
-    }: {
-      selectedSchemaName: string;
-      tableSearchKeyword: string;
-      onSelectedSchemaNameChange: (value: string) => void;
-      onTableSearchKeywordChange: (value: string) => void;
-    }) => (
-      <div data-testid="object-explorer-bridge">
-        <select
-          value={selectedSchemaName}
-          onChange={(event) => onSelectedSchemaNameChange(event.target.value)}
-        >
-          {mocks.schemaList.map((schema) => (
-            <option key={schema.name} value={schema.name}>
-              {schema.name}
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="common.filter-by-name"
-          value={tableSearchKeyword}
-          onChange={(event) => onTableSearchKeywordChange(event.target.value)}
-        />
-      </div>
-    )
-  ),
   useVueState: vi.fn(),
   useDBSchemaV1Store: vi.fn(),
+  getDatabaseProject: vi.fn((database: { project: string }) => ({
+    name: database.project,
+  })),
+  hasProjectPermissionV2: vi.fn(
+    (_project?: unknown, _permission?: string) => true
+  ),
+  getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
+  hasSchemaProperty: vi.fn(() => true),
+  instanceV1SupportsPackage: vi.fn(() => false),
+  instanceV1SupportsSequence: vi.fn(() => false),
+  bytesToString: vi.fn((size: number) => `${size} B`),
+  createApp: vi.fn(),
+  h: vi.fn((component: unknown, props: Record<string, unknown>) => ({
+    component,
+    props,
+  })),
 }));
 
 vi.stubGlobal("localStorage", mocks.localStorage);
 
 let DatabaseOverviewPanel: typeof import("./DatabaseOverviewPanel").DatabaseOverviewPanel;
+
+vi.mock("react-i18next", () => ({
+  useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("vue", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("vue")>();
+  return {
+    ...actual,
+    createApp: mocks.createApp,
+    h: mocks.h,
+  };
+});
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
@@ -84,15 +85,37 @@ vi.mock("@/plugins/naive-ui", () => ({
 }));
 
 vi.mock("@/store", () => ({
+  pinia: {
+    install: vi.fn(),
+  },
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
 }));
 
-vi.mock("../legacy/DatabaseOverviewInfoBridge", () => ({
-  DatabaseOverviewInfoBridge: mocks.overviewInfoBridge,
+vi.mock("@/utils", () => ({
+  bytesToString: mocks.bytesToString,
+  getDatabaseEngine: mocks.getDatabaseEngine,
+  getDatabaseProject: mocks.getDatabaseProject,
+  hasProjectPermissionV2: mocks.hasProjectPermissionV2,
+  hasSchemaProperty: mocks.hasSchemaProperty,
+  instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
+  instanceV1SupportsSequence: mocks.instanceV1SupportsSequence,
 }));
 
-vi.mock("../legacy/DatabaseObjectExplorerBridge", () => ({
-  DatabaseObjectExplorerBridge: mocks.objectExplorerBridge,
+vi.mock("@/react/components/ui/input", () => ({
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input {...props} />
+  ),
+}));
+
+vi.mock("@/react/components/ui/dialog", () => ({
+  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
+    open ? <div data-testid="dialog-root">{children}</div> : null,
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h1>{children}</h1>
+  ),
 }));
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
@@ -120,18 +143,6 @@ const flush = async () => {
   });
 };
 
-const setInputValue = (input: HTMLInputElement, value: string) => {
-  act(() => {
-    const descriptor = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value"
-    );
-    descriptor?.set?.call(input, value);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-};
-
 const setSelectValue = (select: HTMLSelectElement, value: string) => {
   act(() => {
     const descriptor = Object.getOwnPropertyDescriptor(
@@ -139,14 +150,21 @@ const setSelectValue = (select: HTMLSelectElement, value: string) => {
       "value"
     );
     descriptor?.set?.call(select, value);
+    select.dispatchEvent(new Event("input", { bubbles: true }));
     select.dispatchEvent(new Event("change", { bubbles: true }));
   });
 };
 
 const makeDatabase = (): Database =>
   ({
-    name: "instances/inst1/databases/db1",
+    name: "instances/inst1/databases/db",
     project: "projects/proj1",
+    effectiveEnvironment: "environments/prod",
+    instanceResource: {
+      name: "instances/inst1",
+      title: "Primary",
+      engine: Engine.POSTGRES,
+    },
   }) as Database;
 
 beforeEach(async () => {
@@ -155,22 +173,76 @@ beforeEach(async () => {
   mocks.localStorage.getItem.mockReturnValue(null);
   mocks.localStorage.removeItem.mockReset();
   mocks.localStorage.setItem.mockReset();
+  mocks.useTranslation.mockReset();
+  mocks.useTranslation.mockReturnValue({
+    t: (key: string) => key,
+  });
   mocks.routerReplace.mockReset();
-  mocks.overviewInfoBridge.mockClear();
-  mocks.objectExplorerBridge.mockClear();
+  mocks.getDatabaseProject.mockReset();
+  mocks.getDatabaseProject.mockImplementation(
+    (database: { project: string }) => ({
+      name: database.project,
+    })
+  );
+  mocks.hasProjectPermissionV2.mockReset();
+  mocks.hasProjectPermissionV2.mockReturnValue(true);
+  mocks.getDatabaseEngine.mockReset();
+  mocks.getDatabaseEngine.mockReturnValue(Engine.POSTGRES);
+  mocks.hasSchemaProperty.mockReset();
+  mocks.hasSchemaProperty.mockReturnValue(true);
+  mocks.instanceV1SupportsPackage.mockReset();
+  mocks.instanceV1SupportsPackage.mockReturnValue(false);
+  mocks.instanceV1SupportsSequence.mockReset();
+  mocks.instanceV1SupportsSequence.mockReturnValue(false);
+  mocks.bytesToString.mockReset();
+  mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
   mocks.useDBSchemaV1Store.mockReset();
   mocks.useDBSchemaV1Store.mockReturnValue({
     getSchemaList: vi.fn(() => mocks.schemaList),
+    getTableList: vi.fn(() => []),
+    getViewList: vi.fn(() => []),
+    getExtensionList: vi.fn(() => []),
+    getExternalTableList: vi.fn(() => []),
+    getFunctionList: vi.fn(() => []),
+    getDatabaseMetadata: vi.fn(() => ({ schemas: [] })),
   });
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+  mocks.createApp.mockReset();
+  mocks.createApp.mockImplementation(() => ({
+    use() {
+      return this;
+    },
+    mount() {},
+    unmount: vi.fn(),
+  }));
 
   vi.resetModules();
   ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
 });
 
 describe("DatabaseOverviewPanel", () => {
-  test("keeps schema selection and search state in React", async () => {
+  test("renders overview info and schema selector without legacy bridge mocks", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("db");
+    expect(container.querySelector("select")).not.toBeNull();
+    expect(
+      container.querySelector('input[placeholder="common.filter-by-name"]')
+    ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("syncs selected schema back to the route query", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseOverviewPanel, {
         database: makeDatabase(),
@@ -185,19 +257,14 @@ describe("DatabaseOverviewPanel", () => {
       "select"
     ) as HTMLSelectElement | null;
     expect(select).not.toBeNull();
-    setSelectValue(select as HTMLSelectElement, "sales");
 
-    const input = container.querySelector("input") as HTMLInputElement | null;
-    expect(input).not.toBeNull();
-    setInputValue(input as HTMLInputElement, "book");
-
+    setSelectValue(select as HTMLSelectElement, "public");
     await flush();
 
-    expect((container.querySelector("select") as HTMLSelectElement).value).toBe(
-      "sales"
-    );
-    expect((container.querySelector("input") as HTMLInputElement).value).toBe(
-      "book"
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({ schema: "public" }),
+      })
     );
 
     unmount();
@@ -214,12 +281,8 @@ describe("DatabaseOverviewPanel", () => {
     render();
     await flush();
 
-    expect(
-      container.querySelector('[data-testid="overview-info-bridge"]')
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-testid="object-explorer-bridge"]')
-    ).toBeNull();
+    expect(container.textContent).toContain("db");
+    expect(container.querySelector("select")).toBeNull();
 
     unmount();
   });
