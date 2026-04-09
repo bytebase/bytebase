@@ -180,6 +180,42 @@ test.describe("Exemption List Page", () => {
 
     await expect(page.getByText("Reason:").first()).toBeVisible();
   });
+
+  test("All tab shows active visual state when selected", async ({ page }) => {
+    const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
+    const projectId = env.project.split("/").pop()!;
+    await exemptionPage.goto(projectId);
+
+    // Click "All" tab
+    await exemptionPage.allTab.click();
+    await page.waitForTimeout(500);
+
+    // "All" tab should have the active underline (border-b-2 + border-accent)
+    // "Active" tab should NOT have the active style
+    await expect(exemptionPage.allTab).toHaveClass(/border-accent|text-accent/);
+    await expect(exemptionPage.activeTab).not.toHaveClass(/border-accent/);
+  });
+
+  test("grant card has no excessive top padding", async ({ page }) => {
+    const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
+    const projectId = env.project.split("/").pop()!;
+    await exemptionPage.goto(projectId);
+    await exemptionPage.selectMember(env.adminEmail);
+    await page.waitForTimeout(500);
+
+    // The grant card's top padding should be minimal (no pt-4 = 16px gap)
+    const grantCard = page.locator("[class*='border border-gray']").first();
+    const cardBox = await grantCard.boundingBox();
+    // The first child (header row) should start near the top of the card
+    const header = grantCard.locator("> div").first();
+    const headerBox = await header.boundingBox();
+    if (cardBox && headerBox) {
+      const topGap = headerBox.y - cardBox.y;
+      // With border (1px) + no padding, gap should be small (< 8px)
+      // The old pt-4 added 16px. Verify it's under 10px.
+      expect(topGap).toBeLessThan(10);
+    }
+  });
 });
 
 // ── Tests from masking-exemption-grant-revoke.spec.ts ──
