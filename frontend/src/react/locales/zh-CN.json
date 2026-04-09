@@ -524,6 +524,7 @@
     "last-sync": "最后一次同步",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
+    "partitioned": "分区",
     "row-count-est": "估算行数",
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",

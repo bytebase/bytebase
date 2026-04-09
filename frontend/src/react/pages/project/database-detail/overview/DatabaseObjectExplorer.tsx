@@ -23,7 +23,11 @@ import {
   type ObjectSectionRow,
   ObjectSectionTable,
 } from "./ObjectSectionTable";
-import { TableDetailDialog } from "./TableDetailDialog";
+import {
+  TableDetailDialog,
+  type TableDetailDialogData,
+} from "./TableDetailDialog";
+import { TableMetadataTable } from "./TableMetadataTable";
 
 function filterByKeyword(name: string, keyword: string) {
   return name.toLowerCase().includes(keyword.trim().toLowerCase());
@@ -110,6 +114,19 @@ export function DatabaseObjectExplorer({
   const selectedTable = tableList.find(
     (table) => table.name === selectedTableName
   );
+  const selectedTableDetail: TableDetailDialogData | undefined = selectedTable
+    ? {
+        name: selectedTable.name,
+        rowCount: String(selectedTable.rowCount),
+        dataSize: bytesToString(Number(selectedTable.dataSize)),
+        indexSize: bytesToString(Number(selectedTable.indexSize)),
+        columns: selectedTable.columns.map((column) => ({
+          name: column.name,
+          type: column.type,
+          comment: column.comment,
+        })),
+      }
+    : undefined;
 
   useEffect(() => {
     setSelectedTableName((current) =>
@@ -141,16 +158,6 @@ export function DatabaseObjectExplorer({
       },
     });
   }, [selectedTableName]);
-
-  const tableRows: ObjectSectionRow[] = tableList
-    .filter((table) => filterByKeyword(table.name, tableSearchKeyword))
-    .map((table) => ({
-      key: table.name,
-      name: table.name,
-      description: `${t("database.row-count-est")}: ${String(table.rowCount)}, ${t("database.data-size")}: ${bytesToString(Number(table.dataSize))}`,
-      comment: table.comment,
-      onClick: () => setSelectedTableName(table.name),
-    }));
 
   const viewRows: ObjectSectionRow[] = viewList.map((view) => ({
     key: view.name,
@@ -258,7 +265,15 @@ export function DatabaseObjectExplorer({
                 }
               />
             </div>
-            <ObjectSectionTable loading={loading} rows={tableRows} />
+            <TableMetadataTable
+              database={database}
+              loading={loading}
+              rows={tableList.filter((table) =>
+                filterByKeyword(table.name, tableSearchKeyword)
+              )}
+              schemaName={selectedSchemaName}
+              onRowClick={(table) => setSelectedTableName(table.name)}
+            />
           </section>
 
           <section className="space-y-4">
@@ -345,7 +360,7 @@ export function DatabaseObjectExplorer({
 
       <TableDetailDialog
         open={!!selectedTableName}
-        table={selectedTable}
+        table={selectedTableDetail}
         onOpenChange={(open) => {
           if (!open) {
             setSelectedTableName("");

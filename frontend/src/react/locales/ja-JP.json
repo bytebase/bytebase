@@ -524,6 +524,7 @@
     "last-sync": "最後の同期",
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
+    "partitioned": "パーティション",
     "row-count-est": "推定行数",
     "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",

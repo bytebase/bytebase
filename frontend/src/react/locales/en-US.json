@@ -524,6 +524,7 @@
     "last-sync": "Last sync",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",

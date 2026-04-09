@@ -4,15 +4,24 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
-import { bytesToString } from "@/utils";
+export interface TableDetailDialogData {
+  columns: {
+    comment?: string;
+    name: string;
+    type: string;
+  }[];
+  dataSize: string;
+  indexSize: string;
+  name: string;
+  rowCount: string;
+}
 
 export function TableDetailDialog({
   table,
   open,
   onOpenChange,
 }: {
-  table?: TableMetadata;
+  table?: TableDetailDialogData;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -31,25 +40,19 @@ export function TableDetailDialog({
             <div className="text-sm font-medium text-control-light">
               {t("database.row-count-est")}
             </div>
-            <div className="mt-1 text-sm text-main">
-              {String(table.rowCount)}
-            </div>
+            <div className="mt-1 text-sm text-main">{table.rowCount}</div>
           </div>
           <div>
             <div className="text-sm font-medium text-control-light">
               {t("database.data-size")}
             </div>
-            <div className="mt-1 text-sm text-main">
-              {bytesToString(Number(table.dataSize))}
-            </div>
+            <div className="mt-1 text-sm text-main">{table.dataSize}</div>
           </div>
           <div>
             <div className="text-sm font-medium text-control-light">
               {t("database.index-size")}
             </div>
-            <div className="mt-1 text-sm text-main">
-              {bytesToString(Number(table.indexSize))}
-            </div>
+            <div className="mt-1 text-sm text-main">{table.indexSize}</div>
           </div>
         </div>
         <div className="mt-6">

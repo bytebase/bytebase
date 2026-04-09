@@ -33,8 +33,12 @@ const mocks = vi.hoisted(() => {
     routerReplace: vi.fn(() => Promise.resolve()),
     useVueState: vi.fn(),
     useDBSchemaV1Store: vi.fn(),
+    useDatabaseCatalog: vi.fn(),
+    getTableCatalog: vi.fn(),
+    featureToRef: vi.fn(() => ({ value: true })),
     getDatabaseProject: vi.fn((database: { project: string }) => ({
       name: database.project,
+      dataClassificationConfigId: "classification-config",
     })),
     hasProjectPermissionV2: vi.fn(
       (_project?: unknown, _permission?: string) => true
@@ -70,6 +74,9 @@ vi.mock("@/router", () => ({
 
 vi.mock("@/store", () => ({
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
+  useDatabaseCatalog: mocks.useDatabaseCatalog,
+  getTableCatalog: mocks.getTableCatalog,
+  featureToRef: mocks.featureToRef,
 }));
 
 vi.mock("@/utils", () => ({
@@ -213,6 +220,7 @@ beforeEach(async () => {
   mocks.getDatabaseProject.mockImplementation(
     (database: { project: string }) => ({
       name: database.project,
+      dataClassificationConfigId: "classification-config",
     })
   );
   mocks.hasProjectPermissionV2.mockReset();
@@ -245,6 +253,20 @@ beforeEach(async () => {
       schemas: [],
     })),
   });
+  mocks.useDatabaseCatalog.mockReset();
+  mocks.useDatabaseCatalog.mockReturnValue({
+    value: {
+      schemas: [],
+    },
+  });
+  mocks.getTableCatalog.mockReset();
+  mocks.getTableCatalog.mockReturnValue({
+    classification: "",
+  });
+  mocks.featureToRef.mockReset();
+  mocks.featureToRef.mockReturnValue({
+    value: true,
+  });
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
@@ -276,6 +298,38 @@ describe("DatabaseOverviewPanel", () => {
     expect(
       container.querySelector('input[placeholder="common.filter-by-name"]')
     ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("renders the legacy tables header instead of the generic object header", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    const tableHeaderText = Array.from(container.querySelectorAll("th")).map(
+      (cell) => cell.textContent
+    );
+
+    expect(tableHeaderText).toEqual(
+      expect.arrayContaining([
+        "common.schema",
+        "common.name",
+        "database.classification.self",
+        "database.partitioned",
+        "database.row-count-est",
+        "database.data-size",
+        "database.index-size",
+        "common.comment",
+      ])
+    );
+    expect(tableHeaderText).not.toContain("common.definition");
 
     unmount();
   });
