@@ -77,7 +77,7 @@ func (s *Store) GetGroupByName(ctx context.Context, workspace, name string) (*Gr
 // GetGroup gets a group.
 func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMessage, error) {
 	if find.Email != nil && find.Workspace != "" {
-		if v, ok := s.groupCache.Get(getGroupCacheKey(find.Workspace, *find.Email)); ok && s.enableCache {
+		if v, ok := s.groupCache.Get(getGroupCacheKey(find.Workspace, &GroupMessage{Email: *find.Email})); ok && s.enableCache {
 			return v, nil
 		}
 	}
@@ -191,7 +191,7 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	}
 
 	for _, group := range groups {
-		s.groupCache.Add(getGroupCacheKey(group.Workspace, group.Email), group)
+		s.groupCache.Add(getGroupCacheKey(group.Workspace, group), group)
 	}
 	return groups, nil
 }
@@ -233,9 +233,7 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, err
 	}
 
-	if create.Email != "" {
-		s.groupCache.Add(getGroupCacheKey(create.Workspace, create.Email), create)
-	}
+	s.groupCache.Add(getGroupCacheKey(create.Workspace, create), create)
 	return create, nil
 }
 
@@ -300,10 +298,8 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 	}
 
 	group.Workspace = patch.Workspace
-	if group.Email != "" {
-		s.groupCache.Add(getGroupCacheKey(group.Workspace, group.Email), &group)
-		s.groupMembersCache.Remove(getGroupMembersCacheKey(group.Workspace, "groups/"+group.Email))
-	}
+	s.groupCache.Add(getGroupCacheKey(group.Workspace, &group), &group)
+	s.removeGroupMembersCache(group.Workspace, &group)
 	return &group, nil
 }
 
@@ -320,10 +316,12 @@ func (s *Store) DeleteGroup(ctx context.Context, workspace string, id string) er
 		return err
 	}
 
-	if email.Valid && email.String != "" {
-		s.groupCache.Remove(getGroupCacheKey(workspace, email.String))
-		s.groupMembersCache.Remove(getGroupMembersCacheKey(workspace, "groups/"+email.String))
+	group := &GroupMessage{ID: id}
+	if email.Valid {
+		group.Email = email.String
 	}
+	s.groupCache.Remove(getGroupCacheKey(workspace, group))
+	s.removeGroupMembersCache(group.Workspace, group)
 	return nil
 }
 
@@ -361,7 +359,8 @@ func (s *Store) GetUserGroupsSnapshot(ctx context.Context, workspaceID string, u
 // groupName format is "groups/{identifier}" where identifier can be an email or an ID.
 // Trades consistency for performance.
 func (s *Store) GetGroupMembersSnapshot(ctx context.Context, workspaceID string, groupName string) (map[string]bool, error) {
-	if v, ok := s.groupMembersCache.Get(getGroupMembersCacheKey(workspaceID, groupName)); ok {
+	cacheKey := getGroupMembersCacheKey(workspaceID, groupName)
+	if v, ok := s.groupMembersCache.Get(cacheKey); ok {
 		return v, nil
 	}
 
@@ -377,7 +376,7 @@ func (s *Store) GetGroupMembersSnapshot(ctx context.Context, workspaceID string,
 	for _, m := range group.Payload.GetMembers() {
 		members[m.Member] = true
 	}
-	s.groupMembersCache.Add(getGroupMembersCacheKey(workspaceID, groupName), members)
+	s.groupMembersCache.Add(cacheKey, members)
 	return members, nil
 }
 

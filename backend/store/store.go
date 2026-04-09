@@ -133,6 +133,13 @@ func (s *Store) PurgeIamPolicyCaches() {
 	s.iamPolicyCache.Purge()
 }
 
+// removeGroupMembersCache removes all possible cache entries for a group's members,
+// covering both groups/{email} and groups/{id} lookups.
+func (s *Store) removeGroupMembersCache(workspace string, group *GroupMessage) {
+	cacheKey := getGroupMembersCacheKey(workspace, formatGroupName(group))
+	s.groupMembersCache.Remove(cacheKey)
+}
+
 func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
@@ -141,12 +148,21 @@ func getSettingCacheKey(workspace string, name storepb.SettingName) string {
 	return fmt.Sprintf("workspaces/%s/settings/%s", workspace, name.String())
 }
 
-func getGroupCacheKey(workspace, email string) string {
-	return fmt.Sprintf("workspaces/%s/groups/%s", workspace, email)
+// formatGroupName returns "groups/{email}" if email is set, otherwise "groups/{id}".
+// This mirrors utils.FormatGroupName but avoids a circular import.
+func formatGroupName(group *GroupMessage) string {
+	if group.Email != "" {
+		return "groups/" + group.Email
+	}
+	return "groups/" + group.ID
+}
+
+func getGroupCacheKey(workspace string, group *GroupMessage) string {
+	return fmt.Sprintf("workspaces/%s/%s", workspace, formatGroupName(group))
 }
 
 func getGroupMembersCacheKey(workspace, groupName string) string {
-	return fmt.Sprintf("workspaces/%s/%s", workspace, groupName)
+	return fmt.Sprintf("workspaces/%s/%s/members", workspace, groupName)
 }
 
 func getMemberGroupsCacheKey(workspace, userName string) string {
