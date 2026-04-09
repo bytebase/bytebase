@@ -279,7 +279,7 @@ describe("DatabaseRevisionPanel", () => {
 
     expect(mocks.createSheet).toHaveBeenCalledTimes(1);
     expect(mocks.batchCreateRevisions).toHaveBeenCalledTimes(1);
-    expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
+    expect(mocks.listRevisions).toHaveBeenCalledTimes(3);
 
     unmount();
   });
@@ -313,6 +313,83 @@ describe("DatabaseRevisionPanel", () => {
       "instances/inst1/databases/db1/revisions/1"
     );
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
+
+    unmount();
+  });
+
+  test("checks duplicate versions across paginated revision results", async () => {
+    mocks.listRevisions.mockReset();
+    mocks.listRevisions
+      .mockResolvedValueOnce({
+        nextPageToken: "page-2",
+        revisions: [
+          {
+            name: "instances/inst1/databases/db1/revisions/1",
+            version: "1.0.0",
+            type: Revision_Type.VERSIONED,
+          } as Revision,
+        ],
+      })
+      .mockResolvedValueOnce({
+        nextPageToken: "page-2",
+        revisions: [
+          {
+            name: "instances/inst1/databases/db1/revisions/1",
+            version: "1.0.0",
+            type: Revision_Type.VERSIONED,
+          } as Revision,
+        ],
+      })
+      .mockResolvedValueOnce({
+        nextPageToken: "",
+        revisions: [
+          {
+            name: "instances/inst1/databases/db1/revisions/2",
+            version: "2.0.0",
+            type: Revision_Type.VERSIONED,
+          } as Revision,
+        ],
+      });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseRevisionPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    const importButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.import"
+    ) as HTMLButtonElement | undefined;
+    expect(importButton).toBeDefined();
+
+    click(importButton as HTMLButtonElement);
+    await flush();
+
+    const versionInput = container.querySelector(
+      'input[name="version"]'
+    ) as HTMLInputElement | null;
+    const statementInput = container.querySelector(
+      'textarea[name="statement"]'
+    ) as HTMLTextAreaElement | null;
+    expect(versionInput).not.toBeNull();
+    expect(statementInput).not.toBeNull();
+
+    inputValue(versionInput as HTMLInputElement, "2.0.0");
+    inputValue(statementInput as HTMLTextAreaElement, "select 1;");
+    await flush();
+
+    expect(container.textContent).toContain(
+      "database.revision.version-already-exists"
+    );
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement | undefined;
+    expect(createButton).toBeDefined();
+    expect(createButton?.disabled).toBe(true);
 
     unmount();
   });

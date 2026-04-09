@@ -8,6 +8,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(() => true),
   localStorage: {
     clear: vi.fn(),
     getItem: vi.fn(() => null),
@@ -70,6 +71,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let DatabaseCatalogPanel: typeof import("./DatabaseCatalogPanel").DatabaseCatalogPanel;
+
+vi.stubGlobal("confirm", mocks.confirm);
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -220,6 +223,8 @@ const makeDatabase = (): Database =>
   }) as Database;
 
 beforeEach(async () => {
+  mocks.confirm.mockReset();
+  mocks.confirm.mockReturnValue(true);
   vi.stubGlobal("localStorage", mocks.localStorage);
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
@@ -397,6 +402,51 @@ describe("DatabaseCatalogPanel", () => {
       }),
       undefined
     );
+
+    unmount();
+  });
+
+  test("clears deleted columns from the checked selection", async () => {
+    const updateDatabaseCatalog = vi.fn().mockResolvedValue(undefined);
+    mocks.useDatabaseCatalogV1Store.mockReturnValue({
+      updateDatabaseCatalog,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+    render();
+    await flush();
+
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    expect(checkbox).not.toBeNull();
+    click(checkbox as HTMLElement);
+    await flush();
+
+    const grantAccessButtonBeforeDelete = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "settings.sensitive-data.grant-access"
+    );
+    expect(grantAccessButtonBeforeDelete?.hasAttribute("disabled")).toBe(false);
+
+    const deleteButton = container.querySelector(
+      'button[aria-label="common.remove"]'
+    );
+    expect(deleteButton).not.toBeNull();
+    click(deleteButton as HTMLElement);
+    await flush();
+
+    expect(updateDatabaseCatalog).toHaveBeenCalledTimes(1);
+
+    const grantAccessButtonAfterDelete = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "settings.sensitive-data.grant-access"
+    );
+    expect(grantAccessButtonAfterDelete?.hasAttribute("disabled")).toBe(true);
 
     unmount();
   });

@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { revisionServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
@@ -18,6 +18,9 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
   const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
+    useState(false);
+  const [existingVersions, setExistingVersions] = useState<string[]>([]);
+  const [isLoadingExistingVersions, setIsLoadingExistingVersions] =
     useState(false);
   const fetchRevisionList = useCallback(
     async ({
@@ -41,10 +44,58 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     },
     [database.name]
   );
+  const fetchAllRevisionVersions = useCallback(async () => {
+    const versions = new Set<string>();
+    let pageToken = "";
+
+    do {
+      const request = create(ListRevisionsRequestSchema, {
+        parent: database.name,
+        pageSize: 1000,
+        pageToken,
+      });
+      const { nextPageToken, revisions } =
+        await revisionServiceClientConnect.listRevisions(request);
+
+      for (const revision of revisions) {
+        if (revision.version) {
+          versions.add(revision.version);
+        }
+      }
+
+      pageToken = nextPageToken;
+    } while (pageToken);
+
+    return Array.from(versions);
+  }, [database.name]);
   const paged = usePagedData<Revision>({
     sessionKey: `bb.paged-revision-table.${database.name}`,
     fetchList: fetchRevisionList,
   });
+
+  useEffect(() => {
+    if (!showCreateRevisionDrawer) {
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingExistingVersions(true);
+    void fetchAllRevisionVersions()
+      .then((versions) => {
+        if (!cancelled) {
+          setExistingVersions(versions);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingExistingVersions(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchAllRevisionVersions, showCreateRevisionDrawer]);
 
   const handleRevisionCreated = useCallback(
     (_revisions: RevisionMessage[]) => {
@@ -94,9 +145,8 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
       </div>
       <CreateRevisionDialog
         databaseName={database.name}
-        existingVersions={paged.dataList
-          .map((revision) => revision.version)
-          .filter((version): version is string => !!version)}
+        existingVersions={existingVersions}
+        isCheckingExistingVersions={isLoadingExistingVersions}
         open={showCreateRevisionDrawer}
         projectName={database.project}
         onOpenChange={setShowCreateRevisionDrawer}

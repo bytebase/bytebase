@@ -118,6 +118,14 @@ export function DatabaseObjectExplorer({
   }, [routeTable]);
 
   useEffect(() => {
+    if (!selectedTableName || loading || selectedTable) {
+      return;
+    }
+
+    setSelectedTableName("");
+  }, [loading, selectedTable, selectedTableName]);
+
+  useEffect(() => {
     const currentQuery = router.currentRoute.value.query;
     const currentTable =
       typeof currentQuery.table === "string" ? currentQuery.table : "";

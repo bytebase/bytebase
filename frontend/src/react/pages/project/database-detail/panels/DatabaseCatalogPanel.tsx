@@ -6,7 +6,10 @@ import type {
   MaskData,
   MaskDataTarget,
 } from "@/components/SensitiveData/types";
-import { isCurrentColumnException } from "@/components/SensitiveData/utils";
+import {
+  getMaskDataIdentifier,
+  isCurrentColumnException,
+} from "@/components/SensitiveData/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -255,6 +258,13 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   };
 
   const handleDelete = async (item: MaskData) => {
+    const deletedColumnId = getMaskDataIdentifier(item);
+    setCheckedColumnList((current) =>
+      current.filter(
+        (selectedColumn) =>
+          getMaskDataIdentifier(selectedColumn) !== deletedColumnId
+      )
+    );
     if (hasSemanticType(item.target)) {
       item.target.semanticType = "";
     }

@@ -93,7 +93,7 @@ export function DatabaseOverviewPanel({
         <div className="border-t border-block-border pt-6">
           <DatabaseObjectExplorer
             database={database}
-            loading={schemaList.length > 0 && !selectedSchemaName}
+            loading={schemaList.length > 0 && !schemaSelectionReady}
             selectedSchemaName={selectedSchemaName}
             tableSearchKeyword={tableSearchKeyword}
             externalTableSearchKeyword={externalTableSearchKeyword}

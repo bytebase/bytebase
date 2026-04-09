@@ -19,6 +19,7 @@ import {
 export function CreateRevisionDialog({
   databaseName,
   existingVersions,
+  isCheckingExistingVersions,
   open,
   projectName,
   onCreated,
@@ -26,6 +27,7 @@ export function CreateRevisionDialog({
 }: {
   databaseName: string;
   existingVersions: string[];
+  isCheckingExistingVersions: boolean;
   open: boolean;
   projectName: string;
   onCreated: (revisions: Revision[]) => void;
@@ -57,6 +59,7 @@ export function CreateRevisionDialog({
   const canCreate =
     normalizedVersion.length > 0 &&
     statement.trim().length > 0 &&
+    !isCheckingExistingVersions &&
     isValidVersion &&
     !isDuplicateVersion;
 
@@ -126,6 +129,11 @@ export function CreateRevisionDialog({
             {isDuplicateVersion && (
               <p className="text-sm text-error">
                 {t("database.revision.version-already-exists")}
+              </p>
+            )}
+            {isCheckingExistingVersions && (
+              <p className="text-sm text-control-light">
+                {t("common.loading")}...
               </p>
             )}
           </div>

@@ -423,7 +423,7 @@ describe("DatabaseOverviewPanel", () => {
     unmount();
   });
 
-  test("renders loading states for object sections before the schema selection resolves", async () => {
+  test("treats the empty-string schema as a valid resolved selection", async () => {
     mocks.schemaList = [{ name: "" }];
     mocks.useDBSchemaV1Store.mockReturnValue({
       getSchemaList: vi.fn(() => mocks.schemaList),
@@ -450,13 +450,41 @@ describe("DatabaseOverviewPanel", () => {
     );
 
     render();
+    await flush();
 
-    expect(container.textContent).toContain("common.loading");
-    expect(container.textContent).not.toContain(
-      "common.namecommon.definitioncommon.comment-"
+    expect(container.textContent).not.toContain("common.loading");
+    expect(container.querySelector("select")?.getAttribute("disabled")).toBe(
+      null
     );
 
     unmount();
+  });
+
+  test("clears a stale table query when the table does not exist", async () => {
+    const { router } = await import("@/router");
+    router.currentRoute.value.query = { schema: "public", table: "missing" };
+
+    const { render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(mocks.routerReplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          schema: "public",
+          table: undefined,
+        }),
+      })
+    );
+
+    unmount();
+    router.currentRoute.value.query = {};
   });
 
   test("keeps an existing schema query instead of clearing it during initialization", async () => {

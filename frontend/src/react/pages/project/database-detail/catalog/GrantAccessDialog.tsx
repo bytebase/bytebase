@@ -9,7 +9,6 @@ import {
   getExpressionsForDatabaseResource,
 } from "@/components/SensitiveData/utils";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
-import { DatabaseResourceSelector } from "@/react/components/DatabaseResourceSelector";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -44,9 +43,10 @@ export function GrantAccessDialog({
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
 
-  const [databaseResources, setDatabaseResources] = useState<
-    DatabaseResource[]
-  >(() => columnList.map(convertSensitiveColumnToDatabaseResource));
+  const databaseResources = useMemo<DatabaseResource[]>(
+    () => columnList.map(convertSensitiveColumnToDatabaseResource),
+    [columnList]
+  );
   const [description, setDescription] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<
     string | undefined
@@ -162,11 +162,28 @@ export function GrantAccessDialog({
             <span className="text-sm font-medium text-main">
               {t("common.resources")}
             </span>
-            <DatabaseResourceSelector
-              projectName={projectName}
-              value={databaseResources}
-              onChange={setDatabaseResources}
-            />
+            <div className="max-h-60 overflow-y-auto rounded-sm border border-control-border">
+              {databaseResources.map((resource) => (
+                <div
+                  key={[
+                    resource.databaseFullName,
+                    resource.schema ?? "",
+                    resource.table ?? "",
+                    (resource.columns ?? []).join(","),
+                  ].join("/")}
+                  className="border-b border-control-border px-3 py-2 text-sm last:border-b-0"
+                >
+                  {[
+                    resource.databaseFullName.split("/").pop(),
+                    resource.schema,
+                    resource.table,
+                    ...(resource.columns ?? []),
+                  ]
+                    .filter(Boolean)
+                    .join(".")}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-col gap-y-2">
