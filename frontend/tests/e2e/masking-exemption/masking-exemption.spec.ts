@@ -351,37 +351,8 @@ test.describe("Grant and Revoke", () => {
 test.describe("E2E Masking Verification", () => {
   test.setTimeout(120_000);
 
-  test("revoke via UI and verify data becomes masked", async ({ page }) => {
-    const projectId = env.project.split("/").pop()!;
-    const instanceId = env.instance.split("/").pop()!;
-    const dbId = env.database.split("/").pop()!;
-    const listPage = new MaskingExemptionPage(page, env.baseURL);
-    const sqlEditor = new SqlEditorPage(page, env.baseURL);
-
-    // Clean slate: only one exemption so revoking .first() removes it
-    await revokeAllExemptions();
-    await grantExemption("e2e UI revoke test");
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
-
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
-
-    await listPage.goto(projectId);
-    await listPage.selectMember(env.adminEmail);
-    await page.waitForTimeout(500);
-    const revokeBtn = page.getByRole("button", { name: "Revoke" }).first();
-    await revokeBtn.click();
-    await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
-    await page.waitForTimeout(500);
-
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
-
-    await grantExemption("cleanup");
-  });
-
+  // This test runs FIRST: its initial check expects masked data (false),
+  // which avoids the NVirtualList first-render detection issue.
   test("grant via UI and verify data becomes unmasked", async ({ page }) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
@@ -406,6 +377,34 @@ test.describe("E2E Masking Verification", () => {
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
+  });
+
+  test("revoke via UI and verify data becomes masked", async ({ page }) => {
+    const projectId = env.project.split("/").pop()!;
+    const instanceId = env.instance.split("/").pop()!;
+    const dbId = env.database.split("/").pop()!;
+    const listPage = new MaskingExemptionPage(page, env.baseURL);
+    const sqlEditor = new SqlEditorPage(page, env.baseURL);
+
+    await revokeAllExemptions();
+    await grantExemption("e2e UI revoke test");
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
+
+    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.runQuery(sql);
+    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
+
+    await listPage.goto(projectId);
+    await listPage.selectMember(env.adminEmail);
+    await page.waitForTimeout(500);
+    const revokeBtn = page.getByRole("button", { name: "Revoke" }).first();
+    await revokeBtn.click();
+    await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
+    await page.waitForTimeout(500);
+
+    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.runQuery(sql);
+    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
   });
 });
 
