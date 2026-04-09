@@ -11,6 +11,7 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import { ExprEditor } from "@/react/components/ExprEditor";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -175,9 +176,9 @@ export function RuleEditDialog({
         <div className="flex flex-1 flex-col gap-y-4 overflow-y-auto px-6 py-4">
           {/* Fallback hint */}
           {isFallback && (
-            <div className="rounded-xs bg-amber-50 p-3 text-sm text-amber-600">
+            <Alert variant="warning">
               {t("custom-approval.approval-flow.fallback-rules-hint")}
-            </div>
+            </Alert>
           )}
 
           {/* Template presets (create mode only) */}

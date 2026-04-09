@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -359,22 +360,31 @@ export function InstanceFormProvider({
     [specs]
   );
 
-  const pendingCreateInstance = useMemo(() => {
-    const currentLabels = convertKVListToLabels(labelKVList, false);
-    const inst: Instance = create(InstanceSchema, {
-      ...basicInfo,
-      labels: currentLabels,
-      engineVersion: "",
-      dataSources: [],
-    });
-    if (editingDataSource) {
-      const dataSourceCreate = extractDataSourceFromEdit(
-        inst.engine,
-        adminDataSource
-      );
-      inst.dataSources = [dataSourceCreate];
-    }
-    return inst;
+  // Debounced to avoid expensive cloneDeep + extraction on every keystroke.
+  const [pendingCreateInstance, setPendingCreateInstance] = useState<Instance>(
+    () => create(InstanceSchema, {})
+  );
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    clearTimeout(pendingTimerRef.current);
+    pendingTimerRef.current = setTimeout(() => {
+      const currentLabels = convertKVListToLabels(labelKVList, false);
+      const inst: Instance = create(InstanceSchema, {
+        ...basicInfo,
+        labels: currentLabels,
+        engineVersion: "",
+        dataSources: [],
+      });
+      if (editingDataSource) {
+        const dataSourceCreate = extractDataSourceFromEdit(
+          inst.engine,
+          adminDataSource
+        );
+        inst.dataSources = [dataSourceCreate];
+      }
+      setPendingCreateInstance(inst);
+    }, 300);
+    return () => clearTimeout(pendingTimerRef.current);
   }, [
     basicInfo,
     labelKVList,
@@ -487,18 +497,28 @@ export function InstanceFormProvider({
     ]
   );
 
-  const valueChanged = useMemo(() => {
-    if (instance?.state === State.DELETED) return false;
-    const original = {
-      basicInfo: extractBasicInfo(instance),
-      dataSources: extractDataSourceEditState(instance).dataSources,
-    };
-    const currentLabels = convertKVListToLabels(labelKVList, false);
-    const editing = {
-      basicInfo: { ...basicInfo, labels: currentLabels },
-      dataSources: dataSourceEditState.dataSources,
-    };
-    return !isEqual(editing, original);
+  // Debounced valueChanged to avoid expensive deep comparison on every keystroke.
+  const [valueChanged, setValueChanged] = useState(false);
+  const valueChangedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    clearTimeout(valueChangedTimerRef.current);
+    valueChangedTimerRef.current = setTimeout(() => {
+      if (instance?.state === State.DELETED) {
+        setValueChanged(false);
+        return;
+      }
+      const original = {
+        basicInfo: extractBasicInfo(instance),
+        dataSources: extractDataSourceEditState(instance).dataSources,
+      };
+      const currentLabels = convertKVListToLabels(labelKVList, false);
+      const editing = {
+        basicInfo: { ...basicInfo, labels: currentLabels },
+        dataSources: dataSourceEditState.dataSources,
+      };
+      setValueChanged(!isEqual(editing, original));
+    }, 300);
+    return () => clearTimeout(valueChangedTimerRef.current);
   }, [instance, basicInfo, labelKVList, dataSourceEditState.dataSources]);
 
   const isEditing = valueChanged && allowEdit;

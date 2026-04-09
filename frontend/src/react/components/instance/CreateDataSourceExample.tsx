@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/react/components/ui/alert";
 import {
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
@@ -380,9 +381,9 @@ function EngineSpecificDescription({
   if (engine === Engine.POSTGRES) {
     return (
       <>
-        <div className="my-2 rounded-xs border border-yellow-400 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+        <Alert variant="warning" className="my-2">
           {t("instance.sentence.create-user-example.postgresql.warn")}
-        </div>
+        </Alert>
         {authenticationType ===
         DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ? (
           <p>

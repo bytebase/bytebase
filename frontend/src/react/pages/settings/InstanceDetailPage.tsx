@@ -16,6 +16,7 @@ import {
   InstanceSyncButton,
 } from "@/react/components/instance";
 import { EngineIconPath } from "@/react/components/instance/constants";
+import { Alert } from "@/react/components/ui/alert";
 import {
   Tabs,
   TabsList,
@@ -136,7 +137,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const engineIconSrc = EngineIconPath[instance.engine];
 
   return (
-    <div className="pt-4 flex flex-col gap-y-2 px-6">
+    <div className="p-4 flex flex-col gap-y-2">
       {/* Archive banner */}
       {instance.state === State.DELETED && (
         <div className="bg-gray-700 text-white text-center py-2 rounded-sm text-sm font-medium">
@@ -146,9 +147,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
       {/* No environment warning */}
       {!instance.environment && (
-        <div className="w-full mb-4 rounded-sm bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+        <Alert variant="warning" className="mb-4">
           {t("instance.no-environment")}
-        </div>
+        </Alert>
       )}
 
       {/* Header */}
@@ -183,14 +184,14 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
         <TabsPanel value="overview">
           <InstanceFormProvider instance={instance}>
-            <div className="-mt-2">
+            <div>
               <InstanceFormBody />
               <InstanceFormButtons className="sticky bottom-0 z-10" />
             </div>
           </InstanceFormProvider>
         </TabsPanel>
 
-        <TabsPanel value="databases">
+        <TabsPanel value="databases" keepMounted={false}>
           <div className="flex flex-col gap-y-2">
             <AdvancedSearch
               params={searchParams}

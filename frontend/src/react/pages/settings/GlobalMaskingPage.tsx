@@ -24,6 +24,7 @@ import {
 } from "@/plugins/cel";
 import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -555,9 +556,9 @@ export function GlobalMaskingPage() {
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
       {hasSensitiveDataFeature && (
-        <div className="rounded-xs border border-blue-200 bg-blue-50 text-blue-800 px-4 py-3 text-sm">
+        <Alert variant="info">
           {t("custom-approval.rule.first-match-wins")}
-        </div>
+        </Alert>
       )}
 
       {/* Toolbar */}

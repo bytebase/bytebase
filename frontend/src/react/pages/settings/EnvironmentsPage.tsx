@@ -17,6 +17,12 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Tabs,
+  TabsList,
+  TabsPanel,
+  TabsTrigger,
+} from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
@@ -1363,10 +1369,6 @@ export function EnvironmentsPage() {
     });
   };
 
-  const selectedEnvironment = useMemo(() => {
-    return environmentList.find((e) => e.id === selectedId);
-  }, [environmentList, selectedId]);
-
   const handleCreate = async (params: {
     environment: Partial<Environment>;
     rolloutPolicy: Policy;
@@ -1424,56 +1426,55 @@ export function EnvironmentsPage() {
 
   return (
     <div className="py-4 w-full h-full flex flex-col gap-4">
-      {/* Tabs header */}
-      <div className="flex items-center border-b border-control-border">
-        <div className="flex-1 flex overflow-x-auto overflow-y-hidden">
-          {environmentList.map((env, index) => (
-            <button
-              key={env.id}
-              type="button"
-              className={`relative flex items-center gap-x-2 px-4 pb-2 pt-1 text-sm font-medium whitespace-nowrap cursor-pointer transition-colors ${
-                selectedId === env.id
-                  ? "text-accent after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:bg-accent"
-                  : "text-control-light hover:text-control"
-              }`}
-              onClick={() => selectTab(env.id)}
-            >
-              <span className="text-opacity-60">{index + 1}.</span>
-              <EnvironmentName environment={env} />
-            </button>
-          ))}
+      <Tabs
+        value={selectedId}
+        onValueChange={(v) => selectTab(v as string)}
+        className="flex-1 flex flex-col overflow-hidden"
+      >
+        <div className="flex items-center border-b border-control-border">
+          <TabsList className="flex-1 overflow-x-auto overflow-y-hidden gap-x-0 border-none">
+            {environmentList.map((env, index) => (
+              <TabsTrigger key={env.id} value={env.id} className="px-4 pt-1">
+                <span className="text-opacity-60 mr-1">{index + 1}.</span>
+                <EnvironmentName environment={env} />
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {/* Toolbar */}
+          <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
+            <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
+              <Button
+                variant="outline"
+                disabled={!canEdit || environmentList.length <= 1}
+                onClick={() => setShowReorder(true)}
+              >
+                <ListOrdered className="h-4 w-4 mr-1" />
+                {t("common.reorder")}
+              </Button>
+              <Button disabled={!canEdit} onClick={() => setShowCreate(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                {t("common.create")}
+              </Button>
+            </div>
+          </PermissionGuard>
         </div>
 
-        {/* Toolbar */}
-        <PermissionGuard permissions={["bb.settings.setEnvironment"]}>
-          <div className="flex items-center justify-end gap-x-2 px-2 pb-1 shrink-0">
-            <Button
-              variant="outline"
-              disabled={!canEdit || environmentList.length <= 1}
-              onClick={() => setShowReorder(true)}
-            >
-              <ListOrdered className="h-4 w-4 mr-1" />
-              {t("common.reorder")}
-            </Button>
-            <Button disabled={!canEdit} onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              {t("common.create")}
-            </Button>
-          </div>
-        </PermissionGuard>
-      </div>
-
-      {/* Tab content */}
-      <div className="flex-1 overflow-auto">
-        {selectedEnvironment && (
-          <EnvironmentDetail
-            key={selectedEnvironment.id}
-            environment={selectedEnvironment}
-            onDelete={handleDelete}
-            onDirtyChange={setDetailDirty}
-          />
-        )}
-      </div>
+        {/* Tab content */}
+        {environmentList.map((env) => (
+          <TabsPanel
+            key={env.id}
+            value={env.id}
+            className="flex-1 overflow-auto mt-0"
+          >
+            <EnvironmentDetail
+              environment={env}
+              onDelete={handleDelete}
+              onDirtyChange={setDetailDirty}
+            />
+          </TabsPanel>
+        ))}
+      </Tabs>
 
       {/* Create drawer */}
       {showCreate && (

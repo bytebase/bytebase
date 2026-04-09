@@ -1,16 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
+import { LabelListEditor } from "@/react/components/LabelListEditor";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -499,156 +495,6 @@ function ResourceIdField({
   );
 }
 
-// Matches Vue LabelListEditor + LabelEditorRow exactly
-const MAX_LABEL_VALUE_LENGTH = 256;
-
-function LabelListEditor({
-  kvList,
-  onChange,
-  readonly,
-  showErrors = true,
-  onErrorsChange,
-}: {
-  kvList: { key: string; value: string }[];
-  onChange: (list: { key: string; value: string }[]) => void;
-  readonly: boolean;
-  showErrors?: boolean;
-  onErrorsChange?: (errors: string[]) => void;
-}) {
-  const { t } = useTranslation();
-
-  // Compute validation errors for each kv pair
-  const errorList = useMemo(() => {
-    return kvList.map((kv) => {
-      const errors = { key: [] as string[], value: [] as string[] };
-      if (!kv.key) {
-        errors.key.push(t("label.error.key-necessary"));
-      } else if (kvList.filter((k) => k.key === kv.key).length > 1) {
-        errors.key.push(t("label.error.key-duplicated"));
-      }
-      if (!kv.value) {
-        errors.value.push(t("label.error.value-necessary"));
-      } else if (kv.value.length > MAX_LABEL_VALUE_LENGTH) {
-        errors.value.push(
-          t("label.error.max-value-length-exceeded", {
-            length: MAX_LABEL_VALUE_LENGTH,
-          })
-        );
-      }
-      return errors;
-    });
-  }, [kvList, t]);
-
-  const flatErrors = useMemo(() => {
-    return errorList.flatMap((e) => [...e.key, ...e.value]);
-  }, [errorList]);
-
-  const hasErrors = flatErrors.length > 0;
-
-  useEffect(() => {
-    onErrorsChange?.(flatErrors);
-  }, [flatErrors, onErrorsChange]);
-
-  const allowAddLabel = !hasErrors;
-
-  const updateKey = (index: number, key: string) => {
-    onChange(kvList.map((kv, i) => (i === index ? { ...kv, key } : kv)));
-  };
-  const updateValue = (index: number, value: string) => {
-    onChange(kvList.map((kv, i) => (i === index ? { ...kv, value } : kv)));
-  };
-  const handleRemove = (index: number) => {
-    onChange(kvList.filter((_, i) => i !== index));
-  };
-  const handleAdd = () => {
-    onChange([...kvList, { key: "", value: "" }]);
-  };
-
-  return (
-    <div className="flex flex-col gap-y-2">
-      <div className="flex flex-wrap gap-x-2 gap-y-2">
-        {kvList.map((kv, index) => {
-          const errors = showErrors
-            ? (errorList[index] ?? { key: [], value: [] })
-            : { key: [], value: [] };
-          const combinedErrors = [...errors.key, ...errors.value];
-          return (
-            <div key={index} className="flex flex-col gap-y-1">
-              <div className="text-sm flex gap-x-2">
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium mb-1">
-                    Key {index + 1}
-                  </span>
-                  {readonly ? (
-                    <span className="leading-[34px]">{kv.key}</span>
-                  ) : (
-                    <Input
-                      value={kv.key}
-                      placeholder={t("setting.label.key-placeholder")}
-                      className={errors.key.length > 0 ? "border-error" : ""}
-                      onChange={(e) => updateKey(index, e.target.value)}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium mb-1">
-                    Value {index + 1}
-                  </span>
-                  <div className="flex items-center gap-x-2">
-                    {readonly ? (
-                      <span className="leading-[34px]">
-                        {kv.value || (
-                          <span className="text-control-placeholder">
-                            {t("label.empty-label-value")}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <Input
-                        value={kv.value}
-                        placeholder={t("setting.label.value-placeholder")}
-                        className={
-                          errors.value.length > 0 ? "border-error" : ""
-                        }
-                        onChange={(e) => updateValue(index, e.target.value)}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      className={`ml-1 ${readonly ? "invisible" : "visible"} text-control-light hover:text-error`}
-                      onClick={() => handleRemove(index)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {combinedErrors.length > 0 && (
-                <ul className="text-xs text-error list-disc list-outside pl-4">
-                  {combinedErrors.map((err) => (
-                    <li key={err}>{err}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={readonly || !allowAddLabel}
-          onClick={handleAdd}
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          {t("label.add-label")}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 const MIN_SCAN_MINUTES = 30;
 
 function ScanIntervalInput({
@@ -771,6 +617,8 @@ function ScanIntervalInput({
   );
 }
 
+const MAX_VISIBLE_DATABASES = 100;
+
 function SyncDatabases({
   isCreating: isCreatingProp,
   showLabel,
@@ -786,30 +634,35 @@ function SyncDatabases({
 }) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
-  const { hideAdvancedFeatures, instance } = ctx;
+  const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
   const instanceStore = useInstanceV1Store();
 
   const [syncAll, setSyncAll] = useState(syncDatabases.length === 0);
-  const [selectedDatabases, setSelectedDatabases] = useState<string[]>([
-    ...syncDatabases,
-  ]);
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(
+    () => new Set(syncDatabases)
+  );
   const [databaseList, setDatabaseList] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [inputDatabase, setInputDatabase] = useState("");
 
+  // Notify parent only when selection actually changes.
+  const onSyncDatabasesChangeRef = useRef(onSyncDatabasesChange);
+  onSyncDatabasesChangeRef.current = onSyncDatabasesChange;
+  const prevNotifiedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (syncAll) {
-      onSyncDatabasesChange([]);
-    } else {
-      onSyncDatabasesChange(selectedDatabases);
-    }
-  }, [syncAll, selectedDatabases]);
+    const key = syncAll ? "" : [...selectedSet].sort().join("\0");
+    if (key === prevNotifiedRef.current) return;
+    prevNotifiedRef.current = key;
+    onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet]);
+  }, [syncAll, selectedSet]);
 
   useEffect(() => {
     if (syncAll) return;
+    let cancelled = false;
     const fetchDatabases = async () => {
-      const inst = isCreatingProp ? ctx.pendingCreateInstance : instance;
+      const inst = isCreatingProp ? pendingCreateInstance : instance;
       if (!inst) return;
       setLoading(true);
       try {
@@ -817,19 +670,29 @@ function SyncDatabases({
           inst.name,
           isCreatingProp ? inst : undefined
         );
-        setDatabaseList(new Set([...resp.databases, ...selectedDatabases]));
+        if (!cancelled) {
+          setDatabaseList(new Set([...resp.databases, ...selectedSet]));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchDatabases();
+    return () => {
+      cancelled = true;
+    };
   }, [syncAll]);
 
   if (hideAdvancedFeatures) return null;
 
-  const filteredDatabases = [...databaseList].filter((db) =>
-    db.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const lowerSearch = searchText.toLowerCase();
+  const filteredDatabases = lowerSearch
+    ? [...databaseList].filter((db) => db.toLowerCase().includes(lowerSearch))
+    : [...databaseList];
+  const hasMore = filteredDatabases.length > MAX_VISIBLE_DATABASES;
+  const visibleDatabases = hasMore
+    ? filteredDatabases.slice(0, MAX_VISIBLE_DATABASES)
+    : filteredDatabases;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -837,15 +700,21 @@ function SyncDatabases({
     if (!trimmed) return;
     if (e.key === "Enter") {
       setDatabaseList((prev) => new Set([...prev, trimmed]));
-      setSelectedDatabases((prev) => [...prev, trimmed]);
+      setSelectedSet((prev) => new Set([...prev, trimmed]));
       setInputDatabase("");
     }
   };
 
   const toggleDatabase = (db: string) => {
-    setSelectedDatabases((prev) =>
-      prev.includes(db) ? prev.filter((d) => d !== db) : [...prev, db]
-    );
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(db)) {
+        next.delete(db);
+      } else {
+        next.add(db);
+      }
+      return next;
+    });
   };
 
   return (
@@ -885,14 +754,14 @@ function SyncDatabases({
                   onChange={(e) => setSearchText(e.target.value)}
                 />
                 <div className="max-h-[250px] overflow-y-auto flex flex-col gap-y-1">
-                  {filteredDatabases.map((db) => (
+                  {visibleDatabases.map((db) => (
                     <label
                       key={db}
                       className="flex items-center gap-x-2 cursor-pointer text-sm"
                     >
                       <input
                         type="checkbox"
-                        checked={selectedDatabases.includes(db)}
+                        checked={selectedSet.has(db)}
                         disabled={!allowEdit}
                         onChange={() => toggleDatabase(db)}
                       />
@@ -900,6 +769,13 @@ function SyncDatabases({
                     </label>
                   ))}
                 </div>
+                {hasMore && (
+                  <div className="text-xs text-control-light">
+                    {t("common.n-more", {
+                      n: filteredDatabases.length - MAX_VISIBLE_DATABASES,
+                    })}
+                  </div>
+                )}
                 <Input
                   value={inputDatabase}
                   className="w-full"
@@ -1602,7 +1478,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     <Input
                       value={basicInfo.externalLink ?? ""}
                       required
-                      className="textfield mt-1 w-full"
+                      className="mt-1 w-full"
                       disabled={!allowEdit}
                       placeholder={SnowflakeExtraLinkPlaceHolder}
                       onChange={(e) =>
@@ -1623,12 +1499,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
             )}
 
-            {/* Sync Databases (edit mode) */}
-            {!isCreating && (
+            {/* Sync Databases */}
+            {basicInfo.engine !== Engine.DYNAMODB && (
               <SyncDatabases
-                isCreating={false}
-                showLabel
-                allowEdit={allowEdit}
+                isCreating={isCreating}
+                showLabel={!isCreating}
+                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
                 syncDatabases={basicInfo.syncDatabases}
                 onSyncDatabasesChange={handleChangeSyncDatabases}
               />
@@ -1946,16 +1822,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
 
               {actuatorStore.isSaaSMode && (
-                <div className="mt-4 rounded-sm border-none bg-blue-50 p-3">
+                <Alert variant="info" className="mt-4">
                   <a
                     href="https://docs.bytebase.com/get-started/cloud#prerequisites"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="normal-link text-sm"
+                    className="normal-link"
                   >
                     {t("instance.sentence.firewall-info")}
                   </a>
-                </div>
+                </Alert>
               )}
             </>
           )}
@@ -2008,22 +1884,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 ? `${t("instance.test-connection")}...`
                 : t("instance.test-connection")}
             </Button>
-          </div>
-        )}
-
-        {/* Sync Databases Card (create only) */}
-        {basicInfo.engine !== Engine.DYNAMODB && isCreating && (
-          <div className="border border-block-border rounded-lg p-5 flex flex-col gap-y-1">
-            <p className="w-full text-lg leading-6 font-medium text-gray-900">
-              {t("instance.sync-databases.self")}
-            </p>
-            <SyncDatabases
-              isCreating
-              showLabel={false}
-              allowEdit={allowEdit && !!allowCreate}
-              syncDatabases={basicInfo.syncDatabases}
-              onSyncDatabasesChange={handleChangeSyncDatabases}
-            />
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useInstanceV1Store } from "@/store";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
@@ -112,10 +113,11 @@ export function DataSourceSection({
   return (
     <>
       {showROTips && (
-        <div className="mt-2 rounded-sm bg-yellow-50 border border-yellow-200 p-3 flex items-center justify-between">
-          <span className="text-sm text-yellow-800">
-            {t("data-source.no-read-only-data-source")}
-          </span>
+        <Alert
+          variant="warning"
+          className="mt-2 flex items-center justify-between"
+        >
+          <span>{t("data-source.no-read-only-data-source")}</span>
           <Button
             variant="outline"
             size="sm"
@@ -123,7 +125,7 @@ export function DataSourceSection({
           >
             {t("common.create")}
           </Button>
-        </div>
+        </Alert>
       )}
 
       <div className="mt-2 gap-y-2 gap-x-4 border-none">
