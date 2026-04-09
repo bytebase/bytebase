@@ -146,7 +146,6 @@
     "clear-filters": "清除过滤",
     "close": "关闭",
     "closed": "已关闭",
-    "columns": "列",
     "comment": "评论",
     "configure": "配置",
     "configure-now": "现在配置",
@@ -1890,7 +1889,6 @@
   },
   "sql-editor": {
     "access-grants": "访问授权",
-    "access-grants-redirect-hint": "前往 {link} 查看和管理您自己的访问授权。",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
     "expired": "已过期",

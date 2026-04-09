@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -643,43 +644,49 @@ export function ProjectSettingsPage() {
             <h1 className="text-2xl font-bold">{t("common.general")}</h1>
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0">
-            <form className="w-full flex flex-col gap-y-4">
-              <div>
-                <div className="font-medium">
-                  {t("common.name")} <span className="text-error">*</span>
+            <PermissionGuard
+              permissions={["bb.projects.update"]}
+              project={project}
+              display="block"
+            >
+              <form className="w-full flex flex-col gap-y-4">
+                <div>
+                  <div className="font-medium">
+                    {t("common.name")} <span className="text-error">*</span>
+                  </div>
+                  <Input
+                    className="mt-1"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={
+                      !canUpdateProject ||
+                      isDefault ||
+                      project.state !== State.ACTIVE
+                    }
+                    required
+                  />
+                  <div className="mt-1 text-sm text-control-light">
+                    {t("common.id")}: {extractProjectResourceName(project.name)}
+                  </div>
                 </div>
-                <Input
-                  className="mt-1"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  disabled={
-                    !canUpdateProject ||
-                    isDefault ||
-                    project.state !== State.ACTIVE
-                  }
-                  required
-                />
-                <div className="mt-1 text-sm text-control-light">
-                  {t("common.id")}: {extractProjectResourceName(project.name)}
-                </div>
-              </div>
 
-              {/* Project Labels */}
-              <div>
-                <div className="font-medium">
-                  {t("project.settings.project-labels.self")}
+                {/* Project Labels */}
+                <div>
+                  <div className="font-medium">
+                    {t("project.settings.project-labels.self")}
+                  </div>
+                  <div className="text-sm text-gray-500 mb-3">
+                    {t("project.settings.project-labels.description")}
+                  </div>
+                  <LabelListEditor
+                    kvList={labelKVList}
+                    onChange={setLabelKVList}
+                    readonly={!canUpdateProject}
+                    onErrorsChange={setLabelErrors}
+                  />
                 </div>
-                <div className="text-sm text-gray-500 mb-3">
-                  {t("project.settings.project-labels.description")}
-                </div>
-                <LabelListEditor
-                  kvList={labelKVList}
-                  onChange={setLabelKVList}
-                  readonly={!canUpdateProject}
-                  onErrorsChange={setLabelErrors}
-                />
-              </div>
-            </form>
+              </form>
+            </PermissionGuard>
           </div>
         </div>
 

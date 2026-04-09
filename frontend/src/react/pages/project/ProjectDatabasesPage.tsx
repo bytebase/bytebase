@@ -17,6 +17,7 @@ import {
   LabelEditorDrawer,
 } from "@/react/components/database";
 import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -355,16 +356,27 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             placeholder={t("database.filter-database")}
             scopeOptions={scopeOptions}
           />
-          <Button
-            disabled={
-              !hasProjectPermission("bb.instances.list") ||
-              !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(hasProjectPermission)
-            }
-            onClick={() => setShowCreateDrawer(true)}
+          <PermissionGuard
+            permissions={[
+              "bb.instances.list",
+              "bb.plans.create",
+              "bb.sheets.create",
+            ]}
+            project={project}
           >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("common.create")}
-          </Button>
+            <Button
+              disabled={
+                !hasProjectPermission("bb.instances.list") ||
+                !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(
+                  hasProjectPermission
+                )
+              }
+              onClick={() => setShowCreateDrawer(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              {t("common.create")}
+            </Button>
+          </PermissionGuard>
         </div>
       </div>
 

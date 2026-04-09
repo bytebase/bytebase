@@ -20,6 +20,10 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -80,7 +84,6 @@ import {
   generatePlanTitle,
   getDatabaseEnvironment,
   getInstanceResource,
-  hasProjectPermissionV2,
   humanizeTs,
   type SearchParams as VueSearchParams,
 } from "@/utils";
@@ -193,11 +196,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     [t, userStore, me]
   );
 
-  // Permission check
-  const canCreate = useMemo(() => {
-    if (!project) return false;
-    return hasProjectPermissionV2(project, "bb.plans.create");
-  }, [project]);
+  const [canCreate] = usePermissionCheck(["bb.plans.create"], project);
 
   // Build plan filter
   const planFilter = useMemo(() => {
@@ -304,14 +303,9 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
               onParamsChange={setSearchParams}
               scopeOptions={scopeOptions}
             />
-            <Tooltip
-              content={
-                !canCreate
-                  ? t("common.missing-required-permission", {
-                      permissions: "bb.plans.create",
-                    })
-                  : undefined
-              }
+            <PermissionGuard
+              permissions={["bb.plans.create"]}
+              project={project}
             >
               <Button
                 disabled={!canCreate}
@@ -320,7 +314,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
                 <Plus className="w-4 h-4 mr-1" />
                 {t("plan.new-plan")}
               </Button>
-            </Tooltip>
+            </PermissionGuard>
           </div>
         </div>
       </div>

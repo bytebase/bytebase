@@ -2,6 +2,7 @@ import { ArrowRightLeft, Pencil } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { preCreateIssue } from "@/components/Plan/logic/issue";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { usePermissionStore, useProjectV1Store } from "@/store";
@@ -65,32 +66,49 @@ export function DatabaseDetailActions({
   return (
     <>
       <div className="flex shrink-0 flex-wrap items-center justify-start gap-x-2 gap-y-2">
-        <DatabaseSyncButton database={database} disabled={!canSync} />
-        <DatabaseExportSchemaButton
-          database={database}
-          disabled={!canExportSchema}
-        />
+        <PermissionGuard permissions={["bb.databases.sync"]} project={project}>
+          <DatabaseSyncButton database={database} disabled={!canSync} />
+        </PermissionGuard>
+        <PermissionGuard
+          permissions={["bb.databases.getSchema"]}
+          project={project}
+        >
+          <DatabaseExportSchemaButton
+            database={database}
+            disabled={!canExportSchema}
+          />
+        </PermissionGuard>
         {!isDefaultProject && (
-          <Button
-            variant="outline"
-            disabled={!canUpdate}
-            onClick={onOpenTransferProject}
+          <PermissionGuard
+            permissions={["bb.databases.update"]}
+            project={project}
           >
-            <ArrowRightLeft className="h-4 w-4" />
-            {t("database.transfer-project")}
-          </Button>
+            <Button
+              variant="outline"
+              disabled={!canUpdate}
+              onClick={onOpenTransferProject}
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              {t("database.transfer-project")}
+            </Button>
+          </PermissionGuard>
         )}
         {!isDefaultProject && (
-          <Button
-            variant="outline"
-            disabled={!canChangeDatabase}
-            onClick={() =>
-              void preCreateIssue(database.project, [database.name])
-            }
+          <PermissionGuard
+            permissions={["bb.plans.create", "bb.sheets.create"]}
+            project={project}
           >
-            <Pencil className="h-4 w-4" />
-            {t("database.change-database")}
-          </Button>
+            <Button
+              variant="outline"
+              disabled={!canChangeDatabase}
+              onClick={() =>
+                void preCreateIssue(database.project, [database.name])
+              }
+            >
+              <Pencil className="h-4 w-4" />
+              {t("database.change-database")}
+            </Button>
+          </PermissionGuard>
         )}
       </div>
     </>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
@@ -13,7 +14,6 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
-import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -390,14 +390,9 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 onSearch={setWiSearch}
                 className="max-w-lg"
               />
-              <Tooltip
-                content={
-                  canCreateWorkloadIdentity
-                    ? undefined
-                    : t("common.missing-required-permission", {
-                        permissions: "bb.workloadIdentities.create",
-                      })
-                }
+              <PermissionGuard
+                permissions={["bb.workloadIdentities.create"]}
+                project={project}
               >
                 <Button
                   variant="outline"
@@ -406,7 +401,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 >
                   {t("common.create")}
                 </Button>
-              </Tooltip>
+              </PermissionGuard>
             </div>
             {repoUrl && (
               <a

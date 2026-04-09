@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, ShieldAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
@@ -9,7 +9,9 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
+import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -17,7 +19,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -135,10 +136,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   // --- Search state ---
   const [searchParams, setSearchParams] =
     useState<SearchParams>(emptySearchParams);
-
-  // --- Created-time range state ---
-  const [createdAfter, setCreatedAfter] = useState("");
-  const [createdBefore, setCreatedBefore] = useState("");
 
   // --- Sort state ---
   const [sortKey, setSortKey] = useState<SortKey | "">("");
@@ -312,22 +309,13 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       if (query) {
         filter.statement = query;
       }
-      if (createdAfter) {
-        const [y, m, d] = createdAfter.split("-").map(Number);
-        filter.createdTsAfter = new Date(y, m - 1, d).getTime();
-      }
-      if (createdBefore) {
-        const [y, m, d] = createdBefore.split("-").map(Number);
-        // End of the selected day (23:59:59.999)
-        filter.createdTsBefore = new Date(
-          y,
-          m - 1,
-          d,
-          23,
-          59,
-          59,
-          999
-        ).getTime();
+      const createdScope = searchParams.scopes.find((s) => s.id === "created");
+      if (createdScope) {
+        const parts = createdScope.value.split(",");
+        if (parts.length === 2) {
+          filter.createdTsAfter = parseInt(parts[0], 10);
+          filter.createdTsBefore = parseInt(parts[1], 10);
+        }
       }
       const response = await accessGrantStore.listAccessGrants({
         parent: projectName,
@@ -341,14 +329,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         nextPageToken: response.nextPageToken,
       };
     },
-    [
-      projectName,
-      accessGrantStore,
-      searchParams,
-      orderBy,
-      createdAfter,
-      createdBefore,
-    ]
+    [projectName, accessGrantStore, searchParams, orderBy]
   );
 
   const paged = usePagedData<AccessGrant>({
@@ -385,7 +366,11 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         <FeatureAttention feature={PlanFeature.FEATURE_JIT} />
       </div>
 
-      {canList ? (
+      <ComponentPermissionGuard
+        permissions={["bb.accessGrants.list"]}
+        project={project}
+        className="mx-4"
+      >
         <>
           <div className="px-4 pb-2 flex items-center gap-x-2">
             <AdvancedSearch
@@ -394,23 +379,10 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               scopeOptions={scopeOptions}
               placeholder={t("issue.advanced-search.filter")}
             />
-            <div className="flex items-center gap-x-1 shrink-0">
-              <Input
-                type="date"
-                className="w-36 text-xs"
-                value={createdAfter}
-                onChange={(e) => setCreatedAfter(e.target.value)}
-                title={t("common.from")}
-              />
-              <span className="text-control-light text-xs">–</span>
-              <Input
-                type="date"
-                className="w-36 text-xs"
-                value={createdBefore}
-                onChange={(e) => setCreatedBefore(e.target.value)}
-                title={t("common.to")}
-              />
-            </div>
+            <TimeRangePicker
+              params={searchParams}
+              onParamsChange={setSearchParams}
+            />
           </div>
 
           {!hasJITFeature ? (
@@ -497,59 +469,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </div>
           )}
         </>
-      ) : (
-        <div className="mx-4 mt-2 flex flex-col gap-y-3">
-          {/* Permission guard fallback */}
-          <div
-            role="alert"
-            className="relative w-full rounded-xs border border-error/30 bg-error/5 text-error px-4 py-3 text-sm flex gap-x-3"
-          >
-            <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-2">
-              <h5 className="font-medium leading-tight">
-                {t("common.missing-required-permission", { permissions: "" })}
-              </h5>
-              <div>
-                {t("common.required-permission")}
-                <ul className="list-disc pl-4">
-                  <li>bb.accessGrants.list</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Redirect hint */}
-          <div className="flex items-start gap-3 rounded-xs border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            <span>
-              {t("sql-editor.access-grants-redirect-hint")
-                .split("{link}")
-                .map((part, i) =>
-                  i === 0 ? (
-                    <span key={i}>{part}</span>
-                  ) : (
-                    <span key={i}>
-                      <a
-                        className="normal-link"
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push({
-                            name: "sql-editor.project",
-                            params: { project: projectId },
-                            query: { panel: "access" },
-                          });
-                        }}
-                      >
-                        {t("sql-editor.self")}
-                      </a>
-                      {part}
-                    </span>
-                  )
-                )}
-            </span>
-          </div>
-        </div>
-      )}
+      </ComponentPermissionGuard>
 
       {/* Activate / Revoke confirmation dialog */}
       <Dialog

@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rulesToTemplate } from "@/components/SQLReview/components/utils";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { AttachResourcesPanel } from "@/react/components/sql-review/Panels";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { ReviewCreation } from "@/react/components/sql-review/ReviewCreation";
@@ -257,36 +258,42 @@ export function SQLReviewDetailPage({
           </h1>
         )}
         <div className="flex gap-x-2">
-          {reviewPolicy.enforce ? (
+          <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
+            {reviewPolicy.enforce ? (
+              <Button
+                variant="outline"
+                disabled={!hasUpdatePermission}
+                onClick={() => setShowDisableModal(true)}
+              >
+                {t("common.disable")}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                disabled={!hasUpdatePermission}
+                onClick={() => setShowEnableModal(true)}
+              >
+                {t("common.enable")}
+              </Button>
+            )}
+          </PermissionGuard>
+          <PermissionGuard permissions={["bb.policies.update"]}>
             <Button
               variant="outline"
-              disabled={!hasUpdatePermission}
-              onClick={() => setShowDisableModal(true)}
+              disabled={!hasWorkspacePermissionV2("bb.policies.update")}
+              onClick={() => setShowResourcePanel(true)}
             >
-              {t("common.disable")}
+              {t("sql-review.attach-resource.change-resources")}
             </Button>
-          ) : (
+          </PermissionGuard>
+          <PermissionGuard permissions={["bb.reviewConfigs.update"]}>
             <Button
-              variant="outline"
               disabled={!hasUpdatePermission}
-              onClick={() => setShowEnableModal(true)}
+              onClick={() => setEditMode(true)}
             >
-              {t("common.enable")}
+              {t("sql-review.create.configure-rule.change-template")}
             </Button>
-          )}
-          <Button
-            variant="outline"
-            disabled={!hasWorkspacePermissionV2("bb.policies.update")}
-            onClick={() => setShowResourcePanel(true)}
-          >
-            {t("sql-review.attach-resource.change-resources")}
-          </Button>
-          <Button
-            disabled={!hasUpdatePermission}
-            onClick={() => setEditMode(true)}
-          >
-            {t("sql-review.create.configure-rule.change-template")}
-          </Button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -341,14 +348,16 @@ export function SQLReviewDetailPage({
 
       {/* Delete button */}
       <hr className="my-6" />
-      <Button
-        variant="destructive"
-        disabled={!hasDeletePermission}
-        onClick={() => setShowDeleteConfirm(true)}
-      >
-        <Trash2 className="w-4 h-4 mr-1" />
-        {t("sql-review.delete")}
-      </Button>
+      <PermissionGuard permissions={["bb.reviewConfigs.delete"]}>
+        <Button
+          variant="destructive"
+          disabled={!hasDeletePermission}
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          <Trash2 className="w-4 h-4 mr-1" />
+          {t("sql-review.delete")}
+        </Button>
+      </PermissionGuard>
 
       {/* Sticky save bar when rules changed */}
       {rulesUpdated && (

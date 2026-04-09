@@ -1,6 +1,7 @@
 import { EllipsisVertical, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -93,10 +94,12 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
   return (
     <div className="py-4 flex flex-col">
       <div className="px-4 pb-2 flex items-center justify-end">
-        <Button disabled={!allowEdit} onClick={handleAdd}>
-          <Plus className="w-4 h-4 mr-1" />
-          {t("common.create")}
-        </Button>
+        <PermissionGuard permissions={["bb.projects.update"]} project={project}>
+          <Button disabled={!allowEdit} onClick={handleAdd}>
+            <Plus className="w-4 h-4 mr-1" />
+            {t("common.create")}
+          </Button>
+        </PermissionGuard>
       </div>
 
       <WebhookTable

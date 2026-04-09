@@ -229,8 +229,20 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	}
 
 	// Guard: count members in the new policy BEFORE saving.
-	if err := userCountGuard(ctx, s.store, s.licenseService, workspaceID, iamPolicy, s.profile.SaaS); err != nil {
-		return nil, err
+	// Allow over-limit workspaces to reduce seats incrementally (e.g. after license downgrade).
+	userLimit := s.licenseService.GetUserLimit(ctx, workspaceID)
+	newCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy, s.profile.SaaS)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
+	}
+	if newCount > userLimit {
+		oldCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, policyMessage.Policy, s.profile.SaaS)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
+		}
+		if newCount >= oldCount {
+			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
+		}
 	}
 
 	payloadBytes, err := protojson.Marshal(iamPolicy)
