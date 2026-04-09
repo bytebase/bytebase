@@ -1,7 +1,9 @@
 import { create } from "@bufbuild/protobuf";
+import { NConfigProvider } from "naive-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createApp, h, reactive } from "vue";
+import { themeOverrides } from "@/../naive-ui.config";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import i18n from "@/plugins/i18n";
@@ -53,12 +55,19 @@ function VueCreateRevisionDrawerMount({
 
     const app = createApp({
       render() {
-        return h(CreateRevisionDrawer as never, {
-          database: bridgeState.databaseName,
-          show: bridgeState.open,
-          "onUpdate:show": bridgeState.onOpenChange,
-          onCreated: bridgeState.onCreated,
-        });
+        return h(
+          NConfigProvider as never,
+          { themeOverrides: themeOverrides.value },
+          {
+            default: () =>
+              h(CreateRevisionDrawer as never, {
+                database: bridgeState.databaseName,
+                show: bridgeState.open,
+                "onUpdate:show": bridgeState.onOpenChange,
+                onCreated: bridgeState.onCreated,
+              }),
+          }
+        );
       },
     });
     app.use(router).use(pinia).use(i18n).use(NaiveUI);

@@ -37,10 +37,20 @@ const mocks = vi.hoisted(() => ({
     }
   >,
   createApp: vi.fn(),
-  h: vi.fn((component: unknown, props: Record<string, unknown>) => ({
-    component,
-    props,
-  })),
+  h: vi.fn(
+    (
+      component: unknown,
+      props: Record<string, unknown> | null,
+      slots?: { default?: () => unknown }
+    ) => {
+      // If called with slots (wrapper components like NConfigProvider),
+      // return the slot content to unwrap the wrapper.
+      if (slots?.default) {
+        return slots.default();
+      }
+      return { component, props };
+    }
+  ),
 }));
 
 let DatabaseRevisionPanel: typeof import("./DatabaseRevisionPanel").DatabaseRevisionPanel;
@@ -73,6 +83,18 @@ vi.mock("@/plugins/i18n", () => ({
   default: {
     install: vi.fn(),
   },
+}));
+
+vi.mock("naive-ui", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("naive-ui")>();
+  return {
+    ...actual,
+    NConfigProvider: Symbol("NConfigProvider"),
+  };
+});
+
+vi.mock("@/../naive-ui.config", () => ({
+  themeOverrides: { value: {} },
 }));
 
 vi.mock("@/plugins/naive-ui", () => ({

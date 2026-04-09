@@ -1,5 +1,7 @@
+import { NConfigProvider } from "naive-ui";
 import { useEffect, useRef } from "react";
 import { createApp, h, reactive } from "vue";
+import { themeOverrides } from "@/../naive-ui.config";
 import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import OverlayStackManager from "@/components/misc/OverlayStackManager.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
@@ -64,25 +66,32 @@ export function VueTableDetailDrawerMount({
 
     const app = createApp({
       render() {
-        return h(OverlayStackManager as never, null, {
-          default: () =>
-            h(TableDetailDrawer as never, {
-              show: bridgeState.show,
-              databaseName: bridgeState.databaseName,
-              schemaName: bridgeState.schemaName,
-              tableName: bridgeState.tableName,
-              classificationConfig: bridgeState.classificationConfig,
-              onDismiss: bridgeState.onDismiss,
-              onApplyClassification: (table: string, id: string) => {
-                void updateTableCatalog({
-                  database: bridgeState.databaseName,
-                  schema: bridgeState.schemaName,
-                  table,
-                  tableCatalog: { classification: id },
-                });
-              },
-            }),
-        });
+        return h(
+          NConfigProvider as never,
+          { themeOverrides: themeOverrides.value },
+          {
+            default: () =>
+              h(OverlayStackManager as never, null, {
+                default: () =>
+                  h(TableDetailDrawer as never, {
+                    show: bridgeState.show,
+                    databaseName: bridgeState.databaseName,
+                    schemaName: bridgeState.schemaName,
+                    tableName: bridgeState.tableName,
+                    classificationConfig: bridgeState.classificationConfig,
+                    onDismiss: bridgeState.onDismiss,
+                    onApplyClassification: (table: string, id: string) => {
+                      void updateTableCatalog({
+                        database: bridgeState.databaseName,
+                        schema: bridgeState.schemaName,
+                        table,
+                        tableCatalog: { classification: id },
+                      });
+                    },
+                  }),
+              }),
+          }
+        );
       },
     });
     app.use(router).use(pinia).use(i18n).use(NaiveUI);
