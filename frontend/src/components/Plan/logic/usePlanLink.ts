@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { isApprovalCompleted } from "./approval";
 import { usePlanContext } from "./context";
 
 /**
@@ -21,19 +21,7 @@ export const usePlanLink = () => {
     );
   });
 
-  const issueApproved = computed(() => {
-    const issueValue = issue.value;
-    if (!issueValue) return false;
-
-    const hasNoApprovalRequired =
-      (issueValue.approvalTemplate?.flow?.roles ?? []).length === 0;
-
-    return (
-      issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-      issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
-      hasNoApprovalRequired
-    );
-  });
+  const issueApproved = computed(() => isApprovalCompleted(issue.value));
 
   const shouldShow = computed(() => {
     if (route.name !== PROJECT_V1_ROUTE_ISSUE_DETAIL) return false;

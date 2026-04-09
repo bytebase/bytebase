@@ -27,12 +27,12 @@ import { NAlert } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
+import { isApprovalCompleted } from "@/components/Plan/logic/approval";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { usePlanCheckStatus } from "@/components/Plan/logic/usePlanCheckStatus";
 import { issueServiceClientConnect } from "@/connect";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
-  Issue_ApprovalStatus,
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -56,14 +56,7 @@ const isDatabaseChangePlan = computed(
     )
 );
 
-const issueApprovalCompleted = computed(() => {
-  const roles = issue.value.approvalTemplate?.flow?.roles ?? [];
-  return (
-    issue.value.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issue.value.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
-    roles.length === 0
-  );
-});
+const issueApprovalCompleted = computed(() => isApprovalCompleted(issue.value));
 
 const showChecksManualRolloutHint = computed(() => {
   return (
