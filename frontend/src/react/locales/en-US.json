@@ -225,6 +225,7 @@
     "members_other": "Members",
     "minutes": "Minutes",
     "missing-required-permission": "Missing required permissions {{permissions}}",
+    "missing-required-permission-for-resource": "Missing required permissions for resource {{resource}}",
     "n-items-selected": "{{n}} items selected",
     "n-more": "+{{n}} more",
     "name": "Name",
@@ -314,6 +315,7 @@
   "common.archived": "Archived",
   "common.cancel": "Cancel",
   "common.cannot-undo-this-action": "You cannot undo this action",
+  "common.catalog": "Catalog",
   "common.close": "Close",
   "common.confirm": "Confirm",
   "common.continue-anyway": "Continue anyway",
@@ -329,6 +331,7 @@
   "common.detailed-guide": "detailed guide",
   "common.edit": "Edit",
   "common.environment": "Environment",
+  "common.import": "Import",
   "common.key": "Key",
   "common.labels": "Labels",
   "common.learn-more": "Learn more",
@@ -554,9 +557,16 @@
     "unmatched-database": "Unmatched database"
   },
   "database.engine": "Engine",
+  "database.export-schema": "Export Schema",
+  "database.export-schema-multi-file": "Multi-File (ZIP)",
+  "database.export-schema-single-file": "Single File",
+  "database.failed-to-export-schema": "Failed to export schema",
   "database.filter-database": "Filter database",
+  "database.labels": "Database Labels",
   "database.revision.self": "Revision",
+  "database.successfully-exported-schema": "Successfully exported schema",
   "database.sync-complete-for-instance": "Sync complete for instance '{{0}}'",
+  "database.sync-database": "Sync Database",
   "db": {
     "character-set": "Character set",
     "collation": "Collation",
@@ -568,8 +578,10 @@
     "syncing-databases-for-instance": "Syncing databases for {{0}}..."
   },
   "db.failed-to-sync-schema": "Failed to sync schema",
+  "db.failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
   "db.start-to-sync-schema": "Start to sync schema",
+  "db.successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{{0}}'.",
   "db.syncing-databases-for-instance": "Syncing databases for {{0}}...",
   "dynamic.resource.instance": "Instance ID",
   "environment": {
@@ -1324,6 +1336,7 @@
       "self_other": "Stages"
     }
   },
+  "schema-diagram.self": "Schema Diagram",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1710,6 +1723,7 @@
         },
         "re-order": "Re-order"
       },
+      "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "semantic-types": {
         "label": "Columns having the same semantic type will use the same masking algorithms.",

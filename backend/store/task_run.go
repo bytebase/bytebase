@@ -597,12 +597,12 @@ func (s *Store) ListTaskRunsByStatus(ctx context.Context, statuses []storepb.Tas
 	var taskRuns []*TaskRunMessage
 	for rows.Next() {
 		var taskRun TaskRunMessage
-		var resultJSON string
-		var payloadJSON string
+		var creatorEmail sql.NullString
 		var statusString string
+		var resultJSON, payloadJSON string
 		if err := rows.Scan(
 			&taskRun.ID,
-			&taskRun.CreatorEmail,
+			&creatorEmail,
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
@@ -617,8 +617,13 @@ func (s *Store) ListTaskRunsByStatus(ctx context.Context, statuses []storepb.Tas
 		); err != nil {
 			return nil, err
 		}
+		if creatorEmail.Valid {
+			taskRun.CreatorEmail = creatorEmail.String
+		}
 		if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
 			taskRun.Status = storepb.TaskRun_Status(statusValue)
+		} else {
+			return nil, errors.Errorf("invalid task run status string: %s", statusString)
 		}
 		resultProto := &storepb.TaskRunResult{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(resultJSON), resultProto); err != nil {

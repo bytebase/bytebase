@@ -13,6 +13,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -213,11 +214,11 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                 </a>
               </div>
               {externalUrlFromFlag && !isSaaSMode && (
-                <div className="mb-3 p-3 bg-blue-50 text-blue-700 text-sm rounded-xs">
+                <Alert variant="info" className="mb-3">
                   {t(
                     "settings.general.workspace.external-url.cannot-edit-flag"
                   )}
-                </div>
+                </Alert>
               )}
               <Input
                 value={state.externalUrl}
