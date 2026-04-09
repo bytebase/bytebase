@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -87,38 +85,6 @@ func GetUsersByRoleInIAMPolicy(
 	return users
 }
 
-// GetGroupByName finds a group by identifier which can be either:
-//   - Azure objectId (UUID format, no @) - used as group ID in new deployments
-//   - Group email (contains @) - used as group ID in legacy deployments
-//
-// This supports both attribute mapping configurations in Azure Entra ID.
-func GetGroupByName(ctx context.Context, stores *store.Store, workspace string, name string) (*store.GroupMessage, error) {
-	identifier, err := common.GetGroupEmail(name)
-	if err != nil {
-		return nil, err
-	}
-	find := &store.FindGroupMessage{Workspace: workspace}
-	if strings.Contains(identifier, "@") {
-		find.Email = &identifier
-	} else {
-		find.ID = &identifier
-	}
-
-	group, err := stores.GetGroup(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get group %q", name)
-	}
-	if group == nil && find.ID == nil {
-		// The fallback is used to handle the legacy mapping from SCIM sync.
-		// For legacy SCIM sync attribute mapping, the group ExternalID map to Email
-		// If users keep using this legacy mapping, the new group will have empty email, and the email will set as the ID.
-		return stores.GetGroup(ctx, &store.FindGroupMessage{
-			Workspace: workspace,
-			ID:        &identifier,
-		})
-	}
-	return group, nil
-}
 
 // GetUsersByMember gets user messages by member.
 // The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
@@ -140,7 +106,7 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, workspace string
 			users = append(users, user)
 		}
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
-		group, err := GetGroupByName(ctx, stores, workspace, member)
+		group, err := stores.GetGroupByName(ctx, workspace, member)
 		if err != nil {
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return users
@@ -219,7 +185,7 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, workspac
 					break
 				}
 				if strings.HasPrefix(member, common.GroupPrefix) {
-					group, err := GetGroupByName(ctx, stores, workspace, member)
+					group, err := stores.GetGroupByName(ctx, workspace, member)
 					if err != nil {
 						slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 						continue
@@ -286,7 +252,7 @@ func MemberContainsUser(ctx context.Context, stores *store.Store, workspace stri
 
 	// Check if member is a group
 	if strings.HasPrefix(member, common.GroupPrefix) {
-		group, err := GetGroupByName(ctx, stores, workspace, member)
+		group, err := stores.GetGroupByName(ctx, workspace, member)
 		if err != nil {
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return false

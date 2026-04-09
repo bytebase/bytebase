@@ -24,7 +24,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -468,7 +467,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			members = append(members, member)
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(scimGroup.ExternalID))
+		group, err := s.store.GetGroupByName(ctx, c.Param("workspaceID"), common.FormatGroupEmail(scimGroup.ExternalID))
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
@@ -578,7 +577,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			groupName = expr.Value
 		}
 
-		group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
+		group, err := s.store.GetGroupByName(ctx, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to find group, error %v`, err))
 		}
@@ -875,7 +874,7 @@ func (s *Service) getGroup(ctx context.Context, c *echo.Context) (*store.GroupMe
 	if err != nil {
 		return nil, errors.Errorf("failed to parse group %v, error %v", c.Param("groupID"), err)
 	}
-	group, err := utils.GetGroupByName(ctx, s.store, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
+	group, err := s.store.GetGroupByName(ctx, c.Param("workspaceID"), common.FormatGroupEmail(groupName))
 	if err != nil {
 		return nil, errors.Errorf("failed to find group, error %v", err)
 	}

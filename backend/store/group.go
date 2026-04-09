@@ -52,6 +52,28 @@ type GroupMessage struct {
 	Payload     *storepb.GroupPayload
 }
 
+// GetGroupByName resolves a group by its resource name "groups/{identifier}".
+// The identifier can be an email (contains "@") or an ID.
+// Includes a fallback for legacy SCIM sync where the email was stored as the ID.
+func (s *Store) GetGroupByName(ctx context.Context, workspace, name string) (*GroupMessage, error) {
+	identifier := strings.TrimPrefix(name, "groups/")
+	find := &FindGroupMessage{Workspace: workspace}
+	if strings.Contains(identifier, "@") {
+		find.Email = &identifier
+	} else {
+		find.ID = &identifier
+	}
+	group, err := s.GetGroup(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil && find.ID == nil {
+		// Fallback: legacy SCIM sync may store email as ID.
+		return s.GetGroup(ctx, &FindGroupMessage{Workspace: workspace, ID: &identifier})
+	}
+	return group, nil
+}
+
 // GetGroup gets a group.
 func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMessage, error) {
 	if find.Email != nil && find.Workspace != "" {
@@ -336,16 +358,14 @@ func (s *Store) GetUserGroupsSnapshot(ctx context.Context, workspaceID string, u
 }
 
 // GetGroupMembersSnapshot returns group members with snapshot reads (with cache).
-// groupName format is "groups/{email}".
+// groupName format is "groups/{identifier}" where identifier can be an email or an ID.
 // Trades consistency for performance.
 func (s *Store) GetGroupMembersSnapshot(ctx context.Context, workspaceID string, groupName string) (map[string]bool, error) {
 	if v, ok := s.groupMembersCache.Get(getGroupMembersCacheKey(workspaceID, groupName)); ok {
 		return v, nil
 	}
 
-	// Extract email from group name "groups/{email}"
-	email := strings.TrimPrefix(groupName, "groups/")
-	group, err := s.GetGroup(ctx, &FindGroupMessage{Workspace: workspaceID, Email: &email})
+	group, err := s.GetGroupByName(ctx, workspaceID, groupName)
 	if err != nil {
 		return nil, err
 	}
