@@ -554,12 +554,12 @@ const loadReleases = async () => {
 // Load existing revisions to check for duplicates
 const loadExistingRevisions = async () => {
   try {
-    const response = await revisionStore.fetchRevisionsByDatabase(
+    const revisions = await revisionStore.fetchAllRevisionsByDatabase(
       props.database,
       { pageSize: 1000 }
     );
     const versions = new Set<string>();
-    response.revisions.forEach((revision) => {
+    revisions.forEach((revision) => {
       if (revision.version) {
         versions.add(revision.version);
       }

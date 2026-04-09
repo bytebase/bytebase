@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h } from "vue";
+import { createApp, h, reactive } from "vue";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import i18n from "@/plugins/i18n";
@@ -27,19 +27,37 @@ function VueCreateRevisionDrawerMount({
   onOpenChange: (open: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const bridgeStateRef = useRef(
+    reactive({
+      databaseName,
+      onCreated,
+      onOpenChange,
+      open,
+    })
+  );
+
+  useEffect(() => {
+    const bridgeState = bridgeStateRef.current;
+    bridgeState.databaseName = databaseName;
+    bridgeState.onCreated = onCreated;
+    bridgeState.onOpenChange = onOpenChange;
+    bridgeState.open = open;
+  }, [databaseName, onCreated, onOpenChange, open]);
 
   useEffect(() => {
     if (!containerRef.current) {
       return;
     }
 
+    const bridgeState = bridgeStateRef.current;
+
     const app = createApp({
       render() {
         return h(CreateRevisionDrawer as never, {
-          database: databaseName,
-          show: open,
-          "onUpdate:show": onOpenChange,
-          onCreated,
+          database: bridgeState.databaseName,
+          show: bridgeState.open,
+          "onUpdate:show": bridgeState.onOpenChange,
+          onCreated: bridgeState.onCreated,
         });
       },
     });
@@ -49,7 +67,7 @@ function VueCreateRevisionDrawerMount({
     return () => {
       app.unmount();
     };
-  }, [databaseName, onCreated, onOpenChange, open]);
+  }, []);
 
   return <div ref={containerRef} />;
 }

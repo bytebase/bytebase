@@ -30,10 +30,12 @@ const mocks = vi.hoisted(() => ({
       email: "test@example.com",
     },
   },
-  mountedVNodes: [] as {
-    component: unknown;
-    props: Record<string, unknown>;
-  }[],
+  appRenderers: [] as Array<
+    () => {
+      component: unknown;
+      props: Record<string, unknown>;
+    }
+  >,
   createApp: vi.fn(),
   h: vi.fn((component: unknown, props: Record<string, unknown>) => ({
     component,
@@ -188,7 +190,7 @@ beforeEach(async () => {
   });
   mocks.deleteRevision.mockReset();
   mocks.deleteRevision.mockResolvedValue(undefined);
-  mocks.mountedVNodes.length = 0;
+  mocks.appRenderers.length = 0;
   mocks.createApp.mockReset();
   mocks.createApp.mockImplementation(
     (appDefinition: { render: () => unknown }) => {
@@ -197,11 +199,12 @@ beforeEach(async () => {
           return this;
         },
         mount() {
-          const vnode = appDefinition.render() as {
-            component: unknown;
-            props: Record<string, unknown>;
-          };
-          mocks.mountedVNodes.push(vnode);
+          mocks.appRenderers.push(
+            appDefinition.render as () => {
+              component: unknown;
+              props: Record<string, unknown>;
+            }
+          );
         },
         unmount: vi.fn(),
       };
@@ -223,6 +226,8 @@ describe("DatabaseRevisionPanel", () => {
     render();
     await flush();
 
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+
     const importButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "common.import"
     ) as HTMLButtonElement | undefined;
@@ -231,7 +236,10 @@ describe("DatabaseRevisionPanel", () => {
     click(importButton as HTMLButtonElement);
     await flush();
 
-    expect(mocks.mountedVNodes.at(-1)).toMatchObject({
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+
+    const latestDrawerVNode = mocks.appRenderers.at(-1)?.();
+    expect(latestDrawerVNode).toMatchObject({
       component: mocks.CreateRevisionDrawer,
       props: expect.objectContaining({
         database: "instances/inst1/databases/db1",
@@ -239,16 +247,14 @@ describe("DatabaseRevisionPanel", () => {
       }),
     });
 
-    const lastDrawerVNode = mocks.mountedVNodes.at(-1);
-    expect(lastDrawerVNode).toBeDefined();
-
     act(() => {
-      (lastDrawerVNode?.props["onCreated"] as (() => void) | undefined)?.();
+      (latestDrawerVNode?.props["onCreated"] as (() => void) | undefined)?.();
     });
     await flush();
 
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
-    expect(mocks.mountedVNodes.at(-1)).toMatchObject({
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+    expect(mocks.appRenderers.at(-1)?.()).toMatchObject({
       component: mocks.CreateRevisionDrawer,
       props: expect.objectContaining({
         show: false,

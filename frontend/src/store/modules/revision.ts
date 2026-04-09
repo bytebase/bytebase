@@ -36,6 +36,27 @@ export const useRevisionStore = defineStore("revision", () => {
     return resp;
   };
 
+  const fetchAllRevisionsByDatabase = async (
+    database: string,
+    pagination?: {
+      pageSize?: number;
+    }
+  ) => {
+    const revisions: Revision[] = [];
+    let pageToken = "";
+
+    do {
+      const resp = await fetchRevisionsByDatabase(database, {
+        pageSize: pagination?.pageSize,
+        pageToken,
+      });
+      revisions.push(...resp.revisions);
+      pageToken = resp.nextPageToken;
+    } while (pageToken);
+
+    return revisions;
+  };
+
   const getRevisionsByDatabase = (database: string) => {
     return revisionList.value.filter((revision) =>
       revision.name.startsWith(`${database}/${revisionNamePrefix}`)
@@ -65,6 +86,7 @@ export const useRevisionStore = defineStore("revision", () => {
 
   return {
     revisionList,
+    fetchAllRevisionsByDatabase,
     fetchRevisionsByDatabase,
     getRevisionsByDatabase,
     getOrFetchRevisionByName,
