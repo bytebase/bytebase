@@ -1171,6 +1171,7 @@
       "reopen": "重开",
       "reopened": "重开"
     },
+    "checks-manual-rollout-hint": "审批已完成，但由于该计划仍有未通过的检查，系统未自动创建发布。请前往变更计划页继续。",
     "checks-warning-hint": "此变更计划存在未通过的检查。审批通过后将需要手动创建发布。",
     "comment-editor": {
       "nothing-to-preview": "暂无预览",
@@ -1396,9 +1397,18 @@
       "no-checks": "没有检查"
     },
     "phase": {
-      "create-rollout-action": "创建发布",
-      "deploy-description": "审批通过且检查通过后可用",
-      "deploy-description-with-action": "审批通过且检查通过后可用。你可以{action}手动推进。",
+      "create-rollout-action": "手动创建发布",
+      "deploy-approval-must-complete": "审批流必须完成。",
+      "deploy-approval-optional": "根据当前项目设置，审批流可以被绕过。",
+      "deploy-approval-pending": "在系统自动创建发布前，需要先完成审批流。",
+      "deploy-approval-ready": "该计划的审批已完成。",
+      "deploy-checks-blocked": "未通过的检查正在阻止系统自动创建发布。",
+      "deploy-checks-must-pass": "检查必须通过。",
+      "deploy-checks-optional": "在当前项目中，未通过的检查不会阻止手动创建发布。",
+      "deploy-checks-ready": "检查结果已满足系统自动创建发布的条件。",
+      "deploy-checks-running": "请等待运行中的检查完成，系统才能继续自动创建发布。",
+      "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
+      "deploy-manual-create-description": "根据当前项目设置，你也可以手动创建发布。",
       "hide-details": "收起详情 ↑",
       "review-description": "提交审批以继续",
       "show-details": "展开详情 ↓"

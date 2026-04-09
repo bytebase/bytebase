@@ -1171,6 +1171,7 @@
       "reopen": "Reabrir",
       "reopened": "reabierto"
     },
+    "checks-manual-rollout-hint": "La aprobación ya se completó, pero el rollout no se creó automáticamente porque este plan todavía tiene verificaciones fallidas. Ve a Plan para continuar.",
     "checks-warning-hint": "Este plan tiene verificaciones fallidas. Se requerirá un despliegue manual tras la aprobación.",
     "comment-editor": {
       "nothing-to-preview": "Nada para previsualizar",
@@ -1396,9 +1397,18 @@
       "no-checks": "Sin controles"
     },
     "phase": {
-      "create-rollout-action": "crear despliegue",
-      "deploy-description": "Disponible cuando la revisión está aprobada y las comprobaciones pasan",
-      "deploy-description-with-action": "Disponible cuando la revisión está aprobada y las comprobaciones pasan. Puede {action} para continuar manualmente.",
+      "create-rollout-action": "Crear rollout manualmente",
+      "deploy-approval-must-complete": "El flujo de aprobación debe completarse.",
+      "deploy-approval-optional": "La aprobación puede omitirse según la configuración actual del proyecto.",
+      "deploy-approval-pending": "Completa el flujo de aprobación antes de que el rollout pueda continuar automáticamente.",
+      "deploy-approval-ready": "La aprobación ya está completa para este plan.",
+      "deploy-checks-blocked": "Las verificaciones fallidas están bloqueando la creación automática del rollout.",
+      "deploy-checks-must-pass": "Las comprobaciones deben aprobarse.",
+      "deploy-checks-optional": "Las verificaciones fallidas no bloquearán el rollout manual en este proyecto.",
+      "deploy-checks-ready": "Las verificaciones ya permiten la creación automática del rollout.",
+      "deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
+      "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
+      "deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
       "hide-details": "Ocultar detalles ↑",
       "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles ↓"

@@ -1,7 +1,12 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
     <!-- 1. Checks - Health status -->
-    <ChecksSection v-if="isDatabaseChangePlan" />
+    <div v-if="isDatabaseChangePlan" class="flex flex-col gap-2">
+      <NAlert v-if="showChecksManualRolloutHint" type="warning">
+        {{ $t("issue.checks-manual-rollout-hint") }}
+      </NAlert>
+      <ChecksSection />
+    </div>
 
     <!-- 2. Approval Flow - Reviewers -->
     <ApprovalFlowSection :issue="issue" />
@@ -18,16 +23,20 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { NAlert } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
+import { usePlanCheckStatus } from "@/components/Plan/logic/usePlanCheckStatus";
 import { issueServiceClientConnect } from "@/connect";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import {
+  Issue_ApprovalStatus,
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";
@@ -37,6 +46,7 @@ const { t } = useI18n();
 const { plan, issue } = usePlanContextWithIssue();
 const { project } = useCurrentProjectV1();
 const { refreshResources } = useResourcePoller();
+const { getOverallStatus: planCheckStatus } = usePlanCheckStatus(plan);
 
 const isDatabaseChangePlan = computed(
   () =>
@@ -45,6 +55,23 @@ const isDatabaseChangePlan = computed(
       (spec) => spec.config?.case === "changeDatabaseConfig"
     )
 );
+
+const issueApprovalCompleted = computed(() => {
+  const roles = issue.value.approvalTemplate?.flow?.roles ?? [];
+  return (
+    issue.value.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+    issue.value.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
+    roles.length === 0
+  );
+});
+
+const showChecksManualRolloutHint = computed(() => {
+  return (
+    !plan.value.hasRollout &&
+    planCheckStatus.value === Advice_Level.ERROR &&
+    issueApprovalCompleted.value
+  );
+});
 
 const allowChange = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {

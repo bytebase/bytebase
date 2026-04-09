@@ -1171,6 +1171,7 @@
       "reopen": "Mở lại",
       "reopened": "đã mở lại"
     },
+    "checks-manual-rollout-hint": "Phê duyệt đã hoàn tất, nhưng rollout không được tạo tự động vì kế hoạch này vẫn còn kiểm tra lỗi. Hãy vào Plan để tiếp tục.",
     "checks-warning-hint": "Kế hoạch này có kiểm tra thất bại. Sẽ cần triển khai thủ công sau khi phê duyệt.",
     "comment-editor": {
       "nothing-to-preview": "Không có gì để xem trước",
@@ -1396,9 +1397,18 @@
       "no-checks": "Không kiểm tra"
     },
     "phase": {
-      "create-rollout-action": "tạo rollout",
-      "deploy-description": "Có sẵn khi việc xem xét được phê duyệt và kiểm tra đã đạt",
-      "deploy-description-with-action": "Có sẵn khi việc xem xét được phê duyệt và kiểm tra đã đạt. Bạn có thể {action} để tiếp tục thủ công.",
+      "create-rollout-action": "Tạo rollout thủ công",
+      "deploy-approval-must-complete": "Luồng phê duyệt phải hoàn tất.",
+      "deploy-approval-optional": "Có thể bỏ qua luồng phê duyệt theo cấu hình dự án hiện tại.",
+      "deploy-approval-pending": "Hoàn tất luồng phê duyệt trước khi rollout có thể tiếp tục tự động.",
+      "deploy-approval-ready": "Phê duyệt cho kế hoạch này đã hoàn tất.",
+      "deploy-checks-blocked": "Các kiểm tra lỗi đang chặn việc tạo rollout tự động.",
+      "deploy-checks-must-pass": "Các kiểm tra phải đạt.",
+      "deploy-checks-optional": "Các kiểm tra lỗi sẽ không chặn rollout thủ công trong dự án này.",
+      "deploy-checks-ready": "Các kiểm tra đã sẵn sàng để tạo rollout tự động.",
+      "deploy-checks-running": "Hãy chờ các kiểm tra đang chạy hoàn tất trước khi rollout tự động có thể tiếp tục.",
+      "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
+      "deploy-manual-create-description": "Dựa trên cài đặt dự án hiện tại, bạn cũng có thể tạo rollout thủ công.",
       "hide-details": "Ẩn chi tiết ↑",
       "review-description": "Gửi để xem xét để tiếp tục",
       "show-details": "Hiển thị chi tiết ↓"

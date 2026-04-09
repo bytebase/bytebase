@@ -1,5 +1,5 @@
 <template>
-  <div class="flex">
+  <div class="flex" :class="isLast ? 'mb-48' : ''">
     <!-- Timeline column: dot + connecting line -->
     <div class="flex flex-col items-center w-10 md:w-16 shrink-0">
       <div

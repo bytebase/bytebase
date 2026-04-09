@@ -1171,6 +1171,7 @@
       "reopen": "再開",
       "reopened": "再開"
     },
+    "checks-manual-rollout-hint": "承認は完了しましたが、このプランにはまだチェックエラーがあるため、ロールアウトは自動作成されていません。Plan に移動して続行してください。",
     "checks-warning-hint": "このプランにはチェックエラーがあります。承認後、手動でロールアウトを作成する必要があります。",
     "comment-editor": {
       "nothing-to-preview": "まだプレビューはありません",
@@ -1396,9 +1397,18 @@
       "no-checks": "チェックなし"
     },
     "phase": {
-      "create-rollout-action": "ロールアウトを作成",
-      "deploy-description": "レビューが承認され、チェックが通過すると利用可能になります",
-      "deploy-description-with-action": "レビューが承認され、チェックが通過すると利用可能になります。手動で進めるには{action}できます。",
+      "create-rollout-action": "手動でロールアウトを作成",
+      "deploy-approval-must-complete": "承認フローが完了している必要があります。",
+      "deploy-approval-optional": "現在のプロジェクト設定では、承認フローをスキップできます。",
+      "deploy-approval-pending": "ロールアウトを自動的に進める前に承認フローを完了してください。",
+      "deploy-approval-ready": "このプランの承認は完了しています。",
+      "deploy-checks-blocked": "失敗したチェックによりロールアウトの自動作成が止まっています。",
+      "deploy-checks-must-pass": "チェックに合格する必要があります。",
+      "deploy-checks-optional": "このプロジェクトでは、チェック失敗は手動ロールアウトを妨げません。",
+      "deploy-checks-ready": "チェックはロールアウトの自動作成が可能な状態です。",
+      "deploy-checks-running": "実行中のチェックが終わるまで、ロールアウトの自動作成は続行されません。",
+      "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
+      "deploy-manual-create-description": "現在のプロジェクト設定に応じて、ロールアウトを手動で作成することもできます。",
       "hide-details": "詳細を非表示 ↑",
       "review-description": "続行するにはレビューに提出してください",
       "show-details": "詳細を表示 ↓"
