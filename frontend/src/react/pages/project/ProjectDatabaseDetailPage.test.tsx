@@ -133,7 +133,9 @@ const mocks = vi.hoisted(() => {
     })),
     useDBSchemaV1Store: vi.fn(() => ({
       getOrFetchDatabaseMetadata: vi.fn(),
-      getDatabaseMetadata: vi.fn(() => undefined),
+      getDatabaseMetadata: vi.fn(() => undefined as unknown),
+      getSchemaList: vi.fn(() => [] as unknown[]),
+      getTableList: vi.fn(() => [] as unknown[]),
     })),
     usePermissionStore: vi.fn(() => ({
       currentPermissions: new Set([
@@ -478,7 +480,9 @@ beforeEach(() => {
   mocks.useDBSchemaV1Store.mockReset();
   mocks.useDBSchemaV1Store.mockReturnValue({
     getOrFetchDatabaseMetadata: vi.fn(),
-    getDatabaseMetadata: vi.fn(() => undefined),
+    getDatabaseMetadata: vi.fn(() => undefined as unknown),
+    getSchemaList: vi.fn(() => [] as unknown[]),
+    getTableList: vi.fn(() => [] as unknown[]),
   });
   mocks.usePermissionStore.mockReset();
   mocks.usePermissionStore.mockReturnValue({
@@ -781,6 +785,18 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("renders the header metadata and top-level action cluster", async () => {
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getOrFetchDatabaseMetadata: vi.fn(),
+      getDatabaseMetadata: vi.fn(() => ({
+        schemas: [
+          {
+            name: "public",
+          },
+        ],
+      })),
+      getSchemaList: vi.fn(() => [{ name: "public" }]),
+      getTableList: vi.fn(() => [{ name: "book" }, { name: "orders" }]),
+    });
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
@@ -821,6 +837,29 @@ describe("ProjectDatabaseDetailPage", () => {
     expect(
       container.querySelector('[data-testid="database-detail-actions"]')
     ).not.toBeNull();
+    const schemaDiagramButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "schema-diagram.self");
+    expect(schemaDiagramButton).toBeDefined();
+
+    await act(async () => {
+      schemaDiagramButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      mocks.useDBSchemaV1Store.mock.results.at(-1)?.value
+        .getOrFetchDatabaseMetadata
+    ).toHaveBeenCalledWith({
+      database: "instances/inst1/databases/db1",
+      skipCache: false,
+    });
+    expect(document.body.textContent).toContain("public");
+    expect(document.body.textContent).toContain("book");
+    expect(document.body.textContent).toContain("orders");
 
     unmount();
   });

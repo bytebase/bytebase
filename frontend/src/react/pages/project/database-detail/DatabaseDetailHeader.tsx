@@ -5,7 +5,7 @@ import { Button } from "@/react/components/ui/button";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { extractReleaseUID } from "@/utils/v1/release";
 import { DatabaseSQLEditorButton } from "./DatabaseSQLEditorButton";
-import { SchemaDiagramButtonBridge } from "./SchemaDiagramButtonBridge";
+import { SchemaBrowserButton } from "./schema-browser/SchemaBrowserButton";
 
 const extractDatabaseParts = (resource: string) => {
   const matches = resource.match(
@@ -97,7 +97,7 @@ export function DatabaseDetailHeader({
           database={database}
           onFailed={onSQLEditorFailed}
         />
-        {allowAlterSchema && <SchemaDiagramButtonBridge database={database} />}
+        {allowAlterSchema && <SchemaBrowserButton database={database} />}
       </div>
     </div>
   );

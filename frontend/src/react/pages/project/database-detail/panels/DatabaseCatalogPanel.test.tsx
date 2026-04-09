@@ -181,14 +181,6 @@ vi.mock("@/react/components/ui/expiration-picker", () => ({
   ),
 }));
 
-vi.mock("../legacy/SensitiveColumnTableBridge", () => ({
-  SensitiveColumnTableBridge: () => null,
-}));
-
-vi.mock("../legacy/GrantAccessDrawerBridge", () => ({
-  GrantAccessDrawerBridge: () => null,
-}));
-
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const container = document.createElement("div");
   const root = createRoot(container);
