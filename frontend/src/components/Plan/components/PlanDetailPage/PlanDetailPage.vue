@@ -11,7 +11,7 @@
           :label="$t('plan.navigator.changes')"
           :status="phases[0].status"
           :expanded="isExpanded('changes')"
-          :collapsible="currentPhase !== 'changes'"
+          collapsible
           :badge="phases[0].badge"
           :line-class="phases[0].lineClass"
           @toggle="togglePhase('changes')"
@@ -33,7 +33,7 @@
           :label="$t('plan.navigator.review')"
           :status="phases[1].status"
           :expanded="isExpanded('review')"
-          :collapsible="currentPhase !== 'review'"
+          collapsible
           :badge="phases[1].badge"
           :line-class="phases[1].lineClass"
           @toggle="togglePhase('review')"
@@ -60,7 +60,7 @@
           :label="$t('plan.navigator.deploy')"
           :status="phases[2].status"
           :expanded="isExpanded('deploy')"
-          :collapsible="currentPhase !== 'deploy'"
+          collapsible
           :badge="phases[2].badge"
           :is-last="true"
           @toggle="togglePhase('deploy')"
@@ -191,13 +191,8 @@ const {
   desktopSidebarWidth,
   mobileSidebarOpen,
 } = useSidebarContext();
-const {
-  currentPhase,
-  isExpanded,
-  togglePhase,
-  expandPhase,
-  syncExpandedPhases,
-} = useActivePhase(issue, rollout);
+const { isExpanded, togglePhase, expandPhase, syncExpandedPhases } =
+  useActivePhase();
 
 const routeDrivenExpandedPhases = computed<PhaseType[]>(() => {
   if (
@@ -218,7 +213,7 @@ const routeDrivenExpandedPhases = computed<PhaseType[]>(() => {
 });
 
 watch(
-  [routeDrivenExpandedPhases, currentPhase] as const,
+  [routeDrivenExpandedPhases] as const,
   ([phases]) => {
     syncExpandedPhases(phases);
   },
