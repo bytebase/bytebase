@@ -2,6 +2,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -54,12 +55,44 @@ const mocks = vi.hoisted(() => ({
   useDatabaseCatalogV1Store: vi.fn(() => ({
     updateDatabaseCatalog: vi.fn(),
   })),
+  useSettingV1Store: vi.fn(() => ({
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => ({
+      id: "classification-config",
+      classification: {
+        PII: {
+          id: "PII",
+          title: "PII",
+        },
+      },
+    })),
+    getSettingByName: vi.fn(() => ({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "EMAIL",
+                title: "Email",
+              },
+              {
+                id: "PHONE",
+                title: "Phone",
+              },
+            ],
+          },
+        },
+      },
+    })),
+  })),
   pushNotification: vi.fn(),
   hasProjectPermissionV2: vi.fn(
     (_project?: unknown, _permission?: string) => true
   ),
   getDatabaseProject: vi.fn((database: { project: string }) => ({
     name: database.project,
+    dataClassificationConfigId: "classification-config",
   })),
   getInstanceResource: vi.fn(() => ({ name: "instances/inst1", engine: 1 })),
   instanceV1MaskingForNoSQL: vi.fn(() => false),
@@ -88,6 +121,7 @@ vi.mock("@/store", () => ({
   useDatabaseCatalog: mocks.useDatabaseCatalog,
   useDatabaseCatalogV1Store: mocks.useDatabaseCatalogV1Store,
   usePolicyV1Store: mocks.usePolicyV1Store,
+  useSettingV1Store: mocks.useSettingV1Store,
 }));
 
 vi.mock("@/utils", () => ({
@@ -119,6 +153,37 @@ vi.mock("@/react/components/ui/input", () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input {...props} />
   ),
+}));
+
+vi.mock("@/react/components/ui/select", () => ({
+  Select: ({
+    value,
+    onValueChange,
+    children,
+  }: {
+    value?: string;
+    onValueChange?: (value: string) => void;
+    children: React.ReactNode;
+  }) => (
+    <select
+      value={value}
+      onChange={(event) => onValueChange?.(event.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => children,
+  SelectValue: ({ placeholder }: { placeholder?: string }) => (
+    <option value="">{placeholder}</option>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => children,
+  SelectItem: ({
+    value,
+    children,
+  }: {
+    value: string;
+    children: React.ReactNode;
+  }) => <option value={value}>{children}</option>,
 }));
 
 vi.mock("@/react/components/ui/dialog", () => ({
@@ -271,6 +336,38 @@ beforeEach(async () => {
   mocks.useDatabaseCatalogV1Store.mockReturnValue({
     updateDatabaseCatalog: vi.fn(),
   });
+  mocks.useSettingV1Store.mockReset();
+  mocks.useSettingV1Store.mockReturnValue({
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => ({
+      id: "classification-config",
+      classification: {
+        PII: {
+          id: "PII",
+          title: "PII",
+        },
+      },
+    })),
+    getSettingByName: vi.fn(() => ({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              {
+                id: "EMAIL",
+                title: "Email",
+              },
+              {
+                id: "PHONE",
+                title: "Phone",
+              },
+            ],
+          },
+        },
+      },
+    })),
+  });
   mocks.pushNotification.mockReset();
   mocks.hasProjectPermissionV2.mockReset();
   mocks.hasProjectPermissionV2.mockReturnValue(true);
@@ -278,6 +375,7 @@ beforeEach(async () => {
   mocks.getDatabaseProject.mockImplementation(
     (database: { project: string }) => ({
       name: database.project,
+      dataClassificationConfigId: "classification-config",
     })
   );
   mocks.getInstanceResource.mockReset();
@@ -447,6 +545,99 @@ describe("DatabaseCatalogPanel", () => {
       (button) => button.textContent === "settings.sensitive-data.grant-access"
     );
     expect(grantAccessButtonAfterDelete?.hasAttribute("disabled")).toBe(true);
+
+    unmount();
+  });
+
+  test("updates semantic type and classification inline", async () => {
+    const updateDatabaseCatalog = vi.fn().mockResolvedValue(undefined);
+    const getOrFetchSettingByName = vi.fn();
+    mocks.useDatabaseCatalogV1Store.mockReturnValue({
+      updateDatabaseCatalog,
+    });
+    mocks.useSettingV1Store.mockReturnValue({
+      getOrFetchSettingByName,
+      getProjectClassification: vi.fn(() => ({
+        id: "classification-config",
+        classification: {
+          PII: {
+            id: "PII",
+            title: "PII",
+          },
+          CONFIDENTIAL: {
+            id: "CONFIDENTIAL",
+            title: "Confidential",
+          },
+        },
+      })),
+      getSettingByName: vi.fn(() => ({
+        value: {
+          value: {
+            case: "semanticType",
+            value: {
+              types: [
+                {
+                  id: "EMAIL",
+                  title: "Email",
+                },
+                {
+                  id: "PHONE",
+                  title: "Phone",
+                },
+              ],
+            },
+          },
+        },
+      })),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+    render();
+    await flush();
+
+    expect(getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.SEMANTIC_TYPES,
+      true
+    );
+    expect(getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+
+    const selects = Array.from(container.querySelectorAll("select"));
+    expect(selects).toHaveLength(2);
+
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLSelectElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(selects[0], "PHONE");
+      selects[0].dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLSelectElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(selects[1], "CONFIDENTIAL");
+      selects[1].dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    expect(updateDatabaseCatalog).toHaveBeenCalledTimes(2);
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        style: "SUCCESS",
+        title: "common.updated",
+      })
+    );
 
     unmount();
   });

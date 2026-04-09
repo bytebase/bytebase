@@ -3,23 +3,43 @@ import { useTranslation } from "react-i18next";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { getMaskDataIdentifier } from "@/components/SensitiveData/utils";
 import { Button } from "@/react/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
+
+interface Option {
+  label: string;
+  value: string;
+}
 
 export interface SensitiveColumnTableProps {
   checkedColumnList: MaskData[];
   columnList: MaskData[];
+  classificationOptions: Option[];
   rowSelectable: boolean;
+  semanticTypeOptions: Option[];
   showOperation: boolean;
+  onClassificationChange: (item: MaskData, classificationId: string) => void;
   onCheckedColumnListChange: (list: MaskData[]) => void;
   onDelete: (item: MaskData) => void | Promise<void>;
+  onSemanticTypeChange: (item: MaskData, semanticTypeId: string) => void;
 }
 
 export function SensitiveColumnTable({
   checkedColumnList,
   columnList,
+  classificationOptions,
   rowSelectable,
+  semanticTypeOptions,
   showOperation,
+  onClassificationChange,
   onCheckedColumnListChange,
   onDelete,
+  onSemanticTypeChange,
 }: SensitiveColumnTableProps) {
   const { t } = useTranslation();
   const checkedSet = new Set(checkedColumnList.map(getMaskDataIdentifier));
@@ -95,8 +115,54 @@ export function SensitiveColumnTable({
                 )}
                 <td className="px-4 py-3">{tableName}</td>
                 <td className="px-4 py-3">{item.column || "-"}</td>
-                <td className="px-4 py-3">{item.semanticTypeId || "-"}</td>
-                <td className="px-4 py-3">{item.classificationId || "-"}</td>
+                <td className="px-4 py-3">
+                  {showOperation && !item.disableSemanticType ? (
+                    <Select
+                      value={item.semanticTypeId}
+                      onValueChange={(value) =>
+                        onSemanticTypeChange(item, value ?? "")
+                      }
+                    >
+                      <SelectTrigger className="w-full min-w-40">
+                        <SelectValue placeholder={t("common.empty")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">{t("common.empty")}</SelectItem>
+                        {semanticTypeOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    item.semanticTypeId || "-"
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {showOperation && !item.disableClassification ? (
+                    <Select
+                      value={item.classificationId}
+                      onValueChange={(value) =>
+                        onClassificationChange(item, value ?? "")
+                      }
+                    >
+                      <SelectTrigger className="w-full min-w-40">
+                        <SelectValue placeholder={t("common.empty")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">{t("common.empty")}</SelectItem>
+                        {classificationOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    item.classificationId || "-"
+                  )}
+                </td>
                 {showOperation && (
                   <td className="px-4 py-3">
                     <Button
