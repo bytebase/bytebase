@@ -37,7 +37,7 @@
               class="flex flex-col gap-y-4 w-full"
             >
               <div
-                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors mb-4"
                 :class="{
                   'border-blue-500 bg-blue-50': selectedSource === 'release',
                 }"

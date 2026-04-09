@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createApp, h, reactive } from "vue";
 import { themeOverrides } from "@/../naive-ui.config";
+import BBOverlayStack from "@/components/misc/OverlayStackManager.vue";
 import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
 import i18n from "@/plugins/i18n";
@@ -60,12 +61,19 @@ function VueCreateRevisionDrawerMount({
           { themeOverrides: themeOverrides.value },
           {
             default: () =>
-              h(CreateRevisionDrawer as never, {
-                database: bridgeState.databaseName,
-                show: bridgeState.open,
-                "onUpdate:show": bridgeState.onOpenChange,
-                onCreated: bridgeState.onCreated,
-              }),
+              h(
+                BBOverlayStack as never,
+                {},
+                {
+                  default: () =>
+                    h(CreateRevisionDrawer as never, {
+                      database: bridgeState.databaseName,
+                      show: bridgeState.open,
+                      "onUpdate:show": bridgeState.onOpenChange,
+                      onCreated: bridgeState.onCreated,
+                    }),
+                }
+              ),
           }
         );
       },
