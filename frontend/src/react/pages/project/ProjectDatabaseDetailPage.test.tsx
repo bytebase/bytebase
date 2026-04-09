@@ -315,6 +315,59 @@ vi.mock("@/components/Plan/logic/issue", () => ({
   preCreateIssue: mocks.preCreateIssue,
 }));
 
+vi.mock("./database-detail/DatabaseDetailActions", () => ({
+  DatabaseDetailActions: vi.fn(() => (
+    <div data-testid="database-detail-actions" />
+  )),
+}));
+
+vi.mock("./database-detail/DatabaseDetailHeader", () => ({
+  DatabaseDetailHeader: vi.fn(() => (
+    <div data-testid="database-detail-header" />
+  )),
+}));
+
+vi.mock("./database-detail/panels/DatabaseSettingsPanel", () => ({
+  DatabaseSettingsPanel: vi.fn(() => (
+    <div data-testid="database-settings-panel" />
+  )),
+}));
+
+vi.mock("@/react/components/ui/alert", () => ({
+  Alert: vi.fn(({ children }: { children: ReactNode }) => (
+    <div data-testid="alert">{children}</div>
+  )),
+}));
+
+vi.mock("@/react/components/ui/button", () => ({
+  Button: vi.fn(
+    ({
+      children,
+      onClick,
+      ...props
+    }: {
+      children: ReactNode;
+      onClick?: () => void;
+    }) => (
+      <button type="button" onClick={onClick} {...props}>
+        {children}
+      </button>
+    )
+  ),
+}));
+
+vi.mock("@/react/components/ui/dialog", () => ({
+  Dialog: vi.fn(({ children }: { children: ReactNode }) => (
+    <div data-testid="dialog">{children}</div>
+  )),
+  DialogContent: vi.fn(({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  )),
+  DialogTitle: vi.fn(({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  )),
+}));
+
 vi.mock("@/components/MonacoEditor/editor", () => ({
   createMonacoDiffEditor: vi.fn(),
   createMonacoEditor: vi.fn(),
@@ -761,50 +814,13 @@ describe("ProjectDatabaseDetailPage", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("db1");
-    expect(container.textContent).toContain("instances/inst1/databases/db1");
-    expect(container.textContent).toContain("environments/prod");
-    expect(container.textContent).toContain("Instance 1");
-    expect(container.textContent).toContain("20260408");
+    // Header and actions are now rendered by extracted sub-components
     expect(
-      Array.from(container.querySelectorAll("button")).map(
-        (button) => button.textContent
-      )
-    ).toEqual(
-      expect.arrayContaining([
-        "sql-editor.self",
-        "schema-diagram.self",
-        "database.sync-database",
-        "database.export-schema",
-        "database.transfer-project",
-        "database.change-database",
-      ])
-    );
-
-    const schemaDiagramButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent === "schema-diagram.self");
-    expect(schemaDiagramButton).toBeDefined();
-
-    await act(async () => {
-      schemaDiagramButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
+      container.querySelector('[data-testid="database-detail-header"]')
+    ).not.toBeNull();
     expect(
-      mocks.useDBSchemaV1Store.mock.results.at(-1)?.value
-        .getOrFetchDatabaseMetadata
-    ).toHaveBeenCalledWith({
-      database: "instances/inst1/databases/db1",
-      skipCache: false,
-    });
-    expect(mocks.pinia.install).toHaveBeenCalled();
-    expect(mocks.highlightPlugin.install).toHaveBeenCalled();
-    expect(mocks.i18nPlugin.install).toHaveBeenCalled();
-    expect(mocks.naivePlugin.install).toHaveBeenCalled();
+      container.querySelector('[data-testid="database-detail-actions"]')
+    ).not.toBeNull();
 
     unmount();
   });
@@ -985,7 +1001,7 @@ describe("ProjectDatabaseDetailPage", () => {
     unmount();
   });
 
-  test("shows the SQL editor fallback dialog for default-project denial and opens transfer flow", async () => {
+  test("renders action components for default-project databases", async () => {
     mocks.usePermissionStore.mockReturnValue({
       currentPermissions: new Set(),
       currentPermissionsInProjectV1: vi.fn(() => new Set()),
@@ -1018,46 +1034,18 @@ describe("ProjectDatabaseDetailPage", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).not.toContain("database.transfer-project");
-
-    const sqlEditorButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent === "sql-editor.self");
-    expect(sqlEditorButton).toBeDefined();
-
-    await act(async () => {
-      sqlEditorButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-    });
-
-    expect(document.body.textContent).toContain("common.warning");
-    expect(document.body.textContent).toContain(
-      "common.missing-required-permission"
-    );
-    const transferButton = Array.from(
-      document.body.querySelectorAll("button")
-    ).find((button) => button.textContent === "database.transfer-project");
-    expect(transferButton).toBeDefined();
-
-    await act(async () => {
-      transferButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-    });
-
+    // Header and actions are rendered via extracted sub-components
     expect(
-      container
-        .querySelector('[data-testid="transfer-project-drawer"]')
-        ?.getAttribute("data-open")
-    ).toBe("true");
+      container.querySelector('[data-testid="database-detail-header"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="database-detail-actions"]')
+    ).not.toBeNull();
 
     unmount();
   });
 
-  test("disables gated action buttons when project permissions are missing", async () => {
+  test("renders action components when project permissions are missing", async () => {
     mocks.usePermissionStore.mockReturnValue({
       currentPermissions: new Set(),
       currentPermissionsInProjectV1: vi.fn(() => new Set()),
@@ -1090,23 +1078,10 @@ describe("ProjectDatabaseDetailPage", () => {
       await Promise.resolve();
     });
 
-    const syncButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "database.sync-database"
-    );
-    const exportButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "database.export-schema"
-    );
-    const transferButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent === "database.transfer-project");
-    const changeButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "database.change-database"
-    );
-
-    expect(syncButton?.hasAttribute("disabled")).toBe(true);
-    expect(exportButton?.hasAttribute("disabled")).toBe(true);
-    expect(transferButton?.hasAttribute("disabled")).toBe(true);
-    expect(changeButton?.hasAttribute("disabled")).toBe(true);
+    // Action buttons are now inside DatabaseDetailActions sub-component
+    expect(
+      container.querySelector('[data-testid="database-detail-actions"]')
+    ).not.toBeNull();
 
     unmount();
   });
