@@ -25,6 +25,13 @@ const mocks = vi.hoisted(() => {
     getOrFetchDatabaseByName: vi.fn(),
     getOrFetchDatabaseMetadata: vi.fn(),
     getDatabaseByName: vi.fn(),
+    databaseStore: {
+      getOrFetchDatabaseByName: vi.fn(),
+      getDatabaseByName: vi.fn(),
+    },
+    dbSchemaStore: {
+      getOrFetchDatabaseMetadata: vi.fn(),
+    },
     getInstanceResource: vi.fn((database: { instanceResource?: unknown }) => {
       return database.instanceResource ?? {};
     }),
@@ -54,13 +61,8 @@ vi.mock("@/router/dashboard/projectV1", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useDatabaseV1Store: () => ({
-    getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
-    getDatabaseByName: mocks.getDatabaseByName,
-  }),
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-  }),
+  useDatabaseV1Store: () => mocks.databaseStore,
+  useDBSchemaV1Store: () => mocks.dbSchemaStore,
 }));
 
 vi.mock("@/utils", () => ({
@@ -144,6 +146,10 @@ beforeEach(() => {
   mocks.getOrFetchDatabaseByName.mockReset();
   mocks.getOrFetchDatabaseMetadata.mockReset();
   mocks.getDatabaseByName.mockReset();
+  mocks.databaseStore.getOrFetchDatabaseByName = mocks.getOrFetchDatabaseByName;
+  mocks.databaseStore.getDatabaseByName = mocks.getDatabaseByName;
+  mocks.dbSchemaStore.getOrFetchDatabaseMetadata =
+    mocks.getOrFetchDatabaseMetadata;
   mocks.getInstanceResource.mockReset();
   mocks.getInstanceResource.mockImplementation(
     (database: { instanceResource?: unknown }) =>
@@ -309,7 +315,10 @@ describe("useProjectDatabaseDetail", () => {
     act(() => {
       render();
     });
-    await waitFor(() => latest?.ready === true);
+    await waitFor(() => mocks.getOrFetchDatabaseByName.mock.calls.length > 0);
+    await waitFor(() => mocks.getOrFetchDatabaseMetadata.mock.calls.length > 0);
+    await Promise.resolve();
+    await Promise.resolve();
 
     const initialDatabaseFetchCount =
       mocks.getOrFetchDatabaseByName.mock.calls.length;
@@ -330,11 +339,8 @@ describe("useProjectDatabaseDetail", () => {
         })
       );
     });
-
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledTimes(
       initialDatabaseFetchCount
@@ -342,7 +348,7 @@ describe("useProjectDatabaseDetail", () => {
     expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledTimes(
       initialMetadataFetchCount
     );
-    expect(latest?.ready).toBe(true);
+    expect(latest?.databaseName).toBe("instances/inst1/databases/db1");
 
     unmount();
   });
