@@ -34,7 +34,12 @@ const mocks = vi.hoisted(() => {
     useVueState: vi.fn(),
     useDBSchemaV1Store: vi.fn(),
     useDatabaseCatalog: vi.fn(),
+    getColumnCatalog: vi.fn(() => ({
+      semanticType: "",
+      classification: "",
+    })),
     getTableCatalog: vi.fn(),
+    useSettingV1Store: vi.fn(),
     featureToRef: vi.fn(() => ({ value: true })),
     getDatabaseProject: vi.fn((database: { project: string }) => ({
       name: database.project,
@@ -44,8 +49,12 @@ const mocks = vi.hoisted(() => {
       (_project?: unknown, _permission?: string) => true
     ),
     getDatabaseEngine: vi.fn(() => Engine.POSTGRES),
+    hasIndexSizeProperty: vi.fn(() => true),
     hasSchemaProperty: vi.fn(() => true),
+    hasTableEngineProperty: vi.fn(() => false),
     instanceV1HasCollationAndCharacterSet: vi.fn(() => true),
+    instanceV1SupportsColumn: vi.fn(() => true),
+    instanceV1SupportsIndex: vi.fn(() => true),
     instanceV1SupportsPackage: vi.fn(() => false),
     instanceV1SupportsSequence: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
@@ -75,7 +84,9 @@ vi.mock("@/router", () => ({
 vi.mock("@/store", () => ({
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
   useDatabaseCatalog: mocks.useDatabaseCatalog,
+  getColumnCatalog: mocks.getColumnCatalog,
   getTableCatalog: mocks.getTableCatalog,
+  useSettingV1Store: mocks.useSettingV1Store,
   featureToRef: mocks.featureToRef,
 }));
 
@@ -84,10 +95,14 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getDatabaseProject: mocks.getDatabaseProject,
   humanizeDate: mocks.humanizeDate,
+  hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
   hasSchemaProperty: mocks.hasSchemaProperty,
+  hasTableEngineProperty: mocks.hasTableEngineProperty,
   instanceV1HasCollationAndCharacterSet:
     mocks.instanceV1HasCollationAndCharacterSet,
+  instanceV1SupportsColumn: mocks.instanceV1SupportsColumn,
+  instanceV1SupportsIndex: mocks.instanceV1SupportsIndex,
   instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
   instanceV1SupportsSequence: mocks.instanceV1SupportsSequence,
 }));
@@ -231,6 +246,8 @@ beforeEach(async () => {
   mocks.hasSchemaProperty.mockReturnValue(true);
   mocks.instanceV1HasCollationAndCharacterSet.mockReset();
   mocks.instanceV1HasCollationAndCharacterSet.mockReturnValue(true);
+  mocks.instanceV1SupportsColumn.mockReset();
+  mocks.instanceV1SupportsColumn.mockReturnValue(true);
   mocks.instanceV1SupportsPackage.mockReset();
   mocks.instanceV1SupportsPackage.mockReturnValue(false);
   mocks.instanceV1SupportsSequence.mockReset();
@@ -259,14 +276,30 @@ beforeEach(async () => {
       schemas: [],
     },
   });
+  mocks.getColumnCatalog.mockReset();
+  mocks.getColumnCatalog.mockReturnValue({
+    semanticType: "",
+    classification: "",
+  });
   mocks.getTableCatalog.mockReset();
   mocks.getTableCatalog.mockReturnValue({
     classification: "",
+  });
+  mocks.useSettingV1Store.mockReset();
+  mocks.useSettingV1Store.mockReturnValue({
+    getOrFetchSettingByName: vi.fn(),
+    getProjectClassification: vi.fn(() => undefined),
   });
   mocks.featureToRef.mockReset();
   mocks.featureToRef.mockReturnValue({
     value: true,
   });
+  mocks.hasIndexSizeProperty.mockReset();
+  mocks.hasIndexSizeProperty.mockReturnValue(true);
+  mocks.hasTableEngineProperty.mockReset();
+  mocks.hasTableEngineProperty.mockReturnValue(false);
+  mocks.instanceV1SupportsIndex.mockReset();
+  mocks.instanceV1SupportsIndex.mockReturnValue(true);
   mocks.useVueState.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
@@ -330,6 +363,63 @@ describe("DatabaseOverviewPanel", () => {
       ])
     );
     expect(tableHeaderText).not.toContain("common.definition");
+
+    unmount();
+  });
+
+  test("restores the table engine column for MySQL overview rows", async () => {
+    mocks.getDatabaseEngine.mockReturnValue(Engine.MYSQL);
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => mocks.schemaList),
+      getTableList: vi.fn(
+        () =>
+          [
+            {
+              name: "orders",
+              engine: "InnoDB",
+              rowCount: 7,
+              dataSize: 64n,
+              indexSize: 32n,
+              comment: "orders comment",
+              columns: [
+                {
+                  name: "id",
+                  type: "INT",
+                  comment: "",
+                },
+              ],
+            },
+          ] as never
+      ),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        characterSet: "utf8mb4",
+        collation: "utf8mb4_0900_ai_ci",
+        schemas: [],
+      })),
+    });
+
+    vi.resetModules();
+    ({ DatabaseOverviewPanel } = await import("./DatabaseOverviewPanel"));
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseOverviewPanel, {
+        database: makeDatabase(),
+        hasSchemaPermission: true,
+      })
+    );
+
+    render();
+    await flush();
+
+    const tableHeaderText = Array.from(container.querySelectorAll("th")).map(
+      (cell) => cell.textContent
+    );
+    expect(tableHeaderText).toContain("database.engine");
+    expect(container.textContent).toContain("InnoDB");
 
     unmount();
   });

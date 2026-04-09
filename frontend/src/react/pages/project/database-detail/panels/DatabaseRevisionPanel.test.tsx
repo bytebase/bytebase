@@ -22,16 +22,20 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
+  CreateRevisionDrawer: Symbol("CreateRevisionDrawer"),
   listRevisions: vi.fn(),
-  batchCreateRevisions: vi.fn(),
-  createSheet: vi.fn(),
   deleteRevision: vi.fn(),
-  pushNotification: vi.fn(),
   currentUser: {
     value: {
       email: "test@example.com",
     },
   },
+  appRenderers: [] as Array<
+    () => {
+      component: unknown;
+      props: Record<string, unknown>;
+    }
+  >,
   createApp: vi.fn(),
   h: vi.fn((component: unknown, props: Record<string, unknown>) => ({
     component,
@@ -62,7 +66,7 @@ vi.mock("@/components/Revision", () => ({
 }));
 
 vi.mock("@/components/Revision/CreateRevisionDrawer.vue", () => ({
-  default: Symbol("CreateRevisionDrawer"),
+  default: mocks.CreateRevisionDrawer,
 }));
 
 vi.mock("@/plugins/i18n", () => ({
@@ -104,7 +108,6 @@ vi.mock("@/react/components/ui/dialog", () => ({
 vi.mock("@/connect", () => ({
   revisionServiceClientConnect: {
     listRevisions: mocks.listRevisions,
-    batchCreateRevisions: mocks.batchCreateRevisions,
   },
 }));
 
@@ -112,13 +115,9 @@ vi.mock("@/store", () => ({
   pinia: {
     install: vi.fn(),
   },
-  pushNotification: mocks.pushNotification,
   useCurrentUserV1: () => mocks.currentUser,
   useRevisionStore: () => ({
     deleteRevision: mocks.deleteRevision,
-  }),
-  useSheetV1Store: () => ({
-    createSheet: mocks.createSheet,
   }),
 }));
 
@@ -160,21 +159,6 @@ const click = (element: HTMLElement) => {
   });
 };
 
-const inputValue = (
-  element: HTMLInputElement | HTMLTextAreaElement,
-  value: string
-) => {
-  act(() => {
-    const descriptor = Object.getOwnPropertyDescriptor(
-      Object.getPrototypeOf(element),
-      "value"
-    );
-    descriptor?.set?.call(element, value);
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-};
-
 const makeDatabase = (): Database =>
   ({
     name: "instances/inst1/databases/db1",
@@ -204,38 +188,35 @@ beforeEach(async () => {
       } as Revision,
     ],
   });
-  mocks.batchCreateRevisions.mockReset();
-  mocks.batchCreateRevisions.mockResolvedValue({
-    revisions: [
-      {
-        name: "instances/inst1/databases/db1/revisions/2",
-        version: "2.0.0",
-        type: Revision_Type.VERSIONED,
-      } as Revision,
-    ],
-  });
-  mocks.createSheet.mockReset();
-  mocks.createSheet.mockResolvedValue({
-    name: "projects/proj1/sheets/sheet-1",
-  });
   mocks.deleteRevision.mockReset();
   mocks.deleteRevision.mockResolvedValue(undefined);
-  mocks.pushNotification.mockReset();
+  mocks.appRenderers.length = 0;
   mocks.createApp.mockReset();
-  mocks.createApp.mockImplementation(() => ({
-    use() {
-      return this;
-    },
-    mount() {},
-    unmount: vi.fn(),
-  }));
+  mocks.createApp.mockImplementation(
+    (appDefinition: { render: () => unknown }) => {
+      return {
+        use() {
+          return this;
+        },
+        mount() {
+          mocks.appRenderers.push(
+            appDefinition.render as () => {
+              component: unknown;
+              props: Record<string, unknown>;
+            }
+          );
+        },
+        unmount: vi.fn(),
+      };
+    }
+  );
 
   vi.resetModules();
   ({ DatabaseRevisionPanel } = await import("./DatabaseRevisionPanel"));
 });
 
 describe("DatabaseRevisionPanel", () => {
-  test("opens the revision import dialog and refreshes after create", async () => {
+  test("opens the legacy revision drawer and refreshes after create", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseRevisionPanel, {
         database: makeDatabase(),
@@ -245,6 +226,8 @@ describe("DatabaseRevisionPanel", () => {
     render();
     await flush();
 
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+
     const importButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "common.import"
     ) as HTMLButtonElement | undefined;
@@ -253,33 +236,30 @@ describe("DatabaseRevisionPanel", () => {
     click(importButton as HTMLButtonElement);
     await flush();
 
-    expect(
-      container.querySelector('[data-testid="dialog-root"]')
-    ).not.toBeNull();
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
 
-    const versionInput = container.querySelector(
-      'input[name="version"]'
-    ) as HTMLInputElement | null;
-    const statementInput = container.querySelector(
-      'textarea[name="statement"]'
-    ) as HTMLTextAreaElement | null;
-    expect(versionInput).not.toBeNull();
-    expect(statementInput).not.toBeNull();
+    const latestDrawerVNode = mocks.appRenderers.at(-1)?.();
+    expect(latestDrawerVNode).toMatchObject({
+      component: mocks.CreateRevisionDrawer,
+      props: expect.objectContaining({
+        database: "instances/inst1/databases/db1",
+        show: true,
+      }),
+    });
 
-    inputValue(versionInput as HTMLInputElement, "2.0.0");
-    inputValue(statementInput as HTMLTextAreaElement, "select 1;");
-
-    const createButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "common.create"
-    ) as HTMLButtonElement | undefined;
-    expect(createButton).toBeDefined();
-
-    click(createButton as HTMLButtonElement);
+    act(() => {
+      (latestDrawerVNode?.props["onCreated"] as (() => void) | undefined)?.();
+    });
     await flush();
 
-    expect(mocks.createSheet).toHaveBeenCalledTimes(1);
-    expect(mocks.batchCreateRevisions).toHaveBeenCalledTimes(1);
-    expect(mocks.listRevisions).toHaveBeenCalledTimes(3);
+    expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
+    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+    expect(mocks.appRenderers.at(-1)?.()).toMatchObject({
+      component: mocks.CreateRevisionDrawer,
+      props: expect.objectContaining({
+        show: false,
+      }),
+    });
 
     unmount();
   });
@@ -313,83 +293,6 @@ describe("DatabaseRevisionPanel", () => {
       "instances/inst1/databases/db1/revisions/1"
     );
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
-
-    unmount();
-  });
-
-  test("checks duplicate versions across paginated revision results", async () => {
-    mocks.listRevisions.mockReset();
-    mocks.listRevisions
-      .mockResolvedValueOnce({
-        nextPageToken: "page-2",
-        revisions: [
-          {
-            name: "instances/inst1/databases/db1/revisions/1",
-            version: "1.0.0",
-            type: Revision_Type.VERSIONED,
-          } as Revision,
-        ],
-      })
-      .mockResolvedValueOnce({
-        nextPageToken: "page-2",
-        revisions: [
-          {
-            name: "instances/inst1/databases/db1/revisions/1",
-            version: "1.0.0",
-            type: Revision_Type.VERSIONED,
-          } as Revision,
-        ],
-      })
-      .mockResolvedValueOnce({
-        nextPageToken: "",
-        revisions: [
-          {
-            name: "instances/inst1/databases/db1/revisions/2",
-            version: "2.0.0",
-            type: Revision_Type.VERSIONED,
-          } as Revision,
-        ],
-      });
-
-    const { container, render, unmount } = renderIntoContainer(
-      createElement(DatabaseRevisionPanel, {
-        database: makeDatabase(),
-      })
-    );
-
-    render();
-    await flush();
-
-    const importButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "common.import"
-    ) as HTMLButtonElement | undefined;
-    expect(importButton).toBeDefined();
-
-    click(importButton as HTMLButtonElement);
-    await flush();
-
-    const versionInput = container.querySelector(
-      'input[name="version"]'
-    ) as HTMLInputElement | null;
-    const statementInput = container.querySelector(
-      'textarea[name="statement"]'
-    ) as HTMLTextAreaElement | null;
-    expect(versionInput).not.toBeNull();
-    expect(statementInput).not.toBeNull();
-
-    inputValue(versionInput as HTMLInputElement, "2.0.0");
-    inputValue(statementInput as HTMLTextAreaElement, "select 1;");
-    await flush();
-
-    expect(container.textContent).toContain(
-      "database.revision.version-already-exists"
-    );
-
-    const createButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "common.create"
-    ) as HTMLButtonElement | undefined;
-    expect(createButton).toBeDefined();
-    expect(createButton?.disabled).toBe(true);
 
     unmount();
   });

@@ -521,11 +521,14 @@
     "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
     "index-size": "Kích thước chỉ mục",
+    "indexes": "Chỉ mục",
     "last-sync": "Lần đồng bộ cuối cùng",
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
+    "nullable": "Có thể null",
     "partitioned": "Đã phân vùng",
     "row-count-est": "Ước tính số hàng",
+    "row-count-estimate": "Ước tính số hàng",
     "select": "Chọn cơ sở dữ liệu",
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
@@ -556,10 +559,11 @@
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
     "transfer-project": "Chuyển dự án",
-    "type": "Loại",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
-    "unassign-alert-title": "Hủy gán cơ sở dữ liệu"
+    "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
+    "unique": "Duy nhất",
+    "visible": "Hiển thị"
   },
   "database-group": {
     "condition": {
