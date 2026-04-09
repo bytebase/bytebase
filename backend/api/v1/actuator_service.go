@@ -163,11 +163,13 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.UnlicensedFeatures = unlicensedFeaturesString
 
-		activePrincipalCount, err := s.store.CountActivePrincipals(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+		if !s.profile.SaaS {
+			activePrincipalCount, err := s.store.CountActivePrincipals(ctx)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+			serverInfo.ActivatedUserCount = int32(activePrincipalCount)
 		}
-		serverInfo.ActivatedUserCount = int32(activePrincipalCount)
 
 		iamPolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {
