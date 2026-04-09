@@ -43,13 +43,19 @@
     </ul>
 
     <div
-      v-if="showManualCreateRollout"
+      v-if="showManualCreateRolloutHint"
       class="mt-3 flex max-w-[28rem] flex-col items-start gap-y-2"
     >
       <p class="text-xs text-control-placeholder">
-        {{ $t("plan.phase.deploy-manual-create-description") }}
+        {{ manualCreateRolloutDescription }}
       </p>
-      <NButton secondary strong size="small" @click="showRolloutCreatePanel = true">
+      <NButton
+        v-if="canCreateRollout"
+        secondary
+        strong
+        size="small"
+        @click="showRolloutCreatePanel = true"
+      >
         {{ $t("plan.phase.create-rollout-action") }}
       </NButton>
     </div>
@@ -96,8 +102,11 @@ const canCreateRollout = computed(() => {
   return true;
 });
 
-const showManualCreateRollout = computed(() => {
-  if (!canCreateRollout.value) return false;
+const showManualCreateRolloutHint = computed(() => {
+  if (!issue.value) return false;
+  if (plan.value.hasRollout) return false;
+  if (plan.value.state !== State.ACTIVE) return false;
+  if (issue.value.status !== IssueStatus.OPEN) return false;
   if (
     project.value.requireIssueApproval &&
     !actionContext.value.issueApproved
@@ -114,6 +123,13 @@ const showManualCreateRollout = computed(() => {
     !project.value.requireIssueApproval ||
     !project.value.requirePlanCheckNoError
   );
+});
+
+const manualCreateRolloutDescription = computed(() => {
+  if (actionContext.value.permissions.createRollout) {
+    return t("plan.phase.deploy-manual-create-description");
+  }
+  return t("plan.phase.deploy-manual-create-description-readonly");
 });
 
 const requirementItems = computed(() => {

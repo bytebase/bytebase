@@ -1409,6 +1409,7 @@
       "deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
+      "deploy-manual-create-description-readonly": "Un usuario con el permiso Create Rollout puede crear el rollout manualmente.",
       "hide-details": "Ocultar detalles ↑",
       "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles ↓"
