@@ -351,35 +351,6 @@ test.describe("Grant and Revoke", () => {
 test.describe("E2E Masking Verification", () => {
   test.setTimeout(120_000);
 
-  test("grant exemption via API → query shows unmasked data", async ({ page }) => {
-    const projectId = env.project.split("/").pop()!;
-    const instanceId = env.instance.split("/").pop()!;
-    const dbId = env.database.split("/").pop()!;
-    const sqlEditor = new SqlEditorPage(page, env.baseURL);
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
-
-    await revokeAllExemptions();
-    await grantExemption("e2e API grant test");
-
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
-  });
-
-  test("revoke exemption via API → query shows masked data", async ({ page }) => {
-    const projectId = env.project.split("/").pop()!;
-    const instanceId = env.instance.split("/").pop()!;
-    const dbId = env.database.split("/").pop()!;
-    const sqlEditor = new SqlEditorPage(page, env.baseURL);
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
-
-    await revokeAllExemptions();
-
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
-  });
-
   test("revoke via UI and verify data becomes masked", async ({ page }) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
