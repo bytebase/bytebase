@@ -408,6 +408,13 @@ func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]b
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
 			}
+		case "view_ref":
+			schemas := map[string]bool{c.defaultDatabase: true}
+			viewEntries.insertViews(c, schemas)
+		case "index_ref":
+			// Indexes are scoped to tables; without table context just suggest tables.
+			schemas := map[string]bool{c.defaultDatabase: true}
+			tableEntries.insertTables(c, schemas)
 		case "columnref":
 			schema, table, flags := c.determineColumnRef()
 
