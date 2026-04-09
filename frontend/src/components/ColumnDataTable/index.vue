@@ -132,7 +132,7 @@ const columns = computed(() => {
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       hide: !showSensitiveColumn.value,
       resizable: true,
-      width: 140,
+      minWidth: 160,
       render: (column) => {
         const columnCatalog = getColumnCatalog(
           databaseCatalog.value,
@@ -152,7 +152,7 @@ const columns = computed(() => {
       key: "classification",
       title: t("database.classification.self"),
       hide: !showClassificationColumn.value,
-      width: 140,
+      minWidth: 160,
       resizable: true,
       render: (column) => {
         const columnCatalog = getColumnCatalog(

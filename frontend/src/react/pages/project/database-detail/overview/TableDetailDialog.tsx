@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createApp, h, reactive } from "vue";
+import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import OverlayStackManager from "@/components/misc/OverlayStackManager.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import i18n from "@/plugins/i18n";
@@ -72,6 +73,14 @@ export function VueTableDetailDrawerMount({
               tableName: bridgeState.tableName,
               classificationConfig: bridgeState.classificationConfig,
               onDismiss: bridgeState.onDismiss,
+              onApplyClassification: (table: string, id: string) => {
+                void updateTableCatalog({
+                  database: bridgeState.databaseName,
+                  schema: bridgeState.schemaName,
+                  table,
+                  tableCatalog: { classification: id },
+                });
+              },
             }),
         });
       },
