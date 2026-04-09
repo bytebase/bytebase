@@ -1,8 +1,8 @@
 import { first, orderBy } from "lodash-es";
+import { isApprovalCompleted } from "@/components/Plan/logic/approval";
 import { candidatesOfApprovalStepV1, extractUserEmail } from "@/store";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  Issue_ApprovalStatus,
   Issue_Approver_Status,
   Issue_Type,
   IssueStatus,
@@ -52,9 +52,7 @@ function computeIsApprovalCandidate(
 ): boolean {
   if (!issue) return false;
 
-  const issueApproved =
-    issue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+  const issueApproved = isApprovalCompleted(issue);
   if (issueApproved) return false;
 
   const { approvers, approvalTemplate } = issue;
@@ -156,13 +154,6 @@ function computeExportArchiveReady(
   return true;
 }
 
-// Check if issue has no approval required (empty approval flow)
-function hasNoApprovalRequired(issue: Issue | undefined): boolean {
-  if (!issue) return false;
-  const roles = issue.approvalTemplate?.flow?.roles ?? [];
-  return roles.length === 0;
-}
-
 export function buildActionContext(input: ContextBuilderInput): ActionContext {
   const {
     plan,
@@ -246,13 +237,9 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   );
 
   // Compute approval status
-  // Issue is considered approved if:
-  // - Status is APPROVED or SKIPPED, OR
-  // - Approval template has no roles (no approval required)
-  const issueApproved =
-    issue?.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-    issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
-    hasNoApprovalRequired(issue);
+  // Treat approval as complete only after the status is finalized, or after
+  // approval finding resolves to an empty flow (no approval required).
+  const issueApproved = isApprovalCompleted(issue);
 
   return {
     plan,

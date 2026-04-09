@@ -1,4 +1,5 @@
 export * from "./context";
+export * from "./approval";
 export * from "./base";
 export * from "./plan";
 export * from "./initialize";
@@ -9,5 +10,5 @@ export * from "./useResolvedPlanCheckStatus";
 export * from "./utils";
 export * from "./sidebar";
 export * from "./usePlanCheckStatus";
-export * from "./useRolloutReadyLink";
+export * from "./usePlanLink";
 export * from "./rolloutPreview";
