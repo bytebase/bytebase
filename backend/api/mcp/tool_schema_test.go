@@ -741,6 +741,96 @@ func TestGetSchema_StableSortOrder(t *testing.T) {
 	require.Equal(t, "zz", output.Schemas[1].Tables[1].Name)
 }
 
+// TestGetSchema_SummaryDoesNotTruncate verifies the P1 fix: summary mode must
+// return every table in a schema even when there are more than schemaTableLimit
+// of them, because summary is designed to fit large catalogs (per-table payload
+// is tiny) and the server isn't asked to limit in summary mode.
+func TestGetSchema_SummaryDoesNotTruncate(t *testing.T) {
+	// Build 250 tables — well over schemaTableLimit (200).
+	tableCount := schemaTableLimit + 50
+	tables := make([]map[string]any, tableCount)
+	for i := range tables {
+		tables[i] = makeTable(fmt.Sprintf("t%03d", i), 0, []map[string]any{makeColumn("id", "int4", false)}, nil)
+	}
+	resp := makeMetadataResponse(makeSchema("public", tables...))
+	s, mock := mockMetadataServer(t, employeeDB(), resp)
+
+	_, structured, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+		Database: "employee_db",
+		// No Include set → defaults to summary.
+	})
+	require.NoError(t, err)
+	// Summary mode does not send a server-side limit.
+	require.Equal(t, int32(0), mock.lastCall().Limit)
+
+	output, ok := structured.(*SchemaOutput)
+	require.True(t, ok)
+	require.Len(t, output.Schemas, 1)
+	section := output.Schemas[0]
+	require.Len(t, section.Tables, tableCount, "summary mode must not truncate")
+	require.False(t, section.Truncated)
+	require.Equal(t, 0, section.TablesShown)
+}
+
+// TestGetSchema_AmbiguousTableAcrossSchemas verifies the P2 fix: when the same
+// table name exists in multiple schemas and the caller did not specify schema=,
+// the tool must return an AMBIGUOUS_TABLE error instead of silently picking the
+// first match.
+func TestGetSchema_AmbiguousTableAcrossSchemas(t *testing.T) {
+	usersPublic := makeTable("users", 10,
+		[]map[string]any{makeColumn("id", "int4", false)},
+		[]map[string]any{makePrimaryKeyIndex("users_pkey", []string{"id"})},
+	)
+	usersAnalytics := makeTable("users", 20,
+		[]map[string]any{makeColumn("uid", "int4", false)},
+		[]map[string]any{makePrimaryKeyIndex("users_pkey", []string{"uid"})},
+	)
+	resp := makeMetadataResponse(
+		makeSchema("analytics", usersAnalytics),
+		makeSchema("public", usersPublic),
+	)
+	s, _ := mockMetadataServer(t, employeeDB(), resp)
+
+	result, _, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+		Database: "employee_db",
+		Table:    "users",
+		// No Schema set → both matches are visible.
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "AMBIGUOUS_TABLE")
+	require.Contains(t, text, "analytics")
+	require.Contains(t, text, "public")
+	require.Contains(t, text, "schema=")
+}
+
+// TestGetSchema_TableInSpecificSchema verifies the happy path for the P2 fix:
+// with a schema= hint, a single match proceeds normally.
+func TestGetSchema_TableInSpecificSchema(t *testing.T) {
+	usersPublic := makeTable("users", 10,
+		[]map[string]any{makeColumn("id", "int4", false)},
+		[]map[string]any{makePrimaryKeyIndex("users_pkey", []string{"id"})},
+	)
+	// Simulate a server that honors the schema filter: only `public` is returned.
+	resp := makeMetadataResponse(makeSchema("public", usersPublic))
+	s, mock := mockMetadataServer(t, employeeDB(), resp)
+
+	_, structured, err := s.handleGetSchema(testContext(), nil, SchemaInput{
+		Database: "employee_db",
+		Schema:   "public",
+		Table:    "users",
+	})
+	require.NoError(t, err)
+	require.Equal(t, `schema == "public" && table == "users"`, mock.lastCall().Filter)
+
+	output, ok := structured.(*SchemaOutput)
+	require.True(t, ok)
+	require.NotNil(t, output.Table)
+	require.Equal(t, "users", output.Table.Name)
+}
+
 func TestBuildMetadataFilter(t *testing.T) {
 	tests := []struct {
 		name   string

@@ -245,16 +245,26 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 
 	// Transform → SchemaOutput.
 	if input.Table != "" {
-		tableDetail, found := findTable(metadata, input.Table)
-		if !found {
+		matches := findTableMatches(metadata, input.Table)
+		switch {
+		case len(matches) == 0:
 			// Re-fetch without table filter to surface candidates.
 			candidates := s.lookupTableCandidates(fetchCtx, resolved.resourceName, input.Schema, input.Table)
 			return formatTableNotFound(input.Database, input.Table, candidates), nil, nil
+		case len(matches) > 1:
+			// Same table name in multiple schemas. Don't silently pick one.
+			schemas := make([]string, 0, len(matches))
+			for _, m := range matches {
+				schemas = append(schemas, m.schema)
+			}
+			return formatAmbiguousTable(input.Database, input.Table, schemas), nil, nil
 		}
+		match := matches[0]
+		entry := buildTableEntry(match.table, schemaIncludeDetails)
 		output := &SchemaOutput{
 			Database: resolved.resourceName,
 			Engine:   resolved.engine,
-			Table:    tableDetail,
+			Table:    &entry,
 		}
 		text := formatSchemaOutput(output, include)
 		return &mcp.CallToolResult{
@@ -371,20 +381,26 @@ func translateMetadataError(resp *apiResponse) error {
 	}
 }
 
-// findTable locates a single table in a server-filtered metadata response.
-// Returns the details-level TableEntry and true if found, or nil/false otherwise.
-func findTable(metadata *databaseMetadata, table string) (*TableDetail, bool) {
+// tableMatch holds a single (schema, table) match found during lookup.
+type tableMatch struct {
+	schema string
+	table  *tableMetadata
+}
+
+// findTableMatches returns every (schema, table) pair whose table name equals
+// the requested name. The caller decides how to handle 0, 1, or multiple matches.
+func findTableMatches(metadata *databaseMetadata, table string) []tableMatch {
+	var matches []tableMatch
 	for i := range metadata.Schemas {
 		schema := &metadata.Schemas[i]
 		for j := range schema.Tables {
 			t := &schema.Tables[j]
 			if t.Name == table {
-				entry := buildTableEntry(t, schemaIncludeDetails)
-				return &entry, true
+				matches = append(matches, tableMatch{schema: schema.Name, table: t})
 			}
 		}
 	}
-	return nil, false
+	return matches
 }
 
 // lookupTableCandidates issues a second GetDatabaseMetadata call (no table filter)
@@ -435,6 +451,12 @@ func tableNameMatches(name, missing string) bool {
 // transformSchemas converts decoded metadata into the response shape for the
 // given include level. Applies sorting and per-schema truncation.
 func transformSchemas(metadata *databaseMetadata, include string) []SchemaSection {
+	// Only bulk-detail modes ask the server for limit+1 and need the "trim to
+	// schemaTableLimit and flag Truncated" dance. Summary mode is designed to
+	// return every table because the per-table payload is tiny — applying the
+	// cap there would silently drop tables from agents' view.
+	applyTruncation := include == schemaIncludeColumns || include == schemaIncludeDetails
+
 	sections := make([]SchemaSection, 0, len(metadata.Schemas))
 	for i := range metadata.Schemas {
 		schema := &metadata.Schemas[i]
@@ -446,7 +468,7 @@ func transformSchemas(metadata *databaseMetadata, include string) []SchemaSectio
 
 		truncated := false
 		tablesShown := 0
-		if len(schema.Tables) > schemaTableLimit {
+		if applyTruncation && len(schema.Tables) > schemaTableLimit {
 			// Drop the sentinel 201st entry.
 			schema.Tables = schema.Tables[:schemaTableLimit]
 			truncated = true
@@ -630,6 +652,28 @@ func formatTableNotFound(database, table string, candidates []string) *mcp.CallT
 		Message:    fmt.Sprintf("no table matching %q in %s", table, database),
 		Suggestion: "call get_schema without table= to see available tables",
 		Candidates: candidates,
+	}
+
+	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(jsonBytes)}},
+		IsError: true,
+	}
+}
+
+// formatAmbiguousTable returns an MCP result when the requested table name
+// exists in multiple schemas. The caller must pick a schema.
+func formatAmbiguousTable(database, table string, schemas []string) *mcp.CallToolResult {
+	result := struct {
+		Code       string   `json:"code"`
+		Message    string   `json:"message"`
+		Suggestion string   `json:"suggestion"`
+		Schemas    []string `json:"schemas"`
+	}{
+		Code:       "AMBIGUOUS_TABLE",
+		Message:    fmt.Sprintf("table %q exists in multiple schemas of %s", table, database),
+		Suggestion: fmt.Sprintf("re-run with schema= set to one of: %s", strings.Join(schemas, ", ")),
+		Schemas:    schemas,
 	}
 
 	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
