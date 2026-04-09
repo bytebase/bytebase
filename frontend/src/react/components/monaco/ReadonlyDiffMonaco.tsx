@@ -3,6 +3,7 @@ import {
   createMonacoDiffEditor,
   setMonacoModelLanguage,
 } from "@/components/MonacoEditor/editor";
+import { loadMonacoEditor } from "@/components/MonacoEditor/lazy-editor";
 import type { IStandaloneDiffEditor } from "@/components/MonacoEditor/types";
 import { cn } from "@/react/lib/utils";
 import type { Language } from "@/types";
@@ -80,17 +81,17 @@ export function ReadonlyDiffMonaco({
         }
       );
 
-      const { editor: monacoEditor } = await import("monaco-editor");
+      const monaco = await loadMonacoEditor();
 
       if (disposed) {
         return;
       }
 
-      const originalModel = monacoEditor.createModel(
+      const originalModel = monaco.editor.createModel(
         originalRef.current.replace(/\r\n?/g, "\n"),
         languageRef.current
       );
-      const modifiedModel = monacoEditor.createModel(
+      const modifiedModel = monaco.editor.createModel(
         modifiedRef.current.replace(/\r\n?/g, "\n"),
         languageRef.current
       );
