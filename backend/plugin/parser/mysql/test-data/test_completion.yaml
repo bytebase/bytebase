@@ -5239,3 +5239,15 @@
       definition: ""
       comment: ""
       priority: 0
+- input: SELECT | FROM other_db.t2
+  want:
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0

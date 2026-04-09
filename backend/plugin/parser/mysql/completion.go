@@ -470,7 +470,12 @@ func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]b
 			}
 
 			if len(schema) == 0 {
-				databases[c.defaultDatabase] = true
+				// Only fall back to default database when references didn't
+				// supply any explicit database. Otherwise we'd mix unrelated
+				// tables from default db with cross-database queries.
+				if len(databases) == 0 {
+					databases[c.defaultDatabase] = true
+				}
 				databases[""] = true // CTE tables
 			}
 
@@ -508,7 +513,11 @@ func (c *Completer) convertCandidates(candidates *mysqlparser.CandidateSet) ([]b
 			}
 
 			if flags&ObjectFlagsShowColumns != 0 {
-				if schema == table {
+				// determineColumnRef returns schema==table when the user typed
+				// "table.col" — we don't yet know if 'table' is actually a table
+				// or schema, so search both. (Skip when both are empty — that's
+				// the unqualified case.)
+				if schema != "" && schema == table {
 					databases[c.defaultDatabase] = true
 					databases[""] = true
 				}
