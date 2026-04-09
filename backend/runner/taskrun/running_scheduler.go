@@ -30,7 +30,7 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 		select {
 		case <-ticker.C:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
-				slog.Warn("Running task runs scheduler skipped due to HA license restriction", log.BBError(err))
+				// Pending scheduler handles failing task runs; just skip here.
 				continue
 			}
 			if err := s.scheduleRunningTaskRuns(ctx); err != nil {
@@ -38,7 +38,6 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			}
 		case <-s.bus.TaskRunTickleChan:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
-				slog.Warn("Running task runs scheduler skipped due to HA license restriction", log.BBError(err))
 				continue
 			}
 			if err := s.scheduleRunningTaskRuns(ctx); err != nil {

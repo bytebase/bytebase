@@ -25,7 +25,10 @@ import {
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
-import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -566,6 +569,24 @@ function SQLReviewSectionInner(
                     </button>
                   ))
                 )}
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm text-accent hover:bg-control-bg cursor-pointer border-t border-control-border"
+                  onClick={() => {
+                    setShowSelectPanel(false);
+                    router.push({
+                      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+                      query: {
+                        attachedResource: resourcePath,
+                      },
+                    });
+                  }}
+                >
+                  <div className="flex items-center gap-x-1 font-medium">
+                    <Plus className="w-4 h-4" />
+                    {t("common.create")}
+                  </div>
+                </button>
               </div>
             )}
           </div>

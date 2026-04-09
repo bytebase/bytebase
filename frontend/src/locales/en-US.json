@@ -144,7 +144,6 @@
     "cloud": "Cloud",
     "deploy": "Self Host",
     "external-url": "Bytebase has not configured --external-url",
-    "ha-not-licensed": "Multiple replicas detected without HA license. Backend runners are disabled.",
     "license-expired": "Your license for {plan} has expired on {expireAt}.",
     "license-expires": "Your license for {plan} will expire in {days} days on {expireAt}.",
     "request-demo": "Book a 30-minute product demo.",
@@ -2717,7 +2716,7 @@
       }
     },
     "delete": "Delete SQL review policy",
-    "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+    "description": "Define SQL lint rules to enforce best practices and schema consistency. Rules apply to DDL/DML changes only, not to SQL Editor queries.",
     "disabled": "SQL review is disabled",
     "enabled-rules": "Enabled rules",
     "input-then-press-enter": "Input the value then press enter to add",

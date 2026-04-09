@@ -13,7 +13,6 @@ import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   pushNotification,
@@ -38,8 +37,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
-  extractIssueUID,
-  extractProjectResourceName,
+  getIssueRoute,
   instanceV1HasCollationAndCharacterSet,
 } from "@/utils";
 
@@ -351,19 +349,14 @@ export function CreateDatabaseDrawer({
         planCreate,
         { skipRollout: true }
       );
-      router.push({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(createdIssue.name),
-          issueId: extractIssueUID(createdIssue.name),
-        },
-      });
       onClose();
-    } catch {
+      await router.push(getIssueRoute(createdIssue));
+    } catch (error) {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: t("common.failed"),
+        description: String(error),
       });
     } finally {
       setCreating(false);

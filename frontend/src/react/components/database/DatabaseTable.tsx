@@ -217,186 +217,192 @@ export function DatabaseTable({
 
   return (
     <>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b border-control-border">
-            {showSelection && (
-              <th className="w-12 px-4 py-2">
-                <input
-                  ref={headerCheckboxRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  className="rounded-xs border-control-border"
-                />
-              </th>
-            )}
-            <th
-              className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-              onClick={() => toggleSort("name")}
-            >
-              <div className="flex items-center gap-x-1">
-                {t("common.name")}
-                {renderSortIndicator("name")}
-              </div>
-            </th>
-            <th className="px-4 py-2 text-left font-medium">
-              {t("common.environment")}
-            </th>
-            {!showProjectColumn && (
-              <th className="px-4 py-2 text-left font-medium">
-                {t("common.release")}
-              </th>
-            )}
-            {showProjectColumn && (
-              <th
-                className="px-4 py-2 text-left font-medium cursor-pointer select-none"
-                onClick={() => toggleSort("project")}
-              >
-                <div className="flex items-center gap-x-1">
-                  {t("common.project")}
-                  {renderSortIndicator("project")}
-                </div>
-              </th>
-            )}
-            <th
-              className="px-4 py-2 text-left font-medium cursor-pointer select-none"
-              onClick={() => toggleSort("instance")}
-            >
-              <div className="flex items-center gap-x-1">
-                {t("common.instance")}
-                {renderSortIndicator("instance")}
-              </div>
-            </th>
-            <th className="px-4 py-2 text-left font-medium hidden md:table-cell">
-              {t("common.address")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-              {t("common.labels")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
-              {t("common.status")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && databases.length === 0 ? (
-            <tr>
-              <td
-                colSpan={8}
-                className="px-4 py-8 text-center text-control-placeholder"
-              >
-                <div className="flex items-center justify-center gap-x-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                  {t("common.loading")}
-                </div>
-              </td>
-            </tr>
-          ) : databases.length === 0 ? (
-            <tr>
-              <td
-                colSpan={8}
-                className="px-4 py-8 text-center text-control-placeholder"
-              >
-                {t("common.no-data")}
-              </td>
-            </tr>
-          ) : (
-            databases.map((db, i) => {
-              const isSelected = selectedNames?.has(db.name) ?? false;
-              const instanceResource = getInstanceResource(db);
-              return (
-                <tr
-                  key={db.name}
-                  className={cn(
-                    "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
-                    i % 2 === 1 && "bg-gray-50/50"
-                  )}
-                  onClick={(e) => handleRowClick(db, e)}
+      <div className="border rounded-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-control-border">
+                {showSelection && (
+                  <th className="w-12 px-4 py-2">
+                    <input
+                      ref={headerCheckboxRef}
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded-xs border-control-border"
+                    />
+                  </th>
+                )}
+                <th
+                  className="px-4 py-2 text-left font-medium cursor-pointer select-none"
+                  onClick={() => toggleSort("name")}
                 >
-                  {showSelection && (
-                    <td className="w-12 px-4 py-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelection(db.name)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-xs border-control-border"
-                      />
-                    </td>
-                  )}
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-x-2">
-                      <img
-                        className="h-5 w-5"
-                        src={EngineIconPath[instanceResource.engine]}
-                        alt=""
-                      />
-                      <span className="truncate">
-                        {extractDatabaseResourceName(db.name).databaseName}
-                      </span>
+                  <div className="flex items-center gap-x-1">
+                    {t("common.name")}
+                    {renderSortIndicator("name")}
+                  </div>
+                </th>
+                <th className="px-4 py-2 text-left font-medium">
+                  {t("common.environment")}
+                </th>
+                {!showProjectColumn && (
+                  <th className="px-4 py-2 text-left font-medium">
+                    {t("common.release")}
+                  </th>
+                )}
+                {showProjectColumn && (
+                  <th
+                    className="px-4 py-2 text-left font-medium cursor-pointer select-none"
+                    onClick={() => toggleSort("project")}
+                  >
+                    <div className="flex items-center gap-x-1">
+                      {t("common.project")}
+                      {renderSortIndicator("project")}
+                    </div>
+                  </th>
+                )}
+                <th
+                  className="px-4 py-2 text-left font-medium cursor-pointer select-none"
+                  onClick={() => toggleSort("instance")}
+                >
+                  <div className="flex items-center gap-x-1">
+                    {t("common.instance")}
+                    {renderSortIndicator("instance")}
+                  </div>
+                </th>
+                <th className="px-4 py-2 text-left font-medium hidden md:table-cell">
+                  {t("common.address")}
+                </th>
+                <th className="px-4 py-2 text-left font-medium hidden md:table-cell">
+                  {t("common.labels")}
+                </th>
+                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+                  {t("common.status")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && databases.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-control-placeholder"
+                  >
+                    <div className="flex items-center justify-center gap-x-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      {t("common.loading")}
                     </div>
                   </td>
-                  <td className="px-4 py-2">
-                    <EnvironmentLabel
-                      environmentName={getDatabaseEnvironment(db).name}
-                    />
-                  </td>
-                  {!showProjectColumn && (
-                    <td className="px-4 py-2">
-                      <span className="truncate">
-                        {db.release ? extractReleaseUID(db.release) : "-"}
-                      </span>
-                    </td>
-                  )}
-                  {showProjectColumn && (
-                    <td className="px-4 py-2">
-                      <span className="truncate">
-                        {extractProjectResourceName(
-                          getDatabaseProject(db).name
-                        )}
-                      </span>
-                    </td>
-                  )}
-                  <td className="px-4 py-2">
-                    <span className="truncate">{instanceResource.title}</span>
-                  </td>
-                  <td className="px-4 py-2 hidden md:table-cell">
-                    <span className="truncate">
-                      {hostPortOfInstanceV1(instanceResource)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 hidden md:table-cell">
-                    <LabelsDisplay labels={db.labels} />
-                  </td>
-                  <td className="px-4 py-2">
-                    {db.syncStatus === SyncStatus.FAILED ? (
-                      <span
-                        title={db.syncError || t("database.sync-status-failed")}
-                      >
-                        <XCircle className="w-4 h-4 text-error" />
-                      </span>
-                    ) : (
-                      <CheckCircle className="w-4 h-4 text-success" />
-                    )}
+                </tr>
+              ) : databases.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-control-placeholder"
+                  >
+                    {t("common.no-data")}
                   </td>
                 </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-
-      <div className="mx-4">
-        <PagedTableFooter
-          pageSize={pageSize}
-          pageSizeOptions={pageSizeOptions}
-          onPageSizeChange={setPageSize}
-          hasMore={hasMore}
-          isFetchingMore={isFetchingMore}
-          onLoadMore={loadMore}
-        />
+              ) : (
+                databases.map((db, i) => {
+                  const isSelected = selectedNames?.has(db.name) ?? false;
+                  const instanceResource = getInstanceResource(db);
+                  return (
+                    <tr
+                      key={db.name}
+                      className={cn(
+                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
+                        i % 2 === 1 && "bg-gray-50/50"
+                      )}
+                      onClick={(e) => handleRowClick(db, e)}
+                    >
+                      {showSelection && (
+                        <td className="w-12 px-4 py-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelection(db.name)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-xs border-control-border"
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-x-2">
+                          <img
+                            className="h-5 w-5 shrink-0"
+                            src={EngineIconPath[instanceResource.engine]}
+                            alt=""
+                          />
+                          <span className="truncate">
+                            {extractDatabaseResourceName(db.name).databaseName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <EnvironmentLabel
+                          environmentName={getDatabaseEnvironment(db).name}
+                        />
+                      </td>
+                      {!showProjectColumn && (
+                        <td className="px-4 py-2">
+                          <span className="truncate">
+                            {db.release ? extractReleaseUID(db.release) : "-"}
+                          </span>
+                        </td>
+                      )}
+                      {showProjectColumn && (
+                        <td className="px-4 py-2">
+                          <span className="truncate">
+                            {extractProjectResourceName(
+                              getDatabaseProject(db).name
+                            )}
+                          </span>
+                        </td>
+                      )}
+                      <td className="px-4 py-2 max-w-[200px]">
+                        <span className="block truncate">
+                          {instanceResource.title}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 hidden md:table-cell">
+                        <span className="truncate">
+                          {hostPortOfInstanceV1(instanceResource)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 hidden md:table-cell">
+                        <LabelsDisplay labels={db.labels} />
+                      </td>
+                      <td className="px-4 py-2">
+                        {db.syncStatus === SyncStatus.FAILED ? (
+                          <span
+                            title={
+                              db.syncError || t("database.sync-status-failed")
+                            }
+                          >
+                            <XCircle className="w-4 h-4 text-error" />
+                          </span>
+                        ) : (
+                          <CheckCircle className="w-4 h-4 text-success" />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <PagedTableFooter
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        onPageSizeChange={setPageSize}
+        hasMore={hasMore}
+        isFetchingMore={isFetchingMore}
+        onLoadMore={loadMore}
+      />
     </>
   );
 }
