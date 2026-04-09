@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -84,9 +85,9 @@ export function LabelEditorDrawer({
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           {hasMixedValues && (
-            <div className="mb-4 rounded-xs bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
+            <Alert variant="warning" className="mb-4">
               {t("database.mixed-label-values-warning")}
-            </div>
+            </Alert>
           )}
           <div className="flex items-center gap-x-2 mb-4">
             <Input

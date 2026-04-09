@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { cn } from "@/react/lib/utils";
@@ -623,6 +624,8 @@ function ScanIntervalInput({
   );
 }
 
+const MAX_VISIBLE_DATABASES = 100;
+
 function SyncDatabases({
   isCreating: isCreatingProp,
   showLabel,
@@ -638,30 +641,35 @@ function SyncDatabases({
 }) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
-  const { hideAdvancedFeatures, instance } = ctx;
+  const { hideAdvancedFeatures, instance, pendingCreateInstance } = ctx;
   const instanceStore = useInstanceV1Store();
 
   const [syncAll, setSyncAll] = useState(syncDatabases.length === 0);
-  const [selectedDatabases, setSelectedDatabases] = useState<string[]>([
-    ...syncDatabases,
-  ]);
+  const [selectedSet, setSelectedSet] = useState<Set<string>>(
+    () => new Set(syncDatabases)
+  );
   const [databaseList, setDatabaseList] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [inputDatabase, setInputDatabase] = useState("");
 
+  // Notify parent only when selection actually changes.
+  const onSyncDatabasesChangeRef = useRef(onSyncDatabasesChange);
+  onSyncDatabasesChangeRef.current = onSyncDatabasesChange;
+  const prevNotifiedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (syncAll) {
-      onSyncDatabasesChange([]);
-    } else {
-      onSyncDatabasesChange(selectedDatabases);
-    }
-  }, [syncAll, selectedDatabases]);
+    const key = syncAll ? "" : [...selectedSet].sort().join("\0");
+    if (key === prevNotifiedRef.current) return;
+    prevNotifiedRef.current = key;
+    onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet]);
+  }, [syncAll, selectedSet]);
 
   useEffect(() => {
     if (syncAll) return;
+    let cancelled = false;
     const fetchDatabases = async () => {
-      const inst = isCreatingProp ? ctx.pendingCreateInstance : instance;
+      const inst = isCreatingProp ? pendingCreateInstance : instance;
       if (!inst) return;
       setLoading(true);
       try {
@@ -669,19 +677,29 @@ function SyncDatabases({
           inst.name,
           isCreatingProp ? inst : undefined
         );
-        setDatabaseList(new Set([...resp.databases, ...selectedDatabases]));
+        if (!cancelled) {
+          setDatabaseList(new Set([...resp.databases, ...selectedSet]));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchDatabases();
+    return () => {
+      cancelled = true;
+    };
   }, [syncAll]);
 
   if (hideAdvancedFeatures) return null;
 
-  const filteredDatabases = [...databaseList].filter((db) =>
-    db.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const lowerSearch = searchText.toLowerCase();
+  const filteredDatabases = lowerSearch
+    ? [...databaseList].filter((db) => db.toLowerCase().includes(lowerSearch))
+    : [...databaseList];
+  const hasMore = filteredDatabases.length > MAX_VISIBLE_DATABASES;
+  const visibleDatabases = hasMore
+    ? filteredDatabases.slice(0, MAX_VISIBLE_DATABASES)
+    : filteredDatabases;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -689,15 +707,21 @@ function SyncDatabases({
     if (!trimmed) return;
     if (e.key === "Enter") {
       setDatabaseList((prev) => new Set([...prev, trimmed]));
-      setSelectedDatabases((prev) => [...prev, trimmed]);
+      setSelectedSet((prev) => new Set([...prev, trimmed]));
       setInputDatabase("");
     }
   };
 
   const toggleDatabase = (db: string) => {
-    setSelectedDatabases((prev) =>
-      prev.includes(db) ? prev.filter((d) => d !== db) : [...prev, db]
-    );
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(db)) {
+        next.delete(db);
+      } else {
+        next.add(db);
+      }
+      return next;
+    });
   };
 
   return (
@@ -737,14 +761,14 @@ function SyncDatabases({
                   onChange={(e) => setSearchText(e.target.value)}
                 />
                 <div className="max-h-[250px] overflow-y-auto flex flex-col gap-y-1">
-                  {filteredDatabases.map((db) => (
+                  {visibleDatabases.map((db) => (
                     <label
                       key={db}
                       className="flex items-center gap-x-2 cursor-pointer text-sm"
                     >
                       <input
                         type="checkbox"
-                        checked={selectedDatabases.includes(db)}
+                        checked={selectedSet.has(db)}
                         disabled={!allowEdit}
                         onChange={() => toggleDatabase(db)}
                       />
@@ -752,6 +776,13 @@ function SyncDatabases({
                     </label>
                   ))}
                 </div>
+                {hasMore && (
+                  <div className="text-xs text-control-light">
+                    {t("common.n-more", {
+                      n: filteredDatabases.length - MAX_VISIBLE_DATABASES,
+                    })}
+                  </div>
+                )}
                 <Input
                   value={inputDatabase}
                   className="w-full"
@@ -1466,7 +1497,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     <Input
                       value={basicInfo.externalLink ?? ""}
                       required
-                      className="textfield mt-1 w-full"
+                      className="mt-1 w-full"
                       disabled={!allowEdit}
                       placeholder={SnowflakeExtraLinkPlaceHolder}
                       onChange={(e) =>
@@ -1487,12 +1518,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
             )}
 
-            {/* Sync Databases (edit mode) */}
-            {!isCreating && (
+            {/* Sync Databases */}
+            {basicInfo.engine !== Engine.DYNAMODB && (
               <SyncDatabases
-                isCreating={false}
-                showLabel
-                allowEdit={allowEdit}
+                isCreating={isCreating}
+                showLabel={!isCreating}
+                allowEdit={isCreating ? allowEdit && !!allowCreate : allowEdit}
                 syncDatabases={basicInfo.syncDatabases}
                 onSyncDatabasesChange={handleChangeSyncDatabases}
               />
@@ -1810,16 +1841,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
 
               {actuatorStore.isSaaSMode && (
-                <div className="mt-4 rounded-sm border-none bg-blue-50 p-3">
+                <Alert variant="info" className="mt-4">
                   <a
                     href="https://docs.bytebase.com/get-started/cloud#prerequisites"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="normal-link text-sm"
+                    className="normal-link"
                   >
                     {t("instance.sentence.firewall-info")}
                   </a>
-                </div>
+                </Alert>
               )}
             </>
           )}
@@ -1884,22 +1915,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 ? `${t("instance.test-connection")}...`
                 : t("instance.test-connection")}
             </Button>
-          </div>
-        )}
-
-        {/* Sync Databases Card (create only) */}
-        {basicInfo.engine !== Engine.DYNAMODB && isCreating && (
-          <div className="border border-block-border rounded-lg p-5 flex flex-col gap-y-1">
-            <p className="w-full text-lg leading-6 font-medium text-gray-900">
-              {t("instance.sync-databases.self")}
-            </p>
-            <SyncDatabases
-              isCreating
-              showLabel={false}
-              allowEdit={allowEdit && !!allowCreate}
-              syncDatabases={basicInfo.syncDatabases}
-              onSyncDatabasesChange={handleChangeSyncDatabases}
-            />
           </div>
         )}
       </div>

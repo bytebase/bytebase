@@ -77,5 +77,12 @@ export const useInstanceSpecs = (
       hasReadonlyReplicaPort,
       hasExtraParameters,
     };
-  }, [basicInfo, adminDataSource, editingDataSource]);
+  }, [
+    basicInfo.engine,
+    basicInfo.externalLink,
+    adminDataSource.host,
+    adminDataSource.srv,
+    editingDataSource?.type,
+    editingDataSource?.srv,
+  ]);
 };
