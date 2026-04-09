@@ -351,48 +351,33 @@ test.describe("Grant and Revoke", () => {
 test.describe("E2E Masking Verification", () => {
   test.setTimeout(120_000);
 
-  // Warm up the SQL editor on first use — Monaco editor + DB connection
-  // initialization can delay the first query result render significantly
-  test("warm up SQL editor", async ({ page }) => {
+  test("grant exemption via API → query shows unmasked data", async ({ page }) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
+
+    await revokeAllExemptions();
+    await grantExemption("e2e API grant test");
+
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-    await sqlEditor.runQuery("SELECT 1;");
-    await page.waitForTimeout(2000);
+    await sqlEditor.runQuery(sql);
+    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
   });
 
-  test("grant → unmasked, revoke → masked, re-grant → unmasked", async ({ page }) => {
+  test("revoke exemption via API → query shows masked data", async ({ page }) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
+    const sqlEditor = new SqlEditorPage(page, env.baseURL);
+    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
 
-    const queryAndCheck = async (expectUnmasked: boolean) => {
-      const sqlEditor = new SqlEditorPage(page, env.baseURL);
-      const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
-      await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
-      await sqlEditor.runQuery(sql);
-      expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(expectUnmasked);
-    };
-
-    // Clean slate from prior test blocks
     await revokeAllExemptions();
 
-    // Step 1: Grant → unmasked
-    await grantExemption("e2e test exemption");
-    await page.waitForTimeout(1000); // Wait for policy to propagate to masking engine
-    await queryAndCheck(true);
-
-    // Step 2: Revoke → masked
-    await revokeAllExemptions();
-    await page.waitForTimeout(1000);
-    await queryAndCheck(false);
-
-    // Step 3: Re-grant → unmasked
-    await grantExemption("e2e test re-grant");
-    await page.waitForTimeout(1000);
-    await queryAndCheck(true);
+    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.runQuery(sql);
+    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
   });
 
   test("revoke via UI and verify data becomes masked", async ({ page }) => {
