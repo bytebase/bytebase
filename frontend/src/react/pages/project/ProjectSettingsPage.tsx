@@ -4,6 +4,7 @@ import { ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -585,46 +586,8 @@ export function ProjectSettingsPage() {
     }
   }, [project, dangerAction, projectStore, t]);
 
-  // -----------------------------------------------------------------------
-  // Label helpers
-  // -----------------------------------------------------------------------
-  const addKVLabel = useCallback(() => {
-    setLabelKVList((prev) => [...prev, { key: "", value: "" }]);
-  }, []);
-
-  const updateKVLabel = useCallback(
-    (index: number, field: "key" | "value", val: string) => {
-      setLabelKVList((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], [field]: val };
-        return next;
-      });
-    },
-    []
-  );
-
-  const removeKVLabel = useCallback((index: number) => {
-    setLabelKVList((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  // Label validation
-  const labelErrors = useMemo(() => {
-    const errors: string[] = [];
-    const keys = new Set<string>();
-    for (const kv of labelKVList) {
-      if (!kv.key) {
-        errors.push(t("label.error.key-necessary"));
-      }
-      if (keys.has(kv.key) && kv.key) {
-        errors.push(t("label.error.key-duplicated"));
-      }
-      keys.add(kv.key);
-      if (kv.value.length > 63) {
-        errors.push(t("label.error.max-value-length-exceeded", { length: 63 }));
-      }
-    }
-    return errors;
-  }, [labelKVList, t]);
+  // Label validation errors (set by LabelListEditor via onErrorsChange)
+  const [labelErrors, setLabelErrors] = useState<string[]>([]);
 
   // -----------------------------------------------------------------------
   // Issue label helpers
@@ -709,50 +672,12 @@ export function ProjectSettingsPage() {
                 <div className="text-sm text-gray-500 mb-3">
                   {t("project.settings.project-labels.description")}
                 </div>
-                <div className="flex flex-col gap-y-2">
-                  {labelKVList.map((kv, index) => (
-                    <div key={index} className="flex items-center gap-x-2">
-                      <Input
-                        className="flex-1"
-                        placeholder={t("common.key")}
-                        value={kv.key}
-                        onChange={(e) =>
-                          updateKVLabel(index, "key", e.target.value)
-                        }
-                        disabled={!canUpdateProject}
-                      />
-                      <Input
-                        className="flex-1"
-                        placeholder={t("common.value")}
-                        value={kv.value}
-                        onChange={(e) =>
-                          updateKVLabel(index, "value", e.target.value)
-                        }
-                        disabled={!canUpdateProject}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={!canUpdateProject}
-                        onClick={() => removeKVLabel(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {labelErrors.length > 0 && (
-                    <div className="text-sm text-error">
-                      {labelErrors.map((e, i) => (
-                        <div key={i}>{e}</div>
-                      ))}
-                    </div>
-                  )}
-                  {canUpdateProject && (
-                    <Button variant="outline" size="sm" onClick={addKVLabel}>
-                      {t("common.add")}
-                    </Button>
-                  )}
-                </div>
+                <LabelListEditor
+                  kvList={labelKVList}
+                  onChange={setLabelKVList}
+                  readonly={!canUpdateProject}
+                  onErrorsChange={setLabelErrors}
+                />
               </div>
             </form>
           </div>
@@ -945,7 +870,7 @@ export function ProjectSettingsPage() {
                   {issueLabels.map((label, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-x-2 border border-control-border rounded-sm px-2 py-1"
+                      className="inline-flex h-9 items-center gap-x-2 border border-control-border rounded-sm px-1 py-1"
                     >
                       <input
                         type="color"
@@ -954,7 +879,7 @@ export function ProjectSettingsPage() {
                           updateIssueLabelColor(index, e.target.value)
                         }
                         disabled={!canUpdateProject}
-                        className="w-4 h-4 rounded-sm cursor-pointer border-0 p-0"
+                        className="w-5 h-6 rounded-sm cursor-pointer border-0 p-0"
                       />
                       <span className="text-sm">{label.value}</span>
                       {canUpdateProject && (
@@ -986,7 +911,7 @@ export function ProjectSettingsPage() {
                       />
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="md"
                         onClick={addIssueLabel}
                         disabled={!newLabelValue.trim()}
                       >
