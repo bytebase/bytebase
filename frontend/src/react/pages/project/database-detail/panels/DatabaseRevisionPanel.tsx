@@ -77,6 +77,7 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
+  const [drawerEverOpened, setDrawerEverOpened] = useState(false);
   const fetchRevisionList = useCallback(
     async ({
       pageToken,
@@ -104,17 +105,17 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     fetchList: fetchRevisionList,
   });
 
-  const handleRevisionCreated = useCallback(
-    (_revisions: Revision[]) => {
-      setShowCreateRevisionDrawer(false);
-      paged.refresh();
-    },
-    [paged.refresh]
-  );
+  const refreshRef = useRef(paged.refresh);
+  refreshRef.current = paged.refresh;
+
+  const handleRevisionCreated = useCallback((_revisions: Revision[]) => {
+    setShowCreateRevisionDrawer(false);
+    refreshRef.current();
+  }, []);
 
   const handleRevisionDeleted = useCallback(() => {
-    paged.refresh();
-  }, [paged.refresh]);
+    refreshRef.current();
+  }, []);
 
   const handleDelete = useCallback(
     async (name: string) => {
@@ -132,7 +133,12 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
       <div className="flex flex-col gap-y-2">
         <div className="flex items-center justify-between">
           <div />
-          <Button onClick={() => setShowCreateRevisionDrawer(true)}>
+          <Button
+            onClick={() => {
+              setDrawerEverOpened(true);
+              setShowCreateRevisionDrawer(true);
+            }}
+          >
             {t("common.import")}
           </Button>
         </div>
@@ -150,12 +156,14 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           onLoadMore={paged.loadMore}
         />
       </div>
-      <VueCreateRevisionDrawerMount
-        databaseName={database.name}
-        open={showCreateRevisionDrawer}
-        onCreated={handleRevisionCreated}
-        onOpenChange={setShowCreateRevisionDrawer}
-      />
+      {drawerEverOpened && (
+        <VueCreateRevisionDrawerMount
+          databaseName={database.name}
+          open={showCreateRevisionDrawer}
+          onCreated={handleRevisionCreated}
+          onOpenChange={setShowCreateRevisionDrawer}
+        />
+      )}
     </>
   );
 }

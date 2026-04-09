@@ -340,15 +340,12 @@
   "common.members": "成员",
   "common.minutes": "分钟",
   "common.no-data": "无数据",
-  "common.operation": "操作",
   "common.optional": "可选",
   "common.or": "或者",
   "common.overview": "概览",
   "common.password": "密码",
   "common.project": "项目",
   "common.read-only": "只读",
-  "common.remove": "移除",
-  "common.removed": "已移除",
   "common.restore": "恢复",
   "common.rollout": "发布",
   "common.sensitive-placeholder": "敏感数据 - 仅写入",
@@ -520,14 +517,11 @@
     "expression": "Expression",
     "filter-database": "筛选数据库",
     "index-size": "索引大小",
-    "indexes": "索引",
     "last-sync": "最后一次同步",
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
-    "nullable": "可为空",
     "partitioned": "分区",
     "row-count-est": "估算行数",
-    "row-count-estimate": "估计行数",
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
@@ -560,9 +554,7 @@
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
-    "unassign-alert-title": "取消分配数据库",
-    "unique": "唯一",
-    "visible": "Visible"
+    "unassign-alert-title": "取消分配数据库"
   },
   "database-group": {
     "condition": {
@@ -575,7 +567,6 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "分类",
-  "database.column": "列",
   "database.engine": "引擎",
   "database.export-schema": "导出 Schema",
   "database.export-schema-multi-file": "多文件 (ZIP)",
@@ -1375,7 +1366,6 @@
       "self_other": "阶段"
     }
   },
-  "schema-diagram.self": "Schema 关系图",
   "schema-editor": {
     "raw-sql": "SQL 语句"
   },
@@ -1762,9 +1752,7 @@
         },
         "re-order": "排序"
       },
-      "grant-access": "授权访问",
       "never-expires": "无过期时间",
-      "remove-sensitive-column-tips": "要移除此敏感列上的脱敏配置吗？",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",

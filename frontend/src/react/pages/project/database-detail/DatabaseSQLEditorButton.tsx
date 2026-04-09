@@ -1,7 +1,6 @@
 import { Terminal } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { usePermissionStore } from "@/store";
@@ -71,9 +70,12 @@ export function DatabaseSQLEditorButton({
   }, [database, disabled, onFailed, permissionStore]);
 
   return (
-    <Button variant="ghost" size="sm" disabled={disabled} onClick={handleClick}>
-      <Terminal className="h-4 w-4" />
+    <dd
+      className="flex cursor-pointer items-center text-sm textlabel hover:text-accent md:mr-4"
+      onClick={handleClick}
+    >
+      <Terminal className="mr-1 h-4 w-4" />
       {t("sql-editor.self")}
-    </Button>
+    </dd>
   );
 }

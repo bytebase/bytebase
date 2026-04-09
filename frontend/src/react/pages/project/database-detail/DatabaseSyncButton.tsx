@@ -64,7 +64,11 @@ export function DatabaseSyncButton({
   }, [database, databaseStore, dbSchemaStore, t]);
 
   return (
-    <Button disabled={disabled || syncing} onClick={() => void handleClick()}>
+    <Button
+      variant="outline"
+      disabled={disabled || syncing}
+      onClick={() => void handleClick()}
+    >
       <RefreshCw className="h-4 w-4" />
       {t("database.sync-database")}
     </Button>

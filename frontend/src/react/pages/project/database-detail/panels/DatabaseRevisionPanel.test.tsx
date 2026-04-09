@@ -226,7 +226,8 @@ describe("DatabaseRevisionPanel", () => {
     render();
     await flush();
 
-    expect(mocks.createApp).toHaveBeenCalledTimes(1);
+    // Vue mount is lazy — not created until the drawer first opens
+    expect(mocks.createApp).toHaveBeenCalledTimes(0);
 
     const importButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "common.import"
@@ -236,6 +237,7 @@ describe("DatabaseRevisionPanel", () => {
     click(importButton as HTMLButtonElement);
     await flush();
 
+    // After clicking Import, the Vue drawer mount is created
     expect(mocks.createApp).toHaveBeenCalledTimes(1);
 
     const latestDrawerVNode = mocks.appRenderers.at(-1)?.();
@@ -253,6 +255,7 @@ describe("DatabaseRevisionPanel", () => {
     await flush();
 
     expect(mocks.listRevisions).toHaveBeenCalledTimes(2);
+    // Vue mount stays alive after closing (lazy-mounted, never unmounted)
     expect(mocks.createApp).toHaveBeenCalledTimes(1);
     expect(mocks.appRenderers.at(-1)?.()).toMatchObject({
       component: mocks.CreateRevisionDrawer,

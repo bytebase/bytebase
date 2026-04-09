@@ -340,15 +340,12 @@
   "common.members": "メンバー",
   "common.minutes": "分",
   "common.no-data": "データなし",
-  "common.operation": "操作",
   "common.optional": "オプション",
   "common.or": "または",
   "common.overview": "概要",
   "common.password": "パスワード",
   "common.project": "プロジェクト",
   "common.read-only": "読み取り専用",
-  "common.remove": "削除",
-  "common.removed": "削除しました",
   "common.restore": "復元する",
   "common.rollout": "リリース",
   "common.sensitive-placeholder": "機密データ - 書き込みのみ",
@@ -520,14 +517,11 @@
     "expression": "Expression",
     "filter-database": "データベースをフィルター",
     "index-size": "インデックスサイズ",
-    "indexes": "索引",
     "last-sync": "最後の同期",
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
-    "nullable": "null も可能",
     "partitioned": "パーティション",
     "row-count-est": "推定行数",
-    "row-count-estimate": "推定行数",
     "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
@@ -560,9 +554,7 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する",
-    "unique": "唯一",
-    "visible": "見える"
+    "unassign-alert-title": "データベースの割り当てを解除する"
   },
   "database-group": {
     "condition": {
@@ -575,7 +567,6 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "分類",
-  "database.column": "列",
   "database.engine": "エンジン",
   "database.export-schema": "スキーマをエクスポート",
   "database.export-schema-multi-file": "複数ファイル (ZIP)",
@@ -1375,7 +1366,6 @@
       "self_other": "ステージ"
     }
   },
-  "schema-diagram.self": "スキーマ図",
   "schema-editor": {
     "raw-sql": "Raw SQL"
   },
@@ -1762,9 +1752,7 @@
         },
         "re-order": "並び替え"
       },
-      "grant-access": "許可されたアクセス",
       "never-expires": "有効期限なし",
-      "remove-sensitive-column-tips": "この機密列からマスキング設定を削除しますか？",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",
