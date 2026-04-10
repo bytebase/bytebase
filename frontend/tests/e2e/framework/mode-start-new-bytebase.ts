@@ -44,15 +44,21 @@ function checkPort(port: number): Promise<boolean> {
   });
 }
 
+// Bytebase --demo allocates 4 ports based on the main --port value:
+//   PORT     — main HTTP server
+//   PORT + 2 — embedded metadata Postgres
+//   PORT + 3 — test-sample-instance Postgres
+//   PORT + 4 — prod-sample-instance Postgres
+// All four must be free before we commit to a base port.
 export async function findAvailablePort(): Promise<number> {
   let port = DEFAULT_PORT;
+  const offsets = [0, 2, 3, 4];
   for (let i = 0; i < 100; i++) {
-    const mainFree = await checkPort(port);
-    const pgFree = await checkPort(port + 2);
-    if (mainFree && pgFree) return port;
-    port += 4;
+    const checks = await Promise.all(offsets.map((o) => checkPort(port + o)));
+    if (checks.every((free) => free)) return port;
+    port += 5; // skip past all 4 offsets to avoid re-checking conflicting slots
   }
-  throw new Error("Could not find available port pair for Bytebase");
+  throw new Error("Could not find available port range for Bytebase");
 }
 
 export async function startServer(): Promise<{

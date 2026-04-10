@@ -183,8 +183,8 @@ export class SqlEditorPage {
     // Focus the editor
     await this.codeEditor.click();
     await this.page.waitForTimeout(200);
-    // Select all and delete to clear editor
-    await this.page.keyboard.press("Meta+a");
+    // Select all and delete to clear editor (ControlOrMeta for cross-platform)
+    await this.page.keyboard.press("ControlOrMeta+a");
     await this.page.waitForTimeout(100);
     await this.page.keyboard.press("Delete");
     await this.page.waitForTimeout(200);
