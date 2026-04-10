@@ -15,6 +15,7 @@ import {
 import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -47,6 +48,7 @@ import {
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -308,6 +310,16 @@ export function DashboardSidebar() {
   const customLogo = useVueState(
     () => useWorkspaceV1Store().currentWorkspace?.logo ?? ""
   );
+  const recordVisitRef = useRef<((path: string) => void) | null>(null);
+
+  useEffect(() => {
+    const scope = effectScope();
+    scope.run(() => {
+      const { record } = useRecentVisit();
+      recordVisitRef.current = record;
+    });
+    return () => scope.stop();
+  }, []);
 
   // -- Expand / collapse state -----------------------------------------------
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());
@@ -368,12 +380,12 @@ export function DashboardSidebar() {
 
   // -- Navigation ------------------------------------------------------------
 
-  const navigateToHome = useCallback(() => {
+  const resolveHomeRoute = useCallback(() => {
     const target =
       databaseChangeMode === DatabaseChangeMode.EDITOR
         ? SQL_EDITOR_HOME_MODULE
         : WORKSPACE_ROUTE_LANDING;
-    router.push({ name: target });
+    return router.resolve({ name: target });
   }, [databaseChangeMode]);
 
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
@@ -404,9 +416,23 @@ export function DashboardSidebar() {
     router.push({ name });
   }, []);
 
+  const handleHomeClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      const route = resolveHomeRoute();
+      recordVisitRef.current?.(route.fullPath);
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      router.push(route);
+    },
+    [resolveHomeRoute]
+  );
+
   // -- Logo ------------------------------------------------------------------
 
   const logoSrc = customLogo || logoFull;
+  const homeHref = resolveHomeRoute().fullPath;
 
   // -- Render ----------------------------------------------------------------
 
@@ -505,12 +531,13 @@ export function DashboardSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <div
+      <a
+        href={homeHref}
         className="p-2 shrink-0 m-auto cursor-pointer"
-        onClick={navigateToHome}
+        onClick={handleHomeClick}
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
-      </div>
+      </a>
       <WorkspaceSwitcher />
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}

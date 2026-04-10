@@ -341,13 +341,6 @@ export function ProjectSidebar() {
 
   // -- Navigation ------------------------------------------------------------
 
-  const navigateToHome = useCallback(() => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId },
-    });
-  }, [projectId]);
-
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
     if (item.children && item.children.length > 0) {
       manualToggledRef.current.add(key);
@@ -390,9 +383,30 @@ export function ProjectSidebar() {
     [project.name]
   );
 
+  const resolveHomeRoute = useCallback(() => {
+    return router.resolve({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: getProjectName(project.name) },
+    });
+  }, [project.name]);
+
+  const handleHomeClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      const route = resolveHomeRoute();
+      recordVisitRef.current?.(route.fullPath);
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      router.push(route);
+    },
+    [resolveHomeRoute]
+  );
+
   // -- Logo ------------------------------------------------------------------
 
   const logoSrc = customLogo || logoFull;
+  const homeHref = resolveHomeRoute().fullPath;
 
   // -- Render ----------------------------------------------------------------
 
@@ -468,12 +482,13 @@ export function ProjectSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <div
+      <a
+        href={homeHref}
         className="p-2 shrink-0 m-auto cursor-pointer"
-        onClick={navigateToHome}
+        onClick={handleHomeClick}
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
-      </div>
+      </a>
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>
