@@ -231,7 +231,8 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   deleteTime?: Timestamp;
 
   /**
-   * Format: projects/{project}/releases/{release}/files/{id}
+   * Format: projects/{project}/releases/{release}/files/{file_path}
+   * The file_path segment is URL-encoded since file paths may contain "/".
    * Can be empty.
    *
    * @generated from field: string file = 6;

@@ -12,7 +12,7 @@ message RevisionPayload {
   // Can be empty.
   string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
-  // Format: projects/{project}/releases/{release}/files/{id}
+  // The file filepath.
   // Can be empty.
   string file = 2;
 

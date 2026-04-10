@@ -471,7 +471,8 @@ type Revision struct {
 	Deleter string `protobuf:"bytes,4,opt,name=deleter,proto3" json:"deleter,omitempty"`
 	// Can be empty.
 	DeleteTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=delete_time,json=deleteTime,proto3" json:"delete_time,omitempty"`
-	// Format: projects/{project}/releases/{release}/files/{id}
+	// Format: projects/{project}/releases/{release}/files/{file_path}
+	// The file_path segment is URL-encoded since file paths may contain "/".
 	// Can be empty.
 	File string `protobuf:"bytes,6,opt,name=file,proto3" json:"file,omitempty"`
 	// The schema version string for this revision.

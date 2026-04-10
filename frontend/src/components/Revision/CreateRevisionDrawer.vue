@@ -833,7 +833,7 @@ const handleConfirm = async () => {
           revision: {
             release: selectedRelease.value!.name,
             version: file.version,
-            file: `${selectedRelease.value!.name}/files/${file.path}`,
+            file: `${selectedRelease.value!.name}/files/${encodeURIComponent(file.path)}`,
             sheet: file.sheet,
             type: mapReleaseTypeToRevisionType(selectedRelease.value!.type),
           },

@@ -10374,7 +10374,7 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | deleter | [string](#string) |  | Format: users/hello@world.com Can be empty. |
 | delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Can be empty. |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file_path} The file_path segment is URL-encoded since file paths may contain &#34;/&#34;. Can be empty. |
 | version | [string](#string) |  | The schema version string for this revision. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
