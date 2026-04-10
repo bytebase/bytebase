@@ -249,7 +249,8 @@ func classifyQueryTypeOmni(node ast.Node, allSystems bool) (queryType base.Query
 		return base.Select, false
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
 		*ast.BeginStmt, *ast.CommitStmt, *ast.RollbackStmt,
-		*ast.SavepointStmt, *ast.LockTablesStmt, *ast.UnlockTablesStmt:
+		*ast.SavepointStmt, *ast.SetTransactionStmt,
+		*ast.LockTablesStmt, *ast.UnlockTablesStmt:
 		return base.DML, false
 	case *ast.CreateTableStmt, *ast.CreateViewStmt, *ast.CreateIndexStmt,
 		*ast.CreateDatabaseStmt, *ast.CreateEventStmt, *ast.CreateTriggerStmt,
