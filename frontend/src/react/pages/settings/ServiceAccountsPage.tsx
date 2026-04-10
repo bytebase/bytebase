@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
@@ -349,21 +349,38 @@ function ServiceAccountTable({
 // CreateServiceAccountDrawer
 // ============================================================
 
-function CreateServiceAccountSheet({
-  open,
-  serviceAccount,
-  project,
-  onClose,
-  onCreated,
-  onUpdated,
-}: {
+interface CreateServiceAccountSheetProps {
   open: boolean;
   serviceAccount: ServiceAccount | undefined;
   project?: string;
   onClose: () => void;
   onCreated: (sa: ServiceAccount) => void;
   onUpdated: (sa: ServiceAccount) => void;
-}) {
+}
+
+function CreateServiceAccountSheet(props: CreateServiceAccountSheetProps) {
+  const { open, serviceAccount, onClose } = props;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        {open && (
+          <ServiceAccountForm
+            key={serviceAccount?.name ?? "new"}
+            {...props}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ServiceAccountForm({
+  serviceAccount,
+  project,
+  onClose,
+  onCreated,
+  onUpdated,
+}: Omit<CreateServiceAccountSheetProps, "open">) {
   const { t } = useTranslation();
   const serviceAccountStore = useServiceAccountStore();
   const workspaceStore = useWorkspaceV1Store();
@@ -382,28 +399,29 @@ function CreateServiceAccountSheet({
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
   const emailSuffix = getServiceAccountSuffix();
 
-  const [title, setTitle] = useState(serviceAccount?.title ?? "");
-  const [emailPrefix, setEmailPrefix] = useState(
-    serviceAccount?.email ? serviceAccount.email.split("@")[0] : ""
-  );
+  // Capture initial values on mount — parent keys by serviceAccount so
+  // these reflect the latest props.
+  const initialTitle = serviceAccount?.title ?? "";
+  const initialEmailPrefix = serviceAccount?.email
+    ? serviceAccount.email.split("@")[0]
+    : "";
+
+  const [title, setTitle] = useState(initialTitle);
+  const [emailPrefix, setEmailPrefix] = useState(initialEmailPrefix);
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
 
-  // Reset form state whenever the Sheet is (re)opened. The Sheet is always
-  // mounted (visibility controlled by `open`), so useState initializers only
-  // run once on first mount. This effect repopulates fields when the parent
-  // switches `serviceAccount` between create mode and editing an existing row.
-  useEffect(() => {
-    if (!open) return;
-    setTitle(serviceAccount?.title ?? "");
-    setEmailPrefix(
-      serviceAccount?.email ? serviceAccount.email.split("@")[0] : ""
-    );
-    setRoles([]);
-    setIsRequesting(false);
-  }, [open, serviceAccount]);
+  const isFormValid = isEditMode ? true : emailPrefix.trim().length > 0;
 
-  const allowConfirm = isEditMode ? true : emailPrefix.trim().length > 0;
+  // Dirty tracking — Update button disabled unless something changed.
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return true;
+    if (title !== initialTitle) return true;
+    // Roles are not part of edit mode for service accounts (create-only).
+    return false;
+  }, [isEditMode, title, initialTitle]);
+
+  const allowConfirm = isFormValid && isDirty;
 
   const requiredPermission = isEditMode
     ? "bb.serviceAccounts.update"
@@ -515,13 +533,12 @@ function CreateServiceAccountSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("settings.members.service-account")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("settings.members.service-account")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
+      <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
             <div className="flex flex-col gap-y-2">
@@ -595,8 +612,7 @@ function CreateServiceAccountSheet({
             {isEditMode ? t("common.update") : t("common.create")}
           </Button>
         </SheetFooter>
-      </SheetContent>
-    </Sheet>
+    </>
   );
 }
 

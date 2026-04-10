@@ -80,21 +80,46 @@ function computeSubjectPattern(
   return "";
 }
 
-export function CreateWorkloadIdentitySheet({
-  open,
-  workloadIdentity,
-  project,
-  onClose,
-  onCreated,
-  onUpdated,
-}: {
+interface CreateWorkloadIdentitySheetProps {
   open: boolean;
   workloadIdentity?: WorkloadIdentity;
   project?: string;
   onClose: () => void;
   onCreated: (wi: WorkloadIdentity) => void;
   onUpdated?: (wi: WorkloadIdentity) => void;
-}) {
+}
+
+// Outer wrapper — thin shell that provides the Sheet container. The actual
+// form lives in `WorkloadIdentityForm` below, keyed by entity+open so it
+// remounts cleanly every time the Sheet opens. This guarantees that
+// useState initializers in the inner component always see the latest
+// `workloadIdentity` prop and that there's no stale state bleeding between
+// create-mode and edit-mode opens. See PR comment thread for context.
+export function CreateWorkloadIdentitySheet(
+  props: CreateWorkloadIdentitySheetProps
+) {
+  const { open, workloadIdentity, onClose } = props;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        {open && (
+          <WorkloadIdentityForm
+            key={workloadIdentity?.name ?? "new"}
+            {...props}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function WorkloadIdentityForm({
+  workloadIdentity,
+  project,
+  onClose,
+  onCreated,
+  onUpdated,
+}: Omit<CreateWorkloadIdentitySheetProps, "open">) {
   const { t } = useTranslation();
   const workloadIdentityStore = useWorkloadIdentityStore();
   const workspaceStore = useWorkspaceV1Store();
@@ -108,13 +133,42 @@ export function CreateWorkloadIdentitySheet({
 
   const isEditMode = !!workloadIdentity && !!workloadIdentity.email;
 
-  const [title, setTitle] = useState(workloadIdentity?.title ?? "");
-  const [emailPrefix, setEmailPrefix] = useState(() => {
-    if (workloadIdentity?.email) {
-      return workloadIdentity.email.split("@")[0];
-    }
-    return "";
-  });
+  // Initial values derived from the workloadIdentity prop. Because this
+  // component is keyed by entity+open in the parent, it remounts fresh on
+  // every Sheet open — so these useState initializers always see the latest
+  // prop values. No reset useEffect needed.
+  const initialParsed = useMemo(
+    () =>
+      workloadIdentity
+        ? parseWorkloadIdentitySubjectPattern(workloadIdentity)
+        : undefined,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  const initialProviderType =
+    workloadIdentity?.workloadIdentityConfig?.providerType ??
+    WorkloadIdentityConfig_ProviderType.GITHUB;
+  const initialIssuerUrl =
+    workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
+    PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??
+    "";
+  const initialAudience =
+    workloadIdentity?.workloadIdentityConfig?.allowedAudiences[0] ?? "";
+  const initialSubjectPattern =
+    workloadIdentity?.workloadIdentityConfig?.subjectPattern ?? "";
+  const initialTitle = workloadIdentity?.title ?? "";
+  const initialEmailPrefix = workloadIdentity?.email
+    ? workloadIdentity.email.split("@")[0]
+    : "";
+  const initialOwner = initialParsed?.owner ?? "";
+  const initialRepo = initialParsed?.repo ?? "";
+  const initialBranch = initialParsed?.branch ?? "";
+  const initialRefType: RefType =
+    (initialParsed && "refType" in initialParsed && initialParsed.refType) ||
+    "all";
+
+  const [title, setTitle] = useState(initialTitle);
+  const [emailPrefix, setEmailPrefix] = useState(initialEmailPrefix);
 
   const emailSuffix = useMemo(() => {
     const projectId = project ? project.replace(/^projects\//, "") : "";
@@ -127,73 +181,20 @@ export function CreateWorkloadIdentitySheet({
   );
 
   const [providerType, setProviderType] =
-    useState<WorkloadIdentityConfig_ProviderType>(
-      workloadIdentity?.workloadIdentityConfig?.providerType ??
-        WorkloadIdentityConfig_ProviderType.GITHUB
-    );
-  const [owner, setOwner] = useState("");
-  const [repo, setRepo] = useState("");
-  const [branch, setBranch] = useState("");
-  const [refType, setRefType] = useState<RefType>("all");
-  const [issuerUrl, setIssuerUrl] = useState(
-    PLATFORM_PRESETS[WorkloadIdentityConfig_ProviderType.GITHUB]!.issuerUrl
-  );
-  const [audience, setAudience] = useState("");
-  const [subjectPattern, setSubjectPattern] = useState("");
+    useState<WorkloadIdentityConfig_ProviderType>(initialProviderType);
+  const [owner, setOwner] = useState(initialOwner);
+  const [repo, setRepo] = useState(initialRepo);
+  const [branch, setBranch] = useState(initialBranch);
+  const [refType, setRefType] = useState<RefType>(initialRefType);
+  const [issuerUrl, setIssuerUrl] = useState(initialIssuerUrl);
+  const [audience, setAudience] = useState(initialAudience);
+  const [subjectPattern, setSubjectPattern] = useState(initialSubjectPattern);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
 
   const isUpdatingFromPatternRef = useRef(false);
   const isUpdatingFromFieldsRef = useRef(false);
-
-  // Reset form state whenever the Sheet is (re)opened. The Sheet is always
-  // mounted (visibility controlled by `open`), so useState initializers only
-  // run once on first mount. This effect repopulates fields when the parent
-  // switches `workloadIdentity` between create mode and editing an existing row.
-  useEffect(() => {
-    if (!open) return;
-    if (workloadIdentity) {
-      setTitle(workloadIdentity.title);
-      setEmailPrefix(workloadIdentity.email.split("@")[0]);
-
-      const config = workloadIdentity.workloadIdentityConfig;
-      if (config) {
-        setProviderType(config.providerType);
-        setIssuerUrl(config.issuerUrl);
-        setAudience(config.allowedAudiences[0] ?? "");
-        setSubjectPattern(config.subjectPattern);
-
-        const parsed = parseWorkloadIdentitySubjectPattern(workloadIdentity);
-        if (parsed) {
-          setOwner(parsed.owner);
-          setRepo(parsed.repo);
-          setBranch(parsed.branch);
-          if ("refType" in parsed && parsed.refType) {
-            setRefType(parsed.refType);
-          }
-        }
-      }
-    } else {
-      // Create mode — reset to defaults
-      setTitle("");
-      setEmailPrefix("");
-      setProviderType(WorkloadIdentityConfig_ProviderType.GITHUB);
-      setIssuerUrl(
-        PLATFORM_PRESETS[WorkloadIdentityConfig_ProviderType.GITHUB]!.issuerUrl
-      );
-      setAudience("");
-      setSubjectPattern("");
-      setOwner("");
-      setRepo("");
-      setBranch("");
-      setRefType("all");
-      setRoles([]);
-    }
-    setIsRequesting(false);
-    setShowAdvanced(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, workloadIdentity]);
 
   useEffect(() => {
     if (isUpdatingFromPatternRef.current) return;
@@ -235,12 +236,51 @@ export function CreateWorkloadIdentitySheet({
     setBranch("");
   };
 
-  const allowConfirm = useMemo(() => {
+  const isFormValid = useMemo(() => {
     if (!emailPrefix && !workloadIdentity?.email) return false;
     if (!owner) return false;
     if (!issuerUrl) return false;
     return true;
   }, [emailPrefix, workloadIdentity?.email, owner, issuerUrl]);
+
+  // Dirty tracking — compare current state to the initial values captured
+  // at mount. In edit mode the Update button is disabled unless something
+  // actually changed. In create mode we treat any filled-in form as dirty.
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return true;
+    if (title !== initialTitle) return true;
+    if (providerType !== initialProviderType) return true;
+    if (owner !== initialOwner) return true;
+    if (repo !== initialRepo) return true;
+    if (branch !== initialBranch) return true;
+    if (refType !== initialRefType) return true;
+    if (issuerUrl !== initialIssuerUrl) return true;
+    if (audience !== initialAudience) return true;
+    if (subjectPattern !== initialSubjectPattern) return true;
+    return false;
+  }, [
+    isEditMode,
+    title,
+    providerType,
+    owner,
+    repo,
+    branch,
+    refType,
+    issuerUrl,
+    audience,
+    subjectPattern,
+    initialTitle,
+    initialProviderType,
+    initialOwner,
+    initialRepo,
+    initialBranch,
+    initialRefType,
+    initialIssuerUrl,
+    initialAudience,
+    initialSubjectPattern,
+  ]);
+
+  const allowConfirm = isFormValid && isDirty;
 
   const requiredPermission = isEditMode
     ? "bb.workloadIdentities.update"
@@ -371,13 +411,12 @@ export function CreateWorkloadIdentitySheet({
   const isTagRefType = isGitLab && refType === "tag";
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("settings.members.workload-identity")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("settings.members.workload-identity")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
+      <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Title */}
             <div className="flex flex-col gap-y-2">
@@ -630,7 +669,6 @@ export function CreateWorkloadIdentitySheet({
             {isEditMode ? t("common.update") : t("common.create")}
           </Button>
         </SheetFooter>
-      </SheetContent>
-    </Sheet>
+    </>
   );
 }

@@ -440,19 +440,36 @@ function extractUserTitle(email: string): string {
   return atIndex !== -1 ? email.substring(0, atIndex) : email;
 }
 
-function CreateUserSheet({
-  open,
-  user,
-  onClose,
-  onCreated,
-  onUpdated,
-}: {
+interface CreateUserSheetProps {
   open: boolean;
   user: User | undefined;
   onClose: () => void;
   onCreated: (user: User) => void;
   onUpdated: (user: User) => void;
-}) {
+}
+
+// Outer wrapper — renders the Sheet container. The actual form lives in
+// `UserForm` below, keyed by entity so it remounts cleanly every time a
+// different entity is selected, and gated by `open` so it unmounts on close.
+// This guarantees that useState initializers always see the latest `user`
+// prop and that there's no stale state between opens.
+function CreateUserSheet(props: CreateUserSheetProps) {
+  const { open, user, onClose } = props;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        {open && <UserForm key={user?.name ?? "new"} {...props} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function UserForm({
+  user,
+  onClose,
+  onCreated,
+  onUpdated,
+}: Omit<CreateUserSheetProps, "open">) {
   const { t } = useTranslation();
   const userStore = useUserStore();
   const workspaceStore = useWorkspaceV1Store();
@@ -475,39 +492,29 @@ function CreateUserSheet({
   const allowUpdate =
     !isEditMode || hasWorkspacePermissionV2("bb.users.update");
 
+  // Capture initial values on mount. Because the parent keys this component
+  // by user, it remounts fresh every time a different user is edited, so
+  // these initial values always reflect the latest `user` prop.
   const initialRoles = useMemo(() => {
     if (!user || !isEditMode) {
       return [PresetRoleType.WORKSPACE_MEMBER];
     }
     const roles = userMapToRoles.get(getUserFullNameByType(user));
     return roles ? [...roles] : [];
-  }, [user, isEditMode, userMapToRoles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const initialTitle = user?.title ?? "";
+  const initialEmail = user?.email ?? "";
+  const initialPhone = user?.phone ?? "";
 
-  const [title, setTitle] = useState(user?.title ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [title, setTitle] = useState(initialTitle);
+  const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [roles, setRoles] = useState<string[]>(initialRoles);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Reset form state whenever the Sheet is (re)opened. The Sheet is always
-  // mounted (visibility controlled by `open`), so useState initializers only
-  // run once on first mount. This effect repopulates fields when the parent
-  // switches `user` between create mode and editing an existing row.
-  useEffect(() => {
-    if (!open) return;
-    setTitle(user?.title ?? "");
-    setEmail(user?.email ?? "");
-    setPhone(user?.phone ?? "");
-    setPassword("");
-    setPasswordConfirm("");
-    setRoles(initialRoles);
-    setIsRequesting(false);
-    setShowPassword(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user]);
 
   // Password validation
   const passwordChecks = useMemo(() => {
@@ -567,12 +574,34 @@ function CreateUserSheet({
     return workspaceDomains.includes(domain);
   }, [email, isEditMode, enforceIdentityDomain, workspaceDomains]);
 
-  const allowConfirm =
+  const isFormValid =
     email.length > 0 &&
     emailDomainValid &&
     !passwordHint &&
     !passwordMismatch &&
     (isEditMode || password.length > 0);
+
+  // Dirty tracking — in edit mode the Update button is disabled unless
+  // something actually changed. Create mode is always "dirty".
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return true;
+    if (title !== initialTitle) return true;
+    if (phone !== initialPhone) return true;
+    if (password.length > 0) return true;
+    if (!isEqual([...initialRoles].sort(), [...roles].sort())) return true;
+    return false;
+  }, [
+    isEditMode,
+    title,
+    phone,
+    password,
+    roles,
+    initialTitle,
+    initialPhone,
+    initialRoles,
+  ]);
+
+  const allowConfirm = isFormValid && isDirty;
 
   const hasPermission = hasWorkspacePermissionV2(
     isEditMode ? "bb.users.update" : "bb.users.create"
@@ -667,15 +696,14 @@ function CreateUserSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("common.user")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("common.user")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
-          <div className="flex flex-col gap-y-6">
-            {/* Name */}
+      <SheetBody>
+        <div className="flex flex-col gap-y-6">
+          {/* Name */}
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">
                 {t("common.name")}
@@ -827,21 +855,20 @@ function CreateUserSheet({
               </div>
             </div>
           </div>
-        </SheetBody>
+      </SheetBody>
 
-        <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!allowConfirm || !hasPermission || isRequesting}
-            onClick={handleSubmit}
-          >
-            {isEditMode ? t("common.update") : t("common.create")}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          disabled={!allowConfirm || !hasPermission || isRequesting}
+          onClick={handleSubmit}
+        >
+          {isEditMode ? t("common.update") : t("common.create")}
+        </Button>
+      </SheetFooter>
+    </>
   );
 }
 

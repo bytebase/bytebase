@@ -432,19 +432,31 @@ function GroupRow({
 // CreateGroupDrawer
 // ============================================================
 
-function CreateGroupSheet({
-  open,
-  group,
-  onClose,
-  onUpdated,
-  onRemoved,
-}: {
+interface CreateGroupSheetProps {
   open: boolean;
   group: Group | undefined;
   onClose: () => void;
   onUpdated: (group: Group) => void;
   onRemoved: (group: Group) => void;
-}) {
+}
+
+function CreateGroupSheet(props: CreateGroupSheetProps) {
+  const { open, group, onClose } = props;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        {open && <GroupForm key={group?.name ?? "new"} {...props} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function GroupForm({
+  group,
+  onClose,
+  onUpdated,
+  onRemoved,
+}: Omit<CreateGroupSheetProps, "open">) {
   const { t } = useTranslation();
   const groupStore = useGroupStore();
   const settingV1Store = useSettingV1Store();
@@ -459,11 +471,11 @@ function CreateGroupSheet({
   );
   const domainOptions = workspaceDomains.filter((d) => d.trim());
 
-  const [email, setEmail] = useState(() => {
-    if (!group) return "";
-    return group.email ?? "";
-  });
-  const [selectedDomain, setSelectedDomain] = useState(() => {
+  // Initial values derived from the group prop. The parent keys this
+  // component by group, so it remounts fresh on each open — these initial
+  // values always reflect the latest prop.
+  const initialEmail = group?.email ?? "";
+  const initialSelectedDomain = (() => {
     if (group?.email) {
       const atIdx = group.email.indexOf("@");
       if (atIdx >= 0) {
@@ -472,67 +484,27 @@ function CreateGroupSheet({
       }
     }
     return domainOptions[0] ?? "";
-  });
-  const [title, setTitle] = useState(group?.title ?? "");
-  const [description, setDescription] = useState(group?.description ?? "");
-  const [members, setMembers] = useState<GroupMember[]>(() => {
-    if (group) {
-      return group.members.map((m) =>
+  })();
+  const initialTitle = group?.title ?? "";
+  const initialDescription = group?.description ?? "";
+  const initialMembers: GroupMember[] = group
+    ? group.members.map((m) =>
         create(GroupMemberSchema, { member: m.member, role: m.role })
-      );
-    }
-    return [
-      create(GroupMemberSchema, {
-        role: GroupMember_Role.OWNER,
-        member: currentUser.name,
-      }),
-    ];
-  });
-  const [isRequesting, setIsRequesting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // Reset form state whenever the Sheet is (re)opened. Because the Sheet is
-  // always mounted (visibility controlled by `open`), the useState initializers
-  // only run on first mount — we need this effect to repopulate fields when the
-  // parent switches `group` between create mode and editing an existing row.
-  useEffect(() => {
-    if (!open) return;
-    setEmail(group?.email ?? "");
-    if (group?.email) {
-      const atIdx = group.email.indexOf("@");
-      if (atIdx >= 0) {
-        const domain = group.email.slice(atIdx + 1);
-        if (domainOptions.includes(domain)) {
-          setSelectedDomain(domain);
-        } else {
-          setSelectedDomain(domainOptions[0] ?? "");
-        }
-      } else {
-        setSelectedDomain(domainOptions[0] ?? "");
-      }
-    } else {
-      setSelectedDomain(domainOptions[0] ?? "");
-    }
-    setTitle(group?.title ?? "");
-    setDescription(group?.description ?? "");
-    if (group) {
-      setMembers(
-        group.members.map((m) =>
-          create(GroupMemberSchema, { member: m.member, role: m.role })
-        )
-      );
-    } else {
-      setMembers([
+      )
+    : [
         create(GroupMemberSchema, {
           role: GroupMember_Role.OWNER,
           member: currentUser.name,
         }),
-      ]);
-    }
-    setIsRequesting(false);
-    setShowDeleteConfirm(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, group]);
+      ];
+
+  const [email, setEmail] = useState(initialEmail);
+  const [selectedDomain, setSelectedDomain] = useState(initialSelectedDomain);
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [members, setMembers] = useState<GroupMember[]>(initialMembers);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isExternalGroup = !!group?.source;
 
@@ -720,13 +692,12 @@ function CreateGroupSheet({
       hasWorkspacePermissionV2("bb.groups.delete"));
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("common.group")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("common.group")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
+      <SheetBody>
           <div className="flex flex-col gap-y-6">
             {isExternalGroup && (
               <Alert variant="info">
@@ -921,8 +892,7 @@ function CreateGroupSheet({
             </Button>
           </div>
         </SheetFooter>
-      </SheetContent>
-    </Sheet>
+    </>
   );
 }
 
