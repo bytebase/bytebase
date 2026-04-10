@@ -32,7 +32,7 @@ React UI components live in `src/react/components/ui/` and follow shadcn-style p
 - **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
 - **Use `cn()` for conditional classes** — import from `@/react/lib/utils`, don't write manual template literal ternaries
 - **No manual `dark:` overrides** — use semantic tokens that handle theming
-- **No manual `z-index` on overlays** — Dialog, Sheet, Popover handle their own stacking
+- **No manual `z-index` on overlay *consumers*** — callers of `Dialog`, `Sheet`, `Popover`, `Select`, `Tooltip` must not set their own `z-index`. The primitives in `src/react/components/ui/` already coordinate stacking (all overlays use `z-50`; within that layer, later-mounted portals win by DOM order). Do **not** strip `z-50` from `select.tsx`, `tooltip.tsx`, `dialog.tsx`, or `alert-dialog.tsx` — removing it makes Select/Tooltip render behind Dialog (BYT-9226, PR #19824)
 
 ### Component Patterns
 
