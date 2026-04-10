@@ -863,7 +863,7 @@ export function AuditLogTable({
           </div>
 
           {/* Pagination footer */}
-          <div className="mx-4 py-4">
+          <div className="mt-4 mx-2">
             <PagedTableFooter
               pageSize={pageSize}
               pageSizeOptions={pageSizeOptions}

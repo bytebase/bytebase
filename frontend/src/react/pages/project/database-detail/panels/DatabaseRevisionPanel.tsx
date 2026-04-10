@@ -164,14 +164,16 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           loading={paged.isLoading}
           onDelete={handleDelete}
         />
-        <PagedTableFooter
-          pageSize={paged.pageSize}
-          pageSizeOptions={paged.pageSizeOptions}
-          onPageSizeChange={paged.onPageSizeChange}
-          hasMore={paged.hasMore}
-          isFetchingMore={paged.isFetchingMore}
-          onLoadMore={paged.loadMore}
-        />
+        <div className="mt-2">
+          <PagedTableFooter
+            pageSize={paged.pageSize}
+            pageSizeOptions={paged.pageSizeOptions}
+            onPageSizeChange={paged.onPageSizeChange}
+            hasMore={paged.hasMore}
+            isFetchingMore={paged.isFetchingMore}
+            onLoadMore={paged.loadMore}
+          />
+        </div>
       </div>
       {drawerEverOpened && (
         <VueCreateRevisionDrawerMount
