@@ -1,4 +1,3 @@
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
@@ -19,6 +18,14 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -400,62 +407,65 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </div>
           ) : (
             <div className="px-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-control-light">
-                    <th className="py-2 pr-4 font-medium w-24">
-                      {t("common.status")}
-                    </th>
-                    <SortableHeader
-                      label={t("common.creator")}
-                      sortKey="creator"
-                      activeSortKey={sortKey}
-                      sortDir={sortDir}
-                      onSort={handleSort}
-                      className="w-44"
-                    />
-                    <SortableHeader
-                      label={t("common.created-at")}
-                      sortKey="create_time"
-                      activeSortKey={sortKey}
-                      sortDir={sortDir}
-                      onSort={handleSort}
-                      className="w-44 hidden xl:table-cell"
-                    />
-                    <SortableHeader
-                      label={t("common.expiration")}
-                      sortKey="expire_time"
-                      activeSortKey={sortKey}
-                      sortDir={sortDir}
-                      onSort={handleSort}
-                      className="w-44 hidden xl:table-cell"
-                    />
-                    <th className="py-2 pr-4 font-medium">
-                      {t("common.statement")}
-                    </th>
-                    <th className="py-2 pr-4 font-medium w-48">
-                      {t("common.databases")}
-                    </th>
-                    <th className="py-2 font-medium w-40" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.dataList.map((grant) => (
-                    <AccessGrantRow
-                      key={grant.name}
-                      grant={grant}
-                      canActivate={canActivate}
-                      canRevoke={canRevoke}
-                      onActivate={() =>
-                        setConfirmAction({ type: "activate", grant })
-                      }
-                      onRevoke={() =>
-                        setConfirmAction({ type: "revoke", grant })
-                      }
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <div className="border rounded-sm overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-control-bg">
+                      <TableHead className="w-24">
+                        {t("common.status")}
+                      </TableHead>
+                      <TableHead
+                        sortable
+                        sortActive={sortKey === "creator"}
+                        sortDir={sortDir}
+                        onSort={() => handleSort("creator")}
+                        className="w-44"
+                      >
+                        {t("common.creator")}
+                      </TableHead>
+                      <TableHead
+                        sortable
+                        sortActive={sortKey === "create_time"}
+                        sortDir={sortDir}
+                        onSort={() => handleSort("create_time")}
+                        className="w-44 hidden xl:table-cell"
+                      >
+                        {t("common.created-at")}
+                      </TableHead>
+                      <TableHead
+                        sortable
+                        sortActive={sortKey === "expire_time"}
+                        sortDir={sortDir}
+                        onSort={() => handleSort("expire_time")}
+                        className="w-44 hidden xl:table-cell"
+                      >
+                        {t("common.expiration")}
+                      </TableHead>
+                      <TableHead>{t("common.statement")}</TableHead>
+                      <TableHead className="w-48">
+                        {t("common.databases")}
+                      </TableHead>
+                      <TableHead className="w-40" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paged.dataList.map((grant) => (
+                      <AccessGrantRow
+                        key={grant.name}
+                        grant={grant}
+                        canActivate={canActivate}
+                        canRevoke={canRevoke}
+                        onActivate={() =>
+                          setConfirmAction({ type: "activate", grant })
+                        }
+                        onRevoke={() =>
+                          setConfirmAction({ type: "revoke", grant })
+                        }
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               <div className="mt-4">
                 <PagedTableFooter
@@ -512,47 +522,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// SortableHeader
-// ---------------------------------------------------------------------------
-
-function SortableHeader({
-  label,
-  sortKey,
-  activeSortKey,
-  sortDir,
-  onSort,
-  className,
-}: {
-  label: string;
-  sortKey: SortKey;
-  activeSortKey: SortKey | "";
-  sortDir: SortDir;
-  onSort: (key: SortKey) => void;
-  className?: string;
-}) {
-  const isActive = activeSortKey === sortKey;
-  const Icon = isActive
-    ? sortDir === "asc"
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
-
-  return (
-    <th
-      className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-control ${className ?? ""}`}
-      onClick={() => onSort(sortKey)}
-    >
-      <span className="inline-flex items-center gap-x-1">
-        {label}
-        <Icon
-          className={`w-3.5 h-3.5 ${isActive ? "text-accent" : "text-control-placeholder"}`}
-        />
-      </span>
-    </th>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // AccessGrantRow
 // ---------------------------------------------------------------------------
 
@@ -581,18 +550,18 @@ function AccessGrantRow({
     expirationInfo.type === "datetime" ? expirationInfo.value : "-";
 
   return (
-    <tr className="border-b">
-      <td className="py-2 pr-4">
+    <TableRow>
+      <TableCell>
         <Badge variant={statusTagVariant(status)}>
           {getAccessGrantDisplayStatusText(grant)}
         </Badge>
-      </td>
-      <td className="py-2 pr-4 truncate max-w-44">
+      </TableCell>
+      <TableCell className="truncate max-w-44">
         {extractUserEmail(grant.creator)}
-      </td>
-      <td className="py-2 pr-4 text-sm hidden xl:table-cell">{createdAt}</td>
-      <td className="py-2 pr-4 text-sm hidden xl:table-cell">{expiration}</td>
-      <td className="py-2 pr-4">
+      </TableCell>
+      <TableCell className="hidden xl:table-cell">{createdAt}</TableCell>
+      <TableCell className="hidden xl:table-cell">{expiration}</TableCell>
+      <TableCell>
         <Tooltip
           content={
             <pre className="max-w-lg whitespace-pre-wrap">{grant.query}</pre>
@@ -609,11 +578,11 @@ function AccessGrantRow({
             )}
           </div>
         </Tooltip>
-      </td>
-      <td className="py-2 pr-4">
+      </TableCell>
+      <TableCell>
         <DatabaseTargets targets={grant.targets} />
-      </td>
-      <td className="py-2">
+      </TableCell>
+      <TableCell>
         <div className="flex items-center justify-end gap-x-1">
           {status === "REVOKED" && canActivate && (
             <Button variant="ghost" size="sm" onClick={onActivate}>
@@ -645,8 +614,8 @@ function AccessGrantRow({
             </a>
           )}
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

@@ -1,9 +1,17 @@
-import { CheckCircle, ChevronDown, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -186,20 +194,6 @@ export function DatabaseTable({
     }
   }, []);
 
-  const renderSortIndicator = (columnKey: string) => {
-    if (sortKey !== columnKey) {
-      return <ChevronDown className="h-3 w-3 text-gray-300" />;
-    }
-    return (
-      <ChevronDown
-        className={cn(
-          "h-3 w-3 text-accent transition-transform",
-          sortOrder === "asc" && "rotate-180"
-        )}
-      />
-    );
-  };
-
   const allSelected =
     databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
   const someSelected =
@@ -219,11 +213,11 @@ export function DatabaseTable({
     <>
       <div className="border rounded-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[800px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-control-border">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow className="bg-gray-50">
                 {showSelection && (
-                  <th className="w-12 px-4 py-2">
+                  <TableHead className="w-12">
                     <input
                       ref={headerCheckboxRef}
                       type="checkbox"
@@ -231,93 +225,86 @@ export function DatabaseTable({
                       onChange={toggleSelectAll}
                       className="rounded-xs border-control-border"
                     />
-                  </th>
+                  </TableHead>
                 )}
-                <th
-                  className="px-4 py-2 text-left font-medium cursor-pointer select-none"
-                  onClick={() => toggleSort("name")}
+                <TableHead
+                  sortable
+                  sortActive={sortKey === "name"}
+                  sortDir={sortOrder}
+                  onSort={() => toggleSort("name")}
                 >
-                  <div className="flex items-center gap-x-1">
-                    {t("common.name")}
-                    {renderSortIndicator("name")}
-                  </div>
-                </th>
-                <th className="px-4 py-2 text-left font-medium">
-                  {t("common.environment")}
-                </th>
+                  {t("common.name")}
+                </TableHead>
+                <TableHead>{t("common.environment")}</TableHead>
                 {!showProjectColumn && (
-                  <th className="px-4 py-2 text-left font-medium">
-                    {t("common.release")}
-                  </th>
+                  <TableHead>{t("common.release")}</TableHead>
                 )}
                 {showProjectColumn && (
-                  <th
-                    className="px-4 py-2 text-left font-medium cursor-pointer select-none"
-                    onClick={() => toggleSort("project")}
+                  <TableHead
+                    sortable
+                    sortActive={sortKey === "project"}
+                    sortDir={sortOrder}
+                    onSort={() => toggleSort("project")}
                   >
-                    <div className="flex items-center gap-x-1">
-                      {t("common.project")}
-                      {renderSortIndicator("project")}
-                    </div>
-                  </th>
+                    {t("common.project")}
+                  </TableHead>
                 )}
-                <th
-                  className="px-4 py-2 text-left font-medium cursor-pointer select-none"
-                  onClick={() => toggleSort("instance")}
+                <TableHead
+                  sortable
+                  sortActive={sortKey === "instance"}
+                  sortDir={sortOrder}
+                  onSort={() => toggleSort("instance")}
                 >
-                  <div className="flex items-center gap-x-1">
-                    {t("common.instance")}
-                    {renderSortIndicator("instance")}
-                  </div>
-                </th>
-                <th className="px-4 py-2 text-left font-medium hidden md:table-cell">
+                  {t("common.instance")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
                   {t("common.address")}
-                </th>
-                <th className="px-4 py-2 text-left font-medium hidden md:table-cell">
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
                   {t("common.labels")}
-                </th>
-                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
                   {t("common.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading && databases.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={8}
-                    className="px-4 py-8 text-center text-control-placeholder"
+                    className="py-8 text-center text-control-placeholder"
                   >
                     <div className="flex items-center justify-center gap-x-2">
                       <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
                       {t("common.loading")}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : databases.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={8}
-                    className="px-4 py-8 text-center text-control-placeholder"
+                    className="py-8 text-center text-control-placeholder"
                   >
                     {t("common.no-data")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 databases.map((db, i) => {
                   const isSelected = selectedNames?.has(db.name) ?? false;
                   const instanceResource = getInstanceResource(db);
                   return (
-                    <tr
+                    <TableRow
                       key={db.name}
                       className={cn(
-                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
+                        "cursor-pointer",
                         i % 2 === 1 && "bg-gray-50/50"
                       )}
                       onClick={(e) => handleRowClick(db, e)}
                     >
                       {showSelection && (
-                        <td className="w-12 px-4 py-2">
+                        <TableCell className="w-12">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -325,9 +312,9 @@ export function DatabaseTable({
                             onClick={(e) => e.stopPropagation()}
                             className="rounded-xs border-control-border"
                           />
-                        </td>
+                        </TableCell>
                       )}
-                      <td className="px-4 py-2">
+                      <TableCell>
                         <div className="flex items-center gap-x-2">
                           <img
                             className="h-5 w-5 shrink-0"
@@ -338,42 +325,42 @@ export function DatabaseTable({
                             {extractDatabaseResourceName(db.name).databaseName}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell>
                         <EnvironmentLabel
                           environmentName={getDatabaseEnvironment(db).name}
                         />
-                      </td>
+                      </TableCell>
                       {!showProjectColumn && (
-                        <td className="px-4 py-2">
+                        <TableCell>
                           <span className="truncate">
                             {db.release ? extractReleaseUID(db.release) : "-"}
                           </span>
-                        </td>
+                        </TableCell>
                       )}
                       {showProjectColumn && (
-                        <td className="px-4 py-2">
+                        <TableCell>
                           <span className="truncate">
                             {extractProjectResourceName(
                               getDatabaseProject(db).name
                             )}
                           </span>
-                        </td>
+                        </TableCell>
                       )}
-                      <td className="px-4 py-2 max-w-[200px]">
+                      <TableCell className="max-w-[200px]">
                         <span className="block truncate">
                           {instanceResource.title}
                         </span>
-                      </td>
-                      <td className="px-4 py-2 hidden md:table-cell">
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <span className="truncate">
                           {hostPortOfInstanceV1(instanceResource)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2 hidden md:table-cell">
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <LabelsDisplay labels={db.labels} />
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell>
                         {db.syncStatus === SyncStatus.FAILED ? (
                           <span
                             title={
@@ -385,13 +372,13 @@ export function DatabaseTable({
                         ) : (
                           <CheckCircle className="w-4 h-4 text-success" />
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

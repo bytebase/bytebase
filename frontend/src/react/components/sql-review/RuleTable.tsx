@@ -4,6 +4,14 @@ import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
@@ -321,28 +329,28 @@ export function RuleTable({
 
           {/* Desktop table */}
           <div className="hidden lg:block border rounded-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-control-bg">
-                  <th className="w-8 px-3 py-2" />
-                  {supportSelect && <th className="w-8 px-3 py-2" />}
-                  <th className="text-left px-4 py-2 font-medium whitespace-nowrap">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-control-bg">
+                  <TableHead className="w-8" />
+                  {supportSelect && <TableHead className="w-8" />}
+                  <TableHead className="whitespace-nowrap">
                     {t("common.name")}
-                  </th>
+                  </TableHead>
                   {!hideLevel && (
-                    <th className="text-left px-4 py-2 font-medium whitespace-nowrap w-[12rem]">
+                    <TableHead className="whitespace-nowrap w-[12rem]">
                       {t("sql-review.level.name")}
-                    </th>
+                    </TableHead>
                   )}
                   {!supportSelect && (
-                    <th className="text-right px-4 py-2 font-medium whitespace-nowrap w-48">
+                    <TableHead className="text-right whitespace-nowrap w-48">
                       {t("common.operations")}
-                    </th>
+                    </TableHead>
                   )}
-                </tr>
-              </thead>
-              <tbody>
-                {category.ruleList.map((rule, idx) => {
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {category.ruleList.map((rule) => {
                   const key = getRuleKey(rule);
                   const loc = getRuleLocalization(
                     ruleTypeToString(rule.type),
@@ -358,7 +366,6 @@ export function RuleTable({
                       loc={loc}
                       expanded={expanded}
                       expandable={expandable}
-                      striped={idx % 2 === 1}
                       supportSelect={supportSelect}
                       hideLevel={hideLevel}
                       editable={editable}
@@ -371,8 +378,8 @@ export function RuleTable({
                     />
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Mobile cards */}
@@ -464,7 +471,6 @@ interface RuleTableRowProps {
   loc: { title: string; description: string };
   expanded: boolean;
   expandable: boolean;
-  striped: boolean;
   supportSelect: boolean;
   hideLevel: boolean;
   editable: boolean;
@@ -481,7 +487,6 @@ function RuleTableRow({
   loc,
   expanded,
   expandable,
-  striped,
   supportSelect,
   hideLevel,
   editable,
@@ -499,11 +504,11 @@ function RuleTableRow({
 
   return (
     <>
-      <tr
-        className={`border-b last:border-b-0 ${striped ? "bg-gray-50" : ""} ${supportSelect ? "cursor-pointer hover:bg-gray-50" : ""}`}
+      <TableRow
+        className={supportSelect ? "cursor-pointer" : ""}
         onClick={supportSelect ? onToggleRule : undefined}
       >
-        <td className="px-3 py-2 w-8" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
           {expandable && (
             <button
               type="button"
@@ -517,18 +522,18 @@ function RuleTableRow({
               )}
             </button>
           )}
-        </td>
+        </TableCell>
         {supportSelect && (
-          <td className="px-3 py-2 w-8" onClick={(e) => e.stopPropagation()}>
+          <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
             <input
               type="checkbox"
               checked={isSelected}
               onChange={onToggleRule}
               className="h-4 w-4 rounded-xs border-control-border accent-accent"
             />
-          </td>
+          </TableCell>
         )}
-        <td className="px-4 py-2">
+        <TableCell>
           <div className="flex items-center gap-x-2">
             <span>{loc.title}</span>
             <a
@@ -540,18 +545,18 @@ function RuleTableRow({
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>
-        </td>
+        </TableCell>
         {!hideLevel && (
-          <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+          <TableCell onClick={(e) => e.stopPropagation()}>
             <RuleLevelSwitch
               level={rule.level}
               disabled={!editable}
               onLevelChange={onLevelChange}
             />
-          </td>
+          </TableCell>
         )}
         {!supportSelect && (
-          <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+          <TableCell onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-end gap-x-2">
               <Button variant="outline" size="sm" onClick={onEdit}>
                 {editable ? t("common.edit") : t("common.view")}
@@ -562,14 +567,14 @@ function RuleTableRow({
                 </Button>
               )}
             </div>
-          </td>
+          </TableCell>
         )}
-      </tr>
+      </TableRow>
       {expanded && (
-        <tr className="border-b last:border-b-0">
-          <td colSpan={colSpan} className="px-10 py-3 bg-gray-50/50">
+        <TableRow>
+          <TableCell colSpan={colSpan} className="px-10 bg-control-bg/40">
             {loc.description && (
-              <p className="text-gray-500">{loc.description}</p>
+              <p className="text-control-light">{loc.description}</p>
             )}
             {rule.componentList.length > 0 && loc.description && (
               <hr className="my-4 border-control-border" />
@@ -577,8 +582,8 @@ function RuleTableRow({
             {rule.componentList.length > 0 && (
               <RuleConfig rule={rule} disabled size="small" />
             )}
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

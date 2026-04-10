@@ -22,6 +22,14 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Textarea } from "@/react/components/ui/textarea";
 import { BlockTooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -825,45 +833,42 @@ export function RolesPage() {
       {/* Roles Table */}
       {ready ? (
         <div className="border rounded-sm overflow-hidden">
-          <table className="w-full text-sm table-fixed">
+          <Table className="table-fixed">
             <colgroup>
               <col className="w-1/3" />
               <col />
               <col className="w-24" />
             </colgroup>
-            <thead>
-              <tr className="border-b bg-control-bg">
-                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+            <TableHeader>
+              <TableRow className="bg-control-bg">
+                <TableHead className="whitespace-nowrap">
                   {t("role.title")}
-                </th>
-                <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
                   {t("common.description")}
-                </th>
-                <th className="px-4 py-2 text-right font-medium whitespace-nowrap" />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRoleList.map((role, i) => (
-                <tr
-                  key={role.name}
-                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
-                >
-                  <td className="px-4 py-2 whitespace-nowrap">
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRoleList.map((role) => (
+                <TableRow key={role.name}>
+                  <TableCell className="whitespace-nowrap">
                     <span>{displayRoleTitle(role.name)}</span>
                     {!isCustomRole(role.name) && (
                       <Badge variant="secondary" className="ml-2 text-xs">
                         {t("common.system")}
                       </Badge>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-control-light overflow-hidden">
+                  </TableCell>
+                  <TableCell className="text-control-light overflow-hidden">
                     <BlockTooltip content={displayRoleDescription(role.name)}>
                       <span className="block truncate">
                         {displayRoleDescription(role.name)}
                       </span>
                     </BlockTooltip>
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell>
                     {isCustomRole(role.name) && (
                       <div className="flex justify-end gap-x-2">
                         {canDelete && (
@@ -886,11 +891,11 @@ export function RolesPage() {
                         </Button>
                       </div>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : (
         <div className="flex items-center justify-center h-32">
