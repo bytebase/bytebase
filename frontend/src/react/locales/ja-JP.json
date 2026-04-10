@@ -347,6 +347,8 @@
   "common.password": "パスワード",
   "common.project": "プロジェクト",
   "common.read-only": "読み取り専用",
+  "common.remove": "削除",
+  "common.removed": "削除されました",
   "common.restore": "復元する",
   "common.rollout": "リリース",
   "common.sensitive-placeholder": "機密データ - 書き込みのみ",
@@ -518,11 +520,14 @@
     "expression": "Expression",
     "filter-database": "データベースをフィルター",
     "index-size": "インデックスサイズ",
+    "indexes": "索引",
     "last-sync": "最後の同期",
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
+    "nullable": "null も可能",
     "partitioned": "パーティション",
     "row-count-est": "推定行数",
+    "row-count-estimate": "推定行数",
     "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
@@ -555,7 +560,9 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
-    "unassign-alert-title": "データベースの割り当てを解除する"
+    "unassign-alert-title": "データベースの割り当てを解除する",
+    "unique": "唯一",
+    "visible": "見える"
   },
   "database-group": {
     "condition": {
@@ -1372,7 +1379,8 @@
   },
   "schema-template": {
     "classification": {
-      "search": "カテゴリを検索する"
+      "search": "カテゴリを検索する",
+      "select": "分類を選択"
     }
   },
   "setting": {

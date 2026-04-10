@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite/utils/columnDefaultValue";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
-import { useDBSchemaV1Store, useSettingV1Store } from "@/store";
+import {
+  featureToRef,
+  getColumnCatalog,
+  getTableCatalog,
+  useDatabaseCatalog,
+  useDBSchemaV1Store,
+  useSettingV1Store,
+} from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   Database,
@@ -13,10 +21,18 @@ import type {
   TaskMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
+  bytesToString,
   getDatabaseEngine,
   getDatabaseProject,
+  hasIndexSizeProperty,
+  hasProjectPermissionV2,
   hasSchemaProperty,
+  hasTableEngineProperty,
+  instanceV1HasCollationAndCharacterSet,
+  instanceV1SupportsColumn,
+  instanceV1SupportsIndex,
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
 } from "@/utils";
@@ -24,7 +40,10 @@ import {
   type ObjectSectionRow,
   ObjectSectionTable,
 } from "./ObjectSectionTable";
-import { VueTableDetailDrawerMount } from "./TableDetailDialog";
+import {
+  TableDetailDialog,
+  type TableDetailDialogData,
+} from "./TableDetailDialog";
 import { TableMetadataTable } from "./TableMetadataTable";
 
 function filterByKeyword(name: string, keyword: string) {
@@ -92,11 +111,20 @@ export function DatabaseObjectExplorer({
   const databaseMetadata = useVueState(() =>
     dbSchemaStore.getDatabaseMetadata(database.name)
   );
+  const hasSensitiveDataFeature = useVueState(
+    () => featureToRef(PlanFeature.FEATURE_DATA_MASKING).value
+  );
+  const databaseCatalog = useDatabaseCatalog(database.name, false);
+  const catalog = useVueState(() => databaseCatalog.value);
   const project = getDatabaseProject(database);
   const classificationConfig = useVueState(() =>
     settingStore.getProjectClassification(
       project.dataClassificationConfigId ?? ""
     )
+  );
+  const canUpdateCatalog = hasProjectPermissionV2(
+    project,
+    "bb.databaseCatalogs.update"
   );
   const [selectedTableName, setSelectedTableName] = useState(routeTable);
 
@@ -116,9 +144,87 @@ export function DatabaseObjectExplorer({
     ? (selectedSchemaMetadata?.packages ?? [])
     : databaseMetadata.schemas.flatMap((schema) => schema.packages ?? []);
 
-  const handleDismissDrawer = useCallback(() => {
-    setSelectedTableName("");
-  }, []);
+  const selectedTable = tableList.find(
+    (table) => table.name === selectedTableName
+  );
+  const selectedTableCatalog = selectedTable
+    ? getTableCatalog(catalog, selectedSchemaName, selectedTable.name)
+    : undefined;
+  const showSemanticTypeColumn =
+    hasSensitiveDataFeature &&
+    [
+      Engine.MYSQL,
+      Engine.TIDB,
+      Engine.POSTGRES,
+      Engine.REDSHIFT,
+      Engine.ORACLE,
+      Engine.SNOWFLAKE,
+      Engine.MSSQL,
+      Engine.BIGQUERY,
+      Engine.SPANNER,
+      Engine.CASSANDRA,
+      Engine.TRINO,
+    ].includes(databaseEngine);
+  const selectedTableDetail: TableDetailDialogData | undefined = selectedTable
+    ? {
+        database,
+        editable: canUpdateCatalog,
+        classification: selectedTableCatalog?.classification,
+        classificationConfig,
+        collation: selectedTable.collation,
+        columns: selectedTable.columns.map((column) => {
+          const columnCatalog = getColumnCatalog(
+            catalog,
+            selectedSchemaName,
+            selectedTable.name,
+            column.name
+          );
+          return {
+            name: column.name,
+            semanticType: columnCatalog?.semanticType,
+            classification: columnCatalog?.classification,
+            type: column.type,
+            defaultValue: getColumnDefaultValuePlaceholder(column),
+            nullable: column.nullable,
+            characterSet: column.characterSet,
+            collation: column.collation,
+            comment: column.comment,
+          };
+        }),
+        dataSize: bytesToString(Number(selectedTable.dataSize)),
+        engine: selectedTable.engine,
+        indexes: (selectedTable.indexes ?? []).map((index) => ({
+          name: index.name,
+          expressions: index.expressions,
+          unique: index.unique,
+          visible: index.visible,
+          comment: index.comment,
+        })),
+        indexSize: bytesToString(Number(selectedTable.indexSize)),
+        name:
+          supportsSchema && selectedSchemaName
+            ? `"${selectedSchemaName}"."${selectedTable.name}"`
+            : selectedTable.name,
+        rowCount: String(selectedTable.rowCount),
+        schema: selectedSchemaName,
+        showCharacterSet: databaseEngine !== Engine.POSTGRES,
+        showColumnClassification: hasSensitiveDataFeature,
+        showColumnCollation:
+          databaseEngine !== Engine.CLICKHOUSE &&
+          databaseEngine !== Engine.SNOWFLAKE,
+        showColumns: instanceV1SupportsColumn(databaseEngine),
+        showCollation: instanceV1HasCollationAndCharacterSet(databaseEngine),
+        showEngine: hasTableEngineProperty(databaseEngine),
+        showIndexComment: databaseEngine !== Engine.MONGODB,
+        showIndexes: instanceV1SupportsIndex(databaseEngine),
+        showIndexSize: hasIndexSizeProperty(databaseEngine),
+        showIndexVisible:
+          databaseEngine !== Engine.POSTGRES &&
+          databaseEngine !== Engine.MONGODB,
+        showSemanticType: showSemanticTypeColumn,
+        tableName: selectedTable.name,
+      }
+    : undefined;
 
   useEffect(() => {
     void settingStore.getOrFetchSettingByName(
@@ -134,14 +240,12 @@ export function DatabaseObjectExplorer({
   }, [routeTable]);
 
   useEffect(() => {
-    if (!selectedTableName || loading) {
+    if (!selectedTableName || loading || selectedTable) {
       return;
     }
-    const exists = tableList.some((t) => t.name === selectedTableName);
-    if (!exists) {
-      setSelectedTableName("");
-    }
-  }, [loading, selectedTableName, tableList]);
+
+    setSelectedTableName("");
+  }, [loading, selectedTable, selectedTableName]);
 
   useEffect(() => {
     const currentQuery = router.currentRoute.value.query;
@@ -359,13 +463,14 @@ export function DatabaseObjectExplorer({
         </>
       )}
 
-      <VueTableDetailDrawerMount
-        show={!!selectedTableName}
-        databaseName={database.name}
-        schemaName={selectedSchemaName}
-        tableName={selectedTableName}
-        classificationConfig={classificationConfig}
-        onDismiss={handleDismissDrawer}
+      <TableDetailDialog
+        open={!!selectedTableName}
+        table={selectedTableDetail}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTableName("");
+          }
+        }}
       />
     </div>
   );

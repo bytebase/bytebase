@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
+import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   featureToRef,
@@ -12,54 +14,16 @@ import type {
   Database,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   bytesToString,
   getDatabaseEngine,
   getDatabaseProject,
+  hasProjectPermissionV2,
   hasSchemaProperty,
 } from "@/utils";
-
-const BG_COLORS = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
-
-function ClassificationBadge({
-  classificationId,
-  classificationConfig,
-}: {
-  classificationId: string | undefined;
-  classificationConfig:
-    | DataClassificationSetting_DataClassificationConfig
-    | undefined;
-}) {
-  if (!classificationId || !classificationConfig) {
-    return <span>-</span>;
-  }
-  const entry = classificationConfig.classification[classificationId];
-  if (!entry) {
-    return <span>{classificationId}</span>;
-  }
-  const level = (classificationConfig.levels ?? []).find(
-    (l) => l.level === entry.level
-  );
-  const levelColor = BG_COLORS[(entry.level ?? 0) - 1] ?? "bg-gray-200";
-  return (
-    <span className="inline-flex items-center gap-x-1">
-      <span className="truncate">{entry.title}</span>
-      {level && (
-        <span className={`shrink-0 rounded px-1 py-0.5 text-xs ${levelColor}`}>
-          {level.title}
-        </span>
-      )}
-    </span>
-  );
-}
+import { EditableClassificationCell } from "./TableDetailDialog";
 
 export function TableMetadataTable({
   database,
@@ -89,9 +53,21 @@ export function TableMetadataTable({
       project.dataClassificationConfigId ?? ""
     )
   );
+  const editable = hasProjectPermissionV2(
+    project,
+    "bb.databaseCatalogs.update"
+  );
 
   const showEngineColumn = databaseEngine !== Engine.POSTGRES;
   const showPartitionedColumn = databaseEngine === Engine.POSTGRES;
+
+  useEffect(() => {
+    void settingStore.getOrFetchSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+  }, [settingStore]);
+
   const columns = useMemo(
     () =>
       [
@@ -121,8 +97,12 @@ export function TableMetadataTable({
         { key: "dataSize", label: t("database.data-size") },
         { key: "indexSize", label: t("database.index-size") },
         { key: "comment", label: t("common.comment") },
+        onRowClick
+          ? { key: "operations", label: t("common.operations") }
+          : undefined,
       ].filter((column) => column !== undefined),
     [
+      onRowClick,
       showClassificationColumn,
       showEngineColumn,
       showPartitionedColumn,
@@ -170,22 +150,7 @@ export function TableMetadataTable({
             return (
               <tr
                 key={`${database.name}.${schemaName}.${table.name}`}
-                className={
-                  onRowClick ? "cursor-pointer hover:bg-control-bg" : ""
-                }
-                role={onRowClick ? "button" : undefined}
-                tabIndex={onRowClick ? 0 : undefined}
-                onClick={() => onRowClick?.(table)}
-                onKeyDown={
-                  onRowClick
-                    ? (event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          onRowClick(table);
-                        }
-                      }
-                    : undefined
-                }
+                className="hover:bg-control-bg"
               >
                 {showSchemaColumn && (
                   <td className="px-4 py-3 text-sm text-main">
@@ -195,9 +160,21 @@ export function TableMetadataTable({
                 <td className="px-4 py-3 text-sm text-main">{table.name}</td>
                 {showClassificationColumn && (
                   <td className="px-4 py-3 text-sm text-control">
-                    <ClassificationBadge
-                      classificationId={classification}
+                    <EditableClassificationCell
+                      classification={classification}
                       classificationConfig={classificationConfig}
+                      readonly={!editable}
+                      testIdPrefix={`table-row-classification-${table.name}`}
+                      onApply={async (classificationId) => {
+                        await updateTableCatalog({
+                          database: database.name,
+                          schema: schemaName,
+                          table: table.name,
+                          tableCatalog: {
+                            classification: classificationId,
+                          },
+                        });
+                      }}
                     />
                   </td>
                 )}
@@ -223,6 +200,20 @@ export function TableMetadataTable({
                 <td className="px-4 py-3 text-sm text-control">
                   {table.comment || "-"}
                 </td>
+                {onRowClick && (
+                  <td className="px-4 py-3 text-sm text-control">
+                    <div className="flex items-center gap-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        data-testid={`table-row-view-${table.name}`}
+                        onClick={() => onRowClick(table)}
+                      >
+                        {t("common.view-details")}
+                      </Button>
+                    </div>
+                  </td>
+                )}
               </tr>
             );
           })}
