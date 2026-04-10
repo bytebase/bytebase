@@ -4,10 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
-export function LabelEditorDrawer({
+export function LabelEditorSheet({
   open,
   databases,
   onClose,
@@ -24,7 +31,6 @@ export function LabelEditorDrawer({
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
 
-  useEscapeKey(open, onClose);
   useEffect(() => {
     if (open) {
       setLabelsList(databases.map((db) => ({ ...db.labels })));
@@ -33,8 +39,6 @@ export function LabelEditorDrawer({
       setNewValue("");
     }
   }, [open, databases]);
-
-  if (!open) return null;
 
   const addLabelToAll = () => {
     if (!newKey.trim()) return;
@@ -71,19 +75,12 @@ export function LabelEditorDrawer({
   const hasMixedValues = allKeys.some((key) => getDisplayValue(key).mixed);
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[28rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">{t("database.edit-labels")}</h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <SheetHeader>
+          <SheetTitle>{t("database.edit-labels")}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
           {hasMixedValues && (
             <Alert variant="warning" className="mb-4">
               {t("database.mixed-label-values-warning")}
@@ -144,8 +141,8 @@ export function LabelEditorDrawer({
               {t("common.no-data")}
             </p>
           )}
-        </div>
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t border-control-border">
+        </SheetBody>
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -163,8 +160,8 @@ export function LabelEditorDrawer({
           >
             {t("common.update")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

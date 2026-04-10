@@ -6,14 +6,12 @@ import {
   CircleCheck,
   Eye,
   EyeOff,
-  Pencil,
   Plus,
   Settings,
   Trash2,
   Undo2,
-  X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
@@ -24,6 +22,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,9 +38,9 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_GROUPS,
@@ -68,7 +74,7 @@ import {
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { AADSyncDrawer } from "./shared/AADSyncDrawer";
+import { AADSyncSheet } from "./shared/AADSyncSheet";
 
 // ============================================================
 // UserTable
@@ -246,7 +252,41 @@ function UserTable({
             return (
               <TableRow
                 key={user.name}
-                className={i % 2 === 1 ? "bg-gray-50" : ""}
+                className={cn(
+                  i % 2 === 1 && "bg-control-bg/50",
+                  hasWorkspacePermissionV2(getViewPermission(accountType)) &&
+                    "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+                )}
+                tabIndex={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? 0
+                    : undefined
+                }
+                role={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? "button"
+                    : undefined
+                }
+                aria-label={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? user.title || user.email
+                    : undefined
+                }
+                onClick={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? () => handleView(user)
+                    : undefined
+                }
+                onKeyDown={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleView(user);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {/* Account column */}
                 <TableCell className="py-2">
@@ -258,7 +298,7 @@ function UserTable({
                           className={
                             isDeleted
                               ? "line-through text-control-light"
-                              : "font-medium text-accent"
+                              : "font-medium text-main"
                           }
                         >
                           {user.title}
@@ -305,56 +345,33 @@ function UserTable({
                   />
                 </TableCell>
 
-                {/* Operations column */}
+                {/* Operations column — destructive/secondary actions only.
+                    The row itself is clickable to open the detail sheet. */}
                 <TableCell className="py-2">
                   <div className="flex justify-end gap-x-1">
-                    {!isDeleted && (
-                      <>
-                        {hasWorkspacePermissionV2(
-                          getDeletePermission(accountType)
-                        ) &&
-                          !isSelf && (
-                            <Tooltip
-                              content={t(
-                                "settings.members.action.deactivate-confirm-title"
-                              )}
-                            >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-error hover:text-error"
-                                onClick={() => handleDeactivate(user)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
+                    {!isDeleted &&
+                      hasWorkspacePermissionV2(
+                        getDeletePermission(accountType)
+                      ) &&
+                      !isSelf && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.deactivate-confirm-title"
                           )}
-                        {hasWorkspacePermissionV2(
-                          getViewPermission(accountType)
-                        ) && (
-                          <Tooltip
-                            content={
-                              accountType === AccountType.USER
-                                ? t("common.view")
-                                : t("common.edit")
-                            }
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-error hover:text-error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeactivate(user);
+                            }}
                           >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleView(user)}
-                            >
-                              {accountType === AccountType.USER ? (
-                                <Eye className="h-4 w-4" />
-                              ) : (
-                                <Pencil className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </Tooltip>
-                        )}
-                      </>
-                    )}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
                     {isDeleted &&
                       hasWorkspacePermissionV2(
                         getUndeletePermission(accountType)
@@ -368,7 +385,10 @@ function UserTable({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => handleRestore(user)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestore(user);
+                            }}
                           >
                             <Undo2 className="h-4 w-4" />
                           </Button>
@@ -411,7 +431,11 @@ function UserGroupsCell({
             key={groupName}
             variant="secondary"
             className="text-xs px-1.5 py-0 cursor-pointer"
-            onClick={() => {
+            // The parent TableRow is a row-click button — stop propagation so
+            // clicking a group badge navigates to the group without also
+            // opening the user detail sheet.
+            onClick={(e) => {
+              e.stopPropagation();
               if (group && onGroupSelected) {
                 onGroupSelected(group);
               }
@@ -434,17 +458,50 @@ function extractUserTitle(email: string): string {
   return atIndex !== -1 ? email.substring(0, atIndex) : email;
 }
 
-function CreateUserDrawer({
-  user,
-  onClose,
-  onCreated,
-  onUpdated,
-}: {
+interface CreateUserSheetProps {
+  open: boolean;
   user: User | undefined;
   onClose: () => void;
   onCreated: (user: User) => void;
   onUpdated: (user: User) => void;
-}) {
+}
+
+// Outer wrapper — renders the Sheet container. The actual form lives in
+// `UserForm` below, keyed by entity so it remounts cleanly every time a
+// different entity is selected, and gated by `open` so it unmounts on close.
+// This guarantees that useState initializers always see the latest `user`
+// prop and that there's no stale state between opens.
+function CreateUserSheet(props: CreateUserSheetProps) {
+  const { open, user, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation; see the long comment on
+  // CreateWorkloadIdentitySheet for the full rationale.
+  const openEntityRef = useRef(user);
+  if (open) {
+    openEntityRef.current = user;
+  }
+  const stableUser = openEntityRef.current;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <UserForm
+          key={stableUser?.name ?? "new"}
+          user={stableUser}
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          onUpdated={props.onUpdated}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function UserForm({
+  user,
+  onClose,
+  onCreated,
+  onUpdated,
+}: Omit<CreateUserSheetProps, "open">) {
   const { t } = useTranslation();
   const userStore = useUserStore();
   const workspaceStore = useWorkspaceV1Store();
@@ -467,24 +524,36 @@ function CreateUserDrawer({
   const allowUpdate =
     !isEditMode || hasWorkspacePermissionV2("bb.users.update");
 
+  // Capture initial values on mount. Because the parent keys this component
+  // by user, it remounts fresh every time a different user is edited, so
+  // these initial values always reflect the latest `user` prop.
+  //
+  // The empty deps array is intentional: we want the initial baseline
+  // frozen at mount so dirty tracking compares against it. If we added
+  // `userMapToRoles` to deps, a Pinia store refresh mid-edit would move
+  // the baseline and incorrectly classify untouched fields as dirty
+  // (or vice versa). Since the outer CreateUserSheet wrapper remounts
+  // this component whenever the edited user changes, "mount-only" is the
+  // right scope for the baseline.
   const initialRoles = useMemo(() => {
     if (!user || !isEditMode) {
       return [PresetRoleType.WORKSPACE_MEMBER];
     }
     const roles = userMapToRoles.get(getUserFullNameByType(user));
     return roles ? [...roles] : [];
-  }, [user, isEditMode, userMapToRoles]);
+  }, []);
+  const initialTitle = user?.title ?? "";
+  const initialEmail = user?.email ?? "";
+  const initialPhone = user?.phone ?? "";
 
-  const [title, setTitle] = useState(user?.title ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [title, setTitle] = useState(initialTitle);
+  const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [roles, setRoles] = useState<string[]>(initialRoles);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  useEscapeKey(true, onClose);
 
   // Password validation
   const passwordChecks = useMemo(() => {
@@ -544,12 +613,34 @@ function CreateUserDrawer({
     return workspaceDomains.includes(domain);
   }, [email, isEditMode, enforceIdentityDomain, workspaceDomains]);
 
-  const allowConfirm =
+  const isFormValid =
     email.length > 0 &&
     emailDomainValid &&
     !passwordHint &&
     !passwordMismatch &&
     (isEditMode || password.length > 0);
+
+  // Dirty tracking — in edit mode the Update button is disabled unless
+  // something actually changed. Create mode is always "dirty".
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return true;
+    if (title !== initialTitle) return true;
+    if (phone !== initialPhone) return true;
+    if (password.length > 0) return true;
+    if (!isEqual([...initialRoles].sort(), [...roles].sort())) return true;
+    return false;
+  }, [
+    isEditMode,
+    title,
+    phone,
+    password,
+    roles,
+    initialTitle,
+    initialPhone,
+    initialRoles,
+  ]);
+
+  const allowConfirm = isFormValid && isDirty;
 
   const hasPermission = hasWorkspacePermissionV2(
     isEditMode ? "bb.users.update" : "bb.users.create"
@@ -645,193 +736,173 @@ function CreateUserDrawer({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <SheetHeader>
+        <SheetTitle>{t("common.user")}</SheetTitle>
+      </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.user")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+      <SheetBody>
+        <div className="flex flex-col gap-y-6">
+          {/* Name */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.name")}
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t("common.name")}
+              maxLength={200}
+              disabled={!allowUpdate}
+            />
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <div className="flex flex-col gap-y-6">
-            {/* Name */}
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isEditMode}
+            />
+          </div>
+
+          {/* Roles */}
+          {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">
-                {t("common.name")}
+                {t("settings.members.table.roles")}
               </label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("common.name")}
-                maxLength={200}
-                disabled={!allowUpdate}
-              />
+              <RoleSelect value={roles} onChange={setRoles} disabled={false} />
             </div>
+          )}
 
-            {/* Email */}
-            <div className="flex flex-col gap-y-2">
+          {/* Phone */}
+          <div className="flex flex-col gap-y-2">
+            <div>
               <label className="block text-sm font-medium text-control">
-                {t("common.email")}
+                {t("settings.profile.phone")}
+              </label>
+              <span className="textinfolabel text-sm">
+                {t("settings.profile.phone-tips")}
+              </span>
+            </div>
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="new-password"
+              disabled={!allowUpdate}
+            />
+          </div>
+
+          {/* Password */}
+          <div className="flex flex-col gap-y-6">
+            <div>
+              <label className="block text-sm font-medium text-control">
+                {t("settings.profile.password")}
                 <span className="ml-0.5 text-error">*</span>
               </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isEditMode}
-              />
-            </div>
-
-            {/* Roles */}
-            {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.members.table.roles")}
-                </label>
-                <RoleSelect
-                  value={roles}
-                  onChange={setRoles}
-                  disabled={false}
-                />
-              </div>
-            )}
-
-            {/* Phone */}
-            <div className="flex flex-col gap-y-2">
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.phone")}
-                </label>
-                <span className="textinfolabel text-sm">
-                  {t("settings.profile.phone-tips")}
-                </span>
-              </div>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="new-password"
-                disabled={!allowUpdate}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-y-6">
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.password")}
-                  <span className="ml-0.5 text-error">*</span>
-                </label>
-                <span
-                  className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+              <span
+                className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+              >
+                {t("settings.profile.password-hint")}
+                <Tooltip
+                  content={
+                    <ul className="list-none text-sm">
+                      {passwordChecks.map((check, i) => (
+                        <li key={i} className="flex gap-x-1 items-center">
+                          {check.matched ? (
+                            <CircleCheck className="w-4 text-green-400" />
+                          ) : (
+                            <CircleAlert className="w-4 text-red-400" />
+                          )}
+                          {check.text}
+                        </li>
+                      ))}
+                    </ul>
+                  }
                 >
-                  {t("settings.profile.password-hint")}
-                  <Tooltip
-                    content={
-                      <ul className="list-none text-sm">
-                        {passwordChecks.map((check, i) => (
-                          <li key={i} className="flex gap-x-1 items-center">
-                            {check.matched ? (
-                              <CircleCheck className="w-4 text-green-400" />
-                            ) : (
-                              <CircleAlert className="w-4 text-red-400" />
-                            )}
-                            {check.text}
-                          </li>
-                        ))}
-                      </ul>
-                    }
-                  >
-                    <CircleAlert className="w-4 cursor-help" />
-                  </Tooltip>
-                </span>
-                <div className="mt-1 relative flex items-center">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder={t("common.sensitive-placeholder")}
-                    disabled={!allowUpdate}
-                    className={passwordHint ? "border-error" : ""}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                  <CircleAlert className="w-4 cursor-help" />
+                </Tooltip>
+              </span>
+              <div className="mt-1 relative flex items-center">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder={t("common.sensitive-placeholder")}
+                  disabled={!allowUpdate}
+                  className={passwordHint ? "border-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.password-confirm")}
-                  <span className="ml-0.5 text-error">*</span>
-                </label>
-                <div className="mt-1 relative flex items-center">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder={t(
-                      "settings.profile.password-confirm-placeholder"
-                    )}
-                    disabled={!allowUpdate}
-                    className={passwordMismatch ? "border-error" : ""}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {passwordMismatch && (
-                  <span className="text-error text-sm mt-1 pl-1">
-                    {t("settings.profile.password-mismatch")}
-                  </span>
-                )}
+            <div>
+              <label className="block text-sm font-medium text-control">
+                {t("settings.profile.password-confirm")}
+                <span className="ml-0.5 text-error">*</span>
+              </label>
+              <div className="mt-1 relative flex items-center">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder={t(
+                    "settings.profile.password-confirm-placeholder"
+                  )}
+                  disabled={!allowUpdate}
+                  className={passwordMismatch ? "border-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+              {passwordMismatch && (
+                <span className="text-error text-sm mt-1 pl-1">
+                  {t("settings.profile.password-mismatch")}
+                </span>
+              )}
             </div>
           </div>
         </div>
+      </SheetBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!allowConfirm || !hasPermission || isRequesting}
-            onClick={handleSubmit}
-          >
-            {isEditMode ? t("common.update") : t("common.create")}
-          </Button>
-        </div>
-      </div>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          disabled={!allowConfirm || !hasPermission || isRequesting}
+          onClick={handleSubmit}
+        >
+          {isEditMode ? t("common.update") : t("common.create")}
+        </Button>
+      </SheetFooter>
     </>
   );
 }
@@ -1044,29 +1115,29 @@ export function UsersPage() {
         )}
       </div>
 
-      {showCreateUserDrawer && (
-        <CreateUserDrawer
-          user={editingUser}
-          onClose={() => {
-            setShowCreateUserDrawer(false);
-            setEditingUser(undefined);
-          }}
-          onCreated={(user) => {
-            activeUsers.updateCache([user]);
-          }}
-          onUpdated={(user) => {
-            activeUsers.updateCache([user]);
-            if (user.state === State.DELETED) {
-              activeUsers.removeCache(user);
-              inactiveUsers.updateCache([user]);
-            }
-          }}
-        />
-      )}
+      <CreateUserSheet
+        open={showCreateUserDrawer}
+        user={editingUser}
+        onClose={() => {
+          setShowCreateUserDrawer(false);
+          setEditingUser(undefined);
+        }}
+        onCreated={(user) => {
+          activeUsers.updateCache([user]);
+        }}
+        onUpdated={(user) => {
+          activeUsers.updateCache([user]);
+          if (user.state === State.DELETED) {
+            activeUsers.removeCache(user);
+            inactiveUsers.updateCache([user]);
+          }
+        }}
+      />
 
-      {showAadSyncDrawer && (
-        <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
-      )}
+      <AADSyncSheet
+        open={showAadSyncDrawer}
+        onClose={() => setShowAadSyncDrawer(false)}
+      />
     </div>
   );
 }

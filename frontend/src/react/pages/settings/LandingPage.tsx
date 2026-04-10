@@ -22,6 +22,13 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -310,7 +317,7 @@ function useLastVisitedProject() {
 // Config Drawer
 // ---------------------------------------------------------------------------
 
-function ConfigDrawer({
+function ConfigSheet({
   open,
   onClose,
   fullList,
@@ -324,15 +331,6 @@ function ConfigDrawer({
   setConfig: (c: string[]) => void;
 }) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
 
   const dragItem = useRef<number | null>(null);
   const dragOver = useRef<number | null>(null);
@@ -378,24 +376,13 @@ function ConfigDrawer({
     setConfig([...config, id]);
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-96 max-w-[calc(100vw-8rem)] bg-white shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="font-medium text-base">
-            {t("landing.quick-link.manage")}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-2 py-2">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <SheetHeader>
+          <SheetTitle>{t("landing.quick-link.manage")}</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="px-2 py-2">
           {selected.map((item, i) => (
             <div
               key={item.id}
@@ -433,9 +420,9 @@ function ConfigDrawer({
               {item.title}
             </div>
           ))}
-        </div>
-      </div>
-    </div>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -578,7 +565,7 @@ export function LandingPage({
         </div>
       </div>
 
-      <ConfigDrawer
+      <ConfigSheet
         open={showConfigDrawer}
         onClose={() => setShowConfigDrawer(false)}
         fullList={fullList}

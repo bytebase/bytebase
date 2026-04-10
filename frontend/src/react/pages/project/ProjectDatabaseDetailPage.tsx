@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LocationQueryRaw } from "vue-router";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
-import { TransferProjectDrawer } from "@/react/components/database";
+import { TransferProjectSheet } from "@/react/components/database";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -294,7 +294,7 @@ export function ProjectDatabaseDetailPage({
         </DialogContent>
       </Dialog>
 
-      <TransferProjectDrawer
+      <TransferProjectSheet
         open={showTransferDrawer}
         databases={[detail.database]}
         onClose={() => setShowTransferDrawer(false)}

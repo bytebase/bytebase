@@ -7,7 +7,6 @@ import {
   EllipsisVertical,
   Plus,
   Trash2,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,6 +30,14 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -205,10 +212,10 @@ function ConfirmDialog({
 }
 
 // ============================================================
-// CreateProjectDrawer
+// CreateProjectSheet
 // ============================================================
 
-function CreateProjectDrawer({
+function CreateProjectSheet({
   open,
   onClose,
   onCreated,
@@ -225,14 +232,14 @@ function CreateProjectDrawer({
   const [isResourceIdValid, setIsResourceIdValid] = useState(false);
   const resourceIdFieldRef = useRef<ResourceIdFieldRef>(null);
 
-  const closeDrawer = useCallback(() => {
-    onClose();
+  // Reset form state whenever the Sheet is (re)opened. Sheet is always
+  // mounted so useState initializers only run on first mount.
+  useEffect(() => {
+    if (!open) return;
     setTitle("");
     setResourceId("");
     setIsCreating(false);
-  }, [onClose]);
-
-  useEscapeKey(closeDrawer, open);
+  }, [open]);
 
   const allowCreate = useMemo(() => {
     if (!title.trim()) return false;
@@ -257,7 +264,7 @@ function CreateProjectDrawer({
       });
 
       onCreated(created);
-      closeDrawer();
+      onClose();
     } catch (error) {
       if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
         resourceIdFieldRef.current?.addValidationError(
@@ -277,7 +284,7 @@ function CreateProjectDrawer({
     projectStore,
     t,
     onCreated,
-    closeDrawer,
+    onClose,
   ]);
 
   const validate = useCallback(
@@ -302,23 +309,14 @@ function CreateProjectDrawer({
     [projectStore, t]
   );
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={closeDrawer} />
-      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">{t("common.project")}</h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={closeDrawer}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("common.project")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             <div>
               <label className="text-base leading-6 font-medium text-control">
@@ -350,18 +348,18 @@ function CreateProjectDrawer({
               <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-3 px-6 py-4 border-t border-control-border">
-          <Button variant="ghost" onClick={closeDrawer}>
+        <SheetFooter>
+          <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowCreate} onClick={handleCreate}>
             {t("common.create")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1196,7 +1194,7 @@ export function ProjectsPage() {
       </div>
 
       {/* Create drawer */}
-      <CreateProjectDrawer
+      <CreateProjectSheet
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         onCreated={handleCreated}

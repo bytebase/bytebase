@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
@@ -9,10 +9,18 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import {
   ensureServiceAccountFullName,
   pushNotification,
@@ -162,11 +170,39 @@ function ServiceAccountTable({
           ) : (
             users.map((user, i) => {
               const isDeleted = user.state === State.DELETED;
+              const canOpenDetail =
+                !!onUserSelected &&
+                (project
+                  ? hasProjectPermissionV2(project, "bb.serviceAccounts.get")
+                  : hasWorkspacePermissionV2("bb.serviceAccounts.get"));
 
               return (
                 <tr
                   key={user.name}
-                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-control-bg" : ""}`}
+                  className={cn(
+                    "border-b last:border-b-0",
+                    i % 2 === 1 && "bg-control-bg/50",
+                    canOpenDetail &&
+                      "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+                  )}
+                  tabIndex={canOpenDetail ? 0 : undefined}
+                  role={canOpenDetail ? "button" : undefined}
+                  aria-label={
+                    canOpenDetail ? user.title || user.email : undefined
+                  }
+                  onClick={
+                    canOpenDetail ? () => onUserSelected(user) : undefined
+                  }
+                  onKeyDown={
+                    canOpenDetail
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onUserSelected(user);
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {/* Account column */}
                   <td className="px-4 py-2">
@@ -178,7 +214,7 @@ function ServiceAccountTable({
                             className={
                               isDeleted
                                 ? "line-through text-control-light"
-                                : "font-medium text-accent"
+                                : "font-medium text-main"
                             }
                           >
                             {user.title}
@@ -253,55 +289,37 @@ function ServiceAccountTable({
                     </div>
                   </td>
 
-                  {/* Operations column */}
+                  {/* Operations column — destructive/secondary actions only.
+                      The row itself is clickable to open the detail sheet. */}
                   <td className="px-4 py-2">
                     <div className="flex justify-end gap-x-1">
-                      {!isDeleted && (
-                        <>
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.serviceAccounts.delete"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.serviceAccounts.delete"
-                              )) && (
-                            <Tooltip
-                              content={t(
-                                "settings.members.action.deactivate-confirm-title"
-                              )}
+                      {!isDeleted &&
+                        (project
+                          ? hasProjectPermissionV2(
+                              project,
+                              "bb.serviceAccounts.delete"
+                            )
+                          : hasWorkspacePermissionV2(
+                              "bb.serviceAccounts.delete"
+                            )) && (
+                          <Tooltip
+                            content={t(
+                              "settings.members.action.deactivate-confirm-title"
+                            )}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-error hover:text-error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeactivate(user);
+                              }}
                             >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-error hover:text-error"
-                                onClick={() => handleDeactivate(user)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
-                          )}
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.serviceAccounts.get"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.serviceAccounts.get"
-                              )) && (
-                            <Tooltip content={t("common.edit")}>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => onUserSelected?.(user)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
-                          )}
-                        </>
-                      )}
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </Tooltip>
+                        )}
                       {isDeleted &&
                         (project
                           ? hasProjectPermissionV2(
@@ -320,7 +338,10 @@ function ServiceAccountTable({
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              onClick={() => handleRestore(user)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestore(user);
+                              }}
                             >
                               <Undo2 className="h-4 w-4" />
                             </Button>
@@ -342,19 +363,47 @@ function ServiceAccountTable({
 // CreateServiceAccountDrawer
 // ============================================================
 
-function CreateServiceAccountDrawer({
-  serviceAccount,
-  project,
-  onClose,
-  onCreated,
-  onUpdated,
-}: {
+interface CreateServiceAccountSheetProps {
+  open: boolean;
   serviceAccount: ServiceAccount | undefined;
   project?: string;
   onClose: () => void;
   onCreated: (sa: ServiceAccount) => void;
   onUpdated: (sa: ServiceAccount) => void;
-}) {
+}
+
+function CreateServiceAccountSheet(props: CreateServiceAccountSheetProps) {
+  const { open, serviceAccount, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation.
+  const openEntityRef = useRef(serviceAccount);
+  if (open) {
+    openEntityRef.current = serviceAccount;
+  }
+  const stableServiceAccount = openEntityRef.current;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <ServiceAccountForm
+          key={stableServiceAccount?.name ?? "new"}
+          serviceAccount={stableServiceAccount}
+          project={props.project}
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          onUpdated={props.onUpdated}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ServiceAccountForm({
+  serviceAccount,
+  project,
+  onClose,
+  onCreated,
+  onUpdated,
+}: Omit<CreateServiceAccountSheetProps, "open">) {
   const { t } = useTranslation();
   const serviceAccountStore = useServiceAccountStore();
   const workspaceStore = useWorkspaceV1Store();
@@ -373,16 +422,29 @@ function CreateServiceAccountDrawer({
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
   const emailSuffix = getServiceAccountSuffix();
 
-  const [title, setTitle] = useState(serviceAccount?.title ?? "");
-  const [emailPrefix, setEmailPrefix] = useState(
-    serviceAccount?.email ? serviceAccount.email.split("@")[0] : ""
-  );
+  // Capture initial values on mount — parent keys by serviceAccount so
+  // these reflect the latest props.
+  const initialTitle = serviceAccount?.title ?? "";
+  const initialEmailPrefix = serviceAccount?.email
+    ? serviceAccount.email.split("@")[0]
+    : "";
+
+  const [title, setTitle] = useState(initialTitle);
+  const [emailPrefix, setEmailPrefix] = useState(initialEmailPrefix);
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
 
-  useEscapeKey(true, onClose);
+  const isFormValid = isEditMode ? true : emailPrefix.trim().length > 0;
 
-  const allowConfirm = isEditMode ? true : emailPrefix.trim().length > 0;
+  // Dirty tracking — Update button disabled unless something changed.
+  const isDirty = useMemo(() => {
+    if (!isEditMode) return true;
+    if (title !== initialTitle) return true;
+    // Roles are not part of edit mode for service accounts (create-only).
+    return false;
+  }, [isEditMode, title, initialTitle]);
+
+  const allowConfirm = isFormValid && isDirty;
 
   const requiredPermission = isEditMode
     ? "bb.serviceAccounts.update"
@@ -495,102 +557,84 @@ function CreateServiceAccountDrawer({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
+      <SheetHeader>
+        <SheetTitle>{t("settings.members.service-account")}</SheetTitle>
+      </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("settings.members.service-account")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <div className="flex flex-col gap-y-6">
-            {/* Name */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.name")}
-              </label>
-              <Input
-                autoComplete="off"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Foo"
-                maxLength={200}
-              />
-            </div>
-
-            {/* Email */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.email")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
-              {isEditMode ? (
-                <Input value={serviceAccount?.email ?? ""} disabled />
-              ) : (
-                <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    value={emailPrefix}
-                    onChange={(e) => setEmailPrefix(e.target.value)}
-                    className="flex-1 h-9 px-3 py-1 text-sm bg-transparent border-none outline-none ring-0 shadow-none focus:border-none focus:outline-none focus:ring-0 focus:shadow-none"
-                  />
-                  <span className="px-2 py-1 text-sm text-control-light bg-control-bg whitespace-nowrap">
-                    @{emailSuffix}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Roles (create mode only) */}
-            {!isEditMode &&
-              (projectEntity
-                ? hasProjectPermissionV2(
-                    projectEntity,
-                    "bb.projects.setIamPolicy"
-                  )
-                : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
-                <div className="flex flex-col gap-y-2">
-                  <label className="block text-sm font-medium text-control">
-                    {t("settings.members.table.roles")}
-                  </label>
-                  <RoleSelect
-                    value={roles}
-                    onChange={setRoles}
-                    disabled={false}
-                    scope={project ? "project" : undefined}
-                  />
-                </div>
-              )}
+      <SheetBody>
+        <div className="flex flex-col gap-y-6">
+          {/* Name */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.name")}
+            </label>
+            <Input
+              autoComplete="off"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Foo"
+              maxLength={200}
+            />
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!allowConfirm || !hasPermission || isRequesting}
-            onClick={handleSubmit}
-          >
-            {isEditMode ? t("common.update") : t("common.create")}
-          </Button>
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            {isEditMode ? (
+              <Input value={serviceAccount?.email ?? ""} disabled />
+            ) : (
+              <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  value={emailPrefix}
+                  onChange={(e) => setEmailPrefix(e.target.value)}
+                  className="flex-1 h-9 px-3 py-1 text-sm bg-transparent border-none outline-none ring-0 shadow-none focus:border-none focus:outline-none focus:ring-0 focus:shadow-none"
+                />
+                <span className="px-2 py-1 text-sm text-control-light bg-control-bg whitespace-nowrap">
+                  @{emailSuffix}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Roles (create mode only) */}
+          {!isEditMode &&
+            (projectEntity
+              ? hasProjectPermissionV2(
+                  projectEntity,
+                  "bb.projects.setIamPolicy"
+                )
+              : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
+              <div className="flex flex-col gap-y-2">
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.members.table.roles")}
+                </label>
+                <RoleSelect
+                  value={roles}
+                  onChange={setRoles}
+                  disabled={false}
+                  scope={project ? "project" : undefined}
+                />
+              </div>
+            )}
         </div>
-      </div>
+      </SheetBody>
+
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          disabled={!allowConfirm || !hasPermission || isRequesting}
+          onClick={handleSubmit}
+        >
+          {isEditMode ? t("common.update") : t("common.create")}
+        </Button>
+      </SheetFooter>
     </>
   );
 }
@@ -794,18 +838,17 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         )}
       </div>
 
-      {showDrawer && (
-        <CreateServiceAccountDrawer
-          serviceAccount={editingSa}
-          project={projectName}
-          onClose={() => {
-            setShowDrawer(false);
-            setEditingSa(undefined);
-          }}
-          onCreated={handleCreated}
-          onUpdated={handleUpdated}
-        />
-      )}
+      <CreateServiceAccountSheet
+        open={showDrawer}
+        serviceAccount={editingSa}
+        project={projectName}
+        onClose={() => {
+          setShowDrawer(false);
+          setEditingSa(undefined);
+        }}
+        onCreated={handleCreated}
+        onUpdated={handleUpdated}
+      />
     </div>
   );
 }
