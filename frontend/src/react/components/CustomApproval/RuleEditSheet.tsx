@@ -13,12 +13,15 @@ import {
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { Textarea } from "@/react/components/ui/textarea";
 import type { LocalApprovalRule } from "@/types";
@@ -37,7 +40,7 @@ import {
   getApprovalOptionConfigMap,
 } from "./utils";
 
-interface RuleEditDialogProps {
+interface RuleEditSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
@@ -50,7 +53,7 @@ interface RuleEditDialogProps {
   onSave: (rule: Omit<LocalApprovalRule, "uid"> & { uid?: string }) => void;
 }
 
-export function RuleEditDialog({
+export function RuleEditSheet({
   open,
   onOpenChange,
   mode,
@@ -61,7 +64,7 @@ export function RuleEditDialog({
   hasFeature,
   onShowFeatureModal,
   onSave,
-}: RuleEditDialogProps) {
+}: RuleEditSheetProps) {
   const { t } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -163,17 +166,13 @@ export function RuleEditDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col overflow-hidden lg:max-w-[75vw] 2xl:max-w-[55vw]">
-        {/* Header */}
-        <div className="border-b px-6 py-4">
-          <DialogTitle className="text-lg font-medium text-control">
-            {t("custom-approval.rule.self")}
-          </DialogTitle>
-        </div>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent width="wide">
+        <SheetHeader>
+          <SheetTitle>{t("custom-approval.rule.self")}</SheetTitle>
+        </SheetHeader>
 
-        {/* Body */}
-        <div className="flex flex-1 flex-col gap-y-4 overflow-y-auto px-6 py-4">
+        <SheetBody className="gap-y-4">
           {/* Fallback hint */}
           {isFallback && (
             <Alert variant="warning">
@@ -281,18 +280,17 @@ export function RuleEditDialog({
               </>
             )}
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <footer className="flex items-center justify-end gap-x-2 border-t px-6 py-4">
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowSave || !allowAdmin} onClick={handleSave}>
             {mode === "create" ? t("common.create") : t("common.update")}
           </Button>
-        </footer>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
