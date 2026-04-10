@@ -67,13 +67,15 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	// Generate minimal DDL from metadata to load into the catalog.
-	// We build DDL inline (rather than calling schema.GetDatabaseDefinition)
-	// to avoid a circular import: schema/mysql imports parser/mysql.
-	ddl := buildMinimalDDLMySQL(meta.GetProto(), dbName)
-	if ddl != "" {
-		if _, err := e.cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-			return errors.Wrap(err, "failed to load schema DDL into catalog")
+	if e.gCtx.GetDatabaseDefinitionFunc != nil {
+		schemaDDL, err := e.gCtx.GetDatabaseDefinitionFunc(meta.GetProto())
+		if err != nil {
+			return errors.Wrap(err, "failed to generate schema DDL")
+		}
+		if schemaDDL != "" {
+			if _, err := e.cat.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+				return errors.Wrap(err, "failed to load schema DDL into catalog")
+			}
 		}
 	}
 
@@ -782,41 +784,6 @@ func buildPlainFieldMaskMySQL(selStmt *ast.SelectStmt, q *catalog.Query) []bool 
 
 // buildMinimalDDLMySQL generates CREATE TABLE / CREATE VIEW statements
 // from metadata, sufficient for omni's AnalyzeSelectStmt to resolve columns.
-// buildMinimalDDLMySQL generates CREATE TABLE / CREATE VIEW statements from
-// metadata proto, sufficient for omni's AnalyzeSelectStmt to resolve columns.
-// Built inline to avoid circular import (schema/mysql imports parser/mysql).
-func buildMinimalDDLMySQL(meta *storepb.DatabaseSchemaMetadata, dbName string) string {
-	if meta == nil {
-		return ""
-	}
-	var b strings.Builder
-	for _, s := range meta.Schemas {
-		for _, t := range s.Tables {
-			fmt.Fprintf(&b, "CREATE TABLE `%s`.`%s` (\n", dbName, t.Name)
-			for i, c := range t.Columns {
-				colType := c.Type
-				if colType == "" {
-					colType = "text"
-				}
-				fmt.Fprintf(&b, "  `%s` %s", c.Name, colType)
-				if i < len(t.Columns)-1 {
-					b.WriteString(",")
-				}
-				b.WriteString("\n")
-			}
-			b.WriteString(");\n")
-		}
-		for _, v := range s.Views {
-			if v.Definition == "" {
-				continue
-			}
-			def := strings.TrimSuffix(strings.TrimSpace(v.Definition), ";")
-			fmt.Fprintf(&b, "CREATE VIEW `%s`.`%s` AS %s;\n", dbName, v.Name, def)
-		}
-	}
-	return b.String()
-}
-
 func countStarColumnsFromRTEMySQL(q *catalog.Query, targets []*catalog.TargetEntryQ, startPos int, tableName string) int {
 	if startPos >= len(targets) {
 		return 0
