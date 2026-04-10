@@ -11,7 +11,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -483,7 +482,7 @@ func extractViewDependencies(schemaMetadata *storepb.DatabaseSchemaMetadata) {
 
 func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
 	queryStatement := strings.TrimSpace(viewDef)
-	span, err := pgparser.GetQuerySpan(
+	spans, err := base.GetQuerySpan(
 		context.Background(),
 		base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
@@ -494,14 +493,16 @@ func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *
 				return []string{}, nil
 			},
 		},
-		base.Statement{Text: queryStatement},
+		storepb.Engine_POSTGRES,
+		[]base.Statement{{Text: queryStatement}},
 		"",
 		schemaName,
 		false,
 	)
-	if err != nil {
+	if err != nil || len(spans) == 0 {
 		return []*storepb.DependencyColumn{}
 	}
+	span := spans[0]
 
 	dependencyMap := make(map[string]*storepb.DependencyColumn)
 	for sourceColumn := range span.SourceColumns {

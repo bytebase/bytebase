@@ -133,11 +133,8 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 				Views: []*storepb.ViewMetadata{
 					{
-						Name: "v1",
-						Definition: `CREATE VIEW v1 AS
-						SELECT *
-						FROM t1
-						`,
+						Name:       "v1",
+						Definition: `SELECT * FROM t1`,
 					},
 				},
 				ExternalTables: []*storepb.ExternalTableMetadata{
@@ -163,10 +160,20 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 				Sequences: []*storepb.SequenceMetadata{
 					{
-						Name: "seq1",
+						Name:      "seq1",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
 					},
 					{
-						Name: "user_id_seq",
+						Name:      "user_id_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
 					},
 				},
 			},
@@ -202,7 +209,12 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 				Sequences: []*storepb.SequenceMetadata{
 					{
-						Name: "order_id_seq",
+						Name:      "order_id_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
 					},
 				},
 			},

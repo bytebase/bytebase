@@ -24,13 +24,16 @@
               "name":  "t1",
               "columns":  [
                 {
-                  "name":  "a"
+                  "name":  "a",
+                  "type": "text"
                 },
                 {
-                  "name":  "b"
+                  "name":  "b",
+                  "type": "text"
                 },
                 {
-                  "name": "c"
+                  "name": "c",
+                  "type": "text"
                 }
               ]
             },
@@ -38,13 +41,16 @@
               "name":  "t2",
               "columns":  [
                 {
-                  "name":  "c"
+                  "name":  "c",
+                  "type": "text"
                 },
                 {
-                  "name":  "d"
+                  "name":  "d",
+                  "type": "text"
                 },
                 {
-                  "name":  "e"
+                  "name":  "e",
+                  "type": "text"
                 }
               ]
             }
@@ -77,13 +83,16 @@
               "name":  "t1",
               "columns":  [
                 {
-                  "name":  "a"
+                  "name":  "a",
+                  "type": "text"
                 },
                 {
-                  "name":  "b"
+                  "name":  "b",
+                  "type": "text"
                 },
                 {
-                  "name": "c"
+                  "name": "c",
+                  "type": "text"
                 }
               ]
             },
@@ -91,13 +100,16 @@
               "name":  "t2",
               "columns":  [
                 {
-                  "name":  "c"
+                  "name":  "c",
+                  "type": "text"
                 },
                 {
-                  "name":  "d"
+                  "name":  "d",
+                  "type": "text"
                 },
                 {
-                  "name":  "e"
+                  "name":  "e",
+                  "type": "text"
                 }
               ]
             }
@@ -130,13 +142,16 @@
               "name":  "t1",
               "columns":  [
                 {
-                  "name":  "a"
+                  "name":  "a",
+                  "type": "text"
                 },
                 {
-                  "name":  "b"
+                  "name":  "b",
+                  "type": "text"
                 },
                 {
-                  "name": "c"
+                  "name": "c",
+                  "type": "text"
                 }
               ]
             },
@@ -144,13 +159,16 @@
               "name":  "t2",
               "columns":  [
                 {
-                  "name":  "c"
+                  "name":  "c",
+                  "type": "text"
                 },
                 {
-                  "name":  "d"
+                  "name":  "d",
+                  "type": "text"
                 },
                 {
-                  "name":  "e"
+                  "name":  "e",
+                  "type": "text"
                 }
               ]
             }
@@ -183,13 +201,16 @@
               "name":  "t1",
               "columns":  [
                 {
-                  "name":  "a"
+                  "name":  "a",
+                  "type": "text"
                 },
                 {
-                  "name":  "b"
+                  "name":  "b",
+                  "type": "text"
                 },
                 {
-                  "name": "c"
+                  "name": "c",
+                  "type": "text"
                 }
               ]
             },
@@ -197,13 +218,16 @@
               "name":  "t2",
               "columns":  [
                 {
-                  "name":  "c"
+                  "name":  "c",
+                  "type": "text"
                 },
                 {
-                  "name":  "d"
+                  "name":  "d",
+                  "type": "text"
                 },
                 {
-                  "name":  "e"
+                  "name":  "e",
+                  "type": "text"
                 }
               ]
             }
@@ -240,8 +264,8 @@
             {
               "name":  "t",
               "columns":  [
-                {"name":  "a"},
-                {"name":  "b"}
+                {"name": "a", "type": "text"},
+                {"name": "b", "type": "text"}
               ]
             }
           ]
@@ -266,7 +290,7 @@
             {
               "name":  "t",
               "columns":  [
-                {"name":  "id"}
+                {"name": "id", "type": "text"}
               ]
             }
           ]
