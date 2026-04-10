@@ -133,6 +133,7 @@ func (r *statementDisallowMixDMLOmniRule) OnStatement(node ast.Node) {
 	case *ast.CreateTableStmt,
 		*ast.AlterTableStmt,
 		*ast.DropStmt,
+		*ast.TruncateStmt,
 		*ast.CreateIndexStmt,
 		*ast.CreateViewStmt,
 		*ast.CreateFunctionStmt,
@@ -141,9 +142,12 @@ func (r *statementDisallowMixDMLOmniRule) OnStatement(node ast.Node) {
 		*ast.CreateDatabaseStmt,
 		*ast.CreateTriggerStmt,
 		*ast.CreateTypeStmt,
+		*ast.CreateSequenceStmt,
 		*ast.AlterIndexStmt,
 		*ast.AlterSchemaStmt,
-		*ast.AlterDatabaseStmt:
+		*ast.AlterDatabaseStmt,
+		*ast.AlterSequenceStmt,
+		*ast.RenameStmt:
 		r.hasDDL = true
 	default:
 	}

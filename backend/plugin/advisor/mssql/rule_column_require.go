@@ -120,15 +120,28 @@ func (r *columnRequireOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
 			continue
 		}
 		if action.Type == ast.ATDropColumn {
-			colName := strings.ToLower(action.ColName)
-			if _, ok := r.requireColumns[colName]; ok {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.NoRequiredColumn.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("Table %s missing required column \"%s\"", tableName, colName),
-					StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
-				})
+			// Collect all dropped column names from both ColName and Names list.
+			var colNames []string
+			if action.ColName != "" {
+				colNames = append(colNames, strings.ToLower(action.ColName))
+			}
+			if action.Names != nil {
+				for _, nameItem := range action.Names.Items {
+					if ref, ok := nameItem.(*ast.TableRef); ok && ref.Object != "" {
+						colNames = append(colNames, strings.ToLower(ref.Object))
+					}
+				}
+			}
+			for _, colName := range colNames {
+				if _, ok := r.requireColumns[colName]; ok {
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          code.NoRequiredColumn.Int32(),
+						Title:         r.Title,
+						Content:       fmt.Sprintf("Table %s missing required column \"%s\"", tableName, colName),
+						StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
+					})
+				}
 			}
 		}
 	}
