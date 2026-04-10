@@ -126,7 +126,14 @@ async function revokeAllExemptions(): Promise<void> {
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
+
+  // Grant a temporary exemption to read TRUE unmasked values during discovery.
+  // Demo data has `first_name` with classification-based masking, so without
+  // an exemption the API returns masked values.
+  await grantExemption("discovery temporary");
   maskingData = await discoverMaskingData(env);
+  await revokeAllExemptions();
+
   await configureMasking(env, maskingData);
 
   // Create a shared browser context/page for all tests
