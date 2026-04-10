@@ -83,6 +83,7 @@ import {
   useProjectIamPolicyStore,
   useProjectV1Store,
   useRoleStore,
+  useSettingV1Store,
   useSubscriptionV1Store,
   useWorkspaceV1Store,
 } from "@/store";
@@ -91,6 +92,7 @@ import {
   ALL_USERS_USER_EMAIL,
   type DatabaseResource,
   isDefaultProject,
+  PresetRoleType,
   userBindingPrefix,
 } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -1679,6 +1681,20 @@ function RequestRoleDialog({
   const [environments, setEnvironments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  const settingStore = useSettingV1Store();
+
+  // Workspace-configured maximum role expiration, in days. Matches the old
+  // Vue ExpirationSelector: PROJECT_OWNER grants are exempted (project
+  // owners can request unbounded expirations), otherwise the workspace cap
+  // applies. Returns undefined when no cap is set.
+  const maximumRoleExpirationDays = useVueState(() => {
+    if (role === PresetRoleType.PROJECT_OWNER) return undefined;
+    const seconds =
+      settingStore.workspaceProfile.maximumRoleExpiration?.seconds;
+    if (!seconds) return undefined;
+    return Math.floor(Number(seconds) / (60 * 60 * 24));
+  });
+
   // ExprEditor factor/option config — mirrors the old Vue
   // DatabaseResourceForm config for role-grant requests.
   const factorList = useMemo<Factor[]>(
@@ -1715,10 +1731,23 @@ function RequestRoleDialog({
   // can't silently pick a time earlier today and submit a zero-duration
   // role grant.
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
+  const maxDatetime = maximumRoleExpirationDays
+    ? dayjs().add(maximumRoleExpirationDays, "days").format("YYYY-MM-DDTHH:mm")
+    : undefined;
 
   const expirationIsInPast =
     !!expirationTimestamp &&
     dayjs(expirationTimestamp).unix() <= dayjs().unix();
+
+  // Workspace policy may cap role expiration; block submit when the picked
+  // timestamp would exceed that cap (matches Vue ExpirationSelector which
+  // disables over-cap dates in its picker).
+  const expirationExceedsMax =
+    !!expirationTimestamp &&
+    !!maximumRoleExpirationDays &&
+    dayjs(expirationTimestamp).isAfter(
+      dayjs().add(maximumRoleExpirationDays, "days")
+    );
 
   const labelsMisconfigured =
     project.forceIssueLabels && project.issueLabels.length === 0;
@@ -1745,6 +1774,7 @@ function RequestRoleDialog({
     !!role &&
     (!reasonRequired || reason.trim().length > 0) &&
     !expirationIsInPast &&
+    !expirationExceedsMax &&
     !labelsMisconfigured &&
     databaseScopeComplete &&
     (!project.forceIssueLabels || labels.length > 0);
@@ -1789,6 +1819,19 @@ function RequestRoleDialog({
         const [exprString] = await batchConvertParsedExprToCELString([
           parsedExpr,
         ]);
+        // `batchConvertParsedExprToCELString` swallows deparse errors and
+        // returns an empty string on failure. Submitting anyway would
+        // silently drop the database scope filter and produce a broader
+        // grant than the user requested — refuse instead and surface an
+        // error so the user can retry.
+        if (!exprString || !exprString.trim()) {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("project.members.request-role.failed-to-build-expression"),
+          });
+          return;
+        }
         const extraParts = stringifyConditionExpression({
           expirationTimestampInMS,
           environments: scopedEnvironments,
@@ -1991,10 +2034,25 @@ function RequestRoleDialog({
               value={expirationTimestamp}
               onChange={setExpirationTimestamp}
               minDate={minDatetime}
+              maxDate={maxDatetime}
             />
+            {maximumRoleExpirationDays !== undefined && (
+              <p className="text-xs text-control-light">
+                {t("project.members.request-role.max-expiration-hint", {
+                  days: maximumRoleExpirationDays,
+                })}
+              </p>
+            )}
             {expirationIsInPast && (
               <p className="text-xs text-error">
                 {t("project.members.request-role.expiration-must-be-future")}
+              </p>
+            )}
+            {expirationExceedsMax && (
+              <p className="text-xs text-error">
+                {t("project.members.request-role.expiration-exceeds-max", {
+                  days: maximumRoleExpirationDays,
+                })}
               </p>
             )}
           </div>

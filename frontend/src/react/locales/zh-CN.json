@@ -1219,11 +1219,14 @@
       "edit-member": "编辑成员 - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "expiration-exceeds-max": "过期时间不能超过工作空间上限 {{days}} 天。",
         "expiration-must-be-future": "过期时间必须是将来的时间。",
+        "failed-to-build-expression": "构建 CEL 表达式失败，请重试。",
         "labels-misconfigured": {
           "description": "此项目要求选择工单标签，但尚未配置任何标签。请联系项目所有者添加标签后再申请角色。",
           "title": "项目要求工单标签但未配置"
-        }
+        },
+        "max-expiration-hint": "工作空间策略允许的最大值：{{days}} 天。"
       },
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },

@@ -1219,11 +1219,14 @@
       "edit-member": "Edit member - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
         "expiration-must-be-future": "Expiration must be in the future.",
+        "failed-to-build-expression": "Failed to build CEL expression. Please try again.",
         "labels-misconfigured": {
           "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before requesting a role.",
           "title": "Issue labels required but not configured"
-        }
+        },
+        "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },

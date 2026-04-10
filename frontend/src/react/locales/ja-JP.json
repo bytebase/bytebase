@@ -1219,11 +1219,14 @@
       "edit-member": "メンバー編集 - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",
         "expiration-must-be-future": "有効期限は将来の時刻を指定してください。",
+        "failed-to-build-expression": "CEL 式の構築に失敗しました。もう一度お試しください。",
         "labels-misconfigured": {
           "description": "このプロジェクトはイシューラベルを必須にしていますが、ラベルが設定されていません。ロールをリクエストする前に、プロジェクトのオーナーに連絡してラベルを追加してください。",
           "title": "イシューラベルが必須ですが設定されていません"
-        }
+        },
+        "max-expiration-hint": "ワークスペースポリシーで許可される最大値：{{days}} 日。"
       },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
