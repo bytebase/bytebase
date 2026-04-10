@@ -2,8 +2,7 @@ package pg
 
 import (
 	"context"
-
-	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,8 +11,10 @@ import (
 	"github.com/bytebase/omni/pg/catalog"
 	omniparser "github.com/bytebase/omni/pg/parser"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -79,9 +80,9 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 }
 
 // initCatalog initializes the omni catalog from the database metadata.
-// It generates minimal DDL from the metadata proto and loads it into the catalog.
-// We generate DDL directly here instead of using schema.GetDatabaseDefinition
-// to avoid circular imports (schema/pg imports parser/pg).
+// It uses schemapg.GetDatabaseDefinition to produce complete DDL (including
+// CREATE TYPE, CREATE SEQUENCE, dependency ordering, etc.), the same
+// approach used by WalkThroughOmni.
 func (e *omniQuerySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil {
@@ -95,9 +96,21 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	ddl := buildMinimalDDL(meta.GetProto())
+	ddl, err := schema.GetDatabaseDefinition(
+		storepb.Engine_POSTGRES,
+		schema.GetDefinitionContext{},
+		meta.GetProto(),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to generate schema DDL for catalog init")
+	}
 	if ddl != "" {
 		if _, err := e.cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+			slog.Error("failed to parse schema DDL for catalog init",
+				slog.String("database", e.defaultDatabase),
+				log.BBError(err),
+				slog.String("context", ddlErrorContext(ddl, err)),
+			)
 			return errors.Wrapf(err, "failed to load schema DDL into catalog")
 		}
 	}
@@ -117,77 +130,27 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 	return nil
 }
 
-// buildMinimalDDL generates CREATE SCHEMA / CREATE TABLE / CREATE VIEW / CREATE FUNCTION
-// statements from metadata, sufficient for omni's AnalyzeSelectStmt to resolve columns.
-func buildMinimalDDL(meta *storepb.DatabaseSchemaMetadata) string {
-	if meta == nil {
-		return ""
+// ddlErrorContext extracts a snippet around the error position from the DDL.
+// If err is a *omniparser.ParseError with a position, it shows ~200 bytes
+// around that position. Otherwise returns the first 500 bytes.
+func ddlErrorContext(ddl string, err error) string {
+	var parseErr *omniparser.ParseError
+	if errors.As(err, &parseErr) && parseErr.Position > 0 {
+		pos := parseErr.Position
+		start := pos - 100
+		if start < 0 {
+			start = 0
+		}
+		end := pos + 100
+		if end > len(ddl) {
+			end = len(ddl)
+		}
+		return ddl[start:end]
 	}
-	var b strings.Builder
-	for _, s := range meta.Schemas {
-		schemaName := s.Name
-		if schemaName != "public" && schemaName != "pg_catalog" {
-			fmt.Fprintf(&b, "CREATE SCHEMA IF NOT EXISTS %s;\n", quoteIdentifier(schemaName))
-		}
-		for _, t := range s.Tables {
-			buildCreateTable(&b, schemaName, t)
-		}
-		for _, v := range s.Views {
-			buildCreateView(&b, schemaName, v)
-		}
-		for _, v := range s.MaterializedViews {
-			buildCreateMaterializedView(&b, schemaName, v)
-		}
-		for _, f := range s.Functions {
-			if f.Definition != "" {
-				// Load the function with a stubbed body to avoid type validation
-				// failures. The catalog needs the function signature (name, params,
-				// return type) to resolve SELECT * FROM func(), but the actual body
-				// is analyzed separately via analyzeFunctionBody. Stubbing the body
-				// avoids errors when table column types default to text but the
-				// function declares int parameters.
-				stubbed := stubFunctionBody(f.Definition)
-				fmt.Fprintf(&b, "%s;\n", strings.TrimSuffix(strings.TrimSpace(stubbed), ";"))
-			}
-		}
+	if len(ddl) > 500 {
+		return ddl[:500] + "...(truncated)"
 	}
-	return b.String()
-}
-
-func buildCreateTable(b *strings.Builder, schema string, t *storepb.TableMetadata) {
-	fmt.Fprintf(b, "CREATE TABLE %s.%s (\n", quoteIdentifier(schema), quoteIdentifier(t.Name))
-	for i, c := range t.Columns {
-		colType := c.Type
-		if colType == "" {
-			colType = "text"
-		}
-		fmt.Fprintf(b, "  %s %s", quoteIdentifier(c.Name), colType)
-		if i < len(t.Columns)-1 {
-			b.WriteString(",")
-		}
-		b.WriteString("\n")
-	}
-	b.WriteString(");\n")
-}
-
-func buildCreateView(b *strings.Builder, schema string, v *storepb.ViewMetadata) {
-	if v.Definition == "" {
-		return
-	}
-	def := strings.TrimSuffix(strings.TrimSpace(v.Definition), ";")
-	fmt.Fprintf(b, "CREATE VIEW %s.%s AS %s;\n", quoteIdentifier(schema), quoteIdentifier(v.Name), def)
-}
-
-func buildCreateMaterializedView(b *strings.Builder, schema string, v *storepb.MaterializedViewMetadata) {
-	if v.Definition == "" {
-		return
-	}
-	def := strings.TrimSuffix(strings.TrimSpace(v.Definition), ";")
-	fmt.Fprintf(b, "CREATE MATERIALIZED VIEW %s.%s AS %s;\n", quoteIdentifier(schema), quoteIdentifier(v.Name), def)
-}
-
-func quoteIdentifier(name string) string {
-	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+	return ddl
 }
 
 // extractFuncBodyFromDef extracts the dollar-quoted function body from a
@@ -226,39 +189,6 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 		}
 	}
 	return "", 0, 0
-}
-
-// stubFunctionBody replaces the body of a CREATE FUNCTION statement with a
-// minimal stub. This avoids catalog type validation failures when table column
-// types are unknown (defaulting to text) while the function declares specific
-// return types. The function signature is preserved so the catalog can resolve
-// function calls.
-func stubFunctionBody(definition string) string {
-	tag, bodyStart, bodyEnd := findDollarQuotedBody(definition)
-	if tag == "" {
-		return definition
-	}
-
-	// Determine language for appropriate stub body.
-	upper := strings.ToUpper(definition)
-	lang := ""
-	if langIdx := strings.Index(upper, "LANGUAGE"); langIdx >= 0 {
-		rest := strings.TrimSpace(definition[langIdx+8:])
-		parts := strings.Fields(rest)
-		if len(parts) > 0 {
-			lang = strings.ToLower(strings.TrimRight(parts[0], ";"))
-		}
-	}
-
-	var stubBody string
-	switch lang {
-	case "plpgsql":
-		stubBody = " BEGIN RETURN; END; "
-	default:
-		stubBody = " SELECT NULL "
-	}
-
-	return definition[:bodyStart] + stubBody + definition[bodyEnd-len(tag):]
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.

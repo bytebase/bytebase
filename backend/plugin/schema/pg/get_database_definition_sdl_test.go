@@ -7,8 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	omnipg "github.com/bytebase/omni/pg"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -1314,7 +1315,7 @@ CREATE TABLE "test"."table1" (
 			}
 
 			// Validate that the generated SQL can be parsed without errors using ANTLR parser
-			_, err = pgparser.ParsePg(result)
+			_, err = omnipg.Parse(result)
 			require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 		})
 	}
@@ -1370,7 +1371,7 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 	assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePg(result)
+	_, err = omnipg.Parse(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1479,7 +1480,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 	assert.Contains(t, result, `COMMENT ON INDEX "test_schema"."idx_users_email" IS 'Index on email column';`)
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePg(result)
+	_, err = omnipg.Parse(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1518,7 +1519,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
 	assert.Contains(t, result, `COMMENT ON COLUMN "public"."test_table"."id" IS 'Column with ''quoted'' text';`)
 
 	// Validate that the generated SQL can be parsed without errors using ANTLR parser
-	_, err = pgparser.ParsePg(result)
+	_, err = omnipg.Parse(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -1645,7 +1646,7 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 
 	// Validate that each file's SQL can be parsed
 	for fileName, content := range fileMap {
-		_, err := pgparser.ParsePg(content)
+		_, err := omnipg.Parse(content)
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
@@ -1945,7 +1946,7 @@ ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
 		"Column should use serial type because it references test_table_id_seq which is owned by it")
 
 	// Validate that the generated SQL can be parsed
-	_, err = pgparser.ParsePg(result)
+	_, err = omnipg.Parse(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -2006,7 +2007,7 @@ $$`,
 		"Procedure comment should NOT use COMMENT ON FUNCTION")
 
 	// Validate that the generated SQL can be parsed
-	_, err = pgparser.ParsePg(result)
+	_, err = omnipg.Parse(result)
 	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
 }
 
@@ -2103,7 +2104,7 @@ $$`,
 
 	// Validate that each file's SQL can be parsed
 	for fileName, content := range fileMap {
-		_, err := pgparser.ParsePg(content)
+		_, err := omnipg.Parse(content)
 		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
 	}
 }
