@@ -35,7 +35,7 @@ func ParseElasticsearchREST(text string) (*ParseResult, error) {
 // convertParseResult converts an omni ParseResult to a bytebase ParseResult.
 func convertParseResult(r *es.ParseResult) *ParseResult {
 	if r == nil {
-		return nil
+		return &ParseResult{}
 	}
 
 	var requests []*Request

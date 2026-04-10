@@ -1,6 +1,8 @@
 package elasticsearch
 
 import (
+	"strings"
+
 	es "github.com/bytebase/omni/elasticsearch"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,8 +19,11 @@ func SplitMultiSQL(statement string) ([]base.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	if omniStmts == nil {
-		return nil, nil
+	if len(omniStmts) == 0 {
+		if len(strings.TrimSpace(statement)) == 0 {
+			return nil, nil
+		}
+		return []base.Statement{{Text: statement}}, nil
 	}
 
 	var statements []base.Statement
