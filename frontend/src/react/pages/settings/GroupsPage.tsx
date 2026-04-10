@@ -8,7 +8,6 @@ import {
   Settings,
   Trash2,
   Users,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +19,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Table,
   TableBody,
   TableCell,
@@ -28,7 +35,6 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -426,12 +432,14 @@ function GroupRow({
 // CreateGroupDrawer
 // ============================================================
 
-function CreateGroupDrawer({
+function CreateGroupSheet({
+  open,
   group,
   onClose,
   onUpdated,
   onRemoved,
 }: {
+  open: boolean;
   group: Group | undefined;
   onClose: () => void;
   onUpdated: (group: Group) => void;
@@ -483,7 +491,48 @@ function CreateGroupDrawer({
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEscapeKey(true, onClose);
+  // Reset form state whenever the Sheet is (re)opened. Because the Sheet is
+  // always mounted (visibility controlled by `open`), the useState initializers
+  // only run on first mount — we need this effect to repopulate fields when the
+  // parent switches `group` between create mode and editing an existing row.
+  useEffect(() => {
+    if (!open) return;
+    setEmail(group?.email ?? "");
+    if (group?.email) {
+      const atIdx = group.email.indexOf("@");
+      if (atIdx >= 0) {
+        const domain = group.email.slice(atIdx + 1);
+        if (domainOptions.includes(domain)) {
+          setSelectedDomain(domain);
+        } else {
+          setSelectedDomain(domainOptions[0] ?? "");
+        }
+      } else {
+        setSelectedDomain(domainOptions[0] ?? "");
+      }
+    } else {
+      setSelectedDomain(domainOptions[0] ?? "");
+    }
+    setTitle(group?.title ?? "");
+    setDescription(group?.description ?? "");
+    if (group) {
+      setMembers(
+        group.members.map((m) =>
+          create(GroupMemberSchema, { member: m.member, role: m.role })
+        )
+      );
+    } else {
+      setMembers([
+        create(GroupMemberSchema, {
+          role: GroupMember_Role.OWNER,
+          member: currentUser.name,
+        }),
+      ]);
+    }
+    setIsRequesting(false);
+    setShowDeleteConfirm(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, group]);
 
   const isExternalGroup = !!group?.source;
 
@@ -671,26 +720,13 @@ function CreateGroupDrawer({
       hasWorkspacePermissionV2("bb.groups.delete"));
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("common.group")}</SheetTitle>
+        </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.group")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {isExternalGroup && (
               <Alert variant="info">
@@ -833,10 +869,9 @@ function CreateGroupDrawer({
               <p className="text-error text-sm">{errorMessage}</p>
             )}
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t">
+        <SheetFooter className="justify-between">
           <div>
             {canDelete && (
               <>
@@ -885,9 +920,9 @@ function CreateGroupDrawer({
               {isEditMode ? t("common.update") : t("common.create")}
             </Button>
           </div>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1081,23 +1116,22 @@ export function GroupsPage() {
         )}
       </ComponentPermissionGuard>
 
-      {showCreateGroupDrawer && (
-        <CreateGroupDrawer
-          group={editingGroup}
-          onClose={() => {
-            setShowCreateGroupDrawer(false);
-            setEditingGroup(undefined);
-          }}
-          onUpdated={(group) => {
-            groupPaged.updateCache([group]);
-          }}
-          onRemoved={(group) => {
-            groupPaged.removeCache(group);
-            setShowCreateGroupDrawer(false);
-            setEditingGroup(undefined);
-          }}
-        />
-      )}
+      <CreateGroupSheet
+        open={showCreateGroupDrawer}
+        group={editingGroup}
+        onClose={() => {
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+        onUpdated={(group) => {
+          groupPaged.updateCache([group]);
+        }}
+        onRemoved={(group) => {
+          groupPaged.removeCache(group);
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+      />
 
       <AADSyncSheet
         open={showAadSyncDrawer}

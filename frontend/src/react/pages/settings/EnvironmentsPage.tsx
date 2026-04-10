@@ -18,6 +18,14 @@ import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Tabs,
   TabsList,
   TabsPanel,
@@ -1014,10 +1022,12 @@ function EnvironmentDetail({
 // ============================================================
 // CreateDrawer
 // ============================================================
-function CreateDrawer({
+function CreateSheet({
+  open,
   onClose,
   onCreate,
 }: {
+  open: boolean;
   onClose: () => void;
   onCreate: (params: {
     environment: Partial<Environment>;
@@ -1025,7 +1035,6 @@ function CreateDrawer({
   }) => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
   const subscriptionStore = useSubscriptionV1Store();
   const environmentStore = useEnvironmentV1Store();
 
@@ -1041,6 +1050,18 @@ function CreateDrawer({
   );
   const [resourceId, setResourceId] = useState("");
   const [resourceIdValid, setResourceIdValid] = useState(false);
+
+  // Reset form state whenever the Sheet is (re)opened. Sheet is always mounted
+  // so useState initializers only run on first mount.
+  useEffect(() => {
+    if (!open) return;
+    setTitle("");
+    setColor("#4f46e5");
+    setIsProtected(false);
+    setRolloutPolicy(getEmptyRolloutPolicy("", PolicyResourceType.ENVIRONMENT));
+    setResourceId("");
+    setResourceIdValid(false);
+  }, [open]);
 
   const canCreate = useMemo(() => {
     return title.trim().length > 0 && resourceId.length > 0 && resourceIdValid;
@@ -1101,17 +1122,13 @@ function CreateDrawer({
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-xl max-w-[100vw] bg-white shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.environment")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("common.environment")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
             <div className="flex flex-col gap-y-2">
@@ -1187,37 +1204,46 @@ function CreateDrawer({
               />
             </div>
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!canCreate} onClick={handleCreate}>
             {t("common.create")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 // ============================================================
-// ReorderDrawer
+// ReorderSheet
 // ============================================================
-function ReorderDrawer({
+function ReorderSheet({
+  open,
   environments,
   onClose,
   onConfirm,
 }: {
+  open: boolean;
   environments: Environment[];
   onClose: () => void;
   onConfirm: (reordered: Environment[]) => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
   const [list, setList] = useState(() => [...environments]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  // Reset list state whenever the Sheet is (re)opened. Sheet is always mounted
+  // so useState initializer only runs on first mount.
+  useEffect(() => {
+    if (!open) return;
+    setList([...environments]);
+    setDragIndex(null);
+  }, [open, environments]);
 
   const orderChanged = useMemo(() => {
     for (let i = 0; i < list.length; i++) {
@@ -1241,17 +1267,13 @@ function ReorderDrawer({
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-120 max-w-[90vw] bg-white shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("environment.reorder")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <SheetHeader>
+          <SheetTitle>{t("environment.reorder")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-auto px-6 py-4">
+        <SheetBody>
           {list.map((env, index) => (
             <div
               key={env.id}
@@ -1270,18 +1292,18 @@ function ReorderDrawer({
               <GripVertical className="w-5 h-5 text-gray-500" />
             </div>
           ))}
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
             {t("common.update")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1500,22 +1522,20 @@ export function EnvironmentsPage() {
         ))}
       </Tabs>
 
-      {/* Create drawer */}
-      {showCreate && (
-        <CreateDrawer
-          onClose={() => setShowCreate(false)}
-          onCreate={handleCreate}
-        />
-      )}
+      {/* Create sheet */}
+      <CreateSheet
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreate={handleCreate}
+      />
 
-      {/* Reorder drawer */}
-      {showReorder && (
-        <ReorderDrawer
-          environments={environmentList}
-          onClose={() => setShowReorder(false)}
-          onConfirm={handleReorder}
-        />
-      )}
+      {/* Reorder sheet */}
+      <ReorderSheet
+        open={showReorder}
+        environments={environmentList}
+        onClose={() => setShowReorder(false)}
+        onConfirm={handleReorder}
+      />
     </div>
   );
 }

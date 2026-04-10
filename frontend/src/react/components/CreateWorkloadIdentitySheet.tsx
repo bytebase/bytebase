@@ -147,29 +147,53 @@ export function CreateWorkloadIdentitySheet({
   const isUpdatingFromPatternRef = useRef(false);
   const isUpdatingFromFieldsRef = useRef(false);
 
+  // Reset form state whenever the Sheet is (re)opened. The Sheet is always
+  // mounted (visibility controlled by `open`), so useState initializers only
+  // run once on first mount. This effect repopulates fields when the parent
+  // switches `workloadIdentity` between create mode and editing an existing row.
   useEffect(() => {
-    if (!workloadIdentity) return;
-    setTitle(workloadIdentity.title);
-    setEmailPrefix(workloadIdentity.email.split("@")[0]);
+    if (!open) return;
+    if (workloadIdentity) {
+      setTitle(workloadIdentity.title);
+      setEmailPrefix(workloadIdentity.email.split("@")[0]);
 
-    const config = workloadIdentity.workloadIdentityConfig;
-    if (config) {
-      setProviderType(config.providerType);
-      setIssuerUrl(config.issuerUrl);
-      setAudience(config.allowedAudiences[0] ?? "");
-      setSubjectPattern(config.subjectPattern);
+      const config = workloadIdentity.workloadIdentityConfig;
+      if (config) {
+        setProviderType(config.providerType);
+        setIssuerUrl(config.issuerUrl);
+        setAudience(config.allowedAudiences[0] ?? "");
+        setSubjectPattern(config.subjectPattern);
 
-      const parsed = parseWorkloadIdentitySubjectPattern(workloadIdentity);
-      if (parsed) {
-        setOwner(parsed.owner);
-        setRepo(parsed.repo);
-        setBranch(parsed.branch);
-        if ("refType" in parsed && parsed.refType) {
-          setRefType(parsed.refType);
+        const parsed = parseWorkloadIdentitySubjectPattern(workloadIdentity);
+        if (parsed) {
+          setOwner(parsed.owner);
+          setRepo(parsed.repo);
+          setBranch(parsed.branch);
+          if ("refType" in parsed && parsed.refType) {
+            setRefType(parsed.refType);
+          }
         }
       }
+    } else {
+      // Create mode — reset to defaults
+      setTitle("");
+      setEmailPrefix("");
+      setProviderType(WorkloadIdentityConfig_ProviderType.GITHUB);
+      setIssuerUrl(
+        PLATFORM_PRESETS[WorkloadIdentityConfig_ProviderType.GITHUB]!.issuerUrl
+      );
+      setAudience("");
+      setSubjectPattern("");
+      setOwner("");
+      setRepo("");
+      setBranch("");
+      setRefType("all");
+      setRoles([]);
     }
-  }, []);
+    setIsRequesting(false);
+    setShowAdvanced(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, workloadIdentity]);
 
   useEffect(() => {
     if (isUpdatingFromPatternRef.current) return;

@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Copy, KeyRound, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
@@ -9,8 +9,15 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -342,13 +349,15 @@ function ServiceAccountTable({
 // CreateServiceAccountDrawer
 // ============================================================
 
-function CreateServiceAccountDrawer({
+function CreateServiceAccountSheet({
+  open,
   serviceAccount,
   project,
   onClose,
   onCreated,
   onUpdated,
 }: {
+  open: boolean;
   serviceAccount: ServiceAccount | undefined;
   project?: string;
   onClose: () => void;
@@ -380,7 +389,19 @@ function CreateServiceAccountDrawer({
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
 
-  useEscapeKey(true, onClose);
+  // Reset form state whenever the Sheet is (re)opened. The Sheet is always
+  // mounted (visibility controlled by `open`), so useState initializers only
+  // run once on first mount. This effect repopulates fields when the parent
+  // switches `serviceAccount` between create mode and editing an existing row.
+  useEffect(() => {
+    if (!open) return;
+    setTitle(serviceAccount?.title ?? "");
+    setEmailPrefix(
+      serviceAccount?.email ? serviceAccount.email.split("@")[0] : ""
+    );
+    setRoles([]);
+    setIsRequesting(false);
+  }, [open, serviceAccount]);
 
   const allowConfirm = isEditMode ? true : emailPrefix.trim().length > 0;
 
@@ -494,28 +515,13 @@ function CreateServiceAccountDrawer({
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("settings.members.service-account")}</SheetTitle>
+        </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("settings.members.service-account")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
             <div className="flex flex-col gap-y-2">
@@ -576,10 +582,9 @@ function CreateServiceAccountDrawer({
                 </div>
               )}
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -589,9 +594,9 @@ function CreateServiceAccountDrawer({
           >
             {isEditMode ? t("common.update") : t("common.create")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -794,18 +799,17 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         )}
       </div>
 
-      {showDrawer && (
-        <CreateServiceAccountDrawer
-          serviceAccount={editingSa}
-          project={projectName}
-          onClose={() => {
-            setShowDrawer(false);
-            setEditingSa(undefined);
-          }}
-          onCreated={handleCreated}
-          onUpdated={handleUpdated}
-        />
-      )}
+      <CreateServiceAccountSheet
+        open={showDrawer}
+        serviceAccount={editingSa}
+        project={projectName}
+        onClose={() => {
+          setShowDrawer(false);
+          setEditingSa(undefined);
+        }}
+        onCreated={handleCreated}
+        onUpdated={handleUpdated}
+      />
     </div>
   );
 }
