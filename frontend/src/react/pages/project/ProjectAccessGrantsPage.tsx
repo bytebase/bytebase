@@ -47,6 +47,7 @@ import {
   getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
   getAccessGrantStatusTagType,
+  getDefaultPagination,
   hasProjectPermissionV2,
 } from "@/utils";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
@@ -151,7 +152,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     async (keyword: string): Promise<ValueOption[]> => {
       const result = await databaseStore.fetchDatabases({
         parent: projectName,
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
       return result.databases.map((db) => {
@@ -191,7 +192,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const searchUsers = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       const result = await userStore.fetchUserList({
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
       return result.users.map((u) => ({

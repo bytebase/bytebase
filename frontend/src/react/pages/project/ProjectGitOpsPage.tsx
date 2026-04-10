@@ -32,6 +32,7 @@ import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_ser
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   extractDatabaseResourceName,
+  getDefaultPagination,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
@@ -77,7 +78,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
           parent: projectName,
           filter: { query: search },
           pageToken,
-          pageSize: 1000,
+          pageSize: getDefaultPagination(),
           showDeleted: false,
         });
         for (const wi of resp.workloadIdentities) {
@@ -125,7 +126,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         const resp = await databaseStore.fetchDatabases({
           parent: projectName,
           filter: dbSearch ? { query: dbSearch } : {},
-          pageSize: 1000,
+          pageSize: getDefaultPagination(),
           pageToken,
         });
         for (const db of resp.databases) {
