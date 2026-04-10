@@ -1,5 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   featureToRef,
@@ -12,54 +21,16 @@ import type {
   Database,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   bytesToString,
   getDatabaseEngine,
   getDatabaseProject,
+  hasProjectPermissionV2,
   hasSchemaProperty,
 } from "@/utils";
-
-const BG_COLORS = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
-
-function ClassificationBadge({
-  classificationId,
-  classificationConfig,
-}: {
-  classificationId: string | undefined;
-  classificationConfig:
-    | DataClassificationSetting_DataClassificationConfig
-    | undefined;
-}) {
-  if (!classificationId || !classificationConfig) {
-    return <span>-</span>;
-  }
-  const entry = classificationConfig.classification[classificationId];
-  if (!entry) {
-    return <span>{classificationId}</span>;
-  }
-  const level = (classificationConfig.levels ?? []).find(
-    (l) => l.level === entry.level
-  );
-  const levelColor = BG_COLORS[(entry.level ?? 0) - 1] ?? "bg-gray-200";
-  return (
-    <span className="inline-flex items-center gap-x-1">
-      <span className="truncate">{entry.title}</span>
-      {level && (
-        <span className={`shrink-0 rounded px-1 py-0.5 text-xs ${levelColor}`}>
-          {level.title}
-        </span>
-      )}
-    </span>
-  );
-}
+import { EditableClassificationCell } from "./TableDetailDialog";
 
 export function TableMetadataTable({
   database,
@@ -89,9 +60,21 @@ export function TableMetadataTable({
       project.dataClassificationConfigId ?? ""
     )
   );
+  const editable = hasProjectPermissionV2(
+    project,
+    "bb.databaseCatalogs.update"
+  );
 
   const showEngineColumn = databaseEngine !== Engine.POSTGRES;
   const showPartitionedColumn = databaseEngine === Engine.POSTGRES;
+
+  useEffect(() => {
+    void settingStore.getOrFetchSettingByName(
+      Setting_SettingName.DATA_CLASSIFICATION,
+      true
+    );
+  }, [settingStore]);
+
   const columns = useMemo(
     () =>
       [
@@ -149,17 +132,15 @@ export function TableMetadataTable({
 
   return (
     <div className="overflow-hidden rounded-lg border border-block-border">
-      <table className="min-w-full divide-y divide-block-border">
-        <thead className="bg-control-bg">
-          <tr className="text-left text-sm text-control-light">
+      <Table className="min-w-full">
+        <TableHeader className="bg-control-bg">
+          <TableRow className="hover:bg-control-bg">
             {columns.map((column) => (
-              <th key={column.key} className="px-4 py-2 font-medium">
-                {column.label}
-              </th>
+              <TableHead key={column.key}>{column.label}</TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+          </TableRow>
+        </TableHeader>
+        <TableBody className="bg-white">
           {rows.map((table) => {
             const tableCatalog = catalog
               ? getTableCatalog(catalog, schemaName, table.name)
@@ -168,17 +149,18 @@ export function TableMetadataTable({
               tableCatalog?.classification?.trim() || undefined;
 
             return (
-              <tr
+              <TableRow
                 key={`${database.name}.${schemaName}.${table.name}`}
-                className={
-                  onRowClick ? "cursor-pointer hover:bg-control-bg" : ""
-                }
+                className={onRowClick ? "cursor-pointer" : undefined}
                 role={onRowClick ? "button" : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
-                onClick={() => onRowClick?.(table)}
+                onClick={onRowClick ? () => onRowClick(table) : undefined}
                 onKeyDown={
                   onRowClick
                     ? (event) => {
+                        if (event.target !== event.currentTarget) {
+                          return;
+                        }
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           onRowClick(table);
@@ -188,46 +170,56 @@ export function TableMetadataTable({
                 }
               >
                 {showSchemaColumn && (
-                  <td className="px-4 py-3 text-sm text-main">
+                  <TableCell className="text-main">
                     {schemaName || t("db.schema.default")}
-                  </td>
+                  </TableCell>
                 )}
-                <td className="px-4 py-3 text-sm text-main">{table.name}</td>
+                <TableCell className="text-main">{table.name}</TableCell>
                 {showClassificationColumn && (
-                  <td className="px-4 py-3 text-sm text-control">
-                    <ClassificationBadge
-                      classificationId={classification}
-                      classificationConfig={classificationConfig}
-                    />
-                  </td>
+                  <TableCell>
+                    <div
+                      data-testid={`table-row-classification-${table.name}-action`}
+                      className="inline-flex"
+                      onClick={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      <EditableClassificationCell
+                        classification={classification}
+                        classificationConfig={classificationConfig}
+                        readonly={!editable}
+                        testIdPrefix={`table-row-classification-${table.name}`}
+                        onApply={async (classificationId) => {
+                          await updateTableCatalog({
+                            database: database.name,
+                            schema: schemaName,
+                            table: table.name,
+                            tableCatalog: {
+                              classification: classificationId,
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+                  </TableCell>
                 )}
                 {showEngineColumn && (
-                  <td className="px-4 py-3 text-sm text-control">
-                    {table.engine || "-"}
-                  </td>
+                  <TableCell>{table.engine || "-"}</TableCell>
                 )}
                 {showPartitionedColumn && (
-                  <td className="px-4 py-3 text-sm text-control">
+                  <TableCell>
                     {(table.partitions?.length ?? 0) > 0 ? "True" : ""}
-                  </td>
+                  </TableCell>
                 )}
-                <td className="px-4 py-3 text-sm text-control">
-                  {String(table.rowCount)}
-                </td>
-                <td className="px-4 py-3 text-sm text-control">
-                  {bytesToString(Number(table.dataSize))}
-                </td>
-                <td className="px-4 py-3 text-sm text-control">
-                  {bytesToString(Number(table.indexSize))}
-                </td>
-                <td className="px-4 py-3 text-sm text-control">
-                  {table.comment || "-"}
-                </td>
-              </tr>
+                <TableCell>{String(table.rowCount)}</TableCell>
+                <TableCell>{bytesToString(Number(table.dataSize))}</TableCell>
+                <TableCell>{bytesToString(Number(table.indexSize))}</TableCell>
+                <TableCell>{table.comment || "-"}</TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
