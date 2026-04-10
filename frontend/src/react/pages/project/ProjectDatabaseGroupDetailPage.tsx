@@ -11,6 +11,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
@@ -49,7 +55,6 @@ export function ProjectDatabaseGroupDetailPage({
 
   const [editing, setEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
 
   // Fetch the database group on mount
   useEffect(() => {
@@ -138,36 +143,19 @@ export function ProjectDatabaseGroupDetailPage({
           </PermissionGuard>
 
           {canDelete && (
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="px-1!"
-                onClick={() => setShowDropdown((v) => !v)}
-              >
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 px-1 rounded-xs text-sm text-control hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
                 <EllipsisVertical className="size-4" />
-              </Button>
-              {showDropdown && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowDropdown(false)}
-                  />
-                  <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
-                    <button
-                      type="button"
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
-                      onClick={() => {
-                        setShowDropdown(false);
-                        setShowDeleteDialog(true);
-                      }}
-                    >
-                      {t("common.delete")}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  className="text-error"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  {t("common.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       )}

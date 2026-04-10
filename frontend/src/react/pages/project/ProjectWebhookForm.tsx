@@ -9,6 +9,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
@@ -626,35 +632,21 @@ function DetailDropdown({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className="p-1 rounded-xs hover:bg-control-bg"
-        onClick={() => setOpen((v) => !v)}
-      >
+    <DropdownMenu>
+      <DropdownMenuTrigger className="p-1 rounded-xs hover:bg-control-bg outline-hidden">
         <EllipsisVertical className="size-4" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
-              disabled={loading}
-              onClick={() => {
-                setOpen(false);
-                onDelete();
-              }}
-            >
-              {t("common.delete")}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem
+          className="text-error"
+          disabled={loading}
+          onClick={onDelete}
+        >
+          {t("common.delete")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
