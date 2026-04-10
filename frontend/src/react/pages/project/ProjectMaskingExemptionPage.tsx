@@ -368,7 +368,7 @@ export function ProjectMaskingExemptionPage({
 
   const activePreset = useMemo(() => {
     const status = getValueFromScopes(searchParams, "status");
-    return status || "active";
+    return status || "all";
   }, [searchParams]);
 
   const selectPreset = useCallback(
@@ -955,12 +955,12 @@ function ExemptionMemberItem({
             </span>
           )}
           {isServiceAccount && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
               {t("settings.members.service-account")}
             </span>
           )}
           {isWorkloadIdentity && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
               {t("settings.members.workload-identity")}
             </span>
           )}
@@ -1057,7 +1057,7 @@ function ExemptionDetailPanel({
         {member.grants.map((grant, idx) => (
           <div
             key={grant.id}
-            className="border border-block-border rounded-sm overflow-hidden pt-4"
+            className="border border-block-border rounded-sm overflow-hidden"
           >
             <ExemptionGrantSection
               grant={grant}
@@ -1095,13 +1095,10 @@ function ExemptionGrantSection({
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
-  const isExpired = useMemo(
-    () =>
-      !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now(),
-    [grant.expirationTimestamp]
-  );
+  const isExpired =
+    !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now();
 
-  const expiryLabel = useMemo(() => {
+  const expiryLabel = (() => {
     if (!grant.expirationTimestamp) return "";
     const msRemaining = grant.expirationTimestamp - Date.now();
     const hoursRemaining = msRemaining / (1000 * 60 * 60);
@@ -1112,7 +1109,7 @@ function ExemptionGrantSection({
       days,
       count: days,
     });
-  }, [grant.expirationTimestamp, t]);
+  })();
 
   return (
     <div>
@@ -1210,7 +1207,7 @@ function ExemptionResourceTable({
 }) {
   const { t } = useTranslation();
 
-  const isSentinel = (value: string): boolean => value === "";
+  const isSentinel = (value: string): boolean => value === "" || value === "-1";
 
   const handleDatabaseClick = (resource: DatabaseResource) => {
     const path = resource.databaseFullName.startsWith("/")
