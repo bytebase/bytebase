@@ -90,7 +90,7 @@ export function DatabaseOverviewPanel({
       <DatabaseOverviewInfo database={database} />
 
       {allowViewSchema && (
-        <div className="border-t border-block-border pt-6">
+        <div className="mt-4">
           <DatabaseObjectExplorer
             database={database}
             loading={schemaList.length > 0 && !schemaSelectionReady}

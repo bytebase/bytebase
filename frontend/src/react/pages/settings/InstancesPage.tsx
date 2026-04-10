@@ -22,6 +22,11 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
@@ -1142,16 +1147,16 @@ export function InstancesPage() {
     <div className="py-4 flex flex-col">
       {/* Instance count warning */}
       {quotaExhausted && (
-        <div className="mx-4 mb-2 p-3 rounded-xs border border-warning bg-warning/5">
-          <p className="text-sm font-medium text-warning">
+        <Alert variant="warning" className="mx-4 mb-4">
+          <AlertTitle>
             {t("subscription.usage.instance-count.title")}
-          </p>
-          <p className="text-sm text-warning/80 mt-1">
+          </AlertTitle>
+          <AlertDescription>
             {t("subscription.usage.instance-count.runoutof", {
               total: instanceCountLimit,
             })}
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Header: Search + Create */}
@@ -1346,14 +1351,16 @@ export function InstancesPage() {
       </div>
 
       {/* Pagination footer */}
-      <PagedTableFooter
-        pageSize={pageSize}
-        pageSizeOptions={pageSizeOptions}
-        onPageSizeChange={setPageSize}
-        hasMore={hasMore}
-        isFetchingMore={isFetchingMore}
-        onLoadMore={loadMore}
-      />
+      <div className="mt-4 mx-2">
+        <PagedTableFooter
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={setPageSize}
+          hasMore={hasMore}
+          isFetchingMore={isFetchingMore}
+          onLoadMore={loadMore}
+        />
+      </div>
     </div>
   );
 }

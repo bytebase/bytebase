@@ -1203,14 +1203,16 @@ export function ProjectsPage() {
       </div>
 
       {/* Pagination footer */}
-      <PagedTableFooter
-        pageSize={pageSize}
-        pageSizeOptions={pageSizeOptions}
-        onPageSizeChange={setPageSize}
-        hasMore={hasMore}
-        isFetchingMore={isFetchingMore}
-        onLoadMore={loadMore}
-      />
+      <div className="mt-4 mx-2">
+        <PagedTableFooter
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={setPageSize}
+          hasMore={hasMore}
+          isFetchingMore={isFetchingMore}
+          onLoadMore={loadMore}
+        />
+      </div>
 
       {/* Create drawer */}
       <CreateProjectDrawer

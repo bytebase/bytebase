@@ -68,7 +68,7 @@ export function DatabaseChangelogTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-block-border">
+    <div className="overflow-hidden rounded border border-block-border">
       <table className="min-w-full divide-y divide-block-border">
         <thead className="bg-control-bg">
           <tr className="text-left text-sm text-control-light">

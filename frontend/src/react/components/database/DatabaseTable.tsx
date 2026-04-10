@@ -395,14 +395,16 @@ export function DatabaseTable({
         </div>
       </div>
 
-      <PagedTableFooter
-        pageSize={pageSize}
-        pageSizeOptions={pageSizeOptions}
-        onPageSizeChange={setPageSize}
-        hasMore={hasMore}
-        isFetchingMore={isFetchingMore}
-        onLoadMore={loadMore}
-      />
+      <div className="mx-2">
+        <PagedTableFooter
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={setPageSize}
+          hasMore={hasMore}
+          isFetchingMore={isFetchingMore}
+          onLoadMore={loadMore}
+        />
+      </div>
     </>
   );
 }

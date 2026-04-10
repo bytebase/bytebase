@@ -131,7 +131,7 @@ export function TableMetadataTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-block-border">
+    <div className="overflow-hidden rounded border border-block-border">
       <Table className="min-w-full">
         <TableHeader className="bg-control-bg">
           <TableRow className="hover:bg-control-bg">

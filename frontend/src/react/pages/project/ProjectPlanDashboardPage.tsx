@@ -335,7 +335,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         )}
 
         {paged.dataList.length > 0 && (
-          <div className="mx-4 mt-3">
+          <div className="mt-4 mx-2">
             <PagedTableFooter
               pageSize={paged.pageSize}
               pageSizeOptions={paged.pageSizeOptions}
