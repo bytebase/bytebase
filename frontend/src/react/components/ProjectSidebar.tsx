@@ -40,7 +40,7 @@ import {
   useProjectV1Store,
   useWorkspaceV1Store,
 } from "@/store";
-import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -281,13 +281,6 @@ export function ProjectSidebar() {
     }
   }, [projectId, projectStore]);
 
-  const project = useVueState(() => {
-    const pid =
-      (router.currentRoute.value.params.projectId as string | undefined) ?? "";
-    const projectName = pid ? `${projectNamePrefix}${pid}` : "";
-    return projectStore.getProjectByName(projectName);
-  });
-
   // -- Expand / collapse state -----------------------------------------------
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());
   const manualToggledRef = useRef<Set<string>>(new Set());
@@ -363,16 +356,16 @@ export function ProjectSidebar() {
     (path: string) =>
       router.resolve({
         name: path,
-        params: { projectId: getProjectName(project.name) },
+        params: { projectId },
       }).fullPath,
-    [project.name]
+    [projectId]
   );
 
   const handleItemClick = useCallback(
     (e: React.MouseEvent, path: string) => {
       const route = router.resolve({
         name: path,
-        params: { projectId: getProjectName(project.name) },
+        params: { projectId },
       });
       recordVisitRef.current?.(route.fullPath);
       if (e.ctrlKey || e.metaKey) {
@@ -382,15 +375,15 @@ export function ProjectSidebar() {
       e.preventDefault();
       router.push(route);
     },
-    [project.name]
+    [projectId]
   );
 
   const resolveHomeRoute = useCallback(() => {
     return router.resolve({
       name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId: getProjectName(project.name) },
+      params: { projectId },
     });
-  }, [project.name]);
+  }, [projectId]);
 
   const handleHomeClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
