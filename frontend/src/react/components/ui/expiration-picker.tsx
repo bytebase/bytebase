@@ -12,10 +12,12 @@ export function ExpirationPicker({
   value,
   onChange,
   minDate,
+  maxDate,
 }: {
   value: string | undefined;
   onChange: (value: string | undefined) => void;
   minDate?: string;
+  maxDate?: string;
 }) {
   const { t } = useTranslation();
 
@@ -26,6 +28,7 @@ export function ExpirationPicker({
         className="w-64"
         value={value ?? ""}
         min={minDate}
+        max={maxDate}
         onChange={(e) => onChange(e.target.value || undefined)}
       />
       {value && (

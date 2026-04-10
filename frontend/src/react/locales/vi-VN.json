@@ -281,6 +281,7 @@
     "state": "Trạng thái",
     "statement": "Câu lệnh",
     "status": "Trạng thái",
+    "submit": "Gửi",
     "system": "Hệ thống",
     "table": "Bảng",
     "title": "Tiêu đề",
@@ -1109,6 +1110,10 @@
       "updated": "Đã cập nhật",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Yêu cầu vai trò",
+      "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "Đang chờ phê duyệt"
   },
@@ -1213,6 +1218,16 @@
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",
+        "expiration-must-be-future": "Thời gian hết hạn phải ở tương lai.",
+        "failed-to-build-expression": "Không thể xây dựng biểu thức CEL. Vui lòng thử lại.",
+        "labels-misconfigured": {
+          "description": "Dự án này yêu cầu nhãn vấn đề, nhưng chưa có nhãn nào được cấu hình. Vui lòng liên hệ chủ sở hữu dự án để thêm nhãn trước khi yêu cầu vai trò.",
+          "title": "Dự án yêu cầu nhãn vấn đề nhưng chưa cấu hình"
+        },
+        "max-expiration-hint": "Tối đa được phép theo chính sách không gian làm việc: {{days}} ngày."
+      },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
     "settings": {
@@ -1953,8 +1968,11 @@
       }
     },
     "delete": "Xóa chính sách đánh giá SQL",
+    "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+    "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
+    "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
     "enabled-rules": "Quy tắc được bật",
     "engine": {
       "mariadb": "MariaDB",

@@ -281,6 +281,7 @@
     "state": "State",
     "statement": "Statement",
     "status": "Status",
+    "submit": "Submit",
     "system": "System",
     "table": "Table",
     "title": "Title",
@@ -1109,6 +1110,10 @@
       "updated": "Updated",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Request role",
+      "request-specific-role": "Request \"{{role}}\" role"
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "Waiting for Approval"
   },
@@ -1213,6 +1218,16 @@
       "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
       "edit-member": "Edit member - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
+        "expiration-must-be-future": "Expiration must be in the future.",
+        "failed-to-build-expression": "Failed to build CEL expression. Please try again.",
+        "labels-misconfigured": {
+          "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before requesting a role.",
+          "title": "Issue labels required but not configured"
+        },
+        "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
+      },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
     "settings": {
@@ -1953,8 +1968,11 @@
       }
     },
     "delete": "Delete SQL review policy",
+    "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+    "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
     "disabled": "SQL review is disabled",
+    "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
     "enabled-rules": "Enabled rules",
     "engine": {
       "mariadb": "MariaDB",
