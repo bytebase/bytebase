@@ -154,7 +154,7 @@ function MemberTable({
     <div className="border rounded-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 border-b">
+          <tr className="bg-control-bg border-b">
             {allowEdit && (
               <th className="w-10 px-3 py-2">
                 <input
@@ -179,7 +179,7 @@ function MemberTable({
           {bindings.map((mb) => (
             <tr
               key={mb.binding}
-              className="border-b last:border-b-0 hover:bg-gray-50"
+              className="border-b last:border-b-0 hover:bg-control-bg"
             >
               {allowEdit && (
                 <td className="px-3 py-2">
@@ -196,8 +196,8 @@ function MemberTable({
                   {mb.type === "users" ? (
                     <UserAvatar title={mb.title || mb.user?.email || "?"} />
                   ) : (
-                    <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                      <Users className="h-4 w-4 text-gray-500" />
+                    <div className="size-9 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
+                      <Users className="size-4 text-control-light" />
                     </div>
                   )}
                   <div className="flex flex-col">
@@ -387,7 +387,7 @@ function MemberTableByRole({
             return (
               <React.Fragment key={role}>
                 <tr
-                  className="bg-gray-50 border-b cursor-pointer hover:bg-gray-100"
+                  className="bg-control-bg border-b cursor-pointer hover:bg-control-bg"
                   onClick={() => toggleRole(role)}
                 >
                   <td colSpan={3} className="px-4 py-2">
@@ -413,7 +413,7 @@ function MemberTableByRole({
                   members.map((mb) => (
                     <tr
                       key={`${role}-${mb.binding}`}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
+                      className="border-b last:border-b-0 hover:bg-control-bg"
                     >
                       <td className="px-4 py-2 pl-10">
                         <div className="flex items-center gap-x-3">
@@ -423,8 +423,8 @@ function MemberTableByRole({
                               size="sm"
                             />
                           ) : (
-                            <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                              <Users className="h-3.5 w-3.5 text-gray-500" />
+                            <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
+                              <Users className="size-3.5 text-control-light" />
                             </div>
                           )}
                           <div className="flex flex-col">
@@ -653,7 +653,7 @@ function EnvironmentMultiSelect({
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
           {environmentList.length === 0 && (
             <div className="px-3 py-2 text-sm text-control-light">
               {t("common.no-data")}
@@ -664,14 +664,14 @@ function EnvironmentMultiSelect({
             return (
               <div
                 key={env.name}
-                className="flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-gray-50 cursor-pointer"
+                className="flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
                 onClick={() => toggle(env.name)}
               >
                 <div
                   className={cn(
-                    "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+                    "size-4 rounded-xs border flex items-center justify-center shrink-0",
                     selected
-                      ? "bg-accent border-accent text-white"
+                      ? "bg-accent border-accent text-accent-text"
                       : "border-control-border"
                   )}
                 >
@@ -850,12 +850,12 @@ function ProjectRoleBindingForm({
           <label className="block text-sm font-medium text-control">
             {t("common.permissions")}
           </label>
-          <div className="max-h-32 overflow-auto border rounded-sm bg-gray-50 p-2">
+          <div className="max-h-32 overflow-auto border rounded-sm bg-control-bg p-2">
             <div className="flex flex-wrap gap-1">
               {permissions.map((perm) => (
                 <span
                   key={perm}
-                  className="inline-block rounded-xs bg-gray-200 px-1.5 py-0.5 text-xs text-control-light"
+                  className="inline-block rounded-xs bg-control-bg-hover px-1.5 py-0.5 text-xs text-control-light"
                 >
                   {perm}
                 </span>
@@ -940,8 +940,8 @@ function ProjectRoleBindingForm({
                 className={cn(
                   "px-2.5 py-1 text-xs rounded-sm border transition-colors",
                   isSelected
-                    ? "bg-accent text-white border-accent"
-                    : "bg-white text-control border-control-border hover:bg-gray-50"
+                    ? "bg-accent text-accent-text border-accent"
+                    : "bg-background text-control border-control-border hover:bg-control-bg"
                 )}
                 onClick={() => handleExpirationChange(preset.days)}
               >
@@ -1317,11 +1317,11 @@ function EditMemberRoleDrawer({
     const memberEmail = member.user?.email ?? member.binding;
     return (
       <>
-        <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+          className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -1366,7 +1366,7 @@ function EditMemberRoleDrawer({
                     className="border rounded-sm"
                   >
                     {/* Role header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+                    <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
                       <span className="font-medium text-sm">
                         {displayRoleTitle(binding.role)}
                       </span>
@@ -1512,11 +1512,11 @@ function EditMemberRoleDrawer({
   // Workspace edit mode, workspace/project create mode — original UI
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-medium">

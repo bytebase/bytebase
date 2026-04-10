@@ -329,7 +329,7 @@ export function ProjectWebhookForm({
           <>
             <div className="flex flex-row justify-between items-center pt-4">
               <div className="flex flex-row gap-x-2 items-center">
-                <WebhookTypeIcon type={webhook.type} className="h-6 w-6" />
+                <WebhookTypeIcon type={webhook.type} className="size-6" />
                 <h3 className="text-lg leading-6 font-medium text-main">
                   {webhook.title}
                 </h3>
@@ -347,7 +347,7 @@ export function ProjectWebhookForm({
 
         {/* Missing external URL warning */}
         {!externalUrl && (
-          <div className="mb-6 p-3 border border-red-300 bg-red-50 rounded-xs text-sm text-red-800">
+          <div className="mb-6 p-3 border border-error/30 bg-error/5 rounded-xs text-sm text-error">
             <div className="font-medium">{t("banner.external-url")}</div>
             <div className="mt-1">
               {t("settings.general.workspace.external-url.description")}
@@ -386,7 +386,7 @@ export function ProjectWebhookForm({
                     onClick={() => updateField("type", item.type)}
                   >
                     <div className="flex flex-col items-center">
-                      <WebhookTypeIcon type={item.type} className="h-10 w-10" />
+                      <WebhookTypeIcon type={item.type} className="size-10" />
                       <p className="mt-1 text-center text-sm font-medium">
                         {item.name}
                       </p>
@@ -476,7 +476,7 @@ export function ProjectWebhookForm({
                             "project.webhook.activity-support-direct-message"
                           )}
                         >
-                          <Info className="w-4 h-4 text-gray-500" />
+                          <Info className="size-4 text-control-light" />
                         </Tooltip>
                       )}
                   </div>
@@ -554,7 +554,7 @@ export function ProjectWebhookForm({
 
       {/* Footer */}
       <div className="w-full sticky bottom-0 z-10">
-        <div className="w-full py-4 px-4 border-t border-block-border bg-white">
+        <div className="w-full py-4 px-4 border-t border-block-border bg-background">
           <div className="flex justify-end">
             <div className="flex items-center gap-x-2">
               {create ? (
@@ -632,18 +632,18 @@ function DetailDropdown({
     <div className="relative">
       <button
         type="button"
-        className="p-1 rounded-xs hover:bg-gray-100"
+        className="p-1 rounded-xs hover:bg-control-bg"
         onClick={() => setOpen((v) => !v)}
       >
-        <EllipsisVertical className="w-4 h-4" />
+        <EllipsisVertical className="size-4" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
+          <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
               disabled={loading}
               onClick={() => {
                 setOpen(false);

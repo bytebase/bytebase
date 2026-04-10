@@ -17,7 +17,7 @@ function SelectTrigger({
     <BaseSelect.Trigger
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-between gap-1 h-8 px-2 text-sm rounded-xs border border-control-border bg-white text-control whitespace-nowrap",
+        "inline-flex items-center justify-between gap-1 h-8 px-2 text-sm rounded-xs border border-control-border bg-background text-control whitespace-nowrap",
         "hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent",
         "disabled:pointer-events-none disabled:opacity-50",
         className
@@ -26,7 +26,7 @@ function SelectTrigger({
     >
       {children}
       <BaseSelect.Icon>
-        <ChevronDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
+        <ChevronDown className="size-3.5 opacity-50 shrink-0" />
       </BaseSelect.Icon>
     </BaseSelect.Trigger>
   );
@@ -48,7 +48,7 @@ function SelectContent({
         <BaseSelect.Popup
           ref={ref}
           className={cn(
-            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
+            "min-w-(--anchor-width) max-h-60 overflow-auto rounded-sm border border-control-border bg-background py-1 shadow-md",
             className
           )}
           {...props}
@@ -79,7 +79,7 @@ function SelectItem({
       {...props}
     >
       <BaseSelect.ItemIndicator className="absolute left-1.5">
-        <Check className="w-3.5 h-3.5" />
+        <Check className="size-3.5" />
       </BaseSelect.ItemIndicator>
       <BaseSelect.ItemText>{children}</BaseSelect.ItemText>
     </BaseSelect.Item>

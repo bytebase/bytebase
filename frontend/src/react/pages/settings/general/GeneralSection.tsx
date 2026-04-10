@@ -204,7 +204,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                     {t("settings.general.workspace.external-url.self")}
                   </span>
                 </label>
-                <div className="mb-3 text-sm text-gray-400">
+                <div className="mb-3 text-sm text-control-placeholder">
                   {t("settings.general.workspace.external-url.description")}{" "}
                   <LearnMoreLink
                     href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
@@ -235,10 +235,10 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div
-              className="fixed inset-0 bg-black/40"
+              className="fixed inset-0 bg-overlay/40"
               onClick={() => setShowModal(false)}
             />
-            <div className="relative bg-white rounded-sm shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
+            <div className="relative bg-background rounded-sm shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
               <h2 className="text-lg font-semibold">
                 {t("settings.general.workspace.config-updated")}
               </h2>

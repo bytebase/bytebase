@@ -106,8 +106,8 @@ export function CreateRevisionDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl p-6">
         <DialogTitle>{t("database.revision.import-revision")}</DialogTitle>
-        <div className="mt-4 space-y-4">
-          <div className="space-y-2">
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <label
               className="block text-sm font-medium text-control"
               htmlFor="revision-version"
@@ -137,7 +137,7 @@ export function CreateRevisionDialog({
               </p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <label
               className="block text-sm font-medium text-control"
               htmlFor="revision-type"
@@ -160,7 +160,7 @@ export function CreateRevisionDialog({
               </option>
             </select>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <label
               className="block text-sm font-medium text-control"
               htmlFor="revision-statement"

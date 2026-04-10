@@ -77,10 +77,10 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
       return (
         <span
           aria-label={t("common.status")}
-          className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-info bg-white text-info"
+          className="flex size-5 items-center justify-center rounded-full border-2 border-info bg-background text-info"
         >
           <span
-            className="h-2 w-2 rounded-full bg-info"
+            className="size-2 rounded-full bg-info"
             style={{
               animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
             }}
@@ -91,16 +91,16 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
       return (
         <span
           aria-label={t("common.status")}
-          className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-white"
+          className="flex size-5 items-center justify-center rounded-full bg-success text-accent-text"
         >
-          <Check className="h-4 w-4" />
+          <Check className="size-4" />
         </span>
       );
     case Changelog_Status.FAILED:
       return (
         <span
           aria-label={t("common.status")}
-          className="flex h-5 w-5 items-center justify-center rounded-full bg-error text-white"
+          className="flex size-5 items-center justify-center rounded-full bg-error text-accent-text"
         >
           <span className="pb-0.5 text-base font-normal">!</span>
         </span>
@@ -143,7 +143,7 @@ function CopyButton({ content }: { content: string }) {
       disabled={!content}
       onClick={handleCopy}
     >
-      <Copy className="h-4 w-4" />
+      <Copy className="size-4" />
     </Button>
   );
 }
@@ -350,7 +350,7 @@ export function DatabaseChangelogDetailPage({
   if (detail.loading || loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <LoaderCircle className="h-4 w-4 animate-spin text-control-light" />
+        <LoaderCircle className="size-4 animate-spin text-control-light" />
       </div>
     );
   }
@@ -429,7 +429,7 @@ export function DatabaseChangelogDetailPage({
                   }}
                 >
                   {t("common.show-more")}
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="size-4" />
                 </a>
               ) : null}
             </div>

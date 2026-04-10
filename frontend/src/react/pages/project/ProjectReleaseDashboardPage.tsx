@@ -120,7 +120,7 @@ export function ProjectReleaseDashboardPage({
       <div className="mt-2">
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           </div>
         ) : paged.dataList.length === 0 ? (
           <div className="flex justify-center py-8 text-control-light">
@@ -164,7 +164,7 @@ function CategorySelect({
 }) {
   return (
     <select
-      className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-white focus:outline-none focus:border-accent"
+      className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-background focus:outline-none focus:border-accent"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || undefined)}
       disabled={loading}
@@ -241,7 +241,7 @@ function ReleaseRow({ release }: { release: Release }) {
 
   return (
     <tr
-      className="border-b cursor-pointer hover:bg-gray-50"
+      className="border-b cursor-pointer hover:bg-control-bg"
       onClick={onRowClick}
     >
       <td className="py-2 px-4">
@@ -259,7 +259,7 @@ function ReleaseRow({ release }: { release: Release }) {
           {showFiles.map((file, idx) => (
             <p key={idx} className="w-full truncate">
               {file.version && (
-                <span className="mr-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+                <span className="mr-2 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs">
                   {file.version}
                 </span>
               )}
@@ -267,7 +267,7 @@ function ReleaseRow({ release }: { release: Release }) {
             </p>
           ))}
           {release.files.length > MAX_SHOW_FILES_COUNT && (
-            <p className="text-gray-400 text-xs italic">
+            <p className="text-control-placeholder text-xs italic">
               {t("release.total-files", { count: release.files.length })}
             </p>
           )}

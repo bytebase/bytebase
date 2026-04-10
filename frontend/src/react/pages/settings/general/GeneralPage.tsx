@@ -228,7 +228,7 @@ export function GeneralPage() {
 
       {isDirty && (
         <div className="sticky bottom-0 z-10 -mb-4">
-          <div className="flex justify-between w-full py-4 border-t border-block-border bg-white">
+          <div className="flex justify-between w-full py-4 border-t border-block-border bg-background">
             <Button variant="outline" onClick={handleRevert}>
               {t("common.cancel")}
             </Button>

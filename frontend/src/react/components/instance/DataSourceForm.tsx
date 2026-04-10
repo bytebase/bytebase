@@ -510,7 +510,7 @@ export function DataSourceForm({
                 <>
                   <div className="sm:col-span-3 sm:col-start-1">
                     <label className="textlabel block">
-                      Principal <span className="text-red-600">*</span>
+                      Principal <span className="text-error">*</span>
                     </label>
                     <div className="mt-2 flex items-center gap-x-2">
                       <Input
@@ -570,7 +570,7 @@ export function DataSourceForm({
                   </div>
                   <div className="sm:col-span-3 sm:col-start-1">
                     <label className="textlabel block">
-                      KDC <span className="text-red-600">*</span>
+                      KDC <span className="text-error">*</span>
                     </label>
                     <div className="flex items-center gap-x-2">
                       <div className="w-fit textlabel flex gap-x-3">
@@ -646,7 +646,7 @@ export function DataSourceForm({
                   </div>
                   <div className="sm:col-span-3 sm:col-start-1">
                     <label className="textlabel block">
-                      Keytab File <span className="text-red-600">*</span>
+                      Keytab File <span className="text-error">*</span>
                     </label>
                     <div className="mt-3 border-2 border-dashed rounded-lg p-6 text-center">
                       <input
@@ -681,7 +681,7 @@ export function DataSourceForm({
                             className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                             onClick={() => onOpenInfoPanel("authentication")}
                           >
-                            <Info className="w-3.5 h-3.5" />
+                            <Info className="size-3.5" />
                           </button>
                         )}
                     </label>
@@ -713,7 +713,7 @@ export function DataSourceForm({
                 <div className="sm:col-span-3 sm:col-start-1">
                   <label className="textlabel block">
                     {t("instance.database-region")}{" "}
-                    <span className="text-red-600">*</span>
+                    <span className="text-error">*</span>
                   </label>
                   <Input
                     value={dataSource.region ?? ""}
@@ -857,7 +857,7 @@ export function DataSourceForm({
                                   {t(
                                     "instance.external-secret-vault.vault-url"
                                   )}{" "}
-                                  <span className="text-red-600">*</span>
+                                  <span className="text-error">*</span>
                                 </label>
                                 <Input
                                   value={dataSource.externalSecret.url ?? ""}
@@ -928,7 +928,7 @@ export function DataSourceForm({
                                     {t(
                                       "instance.external-secret-vault.vault-auth-type.token.self"
                                     )}{" "}
-                                    <span className="text-red-600">*</span>
+                                    <span className="text-error">*</span>
                                   </label>
                                   <Input
                                     value={
@@ -964,7 +964,7 @@ export function DataSourceForm({
                                       {t(
                                         "instance.external-secret-vault.vault-auth-type.approle.role-id"
                                       )}{" "}
-                                      <span className="text-red-600">*</span>
+                                      <span className="text-error">*</span>
                                     </label>
                                     <Input
                                       value={
@@ -1001,7 +1001,7 @@ export function DataSourceForm({
                                       {t(
                                         "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                                       )}{" "}
-                                      <span className="text-red-600">*</span>
+                                      <span className="text-error">*</span>
                                     </label>
                                     <div className="textlabel my-1 flex gap-x-4">
                                       <label className="flex items-center gap-x-1.5 cursor-pointer">
@@ -1161,7 +1161,7 @@ export function DataSourceForm({
                                   {t(
                                     "instance.external-secret-vault.vault-secret-engine-name"
                                   )}{" "}
-                                  <span className="text-red-600">*</span>
+                                  <span className="text-error">*</span>
                                 </label>
                                 <div className="flex gap-x-2 text-sm textinfolabel">
                                   {t(
@@ -1197,7 +1197,7 @@ export function DataSourceForm({
                             <div>
                               <label className="textlabel block">
                                 {t("instance.external-secret-azure.vault-url")}{" "}
-                                <span className="text-red-600">*</span>
+                                <span className="text-error">*</span>
                               </label>
                               <div className="flex gap-x-2 text-sm textinfolabel">
                                 {t(
@@ -1228,7 +1228,7 @@ export function DataSourceForm({
                           <div>
                             <label className="textlabel block">
                               {secretNameLabel}{" "}
-                              <span className="text-red-600">*</span>
+                              <span className="text-error">*</span>
                             </label>
                             {passwordType ===
                               DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER && (
@@ -1271,7 +1271,7 @@ export function DataSourceForm({
                               <div>
                                 <label className="textlabel block">
                                   {secretKeyLabel}{" "}
-                                  <span className="text-red-600">*</span>
+                                  <span className="text-error">*</span>
                                 </label>
                                 <Input
                                   value={
@@ -1303,8 +1303,7 @@ export function DataSourceForm({
                         <>
                           <div className="mt-2">
                             <label className="textlabel">
-                              Master Name{" "}
-                              <span className="text-red-600">*</span>
+                              Master Name <span className="text-error">*</span>
                             </label>
                             <Input
                               value={dataSource.masterName ?? ""}
@@ -1483,7 +1482,7 @@ export function DataSourceForm({
             <>
               <div>
                 <div className="textlabel mt-2">
-                  Warehouse ID <span className="text-red-600">*</span>
+                  Warehouse ID <span className="text-error">*</span>
                 </div>
                 <Input
                   value={dataSource.warehouseId ?? ""}
@@ -1494,7 +1493,7 @@ export function DataSourceForm({
               </div>
               <div>
                 <div className="textlabel mt-2">
-                  Token <span className="text-red-600">*</span>
+                  Token <span className="text-error">*</span>
                 </div>
                 <Input
                   value={dataSource.authenticationPrivateKey ?? ""}
@@ -1594,12 +1593,12 @@ export function DataSourceForm({
                 <button
                   type="button"
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    dataSource.useSsl ? "bg-accent" : "bg-gray-200"
+                    dataSource.useSsl ? "bg-accent" : "bg-control-bg-hover"
                   }`}
                   onClick={() => handleUseSslChanged(!dataSource.useSsl)}
                 >
                   <span
-                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block size-3.5 transform rounded-full bg-background transition-transform ${
                       dataSource.useSsl ? "translate-x-4.5" : "translate-x-0.5"
                     }`}
                   />
@@ -1610,7 +1609,7 @@ export function DataSourceForm({
                     className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                     onClick={() => onOpenInfoPanel("ssl")}
                   >
-                    <Info className="w-3.5 h-3.5" />
+                    <Info className="size-3.5" />
                   </button>
                 )}
               </div>
@@ -1665,7 +1664,7 @@ export function DataSourceForm({
                     className="inline-flex items-center gap-x-0.5 text-accent text-xs"
                     onClick={() => onOpenInfoPanel("ssh")}
                   >
-                    <Info className="w-3.5 h-3.5" />
+                    <Info className="size-3.5" />
                   </button>
                 )}
               </div>
@@ -1691,7 +1690,7 @@ export function DataSourceForm({
               </div>
 
               {allowEdit && (
-                <div className="flex mt-2 mb-2 gap-x-2 bg-gray-50 p-3 rounded-sm">
+                <div className="flex mt-2 mb-2 gap-x-2 bg-control-bg p-3 rounded-sm">
                   <Input
                     value={newParamKey}
                     className="w-full"

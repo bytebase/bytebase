@@ -26,7 +26,7 @@ export function SectionHeader({
       type="button"
       aria-expanded={isExpanded}
       className={cn(
-        "flex w-full items-center gap-x-2 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+        "flex w-full items-center gap-x-2 py-1.5 bg-background hover:bg-control-bg cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
         indent ? "px-6" : "px-3",
         className
       )}
@@ -34,9 +34,9 @@ export function SectionHeader({
       {...props}
     >
       {isExpanded ? (
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        <ChevronDown className="size-3.5 shrink-0 text-control-placeholder" />
       ) : (
-        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        <ChevronRight className="size-3.5 shrink-0 text-control-placeholder" />
       )}
       <StatusIcon
         className={cn(
@@ -45,13 +45,15 @@ export function SectionHeader({
           section.status === "running" && "animate-spin"
         )}
       />
-      <span className="text-gray-700">{section.label}</span>
+      <span className="text-control">{section.label}</span>
       {section.entryCount > 1 ? (
-        <span className="text-gray-400">({section.entryCount})</span>
+        <span className="text-control-placeholder">({section.entryCount})</span>
       ) : null}
       <span className="flex-1" />
       {section.duration ? (
-        <span className="text-gray-500 tabular-nums">{section.duration}</span>
+        <span className="text-control-light tabular-nums">
+          {section.duration}
+        </span>
       ) : null}
     </button>
   );

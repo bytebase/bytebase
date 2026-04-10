@@ -225,7 +225,7 @@ export function Combobox(props: ComboboxProps) {
           {selectedOptions.map((opt) => (
             <span
               key={opt.value}
-              className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs"
+              className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs"
             >
               {opt.label}
               {!disabled && (
@@ -234,7 +234,7 @@ export function Combobox(props: ComboboxProps) {
                   className="hover:text-error"
                   onClick={(e) => handleRemoveChip(opt.value, e)}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </button>
               )}
             </span>
@@ -273,7 +273,7 @@ export function Combobox(props: ComboboxProps) {
         disabled={option.disabled}
         className={cn(
           "w-full text-left px-3 py-1.5 text-sm flex items-center gap-x-2 transition-colors",
-          "hover:bg-gray-50",
+          "hover:bg-control-bg",
           isSelected && "bg-accent/5",
           option.disabled && "opacity-50 cursor-not-allowed"
         )}
@@ -282,13 +282,13 @@ export function Combobox(props: ComboboxProps) {
         {multiple && (
           <div
             className={cn(
-              "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+              "size-4 rounded-xs border flex items-center justify-center shrink-0",
               isSelected
-                ? "bg-accent border-accent text-white"
+                ? "bg-accent border-accent text-accent-text"
                 : "border-control-border"
             )}
           >
-            {isSelected && <Check className="h-3 w-3" />}
+            {isSelected && <Check className="size-3" />}
           </div>
         )}
         <div className="flex flex-col min-w-0 flex-1">
@@ -313,7 +313,7 @@ export function Combobox(props: ComboboxProps) {
           )}
         </div>
         {!multiple && isSelected && (
-          <Check className="w-4 h-4 text-accent shrink-0" />
+          <Check className="size-4 text-accent shrink-0" />
         )}
       </button>
     );
@@ -325,7 +325,7 @@ export function Combobox(props: ComboboxProps) {
       ref={dropdownRef}
       style={portal ? dropdownStyle : undefined}
       className={cn(
-        "bg-white border border-control-border rounded-sm shadow-lg overflow-hidden",
+        "bg-background border border-control-border rounded-sm shadow-lg overflow-hidden",
         portal ? "z-[999]" : "absolute z-50 mt-1 min-w-full w-max"
       )}
     >
@@ -345,7 +345,7 @@ export function Combobox(props: ComboboxProps) {
           filteredGroups.map((group) => (
             <div key={group.label}>
               {group.label && (
-                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50">
+                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg">
                   {group.label}
                 </div>
               )}
@@ -362,7 +362,7 @@ export function Combobox(props: ComboboxProps) {
       {/* Trigger */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-white px-2 py-1 text-sm cursor-pointer",
+          "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-background px-2 py-1 text-sm cursor-pointer",
           disabled && "opacity-50 cursor-not-allowed",
           open && "border-accent"
         )}
@@ -376,13 +376,13 @@ export function Combobox(props: ComboboxProps) {
         <div className="flex items-center gap-1 shrink-0 ml-auto">
           {clearable && hasValue && !disabled && (
             <span
-              className="rounded-full p-0.5 hover:bg-gray-100 transition-colors"
+              className="rounded-full p-0.5 hover:bg-control-bg transition-colors"
               onClick={handleClear}
             >
-              <X className="w-3 h-3 text-control-light" />
+              <X className="size-3 text-control-light" />
             </span>
           )}
-          <ChevronDown className="w-4 h-4 text-control-light" />
+          <ChevronDown className="size-4 text-control-light" />
         </div>
       </div>
 

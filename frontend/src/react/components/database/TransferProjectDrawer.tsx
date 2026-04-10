@@ -84,8 +84,8 @@ export function TransferProjectDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[36rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[36rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
             {t("database.transfer-project")}
@@ -94,7 +94,7 @@ export function TransferProjectDrawer({
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-y-4">
@@ -109,7 +109,7 @@ export function TransferProjectDrawer({
                 className="px-3 py-2 text-sm border-b last:border-b-0 flex items-center gap-x-2"
               >
                 <img
-                  className="h-4 w-4"
+                  className="size-4"
                   src={EngineIconPath[getInstanceResource(db).engine]}
                   alt=""
                 />
@@ -168,7 +168,7 @@ export function TransferProjectDrawer({
                         "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer border-b last:border-b-0 transition-colors",
                         selectedProject === project.name
                           ? "bg-accent/5"
-                          : "hover:bg-gray-50"
+                          : "hover:bg-control-bg"
                       )}
                     >
                       <input

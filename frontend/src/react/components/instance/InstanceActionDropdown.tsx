@@ -118,21 +118,21 @@ export function InstanceActionDropdown({
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8"
+        className="size-8"
         onClick={() => setOpen(!open)}
       >
-        <EllipsisVertical className="w-4 h-4" />
+        <EllipsisVertical className="size-4" />
       </Button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-sm border bg-white shadow-md py-1">
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-sm border bg-background shadow-md py-1">
             {options.map((opt) => (
               <button
                 key={opt.key}
                 type="button"
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${
-                  opt.key === "delete" ? "text-red-600" : ""
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg ${
+                  opt.key === "delete" ? "text-error" : ""
                 }`}
                 onClick={() => {
                   setOpen(false);

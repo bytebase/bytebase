@@ -74,6 +74,9 @@ module.exports = {
         "block-border": "rgb(var(--color-block-border) / <alpha-value>)",
         "control-border": "rgb(var(--color-control-border) / <alpha-value>)",
 
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        overlay: "rgb(var(--color-overlay) / <alpha-value>)",
+
         "dark-bg": "rgb(var(--color-dark-bg) / <alpha-value>)",
         "matrix-green": "rgb(var(--color-matrix-green) / <alpha-value>)",
         "matrix-green-hover":

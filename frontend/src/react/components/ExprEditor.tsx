@@ -373,7 +373,7 @@ function SearchableSelect({
       <button
         ref={triggerRef}
         type="button"
-        className="h-8 px-2 text-sm rounded-xs border border-control-border bg-white w-full text-left disabled:opacity-50 truncate"
+        className="h-8 px-2 text-sm rounded-xs border border-control-border bg-background w-full text-left disabled:opacity-50 truncate"
         disabled={disabled}
         onClick={handleOpen}
       >
@@ -386,7 +386,7 @@ function SearchableSelect({
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
           matchAnchorWidth
-          className="bg-white border border-control-border rounded-sm shadow-md"
+          className="bg-background border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <SearchInput
@@ -411,7 +411,7 @@ function SearchableSelect({
             {options.map((o) => (
               <li
                 key={o.value}
-                className={`px-3 py-1 text-sm cursor-pointer hover:bg-gray-100 ${
+                className={`px-3 py-1 text-sm cursor-pointer hover:bg-control-bg ${
                   o.value === value ? "font-medium text-accent" : ""
                 }`}
                 onMouseDown={() => handleSelect(o.value)}
@@ -551,7 +551,7 @@ function MultiSearchableSelect({
     <div className="min-w-32 max-w-xs">
       <div
         ref={triggerRef}
-        className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white flex flex-wrap gap-1 cursor-pointer"
+        className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-background flex flex-wrap gap-1 cursor-pointer"
         onClick={disabled ? undefined : handleOpen}
       >
         {value.length === 0 && (
@@ -562,19 +562,19 @@ function MultiSearchableSelect({
         {value.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
+            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
           >
             {getLabelForValue(v)}
             {!disabled && (
               <button
                 type="button"
-                className="text-gray-400 hover:text-gray-600"
+                className="text-control-placeholder hover:text-control-light"
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   removeValue(v);
                 }}
               >
-                <X className="w-3 h-3" />
+                <X className="size-3" />
               </button>
             )}
           </span>
@@ -585,7 +585,7 @@ function MultiSearchableSelect({
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
           matchAnchorWidth
-          className="bg-white border border-control-border rounded-sm shadow-md"
+          className="bg-background border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <SearchInput
@@ -610,7 +610,7 @@ function MultiSearchableSelect({
             {allOptions.map((o) => (
               <li
                 key={o.value}
-                className={`px-3 py-1 text-sm cursor-pointer hover:bg-gray-100 flex items-center gap-2 ${
+                className={`px-3 py-1 text-sm cursor-pointer hover:bg-control-bg flex items-center gap-2 ${
                   value.includes(o.value) ? "font-medium" : ""
                 }`}
                 onMouseDown={() => toggleValue(o.value)}
@@ -673,20 +673,20 @@ function TagInput({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 min-h-8 px-2 py-0.5 rounded-xs border border-control-border bg-white min-w-64 max-w-xs">
+    <div className="flex flex-wrap items-center gap-1 min-h-8 px-2 py-0.5 rounded-xs border border-control-border bg-background min-w-64 max-w-xs">
       {value.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
+          className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
         >
           {tag}
           {!disabled && (
             <button
               type="button"
-              className="text-gray-400 hover:text-gray-600"
+              className="text-control-placeholder hover:text-control-light"
               onClick={() => removeTag(tag)}
             >
-              <X className="w-3 h-3" />
+              <X className="size-3" />
             </button>
           )}
         </span>
@@ -756,7 +756,7 @@ function MultiCheckSelect({
       <button
         ref={triggerRef}
         type="button"
-        className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-xs border border-control-border bg-white text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
+        className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-xs border border-control-border bg-background text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
         disabled={disabled}
         onClick={() => setOpen(!open)}
       >
@@ -766,7 +766,7 @@ function MultiCheckSelect({
         {value.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 bg-gray-100 text-xs px-1.5 py-0.5 rounded-xs"
+            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
           >
             {renderValue
               ? renderValue(v, getLabelForValue(v))
@@ -774,14 +774,14 @@ function MultiCheckSelect({
             {!disabled && (
               <span
                 role="button"
-                className="text-gray-400 hover:text-gray-600"
+                className="text-control-placeholder hover:text-control-light"
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   onChange(value.filter((x) => x !== v));
                 }}
               >
-                <X className="w-3 h-3" />
+                <X className="size-3" />
               </span>
             )}
           </span>
@@ -792,7 +792,7 @@ function MultiCheckSelect({
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
           matchAnchorWidth
-          className="bg-white border border-control-border rounded-sm shadow-md py-1"
+          className="bg-background border border-control-border rounded-sm shadow-md py-1"
         >
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
             <input
@@ -1212,14 +1212,14 @@ function ConditionRow({
       {!readonly && (
         <button
           type="button"
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
+          className="shrink-0 size-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
               group.args.splice(operandIndex, 1);
             })
           }
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="size-3.5" />
         </button>
       )}
     </div>
@@ -1245,7 +1245,7 @@ function RawStringEditor({
   return (
     <div className="w-full flex items-start gap-x-1">
       <textarea
-        className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-white resize-y disabled:opacity-50"
+        className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-background resize-y disabled:opacity-50"
         placeholder="Enter raw CEL expression"
         value={expr.content}
         disabled={readonly}
@@ -1261,14 +1261,14 @@ function RawStringEditor({
       {!readonly && (
         <button
           type="button"
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-gray-100"
+          className="shrink-0 size-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
               group.args.splice(operandIndex, 1);
             })
           }
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="size-3.5" />
         </button>
       )}
     </div>
@@ -1349,11 +1349,11 @@ function ConditionGroup({
   return (
     <div
       className={`w-full flex flex-col gap-y-2 py-0.5 ${
-        root ? "" : "border rounded-xs bg-gray-50"
+        root ? "" : "border rounded-xs bg-control-bg"
       }`}
     >
       {!root && (
-        <div className="pl-2.5 pr-1 text-gray-500 flex items-center">
+        <div className="pl-2.5 pr-1 text-control-light flex items-center">
           <div className="flex-1">
             {args.length > 0 ? (
               <>
@@ -1376,14 +1376,14 @@ function ConditionGroup({
             <div className="flex items-center justify-end">
               <button
                 type="button"
-                className="w-[22px] h-[22px] flex items-center justify-center rounded-xs hover:bg-gray-100"
+                className="size-[22px] flex items-center justify-center rounded-xs hover:bg-control-bg"
                 onClick={() =>
                   parentDoUpdate((group) => {
                     group.args.splice(operandIndex!, 1);
                   })
                 }
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="size-3.5" />
               </button>
             </div>
           )}
@@ -1391,7 +1391,7 @@ function ConditionGroup({
       )}
 
       {root && args.length === 0 && (
-        <div className="text-gray-500 text-sm">
+        <div className="text-control-light text-sm">
           {t("cel.condition.add-root-condition-placeholder")}
         </div>
       )}
@@ -1465,20 +1465,20 @@ function ConditionGroup({
         <div className="pl-1.5 pb-1 flex gap-x-1">
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm text-control-light px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
             disabled={readonly}
             onClick={addCondition}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="size-4" />
             {t("cel.condition.add")}
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm text-control-light px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
             disabled={readonly}
             onClick={addRawString}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="size-4" />
             {t("cel.condition.add-raw-expression")}
           </button>
         </div>
@@ -1488,24 +1488,24 @@ function ConditionGroup({
         <div className="flex gap-x-1">
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
             disabled={readonly}
             onClick={addCondition}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="size-4" />
             {t("cel.condition.add")}
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50 group relative"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50 group relative"
             disabled={readonly}
             onClick={addConditionGroup}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="size-4" />
             {t("cel.condition.add-group")}
             <span className="relative">
-              <HelpCircle className="ml-1 w-3 h-3 text-gray-400" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-gray-800 text-white rounded-sm shadow-lg z-50">
+              <HelpCircle className="ml-1 size-3 text-control-placeholder" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-main text-accent-text rounded-sm shadow-lg z-50">
                 {t("cel.condition.group.tooltip")}
               </span>
             </span>
@@ -1513,11 +1513,11 @@ function ConditionGroup({
           {enableRawExpression && (
             <button
               type="button"
-              className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-gray-100 disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
               disabled={readonly}
               onClick={addRawString}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="size-4" />
               {t("cel.condition.add-raw-expression")}
             </button>
           )}

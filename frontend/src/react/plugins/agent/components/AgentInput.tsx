@@ -619,14 +619,14 @@ export function AgentInput() {
           <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
             <button
-              className="rounded-xs bg-red-500 px-3 py-2 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+              className="rounded-xs bg-error px-3 py-2 text-sm text-accent-text hover:bg-error/90 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={retryLastTurn}
             >
               {t("agent.retry-last-chat-turn")}
             </button>
             <button
-              className="rounded-xs border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={dismissInterrupted}
             >
@@ -640,14 +640,14 @@ export function AgentInput() {
       {isAwaitingConfirm ? (
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <button
-            className="rounded-xs bg-blue-500 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+            className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(true)}
           >
             {confirmLabel}
           </button>
           <button
-            className="rounded-xs border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
@@ -660,13 +660,13 @@ export function AgentInput() {
           {chooseOptions.map((option) => (
             <button
               key={option.value}
-              className="rounded-xs border px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xs border px-3 py-2 text-left text-sm hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={() => submitChoice(option)}
             >
-              <div className="font-medium text-gray-800">{option.label}</div>
+              <div className="font-medium text-main">{option.label}</div>
               {option.description && (
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-control-light">
                   {option.description}
                 </div>
               )}
@@ -702,7 +702,7 @@ export function AgentInput() {
             {showMention && (
               <div
                 ref={mentionListRef}
-                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-xs border bg-white shadow-lg"
+                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-xs border bg-background shadow-lg"
               >
                 {mentionOptions.map((option, index) => {
                   const meta = formatDomRefSuggestionMeta(option.suggestion);
@@ -713,7 +713,7 @@ export function AgentInput() {
                       className={`cursor-pointer px-3 py-2 ${
                         index === highlightIndex
                           ? "bg-accent/10"
-                          : "hover:bg-gray-50"
+                          : "hover:bg-control-bg"
                       }`}
                       onMouseDown={(e) => {
                         e.preventDefault();
@@ -722,7 +722,7 @@ export function AgentInput() {
                       onMouseEnter={() => setHighlightIndex(index)}
                     >
                       <div className="flex flex-col text-sm">
-                        <div className="flex items-center gap-x-2 text-gray-800">
+                        <div className="flex items-center gap-x-2 text-main">
                           <span className="font-medium">
                             [{option.suggestion.ref}]
                           </span>
@@ -731,7 +731,7 @@ export function AgentInput() {
                           </span>
                         </div>
                         {meta && (
-                          <div className="mt-1 text-xs text-gray-500">
+                          <div className="mt-1 text-xs text-control-light">
                             {meta}
                           </div>
                         )}

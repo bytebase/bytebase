@@ -312,7 +312,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
                 disabled={!canCreate}
                 onClick={() => setShowAddSpecDrawer(true)}
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="size-4 mr-1" />
                 {t("plan.new-plan")}
               </Button>
             </PermissionGuard>
@@ -324,7 +324,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
       <div className="mt-2">
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           </div>
         ) : paged.dataList.length === 0 ? (
           <div className="flex justify-center py-8 text-control-light">
@@ -372,13 +372,13 @@ function DismissibleAlert({
 }) {
   return (
     <div className="relative w-full rounded-xs border border-accent/30 bg-accent/5 text-accent px-4 py-3 text-sm flex gap-x-3 items-start">
-      <Info className="h-5 w-5 shrink-0 mt-0.5" />
+      <Info className="size-5 shrink-0 mt-0.5" />
       <div className="flex-1">{children}</div>
       <button
         className="p-0.5 hover:bg-accent/10 rounded-xs shrink-0"
         onClick={onClose}
       >
-        <X className="h-4 w-4" />
+        <X className="size-4" />
       </button>
     </div>
   );
@@ -539,7 +539,7 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   return (
     <tr
       className={cn(
-        "border-b cursor-pointer hover:bg-gray-50",
+        "border-b cursor-pointer hover:bg-control-bg",
         isDeleted && "opacity-60"
       )}
       onClick={onRowClick}
@@ -561,7 +561,7 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             </span>
           )}
           {showDraftTag && !isDeleted && (
-            <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs shrink-0">
+            <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
               {t("common.draft")}
             </span>
           )}
@@ -574,25 +574,25 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
           <div className="flex items-center gap-3 flex-wrap">
             {checkSummary.running > 0 && (
               <div className="flex items-center gap-1 text-control">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 <span>{t("task.status.running")}</span>
               </div>
             )}
             {checkSummary.error > 0 && (
               <div className="flex items-center gap-1 text-error">
-                <XCircle className="w-4 h-4" />
+                <XCircle className="size-4" />
                 <span>{checkSummary.error}</span>
               </div>
             )}
             {checkSummary.warning > 0 && (
               <div className="flex items-center gap-1 text-warning">
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="size-4" />
                 <span>{checkSummary.warning}</span>
               </div>
             )}
             {checkSummary.success > 0 && (
               <div className="flex items-center gap-1 text-success">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="size-4" />
                 <span>{checkSummary.success}</span>
               </div>
             )}
@@ -673,7 +673,7 @@ function StatusTag({
   variant?: "default" | "success" | "warning" | "info";
 }) {
   const variantClasses: Record<string, string> = {
-    default: "bg-gray-100 text-gray-600",
+    default: "bg-control-bg text-control-light",
     success: "bg-success/10 text-success",
     warning: "bg-warning/10 text-warning",
     info: "bg-accent/10 text-accent",
@@ -695,7 +695,7 @@ function StatusTag({
 // ---------------------------------------------------------------------------
 
 function TaskStatusIcon({ status }: { status: Task_Status }) {
-  const size = "w-4 h-4";
+  const size = "size-4";
   switch (status) {
     case Task_Status.DONE:
       return <CheckCircle className={cn(size, "text-success")} />;
@@ -704,14 +704,14 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
     case Task_Status.FAILED:
       return <XCircle className={cn(size, "text-error")} />;
     case Task_Status.CANCELED:
-      return <XCircle className={cn(size, "text-gray-400")} />;
+      return <XCircle className={cn(size, "text-control-placeholder")} />;
     case Task_Status.PENDING:
     case Task_Status.NOT_STARTED:
       return (
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full border-2 border-gray-300"
+            "inline-flex items-center justify-center rounded-full border-2 border-control-border"
           )}
         />
       );
@@ -720,10 +720,10 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-500"
+            "inline-flex items-center justify-center rounded-full bg-control-bg-hover text-control-light"
           )}
         >
-          <span className="w-2 h-0.5 bg-current" />
+          <span className="w-2 h-px bg-current" />
         </span>
       );
     default:
@@ -731,7 +731,7 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full border-2 border-gray-200"
+            "inline-flex items-center justify-center rounded-full border-2 border-block-border"
           )}
         />
       );
@@ -827,8 +827,8 @@ function AddSpecDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-control-border flex items-center justify-between">
           <span className="text-lg font-semibold">{title}</span>
@@ -836,7 +836,7 @@ function AddSpecDrawer({
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -859,7 +859,7 @@ function AddSpecDrawer({
             {t("common.close")}
           </Button>
           <Button disabled={!canSubmit || creating} onClick={handleConfirm}>
-            {creating && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            {creating && <Loader2 className="size-4 mr-1 animate-spin" />}
             {t("common.confirm")}
           </Button>
         </div>
@@ -905,7 +905,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("DATABASE")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <DatabaseIcon className="w-4 h-4" />
+            <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
         </button>
@@ -920,7 +920,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("GROUP")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <FolderTree className="w-4 h-4" />
+            <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
         </button>
@@ -1045,7 +1045,7 @@ function DatabaseSelector({
 
       {loading ? (
         <div className="flex justify-center py-8 text-control-light">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="size-5 animate-spin" />
         </div>
       ) : databases.length === 0 ? (
         <div className="flex justify-center py-8 text-control-light">
@@ -1091,7 +1091,7 @@ function DatabaseSelector({
                   <tr
                     key={db.name}
                     className={cn(
-                      "border-b cursor-pointer hover:bg-gray-50",
+                      "border-b cursor-pointer hover:bg-control-bg",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
@@ -1108,7 +1108,7 @@ function DatabaseSelector({
                       <div className="flex items-center gap-x-1.5">
                         {inst && EngineIconPath[inst.engine] && (
                           <img
-                            className="h-4 w-4 shrink-0"
+                            className="size-4 shrink-0"
                             src={EngineIconPath[inst.engine]}
                             alt=""
                           />
@@ -1127,10 +1127,10 @@ function DatabaseSelector({
                             db.syncError || t("database.sync-status-failed")
                           }
                         >
-                          <XCircle className="w-4 h-4 text-error" />
+                          <XCircle className="size-4 text-error" />
                         </Tooltip>
                       ) : (
-                        <CheckCircle className="w-4 h-4 text-success" />
+                        <CheckCircle className="size-4 text-success" />
                       )}
                     </td>
                   </tr>
@@ -1188,7 +1188,7 @@ function DatabaseGroupSelector({
   if (loading) {
     return (
       <div className="flex justify-center py-8 text-control-light">
-        <Loader2 className="w-5 h-5 animate-spin" />
+        <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
@@ -1218,7 +1218,7 @@ function DatabaseGroupSelector({
             <tr
               key={group.name}
               className={cn(
-                "border-b cursor-pointer hover:bg-gray-50",
+                "border-b cursor-pointer hover:bg-control-bg",
                 isSelected && "bg-accent/5"
               )}
               onClick={() =>
@@ -1235,7 +1235,7 @@ function DatabaseGroupSelector({
               </td>
               <td className="py-2 pr-4">
                 <div className="flex items-center gap-x-1.5">
-                  <FolderTree className="w-4 h-4 text-control-light shrink-0" />
+                  <FolderTree className="size-4 text-control-light shrink-0" />
                   <span>{extractDatabaseGroupName(group.name)}</span>
                 </div>
               </td>

@@ -132,7 +132,7 @@ export function ProjectDatabaseGroupDetailPage({
             project={project}
           >
             <Button disabled={!canUpdate} onClick={() => setEditing(true)}>
-              <Edit className="w-4 h-4 mr-1" />
+              <Edit className="size-4 mr-1" />
               {t("common.configure")}
             </Button>
           </PermissionGuard>
@@ -145,7 +145,7 @@ export function ProjectDatabaseGroupDetailPage({
                 className="px-1!"
                 onClick={() => setShowDropdown((v) => !v)}
               >
-                <EllipsisVertical className="w-4 h-4" />
+                <EllipsisVertical className="size-4" />
               </Button>
               {showDropdown && (
                 <>
@@ -153,10 +153,10 @@ export function ProjectDatabaseGroupDetailPage({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowDropdown(false)}
                   />
-                  <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
+                  <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
                       onClick={() => {
                         setShowDropdown(false);
                         setShowDeleteDialog(true);

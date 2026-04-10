@@ -124,7 +124,7 @@ export function ProjectDatabaseGroupsPage({
               feature={PlanFeature.FEATURE_DATABASE_GROUPS}
               className="text-white"
             />
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="size-4 mr-1" />
             {t("common.create")}
           </Button>
         </div>
@@ -233,7 +233,7 @@ function DatabaseGroupTable({
           {pagedList.map((group) => (
             <tr
               key={group.name}
-              className="border-b cursor-pointer hover:bg-gray-50"
+              className="border-b cursor-pointer hover:bg-control-bg"
               onClick={(e) => onRowClick(e, group)}
             >
               <td className="py-2 pr-4 truncate max-w-64">{group.title}</td>
@@ -296,22 +296,22 @@ function ActionDropdown({
     <div className="relative flex justify-end">
       <button
         type="button"
-        className="p-1 rounded-xs hover:bg-gray-100"
+        className="p-1 rounded-xs hover:bg-control-bg"
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        <EllipsisVertical className="w-4 h-4" />
+        <EllipsisVertical className="size-4" />
       </button>
       {open && (
         <>
           {/* backdrop */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
+          <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(false);

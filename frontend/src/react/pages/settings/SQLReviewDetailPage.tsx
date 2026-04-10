@@ -361,7 +361,7 @@ export function SQLReviewDetailPage({
 
       {/* Sticky save bar when rules changed */}
       {rulesUpdated && (
-        <div className="w-full mt-4 py-2 border-t border-control-border flex justify-between bg-white sticky bottom-0 z-10">
+        <div className="w-full mt-4 py-2 border-t border-control-border flex justify-between bg-background sticky bottom-0 z-10">
           <Button variant="outline" onClick={onCancelChanges}>
             {t("common.cancel")}
           </Button>

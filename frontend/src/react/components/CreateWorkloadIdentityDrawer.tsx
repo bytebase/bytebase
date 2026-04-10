@@ -342,13 +342,13 @@ export function CreateWorkloadIdentityDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
 
       {/* Drawer */}
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -356,7 +356,7 @@ export function CreateWorkloadIdentityDrawer({
             {t("settings.members.workload-identity")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
+            <X className="size-5" />
           </Button>
         </div>
 
@@ -416,7 +416,7 @@ export function CreateWorkloadIdentityDrawer({
                     ) as WorkloadIdentityConfig_ProviderType
                   )
                 }
-                className="border border-control-border rounded-xs text-sm px-2 py-2 bg-white"
+                className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
               >
                 {[
                   WorkloadIdentityConfig_ProviderType.GITHUB,
@@ -460,7 +460,7 @@ export function CreateWorkloadIdentityDrawer({
                 maxLength={200}
                 autoComplete="off"
               />
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-control-light">
                 {isGitLab
                   ? t("settings.members.workload-identity-project-hint")
                   : t("settings.members.workload-identity-repo-hint")}
@@ -478,7 +478,7 @@ export function CreateWorkloadIdentityDrawer({
                 <select
                   value={refType}
                   onChange={(e) => setRefType(e.target.value as RefType)}
-                  className="border border-control-border rounded-xs text-sm px-2 py-2 bg-white"
+                  className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
                 >
                   <option value="all">
                     {t("settings.members.workload-identity-all-branches-tags")}
@@ -508,7 +508,7 @@ export function CreateWorkloadIdentityDrawer({
                   maxLength={200}
                   autoComplete="off"
                 />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-control-light">
                   {isTagRefType
                     ? t("settings.members.workload-identity-tag-hint")
                     : t("settings.members.workload-identity-branch-hint")}
@@ -533,7 +533,7 @@ export function CreateWorkloadIdentityDrawer({
                     autoComplete="off"
                   />
                   {isGitLab && (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-control-light">
                       {t("settings.members.workload-identity-gitlab-url-hint")}
                     </span>
                   )}
@@ -575,9 +575,9 @@ export function CreateWorkloadIdentityDrawer({
             >
               {t("settings.members.workload-identity-advanced")}
               {showAdvanced ? (
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="size-4" />
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="size-4" />
               )}
             </button>
 

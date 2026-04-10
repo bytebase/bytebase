@@ -440,7 +440,7 @@ export function InstanceFormButtons({
     return (
       <div
         className={cn(
-          "w-full py-4 border-t border-block-border flex justify-between bg-white",
+          "w-full py-4 border-t border-block-border flex justify-between bg-background",
           className
         )}
       >
@@ -473,7 +473,7 @@ export function InstanceFormButtons({
   return (
     <div
       className={cn(
-        "w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white",
+        "w-full mt-4 py-4 border-t border-block-border flex justify-between bg-background",
         className
       )}
     >

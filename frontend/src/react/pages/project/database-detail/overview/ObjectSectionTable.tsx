@@ -46,7 +46,7 @@ export function ObjectSectionTable({
             <th className="px-4 py-2 font-medium">{t("common.comment")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+        <tbody className="divide-y divide-block-border bg-background">
           {rows.map((row) => (
             <tr
               key={row.key}

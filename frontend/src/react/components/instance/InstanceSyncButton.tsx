@@ -127,15 +127,15 @@ export function InstanceSyncButton({
         onClick={() => setOpen(!open)}
       >
         {syncing ? t("instance.syncing") : t("instance.sync.self")}
-        <ChevronDown className="ml-1 w-4 h-4" />
+        <ChevronDown className="ml-1 size-4" />
       </Button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 min-w-[140px] rounded-sm border bg-white shadow-md py-1">
+          <div className="absolute left-0 top-full mt-1 z-50 min-w-[140px] rounded-sm border bg-background shadow-md py-1">
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
               title={t("instance.sync.sync-all-tip")}
               onClick={() => syncSchema("sync-all")}
             >
@@ -143,7 +143,7 @@ export function InstanceSyncButton({
             </button>
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
               onClick={() => syncSchema("sync-new")}
             >
               {t("instance.sync.sync-new")}

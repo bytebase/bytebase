@@ -34,7 +34,7 @@ export function DatabaseRevisionTable({
             <th className="px-4 py-2 font-medium">{t("common.operations")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+        <tbody className="divide-y divide-block-border bg-background">
           {revisions.map((revision) => (
             <tr key={revision.name}>
               <td className="px-4 py-3 text-sm text-main">

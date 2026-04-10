@@ -153,7 +153,7 @@ function SpannerHostInput({
           className="normal-link inline-flex items-center"
         >
           {t("common.detailed-guide")}
-          <ExternalLink className="w-4 h-4 ml-1" />
+          <ExternalLink className="size-4 ml-1" />
         </a>
       </p>
     </div>
@@ -215,7 +215,7 @@ function BigQueryHostInput({
           className="normal-link inline-flex items-center"
         >
           {t("common.detailed-guide")}
-          <ExternalLink className="w-4 h-4 ml-1" />
+          <ExternalLink className="size-4 ml-1" />
         </a>
       </p>
     </div>
@@ -242,20 +242,16 @@ function InstanceEngineRadioGrid({
           className={`flex items-center gap-x-2 rounded-sm border px-3 py-2 text-sm text-left transition-colors ${
             eng === engine
               ? "border-accent bg-accent/5 ring-1 ring-accent"
-              : "border-control-border hover:border-accent/50 hover:bg-gray-50"
+              : "border-control-border hover:border-accent/50 hover:bg-control-bg"
           }`}
           onClick={() => onEngineChange(eng)}
         >
           {EngineIconPath[eng] && (
-            <img
-              src={EngineIconPath[eng]}
-              alt=""
-              className="w-5 h-5 shrink-0"
-            />
+            <img src={EngineIconPath[eng]} alt="" className="size-5 shrink-0" />
           )}
           <span className="truncate">{engineNameV1(eng)}</span>
           {isEngineBeta(eng) && (
-            <span className="ml-auto shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600">
+            <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
               Beta
             </span>
           )}
@@ -416,7 +412,7 @@ function ResourceIdField({
       <div className="sm:col-span-3 sm:col-start-1 -mt-4">
         <div className="mt-4 textinfolabel text-sm flex items-center gap-x-1">
           {t("resource-id.self", { resource: resourceName })}:{" "}
-          <span className="text-gray-600 font-medium">{resourceId}</span>
+          <span className="text-control-light font-medium">{resourceId}</span>
         </div>
       </div>
     );
@@ -429,7 +425,7 @@ function ResourceIdField({
           <div className="flex items-center gap-x-1">
             {t("resource-id.self", { resource: resourceName })}:
             {resourceId ? (
-              <span className="text-gray-600 font-medium mr-1">
+              <span className="text-control-light font-medium mr-1">
                 {resourceId}
               </span>
             ) : (
@@ -454,7 +450,7 @@ function ResourceIdField({
               <li
                 key={msg.message}
                 className={`text-xs break-words ${
-                  msg.type === "warning" ? "text-yellow-600" : "text-red-600"
+                  msg.type === "warning" ? "text-warning" : "text-error"
                 }`}
               >
                 {msg.message}
@@ -495,7 +491,7 @@ function ResourceIdField({
             <li
               key={msg.message}
               className={`text-xs break-words ${
-                msg.type === "warning" ? "text-yellow-600" : "text-red-600"
+                msg.type === "warning" ? "text-warning" : "text-error"
               }`}
             >
               {msg.message}
@@ -1276,10 +1272,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       <div className="w-full flex flex-col gap-y-6">
         {/* Engine Selector (create only) */}
         {isCreating && (
-          <div className="rounded-lg border border-block-border bg-white">
+          <div className="rounded-lg border border-block-border bg-background">
             <button
               type="button"
-              className="w-full flex items-center justify-between gap-x-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+              className="w-full flex items-center justify-between gap-x-3 px-4 py-3 text-left transition-colors hover:bg-control-bg"
               onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
             >
               <div className="min-w-0">
@@ -1291,14 +1287,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     <img
                       src={EngineIconPath[basicInfo.engine]}
                       alt=""
-                      className="w-4 h-4"
+                      className="size-4"
                     />
                   )}
                   <span className="text-sm font-medium text-main">
                     {engineNameV1(basicInfo.engine)}
                   </span>
                   {isEngineBeta(basicInfo.engine) && (
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600">
+                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
                       Beta
                     </span>
                   )}
@@ -1306,9 +1302,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               </div>
               <div className="shrink-0 text-control-light">
                 {!isEngineSelectorCollapsed ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="size-4" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="size-4" />
                 )}
               </div>
             </button>
@@ -1359,7 +1355,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       <img
                         src={EngineIconPath[instance.engine]}
                         alt=""
-                        className="w-4 h-4"
+                        className="size-4"
                       />
                     )}
                     <span className="ml-1">{instance.engineVersion}</span>
@@ -1401,7 +1397,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         changeInstanceActivation(e.target.checked)
                       }
                     />
-                    <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                    <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
                   </label>
                 </div>
               </div>
@@ -1484,7 +1480,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         );
                       }}
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="size-4" />
                     </button>
                   )}
                 </label>
@@ -1605,7 +1601,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                             className="ml-1 inline-flex items-center gap-x-0.5 text-accent text-xs"
                             onClick={() => openInfoPanel("host")}
                           >
-                            <Info className="w-3.5 h-3.5" />
+                            <Info className="size-3.5" />
                           </button>
                         )}
                       </>
@@ -1772,7 +1768,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                           disabled={!allowEdit}
                           onClick={() => removeDSAdditionalAddress(index)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="size-4" />
                         </button>
                       </div>
                     </div>
@@ -1860,10 +1856,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
         {/* Connection Options Card */}
         {basicInfo.engine !== Engine.DYNAMODB && editingDataSource && (
-          <div className="border border-block-border rounded-lg bg-white">
+          <div className="border border-block-border rounded-lg bg-background">
             <button
               type="button"
-              className="w-full flex items-center justify-between gap-x-3 px-5 py-4 text-left transition-colors hover:bg-gray-50"
+              className="w-full flex items-center justify-between gap-x-3 px-5 py-4 text-left transition-colors hover:bg-control-bg"
               onClick={() => setIsConnectionOptionsCollapsed((prev) => !prev)}
             >
               <h3 className="text-base font-medium text-main">
@@ -1871,9 +1867,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               </h3>
               <div className="shrink-0 text-control-light">
                 {!isConnectionOptionsCollapsed ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="size-4" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="size-4" />
                 )}
               </div>
             </button>

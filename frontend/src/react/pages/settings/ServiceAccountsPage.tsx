@@ -166,7 +166,7 @@ function ServiceAccountTable({
               return (
                 <tr
                   key={user.name}
-                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
+                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-control-bg" : ""}`}
                 >
                   {/* Account column */}
                   <td className="px-4 py-2">
@@ -496,13 +496,13 @@ function CreateServiceAccountDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
 
       {/* Drawer */}
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -729,7 +729,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         {/* Active list */}
         {activeData.isLoading && activeData.dataList.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+            <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         ) : (
           <>
@@ -771,7 +771,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
             {inactiveData.isLoading && inactiveData.dataList.length === 0 ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+                <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
               </div>
             ) : (
               <>

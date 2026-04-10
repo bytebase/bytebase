@@ -182,15 +182,15 @@ function ConfirmDialog({
   const borderColor = variant === "error" ? "border-error" : "border-warning";
   const okBg =
     variant === "error"
-      ? "bg-error hover:bg-error-hover text-white"
-      : "bg-warning hover:bg-warning-hover text-white";
+      ? "bg-error hover:bg-error-hover text-accent-text"
+      : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
+      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
       <div
         className={cn(
-          "relative bg-white rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
+          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
           borderColor
         )}
       >
@@ -389,7 +389,7 @@ function InstanceActionDropdown({
           <EllipsisVertical className="h-4 w-4" />
         </button>
         {open && (
-          <div className="absolute right-0 top-full mt-1 bg-white border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
+          <div className="absolute right-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
             {isActive && canArchive && (
               <button
                 className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
@@ -484,7 +484,10 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-xs bg-gray-100 py-0.5 px-2 text-sm">
+        <span
+          key={key}
+          className="rounded-xs bg-control-bg py-0.5 px-2 text-sm"
+        >
           {key}:{value}
         </span>
       ))}
@@ -521,8 +524,8 @@ function EditEnvironmentDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">{t("common.environment")}</h2>
           <button
@@ -541,7 +544,7 @@ function EditEnvironmentDrawer({
                   "flex items-center gap-x-3 px-3 py-2 rounded-xs cursor-pointer border",
                   selected === env.name
                     ? "border-accent bg-accent/5"
-                    : "border-transparent hover:bg-gray-50"
+                    : "border-transparent hover:bg-control-bg"
                 )}
               >
                 <input
@@ -554,7 +557,7 @@ function EditEnvironmentDrawer({
                 <div className="flex items-center gap-x-2">
                   {env.color && (
                     <span
-                      className="inline-block w-3 h-3 rounded-full"
+                      className="inline-block size-3 rounded-full"
                       style={{ backgroundColor: env.color }}
                     />
                   )}
@@ -613,7 +616,7 @@ function SyncDropdown({
         <ChevronDown className="h-3 w-3 ml-1" />
       </Button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 bg-white border border-control-border rounded-sm shadow-lg z-10 min-w-[200px]">
+        <div className="absolute left-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[200px]">
           <button
             className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg"
             title={t("instance.sync.sync-all-tip")}
@@ -1118,7 +1121,7 @@ export function InstancesPage() {
 
   const renderSortIndicator = (columnKey: string) => {
     if (sortKey !== columnKey) {
-      return <ChevronDown className="h-3 w-3 text-gray-300" />;
+      return <ChevronDown className="size-3 text-control-border" />;
     }
     return (
       <ChevronDown
@@ -1195,7 +1198,7 @@ export function InstancesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[900px]">
             <thead>
-              <tr className="bg-gray-50 border-b border-control-border">
+              <tr className="bg-control-bg border-b border-control-border">
                 <th className="w-12 px-4 py-2">
                   <input
                     ref={headerCheckboxRef}
@@ -1243,7 +1246,7 @@ export function InstancesPage() {
                     className="px-4 py-8 text-center text-control-placeholder"
                   >
                     <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
                       {t("common.loading")}
                     </div>
                   </td>
@@ -1267,8 +1270,8 @@ export function InstancesPage() {
                     <tr
                       key={instance.name}
                       className={cn(
-                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
-                        i % 2 === 1 && "bg-gray-50/50"
+                        "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
+                        i % 2 === 1 && "bg-control-bg/50"
                       )}
                       onClick={(e) => handleRowClick(instance, e)}
                     >

@@ -110,12 +110,12 @@ export function DatabaseExportSchemaButton({
         disabled={disabled || exporting}
         onClick={() => setOpen((value) => !value)}
       >
-        <Download className="h-4 w-4" />
+        <Download className="size-4" />
         {t("database.export-schema")}
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="size-4" />
       </Button>
       {open && !disabled && !exporting && (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-52 rounded-sm border border-control-border bg-white py-1 shadow-md">
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-52 rounded-sm border border-control-border bg-background py-1 shadow-md">
           {options.map((option) => (
             <button
               key={option.key}
