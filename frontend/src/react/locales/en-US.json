@@ -347,6 +347,8 @@
   "common.password": "Password",
   "common.project": "Project",
   "common.read-only": "Read-only",
+  "common.remove": "Remove",
+  "common.removed": "Removed",
   "common.restore": "Restore",
   "common.rollout": "Rollout",
   "common.sensitive-placeholder": "Sensitive - write only",
@@ -518,11 +520,15 @@
     "expression": "Expression",
     "filter-database": "Filter database",
     "index-size": "Index size",
+    "indexes": "Indexes",
     "last-sync": "Last sync",
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
+    "nullable": "Nullable",
+    "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
+    "row-count-estimate": "Row count estimate",
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -555,7 +561,9 @@
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
-    "unassign-alert-title": "Unassign databases"
+    "unassign-alert-title": "Unassign databases",
+    "unique": "Unique",
+    "visible": "Visible"
   },
   "database-group": {
     "condition": {
@@ -606,6 +614,12 @@
     "syncing-databases-for-instance": "Syncing databases for {{0}}...",
     "tables": "Tables",
     "tasks": "Tasks",
+    "trigger": {
+      "body": "Body",
+      "event": "Event",
+      "timing": "Timing"
+    },
+    "triggers": "Triggers",
     "views": "Views"
   },
   "db.failed-to-sync-schema": "Failed to sync schema",
@@ -1372,7 +1386,8 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Search classification"
+      "search": "Search classification",
+      "select": "Select classification"
     }
   },
   "setting": {
