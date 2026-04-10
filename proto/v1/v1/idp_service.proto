@@ -27,7 +27,10 @@ service IdentityProviderService {
   // Lists all configured identity providers (public endpoint for login page).
   // Permissions required: None
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
-    option (google.api.http) = {get: "/v1/idps"};
+    option (google.api.http) = {
+      get: "/v1/idps"
+      additional_bindings: {get: "/v1/{parent=workspaces/*}/idps"}
+    };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
     // The method requires no authentication thus no authorization.
@@ -91,7 +94,12 @@ message GetIdentityProviderRequest {
   ];
 }
 
-message ListIdentityProvidersRequest {}
+message ListIdentityProvidersRequest {
+  // The parent workspace whose identity providers should be listed.
+  // Format: workspaces/{workspace}
+  // When unset, the workspace is resolved from the request context.
+  string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
+}
 
 message ListIdentityProvidersResponse {
   // The identity providers from the specified request.

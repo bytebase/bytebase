@@ -43,14 +43,13 @@ const (
 	// ActuatorServiceDeleteCacheProcedure is the fully-qualified name of the ActuatorService's
 	// DeleteCache RPC.
 	ActuatorServiceDeleteCacheProcedure = "/bytebase.v1.ActuatorService/DeleteCache"
-	// ActuatorServiceGetWorkspaceActuatorInfoProcedure is the fully-qualified name of the
-	// ActuatorService's GetWorkspaceActuatorInfo RPC.
-	ActuatorServiceGetWorkspaceActuatorInfoProcedure = "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo"
 )
 
 // ActuatorServiceClient is a client for the bytebase.v1.ActuatorService service.
 type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
+	// When `name` is provided (or the workspace-scoped binding is used), the
+	// response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
@@ -59,8 +58,6 @@ type ActuatorServiceClient interface {
 	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
-	// Gets workspace-scoped actuator info. Requires authentication.
-	GetWorkspaceActuatorInfo(context.Context, *connect.Request[v1.GetWorkspaceActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 }
 
 // NewActuatorServiceClient constructs a client for the bytebase.v1.ActuatorService service. By
@@ -92,21 +89,14 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
 			connect.WithClientOptions(opts...),
 		),
-		getWorkspaceActuatorInfo: connect.NewClient[v1.GetWorkspaceActuatorInfoRequest, v1.ActuatorInfo](
-			httpClient,
-			baseURL+ActuatorServiceGetWorkspaceActuatorInfoProcedure,
-			connect.WithSchema(actuatorServiceMethods.ByName("GetWorkspaceActuatorInfo")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
 // actuatorServiceClient implements ActuatorServiceClient.
 type actuatorServiceClient struct {
-	getActuatorInfo          *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
-	setupSample              *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
-	deleteCache              *connect.Client[v1.DeleteCacheRequest, emptypb.Empty]
-	getWorkspaceActuatorInfo *connect.Client[v1.GetWorkspaceActuatorInfoRequest, v1.ActuatorInfo]
+	getActuatorInfo *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
+	setupSample     *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
+	deleteCache     *connect.Client[v1.DeleteCacheRequest, emptypb.Empty]
 }
 
 // GetActuatorInfo calls bytebase.v1.ActuatorService.GetActuatorInfo.
@@ -124,14 +114,11 @@ func (c *actuatorServiceClient) DeleteCache(ctx context.Context, req *connect.Re
 	return c.deleteCache.CallUnary(ctx, req)
 }
 
-// GetWorkspaceActuatorInfo calls bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo.
-func (c *actuatorServiceClient) GetWorkspaceActuatorInfo(ctx context.Context, req *connect.Request[v1.GetWorkspaceActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
-	return c.getWorkspaceActuatorInfo.CallUnary(ctx, req)
-}
-
 // ActuatorServiceHandler is an implementation of the bytebase.v1.ActuatorService service.
 type ActuatorServiceHandler interface {
 	// Gets system information and health status of the Bytebase instance.
+	// When `name` is provided (or the workspace-scoped binding is used), the
+	// response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 	// Sets up sample data for demonstration and testing purposes.
@@ -140,8 +127,6 @@ type ActuatorServiceHandler interface {
 	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error)
-	// Gets workspace-scoped actuator info. Requires authentication.
-	GetWorkspaceActuatorInfo(context.Context, *connect.Request[v1.GetWorkspaceActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
 }
 
 // NewActuatorServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -169,12 +154,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 		connect.WithSchema(actuatorServiceMethods.ByName("DeleteCache")),
 		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceGetWorkspaceActuatorInfoHandler := connect.NewUnaryHandler(
-		ActuatorServiceGetWorkspaceActuatorInfoProcedure,
-		svc.GetWorkspaceActuatorInfo,
-		connect.WithSchema(actuatorServiceMethods.ByName("GetWorkspaceActuatorInfo")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/bytebase.v1.ActuatorService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ActuatorServiceGetActuatorInfoProcedure:
@@ -183,8 +162,6 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 			actuatorServiceSetupSampleHandler.ServeHTTP(w, r)
 		case ActuatorServiceDeleteCacheProcedure:
 			actuatorServiceDeleteCacheHandler.ServeHTTP(w, r)
-		case ActuatorServiceGetWorkspaceActuatorInfoProcedure:
-			actuatorServiceGetWorkspaceActuatorInfoHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -204,8 +181,4 @@ func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect
 
 func (UnimplementedActuatorServiceHandler) DeleteCache(context.Context, *connect.Request[v1.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.DeleteCache is not implemented"))
-}
-
-func (UnimplementedActuatorServiceHandler) GetWorkspaceActuatorInfo(context.Context, *connect.Request[v1.GetWorkspaceActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo is not implemented"))
 }

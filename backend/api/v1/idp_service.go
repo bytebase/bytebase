@@ -52,13 +52,22 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 }
 
 // ListIdentityProviders lists all identity providers.
-func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, _ *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
+func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
 	// allow_without_credential: workspace may not be in context (login page).
-	// List global IDPs (workspace IS NULL) and workspace-scoped IDPs separately.
+	// Workspace resolution order: request.parent -> JWT context -> default workspace (self-hosted).
 	var identityProviders []*store.IdentityProviderMessage
 
-	// TODO(ed): how to let SaaS users get their workspace IDPs before login?
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	var workspaceID string
+	if req.Msg.Parent != "" {
+		id, err := common.GetWorkspaceID(req.Msg.Parent)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		workspaceID = id
+	}
+	if workspaceID == "" {
+		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+	}
 	if workspaceID == "" && !s.profile.SaaS {
 		defaultWorkspaceID, err := s.store.GetWorkspaceID(ctx)
 		if err != nil {

@@ -28,6 +28,9 @@ func (x *ListIdentityProvidersRequest) Equal(y *ListIdentityProvidersRequest) bo
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Parent != y.Parent {
+		return false
+	}
 	return true
 }
 

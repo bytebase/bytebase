@@ -52,12 +52,23 @@ func NewActuatorService(
 }
 
 // GetActuatorInfo gets the actuator info.
+// Workspace resolution order: request.name -> JWT context -> default workspace (self-hosted).
 func (s *ActuatorService) GetActuatorInfo(
 	ctx context.Context,
-	_ *connect.Request[v1pb.GetActuatorInfoRequest],
+	req *connect.Request[v1pb.GetActuatorInfoRequest],
 ) (*connect.Response[v1pb.ActuatorInfo], error) {
 	var workspaceID string
-	if !s.profile.SaaS {
+	if req.Msg.Name != "" {
+		id, err := common.GetWorkspaceID(req.Msg.Name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		workspaceID = id
+	}
+	if workspaceID == "" {
+		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+	}
+	if workspaceID == "" && !s.profile.SaaS {
 		ws, err := s.store.GetWorkspaceID(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -65,19 +76,6 @@ func (s *ActuatorService) GetActuatorInfo(
 		workspaceID = ws
 	}
 	info, err := s.getServerInfo(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(info), nil
-}
-
-// GetWorkspaceActuatorInfo gets workspace-scoped actuator info. Requires authentication.
-// Workspace validation is handled by the ACL layer (resource_reference on name field).
-func (s *ActuatorService) GetWorkspaceActuatorInfo(
-	ctx context.Context,
-	_ *connect.Request[v1pb.GetWorkspaceActuatorInfoRequest],
-) (*connect.Response[v1pb.ActuatorInfo], error) {
-	info, err := s.getServerInfo(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, err
 	}

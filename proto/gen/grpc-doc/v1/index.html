@@ -650,10 +650,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest"><span class="badge">M</span>GetWorkspaceActuatorInfoRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Restriction"><span class="badge">M</span>Restriction</a>
                 </li>
               
@@ -8028,13 +8024,6 @@ Format: projects/{id} </p></td>
         <p>Request message for getting actuator information.</p>
 
         
-
-        
-      
-        <h3 id="bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</h3>
-        <p>Request message for getting workspace-scoped actuator information.</p>
-
-        
           <table class="field-table">
             <thead>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
@@ -8045,7 +8034,10 @@ Format: projects/{id} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The workspace name, format: workspaces/{workspace}. </p></td>
+                  <td><p>Optional. The workspace to scope the response to.
+Format: workspaces/{workspace}
+When unset, the workspace is resolved from the request context (self-hosted)
+or no workspace-scoped fields are returned (SaaS). </p></td>
                 </tr>
               
             </tbody>
@@ -8119,6 +8111,8 @@ Format: projects/{id} </p></td>
                 <td><a href="#bytebase.v1.GetActuatorInfoRequest">GetActuatorInfoRequest</a></td>
                 <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
                 <td><p>Gets system information and health status of the Bytebase instance.
+When `name` is provided (or the workspace-scoped binding is used), the
+response includes workspace-scoped fields for that workspace.
 Permissions required: None</p></td>
               </tr>
             
@@ -8136,13 +8130,6 @@ Permissions required: bb.projects.create</p></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Clears the system cache to force data refresh.
 Permissions required: None</p></td>
-              </tr>
-            
-              <tr>
-                <td>GetWorkspaceActuatorInfo</td>
-                <td><a href="#bytebase.v1.GetWorkspaceActuatorInfoRequest">GetWorkspaceActuatorInfoRequest</a></td>
-                <td><a href="#bytebase.v1.ActuatorInfo">ActuatorInfo</a></td>
-                <td><p>Gets workspace-scoped actuator info. Requires authentication.</p></td>
               </tr>
             
           </tbody>
@@ -8172,6 +8159,13 @@ Permissions required: None</p></td>
                 <td></td>
               </tr>
               
+              <tr>
+                <td>GetActuatorInfo</td>
+                <td>GET</td>
+                <td>/v1/{name=workspaces/*}/actuator/info</td>
+                <td></td>
+              </tr>
+              
             
               
               
@@ -8189,16 +8183,6 @@ Permissions required: None</p></td>
                 <td>DeleteCache</td>
                 <td>DELETE</td>
                 <td>/v1/actuator/cache</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetWorkspaceActuatorInfo</td>
-                <td>GET</td>
-                <td>/v1/{name=workspaces/*}/actuator/info</td>
                 <td></td>
               </tr>
               
@@ -18858,6 +18842,25 @@ server. </p></td>
         <p></p>
 
         
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent workspace whose identity providers should be listed.
+Format: workspaces/{workspace}
+When unset, the workspace is resolved from the request context. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -19453,6 +19456,13 @@ Permissions required: bb.identityProviders.update</p></td>
                 <td>ListIdentityProviders</td>
                 <td>GET</td>
                 <td>/v1/idps</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListIdentityProviders</td>
+                <td>GET</td>
+                <td>/v1/{parent=workspaces/*}/idps</td>
                 <td></td>
               </tr>
               

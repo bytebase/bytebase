@@ -32,22 +32,11 @@ export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
  * @generated from message bytebase.v1.GetActuatorInfoRequest
  */
 export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInfoRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.GetActuatorInfoRequest.
- * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
- */
-export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
-
-/**
- * Request message for getting workspace-scoped actuator information.
- *
- * @generated from message bytebase.v1.GetWorkspaceActuatorInfoRequest
- */
-export declare type GetWorkspaceActuatorInfoRequest = Message<"bytebase.v1.GetWorkspaceActuatorInfoRequest"> & {
   /**
-   * The workspace name, format: workspaces/{workspace}.
+   * Optional. The workspace to scope the response to.
+   * Format: workspaces/{workspace}
+   * When unset, the workspace is resolved from the request context (self-hosted)
+   * or no workspace-scoped fields are returned (SaaS).
    *
    * @generated from field: string name = 1;
    */
@@ -55,10 +44,10 @@ export declare type GetWorkspaceActuatorInfoRequest = Message<"bytebase.v1.GetWo
 };
 
 /**
- * Describes the message bytebase.v1.GetWorkspaceActuatorInfoRequest.
- * Use `create(GetWorkspaceActuatorInfoRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.GetActuatorInfoRequest.
+ * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
-export declare const GetWorkspaceActuatorInfoRequestSchema: GenMessage<GetWorkspaceActuatorInfoRequest>;
+export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
  * Request message for deleting cache.
@@ -275,6 +264,8 @@ export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
 export declare const ActuatorService: GenService<{
   /**
    * Gets system information and health status of the Bytebase instance.
+   * When `name` is provided (or the workspace-scoped binding is used), the
+   * response includes workspace-scoped fields for that workspace.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo
@@ -305,16 +296,6 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof DeleteCacheRequestSchema;
     output: typeof EmptySchema;
-  },
-  /**
-   * Gets workspace-scoped actuator info. Requires authentication.
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.GetWorkspaceActuatorInfo
-   */
-  getWorkspaceActuatorInfo: {
-    methodKind: "unary";
-    input: typeof GetWorkspaceActuatorInfoRequestSchema;
-    output: typeof ActuatorInfoSchema;
   },
 }>;
 
