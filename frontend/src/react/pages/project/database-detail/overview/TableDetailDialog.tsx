@@ -1,3 +1,5 @@
+import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
+import { cloneDeep } from "lodash-es";
 import { Pencil, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -23,8 +25,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSettingV1Store, useSubscriptionV1Store } from "@/store";
+import {
+  getTableCatalog,
+  pushNotification,
+  useDatabaseCatalog,
+  useDatabaseCatalogV1Store,
+  useSettingV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
+import {
+  SchemaCatalogSchema,
+  TableCatalogSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   DataClassificationSetting_DataClassificationConfig,
@@ -36,6 +50,7 @@ import {
   getDatabaseProject,
   getInstanceResource,
   hasWorkspacePermissionV2,
+  instanceV1MaskingForNoSQL,
 } from "@/utils";
 
 interface TableColumnDetail {
@@ -354,6 +369,123 @@ function DetailSection({
       <div className="text-sm font-medium text-control-light">{title}</div>
       {children}
     </div>
+  );
+}
+
+function NoSQLCatalogEditor({
+  database,
+  readonly,
+  schema,
+  tableName,
+}: {
+  database: Database;
+  readonly: boolean;
+  schema: string;
+  tableName: string;
+}) {
+  const { t } = useTranslation();
+  const databaseCatalogStore = useDatabaseCatalogV1Store();
+  const databaseCatalog = useDatabaseCatalog(database.name, false);
+  const catalog = useVueState(() => databaseCatalog.value);
+  const [catalogText, setCatalogText] = useState("{}");
+  const [isUploading, setIsUploading] = useState(false);
+
+  const initialCatalogText = useMemo(() => {
+    return toJsonString(
+      TableCatalogSchema,
+      getTableCatalog(catalog, schema, tableName) ??
+        create(TableCatalogSchema, {
+          name: tableName,
+        }),
+      {
+        prettySpaces: 2,
+      }
+    );
+  }, [catalog, schema, tableName]);
+
+  useEffect(() => {
+    setCatalogText(initialCatalogText);
+  }, [initialCatalogText]);
+
+  const hasChanges = catalogText !== initialCatalogText;
+
+  const handleUpload = async () => {
+    const nextTableCatalog = fromJsonString(TableCatalogSchema, catalogText);
+    if (nextTableCatalog.name !== tableName) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: `catalog name must be ${tableName}`,
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const pendingCatalog = cloneDeep(catalog);
+      const schemaCatalog = pendingCatalog.schemas.find(
+        (schemaCatalog) => schemaCatalog.name === schema
+      );
+      if (schemaCatalog) {
+        const tableIndex = schemaCatalog.tables.findIndex(
+          (tableCatalog) => tableCatalog.name === tableName
+        );
+        if (tableIndex >= 0) {
+          schemaCatalog.tables[tableIndex] = nextTableCatalog;
+        } else {
+          schemaCatalog.tables.push(nextTableCatalog);
+        }
+      } else {
+        pendingCatalog.schemas.push(
+          create(SchemaCatalogSchema, {
+            name: schema,
+            tables: [nextTableCatalog],
+          })
+        );
+      }
+
+      await databaseCatalogStore.updateDatabaseCatalog(pendingCatalog);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <DetailSection title={t("common.catalog")}>
+      <div className="text-sm text-control-light">
+        {t("db.catalog.description")}{" "}
+        <a
+          className="normal-link"
+          href="https://api.bytebase.com/#tag/databasecatalogservice/PATCH/v1/instances/{instance}/databases/{database}/catalog"
+          rel="noreferrer"
+          target="_blank"
+        >
+          {t("common.view-doc")}
+        </a>
+      </div>
+      <Textarea
+        data-testid="nosql-catalog-editor"
+        className="min-h-80 font-mono"
+        disabled={readonly}
+        value={catalogText}
+        onChange={(event) => setCatalogText(event.target.value)}
+      />
+      <div className="flex justify-end gap-x-2">
+        <Button
+          data-testid="nosql-catalog-upload"
+          disabled={readonly || !hasChanges || isUploading}
+          onClick={() => void handleUpload()}
+        >
+          {isUploading ? t("common.updating") : t("common.upload")}
+        </Button>
+      </div>
+    </DetailSection>
   );
 }
 
@@ -801,6 +933,9 @@ export function TableDetailDialog({
   const showColumnClassification = table.showColumnClassification;
   const showColumnCollation = table.showColumnCollation;
   const showColumns = table.showColumns ?? true;
+  const showNoSQLCatalog =
+    !!table.database &&
+    instanceV1MaskingForNoSQL(getInstanceResource(table.database));
   const showIndexCommentColumn = table.showIndexComment;
   const showIndexVisibleColumn = table.showIndexVisible;
   const showPartitionTables =
@@ -1190,6 +1325,15 @@ export function TableDetailDialog({
               </Table>
             </div>
           </DetailSection>
+        )}
+
+        {showNoSQLCatalog && table.database && table.tableName && (
+          <NoSQLCatalogEditor
+            database={table.database}
+            readonly={readonly}
+            schema={table.schema ?? ""}
+            tableName={table.tableName}
+          />
         )}
       </DialogContent>
     </Dialog>

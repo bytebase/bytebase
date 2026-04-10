@@ -361,6 +361,7 @@
   "common.username": "ユーザー名",
   "common.value": "値",
   "common.version": "バージョン",
+  "common.view-doc": "ドキュメントを見る",
   "common.warning": "警告する",
   "common.write-only": "書き込み専用",
   "create-db": {
@@ -622,6 +623,7 @@
     "triggers": "トリガー",
     "views": "ビュー"
   },
+  "db.catalog.description": "テーブルカタログを編集してアップロードします。",
   "db.failed-to-sync-schema": "スキーマの同期に失敗しました",
   "db.failed-to-sync-schema-for-database-database-value-name": "データベース '{{0}}' のスキーマを同期できませんでした。",
   "db.n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
