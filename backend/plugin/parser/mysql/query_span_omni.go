@@ -12,6 +12,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -67,15 +68,17 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	if e.gCtx.GetDatabaseDefinitionFunc != nil {
-		schemaDDL, err := e.gCtx.GetDatabaseDefinitionFunc(meta.GetProto())
-		if err != nil {
-			return errors.Wrap(err, "failed to generate schema DDL")
-		}
-		if schemaDDL != "" {
-			if _, err := e.cat.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-				return errors.Wrap(err, "failed to load schema DDL into catalog")
-			}
+	schemaDDL, err := schema.GetDatabaseDefinition(
+		storepb.Engine_MYSQL,
+		schema.GetDefinitionContext{},
+		meta.GetProto(),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to generate schema DDL")
+	}
+	if schemaDDL != "" {
+		if _, err := e.cat.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+			return errors.Wrap(err, "failed to load schema DDL into catalog")
 		}
 	}
 

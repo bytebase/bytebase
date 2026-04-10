@@ -1868,16 +1868,6 @@
       priority: 0
 - input: WITH a AS (SELECT c1 FROM t1), b AS (SELECT c1, c2 FROM t2) SELECT | FROM a JOIN b ON a.c1 = b.c1
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
     - text: db
       type: DATABASE
       definition: ""
@@ -1910,16 +1900,6 @@
       priority: 0
 - input: WITH a AS (SELECT c1 FROM t1), b AS (SELECT c1, c2 FROM t2) SELECT b.| FROM a JOIN b ON a.c1 = b.c1
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
 - input: WITH x AS (SELECT c1 FROM t1) SELECT | FROM (SELECT * FROM x) sub1
   want:
     - text: db
@@ -1986,18 +1966,8 @@
       priority: 0
 - input: With a AS (SELECT c1 FROM t1), b AS (SELECT a.| FROM a) SELECT * FROM b
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
 - input: WITH x AS (SELECT c1 FROM t1) SELECT | FROM x, t2
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
     - text: c1
       type: COLUMN
       definition: t2 | , NOT NULL
@@ -2035,11 +2005,6 @@
       priority: 0
 - input: WITH x AS (SELECT c1 FROM t1) SELECT x.| FROM x JOIN t2 ON x.c1 = t2.c1
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
 - input: WITH x(a, b) AS (SELECT c1, c2 FROM t2) SELECT | FROM x JOIN t1 ON x.a = t1.c1
   want:
     - text: a
@@ -2086,17 +2051,7 @@
   want:
     - text: c1
       type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: c1
-      type: COLUMN
       definition: t1 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: ""
       comment: ""
       priority: 0
     - text: db
@@ -2126,16 +2081,6 @@
       priority: 0
 - input: WITH x AS (SELECT c1, c2 FROM t2) UPDATE t1 SET c1 = (SELECT | FROM x)
   want:
-    - text: c1
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
     - text: db
       type: DATABASE
       definition: ""
@@ -2165,17 +2110,7 @@
   want:
     - text: c1
       type: COLUMN
-      definition: ""
-      comment: ""
-      priority: 0
-    - text: c1
-      type: COLUMN
       definition: t1 | , NOT NULL
-      comment: ""
-      priority: 0
-    - text: c2
-      type: COLUMN
-      definition: ""
       comment: ""
       priority: 0
     - text: db

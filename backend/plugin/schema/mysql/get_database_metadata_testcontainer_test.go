@@ -532,7 +532,7 @@ CREATE TABLE json_features (
 			require.NoError(t, err)
 
 			// Get metadata from parser
-			parsedMetadata, err := GetDatabaseMetadata(tc.ddl)
+			parsedMetadata, err := GetDatabaseMetadataOmni(tc.ddl)
 			require.NoError(t, err)
 
 			// Compare metadata

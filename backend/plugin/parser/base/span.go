@@ -323,18 +323,11 @@ func (p *Sequence) GetQuerySpanResult() []QuerySpanResult {
 	return result
 }
 
-// GetDatabaseDefinitionFunc generates DDL from database metadata.
-// Used by query span extractors to load schema into an analysis catalog.
-type GetDatabaseDefinitionFunc func(metadata *storepb.DatabaseSchemaMetadata) (string, error)
-
 type GetQuerySpanContext struct {
 	InstanceID                    string
 	GetDatabaseMetadataFunc       GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc         ListDatabaseNamesFunc
 	GetLinkedDatabaseMetadataFunc GetLinkedDatabaseMetadataFunc
-	// GetDatabaseDefinitionFunc generates DDL text from metadata proto.
-	// Injected by the caller to avoid circular imports between parser and schema packages.
-	GetDatabaseDefinitionFunc GetDatabaseDefinitionFunc
 	// TempTables is the temporary tables created in the query span.
 	// It's used to store the temporary tables declared in one batch for SQL Server.
 	TempTables map[string]*PhysicalTable

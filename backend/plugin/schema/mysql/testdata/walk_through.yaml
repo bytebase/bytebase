@@ -7,9 +7,9 @@
   want: ''
   advice:
     status: 1
-    code: 702
-    title: Database `other` is not the current database `test`
-    content: Database `other` is not the current database `test`
+    code: 704
+    title: Unknown database 'other'
+    content: Unknown database 'other'
     startPosition:
       line: 2
 - statement: 'CREATE TABLE `test`.`t1` (a INT);
@@ -59,9 +59,9 @@
   want: ''
   advice:
     status: 1
-    code: 702
-    title: Database `another` is not the current database `test`
-    content: Database `another` is not the current database `test`
+    code: 704
+    title: Unknown database 'another'
+    content: Unknown database 'another'
     startPosition:
       line: 1
 - statement: '-- this is comment

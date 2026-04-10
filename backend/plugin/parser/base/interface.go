@@ -48,7 +48,6 @@ var (
 	diagnoseCollectors      = make(map[storepb.Engine]DiagnoseFunc)
 	statementRanges         = make(map[storepb.Engine]StatementRangeFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
-	databaseDefinitionFuncs = make(map[storepb.Engine]GetDatabaseDefinitionFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
@@ -204,14 +203,6 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 	spans[engine] = f
 }
 
-// RegisterGetDatabaseDefinition registers a DDL generator for the engine.
-// Used by query span extractors to load schema into analysis catalogs.
-func RegisterGetDatabaseDefinition(engine storepb.Engine, f GetDatabaseDefinitionFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	databaseDefinitionFuncs[engine] = f
-}
-
 // GetQuerySpan gets the span of a query from pre-split statements.
 // The interface will return the query spans with non-critical errors, or return an error if the query is invalid.
 // Callers should split the SQL first using SplitMultiSQL and pass the resulting []Statement.
@@ -222,11 +213,6 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	}
 	gCtx.Engine = engine
 	gCtx.TempTables = make(map[string]*PhysicalTable)
-	if gCtx.GetDatabaseDefinitionFunc == nil {
-		if f, ok := databaseDefinitionFuncs[engine]; ok {
-			gCtx.GetDatabaseDefinitionFunc = f
-		}
-	}
 	var results []*QuerySpan
 	var nonEmptyStatements []Statement
 	for _, stmt := range statements {

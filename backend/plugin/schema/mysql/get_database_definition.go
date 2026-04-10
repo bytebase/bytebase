@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -51,14 +50,6 @@ const (
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_MYSQL, GetDatabaseDefinition)
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_OCEANBASE, GetDatabaseDefinition)
-
-	// Register DDL generator for query span extractors (avoids circular import).
-	wrapDef := func(meta *storepb.DatabaseSchemaMetadata) (string, error) {
-		return GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
-	}
-	base.RegisterGetDatabaseDefinition(storepb.Engine_MYSQL, wrapDef)
-	base.RegisterGetDatabaseDefinition(storepb.Engine_MARIADB, wrapDef)
-	base.RegisterGetDatabaseDefinition(storepb.Engine_OCEANBASE, wrapDef)
 
 	schema.RegisterGetTableDefinition(storepb.Engine_MYSQL, GetTableDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_OCEANBASE, GetTableDefinition)

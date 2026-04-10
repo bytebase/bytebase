@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -54,9 +55,9 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThrough(state, asts)
+		advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
-			// Compare the advice fields
+			require.NotNilf(t, test.Advice, "unexpected advice: code=%d content=%s for statement: %s", advice.Code, advice.Content, test.Statement)
 			require.Equal(t, test.Advice.Code, advice.Code)
 			require.Equal(t, test.Advice.Content, advice.Content)
 			continue

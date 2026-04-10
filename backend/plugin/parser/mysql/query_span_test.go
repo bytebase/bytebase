@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -63,10 +62,9 @@ func TestGetQuerySpan(t *testing.T) {
 			a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
 			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
-				GetDatabaseMetadataFunc:   databaseMetadataGetter,
-				ListDatabaseNamesFunc:     databaseNameLister,
-				GetDatabaseDefinitionFunc: mockGetDatabaseDefinition,
-				Engine:                    engine,
+				GetDatabaseMetadataFunc: databaseMetadataGetter,
+				ListDatabaseNamesFunc:   databaseNameLister,
+				Engine:                  engine,
 			}, base.Statement{Text: tc.Statement}, tc.DefaultDatabase, "", tc.IgnoreCaseSensitve)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
@@ -105,36 +103,4 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 			return names, nil
 		}
-}
-
-func mockGetDatabaseDefinition(meta *storepb.DatabaseSchemaMetadata) (string, error) {
-	if meta == nil {
-		return "", nil
-	}
-	var b strings.Builder
-	for _, s := range meta.Schemas {
-		for _, t := range s.Tables {
-			fmt.Fprintf(&b, "CREATE TABLE `%s`.`%s` (\n", meta.Name, t.Name)
-			for i, c := range t.Columns {
-				colType := c.Type
-				if colType == "" {
-					colType = "text"
-				}
-				fmt.Fprintf(&b, "  `%s` %s", c.Name, colType)
-				if i < len(t.Columns)-1 {
-					b.WriteString(",")
-				}
-				b.WriteString("\n")
-			}
-			b.WriteString(");\n")
-		}
-		for _, v := range s.Views {
-			if v.Definition == "" {
-				continue
-			}
-			def := strings.TrimSuffix(strings.TrimSpace(v.Definition), ";")
-			fmt.Fprintf(&b, "CREATE VIEW `%s`.`%s` AS %s;\n", meta.Name, v.Name, def)
-		}
-	}
-	return b.String(), nil
 }
