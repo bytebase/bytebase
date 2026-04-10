@@ -244,7 +244,9 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			Nullable: col.Nullable,
 			Comment:  col.Comment,
 		}
-		if col.Default != nil {
+		if col.AutoIncrement {
+			colMeta.Default = "AUTO_INCREMENT"
+		} else if col.Default != nil {
 			colMeta.Default = *col.Default
 		}
 		if col.OnUpdate != "" {
@@ -272,8 +274,14 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 	// Indexes.
 	for _, idx := range t.Indexes {
 		idxMeta := &storepb.IndexMetadata{
-			Name:    idx.Name,
-			Type:    strings.ToUpper(idx.IndexType),
+			Name: idx.Name,
+			Type: func() string {
+				t := strings.ToUpper(idx.IndexType)
+				if t == "" {
+					return "BTREE"
+				}
+				return t
+			}(),
 			Unique:  idx.Unique,
 			Primary: idx.Primary,
 			Visible: idx.Visible,
