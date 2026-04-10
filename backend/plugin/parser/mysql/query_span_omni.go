@@ -3,13 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/mysql/catalog"
+	mysqlparser "github.com/bytebase/omni/mysql/parser"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -78,11 +81,34 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 	}
 	if schemaDDL != "" {
 		if _, err := e.cat.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+			slog.Error("failed to parse schema DDL for catalog init",
+				slog.String("database", e.defaultDatabase),
+				log.BBError(err),
+				slog.String("context", ddlErrorContext(schemaDDL, err)),
+			)
 			return errors.Wrap(err, "failed to load schema DDL into catalog")
 		}
 	}
 
 	return nil
+}
+
+func (e *omniQuerySpanExtractor) loadDatabaseIntoCatalog(dbName string) {
+	meta, err := e.getDatabaseMetadata(dbName)
+	if err != nil || meta == nil {
+		return
+	}
+	schemaDDL, err := schema.GetDatabaseDefinition(
+		storepb.Engine_MYSQL,
+		schema.GetDefinitionContext{},
+		meta.GetProto(),
+	)
+	if err != nil || schemaDDL == "" {
+		return
+	}
+	initSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`;\nUSE `%s`;\n%s\nUSE `%s`;",
+		dbName, dbName, schemaDDL, e.defaultDatabase)
+	e.cat.Exec(initSQL, &catalog.ExecOptions{ContinueOnError: true}) //nolint:errcheck
 }
 
 //nolint:nilerr // intentional fail-open: AnalyzeSelectStmt errors are swallowed for best-effort results
@@ -147,6 +173,13 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	if err := e.initCatalog(); err != nil {
 		return nil, errors.Wrapf(err, "failed to initialize catalog")
+	}
+
+	// Load additional databases referenced in the query.
+	for resource := range accessesMap {
+		if resource.Database != "" && resource.Database != e.defaultDatabase {
+			e.loadDatabaseIntoCatalog(resource.Database)
+		}
 	}
 
 	query, analyzeErr := e.cat.AnalyzeSelectStmt(selStmt)
@@ -214,12 +247,19 @@ func classifyQueryTypeOmni(node ast.Node, allSystems bool) (queryType base.Query
 			return base.SelectInfoSchema, false
 		}
 		return base.Select, false
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
+		*ast.BeginStmt, *ast.CommitStmt, *ast.RollbackStmt,
+		*ast.SavepointStmt, *ast.LockTablesStmt, *ast.UnlockTablesStmt:
 		return base.DML, false
 	case *ast.CreateTableStmt, *ast.CreateViewStmt, *ast.CreateIndexStmt,
-		*ast.AlterTableStmt, *ast.DropTableStmt, *ast.DropViewStmt, *ast.DropIndexStmt,
-		*ast.RenameTableStmt, *ast.TruncateStmt, *ast.CreateDatabaseStmt,
-		*ast.AlterDatabaseStmt, *ast.DropDatabaseStmt:
+		*ast.CreateDatabaseStmt, *ast.CreateEventStmt, *ast.CreateTriggerStmt,
+		*ast.CreateFunctionStmt,
+		*ast.AlterTableStmt, *ast.AlterDatabaseStmt, *ast.AlterViewStmt,
+		*ast.AlterEventStmt, *ast.AlterRoutineStmt,
+		*ast.DropTableStmt, *ast.DropViewStmt, *ast.DropIndexStmt,
+		*ast.DropDatabaseStmt, *ast.DropEventStmt, *ast.DropTriggerStmt,
+		*ast.DropRoutineStmt,
+		*ast.RenameTableStmt, *ast.TruncateStmt:
 		return base.DDL, false
 	case *ast.SetStmt:
 		return base.Select, false
@@ -277,17 +317,28 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 }
 
 func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query) []base.QuerySpanResult {
+	var leftResults, rightResults []base.QuerySpanResult
 	if q.LArg != nil {
-		return e.extractLineage(q.LArg, nil)
+		leftResults = e.extractLineage(q.LArg, nil)
 	}
+	if q.RArg != nil {
+		rightResults = e.extractLineage(q.RArg, nil)
+	}
+	// Merge: use left branch names, combine source columns from both sides.
 	var results []base.QuerySpanResult
-	for _, te := range q.TargetList {
-		if te.ResJunk {
-			continue
+	for i, left := range leftResults {
+		merged := make(base.SourceColumnSet)
+		for k, v := range left.SourceColumns {
+			merged[k] = v
+		}
+		if i < len(rightResults) {
+			for k, v := range rightResults[i].SourceColumns {
+				merged[k] = v
+			}
 		}
 		results = append(results, base.QuerySpanResult{
-			Name:          te.ResName,
-			SourceColumns: make(base.SourceColumnSet),
+			Name:          left.Name,
+			SourceColumns: merged,
 		})
 	}
 	return results
@@ -395,8 +446,8 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 		}
 
 	case catalog.RTEJoin:
-		// For JOIN RTEs, the column name maps back to a physical column.
-		// Look through all RTEs for a matching column name.
+		// For JOIN RTEs, the column name maps back to physical columns.
+		// Merge all matching sources (for USING/NATURAL JOIN both sides contribute).
 		if colIdx >= 0 && colIdx < len(rte.ColNames) {
 			colName := rte.ColNames[colIdx]
 			for ri, other := range q.RangeTable {
@@ -409,7 +460,6 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 							RangeIdx: ri,
 							AttNum:   ci + 1,
 						}, result)
-						return
 					}
 				}
 			}
@@ -575,6 +625,10 @@ func (e *omniQuerySpanExtractor) collectFromExprSimple(expr ast.TableExpr, refs 
 	case *ast.JoinClause:
 		e.collectFromExprSimple(v.Left, refs)
 		e.collectFromExprSimple(v.Right, refs)
+	case *ast.SubqueryExpr:
+		if v.Alias != "" {
+			*refs = append(*refs, fallbackTableRef{Database: e.defaultDatabase, Table: v.Alias, alias: v.Alias})
+		}
 	default:
 	}
 }
@@ -589,6 +643,14 @@ func (e *omniQuerySpanExtractor) walkExprNodeForColumnRefs(expr ast.ExprNode, ta
 	case *ast.FuncCallExpr:
 		for _, arg := range v.Args {
 			e.walkExprNodeForColumnRefs(arg, tables, result)
+		}
+	case *ast.ResTarget:
+		e.walkExprNodeForColumnRefs(v.Val, tables, result)
+	case *ast.SubqueryExpr:
+		if v.Select != nil {
+			for _, target := range v.Select.TargetList {
+				e.walkExprNodeForColumnRefs(target, tables, result)
+			}
 		}
 	default:
 	}
@@ -641,10 +703,20 @@ func (e *omniQuerySpanExtractor) walkASTForTables(node ast.Node, result base.Sou
 			e.walkTableExprForTables(from, result)
 		}
 		e.walkExprNodeForTables(n.Where, result)
+		for _, target := range n.TargetList {
+			e.walkExprNodeForTables(target, result)
+		}
 		for _, cte := range n.CTEs {
 			if cte.Select != nil {
 				e.walkASTForTables(cte.Select, result)
 			}
+		}
+		// Recurse into set-op branches (UNION/INTERSECT/EXCEPT).
+		if n.Left != nil {
+			e.walkASTForTables(n.Left, result)
+		}
+		if n.Right != nil {
+			e.walkASTForTables(n.Right, result)
 		}
 	case *ast.InsertStmt:
 		if n.Table != nil {
@@ -692,8 +764,21 @@ func (e *omniQuerySpanExtractor) walkTableExprForTables(expr ast.TableExpr, resu
 	}
 }
 
-func (*omniQuerySpanExtractor) walkExprNodeForTables(_ ast.ExprNode, _ base.SourceColumnSet) {
-	// WHERE clause doesn't introduce new table refs in the simple case.
+func (e *omniQuerySpanExtractor) walkExprNodeForTables(expr ast.ExprNode, result base.SourceColumnSet) {
+	if expr == nil {
+		return
+	}
+	switch v := expr.(type) {
+	case *ast.SubqueryExpr:
+		if v.Select != nil {
+			e.walkASTForTables(v.Select, result)
+		}
+	case *ast.FuncCallExpr:
+		for _, arg := range v.Args {
+			e.walkExprNodeForTables(arg, result)
+		}
+	default:
+	}
 }
 
 func (e *omniQuerySpanExtractor) addTableRef(ref *ast.TableRef, result base.SourceColumnSet) {
@@ -778,6 +863,10 @@ func buildPlainFieldMaskMySQL(selStmt *ast.SelectStmt, q *catalog.Query) []bool 
 				pos++
 			}
 		} else {
+			// Non-star: check if the underlying expression is a plain column ref.
+			if pos < nResults {
+				mask[pos] = isUltimatelyPlainColumnMySQL(q, targets[pos].Expr)
+			}
 			pos++
 		}
 	}
@@ -833,4 +922,25 @@ func countStarColumnsFromRTEMySQL(q *catalog.Query, targets []*catalog.TargetEnt
 		return 1
 	}
 	return count
+}
+
+// ddlErrorContext extracts a snippet around the error position from the DDL.
+func ddlErrorContext(ddl string, err error) string {
+	var parseErr *mysqlparser.ParseError
+	if errors.As(err, &parseErr) && parseErr.Position > 0 {
+		pos := parseErr.Position
+		start := pos - 100
+		if start < 0 {
+			start = 0
+		}
+		end := pos + 100
+		if end > len(ddl) {
+			end = len(ddl)
+		}
+		return ddl[start:end]
+	}
+	if len(ddl) > 500 {
+		return ddl[:500] + "...(truncated)"
+	}
+	return ddl
 }

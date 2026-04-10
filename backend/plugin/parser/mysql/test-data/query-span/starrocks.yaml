@@ -40,7 +40,7 @@
               schema: ""
               table: v2
               column: product_info
-          isplainfield: false
+          isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -88,7 +88,7 @@
               schema: ""
               table: v1
               column: product_info
-          isplainfield: false
+          isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:

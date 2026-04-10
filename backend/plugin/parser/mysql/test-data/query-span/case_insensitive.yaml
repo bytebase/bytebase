@@ -31,7 +31,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: false
+          isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
