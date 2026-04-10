@@ -116,6 +116,7 @@ describe("FeatureAttention", () => {
 
     const alert = container.querySelector('[role="alert"]');
     expect(alert).toBeTruthy();
+    expect(alert?.querySelectorAll("svg")).toHaveLength(1);
 
     const actionButton = [...container.querySelectorAll("button")].find(
       (button) =>

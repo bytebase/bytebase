@@ -120,7 +120,7 @@ export function FeatureAttention({
 
   return (
     <>
-      <Alert variant={isWarning ? "warning" : "info"}>
+      <Alert variant={isWarning ? "warning" : "info"} showIcon={false}>
         <Icon className="size-5 mt-0.5 shrink-0" />
         <div className="flex-1 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
