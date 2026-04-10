@@ -1263,6 +1263,15 @@ function SortableEnvironmentRow({
   );
 }
 
+// Outer wrapper — captures a snapshot of `environments` at open time and
+// keeps it stable for the lifetime of the opened sheet. The inner
+// `ReorderSheetInner` is keyed by an open counter so it remounts fresh
+// every time the Sheet opens (re-initializing its `list` state from the
+// snapshot), but does NOT reset mid-session when the parent's
+// `environments` prop gets a new reference on every render (which
+// `useVueState` does — it spreads the store's array). A naive
+// `useEffect([open, environments])` reset would clobber the user's drag
+// reorder the instant the parent re-renders, which was the previous bug.
 function ReorderSheet({
   open,
   environments,
@@ -1274,15 +1283,56 @@ function ReorderSheet({
   onClose: () => void;
   onConfirm: (reordered: Environment[]) => void;
 }) {
-  const { t } = useTranslation();
-  const [list, setList] = useState(() => [...environments]);
-
-  // Reset list state whenever the Sheet is (re)opened. Sheet is always
-  // mounted so the useState initializer only runs on first mount.
+  // Counter bumps each time the Sheet transitions from closed → open,
+  // forcing the inner component to remount with a fresh list snapshot.
+  const [openCount, setOpenCount] = useState(0);
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
-    setList([...environments]);
-  }, [open, environments]);
+    if (open && !prevOpenRef.current) {
+      setOpenCount((c) => c + 1);
+    }
+    prevOpenRef.current = open;
+  }, [open]);
+
+  // Snapshot the environments at the moment we decided to open. This
+  // closes over a stable array reference for the session.
+  const snapshotRef = useRef(environments);
+  if (open && !prevOpenRef.current) {
+    snapshotRef.current = environments;
+  }
+  // After the initial open transition we keep refreshing the snapshot
+  // while open remains true so list-item metadata (titles, colors) stays
+  // current. But we never mutate the *order* mid-session.
+  const snapshot = open ? environments : snapshotRef.current;
+
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <ReorderSheetInner
+          key={openCount}
+          environments={snapshot}
+          onClose={onClose}
+          onConfirm={onConfirm}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ReorderSheetInner({
+  environments,
+  onClose,
+  onConfirm,
+}: {
+  environments: Environment[];
+  onClose: () => void;
+  onConfirm: (reordered: Environment[]) => void;
+}) {
+  const { t } = useTranslation();
+  // Initialize once at mount from the snapshot passed in. The outer
+  // wrapper remounts this component on each open, so this initializer
+  // always sees the correct starting order.
+  const [list, setList] = useState<Environment[]>(() => [...environments]);
 
   // dnd-kit sensors — Pointer handles mouse/touch, Keyboard enables
   // Tab+Space/Arrow accessible reordering.
@@ -1297,62 +1347,63 @@ function ReorderSheet({
     })
   );
 
+  // Compare against the initial order captured at mount, not against the
+  // live `environments` prop (which may change reference on every parent
+  // render thanks to useVueState spreading the store array).
+  const initialOrderRef = useRef(environments.map((e) => e.id));
   const orderChanged = useMemo(() => {
+    if (list.length !== initialOrderRef.current.length) return true;
     for (let i = 0; i < list.length; i++) {
-      if (list[i].id !== environments[i].id) return true;
+      if (list[i].id !== initialOrderRef.current[i]) return true;
     }
     return false;
-  }, [list, environments]);
+  }, [list]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = list.findIndex((e) => e.id === active.id);
-    const newIndex = list.findIndex((e) => e.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
-    setList(arrayMove(list, oldIndex, newIndex));
+    setList((prev) => {
+      const oldIndex = prev.findIndex((e) => e.id === active.id);
+      const newIndex = prev.findIndex((e) => e.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="narrow">
-        <SheetHeader>
-          <SheetTitle>{t("environment.reorder")}</SheetTitle>
-        </SheetHeader>
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("environment.reorder")}</SheetTitle>
+      </SheetHeader>
 
-        <SheetBody>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+      <SheetBody>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={list.map((e) => e.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={list.map((e) => e.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="flex flex-col gap-y-1">
-                {list.map((env, index) => (
-                  <SortableEnvironmentRow
-                    key={env.id}
-                    env={env}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </SheetBody>
+            <div className="flex flex-col gap-y-1">
+              {list.map((env, index) => (
+                <SortableEnvironmentRow key={env.id} env={env} index={index} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </SheetBody>
 
-        <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
-            {t("common.update")}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
+          {t("common.update")}
+        </Button>
+      </SheetFooter>
+    </>
   );
 }
 
