@@ -97,8 +97,8 @@ export class BytebaseApiClient {
 
   async updateInstanceDataSource(instanceName: string, dataSourceId: string, port: string) {
     return this.request<unknown>("PATCH",
-      `/v1/${instanceName}/dataSources/${dataSourceId}?updateMask=port`,
-      { port });
+      `/v1/${instanceName}:updateDataSource?updateMask=port`,
+      { id: dataSourceId, port });
   }
 
   // Query — endpoint is /v1/instances/{instance}/databases/{database}:query
