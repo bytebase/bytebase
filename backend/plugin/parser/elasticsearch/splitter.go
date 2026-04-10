@@ -3,6 +3,8 @@ package elasticsearch
 import (
 	"strings"
 
+	es "github.com/bytebase/omni/elasticsearch"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -13,12 +15,11 @@ func init() {
 
 // SplitMultiSQL splits the input into individual ElasticSearch REST API requests.
 func SplitMultiSQL(statement string) ([]base.Statement, error) {
-	parseResult, err := ParseElasticsearchREST(statement)
+	omniStmts, err := es.SplitMultiSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-
-	if parseResult == nil || len(parseResult.Requests) == 0 {
+	if len(omniStmts) == 0 {
 		if len(strings.TrimSpace(statement)) == 0 {
 			return nil, nil
 		}
@@ -26,55 +27,23 @@ func SplitMultiSQL(statement string) ([]base.Statement, error) {
 	}
 
 	var statements []base.Statement
-	for _, req := range parseResult.Requests {
-		if req == nil {
-			continue
-		}
-		text := statement[req.StartOffset:req.EndOffset]
-		empty := len(strings.TrimSpace(text)) == 0
-
-		// Calculate 1-based line and column positions
-		startLine, startColumn := byteOffsetToPosition(statement, req.StartOffset)
-		endLine, endColumn := byteOffsetToPosition(statement, req.EndOffset)
-
+	for _, s := range omniStmts {
 		statements = append(statements, base.Statement{
-			Text:  text,
-			Empty: empty,
+			Text:  s.Text,
+			Empty: s.Empty,
 			Start: &storepb.Position{
-				Line:   int32(startLine),
-				Column: int32(startColumn),
+				Line:   int32(s.Start.Line),
+				Column: int32(s.Start.Column),
 			},
 			End: &storepb.Position{
-				Line:   int32(endLine),
-				Column: int32(endColumn),
+				Line:   int32(s.End.Line),
+				Column: int32(s.End.Column),
 			},
 			Range: &storepb.Range{
-				Start: int32(req.StartOffset),
-				End:   int32(req.EndOffset),
+				Start: int32(s.Range.Start),
+				End:   int32(s.Range.End),
 			},
 		})
 	}
 	return statements, nil
-}
-
-// byteOffsetToPosition converts a byte offset to 1-based line and column numbers.
-// Column is measured in Unicode code points (runes), not bytes.
-func byteOffsetToPosition(text string, byteOffset int) (line, column int) {
-	line = 1
-	column = 1
-	currentByte := 0
-
-	for _, r := range text {
-		if currentByte >= byteOffset {
-			break
-		}
-		if r == '\n' {
-			line++
-			column = 1
-		} else {
-			column++
-		}
-		currentByte += len(string(r))
-	}
-	return line, column
 }
