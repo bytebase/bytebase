@@ -25176,7 +25176,8 @@ components:
           type: string
           title: file
           description: |-
-            Format: projects/{project}/releases/{release}/files/{id}
+            Format: projects/{project}/releases/{release}/files/{file_path}
+             The file_path segment is URL-encoded since file paths may contain "/".
              Can be empty.
         version:
           type: string

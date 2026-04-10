@@ -155,7 +155,8 @@ message Revision {
   // Can be empty.
   google.protobuf.Timestamp delete_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Format: projects/{project}/releases/{release}/files/{id}
+  // Format: projects/{project}/releases/{release}/files/{file_path}
+  // The file_path segment is URL-encoded since file paths may contain "/".
   // Can be empty.
   string file = 6;
 

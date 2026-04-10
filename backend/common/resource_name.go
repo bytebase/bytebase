@@ -3,6 +3,7 @@ package common
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -467,11 +468,23 @@ func GetProjectReleaseID(name string) (string, string, error) {
 }
 
 func GetProjectReleaseIDFile(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix, FileNamePrefix)
-	if err != nil {
-		return "", "", "", err
+	// Find the "files/" segment - everything after it is the encoded file path
+	parentPart, encodedFileID, found := strings.Cut(name, "/"+FileNamePrefix)
+	if !found {
+		return "", "", "", errors.Errorf("invalid release file name %q: missing files/ segment", name)
 	}
-	return tokens[0], tokens[1], tokens[2], nil
+
+	tokens, err := GetNameParentTokens(parentPart, ProjectNamePrefix, ReleaseNamePrefix)
+	if err != nil {
+		return "", "", "", errors.Errorf("invalid release file name %q", name)
+	}
+
+	fileID, err := url.PathUnescape(encodedFileID)
+	if err != nil {
+		return "", "", "", errors.Errorf("invalid release file name %q: failed to decode file ID", name)
+	}
+
+	return tokens[0], tokens[1], fileID, nil
 }
 
 // GetGroupEmail returns the group email.
@@ -612,7 +625,7 @@ func FormatReleaseName(projectID string, releaseID string) string {
 }
 
 func FormatReleaseFile(release string, fileID string) string {
-	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, fileID)
+	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, url.PathEscape(fileID))
 }
 
 func FormatRevision(instanceID, databaseID string, revisionID string) string {
