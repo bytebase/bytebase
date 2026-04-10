@@ -177,16 +177,6 @@ export class SqlEditorPage {
     await this.page.waitForTimeout(2000);
   }
 
-  async goto(projectId: string) {
-    await this.page.goto(`${this.baseURL}/sql-editor/projects/${projectId}`);
-    await this.page.keyboard.press("Escape").catch(() => {});
-    await this.page.waitForTimeout(2000);
-  }
-
-  async connectToDatabase(_dbName: string) {
-    // No-op when using gotoWithDb
-  }
-
   async runQuery(sql: string) {
     await this.page.keyboard.press("Escape").catch(() => {});
     await this.page.waitForTimeout(300);

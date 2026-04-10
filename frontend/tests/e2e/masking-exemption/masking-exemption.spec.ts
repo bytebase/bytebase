@@ -25,6 +25,8 @@ interface MaskingTestData {
 
 let env: TestEnv & { api: BytebaseApiClient };
 let maskingData: MaskingTestData;
+// Extracted IDs for convenience — assigned once in file-level beforeAll
+let projectId: string;
 
 // Shared browser context and page — reused across ALL tests.
 // Avoids browser open/close overhead and NVirtualList first-render issues.
@@ -158,13 +160,13 @@ async function dropMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): P
   }
 }
 
-async function grantExemption(description: string): Promise<void> {
+async function grantExemption(description: string, member = `user:${env.adminEmail}`): Promise<void> {
   const existing = await env.api.getPolicy(`${env.project}/policies/masking_exemption`) as {
     maskingExemptionPolicy?: { exemptions: { members: string[]; condition?: { expression: string; description: string } }[] };
   } | null;
   const exemptions = existing?.maskingExemptionPolicy?.exemptions ?? [];
   exemptions.push({
-    members: [`user:${env.adminEmail}`],
+    members: [member],
     condition: { expression: "", description },
   });
   await env.api.upsertPolicy(env.project, "masking_exemption", {
@@ -184,6 +186,7 @@ async function revokeAllExemptions(): Promise<void> {
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
+  projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
   // Create our own test schema/table/data — no dependency on demo content.
@@ -213,7 +216,6 @@ test.describe("Exemption List Page", () => {
 
   test("loads and displays member list with grant details", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
 
     await expect(exemptionPage.grantExemptionButton).toBeVisible();
@@ -225,7 +227,6 @@ test.describe("Exemption List Page", () => {
 
   test("Active tab shows only active grants", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.activeTab.click();
     await page.waitForTimeout(500);
@@ -236,7 +237,6 @@ test.describe("Exemption List Page", () => {
 
   test("selecting a member shows their grants in detail panel", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.selectMember(env.adminEmail);
     await page.waitForTimeout(500);
@@ -247,7 +247,6 @@ test.describe("Exemption List Page", () => {
 
   test("grant card shows reason", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.selectMember(env.adminEmail);
     await page.waitForTimeout(500);
@@ -257,7 +256,6 @@ test.describe("Exemption List Page", () => {
 
   test("clicking All tab removes Active filter and shows all data", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
 
     await exemptionPage.allTab.click();
@@ -269,7 +267,6 @@ test.describe("Exemption List Page", () => {
 
   test("grant card has no excessive top padding", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.selectMember(env.adminEmail);
     await page.waitForTimeout(500);
@@ -294,15 +291,7 @@ test.describe("Member Type Badges", () => {
   test.beforeAll(async () => {
     const sa = await env.api.createServiceAccount(env.project, saId, "E2E Test SA");
     saEmail = sa.email;
-    const existing = await env.api.getPolicy(`${env.project}/policies/masking_exemption`) as {
-      maskingExemptionPolicy?: { exemptions: { members: string[]; condition?: { expression: string; description: string } }[] };
-    } | null;
-    const exemptions = existing?.maskingExemptionPolicy?.exemptions ?? [];
-    exemptions.push({ members: [`serviceAccount:${saEmail}`], condition: { expression: "", description: "SA test" } });
-    await env.api.upsertPolicy(env.project, "masking_exemption", {
-      type: "MASKING_EXEMPTION",
-      maskingExemptionPolicy: { exemptions },
-    });
+    await grantExemption("SA test", `serviceAccount:${saEmail}`);
   });
 
   test.afterAll(async () => {
@@ -312,7 +301,6 @@ test.describe("Member Type Badges", () => {
 
   test("service account badge renders on single line", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
-    const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.allTab.click();
     await page.waitForTimeout(500);
@@ -333,7 +321,6 @@ test.describe("Grant and Revoke", () => {
   });
 
   test("grant exemption via UI and verify it appears in list", async () => {
-    const projectId = env.project.split("/").pop()!;
     const grantPage = new GrantExemptionPage(page, env.baseURL);
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
@@ -355,7 +342,6 @@ test.describe("Grant and Revoke", () => {
   });
 
   test("revoke exemption via UI and verify it disappears", async () => {
-    const projectId = env.project.split("/").pop()!;
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
     await grantExemption("To be revoked");
@@ -375,7 +361,6 @@ test.describe("Grant and Revoke", () => {
   });
 
   test("revoke confirmation can be cancelled", async () => {
-    const projectId = env.project.split("/").pop()!;
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
     await grantExemption("Should survive cancel");
@@ -398,9 +383,6 @@ test.describe("E2E Masking Verification", () => {
   // Shared cycle test: masked → grant via UI → unmasked → revoke via UI → masked.
   // Parameterized by which column (classification-masked vs semantic-type-masked).
   const runMaskingCycle = async (target: MaskingTestColumn, reason: string) => {
-    const projectId = env.project.split("/").pop()!;
-    const instanceId = env.instance.split("/").pop()!;
-    const dbId = env.database.split("/").pop()!;
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
     const grantPage = new GrantExemptionPage(page, env.baseURL);
     const listPage = new MaskingExemptionPage(page, env.baseURL);
@@ -409,7 +391,7 @@ test.describe("E2E Masking Verification", () => {
 
     // Step 1: No exemption → data is masked
     await revokeAllExemptions();
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(false);
 
@@ -420,7 +402,7 @@ test.describe("E2E Masking Verification", () => {
     await grantPage.submit();
     await page.waitForTimeout(1000);
 
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(true);
 
@@ -432,7 +414,7 @@ test.describe("E2E Masking Verification", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
     await page.waitForTimeout(500);
 
-    await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
     await sqlEditor.runQuery(sql);
     expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(false);
   };
@@ -460,7 +442,6 @@ test.describe("Responsive Layout", () => {
 
   test("wide screen shows split-panel layout", async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    const projectId = env.project.split("/").pop()!;
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     await exemptionPage.goto(projectId);
 
@@ -470,7 +451,6 @@ test.describe("Responsive Layout", () => {
 
   test("narrow screen shows expandable list", async () => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    const projectId = env.project.split("/").pop()!;
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     await exemptionPage.goto(projectId);
 
