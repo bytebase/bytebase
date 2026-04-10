@@ -385,6 +385,11 @@ test.describe("Responsive Layout", () => {
     await grantExemption("Layout test grant");
   });
 
+  test.afterAll(async () => {
+    // Reset viewport so subsequent tests (if any) aren't stuck at mobile size
+    await page.setViewportSize({ width: 1280, height: 720 });
+  });
+
   test("wide screen shows split-panel layout", async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     const projectId = env.project.split("/").pop()!;
