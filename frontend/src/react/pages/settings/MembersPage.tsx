@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import {
   Building2,
@@ -1654,7 +1653,7 @@ function RequestRoleDialog({
   // Bind the datetime-local picker's min to the current minute so users
   // can't silently pick a time earlier today and submit a zero-duration
   // role grant.
-  const minDatetime = useMemo(() => dayjs().format("YYYY-MM-DDTHH:mm"), []);
+  const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
 
   const expirationIsInPast =
     !!expirationTimestamp &&
@@ -1663,10 +1662,15 @@ function RequestRoleDialog({
   const labelsMisconfigured =
     project.forceIssueLabels && project.issueLabels.length === 0;
 
+  // Match the old Vue AddProjectMemberForm behavior: reason is only required
+  // when the project enforces issue titles (where the reason becomes the
+  // title). Otherwise the title is auto-generated and the reason is optional.
+  const reasonRequired = project.enforceIssueTitle;
+
   const canSubmit =
     !submitting &&
     !!role &&
-    reason.trim().length > 0 &&
+    (!reasonRequired || reason.trim().length > 0) &&
     !expirationIsInPast &&
     !labelsMisconfigured &&
     (!project.forceIssueLabels || labels.length > 0);
@@ -1675,26 +1679,29 @@ function RequestRoleDialog({
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      // Compute expiration as a Duration from now until the picked timestamp.
-      const expiration = expirationTimestamp
-        ? create(DurationSchema, {
-            seconds: BigInt(
-              Math.max(0, dayjs(expirationTimestamp).unix() - dayjs().unix())
-            ),
-          })
-        : undefined;
+      const trimmedReason = reason.trim();
+
+      // Encode expiration into the CEL condition (as
+      // `request.time < timestamp("...")`) — the backend's
+      // UpdateProjectPolicyFromRoleGrantIssue uses `condition.expression`
+      // to gate access and ignores `roleGrant.expiration` entirely, so the
+      // expiration must live in the condition to actually take effect.
+      const condition = buildConditionExpr({
+        role,
+        description: trimmedReason,
+        expirationTimestampInMS: expirationTimestamp
+          ? dayjs(expirationTimestamp).valueOf()
+          : undefined,
+      });
 
       const roleGrant = create(RoleGrantSchema, {
         role,
         user: `users/${currentUser.email}`,
-        expiration,
+        condition,
       });
 
       // When the project enforces issue titles, the user-provided reason is
       // treated as the title (matching the old Vue RoleGrantPanel behavior).
-      // In that mode we leave the description empty so the same text doesn't
-      // appear twice on the resulting issue.
-      const trimmedReason = reason.trim();
       const title = project.enforceIssueTitle
         ? `[${t("issue.title.request-role")}] ${trimmedReason}`
         : formatIssueTitle(
@@ -1703,11 +1710,10 @@ function RequestRoleDialog({
             }),
             []
           );
-      const description = project.enforceIssueTitle ? "" : trimmedReason;
 
       const newIssue = create(IssueSchema, {
         title,
-        description,
+        description: trimmedReason,
         type: Issue_Type.ROLE_GRANT,
         roleGrant,
         labels,
@@ -1774,7 +1780,7 @@ function RequestRoleDialog({
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
               {t("common.reason")}
-              <span className="text-error ml-0.5">*</span>
+              {reasonRequired && <span className="text-error ml-0.5">*</span>}
             </label>
             <Textarea
               value={reason}
