@@ -1,3 +1,4 @@
+import { execFileSync } from "child_process";
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
@@ -30,139 +31,102 @@ let maskingData: MaskingTestData;
 let sharedContext: BrowserContext;
 let page: Page;
 
-// ── Feature-specific discovery ──
+// ── Feature-specific test data setup ──
 
-type Row = { values?: { stringValue?: string; int64Value?: string }[] };
-const getStr = (row: Row, idx: number) => row.values?.[idx]?.stringValue ?? row.values?.[idx]?.int64Value ?? "";
-const getRows = (result: { results: unknown[] }) =>
-  ((result.results?.[0] as { rows?: Row[] })?.rows ?? []);
+// Fixed values we control: the test creates its own schema/table/rows,
+// applies masking, and drops everything in teardown.
+const TEST_SCHEMA = "e2e_masking";
+const TEST_TABLE = "t";
+const CLASSIFICATION_COLUMN = "col_classification";
+const SEMANTIC_TYPE_COLUMN = "col_semantic";
+const ROW_PK = "1";
+const CLASSIFICATION_VALUE = "ClassValueABCDE";
+const SEMANTIC_TYPE_VALUE = "SemValueABCDE";
+const CLASSIFICATION_LEVEL = "1-2"; // matches demo classification rules
 
-interface CandidateColumn {
-  schema: string;
-  table: string;
-  column: string;
-  pkColumn: string;
+// Execute SQL via psql over Unix socket on the sample Postgres instance.
+// Used for DDL/DML setup and teardown — Bytebase's query API is read-only.
+function execSql(env: TestEnv & { api: BytebaseApiClient }, dbName: string, sql: string): void {
+  // Sample instance Postgres runs on PORT+4 via Unix socket at /tmp.
+  // Parse port from baseURL (http://localhost:PORT).
+  const match = env.baseURL.match(/localhost:(\d+)/);
+  if (!match) throw new Error(`Cannot parse port from baseURL: ${env.baseURL}`);
+  const sampleInstancePort = String(parseInt(match[1], 10) + 4);
+  execFileSync("psql", [
+    "-h", "/tmp",
+    "-p", sampleInstancePort,
+    "-U", "bbsample",
+    "-d", dbName,
+    "-v", "ON_ERROR_STOP=1",
+    "-c", sql,
+  ], { stdio: "pipe" });
 }
 
-// Query information_schema for text columns in tables with a single-column PK.
-async function findCandidateTextColumns(env: TestEnv & { api: BytebaseApiClient }): Promise<CandidateColumn[]> {
-  const result = await env.api.query(
-    env.database,
-    `SELECT c.table_schema, c.table_name, c.column_name, pk.pk_column
-     FROM information_schema.columns c
-     JOIN (
-       SELECT kcu.table_schema, kcu.table_name, MIN(kcu.column_name) AS pk_column
-       FROM information_schema.table_constraints tc
-       JOIN information_schema.key_column_usage kcu
-         ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
-       WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
-       GROUP BY kcu.table_schema, kcu.table_name
-       HAVING COUNT(*) = 1
-     ) pk ON c.table_schema = pk.table_schema AND c.table_name = pk.table_name
-     WHERE c.table_schema = 'public'
-       AND c.data_type IN ('text', 'character varying')
-       AND c.column_name != pk.pk_column`
-  );
-  return getRows(result)
-    .map((r) => ({
-      schema: getStr(r, 0),
-      table: getStr(r, 1),
-      column: getStr(r, 2),
-      pkColumn: getStr(r, 3),
-    }))
-    .filter((c) => c.schema && c.table && c.column && c.pkColumn);
-}
+async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
+  const dbName = env.database.split("/").pop()!;
 
-// Fetch a sample row (PK + value) from the given column. Returns null if empty.
-async function sampleRow(
-  env: TestEnv & { api: BytebaseApiClient },
-  c: CandidateColumn,
-): Promise<MaskingTestColumn | null> {
-  const result = await env.api.query(
-    env.database,
-    `SELECT "${c.pkColumn}", "${c.column}" FROM "${c.schema}"."${c.table}" WHERE "${c.column}" IS NOT NULL AND "${c.column}" != '' LIMIT 1`,
-  );
-  const rows = getRows(result);
-  if (rows.length === 0) return null;
-  const pkValue = getStr(rows[0], 0);
-  const textValue = getStr(rows[0], 1);
-  if (!pkValue || !textValue) return null;
-  return {
-    sampleTable: c.table,
-    sampleSchema: c.schema,
-    sampleColumn: c.column,
-    primaryKeyColumn: c.pkColumn,
-    primaryKeyValue: pkValue,
-    knownUnmaskedValue: textValue,
-  };
-}
+  // Drop anything leftover from a previous run, then create fresh schema/table/row
+  execSql(env, dbName, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+  execSql(env, dbName, `CREATE SCHEMA ${TEST_SCHEMA}`);
+  execSql(env, dbName, `CREATE TABLE ${TEST_SCHEMA}.${TEST_TABLE} (
+    id INTEGER PRIMARY KEY,
+    ${CLASSIFICATION_COLUMN} TEXT NOT NULL,
+    ${SEMANTIC_TYPE_COLUMN} TEXT NOT NULL
+  )`);
+  execSql(env, dbName, `INSERT INTO ${TEST_SCHEMA}.${TEST_TABLE} (id, ${CLASSIFICATION_COLUMN}, ${SEMANTIC_TYPE_COLUMN})
+    VALUES (${ROW_PK}, '${CLASSIFICATION_VALUE}', '${SEMANTIC_TYPE_VALUE}')`);
 
-// Discover test columns for both masking mechanisms.
-// Strategy: grant a temporary exemption so all queries return TRUE unmasked values.
-// Then split candidates: first one becomes the classification column (assumes demo
-// data configures classification on an early text column), second becomes the
-// semantic type column (we apply semanticType explicitly in configureMasking).
-async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  const candidates = await findCandidateTextColumns(env);
-  if (candidates.length < 2) {
-    throw new Error(`Need at least 2 text columns for masking tests, found ${candidates.length}`);
+  // Sync the database schema so Bytebase picks up the new table
+  try {
+    await env.api.syncDatabase(env.database);
+  } catch {
+    // sync endpoint may not be available; catalog update will still work
   }
 
-  // Check catalog to separate columns that already have classification from those that don't
-  const catalog = await env.api.getCatalog(env.database) as {
-    schemas?: { name: string; tables?: { name: string; columns?: { columns?: { name: string; classification?: string; semanticType?: string }[] } }[] }[];
-  };
-  const hasClassification = (c: CandidateColumn): boolean => {
-    const schema = catalog.schemas?.find((s) => s.name === c.schema);
-    const table = schema?.tables?.find((t) => t.name === c.table);
-    const col = table?.columns?.columns?.find((col) => col.name === c.column);
-    return !!col?.classification;
-  };
-  const hasAnyMasking = (c: CandidateColumn): boolean => {
-    const schema = catalog.schemas?.find((s) => s.name === c.schema);
-    const table = schema?.tables?.find((t) => t.name === c.table);
-    const col = table?.columns?.columns?.find((col) => col.name === c.column);
-    return !!(col?.classification || col?.semanticType);
-  };
-
-  const classCandidates = candidates.filter(hasClassification);
-  const cleanCandidates = candidates.filter((c) => !hasAnyMasking(c));
-
-  if (classCandidates.length === 0) {
-    throw new Error("No text column with classification found in demo data");
-  }
-  if (cleanCandidates.length === 0) {
-    throw new Error("No text column without masking found in demo data");
-  }
-
-  // Must pick different columns so tests don't interfere
-  const classCol = await sampleRow(env, classCandidates[0]);
-  const semCol = await sampleRow(env, cleanCandidates[0]);
-  if (!classCol) throw new Error(`No data in classification candidate ${classCandidates[0].table}.${classCandidates[0].column}`);
-  if (!semCol) throw new Error(`No data in semantic type candidate ${cleanCandidates[0].table}.${cleanCandidates[0].column}`);
-
-  return { classificationColumn: classCol, semanticTypeColumn: semCol };
-}
-
-// Apply semantic type masking on the chosen semantic type column.
-async function configureMasking(env: TestEnv & { api: BytebaseApiClient }, data: MaskingTestData): Promise<void> {
-  const c = data.semanticTypeColumn;
-  const catalog = {
+  // Configure catalog: classification on one column, semanticType on the other
+  await env.api.updateCatalog(env.database, {
     name: `${env.database}/catalog`,
     schemas: [{
-      name: c.sampleSchema,
+      name: TEST_SCHEMA,
       tables: [{
-        name: c.sampleTable,
+        name: TEST_TABLE,
         columns: {
-          columns: [{
-            name: c.sampleColumn,
-            semanticType: "bb.default-partial",
-          }],
+          columns: [
+            { name: CLASSIFICATION_COLUMN, classification: CLASSIFICATION_LEVEL },
+            { name: SEMANTIC_TYPE_COLUMN, semanticType: "bb.default-partial" },
+          ],
         },
       }],
     }],
+  });
+
+  const common = {
+    sampleTable: TEST_TABLE,
+    sampleSchema: TEST_SCHEMA,
+    primaryKeyColumn: "id",
+    primaryKeyValue: ROW_PK,
   };
-  await env.api.updateCatalog(env.database, catalog);
+  return {
+    classificationColumn: {
+      ...common,
+      sampleColumn: CLASSIFICATION_COLUMN,
+      knownUnmaskedValue: CLASSIFICATION_VALUE,
+    },
+    semanticTypeColumn: {
+      ...common,
+      sampleColumn: SEMANTIC_TYPE_COLUMN,
+      knownUnmaskedValue: SEMANTIC_TYPE_VALUE,
+    },
+  };
+}
+
+function dropMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): void {
+  const dbName = env.database.split("/").pop()!;
+  try {
+    execSql(env, dbName, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+  } catch {
+    // best effort — server may already be torn down
+  }
 }
 
 async function grantExemption(description: string): Promise<void> {
@@ -193,14 +157,9 @@ test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Grant a temporary exemption to read TRUE unmasked values during discovery.
-  // Demo data has `first_name` with classification-based masking, so without
-  // an exemption the API returns masked values.
-  await grantExemption("discovery temporary");
-  maskingData = await discoverMaskingData(env);
-  await revokeAllExemptions();
-
-  await configureMasking(env, maskingData);
+  // Create our own test schema/table/data — no dependency on demo content.
+  // Applies classification to one column and semanticType to another.
+  maskingData = await createMaskingTestData(env);
 
   // Create a shared browser context/page for all tests
   sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
@@ -209,6 +168,8 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => {
   await sharedContext?.close();
+  await revokeAllExemptions().catch(() => { /* ignore */ });
+  dropMaskingTestData(env);
 });
 
 // ── Exemption List Page ──

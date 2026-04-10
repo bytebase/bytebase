@@ -57,6 +57,10 @@ export class BytebaseApiClient {
     return this.request<{ databases: { name: string; project: string }[] }>("GET", `/v1/${parent}/databases?pageSize=100`);
   }
 
+  async syncDatabase(databaseFullName: string) {
+    return this.request<unknown>("POST", `/v1/${databaseFullName}:sync`, {});
+  }
+
   // Policies
   async getPolicy(policyName: string) {
     try {
