@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
@@ -182,10 +182,26 @@ function ServiceAccountTable({
                   className={cn(
                     "border-b last:border-b-0",
                     i % 2 === 1 && "bg-control-bg/50",
-                    canOpenDetail && "cursor-pointer hover:bg-control-bg"
+                    canOpenDetail &&
+                      "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
                   )}
+                  tabIndex={canOpenDetail ? 0 : undefined}
+                  role={canOpenDetail ? "button" : undefined}
+                  aria-label={
+                    canOpenDetail ? user.title || user.email : undefined
+                  }
                   onClick={
                     canOpenDetail ? () => onUserSelected(user) : undefined
+                  }
+                  onKeyDown={
+                    canOpenDetail
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onUserSelected(user);
+                          }
+                        }
+                      : undefined
                   }
                 >
                   {/* Account column */}
@@ -358,12 +374,24 @@ interface CreateServiceAccountSheetProps {
 
 function CreateServiceAccountSheet(props: CreateServiceAccountSheetProps) {
   const { open, serviceAccount, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation.
+  const openEntityRef = useRef(serviceAccount);
+  if (open) {
+    openEntityRef.current = serviceAccount;
+  }
+  const stableServiceAccount = openEntityRef.current;
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
-        {open && (
-          <ServiceAccountForm key={serviceAccount?.name ?? "new"} {...props} />
-        )}
+        <ServiceAccountForm
+          key={stableServiceAccount?.name ?? "new"}
+          serviceAccount={stableServiceAccount}
+          project={props.project}
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          onUpdated={props.onUpdated}
+        />
       </SheetContent>
     </Sheet>
   );

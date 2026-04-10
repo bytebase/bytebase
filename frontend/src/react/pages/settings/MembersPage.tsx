@@ -1666,7 +1666,11 @@ function RequestRoleSheet(props: RequestRoleSheetProps) {
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
-        {open && <RequestRoleForm key={project.name} {...props} />}
+        {/* Base UI's Dialog.Portal unmounts after the close animation,
+            so the inner form mounts/unmounts with the Sheet's lifecycle
+            without needing an explicit {open && ...} guard. The `key`
+            forces a fresh mount if the project switches while open. */}
+        <RequestRoleForm key={project.name} {...props} />
       </SheetContent>
     </Sheet>
   );

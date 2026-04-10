@@ -90,24 +90,37 @@ interface CreateWorkloadIdentitySheetProps {
 }
 
 // Outer wrapper — thin shell that provides the Sheet container. The actual
-// form lives in `WorkloadIdentityForm` below, keyed by entity+open so it
-// remounts cleanly every time the Sheet opens. This guarantees that
-// useState initializers in the inner component always see the latest
-// `workloadIdentity` prop and that there's no stale state bleeding between
-// create-mode and edit-mode opens. See PR comment thread for context.
+// form lives in `WorkloadIdentityForm` below.
+//
+// Stable-entity trick: `openEntityRef` holds the last entity the Sheet was
+// *opened* with. When the parent closes the Sheet it typically nulls out the
+// entity at the same time — but we need the form to continue rendering the
+// previous entity's data for the 200ms close animation. The ref is frozen
+// while `open === false`, so the inner form stays visually stable through
+// the slide-out transition. Base UI's Dialog.Portal unmounts the Popup after
+// the animation completes, at which point the form unmounts cleanly and a
+// subsequent open will mount it fresh (useState initializers re-run from
+// the ref'd entity).
 export function CreateWorkloadIdentitySheet(
   props: CreateWorkloadIdentitySheetProps
 ) {
   const { open, workloadIdentity, onClose } = props;
+  const openEntityRef = useRef(workloadIdentity);
+  if (open) {
+    openEntityRef.current = workloadIdentity;
+  }
+  const stableEntity = openEntityRef.current;
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
-        {open && (
-          <WorkloadIdentityForm
-            key={workloadIdentity?.name ?? "new"}
-            {...props}
-          />
-        )}
+        <WorkloadIdentityForm
+          key={stableEntity?.name ?? "new"}
+          workloadIdentity={stableEntity}
+          project={props.project}
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          onUpdated={props.onUpdated}
+        />
       </SheetContent>
     </Sheet>
   );

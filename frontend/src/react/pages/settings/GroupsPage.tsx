@@ -323,9 +323,23 @@ function GroupRow({
       <TableRow
         className={cn(
           stripeBg,
-          canOpen && "cursor-pointer hover:bg-control-bg"
+          canOpen &&
+            "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
         )}
+        tabIndex={canOpen ? 0 : undefined}
+        role={canOpen ? "button" : undefined}
+        aria-label={canOpen ? group.title : undefined}
         onClick={canOpen ? onEdit : undefined}
+        onKeyDown={
+          canOpen
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onEdit();
+                }
+              }
+            : undefined
+        }
       >
         <TableCell className="py-2">
           <div className="flex items-center gap-x-2">
@@ -442,10 +456,23 @@ interface CreateGroupSheetProps {
 
 function CreateGroupSheet(props: CreateGroupSheetProps) {
   const { open, group, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation.
+  const openEntityRef = useRef(group);
+  if (open) {
+    openEntityRef.current = group;
+  }
+  const stableGroup = openEntityRef.current;
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
-        {open && <GroupForm key={group?.name ?? "new"} {...props} />}
+        <GroupForm
+          key={stableGroup?.name ?? "new"}
+          group={stableGroup}
+          onClose={props.onClose}
+          onUpdated={props.onUpdated}
+          onRemoved={props.onRemoved}
+        />
       </SheetContent>
     </Sheet>
   );

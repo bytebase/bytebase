@@ -137,11 +137,26 @@ function WorkloadIdentityTable({
                   key={user.name}
                   className={
                     canOpenDetail
-                      ? "cursor-pointer hover:bg-control-bg"
+                      ? "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
                       : undefined
+                  }
+                  tabIndex={canOpenDetail ? 0 : undefined}
+                  role={canOpenDetail ? "button" : undefined}
+                  aria-label={
+                    canOpenDetail ? user.title || user.email : undefined
                   }
                   onClick={
                     canOpenDetail ? () => onUserSelected(user) : undefined
+                  }
+                  onKeyDown={
+                    canOpenDetail
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onUserSelected(user);
+                          }
+                        }
+                      : undefined
                   }
                 >
                   {/* Account column */}

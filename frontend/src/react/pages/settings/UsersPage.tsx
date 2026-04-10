@@ -11,7 +11,7 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
@@ -255,11 +255,36 @@ function UserTable({
                 className={cn(
                   i % 2 === 1 && "bg-control-bg/50",
                   hasWorkspacePermissionV2(getViewPermission(accountType)) &&
-                    "cursor-pointer hover:bg-control-bg"
+                    "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
                 )}
+                tabIndex={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? 0
+                    : undefined
+                }
+                role={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? "button"
+                    : undefined
+                }
+                aria-label={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? user.title || user.email
+                    : undefined
+                }
                 onClick={
                   hasWorkspacePermissionV2(getViewPermission(accountType))
                     ? () => handleView(user)
+                    : undefined
+                }
+                onKeyDown={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleView(user);
+                        }
+                      }
                     : undefined
                 }
               >
@@ -444,10 +469,24 @@ interface CreateUserSheetProps {
 // prop and that there's no stale state between opens.
 function CreateUserSheet(props: CreateUserSheetProps) {
   const { open, user, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation; see the long comment on
+  // CreateWorkloadIdentitySheet for the full rationale.
+  const openEntityRef = useRef(user);
+  if (open) {
+    openEntityRef.current = user;
+  }
+  const stableUser = openEntityRef.current;
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="standard">
-        {open && <UserForm key={user?.name ?? "new"} {...props} />}
+        <UserForm
+          key={stableUser?.name ?? "new"}
+          user={stableUser}
+          onClose={props.onClose}
+          onCreated={props.onCreated}
+          onUpdated={props.onUpdated}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -484,6 +523,14 @@ function UserForm({
   // Capture initial values on mount. Because the parent keys this component
   // by user, it remounts fresh every time a different user is edited, so
   // these initial values always reflect the latest `user` prop.
+  //
+  // The empty deps array is intentional: we want the initial baseline
+  // frozen at mount so dirty tracking compares against it. If we added
+  // `userMapToRoles` to deps, a Pinia store refresh mid-edit would move
+  // the baseline and incorrectly classify untouched fields as dirty
+  // (or vice versa). Since the outer CreateUserSheet wrapper remounts
+  // this component whenever the edited user changes, "mount-only" is the
+  // right scope for the baseline.
   const initialRoles = useMemo(() => {
     if (!user || !isEditMode) {
       return [PresetRoleType.WORKSPACE_MEMBER];

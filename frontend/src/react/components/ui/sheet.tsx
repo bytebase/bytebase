@@ -90,33 +90,35 @@ function SheetContent({
         {...props}
       >
         {children}
-        {/* Built-in close affordance in the top-right corner. Callers should
-            not render their own close button — Base UI's Close component
-            handles click and dismisses the Sheet via the Root's onOpenChange. */}
-        <BaseDialog.Close
-          aria-label="Close"
-          className="absolute right-4 top-4 rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
-        >
-          <X className="size-4" />
-        </BaseDialog.Close>
       </BaseDialog.Popup>
     </BaseDialog.Portal>
   );
 }
 
 // ---- Header ----
-// Sticky top region with a bottom border. Typically contains SheetTitle and
-// an optional SheetDescription. `pr-12` reserves space on the right edge for
-// the absolute-positioned close button in SheetContent.
-function SheetHeader({ className, ...props }: ComponentProps<"div">) {
+// Sticky top region with a bottom border, laid out as a row so the built-in
+// close button sits on the right. Typically contains a `SheetTitle` and an
+// optional `SheetDescription` — both are wrapped in a flex-col for the
+// vertical stack layout while the close button remains flush right.
+function SheetHeader({ className, children, ...props }: ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-y-1 border-b border-control-border px-6 py-4 pr-12",
+        "flex items-start justify-between gap-x-4 border-b border-control-border px-6 py-4",
         className
       )}
       {...props}
-    />
+    >
+      <div className="flex flex-col gap-y-1 min-w-0 flex-1">{children}</div>
+      {/* Built-in close affordance. Callers should not render their own close
+          button — Base UI's Close dismisses the Sheet via Root's onOpenChange. */}
+      <BaseDialog.Close
+        aria-label="Close"
+        className="shrink-0 rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
+      >
+        <X className="size-4" />
+      </BaseDialog.Close>
+    </div>
   );
 }
 
