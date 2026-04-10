@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -35,305 +31,306 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewMigrationCompatibilityRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
+	rule := &migrationCompatibilityOmniRule{
+		OmniBaseRule:    OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		currentDatabase: checkCtx.CurrentDatabase,
+		newTables:       make(map[string]any),
+		newSchemas:      make(map[string]any),
+		newDatabases:    make(map[string]any),
+	}
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+}
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+type migrationCompatibilityOmniRule struct {
+	OmniBaseRule
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
+	currentDatabase string
+	newTables       map[string]any
+	newSchemas      map[string]any
+	newDatabases    map[string]any
+}
+
+func (*migrationCompatibilityOmniRule) Name() string {
+	return "MigrationCompatibilityOmniRule"
+}
+
+func (r *migrationCompatibilityOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.handleCreateTable(n)
+	case *ast.CreateSchemaStmt:
+		r.handleCreateSchema(n)
+	case *ast.CreateDatabaseStmt:
+		r.handleCreateDatabase(n)
+	case *ast.DropStmt:
+		r.handleDrop(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTable(n)
+	case *ast.ExecStmt:
+		r.handleExec(n)
+	default:
+	}
+}
+
+func (r *migrationCompatibilityOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+	if n.Name == nil {
+		return
+	}
+	norm := normalizeTableRef(n.Name, r.currentDatabase, "dbo")
+	r.newTables[norm] = nil
+}
+
+func (r *migrationCompatibilityOmniRule) handleCreateSchema(n *ast.CreateSchemaStmt) {
+	schemaName := strings.ToLower(n.Name)
+	if schemaName == "" {
+		schemaName = strings.ToLower(n.Authorization)
+	}
+	norm := fmt.Sprintf("%s.%s", r.currentDatabase, schemaName)
+	r.newSchemas[norm] = nil
+}
+
+func (r *migrationCompatibilityOmniRule) handleCreateDatabase(n *ast.CreateDatabaseStmt) {
+	r.newDatabases[strings.ToLower(n.Name)] = nil
+}
+
+func (r *migrationCompatibilityOmniRule) handleDrop(n *ast.DropStmt) {
+	switch n.ObjectType {
+	case ast.DropTable:
+		if n.Names == nil {
+			return
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		for _, item := range n.Names.Items {
+			ref, ok := item.(*ast.TableRef)
+			if !ok {
+				continue
+			}
+			norm := normalizeTableRef(ref, r.currentDatabase, "dbo")
+			if _, ok := r.newTables[norm]; !ok {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          advisorcode.CompatibilityDropSchema.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Drop table %s may cause incompatibility with the existing data and code", norm),
+					StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
+				})
+			}
+			delete(r.newTables, norm)
+		}
+	case ast.DropSchema:
+		if n.Names == nil {
+			return
+		}
+		for _, item := range n.Names.Items {
+			ref, ok := item.(*ast.TableRef)
+			if !ok {
+				continue
+			}
+			schemaName := strings.ToLower(ref.Object)
+			norm := fmt.Sprintf("%s.%s", r.currentDatabase, schemaName)
+			if _, ok := r.newSchemas[norm]; !ok {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          advisorcode.CompatibilityDropSchema.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Drop schema %s may cause incompatibility with the existing data and code", norm),
+					StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
+				})
+			}
+			delete(r.newSchemas, norm)
+		}
+	case ast.DropDatabase:
+		if n.Names == nil {
+			return
+		}
+		for _, item := range n.Names.Items {
+			ref, ok := item.(*ast.TableRef)
+			if !ok {
+				continue
+			}
+			dbName := strings.ToLower(ref.Object)
+			if _, ok := r.newDatabases[dbName]; !ok {
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          advisorcode.CompatibilityDropSchema.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Drop database %s may cause incompatibility with the existing data and code", dbName),
+					StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
+				})
+			}
+			delete(r.newDatabases, dbName)
+		}
+	default:
+	}
+}
+
+func (r *migrationCompatibilityOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+	if n.Name == nil {
+		return
+	}
+	norm := normalizeTableRef(n.Name, r.currentDatabase, "dbo")
+	if _, ok := r.newTables[norm]; ok {
+		return
+	}
+
+	if n.Actions == nil {
+		return
+	}
+	for _, item := range n.Actions.Items {
+		action, ok := item.(*ast.AlterTableAction)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
 
-	return checker.GetAdviceList(), nil
-}
-
-// MigrationCompatibilityRule is the rule for migration compatibility.
-type MigrationCompatibilityRule struct {
-	BaseRule
-	// normalizedLastCreateTableNameMap contain the last created table name in normalized format.
-	normalizedNewCreateTableNameMap map[string]any
-	// normalizedLastCreateSchemaNameMap contain the last created schema name in normalized format.
-	normalizedNewCreateSchemaNameMap map[string]any
-	// normalizedNewCreateDatabaseNameMap contain the new created database name in normalized format.
-	normalizedNewCreateDatabaseNameMap map[string]any
-
-	// currentDatabase is the current database name.
-	currentDatabase string
-}
-
-// NewMigrationCompatibilityRule creates a new MigrationCompatibilityRule.
-func NewMigrationCompatibilityRule(level storepb.Advice_Status, title string, currentDatabase string) *MigrationCompatibilityRule {
-	return &MigrationCompatibilityRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		normalizedNewCreateTableNameMap:    make(map[string]any),
-		normalizedNewCreateSchemaNameMap:   make(map[string]any),
-		normalizedNewCreateDatabaseNameMap: make(map[string]any),
-		currentDatabase:                    currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*MigrationCompatibilityRule) Name() string {
-	return "MigrationCompatibilityRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *MigrationCompatibilityRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case "Create_schema":
-		r.enterCreateSchema(ctx.(*parser.Create_schemaContext))
-	case NodeTypeCreateDatabase:
-		r.enterCreateDatabase(ctx.(*parser.Create_databaseContext))
-	case NodeTypeDropTable:
-		r.enterDropTable(ctx.(*parser.Drop_tableContext))
-	case "Drop_schema":
-		r.enterDropSchema(ctx.(*parser.Drop_schemaContext))
-	case NodeTypeDropDatabase:
-		r.enterDropDatabase(ctx.(*parser.Drop_databaseContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	case "Execute_body":
-		r.enterExecuteBody(ctx.(*parser.Execute_bodyContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*MigrationCompatibilityRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *MigrationCompatibilityRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := ctx.Table_name()
-	if tableName == nil || tableName.GetTable() == nil {
-		return
-	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, r.currentDatabase, "dbo", false)
-	r.normalizedNewCreateTableNameMap[normalizedTableName] = any(nil)
-}
-
-func (r *MigrationCompatibilityRule) enterCreateSchema(ctx *parser.Create_schemaContext) {
-	var schemaName string
-	if v := ctx.GetSchema_name(); v != nil {
-		_, schemaName = tsqlparser.NormalizeTSQLIdentifier(v)
-	} else {
-		_, schemaName = tsqlparser.NormalizeTSQLIdentifier(ctx.GetOwner_name())
-	}
-
-	normalizedDatabaseSchemaName := fmt.Sprintf("%s.%s", r.currentDatabase, schemaName)
-	r.normalizedNewCreateSchemaNameMap[normalizedDatabaseSchemaName] = any(nil)
-}
-
-func (r *MigrationCompatibilityRule) enterCreateDatabase(ctx *parser.Create_databaseContext) {
-	_, databaseName := tsqlparser.NormalizeTSQLIdentifier(ctx.GetDatabase())
-	r.normalizedNewCreateDatabaseNameMap[databaseName] = any(nil)
-}
-
-func (r *MigrationCompatibilityRule) enterDropTable(ctx *parser.Drop_tableContext) {
-	allTableNames := ctx.AllTable_name()
-	for _, tableName := range allTableNames {
-		if tableName == nil || tableName.GetTable() == nil {
-			continue
-		}
-		normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, r.currentDatabase, "dbo", false)
-		if _, ok := r.normalizedNewCreateTableNameMap[normalizedTableName]; !ok {
+		switch action.Type {
+		case ast.ATDropColumn:
+			colName := strings.ToLower(action.ColName)
+			// Also handle multiple column drops via Names list.
+			var colNames []string
+			if colName != "" {
+				colNames = append(colNames, colName)
+			}
+			if action.Names != nil {
+				for _, nameItem := range action.Names.Items {
+					if ref, ok := nameItem.(*ast.TableRef); ok {
+						colNames = append(colNames, strings.ToLower(ref.Object))
+					}
+				}
+			}
+			if len(colNames) > 0 {
+				placeholder := strings.Join(colNames, ", ")
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          advisorcode.CompatibilityDropSchema.Int32(),
+					Title:         r.Title,
+					Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", placeholder),
+					StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
+				})
+			}
+		case ast.ATAlterColumn:
+			colName := ""
+			if action.Column != nil {
+				colName = strings.ToLower(action.Column.Name)
+			} else if action.ColName != "" {
+				colName = strings.ToLower(action.ColName)
+			}
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          advisorcode.CompatibilityDropSchema.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Drop table %s may cause incompatibility with the existing data and code", normalizedTableName),
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				Status:        r.Level,
+				Code:          advisorcode.CompatibilityAlterColumn.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Alter COLUMN %s may cause incompatibility with the existing data and code", colName),
+				StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
 			})
-		}
-		delete(r.normalizedNewCreateTableNameMap, normalizedTableName)
-	}
-}
-
-func (r *MigrationCompatibilityRule) enterDropSchema(ctx *parser.Drop_schemaContext) {
-	schemaName := ctx.GetSchema_name()
-	_, normalizedSchemaName := tsqlparser.NormalizeTSQLIdentifier(schemaName)
-	normalizedSchemaName = fmt.Sprintf("%s.%s", r.currentDatabase, normalizedSchemaName)
-	if _, ok := r.normalizedNewCreateSchemaNameMap[normalizedSchemaName]; !ok {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          advisorcode.CompatibilityDropSchema.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Drop schema %s may cause incompatibility with the existing data and code", normalizedSchemaName),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-		})
-	}
-	delete(r.normalizedNewCreateSchemaNameMap, normalizedSchemaName)
-}
-
-func (r *MigrationCompatibilityRule) enterDropDatabase(ctx *parser.Drop_databaseContext) {
-	databaseName := ctx.GetDatabase_name_or_database_snapshot_name()
-	_, normalizedDatabaseName := tsqlparser.NormalizeTSQLIdentifier(databaseName)
-	if _, ok := r.normalizedNewCreateDatabaseNameMap[normalizedDatabaseName]; !ok {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          advisorcode.CompatibilityDropSchema.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Drop database %s may cause incompatibility with the existing data and code", normalizedDatabaseName),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-		})
-	}
-	delete(r.normalizedNewCreateDatabaseNameMap, normalizedDatabaseName)
-}
-
-func (r *MigrationCompatibilityRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	handleTableName := ctx.Table_name(0)
-	normalizedHandleTableName := tsqlparser.NormalizeTSQLTableName(handleTableName, r.currentDatabase, "dbo", false)
-	if _, ok := r.normalizedNewCreateTableNameMap[normalizedHandleTableName]; ok {
-		return
-	}
-
-	if ctx.DROP() != nil && ctx.COLUMN() != nil {
-		allDropColumns := ctx.AllId_()
-		var allNormalizedDropColumnNames []string
-		for _, dropColumn := range allDropColumns {
-			_, normalizedDropColumnName := tsqlparser.NormalizeTSQLIdentifier(dropColumn)
-			allNormalizedDropColumnNames = append(allNormalizedDropColumnNames, normalizedDropColumnName)
-		}
-		placeholder := strings.Join(allNormalizedDropColumnNames, ", ")
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          advisorcode.CompatibilityDropSchema.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", placeholder),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
-		})
-		return
-	}
-	if len(ctx.AllALTER()) == 2 && ctx.COLUMN() != nil {
-		normalizedColumnName := ""
-		if ctx.Column_definition() != nil {
-			_, normalizedColumnName = tsqlparser.NormalizeTSQLIdentifier(ctx.Column_definition().Id_())
-		} else if ctx.Column_modifier() != nil {
-			_, normalizedColumnName = tsqlparser.NormalizeTSQLIdentifier(ctx.Column_modifier().Id_())
-		}
-
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          advisorcode.CompatibilityAlterColumn.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Alter COLUMN %s may cause incompatibility with the existing data and code", normalizedColumnName),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.COLUMN().GetSymbol().GetLine()),
-		})
-		return
-	}
-	if v := ctx.Column_def_table_constraints(); v != nil {
-		allColumnDefTableConstraints := v.AllColumn_def_table_constraint()
-		for _, columnDefTableConstraint := range allColumnDefTableConstraints {
-			code := advisorcode.Ok
-			operation := ""
-			tableConstraint := columnDefTableConstraint.Table_constraint()
-			if tableConstraint == nil {
+		case ast.ATAddConstraint:
+			if action.Constraint == nil {
 				continue
 			}
-			if tableConstraint.PRIMARY() != nil {
-				code = advisorcode.CompatibilityAddPrimaryKey
+			// WITH NOCHECK variant — the omni parser may use ATAddConstraint
+			// with WithCheck="NOCHECK" instead of ATNocheckConstraint.
+			if strings.EqualFold(action.WithCheck, "NOCHECK") {
+				switch action.Constraint.Type {
+				case ast.ConstraintForeignKey:
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
+						Title:         r.Title,
+						Content:       "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
+						StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
+					})
+				case ast.ConstraintCheck:
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
+						Title:         r.Title,
+						Content:       "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
+						StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
+					})
+				default:
+				}
+				continue
+			}
+			// WITH CHECK ADD is safe — skip it.
+			if strings.EqualFold(action.WithCheck, "CHECK") {
+				continue
+			}
+			c := advisorcode.Ok
+			operation := ""
+			switch action.Constraint.Type {
+			case ast.ConstraintPrimaryKey:
+				c = advisorcode.CompatibilityAddPrimaryKey
 				operation = "Add PRIMARY KEY"
-			}
-			if tableConstraint.UNIQUE() != nil {
-				code = advisorcode.CompatibilityAddUniqueKey
+			case ast.ConstraintUnique:
+				c = advisorcode.CompatibilityAddUniqueKey
 				operation = "Add UNIQUE KEY"
-			}
-			if tableConstraint.Check_constraint() != nil {
-				code = advisorcode.CompatibilityAddCheck
+			case ast.ConstraintCheck:
+				c = advisorcode.CompatibilityAddCheck
 				operation = "Add CHECK"
+			case ast.ConstraintForeignKey:
+				c = advisorcode.CompatibilityAddForeignKey
+				operation = "Add FOREIGN KEY"
+			default:
+				continue
 			}
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.Int32(),
-				Title:         r.title,
+				Status:        r.Level,
+				Code:          c.Int32(),
+				Title:         r.Title,
 				Content:       fmt.Sprintf("%s may cause incompatibility with the existing data and code", operation),
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
 			})
-		}
-		return
-	}
-	if ctx.WITH() != nil && ctx.NOCHECK() != nil {
-		if ctx.FOREIGN() != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
-				Title:         r.title,
-				Content:       "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.FOREIGN().GetSymbol().GetLine()),
-			})
-			return
-		}
-		if len(ctx.AllCHECK()) == 1 {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
-				Title:         r.title,
-				Content:       "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.CHECK(0).GetSymbol().GetLine()),
-			})
-			return
+		case ast.ATNocheckConstraint:
+			// Legacy fallback — omni may still use this in some cases.
+			if action.Constraint != nil {
+				switch action.Constraint.Type {
+				case ast.ConstraintForeignKey:
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
+						Title:         r.Title,
+						Content:       "Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code",
+						StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
+					})
+				case ast.ConstraintCheck:
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          advisorcode.CompatibilityAddForeignKey.Int32(),
+						Title:         r.Title,
+						Content:       "Add CHECK WITH NO CHECK may cause incompatibility with the existing data and code",
+						StartPosition: &storepb.Position{Line: r.LocToLine(action.Loc)},
+					})
+				default:
+				}
+			}
+		default:
 		}
 	}
 }
 
-// enterExecuteBody is called when production execute_body is entered.
-func (r *MigrationCompatibilityRule) enterExecuteBody(ctx *parser.Execute_bodyContext) {
-	if ctx.Func_proc_name_server_database_schema() == nil {
+func (r *migrationCompatibilityOmniRule) handleExec(n *ast.ExecStmt) {
+	if n.Name == nil {
 		return
 	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema() == nil {
+	if n.Name.Schema != "" {
 		return
 	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema() == nil {
+	if strings.ToLower(n.Name.Object) != "sp_rename" {
 		return
 	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetSchema() != nil {
+	// Check that there is at least one argument.
+	if n.Args == nil || n.Args.Len() == 0 {
 		return
 	}
-
-	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	_, normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
-	if normalizedProcedureName != "sp_rename" {
+	firstArg, ok := n.Args.Items[0].(*ast.ExecArg)
+	if !ok {
 		return
 	}
-
-	unnamedArguments := tsqlparser.FlattenExecuteStatementArgExecuteStatementArgUnnamed(ctx.Execute_statement_arg())
-
-	firstArgument := unnamedArguments[0]
-	if firstArgument == nil {
-		return
+	// Check that the first argument is a string literal.
+	if lit, ok := firstArg.Value.(*ast.Literal); ok && lit.Type == ast.LitString {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.Level,
+			Code:          advisorcode.CompatibilityRenameTable.Int32(),
+			Title:         r.Title,
+			Content:       "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
+			StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
+		})
 	}
-	if firstArgument.Execute_parameter() == nil {
-		return
-	}
-	if firstArgument.Execute_parameter().Constant() == nil {
-		return
-	}
-	if firstArgument.Execute_parameter().Constant().STRING() == nil {
-		return
-	}
-	r.AddAdvice(&storepb.Advice{
-		Status:        r.level,
-		Code:          advisorcode.CompatibilityRenameTable.Int32(),
-		Title:         r.title,
-		Content:       "sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.",
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-	})
 }

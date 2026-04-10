@@ -4,18 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -40,128 +34,68 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("string_array_payload is required for table disallow DML rule")
 	}
 
-	// Create the rule
-	rule := NewTableDisallowDMLRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableDisallowDMLRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		disallowList: stringArrayPayload.List,
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// TableDisallowDMLRule is the rule checking for disallow DML on specific tables.
-type TableDisallowDMLRule struct {
-	BaseRule
-	// disallowList is the list of table names that disallow DML.
+type tableDisallowDMLRule struct {
+	OmniBaseRule
 	disallowList []string
 }
 
-// NewTableDisallowDMLRule creates a new TableDisallowDMLRule.
-func NewTableDisallowDMLRule(level storepb.Advice_Status, title string, disallowList []string) *TableDisallowDMLRule {
-	return &TableDisallowDMLRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		disallowList: disallowList,
-	}
-}
-
-// Name returns the rule name.
-func (*TableDisallowDMLRule) Name() string {
+func (*tableDisallowDMLRule) Name() string {
 	return "TableDisallowDMLRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Merge_statement":
-		r.enterMergeStatement(ctx.(*parser.Merge_statementContext))
-	case NodeTypeInsertStatement:
-		r.enterInsertStatement(ctx.(*parser.Insert_statementContext))
-	case NodeTypeDeleteStatement:
-		r.enterDeleteStatement(ctx.(*parser.Delete_statementContext))
-	case NodeTypeUpdateStatement:
-		r.enterUpdateStatement(ctx.(*parser.Update_statementContext))
-	case "Select_statement_standalone":
-		r.enterSelectStatementStandalone(ctx.(*parser.Select_statement_standaloneContext))
+func (r *tableDisallowDMLRule) OnStatement(node ast.Node) {
+	var tableName string
+	var loc ast.Loc
+
+	switch n := node.(type) {
+	case *ast.InsertStmt:
+		if n.Relation != nil {
+			tableName = normalizeTableRef(n.Relation, "", "")
+			loc = n.Loc
+		}
+	case *ast.UpdateStmt:
+		if n.Relation != nil {
+			tableName = normalizeTableRef(n.Relation, "", "")
+			loc = n.Loc
+		}
+	case *ast.DeleteStmt:
+		if n.Relation != nil {
+			tableName = normalizeTableRef(n.Relation, "", "")
+			loc = n.Loc
+		}
+	case *ast.MergeStmt:
+		if n.Target != nil {
+			tableName = normalizeTableRef(n.Target, "", "")
+			loc = n.Loc
+		}
+	case *ast.SelectStmt:
+		if n.IntoTable != nil {
+			tableName = normalizeTableRef(n.IntoTable, "", "")
+			loc = n.Loc
+		}
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowDMLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *TableDisallowDMLRule) enterMergeStatement(ctx *parser.Merge_statementContext) {
-	if ctx.Ddl_object() == nil {
 		return
 	}
-	tableName := ctx.Ddl_object().GetText()
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
 
-func (r *TableDisallowDMLRule) enterInsertStatement(ctx *parser.Insert_statementContext) {
-	if ctx.Ddl_object() == nil {
+	if tableName == "" {
 		return
 	}
-	tableName := ctx.Ddl_object().GetText()
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
 
-func (r *TableDisallowDMLRule) enterDeleteStatement(ctx *parser.Delete_statementContext) {
-	if ctx.Delete_statement_from() == nil {
-		return
-	}
-	tableName := ctx.Delete_statement_from().GetText()
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDMLRule) enterUpdateStatement(ctx *parser.Update_statementContext) {
-	if ctx.Ddl_object() == nil {
-		return
-	}
-	tableName := ctx.Ddl_object().GetText()
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDMLRule) enterSelectStatementStandalone(ctx *parser.Select_statement_standaloneContext) {
-	querySpec := ctx.Select_statement().Query_expression().Query_specification()
-	if querySpec == nil {
-		return
-	}
-	if querySpec.INTO() == nil || querySpec.Table_name() == nil {
-		return
-	}
-	tableName := tsqlparser.NormalizeTSQLTableName(querySpec.Table_name(), "" /* fallbackDatabase */, "" /* fallbackSchema */, false /* caseSensitive */)
-	r.checkTableName(tableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDMLRule) checkTableName(normalizedTableName string, line int) {
 	for _, disallow := range r.disallowList {
-		if normalizedTableName == disallow {
+		if tableName == disallow {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.TableDisallowDML.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("DML is disallowed on table %s.", normalizedTableName),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
+				StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
 			})
 			return
 		}

@@ -37,7 +37,7 @@
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Calling function 'AVG(bar)' in 'WHERE' clause is not allowed
+      content: Calling function 'AVG' in 'WHERE' clause is not allowed
       startposition:
         line: 2
         column: 0
@@ -56,7 +56,7 @@
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
+      content: Calling function 'AVG' in 'WHERE' clause is not allowed
       startposition:
         line: 1
         column: 0

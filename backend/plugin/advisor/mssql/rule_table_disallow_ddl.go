@@ -4,31 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-)
-
-var (
-	_ advisor.Advisor = (*TableDisallowDDLAdvisor)(nil)
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_DISALLOW_DDL, &TableDisallowDDLAdvisor{})
 }
 
-// TableDisallowDDLAdvisor is the advisor checking for disallow DDL on specific tables.
-type TableDisallowDDLAdvisor struct {
-}
+type TableDisallowDDLAdvisor struct{}
 
 func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
@@ -40,118 +28,60 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("string_array_payload is required for table disallow DDL rule")
 	}
 
-	// Create the rule
-	rule := NewTableDisallowDDLRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableDisallowDDLRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		disallowList: stringArrayPayload.List,
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// TableDisallowDDLRule is the rule checking for disallow DDL on specific tables.
-type TableDisallowDDLRule struct {
-	BaseRule
-	// disallowList is the list of table names that disallow DDL.
+type tableDisallowDDLRule struct {
+	OmniBaseRule
 	disallowList []string
 }
 
-// NewTableDisallowDDLRule creates a new TableDisallowDDLRule.
-func NewTableDisallowDDLRule(level storepb.Advice_Status, title string, disallowList []string) *TableDisallowDDLRule {
-	return &TableDisallowDDLRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		disallowList: disallowList,
-	}
-}
-
-// Name returns the rule name.
-func (*TableDisallowDDLRule) Name() string {
+func (*tableDisallowDDLRule) Name() string {
 	return "TableDisallowDDLRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDisallowDDLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	case NodeTypeDropTable:
-		r.enterDropTable(ctx.(*parser.Drop_tableContext))
-	case NodeTypeTruncateTable:
-		r.enterTruncateTable(ctx.(*parser.Truncate_tableContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDisallowDDLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *TableDisallowDDLRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := ctx.Table_name()
-	if tableName == nil {
-		return
-	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "" /* fallbackSchema */, false /* caseSensitive */)
-	r.checkTableName(normalizedTableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	tableName := ctx.Table_name(0)
-	if tableName == nil {
-		return
-	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "" /* fallbackSchema */, false /* caseSensitive */)
-	r.checkTableName(normalizedTableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) enterDropTable(ctx *parser.Drop_tableContext) {
-	for _, tableName := range ctx.AllTable_name() {
-		if tableName == nil {
+func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Name != nil {
+			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+		}
+	case *ast.AlterTableStmt:
+		if n.Name != nil {
+			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+		}
+	case *ast.DropStmt:
+		if n.ObjectType != ast.DropTable || n.Names == nil {
 			return
 		}
-		normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "" /* fallbackSchema */, false /* caseSensitive */)
-		r.checkTableName(normalizedTableName, ctx.GetStart().GetLine())
+		for _, item := range n.Names.Items {
+			ref, ok := item.(*ast.TableRef)
+			if !ok || ref == nil {
+				continue
+			}
+			r.checkTableName(normalizeTableRef(ref, "", ""), r.LocToLine(n.Loc))
+		}
+	case *ast.TruncateStmt:
+		if n.Table != nil {
+			r.checkTableName(normalizeTableRef(n.Table, "", ""), r.LocToLine(n.Loc))
+		}
+	default:
 	}
 }
 
-func (r *TableDisallowDDLRule) enterTruncateTable(ctx *parser.Truncate_tableContext) {
-	tableName := ctx.Table_name()
-	if tableName == nil {
-		return
-	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "" /* fallbackSchema */, false /* caseSensitive */)
-	r.checkTableName(normalizedTableName, ctx.GetStart().GetLine())
-}
-
-func (r *TableDisallowDDLRule) checkTableName(normalizedTableName string, line int) {
+func (r *tableDisallowDDLRule) checkTableName(normalizedTableName string, line int32) {
 	for _, disallow := range r.disallowList {
 		if normalizedTableName == disallow {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.TableDisallowDDL.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       fmt.Sprintf("DDL is disallowed on table %s.", normalizedTableName),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
+				StartPosition: &storepb.Position{Line: line},
 			})
 			return
 		}

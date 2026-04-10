@@ -6,7 +6,7 @@
     - status: 2
       code: 301
       title: NAMING_TABLE
-      content: '[\\] mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
+      content: '\\ mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
       startposition:
         line: 1
         column: 0

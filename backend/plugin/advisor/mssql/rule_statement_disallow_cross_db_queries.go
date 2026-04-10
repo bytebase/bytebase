@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func init() {
@@ -28,87 +24,45 @@ func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewDisallowCrossDBQueriesRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &disallowCrossDBQueriesRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		curDB:        checkCtx.CurrentDatabase,
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// DisallowCrossDBQueriesRule is the rule for disallowing cross database queries.
-type DisallowCrossDBQueriesRule struct {
-	BaseRule
+type disallowCrossDBQueriesRule struct {
+	OmniBaseRule
 	curDB string
 }
 
-// NewDisallowCrossDBQueriesRule creates a new DisallowCrossDBQueriesRule.
-func NewDisallowCrossDBQueriesRule(level storepb.Advice_Status, title string, currentDatabase string) *DisallowCrossDBQueriesRule {
-	return &DisallowCrossDBQueriesRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		curDB: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*DisallowCrossDBQueriesRule) Name() string {
+func (*disallowCrossDBQueriesRule) Name() string {
 	return "DisallowCrossDBQueriesRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *DisallowCrossDBQueriesRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Table_source_item":
-		r.enterTableSourceItem(ctx.(*parser.Table_source_itemContext))
-	case "Use_statement":
-		r.enterUseStatement(ctx.(*parser.Use_statementContext))
-	default:
-		// Ignore other node types
+func (r *disallowCrossDBQueriesRule) OnStatement(node ast.Node) {
+	// Check for USE statement to track current database.
+	if useStmt, ok := node.(*ast.UseStmt); ok {
+		if useStmt.Database != "" {
+			r.curDB = strings.ToLower(useStmt.Database)
+		}
+		return
 	}
-	return nil
-}
 
-// OnExit is called when exiting a parse tree node.
-func (*DisallowCrossDBQueriesRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *DisallowCrossDBQueriesRule) enterTableSourceItem(ctx *parser.Table_source_itemContext) {
-	if fullTblnameCtx := ctx.Full_table_name(); fullTblnameCtx != nil {
-		// Case insensitive.
-		if fullTblName, err := tsqlparser.NormalizeFullTableName(fullTblnameCtx); err == nil && fullTblName.Database != "" && !strings.EqualFold(fullTblName.Database, r.curDB) {
+	ast.Inspect(node, func(n ast.Node) bool {
+		ref, ok := n.(*ast.TableRef)
+		if !ok || ref == nil {
+			return true
+		}
+		if ref.Database != "" && !strings.EqualFold(ref.Database, r.curDB) {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.StatementDisallowCrossDBQueries.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", fullTblName.Database, r.curDB),
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Cross database queries (target databse: '%s', current database: '%s') are prohibited", ref.Database, r.curDB),
+				StartPosition: &storepb.Position{Line: r.LocToLine(ref.Loc)},
 			})
 		}
-		// Ignore internal error...
-	}
-}
-
-func (r *DisallowCrossDBQueriesRule) enterUseStatement(ctx *parser.Use_statementContext) {
-	if newDB := ctx.GetDatabase(); newDB != nil {
-		_, lowercaceDBName := tsqlparser.NormalizeTSQLIdentifier(newDB)
-		r.curDB = lowercaceDBName
-	}
+		return true
+	})
 }

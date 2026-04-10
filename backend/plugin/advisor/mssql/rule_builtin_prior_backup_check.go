@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mssql/ast"
 	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -51,7 +52,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
 			Code:          code.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: common.ConvertANTLRLineToPosition(1),
+			StartPosition: &storepb.Position{Line: 1},
 		})
 	}
 
@@ -62,33 +63,24 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			Title:         title,
 			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
 			Code:          code.DatabaseNotExists.Int32(),
-			StartPosition: common.ConvertANTLRLineToPosition(1),
+			StartPosition: &storepb.Position{Line: 1},
 		})
 		return adviceList, nil
 	}
 
-	// Use the refactored rule for DDL/DML checking
-	rule := NewStatementDisallowMixDMLRule(level, title)
-	checker := NewGenericChecker([]Rule{rule})
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	// Use omni rule for DDL detection.
+	ddlRule := &statementDisallowMixDMLOmniRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: title},
 	}
+	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{ddlRule})
 
-	if rule.hasDDL {
+	if ddlRule.hasDDL {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
 			Content:       "Prior backup cannot deal with mixed DDL and DML statements",
 			Code:          int32(code.BuiltinPriorBackupCheck),
-			StartPosition: common.ConvertANTLRLineToPosition(1),
+			StartPosition: &storepb.Position{Line: 1},
 		})
 	}
 
@@ -113,7 +105,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 					Title:         title,
 					Content:       fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
 					Code:          code.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: common.ConvertANTLRLineToPosition(1),
+					StartPosition: &storepb.Position{Line: 1},
 				})
 				break
 			}
@@ -123,63 +115,41 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-// StatementDisallowMixDMLRule is the rule for checking mixed DDL and DML statements.
-type StatementDisallowMixDMLRule struct {
-	BaseRule
-	updateStatements []*parser.Update_statementContext
-	deleteStatements []*parser.Delete_statementContext
-	hasDDL           bool
+// statementDisallowMixDMLOmniRule uses omni AST to detect DDL statements.
+type statementDisallowMixDMLOmniRule struct {
+	OmniBaseRule
+	hasDDL bool
 }
 
-// NewStatementDisallowMixDMLRule creates a new StatementDisallowMixDMLRule.
-func NewStatementDisallowMixDMLRule(level storepb.Advice_Status, title string) *StatementDisallowMixDMLRule {
-	return &StatementDisallowMixDMLRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
+func (*statementDisallowMixDMLOmniRule) Name() string {
+	return "StatementDisallowMixDMLOmniRule"
+}
+
+func (r *statementDisallowMixDMLOmniRule) OnStatement(node ast.Node) {
+	if r.hasDDL {
+		return
 	}
-}
-
-// Name returns the rule name.
-func (*StatementDisallowMixDMLRule) Name() string {
-	return "StatementDisallowMixDMLRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *StatementDisallowMixDMLRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Ddl_clause":
-		r.enterDDLClause(ctx.(*parser.Ddl_clauseContext))
-	case NodeTypeUpdateStatement:
-		r.enterUpdateStatement(ctx.(*parser.Update_statementContext))
-	case NodeTypeDeleteStatement:
-		r.enterDeleteStatement(ctx.(*parser.Delete_statementContext))
+	switch node.(type) {
+	case *ast.CreateTableStmt,
+		*ast.AlterTableStmt,
+		*ast.DropStmt,
+		*ast.TruncateStmt,
+		*ast.CreateIndexStmt,
+		*ast.CreateViewStmt,
+		*ast.CreateFunctionStmt,
+		*ast.CreateProcedureStmt,
+		*ast.CreateSchemaStmt,
+		*ast.CreateDatabaseStmt,
+		*ast.CreateTriggerStmt,
+		*ast.CreateTypeStmt,
+		*ast.CreateSequenceStmt,
+		*ast.AlterIndexStmt,
+		*ast.AlterSchemaStmt,
+		*ast.AlterDatabaseStmt,
+		*ast.AlterSequenceStmt,
+		*ast.RenameStmt:
+		r.hasDDL = true
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*StatementDisallowMixDMLRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *StatementDisallowMixDMLRule) enterDDLClause(_ *parser.Ddl_clauseContext) {
-	r.hasDDL = true
-}
-
-func (r *StatementDisallowMixDMLRule) enterUpdateStatement(ctx *parser.Update_statementContext) {
-	if tsqlparser.IsTopLevel(ctx.GetParent()) {
-		r.updateStatements = append(r.updateStatements, ctx)
-	}
-}
-
-func (r *StatementDisallowMixDMLRule) enterDeleteStatement(ctx *parser.Delete_statementContext) {
-	if tsqlparser.IsTopLevel(ctx.GetParent()) {
-		r.deleteStatements = append(r.deleteStatements, ctx)
 	}
 }
 

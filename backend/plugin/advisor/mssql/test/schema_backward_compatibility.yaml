@@ -69,7 +69,15 @@
     - status: 2
       code: 112
       title: SCHEMA_BACKWARD_COMPATIBILITY
-      content: Drop column mycolumnone, mycolumntwo may cause incompatibility with the existing data and code
+      content: Drop column mycolumnone may cause incompatibility with the existing data and code
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop column mycolumntwo may cause incompatibility with the existing data and code
       startposition:
         line: 1
         column: 0

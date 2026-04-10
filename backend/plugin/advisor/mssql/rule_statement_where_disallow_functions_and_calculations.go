@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
@@ -28,223 +25,103 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewDisallowFuncAndCalculationsRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &disallowFuncAndCalcOmniRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// DisallowFuncAndCalculationsRule is the rule for disallowing functions and calculations in WHERE clause.
-type DisallowFuncAndCalculationsRule struct {
-	BaseRule
-	// We only check the 'WHERE' clause in a 'SELECT' statement.
-	// Also, the value of 'whereCnt' represents the depth of entering the 'WHERE' clause.  Same below.
-	whereCnt      int
-	selectStatCnt int
-	havingCnt     int
-	// Each statement can only trigger the rule once.
-	hasTriggeredRule bool
+type disallowFuncAndCalcOmniRule struct {
+	OmniBaseRule
 }
 
-// NewDisallowFuncAndCalculationsRule creates a new DisallowFuncAndCalculationsRule.
-func NewDisallowFuncAndCalculationsRule(level storepb.Advice_Status, title string) *DisallowFuncAndCalculationsRule {
-	return &DisallowFuncAndCalculationsRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		selectStatCnt:    0,
-		whereCnt:         0,
-		havingCnt:        0,
-		hasTriggeredRule: false,
-	}
+func (*disallowFuncAndCalcOmniRule) Name() string {
+	return "DisallowFuncAndCalcOmniRule"
 }
 
-// Name returns the rule name.
-func (*DisallowFuncAndCalculationsRule) Name() string {
-	return "DisallowFuncAndCalculationsRule"
+func (r *disallowFuncAndCalcOmniRule) OnStatement(node ast.Node) {
+	// Find all statements that have a WHERE clause.
+	ast.Inspect(node, func(n ast.Node) bool {
+		var where ast.ExprNode
+		switch stmt := n.(type) {
+		case *ast.SelectStmt:
+			where = stmt.WhereClause
+		case *ast.UpdateStmt:
+			where = stmt.WhereClause
+		case *ast.DeleteStmt:
+			where = stmt.WhereClause
+		default:
+			return true
+		}
+
+		if where == nil {
+			return true
+		}
+
+		r.checkWhereClause(where)
+		return true
+	})
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *DisallowFuncAndCalculationsRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Query_specification":
-		r.enterQuerySpecification(ctx.(*parser.Query_specificationContext))
-	case "Having_clause":
-		r.enterHavingClause(ctx.(*parser.Having_clauseContext))
-	case NodeTypeSearchCondition:
-		r.enterSearchCondition(ctx.(*parser.Search_conditionContext))
-	case "BUILT_IN_FUNC":
-		r.enterBuiltInFunc(ctx.(*parser.BUILT_IN_FUNCContext))
-	case "RANKING_WINDOWED_FUNC":
-		r.enterRankingWindowedFunc(ctx.(*parser.RANKING_WINDOWED_FUNCContext))
-	case "AGGREGATE_WINDOWED_FUNC":
-		r.enterAggregateWindowedFunc(ctx.(*parser.AGGREGATE_WINDOWED_FUNCContext))
-	case "ANALYTIC_WINDOWED_FUNC":
-		r.enterAnalyticWindowedFunc(ctx.(*parser.ANALYTIC_WINDOWED_FUNCContext))
-	case "SCALAR_FUNCTION":
-		r.enterScalarFunction(ctx.(*parser.SCALAR_FUNCTIONContext))
-	case "FREE_TEXT":
-		r.enterFreeText(ctx.(*parser.FREE_TEXTContext))
-	case "PARTITION_FUNC":
-		r.enterPartitionFunc(ctx.(*parser.PARTITION_FUNCContext))
-	case "HIERARCHYID_METHOD":
-		r.enterHierarchyIDMethod(ctx.(*parser.HIERARCHYID_METHODContext))
-	case "Expression":
-		r.enterExpression(ctx.(*parser.ExpressionContext))
-	case "Unary_operator_expression":
-		r.enterUnaryOperatorExpression(ctx.(*parser.Unary_operator_expressionContext))
+func (r *disallowFuncAndCalcOmniRule) checkWhereClause(where ast.ExprNode) {
+	// Only report the first violation per WHERE clause.
+	found := false
+
+	ast.Inspect(where, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		switch expr := n.(type) {
+		case *ast.FuncCallExpr:
+			found = true
+			funcName := ""
+			if expr.Name != nil {
+				funcName = tableRefText(expr.Name)
+			}
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", funcName),
+				StartPosition: &storepb.Position{Line: r.LocToLine(expr.Loc)},
+			})
+			return false
+		case *ast.BinaryExpr:
+			if isArithmeticOp(expr.Op) {
+				found = true
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
+					Title:         r.Title,
+					Content:       "Performing calculations in 'WHERE' clause is not allowed",
+					StartPosition: &storepb.Position{Line: r.LocToLine(expr.Loc)},
+				})
+				return false
+			}
+		case *ast.UnaryExpr:
+			if expr.Op == ast.UnaryPlus || expr.Op == ast.UnaryMinus || expr.Op == ast.UnaryBitNot {
+				found = true
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
+					Title:         r.Title,
+					Content:       "Performing calculations in 'WHERE' clause is not allowed",
+					StartPosition: &storepb.Position{Line: r.LocToLine(expr.Loc)},
+				})
+				return false
+			}
+		default:
+		}
+		return true
+	})
+}
+
+func isArithmeticOp(op ast.BinaryOp) bool {
+	switch op {
+	case ast.BinOpAdd, ast.BinOpSub, ast.BinOpMul, ast.BinOpDiv, ast.BinOpMod:
+		return true
 	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *DisallowFuncAndCalculationsRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case "Query_specification":
-		r.exitQuerySpecification(ctx.(*parser.Query_specificationContext))
-	case "Having_clause":
-		r.exitHavingClause(ctx.(*parser.Having_clauseContext))
-	case NodeTypeSearchCondition:
-		r.exitSearchCondition(ctx.(*parser.Search_conditionContext))
-	default:
-		// Ignore other node types
-	}
-	return nil
-}
-
-func (r *DisallowFuncAndCalculationsRule) generateAdviceOnFunctionUsing(ctx antlr.BaseParserRuleContext) *storepb.Advice {
-	if r.whereCnt == 0 || r.hasTriggeredRule {
-		return nil
-	}
-	r.hasTriggeredRule = true
-	return &storepb.Advice{
-		Status:        r.level,
-		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
-		Title:         r.title,
-		Content:       fmt.Sprintf("Calling function '%s' in 'WHERE' clause is not allowed", ctx.GetText()),
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) generateAdviceOnPerformingCalculations(ctx antlr.BaseParserRuleContext) *storepb.Advice {
-	if r.whereCnt == 0 || r.hasTriggeredRule {
-		return nil
-	}
-	r.hasTriggeredRule = true
-	return &storepb.Advice{
-		Status:        r.level,
-		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
-		Title:         r.title,
-		Content:       "Performing calculations in 'WHERE' clause is not allowed",
-		StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterQuerySpecification(_ *parser.Query_specificationContext) {
-	r.selectStatCnt++
-}
-
-func (r *DisallowFuncAndCalculationsRule) exitQuerySpecification(_ *parser.Query_specificationContext) {
-	r.selectStatCnt--
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterHavingClause(_ *parser.Having_clauseContext) {
-	r.havingCnt++
-}
-
-func (r *DisallowFuncAndCalculationsRule) exitHavingClause(_ *parser.Having_clauseContext) {
-	r.havingCnt--
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterSearchCondition(_ *parser.Search_conditionContext) {
-	if r.selectStatCnt != 0 && r.havingCnt == 0 {
-		r.whereCnt++
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) exitSearchCondition(_ *parser.Search_conditionContext) {
-	r.whereCnt--
-	r.hasTriggeredRule = false
-}
-
-// Calling functions.
-func (r *DisallowFuncAndCalculationsRule) enterBuiltInFunc(ctx *parser.BUILT_IN_FUNCContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterRankingWindowedFunc(ctx *parser.RANKING_WINDOWED_FUNCContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterAggregateWindowedFunc(ctx *parser.AGGREGATE_WINDOWED_FUNCContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterAnalyticWindowedFunc(ctx *parser.ANALYTIC_WINDOWED_FUNCContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterScalarFunction(ctx *parser.SCALAR_FUNCTIONContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterFreeText(ctx *parser.FREE_TEXTContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterPartitionFunc(ctx *parser.PARTITION_FUNCContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterHierarchyIDMethod(ctx *parser.HIERARCHYID_METHODContext) {
-	if advice := r.generateAdviceOnFunctionUsing(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
-	}
-}
-
-// Performing calculations.
-func (r *DisallowFuncAndCalculationsRule) enterExpression(ctx *parser.ExpressionContext) {
-	if ctx.GetOp() != nil {
-		if advice := r.generateAdviceOnPerformingCalculations(ctx.BaseParserRuleContext); advice != nil {
-			r.AddAdvice(advice)
-		}
-	}
-}
-
-func (r *DisallowFuncAndCalculationsRule) enterUnaryOperatorExpression(ctx *parser.Unary_operator_expressionContext) {
-	if advice := r.generateAdviceOnPerformingCalculations(ctx.BaseParserRuleContext); advice != nil {
-		r.AddAdvice(advice)
+		return false
 	}
 }

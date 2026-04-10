@@ -6,16 +6,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -51,170 +47,90 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	// Create the rule
-	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), format, maxLength)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &namingTableRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		format:       format,
+		maxLength:    maxLength,
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// NamingTableRule is the rule for table naming convention.
-type NamingTableRule struct {
-	BaseRule
+type namingTableRule struct {
+	OmniBaseRule
 	format    *regexp.Regexp
 	maxLength int
 }
 
-// NewNamingTableRule creates a new NamingTableRule.
-func NewNamingTableRule(level storepb.Advice_Status, title string, format *regexp.Regexp, maxLength int) *NamingTableRule {
-	return &NamingTableRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		format:    format,
-		maxLength: maxLength,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingTableRule) Name() string {
+func (*namingTableRule) Name() string {
 	return "NamingTableRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *NamingTableRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case "Execute_body":
-		r.enterExecuteBody(ctx.(*parser.Execute_bodyContext))
+func (r *namingTableRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		if n.Name == nil {
+			return
+		}
+		r.checkTableName(n.Name.Object, n.Loc)
+	case *ast.ExecStmt:
+		r.checkSpRename(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (*NamingTableRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *NamingTableRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := ctx.Table_name().GetTable().GetText()
-
+func (r *namingTableRule) checkTableName(tableName string, loc ast.Loc) {
+	if tableName == "" {
+		return
+	}
 	if !r.format.MatchString(tableName) {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
 		})
 	}
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
 		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
+			Status:        r.Level,
 			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
+			Title:         r.Title,
 			Content:       fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, tableName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+			StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
 		})
 	}
 }
 
-func (r *NamingTableRule) enterExecuteBody(ctx *parser.Execute_bodyContext) {
-	if ctx.Func_proc_name_server_database_schema() == nil {
+func (r *namingTableRule) checkSpRename(execStmt *ast.ExecStmt) {
+	if execStmt.Name == nil {
 		return
 	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema() == nil {
+	// Check if the procedure is sp_rename.
+	if execStmt.Name.Schema != "" {
 		return
 	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema() == nil {
-		return
-	}
-	if ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetSchema() != nil {
-		return
-	}
-
-	v := ctx.Func_proc_name_server_database_schema().Func_proc_name_database_schema().Func_proc_name_schema().GetProcedure()
-	_, normalizedProcedureName := tsqlparser.NormalizeTSQLIdentifier(v)
-	if normalizedProcedureName != "sp_rename" {
+	if !strings.EqualFold(execStmt.Name.Object, "sp_rename") {
 		return
 	}
 
-	firstArgument := ctx.Execute_statement_arg()
-	if firstArgument == nil {
-		return
-	}
-	if firstArgument.Execute_statement_arg_unnamed() == nil {
-		return
-	}
-	if firstArgument.Execute_statement_arg_unnamed().Execute_parameter() == nil {
-		return
-	}
-	if firstArgument.Execute_statement_arg_unnamed().Execute_parameter().Constant() == nil {
-		return
-	}
-	if firstArgument.Execute_statement_arg_unnamed().Execute_parameter().Constant().STRING() == nil {
+	if execStmt.Args == nil || execStmt.Args.Len() < 2 {
 		return
 	}
 
-	if len(ctx.Execute_statement_arg().AllExecute_statement_arg()) != 1 {
+	// Get the second argument (new name).
+	arg1, ok := execStmt.Args.Items[1].(*ast.ExecArg)
+	if !ok || arg1 == nil {
 		return
 	}
-	secondArgument := ctx.Execute_statement_arg().Execute_statement_arg(0)
-	if secondArgument == nil {
+	lit, ok := arg1.Value.(*ast.Literal)
+	if !ok || lit == nil {
 		return
 	}
-	if secondArgument.Execute_statement_arg_unnamed() == nil {
-		return
-	}
-	if secondArgument.Execute_statement_arg_unnamed().Execute_parameter() == nil {
-		return
-	}
-	if secondArgument.Execute_statement_arg_unnamed().Execute_parameter().Constant() == nil {
-		return
-	}
-	if secondArgument.Execute_statement_arg_unnamed().Execute_parameter().Constant().STRING() == nil {
-		return
-	}
-
-	newTableName := secondArgument.Execute_statement_arg_unnamed().Execute_parameter().Constant().STRING().GetText()
+	newTableName := lit.Str
 	if strings.HasPrefix(newTableName, "'") && strings.HasSuffix(newTableName, "'") {
 		newTableName = newTableName[1 : len(newTableName)-1]
 	}
 
-	if !r.format.MatchString(newTableName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, newTableName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-		})
-	}
-	if r.maxLength > 0 && len(newTableName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, newTableName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-		})
-	}
+	r.checkTableName(newTableName, execStmt.Loc)
 }

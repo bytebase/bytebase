@@ -3,23 +3,15 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"math"
-	"strconv"
+	"strings"
 
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -49,103 +41,64 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, nil
 	}
 
-	// Create the rule
-	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &columnMaximumVarcharLengthRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		maximum:      int(numberPayload.Number),
+		checkTypeString: map[string]bool{
+			"varchar":  true,
+			"nvarchar": true,
+			"char":     true,
+			"nchar":    true,
+		},
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// ColumnMaximumVarcharLengthRule checks for maximum varchar length.
-type ColumnMaximumVarcharLengthRule struct {
-	BaseRule
-
-	checkTypeString map[string]any
+type columnMaximumVarcharLengthRule struct {
+	OmniBaseRule
+	checkTypeString map[string]bool
 	maximum         int
 }
 
-// NewColumnMaximumVarcharLengthRule creates a new ColumnMaximumVarcharLengthRule.
-func NewColumnMaximumVarcharLengthRule(level storepb.Advice_Status, title string, maximum int) *ColumnMaximumVarcharLengthRule {
-	return &ColumnMaximumVarcharLengthRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		checkTypeString: map[string]any{
-			"varchar":  nil,
-			"nvarchar": nil,
-			"char":     nil,
-			"nchar":    nil,
-		},
-		maximum: maximum,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnMaximumVarcharLengthRule) Name() string {
+func (*columnMaximumVarcharLengthRule) Name() string {
 	return "ColumnMaximumVarcharLengthRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnMaximumVarcharLengthRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == "Data_type" {
-		r.enterDataType(ctx.(*parser.Data_typeContext))
-	}
-	return nil
-}
+func (r *columnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
+	seen := make(map[*ast.DataType]bool)
+	ast.Inspect(node, func(n ast.Node) bool {
+		dt, ok := n.(*ast.DataType)
+		if !ok || dt == nil {
+			return true
+		}
+		if seen[dt] {
+			return true
+		}
+		seen[dt] = true
 
-// OnExit is called when exiting a parse tree node.
-func (*ColumnMaximumVarcharLengthRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
+		normalizedType := strings.ToLower(dt.Name)
+		if !r.checkTypeString[normalizedType] {
+			return true
+		}
 
-func (r *ColumnMaximumVarcharLengthRule) enterDataType(ctx *parser.Data_typeContext) {
-	currentLength := 0
-	line := ctx.GetStart().GetLine()
-	if ctx.MAX() != nil && (ctx.VARCHAR() != nil || ctx.NVARCHAR() != nil) {
-		// https://learn.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql?view=sql-server-ver16&redirectedfrom=MSDN
-		currentLength = math.MaxInt32 // 2 ^ 31 - 1
-		line = ctx.MAX().GetSymbol().GetLine()
-	} else if ctx.GetExt_type() != nil && ctx.GetScale() != nil && ctx.GetPrec() == nil && ctx.GetInc() == nil {
-		_, normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetExt_type())
-		if _, ok := r.checkTypeString[normalizedTypeString]; !ok {
-			return
+		currentLength := 0
+		if dt.MaxLength {
+			currentLength = math.MaxInt32
+		} else if dt.Length != nil {
+			if lit, ok := dt.Length.(*ast.Literal); ok {
+				currentLength = int(lit.Ival)
+			}
 		}
-		length, err := strconv.Atoi(ctx.GetScale().GetText())
-		if err != nil {
-			slog.Error("failed to convert scale to int", log.BBError(err))
+
+		if currentLength > r.maximum {
+			r.AddAdvice(&storepb.Advice{
+				Status:        r.Level,
+				Code:          code.VarcharLengthExceedsLimit.Int32(),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
+				StartPosition: &storepb.Position{Line: r.LocToLine(dt.Loc)},
+			})
 		}
-		currentLength = length
-		line = ctx.GetScale().GetLine()
-	} else if ctx.GetUnscaled_type() != nil {
-		_, normalizedTypeString := tsqlparser.NormalizeTSQLIdentifier(ctx.GetUnscaled_type())
-		if _, ok := r.checkTypeString[normalizedTypeString]; !ok {
-			return
-		}
-		line = ctx.GetUnscaled_type().GetStart().GetLine()
-	}
-	if currentLength > r.maximum {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.VarcharLengthExceedsLimit.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
-		})
-	}
+		return true
+	})
 }
