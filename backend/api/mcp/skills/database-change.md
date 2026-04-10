@@ -5,6 +5,8 @@ description: Use when making schema changes (DDL), data migrations, ALTER TABLE,
 
 # Database Change
 
+> **For single-database changes, use `propose_database_change` instead.** It handles sheet/plan/issue creation in one call. The manual workflow below is for batch changes (multiple targets) or advanced use cases.
+
 ## Overview
 
 Create database changes (DDL/DML) through Bytebase's review workflow. Supports single database or batch changes across multiple databases.

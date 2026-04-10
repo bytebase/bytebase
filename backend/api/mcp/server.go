@@ -4,6 +4,7 @@ package mcp
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -23,6 +24,10 @@ type Server struct {
 	profile      *config.Profile
 	secret       string
 	openAPIIndex *OpenAPIIndex
+
+	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
+	// Zero means use the default (planCheckPollBudget).
+	planCheckPollBudgetOverride time.Duration
 }
 
 // NewServer creates a new MCP server.
@@ -62,6 +67,7 @@ func (s *Server) registerTools() {
 	s.registerSkillTool()
 	s.registerQueryTool()
 	s.registerSchemaTool()
+	s.registerChangeTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
