@@ -1769,10 +1769,17 @@ function RequestRoleDialog({
     (databaseMode === "SELECT" && databaseResources.length > 0) ||
     (databaseMode === "EXPRESSION" && validateSimpleExpr(exprGroup));
 
+  // When the workspace enforces a maximum role expiration, the user MUST
+  // pick an expiration — leaving it empty sends `roleGrant.expiration` as
+  // `undefined`, which the backend's approval runner treats as effectively
+  // unbounded (math.MaxInt32 days), bypassing the cap entirely.
+  const expirationRequired = maximumRoleExpirationDays !== undefined;
+
   const canSubmit =
     !submitting &&
     !!role &&
     (!reasonRequired || reason.trim().length > 0) &&
+    (!expirationRequired || !!expirationTimestamp) &&
     !expirationIsInPast &&
     !expirationExceedsMax &&
     !labelsMisconfigured &&
@@ -1989,10 +1996,10 @@ function RequestRoleDialog({
                         }}
                       />
                       {m === "ALL"
-                        ? t("common.all")
+                        ? t("issue.role-grant.all-databases")
                         : m === "EXPRESSION"
-                          ? "CEL Expression"
-                          : t("common.manually-select")}
+                          ? t("issue.role-grant.use-cel")
+                          : t("issue.role-grant.manually-select")}
                     </label>
                   )
                 )}
@@ -2029,6 +2036,9 @@ function RequestRoleDialog({
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
               {t("common.expiration")}
+              {expirationRequired && (
+                <span className="text-error ml-0.5">*</span>
+              )}
             </label>
             <ExpirationPicker
               value={expirationTimestamp}
