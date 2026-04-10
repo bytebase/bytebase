@@ -16,15 +16,34 @@ const ADMIN_PASSWORD = "12345678"; // NOSONAR: fixed demo account password
 let serverProcess: child_process.ChildProcess | undefined;
 let tempDir: string | undefined;
 
+// Verify a PID belongs to a bytebase process before sending signals.
+// Prevents us from killing an unrelated process if the OS has recycled the PID
+// since the last e2e run (e.g. server crashed, PID got reused by another app).
+function isBytebaseProcess(pid: number): boolean {
+  try {
+    const out = child_process
+      .execFileSync("ps", ["-p", String(pid), "-o", "command="], {
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      })
+      .trim();
+    return out.includes("bytebase");
+  } catch {
+    return false; // ps exits non-zero if pid doesn't exist
+  }
+}
+
 export function cleanupOrphans(): void {
   if (!fs.existsSync(PID_FILE)) return;
   const content = fs.readFileSync(PID_FILE, "utf-8").trim().split("\n");
   const pid = parseInt(content[0], 10);
   const dir = content[1];
-  try {
-    process.kill(-pid, "SIGTERM"); // Kill process group
-  } catch {
-    /* already dead */
+  if (Number.isFinite(pid) && pid > 0 && isBytebaseProcess(pid)) {
+    try {
+      process.kill(-pid, "SIGTERM"); // Kill process group
+    } catch {
+      /* already dead */
+    }
   }
   if (dir && fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });

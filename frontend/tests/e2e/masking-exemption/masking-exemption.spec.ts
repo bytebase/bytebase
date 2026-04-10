@@ -271,14 +271,26 @@ test.describe("Exemption List Page", () => {
     await exemptionPage.selectMember(env.adminEmail);
     await page.waitForTimeout(500);
 
-    const grantCard = page.locator("[class*='border border-gray']").first();
+    // Use a stable data-testid locator (not CSS class substrings, which break
+    // on theme refactors). Fail loudly if the card isn't found rather than
+    // silently passing — the previous version of this test was a false
+    // positive because its class selector matched nothing.
+    const grantCard = page.getByTestId("exemption-grant-card").first();
+    await expect(grantCard).toBeVisible();
+
     const cardBox = await grantCard.boundingBox();
-    const header = grantCard.locator("> div").first();
+    const header = grantCard.getByTestId("exemption-grant-header").first();
+    await expect(header).toBeVisible();
     const headerBox = await header.boundingBox();
-    if (cardBox && headerBox) {
-      const topGap = headerBox.y - cardBox.y;
-      expect(topGap).toBeLessThanOrEqual(12);
-    }
+    expect(cardBox, "grant card boundingBox should be measurable").toBeTruthy();
+    expect(headerBox, "grant card header boundingBox should be measurable").toBeTruthy();
+
+    // Expected layout: 1px top border + header's own py-2 (8px) = ~9px gap.
+    // The original bug added pt-4 (16px) on the wrapper, pushing the gap to ~25px.
+    // Allow 0-14px range: tolerates border + minor padding, rejects pt-4 regression.
+    const topGap = headerBox!.y - cardBox!.y;
+    expect(topGap, `header should sit near top of card (got ${topGap}px)`).toBeGreaterThanOrEqual(0);
+    expect(topGap, `header should sit near top of card (got ${topGap}px)`).toBeLessThanOrEqual(14);
   });
 });
 
