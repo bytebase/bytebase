@@ -94,7 +94,7 @@ async function findMonacoEditor(
 
   try {
     const { isMonacoLoaded, getMonacoEditor } = await import(
-      "@/components/MonacoEditor/lazy-editor"
+      "@/react/components/monaco/core"
     );
     if (!isMonacoLoaded()) return null;
     const monaco = await getMonacoEditor();

@@ -1896,11 +1896,19 @@
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
     "expired": "已过期",
+    "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "self": "SQL 编辑器",
-    "view-issue": "查看工单"
+    "view-issue": "查看工单",
+    "web-socket": {
+      "errors": {
+        "description": "Auto Completion might be limited or disabled.",
+        "disconnected": "WebSocket disconnected",
+        "title": "WebSocket connection failed"
+      }
+    }
   },
   "sql-review": {
     "add-or-remove-rules": "添加或删除规则",
