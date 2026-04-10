@@ -10,6 +10,14 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -219,38 +227,40 @@ function DatabaseGroupTable({
 
   return (
     <div className="px-4">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 pr-4 font-medium w-64">{t("common.name")}</th>
-            <th className="py-2 pr-4 font-medium">
-              {t("database.expression")}
-            </th>
-            {showActions && <th className="py-2 font-medium w-12" />}
-          </tr>
-        </thead>
-        <tbody>
-          {pagedList.map((group) => (
-            <tr
-              key={group.name}
-              className="border-b cursor-pointer hover:bg-gray-50"
-              onClick={(e) => onRowClick(e, group)}
-            >
-              <td className="py-2 pr-4 truncate max-w-64">{group.title}</td>
-              <td className="py-2 pr-4 truncate text-control-light">
-                {group.databaseExpr?.expression || (
-                  <span className="italic">{t("common.empty")}</span>
+      <div className="border rounded-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-control-bg">
+              <TableHead className="w-64">{t("common.name")}</TableHead>
+              <TableHead>{t("database.expression")}</TableHead>
+              {showActions && <TableHead className="w-12" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pagedList.map((group) => (
+              <TableRow
+                key={group.name}
+                className="cursor-pointer"
+                onClick={(e) => onRowClick(e, group)}
+              >
+                <TableCell className="truncate max-w-64">
+                  {group.title}
+                </TableCell>
+                <TableCell className="truncate text-control-light">
+                  {group.databaseExpr?.expression || (
+                    <span className="italic">{t("common.empty")}</span>
+                  )}
+                </TableCell>
+                {showActions && (
+                  <TableCell>
+                    <ActionDropdown group={group} onDelete={onDelete} />
+                  </TableCell>
                 )}
-              </td>
-              {showActions && (
-                <td className="py-2">
-                  <ActionDropdown group={group} onDelete={onDelete} />
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       {totalPages > 1 && (
         <div className="flex justify-end items-center gap-x-2 mt-3">

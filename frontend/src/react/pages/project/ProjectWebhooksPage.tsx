@@ -8,6 +8,14 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -157,81 +165,81 @@ function WebhookTable({
 
   return (
     <div className="px-4">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 pr-4 font-medium w-60">{t("common.name")}</th>
-            <th className="py-2 pr-4 font-medium">URL</th>
-            <th className="py-2 pr-4 font-medium">
-              {t("project.webhook.triggering-activity")}
-            </th>
-            {allowEdit && <th className="py-2 font-medium w-12" />}
-          </tr>
-        </thead>
-        <tbody>
-          {webhooks.length === 0 ? (
-            <tr>
-              <td
-                colSpan={allowEdit ? 4 : 3}
-                className="py-8 text-center text-control-light"
-              >
-                {t("common.no-data")}
-              </td>
-            </tr>
-          ) : (
-            webhooks.map((webhook) => {
-              const activityTitles = webhook.notificationTypes.map(
-                (activity) => {
-                  const item = activityItemList.find(
-                    (item) => item.activity === activity
-                  );
-                  return item
-                    ? item.title
-                    : Activity_Type[activity] || `ACTIVITY_${activity}`;
-                }
-              );
-
-              return (
-                <tr
-                  key={webhook.name}
-                  className="border-b cursor-pointer hover:bg-gray-50"
-                  onClick={(e) => onRowClick(e, webhook)}
+      <div className="border rounded-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-control-bg">
+              <TableHead className="w-60">{t("common.name")}</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
+              {allowEdit && <TableHead className="w-12" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {webhooks.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={allowEdit ? 4 : 3}
+                  className="py-8 text-center text-control-light"
                 >
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-x-2">
-                      <WebhookTypeIcon
-                        type={webhook.type}
-                        className="w-5 h-5"
-                      />
-                      {webhook.title}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4 truncate max-w-xs text-control-light">
-                    {webhook.url}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex flex-wrap gap-2">
-                      {activityTitles.map((title) => (
-                        <span
-                          key={title}
-                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-gray-100 text-gray-700"
-                        >
-                          {title}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  {allowEdit && (
-                    <td className="py-2">
-                      <ActionDropdown webhook={webhook} onDelete={onDelete} />
-                    </td>
-                  )}
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                  {t("common.no-data")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              webhooks.map((webhook) => {
+                const activityTitles = webhook.notificationTypes.map(
+                  (activity) => {
+                    const item = activityItemList.find(
+                      (item) => item.activity === activity
+                    );
+                    return item
+                      ? item.title
+                      : Activity_Type[activity] || `ACTIVITY_${activity}`;
+                  }
+                );
+
+                return (
+                  <TableRow
+                    key={webhook.name}
+                    className="cursor-pointer"
+                    onClick={(e) => onRowClick(e, webhook)}
+                  >
+                    <TableCell className="py-2 pr-4">
+                      <div className="flex items-center gap-x-2">
+                        <WebhookTypeIcon
+                          type={webhook.type}
+                          className="w-5 h-5"
+                        />
+                        {webhook.title}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-2 pr-4 truncate max-w-xs text-control-light">
+                      {webhook.url}
+                    </TableCell>
+                    <TableCell className="py-2 pr-4">
+                      <div className="flex flex-wrap gap-2">
+                        {activityTitles.map((title) => (
+                          <span
+                            key={title}
+                            className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
+                          >
+                            {title}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    {allowEdit && (
+                      <TableCell className="py-2">
+                        <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

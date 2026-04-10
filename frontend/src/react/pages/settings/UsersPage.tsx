@@ -23,6 +23,14 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -215,33 +223,33 @@ function UserTable({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-control-bg">
-            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="whitespace-nowrap">
               {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("settings.members.table.groups")}
-            </th>
-            <th className="px-4 py-2 text-right font-medium whitespace-nowrap">
+            </TableHead>
+            <TableHead className="text-right whitespace-nowrap">
               {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.map((user, i) => {
             const accountType = getAccountTypeByEmail(user.email);
             const isDeleted = user.state === State.DELETED;
             const isSelf = currentUser.name === user.name;
 
             return (
-              <tr
+              <TableRow
                 key={user.name}
-                className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
+                className={i % 2 === 1 ? "bg-gray-50" : ""}
               >
                 {/* Account column */}
-                <td className="px-4 py-2">
+                <TableCell className="py-2">
                   <div className="flex items-center gap-x-3">
                     <UserAvatar title={user.title || user.email} />
                     <div className="flex flex-col">
@@ -287,18 +295,18 @@ function UserTable({
                       </span>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Groups column */}
-                <td className="px-4 py-2">
+                <TableCell className="py-2">
                   <UserGroupsCell
                     user={user}
                     onGroupSelected={onGroupSelected}
                   />
-                </td>
+                </TableCell>
 
                 {/* Operations column */}
-                <td className="px-4 py-2">
+                <TableCell className="py-2">
                   <div className="flex justify-end gap-x-1">
                     {!isDeleted && (
                       <>
@@ -367,12 +375,12 @@ function UserTable({
                         </Tooltip>
                       )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

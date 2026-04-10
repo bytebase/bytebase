@@ -26,6 +26,14 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -412,35 +420,25 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm min-w-[1000px]">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 px-4 font-medium min-w-80">
-              {t("issue.table.name")}
-            </th>
-            <th className="py-2 px-4 font-medium w-50">
-              {t("plan.checks.self")}
-            </th>
-            <th className="py-2 px-4 font-medium w-35">
-              {t("plan.navigator.review")}
-            </th>
-            <th className="py-2 px-4 font-medium w-65">
+      <Table className="min-w-[1000px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-80">{t("issue.table.name")}</TableHead>
+            <TableHead className="w-50">{t("plan.checks.self")}</TableHead>
+            <TableHead className="w-35">{t("plan.navigator.review")}</TableHead>
+            <TableHead className="w-65">
               {t("rollout.stage.self", { count: 2 })}
-            </th>
-            <th className="py-2 px-4 font-medium w-38">
-              {t("issue.table.updated")}
-            </th>
-            <th className="py-2 px-4 font-medium w-38">
-              {t("issue.table.creator")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+            <TableHead className="w-38">{t("issue.table.updated")}</TableHead>
+            <TableHead className="w-38">{t("issue.table.creator")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {plans.map((plan) => (
             <PlanRow key={plan.name} plan={plan} projectId={projectId} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -537,15 +535,12 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   };
 
   return (
-    <tr
-      className={cn(
-        "border-b cursor-pointer hover:bg-gray-50",
-        isDeleted && "opacity-60"
-      )}
+    <TableRow
+      className={cn("cursor-pointer", isDeleted && "opacity-60")}
       onClick={onRowClick}
     >
       {/* Title */}
-      <td className="py-2 px-4">
+      <TableCell>
         <div className="flex items-center gap-x-2 overflow-hidden">
           <span className="whitespace-nowrap text-control opacity-60">
             {extractPlanUID(plan.name)}
@@ -561,15 +556,15 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             </span>
           )}
           {showDraftTag && !isDeleted && (
-            <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs shrink-0">
+            <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
               {t("common.draft")}
             </span>
           )}
         </div>
-      </td>
+      </TableCell>
 
       {/* Checks */}
-      <td className="py-2 px-4">
+      <TableCell>
         {hasAnyCheck ? (
           <div className="flex items-center gap-3 flex-wrap">
             {checkSummary.running > 0 && (
@@ -600,19 +595,19 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Approval */}
-      <td className="py-2 px-4">
+      <TableCell>
         {approvalTag ? (
           <StatusTag label={approvalTag.label} variant={approvalTag.variant} />
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Stages */}
-      <td className="py-2 px-4">
+      <TableCell>
         {plan.rolloutStageSummaries.length === 0 ? (
           <span className="text-control-light">-</span>
         ) : (
@@ -640,24 +635,24 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             })}
           </div>
         )}
-      </td>
+      </TableCell>
 
       {/* Updated */}
-      <td className="py-2 px-4">
+      <TableCell>
         <Tooltip content={formatAbsoluteDateTime(updateTimeTs * 1000)}>
           <span className="text-control-light whitespace-nowrap">
             {humanizeTs(updateTimeTs)}
           </span>
         </Tooltip>
-      </td>
+      </TableCell>
 
       {/* Creator */}
-      <td className="py-2 px-4">
+      <TableCell>
         <div className="flex items-center gap-x-1.5">
           <span className="text-sm truncate">{creator.title}</span>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -1053,10 +1048,10 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-control-light">
-                <th className="py-2 pr-2 w-8">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -1066,45 +1061,39 @@ function DatabaseSelector({
                     onChange={toggleAll}
                     className="accent-accent"
                   />
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.database")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.instance")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.environment")}
-                </th>
-                <th className="py-2 pr-4 font-medium whitespace-nowrap">
+                </TableHead>
+                <TableHead>{t("common.database")}</TableHead>
+                <TableHead>{t("common.instance")}</TableHead>
+                <TableHead>{t("common.environment")}</TableHead>
+                <TableHead className="whitespace-nowrap">
                   {t("common.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {databases.map((db) => {
                 const { databaseName } = extractDatabaseResourceName(db.name);
                 const inst = getInstanceResource(db);
                 const env = getDatabaseEnvironment(db);
                 const isSelected = selectedNames.has(db.name);
                 return (
-                  <tr
+                  <TableRow
                     key={db.name}
                     className={cn(
-                      "border-b cursor-pointer hover:bg-gray-50",
+                      "cursor-pointer",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 pr-2">
+                    <TableCell>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         readOnly
                         className="accent-accent"
                       />
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-x-1.5">
                         {inst && EngineIconPath[inst.engine] && (
                           <img
@@ -1115,12 +1104,12 @@ function DatabaseSelector({
                         )}
                         <span>{databaseName}</span>
                       </div>
-                    </td>
-                    <td className="py-2 pr-4">{inst?.title}</td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell>{inst?.title}</TableCell>
+                    <TableCell>
                       {env && <EnvironmentLabel environmentName={env.name} />}
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell>
                       {db.syncStatus === SyncStatus.FAILED ? (
                         <Tooltip
                           content={
@@ -1132,12 +1121,12 @@ function DatabaseSelector({
                       ) : (
                         <CheckCircle className="w-4 h-4 text-success" />
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {hasMore && (
             <div className="flex justify-center">
@@ -1202,47 +1191,42 @@ function DatabaseGroupSelector({
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b text-left text-control-light">
-          <th className="py-2 pr-2 w-8" />
-          <th className="py-2 pr-4 font-medium">
-            {t("common.database-group")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8" />
+          <TableHead>{t("common.database-group")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {groups.map((group) => {
           const isSelected = selectedGroup === group.name;
           return (
-            <tr
+            <TableRow
               key={group.name}
-              className={cn(
-                "border-b cursor-pointer hover:bg-gray-50",
-                isSelected && "bg-accent/5"
-              )}
+              className={cn("cursor-pointer", isSelected && "bg-accent/5")}
               onClick={() =>
                 onSelectedGroupChange(isSelected ? undefined : group.name)
               }
             >
-              <td className="py-2 pr-2">
+              <TableCell>
                 <input
                   type="radio"
                   checked={isSelected}
                   readOnly
                   className="accent-accent"
                 />
-              </td>
-              <td className="py-2 pr-4">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-x-1.5">
                   <FolderTree className="w-4 h-4 text-control-light shrink-0" />
                   <span>{extractDatabaseGroupName(group.name)}</span>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           );
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

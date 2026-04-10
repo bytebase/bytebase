@@ -7,6 +7,14 @@ import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -188,22 +196,20 @@ function ReleaseTable({ releases }: { releases: Release[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 px-4 font-medium w-75">{t("common.name")}</th>
-            <th className="py-2 px-4 font-medium">{t("release.files")}</th>
-            <th className="py-2 px-4 font-medium w-32">
-              {t("common.created-at")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-75">{t("common.name")}</TableHead>
+            <TableHead>{t("release.files")}</TableHead>
+            <TableHead className="w-32">{t("common.created-at")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {releases.map((release) => (
             <ReleaseRow key={release.name} release={release} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -240,11 +246,8 @@ function ReleaseRow({ release }: { release: Release }) {
   );
 
   return (
-    <tr
-      className="border-b cursor-pointer hover:bg-gray-50"
-      onClick={onRowClick}
-    >
-      <td className="py-2 px-4">
+    <TableRow className="cursor-pointer" onClick={onRowClick}>
+      <TableCell>
         <span
           className={cn(
             "truncate",
@@ -253,13 +256,13 @@ function ReleaseRow({ release }: { release: Release }) {
         >
           {releaseName}
         </span>
-      </td>
-      <td className="py-2 px-4">
+      </TableCell>
+      <TableCell>
         <div className="flex flex-col items-start gap-1">
           {showFiles.map((file, idx) => (
             <p key={idx} className="w-full truncate">
               {file.version && (
-                <span className="mr-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+                <span className="mr-2 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs">
                   {file.version}
                 </span>
               )}
@@ -267,15 +270,15 @@ function ReleaseRow({ release }: { release: Release }) {
             </p>
           ))}
           {release.files.length > MAX_SHOW_FILES_COUNT && (
-            <p className="text-gray-400 text-xs italic">
+            <p className="text-control-light text-xs italic">
               {t("release.total-files", { count: release.files.length })}
             </p>
           )}
         </div>
-      </td>
-      <td className="py-2 px-4">
+      </TableCell>
+      <TableCell>
         <HumanizeTs ts={createTimeTs} />
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

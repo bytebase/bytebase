@@ -1,5 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { router } from "@/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
@@ -25,19 +33,19 @@ export function DatabaseRevisionTable({
 
   return (
     <div className="overflow-hidden rounded border border-block-border">
-      <table className="min-w-full divide-y divide-block-border">
-        <thead className="bg-control-bg">
-          <tr className="text-left text-sm text-control-light">
-            <th className="px-4 py-2 font-medium">{t("common.version")}</th>
-            <th className="px-4 py-2 font-medium">{t("common.type")}</th>
-            <th className="px-4 py-2 font-medium">{t("common.created-at")}</th>
-            <th className="px-4 py-2 font-medium">{t("common.operations")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+      <Table>
+        <TableHeader className="bg-control-bg">
+          <TableRow>
+            <TableHead>{t("common.version")}</TableHead>
+            <TableHead>{t("common.type")}</TableHead>
+            <TableHead>{t("common.created-at")}</TableHead>
+            <TableHead>{t("common.operations")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {revisions.map((revision) => (
-            <tr key={revision.name}>
-              <td className="px-4 py-3 text-sm text-main">
+            <TableRow key={revision.name}>
+              <TableCell className="text-main">
                 <button
                   className="cursor-pointer text-left hover:text-accent"
                   type="button"
@@ -45,18 +53,16 @@ export function DatabaseRevisionTable({
                 >
                   {revision.version || revision.name}
                 </button>
-              </td>
-              <td className="px-4 py-3 text-sm text-control">
-                {getRevisionType(revision.type)}
-              </td>
-              <td className="px-4 py-3 text-sm text-control">
+              </TableCell>
+              <TableCell>{getRevisionType(revision.type)}</TableCell>
+              <TableCell>
                 {getDateForPbTimestampProtoEs(revision.createTime)
                   ? humanizeDate(
                       getDateForPbTimestampProtoEs(revision.createTime) as Date
                     )
                   : "-"}
-              </td>
-              <td className="px-4 py-3 text-sm text-control">
+              </TableCell>
+              <TableCell>
                 <Button
                   data-name={revision.name}
                   size="sm"
@@ -66,21 +72,21 @@ export function DatabaseRevisionTable({
                 >
                   {t("common.delete")}
                 </Button>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {revisions.length === 0 && (
-            <tr>
-              <td
-                className="px-4 py-6 text-center text-sm text-control-light"
+            <TableRow>
+              <TableCell
+                className="py-6 text-center text-control-light"
                 colSpan={4}
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

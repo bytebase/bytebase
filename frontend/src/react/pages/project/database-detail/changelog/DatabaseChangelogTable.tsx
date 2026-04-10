@@ -1,6 +1,14 @@
 import { Check } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { router } from "@/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
@@ -69,52 +77,52 @@ export function DatabaseChangelogTable({
 
   return (
     <div className="overflow-hidden rounded border border-block-border">
-      <table className="min-w-full divide-y divide-block-border">
-        <thead className="bg-control-bg">
-          <tr className="text-left text-sm text-control-light">
-            <th className="w-12 px-4 py-2" />
-            <th className="w-[180px] px-4 py-2 font-medium">
+      <Table>
+        <TableHeader className="bg-control-bg">
+          <TableRow>
+            <TableHead className="w-12" />
+            <TableHead className="w-[180px]">
               {t("common.created-at")}
-            </th>
-            <th className="min-w-[200px] px-4 py-2 font-medium">
+            </TableHead>
+            <TableHead className="min-w-[200px]">
               {t("common.rollout")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {changelogs.map((changelog) => (
-            <tr
+            <TableRow
               key={changelog.name}
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer"
               onClick={(e) => handleRowClick(changelog, e)}
             >
-              <td className="px-4 py-3 text-center">
+              <TableCell className="text-center">
                 <ChangelogStatusIcon status={changelog.status} />
-              </td>
-              <td className="px-4 py-3 text-sm text-main">
+              </TableCell>
+              <TableCell>
                 {getDateForPbTimestampProtoEs(changelog.createTime)
                   ? humanizeDate(
                       getDateForPbTimestampProtoEs(changelog.createTime) as Date
                     )
                   : "-"}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-main">
+              </TableCell>
+              <TableCell className="truncate">
                 {changelog.planTitle || "-"}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {changelogs.length === 0 && (
-            <tr>
-              <td
-                className="px-4 py-6 text-center text-sm text-control-light"
+            <TableRow>
+              <TableCell
+                className="py-6 text-center text-control-light"
                 colSpan={3}
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

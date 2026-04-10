@@ -42,6 +42,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
+import {
   Tabs,
   TabsList,
   TabsPanel,
@@ -152,52 +160,43 @@ function MemberTable({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
             {allowEdit && (
-              <th className="w-10 px-3 py-2">
+              <TableHead className="w-10">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
                 />
-              </th>
+              </TableHead>
             )}
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.roles")}
-            </th>
-            <th className="w-24 px-4 py-2 text-left font-medium text-control-light">
-              {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead>{t("settings.members.table.account")}</TableHead>
+            <TableHead>{t("settings.members.table.roles")}</TableHead>
+            <TableHead className="w-24">{t("common.operations")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {bindings.map((mb) => (
-            <tr
-              key={mb.binding}
-              className="border-b last:border-b-0 hover:bg-gray-50"
-            >
+            <TableRow key={mb.binding}>
               {allowEdit && (
-                <td className="px-3 py-2">
+                <TableCell>
                   <input
                     type="checkbox"
                     checked={selectedBindings.includes(mb.binding)}
                     disabled={isSelectDisabled(mb)}
                     onChange={() => toggleOne(mb.binding)}
                   />
-                </td>
+                </TableCell>
               )}
-              <td className="px-4 py-2">
+              <TableCell>
                 <div className="flex items-center gap-x-3">
                   {mb.type === "users" ? (
                     <UserAvatar title={mb.title || mb.user?.email || "?"} />
                   ) : (
-                    <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                      <Users className="h-4 w-4 text-gray-500" />
+                    <div className="h-9 w-9 rounded-full bg-control-bg flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-control-light" />
                     </div>
                   )}
                   <div className="flex flex-col">
@@ -247,8 +246,8 @@ function MemberTable({
                     </span>
                   </div>
                 </div>
-              </td>
-              <td className="px-4 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex flex-wrap gap-1">
                   {scope === "project"
                     ? sortRoles(mb.projectRoleBindings.map((b) => b.role)).map(
@@ -265,8 +264,8 @@ function MemberTable({
                         </Badge>
                       ))}
                 </div>
-              </td>
-              <td className="px-4 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-x-1">
                   {allowEdit && canEdit(mb) && (
                     <Button
@@ -295,21 +294,21 @@ function MemberTable({
                     </Button>
                   )}
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {bindings.length === 0 && (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={allowEdit ? 4 : 3}
-                className="px-4 py-8 text-center text-control-light"
+                className="py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -380,17 +379,17 @@ function MemberTableByRole({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <tbody>
+      <Table>
+        <TableBody>
           {roleToBindings.map(({ role, members }) => {
             const expanded = expandedRoles.has(role);
             return (
               <React.Fragment key={role}>
-                <tr
-                  className="bg-gray-50 border-b cursor-pointer hover:bg-gray-100"
+                <TableRow
+                  className="bg-control-bg cursor-pointer"
                   onClick={() => toggleRole(role)}
                 >
-                  <td colSpan={3} className="px-4 py-2">
+                  <TableCell colSpan={3}>
                     <div className="flex items-center gap-x-2">
                       {expanded ? (
                         <ChevronDown className="h-4 w-4" />
@@ -407,15 +406,12 @@ function MemberTableByRole({
                         ({members.length})
                       </span>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
                 {expanded &&
                   members.map((mb) => (
-                    <tr
-                      key={`${role}-${mb.binding}`}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-2 pl-10">
+                    <TableRow key={`${role}-${mb.binding}`}>
+                      <TableCell className="pl-10">
                         <div className="flex items-center gap-x-3">
                           {mb.type === "users" ? (
                             <UserAvatar
@@ -423,8 +419,8 @@ function MemberTableByRole({
                               size="sm"
                             />
                           ) : (
-                            <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                              <Users className="h-3.5 w-3.5 text-gray-500" />
+                            <div className="h-7 w-7 rounded-full bg-control-bg flex items-center justify-center shrink-0">
+                              <Users className="h-3.5 w-3.5 text-control-light" />
                             </div>
                           )}
                           <div className="flex flex-col">
@@ -476,9 +472,9 @@ function MemberTableByRole({
                             </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-2" />
-                      <td className="w-24 px-4 py-2">
+                      </TableCell>
+                      <TableCell />
+                      <TableCell className="w-24">
                         <div className="flex items-center gap-x-1">
                           {allowEdit && canEdit(mb) && (
                             <Button
@@ -507,24 +503,24 @@ function MemberTableByRole({
                             </Button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
               </React.Fragment>
             );
           })}
           {roleToBindings.length === 0 && (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={3}
-                className="px-4 py-8 text-center text-control-light"
+                className="py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -1427,49 +1423,38 @@ function EditMemberRoleDrawer({
 
                     {/* Database resources table */}
                     <div className="p-4">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.database")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.schema")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.table")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.expiration")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("common.database")}</TableHead>
+                            <TableHead>{t("common.schema")}</TableHead>
+                            <TableHead>{t("common.table")}</TableHead>
+                            <TableHead>{t("common.expiration")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {rows.map((row, rowIdx) => (
-                            <tr
-                              key={rowIdx}
-                              className="border-b last:border-b-0"
-                            >
-                              <td className="px-2 py-1.5 text-sm">
+                            <TableRow key={rowIdx}>
+                              <TableCell>
                                 {row.databaseResource?.databaseFullName ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
+                              </TableCell>
+                              <TableCell>
                                 {row.databaseResource?.schema ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
+                              </TableCell>
+                              <TableCell>
                                 {row.databaseResource?.table ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
+                              </TableCell>
+                              <TableCell>
                                 {row.expiration
                                   ? formatAbsoluteDateTime(
                                       row.expiration.getTime()
                                     )
                                   : t("project.members.never-expires")}
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
                 );

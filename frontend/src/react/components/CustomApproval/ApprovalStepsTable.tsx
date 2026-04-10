@@ -4,6 +4,14 @@ import { RoleSelect } from "@/react/components/RoleSelect";
 import { PresetRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 import { Button } from "../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 
 interface ApprovalStepsTableProps {
   roles: string[];
@@ -39,32 +47,27 @@ export function ApprovalStepsTable({
 
   return (
     <div>
-      <table className="w-full border-collapse border border-control-border text-sm">
-        <thead>
-          <tr className="bg-control-bg">
-            <th className="w-20 border border-control-border px-3 py-2 text-center font-medium text-control">
+      <Table className="border border-control-border">
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="w-20 text-center text-control">
               {t("custom-approval.approval-flow.node.order")}
-            </th>
-            <th className="border border-control-border px-3 py-2 text-left font-medium text-control">
+            </TableHead>
+            <TableHead className="text-control">
               {t("custom-approval.approval-flow.node.approver")}
-            </th>
+            </TableHead>
             {editable && (
-              <th className="border border-control-border px-3 py-2 text-left font-medium text-control">
+              <TableHead className="text-control">
                 {t("common.operations")}
-              </th>
+              </TableHead>
             )}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {roles.map((role, index) => (
-            <tr
-              key={index}
-              className={index % 2 === 1 ? "bg-control-bg/50" : "bg-white"}
-            >
-              <td className="border border-control-border px-3 py-2 text-center text-control">
-                {index + 1}
-              </td>
-              <td className="border border-control-border px-3 py-2">
+            <TableRow key={index}>
+              <TableCell className="text-center">{index + 1}</TableCell>
+              <TableCell>
                 {editable ? (
                   <RoleSelect
                     value={role ? [role] : []}
@@ -78,9 +81,9 @@ export function ApprovalStepsTable({
                 ) : (
                   <span className="text-control">{displayRoleTitle(role)}</span>
                 )}
-              </td>
+              </TableCell>
               {editable && (
-                <td className="border border-control-border px-3 py-2">
+                <TableCell>
                   <div className="flex gap-x-1">
                     <Button
                       variant="outline"
@@ -109,12 +112,12 @@ export function ApprovalStepsTable({
                       </Button>
                     )}
                   </div>
-                </td>
+                </TableCell>
               )}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {editable && allowAdmin && (
         <div className="mt-4">
           <Button variant="outline" onClick={addStep}>

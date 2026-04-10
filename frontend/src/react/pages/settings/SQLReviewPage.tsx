@@ -6,6 +6,14 @@ import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -89,34 +97,31 @@ function PolicyTable({
     <>
       {/* Desktop table */}
       <div className="hidden lg:block border rounded-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-control-bg">
-              <th className="px-4 py-2 text-left font-medium whitespace-nowrap w-[200px]">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-control-bg">
+              <TableHead className="whitespace-nowrap w-[200px]">
                 {t("common.name")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium whitespace-nowrap w-[250px]">
+              </TableHead>
+              <TableHead className="whitespace-nowrap w-[250px]">
                 {t("common.resource")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+              </TableHead>
+              <TableHead className="whitespace-nowrap">
                 {t("sql-review.enabled-rules")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium whitespace-nowrap capitalize w-[7rem]">
+              </TableHead>
+              <TableHead className="whitespace-nowrap capitalize w-[7rem]">
                 {t("common.enabled")}
-              </th>
-              <th className="px-4 py-2 text-left font-medium whitespace-nowrap w-[10rem]">
+              </TableHead>
+              <TableHead className="whitespace-nowrap w-[10rem]">
                 {t("common.operations")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {policies.map((policy, i) => (
-              <tr
-                key={policy.id}
-                className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
-              >
-                <td className="px-4 py-2">{highlight(policy.name)}</td>
-                <td className="px-4 py-2">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {policies.map((policy) => (
+              <TableRow key={policy.id}>
+                <TableCell>{highlight(policy.name)}</TableCell>
+                <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {policy.resources.length === 0 && <span>-</span>}
                     {policy.resources.map((resource) => (
@@ -125,9 +130,9 @@ function PolicyTable({
                       </Badge>
                     ))}
                   </div>
-                </td>
-                <td className="px-4 py-2">{policy.ruleList.length}</td>
-                <td className="px-4 py-2">
+                </TableCell>
+                <TableCell>{policy.ruleList.length}</TableCell>
+                <TableCell>
                   {hasUpdatePermission ? (
                     <input
                       type="checkbox"
@@ -140,8 +145,8 @@ function PolicyTable({
                   ) : (
                     <X className="w-4 h-4 text-control-light" />
                   )}
-                </td>
-                <td className="px-4 py-2">
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center gap-x-2">
                     {hasDeletePermission &&
                       (confirmingDelete === policy.id ? (
@@ -196,11 +201,11 @@ function PolicyTable({
                       </Button>
                     </Tooltip>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Mobile card layout */}

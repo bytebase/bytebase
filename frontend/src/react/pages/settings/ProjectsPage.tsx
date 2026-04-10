@@ -3,7 +3,6 @@ import { sortBy, uniq } from "lodash-es";
 import {
   Archive,
   Check,
-  ChevronDown,
   EllipsisVertical,
   Plus,
   Trash2,
@@ -25,6 +24,14 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -1020,20 +1027,6 @@ export function ProjectsPage() {
     fetchProjects(true);
   }, [fetchProjects]);
 
-  const renderSortIndicator = (columnKey: string) => {
-    if (sortKey !== columnKey) {
-      return <ChevronDown className="h-3 w-3 text-gray-300" />;
-    }
-    return (
-      <ChevronDown
-        className={cn(
-          "h-3 w-3 text-accent transition-transform",
-          sortOrder === "asc" && "rotate-180"
-        )}
-      />
-    );
-  };
-
   const selectableProjects = useMemo(
     () =>
       projects.filter((p) => extractProjectResourceName(p.name) !== "default"),
@@ -1078,59 +1071,59 @@ export function ProjectsPage() {
       {/* Table */}
       <div className="border rounded-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-control-border">
+          <Table className="min-w-[700px]">
+            <TableHeader>
+              <TableRow className="bg-gray-50">
                 {canDelete && (
-                  <th className="w-12 px-4 py-2">
+                  <TableHead className="w-12">
                     <input
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleSelectAll}
                       className="rounded-xs border-control-border"
                     />
-                  </th>
+                  </TableHead>
                 )}
-                <th className="px-4 py-2 text-left font-medium min-w-[128px]">
+                <TableHead className="min-w-[128px]">
                   {t("common.id")}
-                </th>
-                <th
-                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                  onClick={() => toggleSort("title")}
+                </TableHead>
+                <TableHead
+                  sortable
+                  sortActive={sortKey === "title"}
+                  sortDir={sortOrder}
+                  onSort={() => toggleSort("title")}
+                  className="min-w-[200px]"
                 >
-                  <div className="flex items-center gap-x-1">
-                    {t("project.table.name")}
-                    {renderSortIndicator("title")}
-                  </div>
-                </th>
-                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
+                  {t("project.table.name")}
+                </TableHead>
+                <TableHead className="min-w-[240px] hidden md:table-cell">
                   {t("common.labels")}
-                </th>
-                <th className="w-[50px]" />
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="w-[50px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading && projects.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={canDelete ? 5 : 4}
-                    className="px-4 py-8 text-center text-control-placeholder"
+                    className="py-8 text-center text-control-placeholder"
                   >
                     <div className="flex items-center justify-center gap-x-2">
                       <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
                       {t("common.loading")}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : projects.length === 0 ? (
-                <tr>
-                  <td
+                <TableRow>
+                  <TableCell
                     colSpan={canDelete ? 5 : 4}
-                    className="px-4 py-8 text-center text-control-placeholder"
+                    className="py-8 text-center text-control-placeholder"
                   >
                     {t("common.no-data")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 projects.map((project, i) => {
                   const resourceName = extractProjectResourceName(project.name);
@@ -1138,17 +1131,17 @@ export function ProjectsPage() {
                   const isSelected = selectedNames.has(project.name);
 
                   return (
-                    <tr
+                    <TableRow
                       key={project.name}
                       className={cn(
-                        "border-b last:border-b-0 cursor-pointer hover:bg-gray-50",
+                        "cursor-pointer",
                         i % 2 === 1 && "bg-gray-50/50"
                       )}
                       onClick={(e) => handleRowClick(project, e)}
                     >
                       {canDelete && (
-                        <td
-                          className="w-12 px-4 py-2"
+                        <TableCell
+                          className="w-12"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
@@ -1158,15 +1151,15 @@ export function ProjectsPage() {
                             onChange={() => toggleSelection(project.name)}
                             className="rounded-xs border-control-border disabled:opacity-50"
                           />
-                        </td>
+                        </TableCell>
                       )}
-                      <td className="px-4 py-2">
+                      <TableCell>
                         <HighlightText
                           text={resourceName}
                           keyword={searchText}
                         />
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-x-2">
                           <HighlightText
                             text={project.title}
@@ -1178,11 +1171,11 @@ export function ProjectsPage() {
                             </Badge>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-2 hidden md:table-cell">
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <LabelsDisplay labels={project.labels} />
-                      </td>
-                      <td className="px-4 py-2">
+                      </TableCell>
+                      <TableCell>
                         <div
                           className="flex justify-end"
                           onClick={(e) => e.stopPropagation()}
@@ -1192,13 +1185,13 @@ export function ProjectsPage() {
                             onAction={handleProjectAction}
                           />
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

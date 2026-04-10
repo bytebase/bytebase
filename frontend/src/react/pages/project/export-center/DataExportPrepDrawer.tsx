@@ -15,6 +15,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { Switch } from "@/react/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
@@ -918,10 +926,10 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-control-light">
-                <th className="py-2 pr-2 w-8">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -931,39 +939,35 @@ function DatabaseSelector({
                     onChange={toggleAll}
                     className="accent-accent"
                   />
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.database")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.environment")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead>{t("common.database")}</TableHead>
+                <TableHead>{t("common.environment")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {databases.map((db) => {
                 const { databaseName } = extractDatabaseResourceName(db.name);
                 const inst = getInstanceResource(db);
                 const env = getDatabaseEnvironment(db);
                 const isSelected = selectedNames.has(db.name);
                 return (
-                  <tr
+                  <TableRow
                     key={db.name}
                     className={cn(
-                      "border-b cursor-pointer hover:bg-gray-50",
+                      "cursor-pointer",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 pr-2">
+                    <TableCell>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         readOnly
                         className="accent-accent"
                       />
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-x-1.5">
                         {inst && EngineIconPath[inst.engine] && (
                           <img
@@ -974,15 +978,15 @@ function DatabaseSelector({
                         )}
                         <span>{databaseName}</span>
                       </div>
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell>
                       {env && <EnvironmentLabel environmentName={env.name} />}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           {hasMore && (
             <div className="flex justify-center">
@@ -1047,47 +1051,42 @@ function DatabaseGroupSelector({
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b text-left text-control-light">
-          <th className="py-2 pr-2 w-8" />
-          <th className="py-2 pr-4 font-medium">
-            {t("common.database-group")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8" />
+          <TableHead>{t("common.database-group")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {groups.map((group) => {
           const isSelected = selectedGroup === group.name;
           return (
-            <tr
+            <TableRow
               key={group.name}
-              className={cn(
-                "border-b cursor-pointer hover:bg-gray-50",
-                isSelected && "bg-accent/5"
-              )}
+              className={cn("cursor-pointer", isSelected && "bg-accent/5")}
               onClick={() =>
                 onSelectedGroupChange(isSelected ? undefined : group.name)
               }
             >
-              <td className="py-2 pr-2">
+              <TableCell>
                 <input
                   type="radio"
                   checked={isSelected}
                   readOnly
                   className="accent-accent"
                 />
-              </td>
-              <td className="py-2 pr-4">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-x-1.5">
                   <FolderTree className="w-4 h-4 text-control-light shrink-0" />
                   <span>{extractDatabaseGroupName(group.name)}</span>
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           );
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

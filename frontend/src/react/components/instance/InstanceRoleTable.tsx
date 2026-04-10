@@ -1,4 +1,12 @@
 import { useTranslation } from "react-i18next";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 
 interface InstanceRoleTableProps {
@@ -11,43 +19,34 @@ export function InstanceRoleTable({
   const { t } = useTranslation();
 
   return (
-    <table className="w-full text-sm border border-block-border rounded-sm">
-      <thead>
-        <tr className="bg-gray-50 border-b border-block-border">
-          <th className="text-left px-4 py-2 w-[200px] font-medium">
-            {t("common.user")}
-          </th>
-          <th className="text-left px-4 py-2 font-medium">
-            {t("instance.grants")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table className="border border-block-border rounded-sm">
+      <TableHeader>
+        <TableRow className="bg-control-bg">
+          <TableHead className="w-[200px]">{t("common.user")}</TableHead>
+          <TableHead>{t("instance.grants")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {instanceRoleList.length === 0 ? (
-          <tr>
-            <td
+          <TableRow>
+            <TableCell
               colSpan={2}
-              className="px-4 py-8 text-center text-control-light"
+              className="py-8 text-center text-control-light"
             >
               {t("common.no-data")}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ) : (
-          instanceRoleList.map((role, index) => (
-            <tr
-              key={role.roleName}
-              className={index % 2 === 1 ? "bg-gray-50/50" : ""}
-            >
-              <td className="px-4 py-2 border-b border-block-border">
-                {role.roleName}
-              </td>
-              <td className="px-4 py-2 border-b border-block-border whitespace-pre-wrap break-all">
+          instanceRoleList.map((role) => (
+            <TableRow key={role.roleName}>
+              <TableCell>{role.roleName}</TableCell>
+              <TableCell className="whitespace-pre-wrap break-all">
                 {(role.attribute ?? "").replaceAll("\n", "\n\n")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))
         )}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

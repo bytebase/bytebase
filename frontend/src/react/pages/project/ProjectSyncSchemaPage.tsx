@@ -29,6 +29,14 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -2050,10 +2058,10 @@ function TargetDatabasesSelectPanel({
             </div>
           ) : (
             <>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-2 px-2 w-8 text-left">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-8">
                       <input
                         type="checkbox"
                         checked={
@@ -2062,36 +2070,27 @@ function TargetDatabasesSelectPanel({
                         }
                         onChange={toggleAll}
                       />
-                    </th>
-                    <th className="py-2 px-2 text-left font-medium">
-                      {t("common.database")}
-                    </th>
-                    <th className="py-2 px-2 text-left font-medium">
-                      {t("common.environment")}
-                    </th>
-                    <th className="py-2 px-2 text-left font-medium">
-                      {t("common.instance")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                    <TableHead>{t("common.database")}</TableHead>
+                    <TableHead>{t("common.environment")}</TableHead>
+                    <TableHead>{t("common.instance")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredDatabases.map((db) => (
-                    <tr
+                    <TableRow
                       key={db.name}
-                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      className="cursor-pointer"
                       onClick={() => toggleDatabase(db.name)}
                     >
-                      <td
-                        className="py-2 px-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selected.has(db.name)}
                           onChange={() => toggleDatabase(db.name)}
                         />
-                      </td>
-                      <td className="py-2 px-2">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-x-1">
                           {EngineIconPath[getInstanceResource(db).engine] && (
                             <img
@@ -2104,17 +2103,13 @@ function TargetDatabasesSelectPanel({
                           )}
                           {extractDatabaseResourceName(db.name).databaseName}
                         </div>
-                      </td>
-                      <td className="py-2 px-2">
-                        {getDatabaseEnvironment(db).title}
-                      </td>
-                      <td className="py-2 px-2">
-                        {getInstanceResource(db).title}
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>{getDatabaseEnvironment(db).title}</TableCell>
+                      <TableCell>{getInstanceResource(db).title}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
               {dbNextPageToken && (
                 <div className="flex justify-center py-3">
                   <Button

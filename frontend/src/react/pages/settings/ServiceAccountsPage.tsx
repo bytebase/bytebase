@@ -9,6 +9,14 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -138,38 +146,35 @@ function ServiceAccountTable({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-control-bg">
-            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="whitespace-nowrap">
               {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-right font-medium whitespace-nowrap">
+            </TableHead>
+            <TableHead className="text-right whitespace-nowrap">
               {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={2}
-                className="py-8 text-center text-control-light text-sm"
+                className="py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
-            users.map((user, i) => {
+            users.map((user) => {
               const isDeleted = user.state === State.DELETED;
 
               return (
-                <tr
-                  key={user.name}
-                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-gray-50" : ""}`}
-                >
+                <TableRow key={user.name}>
                   {/* Account column */}
-                  <td className="px-4 py-2">
+                  <TableCell>
                     <div className="flex items-center gap-x-3">
                       <UserAvatar title={user.title || user.email} />
                       <div className="flex flex-col min-w-0">
@@ -251,10 +256,10 @@ function ServiceAccountTable({
                         </div>
                       )}
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Operations column */}
-                  <td className="px-4 py-2">
+                  <TableCell>
                     <div className="flex justify-end gap-x-1">
                       {!isDeleted && (
                         <>
@@ -327,13 +332,13 @@ function ServiceAccountTable({
                           </Tooltip>
                         )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
