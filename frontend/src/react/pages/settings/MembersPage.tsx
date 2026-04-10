@@ -54,14 +54,17 @@ import {
 } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import {
   Tabs,
   TabsList,
@@ -1652,13 +1655,27 @@ function EditMemberRoleDrawer({
 // members page before the React migration.
 // ============================================================
 
-function RequestRoleDialog({
-  project,
-  onClose,
-}: {
+interface RequestRoleSheetProps {
+  open: boolean;
   project: Project;
   onClose: () => void;
-}) {
+}
+
+function RequestRoleSheet(props: RequestRoleSheetProps) {
+  const { open, project, onClose } = props;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        {open && <RequestRoleForm key={project.name} {...props} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function RequestRoleForm({
+  project,
+  onClose,
+}: Omit<RequestRoleSheetProps, "open">) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const [role, setRole] = useState("");
@@ -1929,15 +1946,12 @@ function RequestRoleDialog({
     project.issueLabels.length > 0 || project.forceIssueLabels;
 
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent className="max-w-lg p-6">
-        <DialogTitle>{t("issue.title.request-role")}</DialogTitle>
-        <div className="flex flex-col gap-y-4 mt-4">
+    <>
+      <SheetHeader>
+        <SheetTitle>{t("issue.title.request-role")}</SheetTitle>
+      </SheetHeader>
+      <SheetBody>
+        <div className="flex flex-col gap-y-4">
           {labelsMisconfigured && (
             <Alert variant="warning">
               <AlertTitle>
@@ -2085,16 +2099,16 @@ function RequestRoleDialog({
             />
           )}
         </div>
-        <div className="flex items-center justify-end gap-x-2 mt-6">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!canSubmit} onClick={handleSubmit}>
-            {t("common.submit")}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </SheetBody>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose} disabled={submitting}>
+          {t("common.cancel")}
+        </Button>
+        <Button disabled={!canSubmit} onClick={handleSubmit}>
+          {t("common.submit")}
+        </Button>
+      </SheetFooter>
+    </>
   );
 }
 
@@ -2380,8 +2394,9 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         </TabsPanel>
       </Tabs>
 
-      {showRequestRoleDialog && project && (
-        <RequestRoleDialog
+      {project && (
+        <RequestRoleSheet
+          open={showRequestRoleDialog}
           project={project}
           onClose={() => setShowRequestRoleDialog(false)}
         />

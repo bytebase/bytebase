@@ -313,8 +313,18 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     }
   };
 
-  const handleUserSelected = (user: User) => {
-    const wi = workloadIdentityStore.getWorkloadIdentity(user.email);
+  const handleUserSelected = async (user: User) => {
+    // Use getOrFetch so the full WorkloadIdentity (including
+    // workloadIdentityConfig with subjectPattern) is loaded before we open
+    // the edit Sheet. `getWorkloadIdentity` returns a stub with only
+    // name/email/title if the cache is empty — which it is on first click
+    // of a row, since listWorkloadIdentities doesn't populate the cache.
+    // Without this, the edit Sheet would see no config and leave
+    // Organization/Repository/Branch fields blank.
+    const wi = await workloadIdentityStore.getOrFetchWorkloadIdentity(
+      user.email,
+      true
+    );
     setEditingWI(wi);
     setShowDrawer(true);
   };
