@@ -46,7 +46,9 @@ const databaseResourcePattern =
 
 export function extractDatabaseName(resource: string): string {
   const matches = resource.match(databaseResourcePattern);
-  return matches?.groups?.databaseName ?? "";
+  const name = matches?.groups?.databaseName ?? "";
+  // Treat "-1" (legacy UNKNOWN_ID sentinel) as empty — means "all databases"
+  return name === "-1" ? "" : name;
 }
 
 export const operatorDisplayMap: Record<string, string> = {

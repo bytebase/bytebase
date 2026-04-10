@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
     name: "instances/inst1",
     engine: Engine.POSTGRES,
   })),
+  instanceV1MaskingForNoSQL: vi.fn(() => false),
   hasProjectPermissionV2: vi.fn(() => true),
   hasSchemaProperty: vi.fn(() => true),
   hasWorkspacePermissionV2: vi.fn(() => true),
@@ -65,6 +66,7 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getDatabaseProject: mocks.getDatabaseProject,
   getInstanceResource: mocks.getInstanceResource,
+  instanceV1MaskingForNoSQL: mocks.instanceV1MaskingForNoSQL,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
   hasSchemaProperty: mocks.hasSchemaProperty,
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
@@ -247,6 +249,8 @@ beforeEach(async () => {
     name: "instances/inst1",
     engine: Engine.POSTGRES,
   });
+  mocks.instanceV1MaskingForNoSQL.mockReset();
+  mocks.instanceV1MaskingForNoSQL.mockReturnValue(false);
   mocks.hasProjectPermissionV2.mockReset();
   mocks.hasProjectPermissionV2.mockReturnValue(true);
   mocks.hasSchemaProperty.mockReset();

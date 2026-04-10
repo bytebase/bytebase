@@ -2,9 +2,10 @@ package elasticsearch
 
 import (
 	"context"
-	"unicode/utf8"
 
 	lsp "github.com/bytebase/lsp-protocol"
+
+	es "github.com/bytebase/omni/elasticsearch"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -15,57 +16,26 @@ func init() {
 }
 
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	parseResult, _ := ParseElasticsearchREST(statement)
-	if parseResult == nil {
+	omniRanges, err := es.GetStatementRanges(statement)
+	if err != nil {
+		return nil, err
+	}
+	if omniRanges == nil {
 		return []base.Range{}, nil
 	}
-	bs := []byte(statement)
-	var ranges []base.Range
-	for _, r := range parseResult.Requests {
-		if r == nil {
-			continue
-		}
-		if r.EndOffset <= r.StartOffset {
-			continue
-		}
 
-		// Get the start and end position of the request.
-		startPosition := getPositionByByteOffset(r.StartOffset, bs)
-		endPosition := getPositionByByteOffset(r.EndOffset, bs)
-		if startPosition == nil || endPosition == nil {
-			continue
-		}
+	ranges := make([]base.Range, 0, len(omniRanges))
+	for _, r := range omniRanges {
 		ranges = append(ranges, base.Range{
-			Start: *startPosition,
-			End:   *endPosition,
+			Start: lsp.Position{
+				Line:      r.Start.Line,
+				Character: r.Start.Character,
+			},
+			End: lsp.Position{
+				Line:      r.End.Line,
+				Character: r.End.Character,
+			},
 		})
 	}
 	return ranges, nil
-}
-
-func getPositionByByteOffset(byteOffset int, bs []byte) *lsp.Position {
-	var position lsp.Position
-	for i := 0; ; {
-		if i >= byteOffset || i > len(bs) {
-			break
-		}
-		if bs[i] == '\n' {
-			position.Line++
-			position.Character = 0
-			i++
-			continue
-		}
-		r, size := utf8.DecodeRune(bs[i:])
-		if r == utf8.RuneError {
-			return nil
-		}
-		position.Character++
-		if r > 0xFFFF {
-			// Out of BMP, need surrogate pair.
-			position.Character++
-		}
-		i += size
-	}
-
-	return &position
 }

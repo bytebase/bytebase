@@ -58,6 +58,7 @@ const mocks = vi.hoisted(() => {
     hasSchemaProperty: vi.fn(() => true),
     hasTableEngineProperty: vi.fn(() => false),
     instanceV1HasCollationAndCharacterSet: vi.fn(() => true),
+    instanceV1MaskingForNoSQL: vi.fn(() => false),
     instanceV1SupportsColumn: vi.fn(() => true),
     instanceV1SupportsIndex: vi.fn(() => true),
     instanceV1SupportsPackage: vi.fn(() => false),
@@ -110,6 +111,7 @@ vi.mock("@/utils", () => ({
   hasTableEngineProperty: mocks.hasTableEngineProperty,
   instanceV1HasCollationAndCharacterSet:
     mocks.instanceV1HasCollationAndCharacterSet,
+  instanceV1MaskingForNoSQL: mocks.instanceV1MaskingForNoSQL,
   instanceV1SupportsColumn: mocks.instanceV1SupportsColumn,
   instanceV1SupportsIndex: mocks.instanceV1SupportsIndex,
   instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
@@ -258,6 +260,8 @@ beforeEach(async () => {
   mocks.getDatabaseEngine.mockReturnValue(Engine.POSTGRES);
   mocks.isDev.mockReset();
   mocks.isDev.mockReturnValue(false);
+  mocks.instanceV1MaskingForNoSQL.mockReset();
+  mocks.instanceV1MaskingForNoSQL.mockReturnValue(false);
   mocks.hasSchemaProperty.mockReset();
   mocks.hasSchemaProperty.mockReturnValue(true);
   mocks.instanceV1HasCollationAndCharacterSet.mockReset();

@@ -90,7 +90,7 @@ function MonacoJSONEditor({
     let disposed = false;
     (async () => {
       const { createMonacoEditor } = await import(
-        "@/components/MonacoEditor/editor"
+        "@/react/components/monaco/core"
       );
       if (disposed || !containerRef.current) return;
       const editor = await createMonacoEditor({

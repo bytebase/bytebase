@@ -8,62 +8,20 @@ import { ReadonlyMonaco } from "./ReadonlyMonaco";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => {
-  const createMonacoEditor = vi.fn();
-  const setMonacoModelLanguage = vi.fn();
+  const MonacoEditor = vi.fn((props: Record<string, unknown>) =>
+    createElement("div", {
+      "data-testid": "monaco-editor",
+      "data-props": JSON.stringify(props),
+    })
+  );
   return {
-    createMonacoEditor,
-    setMonacoModelLanguage,
+    MonacoEditor,
   };
 });
 
-vi.mock("@/components/MonacoEditor/editor", () => ({
-  createMonacoEditor: mocks.createMonacoEditor,
-  setMonacoModelLanguage: mocks.setMonacoModelLanguage,
+vi.mock("./MonacoEditor", () => ({
+  MonacoEditor: mocks.MonacoEditor,
 }));
-
-const createDeferred = <T,>() => {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
-};
-
-const flushAsync = () =>
-  new Promise<void>((resolve) => {
-    setTimeout(resolve, 0);
-  });
-
-const createEditor = () => {
-  let contentHeight = 240;
-  let contentSizeHandler:
-    | ((event: {
-        contentHeight: number;
-        contentHeightChanged: boolean;
-      }) => void)
-    | undefined;
-  const model = {};
-
-  return {
-    model,
-    setValue: vi.fn(),
-    getValue: vi.fn(() => "first line"),
-    getModel: vi.fn(() => model),
-    getContentHeight: vi.fn(() => contentHeight),
-    onDidContentSizeChange: vi.fn((handler) => {
-      contentSizeHandler = handler;
-      return { dispose: vi.fn() };
-    }),
-    emitContentHeight(nextHeight: number) {
-      contentHeight = nextHeight;
-      contentSizeHandler?.({
-        contentHeight: nextHeight,
-        contentHeightChanged: true,
-      });
-    },
-    dispose: vi.fn(),
-  };
-};
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const container = document.createElement("div");
@@ -75,7 +33,6 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
 
   return {
     container,
-    root,
     rerender: (nextElement: ReturnType<typeof createElement>) => {
       act(() => {
         root.render(nextElement);
@@ -89,73 +46,97 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
 };
 
 beforeEach(() => {
-  mocks.createMonacoEditor.mockReset();
-  mocks.setMonacoModelLanguage.mockReset();
+  mocks.MonacoEditor.mockClear();
 });
 
 describe("ReadonlyMonaco", () => {
-  test("reconciles the latest props after delayed editor creation", async () => {
-    const deferred = createDeferred<Awaited<ReturnType<typeof createEditor>>>();
-    mocks.createMonacoEditor.mockReturnValue(deferred.promise);
-    const editor = createEditor();
-
-    const { unmount, rerender } = renderIntoContainer(
+  test("forwards readonly editor props", () => {
+    const { container, unmount } = renderIntoContainer(
       createElement(ReadonlyMonaco, {
-        content: "initial",
+        advices: [
+          {
+            severity: "WARNING",
+            message: "Advice",
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: 1,
+            endColumn: 8,
+          },
+        ],
+        className: "editor-shell",
+        content: "select 1",
+        filename: "test.sql",
+        language: "json",
+        lineHighlights: [
+          {
+            startLineNumber: 1,
+            endLineNumber: 1,
+            options: {
+              isWholeLine: true,
+            },
+          },
+        ],
+        max: 480,
+        min: 180,
+        options: { wordWrap: "off" },
+      })
+    );
+
+    const props = JSON.parse(
+      container.firstElementChild?.getAttribute("data-props") ?? "{}"
+    );
+    expect(props).toMatchObject({
+      className: "editor-shell",
+      content: "select 1",
+      filename: "test.sql",
+      language: "json",
+      max: 480,
+      min: 180,
+      readOnly: true,
+    });
+    expect(props.advices).toEqual([
+      {
+        severity: "WARNING",
+        message: "Advice",
+        startLineNumber: 1,
+        startColumn: 1,
+        endLineNumber: 1,
+        endColumn: 8,
+      },
+    ]);
+    expect(props.lineHighlights).toEqual([
+      {
+        startLineNumber: 1,
+        endLineNumber: 1,
+        options: { isWholeLine: true },
+      },
+    ]);
+    expect(props.options).toEqual({ wordWrap: "off" });
+
+    unmount();
+  });
+
+  test("updates forwarded props on rerender", () => {
+    const { container, rerender, unmount } = renderIntoContainer(
+      createElement(ReadonlyMonaco, {
+        content: "before",
         language: "sql",
       })
     );
 
     rerender(
       createElement(ReadonlyMonaco, {
-        content: "updated",
+        content: "after",
         language: "json",
       })
     );
 
-    await act(async () => {
-      deferred.resolve(editor);
-      await deferred.promise;
-      await flushAsync();
-    });
-
-    expect(editor.setValue).toHaveBeenCalledWith("updated");
-    expect(mocks.setMonacoModelLanguage).toHaveBeenCalledWith(
-      editor.model,
-      "json"
+    const props = JSON.parse(
+      container.firstElementChild?.getAttribute("data-props") ?? "{}"
     );
-
-    unmount();
-  });
-
-  test("sizes from Monaco content height changes", async () => {
-    const deferred = createDeferred<ReturnType<typeof createEditor>>();
-    mocks.createMonacoEditor.mockReturnValue(deferred.promise);
-    const editor = createEditor();
-
-    const { container, unmount } = renderIntoContainer(
-      createElement(ReadonlyMonaco, {
-        content: "a very long single line that wraps in Monaco",
-      })
-    );
-
-    await act(async () => {
-      deferred.resolve(editor);
-      await deferred.promise;
-      await flushAsync();
-    });
-
-    expect(
-      (container.firstElementChild as HTMLElement | null)?.style.height
-    ).toBe("240px");
-
-    act(() => {
-      editor.emitContentHeight(480);
-    });
-
-    expect(
-      (container.firstElementChild as HTMLElement | null)?.style.height
-    ).toBe("480px");
+    expect(props.content).toBe("after");
+    expect(props.language).toBe("json");
+    expect(props.readOnly).toBe(true);
 
     unmount();
   });

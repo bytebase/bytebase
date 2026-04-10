@@ -361,6 +361,7 @@
   "common.username": "Username",
   "common.value": "Value",
   "common.version": "Version",
+  "common.view-doc": "View doc",
   "common.warning": "Warning",
   "common.write-only": "write only",
   "create-db": {
@@ -622,6 +623,7 @@
     "triggers": "Triggers",
     "views": "Views"
   },
+  "db.catalog.description": "Edit and upload the table catalog.",
   "db.failed-to-sync-schema": "Failed to sync schema",
   "db.failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
@@ -1896,11 +1898,19 @@
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
+    "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "web-socket": {
+      "errors": {
+        "description": "Auto Completion might be limited or disabled.",
+        "disconnected": "WebSocket disconnected",
+        "title": "WebSocket connection failed"
+      }
+    }
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",
