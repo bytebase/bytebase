@@ -44,7 +44,7 @@ function SelectContent({
 }: ComponentProps<typeof BaseSelect.Popup>) {
   return (
     <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={4} className="z-[100]">
+      <BaseSelect.Positioner sideOffset={4}>
         <BaseSelect.Popup
           ref={ref}
           className={cn(

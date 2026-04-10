@@ -1,6 +1,11 @@
 import { CircleAlert, Info } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { router } from "@/router";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
@@ -115,34 +120,14 @@ export function FeatureAttention({
 
   return (
     <>
-      <div
-        className={`flex items-start gap-3 rounded-xs border px-4 py-3 ${
-          isWarning
-            ? "border-yellow-300 bg-yellow-50"
-            : "border-blue-200 bg-blue-50"
-        }`}
-      >
-        <Icon
-          className={`w-5 h-5 mt-0.5 shrink-0 ${
-            isWarning ? "text-yellow-600" : "text-blue-600"
-          }`}
-        />
+      <Alert variant={isWarning ? "warning" : "info"}>
+        <Icon className="size-5 mt-0.5 shrink-0" />
         <div className="flex-1 flex flex-col gap-3">
-          <div>
-            <p
-              className={`font-medium text-sm ${
-                isWarning ? "text-yellow-800" : "text-blue-800"
-              }`}
-            >
-              {title}
-            </p>
-            <p
-              className={`text-sm whitespace-pre-line mt-1 ${
-                isWarning ? "text-yellow-700" : "text-blue-700"
-              }`}
-            >
+          <div className="flex flex-col gap-1">
+            <AlertTitle>{title}</AlertTitle>
+            <AlertDescription className="mt-0 whitespace-pre-line">
               {descriptionText}
-            </p>
+            </AlertDescription>
           </div>
           {actionText && (
             <div className="flex justify-end">
@@ -157,7 +142,7 @@ export function FeatureAttention({
             </div>
           )}
         </div>
-      </div>
+      </Alert>
       <InstanceAssignmentBridge
         open={showInstanceAssignment}
         selectedInstanceList={instance ? [instance.name] : []}
