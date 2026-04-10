@@ -260,6 +260,8 @@ export function ProjectSidebar() {
   // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
   const recordVisitRef = useRef<((path: string) => void) | null>(null);
   useEffect(() => {
+    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
+    // recent-visit helper so React components don't need a Vue effect scope.
     const scope = effectScope();
     scope.run(() => {
       const { record } = useRecentVisit();

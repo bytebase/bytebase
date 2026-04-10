@@ -313,6 +313,8 @@ export function DashboardSidebar() {
   const recordVisitRef = useRef<((path: string) => void) | null>(null);
 
   useEffect(() => {
+    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
+    // recent-visit helper so React components don't need a Vue effect scope.
     const scope = effectScope();
     scope.run(() => {
       const { record } = useRecentVisit();
