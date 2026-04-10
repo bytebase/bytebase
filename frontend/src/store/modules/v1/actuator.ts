@@ -137,11 +137,8 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
   };
 
   const fetchActuatorInfo = async (workspace?: string) => {
-    if (!workspace) {
-      return actuatorServiceClientConnect.getActuatorInfo({});
-    }
-    return actuatorServiceClientConnect.getWorkspaceActuatorInfo({
-      name: workspace,
+    return actuatorServiceClientConnect.getActuatorInfo({
+      name: workspace ?? "",
     });
   };
 

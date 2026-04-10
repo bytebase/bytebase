@@ -126,7 +126,6 @@
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
-    - [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest)
     - [Restriction](#bytebase-v1-Restriction)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
@@ -2606,19 +2605,9 @@ Request message for deleting cache.
 Request message for getting actuator information.
 
 
-
-
-
-
-<a name="bytebase-v1-GetWorkspaceActuatorInfoRequest"></a>
-
-### GetWorkspaceActuatorInfoRequest
-Request message for getting workspace-scoped actuator information.
-
-
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. |
+| name | [string](#string) |  | Optional. The workspace to scope the response to. Format: workspaces/{workspace} When unset, the workspace is resolved from the request context (self-hosted) or no workspace-scoped fields are returned (SaaS). |
 
 
 
@@ -2665,10 +2654,9 @@ ActuatorService manages system health and operational information.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. Permissions required: None |
+| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. When `name` is provided (or the workspace-scoped binding is used), the response includes workspace-scoped fields for that workspace. Permissions required: None |
 | SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Clears the system cache to force data refresh. Permissions required: None |
-| GetWorkspaceActuatorInfo | [GetWorkspaceActuatorInfoRequest](#bytebase-v1-GetWorkspaceActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets workspace-scoped actuator info. Requires authentication. |
 
  
 
@@ -6569,6 +6557,11 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 ### ListIdentityProvidersRequest
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent workspace whose identity providers should be listed. Format: workspaces/{workspace} When unset, the workspace is resolved from the request context. |
 
 
 

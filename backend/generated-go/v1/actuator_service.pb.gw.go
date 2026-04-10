@@ -35,6 +35,8 @@ var (
 	_ = metadata.Join
 )
 
+var filter_ActuatorService_GetActuatorInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+
 func request_ActuatorService_GetActuatorInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ActuatorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetActuatorInfoRequest
@@ -42,6 +44,12 @@ func request_ActuatorService_GetActuatorInfo_0(ctx context.Context, marshaler ru
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ActuatorService_GetActuatorInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.GetActuatorInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -52,6 +60,51 @@ func local_request_ActuatorService_GetActuatorInfo_0(ctx context.Context, marsha
 		protoReq GetActuatorInfoRequest
 		metadata runtime.ServerMetadata
 	)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ActuatorService_GetActuatorInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.GetActuatorInfo(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_ActuatorService_GetActuatorInfo_1(ctx context.Context, marshaler runtime.Marshaler, client ActuatorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetActuatorInfoRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["name"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+	}
+	protoReq.Name, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	msg, err := client.GetActuatorInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_ActuatorService_GetActuatorInfo_1(ctx context.Context, marshaler runtime.Marshaler, server ActuatorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetActuatorInfoRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["name"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+	}
+	protoReq.Name, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
 	msg, err := server.GetActuatorInfo(ctx, &protoReq)
 	return msg, metadata, err
 }
@@ -98,45 +151,6 @@ func local_request_ActuatorService_DeleteCache_0(ctx context.Context, marshaler 
 	return msg, metadata, err
 }
 
-func request_ActuatorService_GetWorkspaceActuatorInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ActuatorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetWorkspaceActuatorInfoRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	val, ok := pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-	protoReq.Name, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-	msg, err := client.GetWorkspaceActuatorInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_ActuatorService_GetWorkspaceActuatorInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ActuatorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetWorkspaceActuatorInfoRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-	protoReq.Name, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-	msg, err := server.GetWorkspaceActuatorInfo(ctx, &protoReq)
-	return msg, metadata, err
-}
-
 // RegisterActuatorServiceHandlerServer registers the http handlers for service ActuatorService to "mux".
 // UnaryRPC     :call ActuatorServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -162,6 +176,26 @@ func RegisterActuatorServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 		forward_ActuatorService_GetActuatorInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_ActuatorService_GetActuatorInfo_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ActuatorService/GetActuatorInfo", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*}/actuator/info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_ActuatorService_GetActuatorInfo_1(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_ActuatorService_GetActuatorInfo_1(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodPost, pattern_ActuatorService_SetupSample_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -202,26 +236,6 @@ func RegisterActuatorServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 		forward_ActuatorService_DeleteCache_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_ActuatorService_GetWorkspaceActuatorInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*}/actuator/info"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_ActuatorService_GetWorkspaceActuatorInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_ActuatorService_GetWorkspaceActuatorInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -280,6 +294,23 @@ func RegisterActuatorServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		}
 		forward_ActuatorService_GetActuatorInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_ActuatorService_GetActuatorInfo_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ActuatorService/GetActuatorInfo", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*}/actuator/info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ActuatorService_GetActuatorInfo_1(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_ActuatorService_GetActuatorInfo_1(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_ActuatorService_SetupSample_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -314,36 +345,19 @@ func RegisterActuatorServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		}
 		forward_ActuatorService_DeleteCache_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_ActuatorService_GetWorkspaceActuatorInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo", runtime.WithHTTPPathPattern("/v1/{name=workspaces/*}/actuator/info"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_ActuatorService_GetWorkspaceActuatorInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_ActuatorService_GetWorkspaceActuatorInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
 	return nil
 }
 
 var (
-	pattern_ActuatorService_GetActuatorInfo_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "actuator", "info"}, ""))
-	pattern_ActuatorService_SetupSample_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "actuator"}, "setupSample"))
-	pattern_ActuatorService_DeleteCache_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "actuator", "cache"}, ""))
-	pattern_ActuatorService_GetWorkspaceActuatorInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3, 2, 4}, []string{"v1", "workspaces", "name", "actuator", "info"}, ""))
+	pattern_ActuatorService_GetActuatorInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "actuator", "info"}, ""))
+	pattern_ActuatorService_GetActuatorInfo_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3, 2, 4}, []string{"v1", "workspaces", "name", "actuator", "info"}, ""))
+	pattern_ActuatorService_SetupSample_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "actuator"}, "setupSample"))
+	pattern_ActuatorService_DeleteCache_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "actuator", "cache"}, ""))
 )
 
 var (
-	forward_ActuatorService_GetActuatorInfo_0          = runtime.ForwardResponseMessage
-	forward_ActuatorService_SetupSample_0              = runtime.ForwardResponseMessage
-	forward_ActuatorService_DeleteCache_0              = runtime.ForwardResponseMessage
-	forward_ActuatorService_GetWorkspaceActuatorInfo_0 = runtime.ForwardResponseMessage
+	forward_ActuatorService_GetActuatorInfo_0 = runtime.ForwardResponseMessage
+	forward_ActuatorService_GetActuatorInfo_1 = runtime.ForwardResponseMessage
+	forward_ActuatorService_SetupSample_0     = runtime.ForwardResponseMessage
+	forward_ActuatorService_DeleteCache_0     = runtime.ForwardResponseMessage
 )

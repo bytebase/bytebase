@@ -20,10 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ActuatorService_GetActuatorInfo_FullMethodName          = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	ActuatorService_SetupSample_FullMethodName              = "/bytebase.v1.ActuatorService/SetupSample"
-	ActuatorService_DeleteCache_FullMethodName              = "/bytebase.v1.ActuatorService/DeleteCache"
-	ActuatorService_GetWorkspaceActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/GetWorkspaceActuatorInfo"
+	ActuatorService_GetActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/GetActuatorInfo"
+	ActuatorService_SetupSample_FullMethodName     = "/bytebase.v1.ActuatorService/SetupSample"
+	ActuatorService_DeleteCache_FullMethodName     = "/bytebase.v1.ActuatorService/DeleteCache"
 )
 
 // ActuatorServiceClient is the client API for ActuatorService service.
@@ -33,6 +32,8 @@ const (
 // ActuatorService manages system health and operational information.
 type ActuatorServiceClient interface {
 	// Gets system information and health status of the Bytebase instance.
+	// When `name` is provided (or the workspace-scoped binding is used), the
+	// response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(ctx context.Context, in *GetActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.
@@ -41,8 +42,6 @@ type ActuatorServiceClient interface {
 	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Gets workspace-scoped actuator info. Requires authentication.
-	GetWorkspaceActuatorInfo(ctx context.Context, in *GetWorkspaceActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 }
 
 type actuatorServiceClient struct {
@@ -83,16 +82,6 @@ func (c *actuatorServiceClient) DeleteCache(ctx context.Context, in *DeleteCache
 	return out, nil
 }
 
-func (c *actuatorServiceClient) GetWorkspaceActuatorInfo(ctx context.Context, in *GetWorkspaceActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ActuatorInfo)
-	err := c.cc.Invoke(ctx, ActuatorService_GetWorkspaceActuatorInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ActuatorServiceServer is the server API for ActuatorService service.
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility.
@@ -100,6 +89,8 @@ func (c *actuatorServiceClient) GetWorkspaceActuatorInfo(ctx context.Context, in
 // ActuatorService manages system health and operational information.
 type ActuatorServiceServer interface {
 	// Gets system information and health status of the Bytebase instance.
+	// When `name` is provided (or the workspace-scoped binding is used), the
+	// response includes workspace-scoped fields for that workspace.
 	// Permissions required: None
 	GetActuatorInfo(context.Context, *GetActuatorInfoRequest) (*ActuatorInfo, error)
 	// Sets up sample data for demonstration and testing purposes.
@@ -108,8 +99,6 @@ type ActuatorServiceServer interface {
 	// Clears the system cache to force data refresh.
 	// Permissions required: None
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
-	// Gets workspace-scoped actuator info. Requires authentication.
-	GetWorkspaceActuatorInfo(context.Context, *GetWorkspaceActuatorInfoRequest) (*ActuatorInfo, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }
 
@@ -128,9 +117,6 @@ func (UnimplementedActuatorServiceServer) SetupSample(context.Context, *SetupSam
 }
 func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteCache not implemented")
-}
-func (UnimplementedActuatorServiceServer) GetWorkspaceActuatorInfo(context.Context, *GetWorkspaceActuatorInfoRequest) (*ActuatorInfo, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetWorkspaceActuatorInfo not implemented")
 }
 func (UnimplementedActuatorServiceServer) mustEmbedUnimplementedActuatorServiceServer() {}
 func (UnimplementedActuatorServiceServer) testEmbeddedByValue()                         {}
@@ -207,24 +193,6 @@ func _ActuatorService_DeleteCache_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ActuatorService_GetWorkspaceActuatorInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetWorkspaceActuatorInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ActuatorServiceServer).GetWorkspaceActuatorInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ActuatorService_GetWorkspaceActuatorInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ActuatorServiceServer).GetWorkspaceActuatorInfo(ctx, req.(*GetWorkspaceActuatorInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ActuatorService_ServiceDesc is the grpc.ServiceDesc for ActuatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -243,10 +211,6 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteCache",
 			Handler:    _ActuatorService_DeleteCache_Handler,
-		},
-		{
-			MethodName: "GetWorkspaceActuatorInfo",
-			Handler:    _ActuatorService_GetWorkspaceActuatorInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

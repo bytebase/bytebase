@@ -24,8 +24,26 @@ paths:
       summary: GetActuatorInfo
       description: |-
         Gets system information and health status of the Bytebase instance.
+         When `name` is provided (or the workspace-scoped binding is used), the
+         response includes workspace-scoped fields for that workspace.
          Permissions required: None
       operationId: ActuatorService_GetActuatorInfo
+      parameters:
+        - name: name
+          in: query
+          description: |-
+            Optional. The workspace to scope the response to.
+             Format: workspaces/{workspace}
+             When unset, the workspace is resolved from the request context (self-hosted)
+             or no workspace-scoped fields are returned (SaaS).
+          schema:
+            type: string
+            title: name
+            description: |-
+              Optional. The workspace to scope the response to.
+               Format: workspaces/{workspace}
+               When unset, the workspace is resolved from the request context (self-hosted)
+               or no workspace-scoped fields are returned (SaaS).
       responses:
         "200":
           description: Success
@@ -1162,6 +1180,20 @@ paths:
         Lists all configured identity providers (public endpoint for login page).
          Permissions required: None
       operationId: IdentityProviderService_ListIdentityProviders
+      parameters:
+        - name: parent
+          in: query
+          description: |-
+            The parent workspace whose identity providers should be listed.
+             Format: workspaces/{workspace}
+             When unset, the workspace is resolved from the request context.
+          schema:
+            type: string
+            title: parent
+            description: |-
+              The parent workspace whose identity providers should be listed.
+               Format: workspaces/{workspace}
+               When unset, the workspace is resolved from the request context.
       responses:
         "200":
           description: Success
@@ -15225,9 +15257,13 @@ paths:
     get:
       tags:
         - ActuatorService
-      summary: GetWorkspaceActuatorInfo
-      description: Gets workspace-scoped actuator info. Requires authentication.
-      operationId: ActuatorService_GetWorkspaceActuatorInfo
+      summary: GetActuatorInfo
+      description: |-
+        Gets system information and health status of the Bytebase instance.
+         When `name` is provided (or the workspace-scoped binding is used), the
+         response includes workspace-scoped fields for that workspace.
+         Permissions required: None
+      operationId: ActuatorService_GetActuatorInfo2
       parameters:
         - name: workspace
           in: path
@@ -15393,6 +15429,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListDatabasesResponse'
+  /v1/workspaces/{workspace}/idps:
+    get:
+      tags:
+        - IdentityProviderService
+      summary: ListIdentityProviders
+      description: |-
+        Lists all configured identity providers (public endpoint for login page).
+         Permissions required: None
+      operationId: IdentityProviderService_ListIdentityProviders2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListIdentityProvidersResponse'
   /v1/workspaces/{workspace}/policies:
     get:
       tags:
@@ -20291,6 +20350,15 @@ components:
       additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            Optional. The workspace to scope the response to.
+             Format: workspaces/{workspace}
+             When unset, the workspace is resolved from the request context (self-hosted)
+             or no workspace-scoped fields are returned (SaaS).
       title: GetActuatorInfoRequest
       additionalProperties: false
       description: Request message for getting actuator information.
@@ -20805,18 +20873,6 @@ components:
       required:
         - name
       additionalProperties: false
-    bytebase.v1.GetWorkspaceActuatorInfoRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: 'The workspace name, format: workspaces/{workspace}.'
-      title: GetWorkspaceActuatorInfoRequest
-      required:
-        - name
-      additionalProperties: false
-      description: Request message for getting workspace-scoped actuator information.
     bytebase.v1.GetWorkspaceRequest:
       type: object
       properties:
@@ -22030,6 +22086,14 @@ components:
       description: Response message for listing groups.
     bytebase.v1.ListIdentityProvidersRequest:
       type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+          description: |-
+            The parent workspace whose identity providers should be listed.
+             Format: workspaces/{workspace}
+             When unset, the workspace is resolved from the request context.
       title: ListIdentityProvidersRequest
       additionalProperties: false
     bytebase.v1.ListIdentityProvidersResponse:

@@ -34,6 +34,14 @@ export declare const GetIdentityProviderRequestSchema: GenMessage<GetIdentityPro
  * @generated from message bytebase.v1.ListIdentityProvidersRequest
  */
 export declare type ListIdentityProvidersRequest = Message<"bytebase.v1.ListIdentityProvidersRequest"> & {
+  /**
+   * The parent workspace whose identity providers should be listed.
+   * Format: workspaces/{workspace}
+   * When unset, the workspace is resolved from the request context.
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
 };
 
 /**

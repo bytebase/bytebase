@@ -16,9 +16,14 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 // ActuatorService manages system health and operational information.
 service ActuatorService {
   // Gets system information and health status of the Bytebase instance.
+  // When `name` is provided (or the workspace-scoped binding is used), the
+  // response includes workspace-scoped fields for that workspace.
   // Permissions required: None
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {get: "/v1/actuator/info"};
+    option (google.api.http) = {
+      get: "/v1/actuator/info"
+      additional_bindings: {get: "/v1/{name=workspaces/*}/actuator/info"}
+    };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
@@ -40,29 +45,18 @@ service ActuatorService {
     option (google.api.http) = {delete: "/v1/actuator/cache"};
     option (bytebase.v1.allow_without_credential) = true;
   }
-
-  // Gets workspace-scoped actuator info. Requires authentication.
-  rpc GetWorkspaceActuatorInfo(GetWorkspaceActuatorInfoRequest) returns (ActuatorInfo) {
-    option (google.api.http) = {get: "/v1/{name=workspaces/*}/actuator/info"};
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.settings.getWorkspaceProfile";
-    option (bytebase.v1.auth_method) = IAM;
-  }
 }
 
 // Request message for setting up sample data.
 message SetupSampleRequest {}
 
 // Request message for getting actuator information.
-message GetActuatorInfoRequest {}
-
-// Request message for getting workspace-scoped actuator information.
-message GetWorkspaceActuatorInfoRequest {
-  // The workspace name, format: workspaces/{workspace}.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Workspace"}
-  ];
+message GetActuatorInfoRequest {
+  // Optional. The workspace to scope the response to.
+  // Format: workspaces/{workspace}
+  // When unset, the workspace is resolved from the request context (self-hosted)
+  // or no workspace-scoped fields are returned (SaaS).
+  string name = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
 }
 
 // Request message for deleting cache.

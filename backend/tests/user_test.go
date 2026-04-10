@@ -47,7 +47,7 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
-	actuator, err := ctl.actuatorServiceClient.GetWorkspaceActuatorInfo(ctx, connect.NewRequest(&v1pb.GetWorkspaceActuatorInfoRequest{
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{
 		Name: memberResp.Msg.Workspace,
 	}))
 	a.NoError(err)

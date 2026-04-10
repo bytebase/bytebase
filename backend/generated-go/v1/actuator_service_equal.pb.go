@@ -20,16 +20,6 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	return true
-}
-
-func (x *GetWorkspaceActuatorInfoRequest) Equal(y *GetWorkspaceActuatorInfoRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
 	if x.Name != y.Name {
 		return false
 	}
