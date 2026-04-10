@@ -29,9 +29,18 @@ import {
   roleHasEnvironmentLimitation,
 } from "@/components/ProjectMember/utils";
 import { issueServiceClientConnect } from "@/connect";
+import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
+import {
+  buildCELExpr,
+  emptySimpleExpr,
+  validateSimpleExpr,
+  wrapAsGroup,
+} from "@/plugins/cel";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import type { OptionConfig } from "@/react/components/ExprEditor";
+import { ExprEditor } from "@/react/components/ExprEditor";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -97,15 +106,22 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
+  batchConvertParsedExprToCELString,
   displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
   formatAbsoluteDateTime,
   formatIssueTitle,
+  getDatabaseNameOptionConfig,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   sortRoles,
 } from "@/utils";
+import {
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+} from "@/utils/cel-attributes";
 import {
   buildConditionExpr,
   convertFromExpr,
@@ -1655,9 +1671,45 @@ function RequestRoleDialog({
   const [databaseResources, setDatabaseResources] = useState<
     DatabaseResource[]
   >([]);
-  const [celExpression, setCelExpression] = useState("");
+  // CEL expression for EXPRESSION mode is held as a structured group so it
+  // can render in ExprEditor (matching the old Vue DatabaseResourceForm).
+  const [exprGroup, setExprGroup] = useState<ConditionGroupExpr>(() =>
+    wrapAsGroup(emptySimpleExpr())
+  );
   const [environments, setEnvironments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // ExprEditor factor/option config — mirrors the old Vue
+  // DatabaseResourceForm config for role-grant requests.
+  const factorList = useMemo<Factor[]>(
+    () => [
+      CEL_ATTRIBUTE_RESOURCE_DATABASE,
+      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+    ],
+    []
+  );
+  const factorOperatorOverrideMap = useMemo(
+    () =>
+      new Map<Factor, Operator[]>([
+        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
+        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
+        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
+      ]),
+    []
+  );
+  const factorOptionConfigMap = useMemo(
+    () =>
+      factorList.reduce((map, factor) => {
+        if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
+          map.set(factor, getDatabaseNameOptionConfig(project.name));
+        } else {
+          map.set(factor, { options: [] });
+        }
+        return map;
+      }, new Map<Factor, OptionConfig>()),
+    [factorList, project.name]
+  );
 
   // Bind the datetime-local picker's min to the current minute so users
   // can't silently pick a time earlier today and submit a zero-duration
@@ -1686,7 +1738,7 @@ function RequestRoleDialog({
     !showDatabases ||
     databaseMode === "ALL" ||
     (databaseMode === "SELECT" && databaseResources.length > 0) ||
-    (databaseMode === "EXPRESSION" && celExpression.trim().length > 0);
+    (databaseMode === "EXPRESSION" && validateSimpleExpr(exprGroup));
 
   const canSubmit =
     !submitting &&
@@ -1726,14 +1778,24 @@ function RequestRoleDialog({
       // Both must be populated — the condition controls what the grant
       // allows, the expiration controls which approvers review it.
       let condition;
-      if (showDatabases && databaseMode === "EXPRESSION" && celExpression) {
+      if (showDatabases && databaseMode === "EXPRESSION") {
+        // Convert the structured ExprEditor group to a raw CEL string and
+        // combine it with any environment/expiration clauses. Mirrors
+        // ProjectMaskingExemptionCreatePage's EXPRESSION-mode submit path.
+        const parsedExpr = await buildCELExpr(exprGroup);
+        if (!parsedExpr) {
+          throw new Error("failed to build CEL expression");
+        }
+        const [exprString] = await batchConvertParsedExprToCELString([
+          parsedExpr,
+        ]);
         const extraParts = stringifyConditionExpression({
           expirationTimestampInMS,
           environments: scopedEnvironments,
         });
         const fullExpression = extraParts
-          ? `(${celExpression}) && ${extraParts}`
-          : celExpression;
+          ? `(${exprString}) && ${extraParts}`
+          : exprString;
         condition = create(ConditionExprSchema, {
           expression: fullExpression,
           description: trimmedReason,
@@ -1843,7 +1905,7 @@ function RequestRoleDialog({
                 // apply to some roles and the new role may not use them.
                 setDatabaseMode("ALL");
                 setDatabaseResources([]);
-                setCelExpression("");
+                setExprGroup(wrapAsGroup(emptySimpleExpr()));
                 setEnvironments([]);
               }}
             />
@@ -1861,20 +1923,54 @@ function RequestRoleDialog({
             />
           </div>
           {showDatabases && (
-            <DatabaseResourceSection
-              projectName={project.name}
-              mode={databaseMode}
-              onModeChange={(mode) => {
-                setDatabaseMode(mode);
-                setDatabaseResources([]);
-                setCelExpression("");
-              }}
-              databaseResources={databaseResources}
-              onDatabaseResourcesChange={setDatabaseResources}
-              celExpression={celExpression}
-              onCelExpressionChange={setCelExpression}
-              formId="request-role"
-            />
+            <div className="flex flex-col gap-y-2">
+              <label className="text-sm font-medium">
+                {t("common.databases")}
+                <span className="text-error ml-0.5">*</span>
+              </label>
+              <div className="flex items-center gap-x-4">
+                {(["ALL", "EXPRESSION", "SELECT"] as DatabaseMode[]).map(
+                  (m) => (
+                    <label
+                      key={m}
+                      className="flex items-center gap-x-2 text-sm cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name="request-role-db-mode"
+                        checked={databaseMode === m}
+                        onChange={() => {
+                          setDatabaseMode(m);
+                          setDatabaseResources([]);
+                          setExprGroup(wrapAsGroup(emptySimpleExpr()));
+                        }}
+                      />
+                      {m === "ALL"
+                        ? t("common.all")
+                        : m === "EXPRESSION"
+                          ? "CEL Expression"
+                          : t("common.manually-select")}
+                    </label>
+                  )
+                )}
+              </div>
+              {databaseMode === "EXPRESSION" && (
+                <ExprEditor
+                  expr={exprGroup}
+                  factorList={factorList}
+                  optionConfigMap={factorOptionConfigMap}
+                  factorOperatorOverrideMap={factorOperatorOverrideMap}
+                  onUpdate={setExprGroup}
+                />
+              )}
+              {databaseMode === "SELECT" && (
+                <DatabaseResourceSelectorComponent
+                  projectName={project.name}
+                  value={databaseResources}
+                  onChange={setDatabaseResources}
+                />
+              )}
+            </div>
           )}
           {showEnvironments && (
             <div className="flex flex-col gap-y-1">
