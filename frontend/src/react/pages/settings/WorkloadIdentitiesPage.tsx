@@ -1,5 +1,5 @@
 import { Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -323,6 +323,11 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     }
   };
 
+  // Sequence guard for async row-selection. Each click increments the
+  // counter; only the response from the latest click is allowed to update
+  // `editingWI`. Without this, fast double-clicks on different rows can
+  // resolve out of order and open the sheet with the wrong identity.
+  const selectSeqRef = useRef(0);
   const handleUserSelected = async (user: User) => {
     // Use getOrFetch so the full WorkloadIdentity (including
     // workloadIdentityConfig with subjectPattern) is loaded before we open
@@ -331,10 +336,13 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     // of a row, since listWorkloadIdentities doesn't populate the cache.
     // Without this, the edit Sheet would see no config and leave
     // Organization/Repository/Branch fields blank.
+    const seq = ++selectSeqRef.current;
     const wi = await workloadIdentityStore.getOrFetchWorkloadIdentity(
       user.email,
       true
     );
+    // Drop stale response — a later click superseded this request.
+    if (seq !== selectSeqRef.current) return;
     setEditingWI(wi);
     setShowDrawer(true);
   };

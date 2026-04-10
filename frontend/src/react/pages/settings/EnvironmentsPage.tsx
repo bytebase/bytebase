@@ -32,6 +32,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -1227,18 +1228,45 @@ function ReorderSheet({
     return false;
   }, [list, environments]);
 
-  const onDragStart = (index: number) => {
+  // Track the hovered-over target separately so the on-screen list only
+  // reorders on drop — mutating `list` mid-drag causes re-renders that
+  // can abort the HTML5 drag session (seen in Chrome when the Sheet's
+  // Dialog.Popup re-renders).
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    // HTML5 DnD requires dataTransfer.setData to start a drag in Firefox,
+    // and effectAllowed/dropEffect is needed for the drop cursor in Chrome.
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
     setDragIndex(index);
   };
 
-  const onDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    // preventDefault here is what actually signals "this element is a
+    // valid drop target" — without it onDrop never fires.
     e.preventDefault();
-    if (dragIndex === null || dragIndex === index) return;
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const source = Number(e.dataTransfer.getData("text/plain"));
+    if (Number.isNaN(source) || source === targetIndex) {
+      return;
+    }
     const newList = [...list];
-    const [item] = newList.splice(dragIndex, 1);
-    newList.splice(index, 0, item);
+    const [item] = newList.splice(source, 1);
+    newList.splice(targetIndex, 0, item);
     setList(newList);
-    setDragIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   return (
@@ -1253,12 +1281,18 @@ function ReorderSheet({
             <div
               key={env.id}
               draggable
-              onDragStart={() => onDragStart(index)}
-              onDragOver={(e) => onDragOver(e, index)}
-              onDragEnd={() => setDragIndex(null)}
-              className={`flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab ${
-                dragIndex === index ? "opacity-50" : ""
-              }`}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "flex items-center justify-between p-2 rounded-xs cursor-grab border border-transparent",
+                dragIndex === index && "opacity-50",
+                dragOverIndex === index &&
+                  dragIndex !== index &&
+                  "border-accent bg-accent/5",
+                dragIndex !== index && "hover:bg-control-bg"
+              )}
             >
               <div className="flex items-center gap-x-2">
                 <span className="textinfo">{index + 1}.</span>
