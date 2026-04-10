@@ -28,7 +28,7 @@ import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source as RuleSource } from "@/types/proto-es/v1/setting_service_pb";
-import { RuleEditDialog } from "./RuleEditDialog";
+import { RuleEditSheet } from "./RuleEditSheet";
 import { approvalSourceText, formatApprovalFlow } from "./utils";
 
 interface RulesSectionProps {
@@ -365,7 +365,7 @@ export function RulesSection({
         )}
       </div>
 
-      <RuleEditDialog
+      <RuleEditSheet
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={dialogMode}
