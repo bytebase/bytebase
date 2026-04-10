@@ -191,10 +191,10 @@ export function AgentWindow() {
 
   const currentChatStatusClass = useMemo(() => {
     if (!currentChat || currentChat.status === "idle")
-      return "bg-gray-100 text-gray-600";
-    if (currentChat.status === "running") return "bg-blue-50 text-blue-600";
+      return "bg-control-bg text-control-light";
+    if (currentChat.status === "running") return "bg-blue-50 text-accent";
     if (currentChat.interrupted || currentChat.status === "error")
-      return "bg-red-50 text-red-600";
+      return "bg-red-50 text-error";
     return "bg-amber-50 text-amber-600";
   }, [currentChat]);
 
@@ -696,12 +696,12 @@ export function AgentWindow() {
     return createPortal(
       <div
         data-agent-window
-        className="fixed bottom-4 right-4 z-[1999] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600"
+        className="fixed bottom-4 right-4 z-[1999] flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
         onClick={() => useAgentStore.getState().restore()}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
+          className="size-5"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -720,12 +720,12 @@ export function AgentWindow() {
     <div
       ref={windowRef}
       data-agent-window
-      className="fixed z-[1999] flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+      className="fixed z-[1999] flex flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl"
       style={windowStyle}
     >
       {/* Header */}
       <div
-        className="flex cursor-move select-none items-center justify-between border-b bg-gray-50 px-3 py-2"
+        className="flex cursor-move select-none items-center justify-between border-b bg-control-bg px-3 py-2"
         onMouseDown={startDrag}
       >
         <div className="flex min-w-0 items-center gap-x-2">
@@ -737,14 +737,14 @@ export function AgentWindow() {
           >
             {currentChatStatusLabel}
           </span>
-          <span className="truncate text-xs text-gray-500">
+          <span className="truncate text-xs text-control-light">
             {currentChatTokenUsageLabel}
           </span>
         </div>
         <div className="flex items-center gap-x-1">
           <button
             data-agent-window-action
-            className="flex h-5 w-5 items-center justify-center rounded-xs text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
             title={t("agent.minimize")}
             onClick={(e) => {
               e.stopPropagation();
@@ -755,7 +755,7 @@ export function AgentWindow() {
           </button>
           <button
             data-agent-window-action
-            className="flex h-5 w-5 items-center justify-center rounded-xs text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
             title={t("agent.close")}
             onClick={(e) => {
               e.stopPropagation();
@@ -768,23 +768,23 @@ export function AgentWindow() {
       </div>
 
       {/* Body */}
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-background">
         {/* Sidebar */}
         <aside
           ref={sidebarRef}
-          className="flex shrink-0 flex-col border-r border-gray-200 bg-gray-50"
+          className="flex shrink-0 flex-col border-r border-block-border bg-control-bg"
           style={sidebarStyle}
         >
           {/* Sidebar header */}
-          <div className="border-b border-gray-200 px-3 py-3">
+          <div className="border-b border-block-border px-3 py-3">
             <div className="flex items-center justify-between gap-x-2">
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
                   {t("agent.chat-list-label")}
                 </h2>
               </div>
               <button
-                className="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-control-bg disabled:cursor-not-allowed disabled:bg-control-bg disabled:text-control-placeholder"
                 disabled={isChatCreationDisabled}
                 onClick={createChat}
               >
@@ -801,8 +801,8 @@ export function AgentWindow() {
                   key={chat.id}
                   className={`w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
                     chat.id === currentChatId
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700 hover:bg-white"
+                      ? "bg-accent/10 text-accent"
+                      : "text-control hover:bg-background"
                   }`}
                   data-agent-chat-row={chat.id}
                 >
@@ -838,8 +838,8 @@ export function AgentWindow() {
                       <span
                         className={`mt-1 block truncate text-xs ${
                           chat.id === currentChatId
-                            ? "text-blue-600/80"
-                            : "text-gray-500"
+                            ? "text-accent/80"
+                            : "text-control-light"
                         }`}
                         data-agent-chat-updated-ts
                       >
@@ -853,7 +853,7 @@ export function AgentWindow() {
           </div>
 
           {/* Sidebar footer */}
-          <div className="border-t border-gray-200 px-3 py-3">
+          <div className="border-t border-block-border px-3 py-3">
             <div className="flex flex-col gap-y-2">
               <div
                 className="flex flex-wrap gap-x-2 gap-y-2"
@@ -863,7 +863,7 @@ export function AgentWindow() {
                   <>
                     {showArchivedOnly ? (
                       <button
-                        className="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                        className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
                         data-agent-unarchive-chat
                         onClick={toggleArchiveCurrentChat}
                       >
@@ -873,7 +873,7 @@ export function AgentWindow() {
                       <ConfirmDialog
                         message={t("agent.archive-chat-confirmation")}
                         onConfirm={toggleArchiveCurrentChat}
-                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
                         triggerLabel={t("agent.archive-chat")}
                         triggerDataAttr="data-agent-archive-chat"
                       />
@@ -882,7 +882,7 @@ export function AgentWindow() {
                       <ConfirmDialog
                         message={t("agent.delete-chat-confirmation")}
                         onConfirm={deleteCurrentChat}
-                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-error hover:bg-red-50"
                         triggerLabel={t("agent.delete-chat")}
                         triggerDataAttr="data-agent-delete-chat"
                       />
@@ -890,7 +890,7 @@ export function AgentWindow() {
                   </>
                 )}
                 <button
-                  className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-gray-600 hover:bg-white"
+                  className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-control-light hover:bg-background"
                   aria-label={
                     showArchivedOnly
                       ? t("agent.archived-only-chats")
@@ -905,9 +905,9 @@ export function AgentWindow() {
                   onClick={toggleChatListMode}
                 >
                   {showArchivedOnly ? (
-                    <Archive className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Archive className="size-3.5" aria-hidden="true" />
                   ) : (
-                    <Inbox className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Inbox className="size-3.5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -920,10 +920,10 @@ export function AgentWindow() {
           type="button"
           data-agent-window-action
           data-agent-sidebar-resize
-          className="group relative w-1 shrink-0 cursor-col-resize bg-gray-100 transition-colors hover:bg-blue-100"
+          className="group relative w-1 shrink-0 cursor-col-resize bg-control-bg transition-colors hover:bg-accent/10"
           onMouseDown={startSidebarResize}
         >
-          <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-blue-400" />
+          <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
         </button>
 
         {/* Main panel */}
@@ -938,13 +938,13 @@ export function AgentWindow() {
         type="button"
         data-agent-window-action
         data-agent-window-resize
-        className="absolute bottom-0 right-0 flex h-5 w-5 cursor-se-resize items-end justify-end pb-0.5 pr-0.5 text-gray-300 hover:text-gray-400"
+        className="absolute bottom-0 right-0 flex size-5 cursor-se-resize items-end justify-end pb-0.5 pr-0.5 text-control-border hover:text-control-placeholder"
         title={t("agent.resize")}
         onMouseDown={startResize}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-3 w-3"
+          className="size-3"
           viewBox="0 0 12 12"
           fill="none"
           stroke="currentColor"
@@ -991,7 +991,7 @@ function ConfirmDialog({
         <div className="flex justify-end gap-x-2">
           <DialogClose
             render={
-              <button className="rounded-xs border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
+              <button className="rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg">
                 {t("common.cancel")}
               </button>
             }
@@ -999,7 +999,7 @@ function ConfirmDialog({
           <DialogClose
             render={
               <button
-                className="rounded-xs bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                className="rounded-xs bg-accent px-3 py-1.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
                 onClick={onConfirm}
               >
                 {t("common.confirm")}

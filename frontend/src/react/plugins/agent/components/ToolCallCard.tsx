@@ -173,7 +173,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
   const renderStatus = () => {
     if (isAskUser) {
       return resultText ? (
-        <span className="text-green-500">
+        <span className="text-success">
           {t("agent.tool-response-submitted")}
         </span>
       ) : (
@@ -182,15 +182,15 @@ export function ToolCallCard({ toolCall, result }: Props) {
     }
     if (isDone) {
       return (
-        <span className={doneSuccess ? "text-green-500" : "text-red-500"}>
+        <span className={doneSuccess ? "text-success" : "text-error"}>
           {doneSuccess ? t("agent.tool-completed") : t("agent.tool-failed")}
         </span>
       );
     }
     return resultText ? (
-      <span className="text-green-500">&#10003;</span>
+      <span className="text-success">&#10003;</span>
     ) : (
-      <span className="animate-pulse text-gray-400">&#9679;</span>
+      <span className="animate-pulse text-control-placeholder">&#9679;</span>
     );
   };
 
@@ -198,42 +198,46 @@ export function ToolCallCard({ toolCall, result }: Props) {
     if (isAskUser) {
       return (
         <>
-          <div className="text-gray-500">
+          <div className="text-control-light">
             {askKind === "confirm"
               ? t("agent.tool-ask-user-confirm")
               : askKind === "choose"
                 ? t("agent.tool-ask-user-choose")
                 : t("agent.tool-ask-user-input")}
           </div>
-          <div className="text-gray-500">{t("agent.tool-prompt")}</div>
-          <pre className="whitespace-pre-wrap break-all text-gray-700">
+          <div className="text-control-light">{t("agent.tool-prompt")}</div>
+          <pre className="whitespace-pre-wrap break-all text-control">
             {askPrompt}
           </pre>
           {askDefaultValue && (
             <>
-              <div className="text-gray-500">
+              <div className="text-control-light">
                 {t("agent.tool-default-value")}
               </div>
-              <pre className="whitespace-pre-wrap break-all text-gray-700">
+              <pre className="whitespace-pre-wrap break-all text-control">
                 {askDefaultValue}
               </pre>
             </>
           )}
           {askKind === "choose" && askOptions.length > 0 && (
             <>
-              <div className="text-gray-500">{t("agent.tool-options")}</div>
-              <div className="space-y-1">
+              <div className="text-control-light">
+                {t("agent.tool-options")}
+              </div>
+              <div className="flex flex-col gap-1">
                 {askOptions.map((option) => (
                   <div
                     key={option.value}
-                    className="rounded border border-gray-200 bg-white px-2 py-1"
+                    className="rounded border border-block-border bg-background px-2 py-1"
                   >
-                    <div className="font-medium text-gray-700">
+                    <div className="font-medium text-control">
                       {option.label}
                     </div>
-                    <div className="text-gray-500">{option.value}</div>
+                    <div className="text-control-light">{option.value}</div>
                     {option.description && (
-                      <div className="text-gray-500">{option.description}</div>
+                      <div className="text-control-light">
+                        {option.description}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -242,14 +246,16 @@ export function ToolCallCard({ toolCall, result }: Props) {
           )}
           {askResponse && (
             <>
-              <div className="text-gray-500">{t("agent.tool-answer")}</div>
-              <pre className="whitespace-pre-wrap break-all text-gray-700">
+              <div className="text-control-light">{t("agent.tool-answer")}</div>
+              <pre className="whitespace-pre-wrap break-all text-control">
                 {askResponse.answer}
               </pre>
               {askResponse.kind === "choose" && (
                 <>
-                  <div className="text-gray-500">{t("agent.tool-value")}</div>
-                  <pre className="whitespace-pre-wrap break-all text-gray-700">
+                  <div className="text-control-light">
+                    {t("agent.tool-value")}
+                  </div>
+                  <pre className="whitespace-pre-wrap break-all text-control">
                     {askResponse.value}
                   </pre>
                 </>
@@ -263,8 +269,8 @@ export function ToolCallCard({ toolCall, result }: Props) {
     if (isDone) {
       return (
         <>
-          <div className="text-gray-500">{t("agent.result")}</div>
-          <pre className="whitespace-pre-wrap break-all text-gray-700">
+          <div className="text-control-light">{t("agent.result")}</div>
+          <pre className="whitespace-pre-wrap break-all text-control">
             {doneText}
           </pre>
         </>
@@ -273,14 +279,14 @@ export function ToolCallCard({ toolCall, result }: Props) {
 
     return (
       <>
-        <div className="text-gray-500">{t("agent.args")}</div>
-        <pre className="whitespace-pre-wrap break-all text-gray-700">
+        <div className="text-control-light">{t("agent.args")}</div>
+        <pre className="whitespace-pre-wrap break-all text-control">
           {formatJson(toolCall.arguments)}
         </pre>
         {resultText && (
           <>
-            <div className="text-gray-500">{t("agent.result")}</div>
-            <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap break-all text-gray-700">
+            <div className="text-control-light">{t("agent.result")}</div>
+            <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap break-all text-control">
               {formatJson(resultText)}
             </pre>
           </>
@@ -290,20 +296,20 @@ export function ToolCallCard({ toolCall, result }: Props) {
   };
 
   return (
-    <div className="rounded border bg-gray-50 text-xs">
+    <div className="rounded border bg-control-bg text-xs">
       <div
         className="flex cursor-pointer items-center gap-x-2 px-2 py-1.5"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="font-mono text-gray-600">{toolCall.name}</span>
+        <span className="font-mono text-control-light">{toolCall.name}</span>
         {renderStatus()}
-        <span className="ml-auto text-gray-400">
+        <span className="ml-auto text-control-placeholder">
           {expanded ? "\u25BE" : "\u25B8"}
         </span>
       </div>
 
       {expanded && (
-        <div className="space-y-1 border-t px-2 py-1.5">
+        <div className="flex flex-col gap-1 border-t px-2 py-1.5">
           {renderExpandedContent()}
         </div>
       )}

@@ -373,7 +373,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               }
               onClick={() => setShowCreateDrawer(true)}
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="size-4 mr-1" />
               {t("common.create")}
             </Button>
           </PermissionGuard>
@@ -436,10 +436,10 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       {showUnassignConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0 bg-overlay/50"
             onClick={() => setShowUnassignConfirm(false)}
           />
-          <div className="relative bg-white rounded-sm shadow-lg p-6 max-w-md w-full mx-4">
+          <div className="relative bg-background rounded-sm shadow-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-2">
               {t("database.unassign-alert-title")}
             </h3>

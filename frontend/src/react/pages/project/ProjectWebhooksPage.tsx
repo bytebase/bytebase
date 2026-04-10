@@ -96,7 +96,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
       <div className="px-4 pb-2 flex items-center justify-end">
         <PermissionGuard permissions={["bb.projects.update"]} project={project}>
           <Button disabled={!allowEdit} onClick={handleAdd}>
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="size-4 mr-1" />
             {t("common.create")}
           </Button>
         </PermissionGuard>
@@ -194,15 +194,12 @@ function WebhookTable({
               return (
                 <tr
                   key={webhook.name}
-                  className="border-b cursor-pointer hover:bg-gray-50"
+                  className="border-b cursor-pointer hover:bg-control-bg"
                   onClick={(e) => onRowClick(e, webhook)}
                 >
                   <td className="py-2 pr-4">
                     <div className="flex items-center gap-x-2">
-                      <WebhookTypeIcon
-                        type={webhook.type}
-                        className="w-5 h-5"
-                      />
+                      <WebhookTypeIcon type={webhook.type} className="size-5" />
                       {webhook.title}
                     </div>
                   </td>
@@ -214,7 +211,7 @@ function WebhookTable({
                       {activityTitles.map((title) => (
                         <span
                           key={title}
-                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-gray-100 text-gray-700"
+                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
                         >
                           {title}
                         </span>
@@ -250,13 +247,13 @@ function ActionDropdown({
     <div className="relative flex justify-end">
       <button
         type="button"
-        className="p-1 rounded-xs hover:bg-gray-100"
+        className="p-1 rounded-xs hover:bg-control-bg"
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        <EllipsisVertical className="w-4 h-4" />
+        <EllipsisVertical className="size-4" />
       </button>
       {open && (
         <>
@@ -267,10 +264,10 @@ function ActionDropdown({
               setOpen(false);
             }}
           />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-white border rounded-sm shadow-md min-w-[100px]">
+          <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 text-error"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(false);

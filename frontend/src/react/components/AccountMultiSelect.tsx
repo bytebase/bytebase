@@ -80,9 +80,9 @@ function SelectionCheckbox({ selected }: { selected: boolean }) {
   return (
     <div
       className={cn(
-        "h-4 w-4 rounded-xs border flex items-center justify-center shrink-0",
+        "size-4 rounded-xs border flex items-center justify-center shrink-0",
         selected
-          ? "bg-accent border-accent text-white"
+          ? "bg-accent border-accent text-accent-text"
           : "border-control-border"
       )}
     >
@@ -110,14 +110,14 @@ function SpecialAccountOption({
   return (
     <div
       className={cn(
-        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
         selected && "bg-accent/5"
       )}
       onClick={onToggle}
     >
       <SelectionCheckbox selected={selected} />
       <div
-        className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+        className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
         style={{ backgroundColor: getAvatarColor(match.email) }}
       >
         <Icon className="h-3.5 w-3.5" />
@@ -127,7 +127,7 @@ function SpecialAccountOption({
           <span className="text-sm font-medium truncate">
             {match.email.split("@")[0]}
           </span>
-          <span className="text-xs text-control-light bg-gray-100 rounded-xs px-1">
+          <span className="text-xs text-control-light bg-control-bg rounded-xs px-1">
             {label}
           </span>
         </div>
@@ -296,7 +296,7 @@ export function AccountMultiSelect({
         {value.map((binding) => (
           <span
             key={binding}
-            className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs"
+            className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs"
           >
             {chipLabel(binding)}
             {!disabled && (
@@ -323,11 +323,11 @@ export function AccountMultiSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col">
+        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col">
           {/* Search input */}
           <SearchInput
             ref={inputRef}
-            wrapperClassName="sticky top-0 bg-white m-2"
+            wrapperClassName="sticky top-0 bg-background m-2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("common.search-for-more")}
@@ -338,7 +338,7 @@ export function AccountMultiSelect({
             {includeAllUsers && (
               <div
                 className={cn(
-                  "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                  "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                   selectedFullnames.has(ALL_USERS_USER_EMAIL) && "bg-accent/5"
                 )}
                 onClick={() => toggle(ALL_USERS_USER_EMAIL)}
@@ -348,7 +348,7 @@ export function AccountMultiSelect({
                 />
                 {/* Blue avatar circle */}
                 <div
-                  className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                  className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
                   style={{ backgroundColor: "#3B82F6" }}
                 >
                   <Users className="h-4 w-4" />
@@ -362,7 +362,7 @@ export function AccountMultiSelect({
             {/* Users */}
             {users.length > 0 && (
               <div>
-                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50 border-b">
+                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
                   {t("common.users")}
                 </div>
                 {users.map((user) => {
@@ -376,7 +376,7 @@ export function AccountMultiSelect({
                     <div
                       key={user.name}
                       className={cn(
-                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                         selected && "bg-accent/5"
                       )}
                       onClick={() => toggle(fullname)}
@@ -384,7 +384,7 @@ export function AccountMultiSelect({
                       <SelectionCheckbox selected={selected} />
                       {/* Avatar */}
                       <div
-                        className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                        className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
                         style={{ backgroundColor: color }}
                       >
                         {initials}
@@ -395,7 +395,7 @@ export function AccountMultiSelect({
                             {displayName}
                           </span>
                           {isCurrentUser && (
-                            <span className="text-xs text-control-light bg-gray-100 rounded-xs px-1">
+                            <span className="text-xs text-control-light bg-control-bg rounded-xs px-1">
                               {t("common.you")}
                             </span>
                           )}
@@ -415,7 +415,7 @@ export function AccountMultiSelect({
             {/* Groups */}
             {groups.length > 0 && (
               <div>
-                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-gray-50 border-b">
+                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
                   {t("common.groups")}
                 </div>
                 {groups.map((group) => {
@@ -425,13 +425,13 @@ export function AccountMultiSelect({
                     <div
                       key={group.name}
                       className={cn(
-                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                        "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                         selected && "bg-accent/5"
                       )}
                       onClick={() => toggle(fullname)}
                     >
                       <SelectionCheckbox selected={selected} />
-                      <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
+                      <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
                         <Users className="h-4 w-4 text-control-light" />
                       </div>
                       <div className="flex flex-col min-w-0">
@@ -470,7 +470,7 @@ export function AccountMultiSelect({
             {arbitraryEmailMatch && (
               <div
                 className={cn(
-                  "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50",
+                  "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                   selectedFullnames.has(`users/${arbitraryEmailMatch}`) &&
                     "bg-accent/5"
                 )}
@@ -482,7 +482,7 @@ export function AccountMultiSelect({
                   )}
                 />
                 <div
-                  className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                  className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
                   style={{
                     backgroundColor: getAvatarColor(arbitraryEmailMatch),
                   }}

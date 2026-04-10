@@ -354,7 +354,7 @@ export function DatabaseObjectExplorer({
   }));
 
   return (
-    <div className="space-y-6 pt-6">
+    <div className="flex flex-col gap-6 pt-6">
       {supportsSchema && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
           <label
@@ -365,7 +365,7 @@ export function DatabaseObjectExplorer({
           </label>
           <select
             id="schema-select"
-            className="min-w-48 rounded-xs border border-control-border bg-white px-3 py-2 text-sm text-main"
+            className="min-w-48 rounded-xs border border-control-border bg-background px-3 py-2 text-sm text-main"
             disabled={loading}
             value={selectedSchemaName}
             onChange={(event) =>
@@ -383,7 +383,7 @@ export function DatabaseObjectExplorer({
 
       {databaseEngine !== Engine.REDIS && (
         <>
-          <section className="space-y-4">
+          <section className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-lg font-medium text-main">
                 {databaseEngine === Engine.MONGODB
@@ -411,14 +411,14 @@ export function DatabaseObjectExplorer({
             />
           </section>
 
-          <section className="space-y-4">
+          <section className="flex flex-col gap-4">
             <div className="text-lg font-medium text-main">{t("db.views")}</div>
             <ObjectSectionTable loading={loading} rows={viewRows} />
           </section>
 
           {(databaseEngine === Engine.POSTGRES ||
             databaseEngine === Engine.HIVE) && (
-            <section className="space-y-4">
+            <section className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-lg font-medium text-main">
                   {t("db.external-tables")}
@@ -438,7 +438,7 @@ export function DatabaseObjectExplorer({
           )}
 
           {databaseEngine === Engine.POSTGRES && (
-            <section className="space-y-4">
+            <section className="flex flex-col gap-4">
               <div className="text-lg font-medium text-main">
                 {t("db.extensions")}
               </div>
@@ -448,7 +448,7 @@ export function DatabaseObjectExplorer({
 
           {(databaseEngine === Engine.POSTGRES ||
             databaseEngine === Engine.MSSQL) && (
-            <section className="space-y-4">
+            <section className="flex flex-col gap-4">
               <div className="text-lg font-medium text-main">
                 {t("db.functions")}
               </div>
@@ -457,7 +457,7 @@ export function DatabaseObjectExplorer({
           )}
 
           {instanceV1SupportsSequence(databaseEngine) && (
-            <section className="space-y-4">
+            <section className="flex flex-col gap-4">
               <div className="text-lg font-medium text-main">
                 {t("db.sequences")}
               </div>
@@ -467,13 +467,13 @@ export function DatabaseObjectExplorer({
 
           {databaseEngine === Engine.SNOWFLAKE && (
             <>
-              <section className="space-y-4">
+              <section className="flex flex-col gap-4">
                 <div className="text-lg font-medium text-main">
                   {t("db.streams")}
                 </div>
                 <ObjectSectionTable loading={loading} rows={streamRows} />
               </section>
-              <section className="space-y-4">
+              <section className="flex flex-col gap-4">
                 <div className="text-lg font-medium text-main">
                   {t("db.tasks")}
                 </div>
@@ -483,7 +483,7 @@ export function DatabaseObjectExplorer({
           )}
 
           {instanceV1SupportsPackage(databaseEngine) && (
-            <section className="space-y-4">
+            <section className="flex flex-col gap-4">
               <div className="text-lg font-medium text-main">
                 {t("db.packages")}
               </div>

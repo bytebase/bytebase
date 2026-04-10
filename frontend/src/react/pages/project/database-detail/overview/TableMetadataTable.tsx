@@ -140,7 +140,7 @@ export function TableMetadataTable({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody className="bg-white">
+        <TableBody className="bg-background">
           {rows.map((table) => {
             const tableCatalog = catalog
               ? getTableCatalog(catalog, schemaName, table.name)

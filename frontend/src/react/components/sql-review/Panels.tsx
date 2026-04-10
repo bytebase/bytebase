@@ -101,14 +101,14 @@ export function RulesSelectPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[70rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[70rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-lg font-medium">
             {t("sql-review.select-review-rules")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
@@ -253,14 +253,14 @@ export function AttachResourcesPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-lg font-medium">
             {t("sql-review.attach-resource.self")}
           </h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </Button>
         </div>
 
@@ -307,7 +307,7 @@ export function AttachResourcesPanel({
             {/* OR divider */}
             <div className="flex items-center gap-x-2">
               <div className="textlabel w-10 capitalize">{t("common.or")}</div>
-              <hr className="flex-1 border-gray-200" />
+              <hr className="flex-1 border-block-border" />
             </div>
 
             {/* Project section */}

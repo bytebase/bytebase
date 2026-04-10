@@ -219,7 +219,7 @@ function LevelBadge({
 }) {
   const levelObj = config.levels.find((l) => l.level === level);
   if (!levelObj) return null;
-  const color = bgColorList[level - 1] ?? "bg-gray-200";
+  const color = bgColorList[level - 1] ?? "bg-control-bg-hover";
   return (
     <span className={`ml-1 px-1 py-0.5 rounded-xs text-xs ${color}`}>
       {levelObj.title}
@@ -288,7 +288,7 @@ function ClassificationTreeNode({
       >
         {hasChildren ? (
           <ChevronRight
-            className={`w-4 h-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
+            className={`size-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
           />
         ) : (
           <span className="w-4 shrink-0" />
@@ -330,7 +330,7 @@ function ClassificationTree({
   );
 
   return (
-    <div className="space-y-4 h-full">
+    <div className="flex flex-col gap-4 h-full">
       <div>
         <SearchInput
           value={searchText}
@@ -603,7 +603,7 @@ export function DataClassificationPage() {
 
       {editing && (
         <>
-          <div className="text-sm text-control-light space-y-1">
+          <div className="text-sm text-control-light flex flex-col gap-1">
             <p>{t("settings.sensitive-data.classification.guide-intro")}</p>
             <ul className="list-disc list-inside">
               <li>

@@ -72,15 +72,15 @@ export function LabelEditorDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[28rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[28rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">{t("database.edit-labels")}</h2>
           <button
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
@@ -107,7 +107,7 @@ export function LabelEditorDrawer({
               }}
             />
             <Button size="sm" onClick={addLabelToAll} disabled={!newKey.trim()}>
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
             </Button>
           </div>
           {allKeys.length > 0 ? (
@@ -117,7 +117,7 @@ export function LabelEditorDrawer({
                 return (
                   <div
                     key={key}
-                    className="flex items-center justify-between rounded-xs bg-gray-50 px-3 py-2"
+                    className="flex items-center justify-between rounded-xs bg-control-bg px-3 py-2"
                   >
                     <span className="text-sm">
                       {key}:
@@ -130,10 +130,10 @@ export function LabelEditorDrawer({
                       )}
                     </span>
                     <button
-                      className="p-0.5 hover:bg-gray-200 rounded-xs"
+                      className="p-0.5 hover:bg-control-bg-hover rounded-xs"
                       onClick={() => removeLabel(key)}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="size-3" />
                     </button>
                   </div>
                 );

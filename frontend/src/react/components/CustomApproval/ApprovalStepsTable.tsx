@@ -59,7 +59,7 @@ export function ApprovalStepsTable({
           {roles.map((role, index) => (
             <tr
               key={index}
-              className={index % 2 === 1 ? "bg-control-bg/50" : "bg-white"}
+              className={index % 2 === 1 ? "bg-control-bg/50" : "bg-background"}
             >
               <td className="border border-control-border px-3 py-2 text-center text-control">
                 {index + 1}

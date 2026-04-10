@@ -299,8 +299,8 @@ export function DataExportPrepDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-control-border">
           <div className="flex flex-col gap-y-3">
@@ -312,7 +312,7 @@ export function DataExportPrepDrawer({
                 className="p-1 hover:bg-control-bg rounded-xs"
                 onClick={onClose}
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </div>
             {/* Steps indicator */}
@@ -323,7 +323,7 @@ export function DataExportPrepDrawer({
                 active={step === 1}
                 completed={step > 1}
               />
-              <div className="h-px w-8 bg-gray-300" />
+              <div className="h-px w-8 bg-control-border" />
               <StepIndicator
                 number={2}
                 label={t("common.configure")}
@@ -500,7 +500,7 @@ export function DataExportPrepDrawer({
             </Button>
           ) : (
             <Button disabled={!canCreate || creating} onClick={handleCreate}>
-              {creating && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+              {creating && <Loader2 className="size-4 mr-1 animate-spin" />}
               {t("common.create")}
             </Button>
           )}
@@ -529,16 +529,16 @@ function StepIndicator({
     <div className="flex items-center gap-x-2">
       <span
         className={cn(
-          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+          "size-6 rounded-full flex items-center justify-center text-xs font-medium",
           active
-            ? "bg-accent text-white"
+            ? "bg-accent text-accent-text"
             : completed
-              ? "bg-success text-white"
-              : "bg-gray-200 text-gray-500"
+              ? "bg-success text-accent-text"
+              : "bg-control-bg-hover text-control-light"
         )}
       >
         {completed ? (
-          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="size-3.5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -583,7 +583,7 @@ function TargetBadge({ target }: { target: string }) {
       <div className="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm min-w-0">
         {inst && EngineIconPath[inst.engine] && (
           <img
-            className="h-4 w-4 shrink-0"
+            className="size-4 shrink-0"
             src={EngineIconPath[inst.engine]}
             alt=""
           />
@@ -598,7 +598,7 @@ function TargetBadge({ target }: { target: string }) {
     const groupName = extractDatabaseGroupName(target);
     return (
       <div className="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm min-w-0">
-        <FolderTree className="w-4 h-4 shrink-0 text-control-light" />
+        <FolderTree className="size-4 shrink-0 text-control-light" />
         <span className="text-sm truncate">{groupName}</span>
       </div>
     );
@@ -650,8 +650,8 @@ function IssueLabelSelect({
         <button
           type="button"
           className={cn(
-            "w-full flex items-center justify-between gap-2 border border-control-border rounded-sm h-9 px-3 text-sm bg-white text-left transition-colors",
-            "hover:border-gray-400",
+            "w-full flex items-center justify-between gap-2 border border-control-border rounded-sm h-9 px-3 text-sm bg-background text-left transition-colors",
+            "hover:border-control-border",
             open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
           )}
           onClick={() => setOpen(!open)}
@@ -663,15 +663,15 @@ function IssueLabelSelect({
                 return (
                   <span
                     key={val}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-gray-100 text-xs"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-control-bg text-xs"
                   >
                     <span
-                      className="w-2.5 h-2.5 rounded-sm shrink-0"
+                      className="size-2.5 rounded-sm shrink-0"
                       style={{ backgroundColor: label?.color }}
                     />
                     {val}
                     <X
-                      className="w-3 h-3 text-gray-400 hover:text-gray-600"
+                      className="size-3 text-control-placeholder hover:text-control-light"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleLabel(val);
@@ -682,20 +682,22 @@ function IssueLabelSelect({
               })}
             </div>
           ) : (
-            <span className="text-gray-400">{t("common.select")}</span>
+            <span className="text-control-placeholder">
+              {t("common.select")}
+            </span>
           )}
           <ChevronDown
             className={cn(
-              "w-4 h-4 text-gray-400 shrink-0 transition-transform",
+              "size-4 text-control-placeholder shrink-0 transition-transform",
               open && "rotate-180"
             )}
           />
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
+          <div className="absolute z-50 mt-1 w-full bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
             <div className="max-h-60 overflow-y-auto">
               {labels.length === 0 ? (
-                <div className="px-3 py-6 text-sm text-gray-400 text-center">
+                <div className="px-3 py-6 text-sm text-control-placeholder text-center">
                   {t("common.no-data")}
                 </div>
               ) : (
@@ -705,17 +707,17 @@ function IssueLabelSelect({
                     <button
                       key={label.value}
                       type="button"
-                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-control-bg transition-colors"
                       onClick={() => toggleLabel(label.value)}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         readOnly
-                        className="rounded-xs border-gray-300 accent-accent"
+                        className="rounded-xs border-control-border accent-accent"
                       />
                       <span
-                        className="w-4 h-4 rounded-sm shrink-0"
+                        className="size-4 rounded-sm shrink-0"
                         style={{ backgroundColor: label.color }}
                       />
                       <span>{label.value}</span>
@@ -769,7 +771,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("DATABASE")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <DatabaseIcon className="w-4 h-4" />
+            <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
         </button>
@@ -784,7 +786,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("GROUP")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <FolderTree className="w-4 h-4" />
+            <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
         </button>
@@ -910,7 +912,7 @@ function DatabaseSelector({
 
       {loading ? (
         <div className="flex justify-center py-8 text-control-light">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="size-5 animate-spin" />
         </div>
       ) : databases.length === 0 ? (
         <div className="flex justify-center py-8 text-control-light">
@@ -950,7 +952,7 @@ function DatabaseSelector({
                   <tr
                     key={db.name}
                     className={cn(
-                      "border-b cursor-pointer hover:bg-gray-50",
+                      "border-b cursor-pointer hover:bg-control-bg",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
@@ -967,7 +969,7 @@ function DatabaseSelector({
                       <div className="flex items-center gap-x-1.5">
                         {inst && EngineIconPath[inst.engine] && (
                           <img
-                            className="h-4 w-4 shrink-0"
+                            className="size-4 shrink-0"
                             src={EngineIconPath[inst.engine]}
                             alt=""
                           />
@@ -1033,7 +1035,7 @@ function DatabaseGroupSelector({
   if (loading) {
     return (
       <div className="flex justify-center py-8 text-control-light">
-        <Loader2 className="w-5 h-5 animate-spin" />
+        <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
@@ -1063,7 +1065,7 @@ function DatabaseGroupSelector({
             <tr
               key={group.name}
               className={cn(
-                "border-b cursor-pointer hover:bg-gray-50",
+                "border-b cursor-pointer hover:bg-control-bg",
                 isSelected && "bg-accent/5"
               )}
               onClick={() =>
@@ -1080,7 +1082,7 @@ function DatabaseGroupSelector({
               </td>
               <td className="py-2 pr-4">
                 <div className="flex items-center gap-x-1.5">
-                  <FolderTree className="w-4 h-4 text-control-light shrink-0" />
+                  <FolderTree className="size-4 text-control-light shrink-0" />
                   <span>{extractDatabaseGroupName(group.name)}</span>
                 </div>
               </td>

@@ -13,9 +13,9 @@ import { changelogLink } from "@/utils/v1/changelog";
 function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
   if (status === Changelog_Status.PENDING) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-info bg-white text-info">
+      <span className="flex size-5 items-center justify-center rounded-full border-2 border-info bg-background text-info">
         <span
-          className="h-2 w-2 rounded-full bg-info"
+          className="size-2 rounded-full bg-info"
           style={{
             animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
           }}
@@ -25,14 +25,14 @@ function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
   }
   if (status === Changelog_Status.DONE) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-white">
-        <Check className="h-4 w-4" />
+      <span className="flex size-5 items-center justify-center rounded-full bg-success text-accent-text">
+        <Check className="size-4" />
       </span>
     );
   }
   if (status === Changelog_Status.FAILED) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-error text-white">
+      <span className="flex size-5 items-center justify-center rounded-full bg-error text-accent-text">
         <span className="text-base font-normal">!</span>
       </span>
     );
@@ -81,11 +81,11 @@ export function DatabaseChangelogTable({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-block-border bg-white">
+        <tbody className="divide-y divide-block-border bg-background">
           {changelogs.map((changelog) => (
             <tr
               key={changelog.name}
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer hover:bg-control-bg"
               onClick={(e) => handleRowClick(changelog, e)}
             >
               <td className="px-4 py-3 text-center">

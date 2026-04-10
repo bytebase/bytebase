@@ -180,7 +180,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
               }
             >
               <Button disabled={!canCreate} onClick={() => setShowDrawer(true)}>
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="size-4 mr-1" />
                 {t("quick-action.request-export-data")}
               </Button>
             </Tooltip>
@@ -192,7 +192,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
       <div className="mt-2">
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           </div>
         ) : paged.dataList.length === 0 ? (
           <div className="flex justify-center py-8 text-control-light">
@@ -241,14 +241,14 @@ function IssueStatusIcon({ status }: { status: IssueStatus }) {
   switch (status) {
     case IssueStatus.OPEN:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-white border-2 border-info text-info shrink-0">
-          <span className="h-1.5 w-1.5 bg-info rounded-full" />
+        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 border-info text-info shrink-0">
+          <span className="size-1.5 bg-info rounded-full" />
         </span>
       );
     case IssueStatus.DONE:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-success text-white shrink-0">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <span className="flex items-center justify-center rounded-full size-5 bg-success text-accent-text shrink-0">
+          <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -259,8 +259,8 @@ function IssueStatusIcon({ status }: { status: IssueStatus }) {
       );
     case IssueStatus.CANCELED:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-white border-2 text-gray-400 border-gray-400 shrink-0">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 text-control-placeholder border-control-placeholder shrink-0">
+          <svg className="size-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
@@ -295,7 +295,7 @@ function RiskLevelIcon({ riskLevel }: { riskLevel: RiskLevel }) {
   return (
     <Tooltip content={`${label} (${t("issue.risk-level.self")})`}>
       <svg
-        className={`w-4 h-4 shrink-0 ${color}`}
+        className={`size-4 shrink-0 ${color}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -321,7 +321,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (issue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
     return (
-      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
       </span>
     );
@@ -364,7 +364,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
       const roleName = role ? displayRoleTitle(role) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+          <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
             {progressText}
           </span>
           {roleName && (
@@ -379,7 +379,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   // No approval required
   return (
-    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-500">
+    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
       {t("custom-approval.approval-flow.skip")}
     </span>
   );
@@ -481,7 +481,7 @@ function IssueListItem({
 
   return (
     <div
-      className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50"
+      className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-block-border hover:bg-control-bg"
       onClick={onRowClick}
     >
       {/* Left: issue content */}
@@ -502,7 +502,7 @@ function IssueListItem({
             ) : (
               <a
                 href={issueUrl}
-                className="font-medium text-base truncate hover:underline italic text-gray-400"
+                className="font-medium text-base truncate hover:underline italic text-control-placeholder"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("common.untitled")}
@@ -515,7 +515,7 @@ function IssueListItem({
                 className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded-xs text-xs whitespace-nowrap border shrink-0"
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm shrink-0"
+                  className="size-2.5 rounded-sm shrink-0"
                   style={{ backgroundColor: label.color }}
                 />
                 {label.value}

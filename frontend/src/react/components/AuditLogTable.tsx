@@ -192,17 +192,17 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
             className="p-0.5 border border-control-border rounded-xs hover:bg-control-bg"
             onClick={() => setShowModal(true)}
           >
-            <Maximize2 className="w-3 h-3" />
+            <Maximize2 className="size-3" />
           </button>
         </div>
       </div>
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-sm shadow-lg flex flex-col"
+            className="bg-background rounded-sm shadow-lg flex flex-col"
             style={{
               width: "calc(100vw - 12rem)",
               height: "calc(100vh - 12rem)",
@@ -217,7 +217,7 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
                 className="p-1 hover:bg-control-bg rounded-full"
                 onClick={() => setShowModal(false)}
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -275,11 +275,11 @@ function ExportDropdown({
         title={tooltip}
         onClick={() => setOpen(!open)}
       >
-        <Download className="w-4 h-4 mr-1" />
+        <Download className="size-4 mr-1" />
         {t("common.export")}
       </Button>
       {open && !disabled && (
-        <div className="absolute right-0 top-[42px] bg-white border border-control-border rounded-sm shadow-lg z-50 py-1 min-w-[100px]">
+        <div className="absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg z-50 py-1 min-w-[100px]">
           {formats.map(({ format, label }) => (
             <button
               key={label}
@@ -442,7 +442,7 @@ function useColumnDefs(): ColumnDef[] {
           if (!link.startsWith("/")) link = `/${link}`;
           return (
             <a href={link} target="_blank" rel="noreferrer">
-              <ExternalLink className="w-4 h-4 text-accent" />
+              <ExternalLink className="size-4 text-accent" />
             </a>
           );
         },
@@ -811,7 +811,7 @@ export function AuditLogTable({
                       </div>
                       {col.resizable && (
                         <div
-                          className="absolute right-0 top-1/4 h-1/2 w-[3px] cursor-col-resize rounded-full bg-gray-200 hover:bg-accent/60 active:bg-accent transition-colors"
+                          className="absolute right-0 top-1/4 h-1/2 w-[3px] cursor-col-resize rounded-full bg-control-bg-hover hover:bg-accent/60 active:bg-accent transition-colors"
                           onMouseDown={(e) => onResizeStart(colIdx, e)}
                         />
                       )}
@@ -844,7 +844,7 @@ export function AuditLogTable({
                       key={log.name || idx}
                       className={cn(
                         "border-b border-block-border",
-                        idx % 2 === 1 && "bg-gray-50/50"
+                        idx % 2 === 1 && "bg-control-bg/50"
                       )}
                     >
                       {columns.map((col) => (

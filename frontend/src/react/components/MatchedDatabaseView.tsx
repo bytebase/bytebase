@@ -255,7 +255,7 @@ export function MatchedDatabaseView({
         </span>
         {loading && (
           <svg
-            className="animate-spin h-5 w-5 opacity-60"
+            className="animate-spin size-5 opacity-60"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -278,7 +278,7 @@ export function MatchedDatabaseView({
       </div>
 
       {matchingError && (
-        <p className="my-2 text-sm border border-red-600 px-2 py-1 rounded-sm bg-red-50 text-red-600">
+        <p className="my-2 text-sm border border-error px-2 py-1 rounded-sm bg-error/10 text-error">
           {matchingError}
         </p>
       )}
@@ -294,17 +294,17 @@ export function MatchedDatabaseView({
                 type="button"
                 className={`w-full flex items-center justify-between py-2 px-1 text-left text-sm ${
                   isEmpty
-                    ? "cursor-default text-gray-400"
-                    : "cursor-pointer hover:bg-gray-50"
+                    ? "cursor-default text-control-placeholder"
+                    : "cursor-pointer hover:bg-control-bg"
                 }`}
                 disabled={isEmpty}
                 onClick={() => toggleSection(section.name)}
               >
                 <div className="flex items-center gap-x-1">
                   <svg
-                    className={`h-4 w-4 transition-transform ${
+                    className={`size-4 transition-transform ${
                       isExpanded ? "rotate-90" : ""
-                    } ${isEmpty ? "text-gray-300" : ""}`}
+                    } ${isEmpty ? "text-control-border" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -319,7 +319,9 @@ export function MatchedDatabaseView({
                   <span>{section.title}</span>
                 </div>
                 {section.showTotal && (
-                  <span className="text-gray-500 text-xs">{section.total}</span>
+                  <span className="text-control-light text-xs">
+                    {section.total}
+                  </span>
                 )}
               </button>
 
@@ -339,7 +341,7 @@ export function MatchedDatabaseView({
                           <span className="truncate">{dbName}</span>
                           <div className="flex-1 flex flex-row justify-end items-center shrink-0">
                             <span className="text-sm">{instance.title}</span>
-                            <span className="ml-1 text-sm text-gray-400 max-w-31 truncate">
+                            <span className="ml-1 text-sm text-control-placeholder max-w-31 truncate">
                               {env.title}
                             </span>
                           </div>
@@ -350,7 +352,7 @@ export function MatchedDatabaseView({
                   {section.hasMore && (
                     <button
                       type="button"
-                      className="self-start px-2 py-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                      className="self-start px-2 py-1 text-sm text-accent hover:text-accent/80 disabled:opacity-50"
                       disabled={section.sectionLoading}
                       onClick={section.onLoadMore}
                     >

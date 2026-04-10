@@ -54,7 +54,7 @@ export function InfoPanel({
         onTransitionEnd={handleTransitionEnd}
       >
         <div
-          className={`w-[500px] bg-white border-l border-block-border shadow-lg flex flex-col h-full transition-transform duration-200 ${
+          className={`w-[500px] bg-background border-l border-block-border shadow-lg flex flex-col h-full transition-transform duration-200 ${
             visible ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -70,7 +70,7 @@ export function InfoPanel({
   return (
     <aside
       data-info-panel-docked="true"
-      className={`h-full w-full min-w-0 overflow-hidden border-l border-block-border bg-white transition-all duration-150 ${
+      className={`h-full w-full min-w-0 overflow-hidden border-l border-block-border bg-background transition-all duration-150 ${
         visible ? "opacity-100" : "opacity-0 translate-x-3"
       }`}
       onTransitionEnd={handleTransitionEnd}
@@ -94,7 +94,7 @@ function PanelHeader({
 }) {
   return (
     <div
-      className={`sticky top-0 z-10 flex items-center justify-between border-b border-block-border bg-white ${className ?? ""}`}
+      className={`sticky top-0 z-10 flex items-center justify-between border-b border-block-border bg-background ${className ?? ""}`}
     >
       <h3 className="min-w-0 truncate text-sm font-semibold text-main">
         {title}
@@ -103,7 +103,7 @@ function PanelHeader({
         className="text-control-light hover:text-main p-0.5 rounded-xs"
         onClick={onClose}
       >
-        <X className="w-4 h-4" />
+        <X className="size-4" />
       </button>
     </div>
   );
@@ -132,10 +132,10 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
       {snippet.codeBlock && (
         <div className="flex flex-col gap-y-1">
           <div className="flex flex-row">
-            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-gray-50 whitespace-pre-line rounded-l-[3px] overflow-x-auto text-[12px]">
+            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-control-bg whitespace-pre-line rounded-l-[3px] overflow-x-auto text-[12px]">
               <code>{snippet.codeBlock.code}</code>
             </pre>
-            <div className="flex items-center -ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 rounded-r-[3px]">
+            <div className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover rounded-r-[3px]">
               <CopyButton content={snippet.codeBlock.code} />
             </div>
           </div>
@@ -181,9 +181,9 @@ function CopyButton({ content }: { content: string }) {
       onClick={handleCopy}
     >
       {copied ? (
-        <Check className="w-4 h-4 text-success" />
+        <Check className="size-4 text-success" />
       ) : (
-        <Copy className="w-4 h-4" />
+        <Copy className="size-4" />
       )}
     </button>
   );

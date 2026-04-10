@@ -386,7 +386,7 @@ export function SemanticTypesPage() {
       <div className="border border-control-border rounded-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-control-border">
+            <tr className="bg-control-bg border-b border-control-border">
               <th className="px-3 py-2 font-medium w-20 text-center">
                 {t("settings.sensitive-data.semantic-types.table.icon")}
               </th>
@@ -678,8 +678,8 @@ function MaskingAlgorithmDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onDismiss} />
-      <div className="relative w-[40rem] max-w-[calc(100vw-5rem)] bg-white shadow-xl flex flex-col">
+      <div className="absolute inset-0 bg-overlay/40" onClick={onDismiss} />
+      <div className="relative w-[40rem] max-w-[calc(100vw-5rem)] bg-background shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-medium">
             {t(
@@ -687,7 +687,7 @@ function MaskingAlgorithmDrawer({
             )}
           </h2>
           <button
-            className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+            className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
             onClick={onDismiss}
           >
             <X className="w-5 h-5" />
@@ -699,7 +699,7 @@ function MaskingAlgorithmDrawer({
           <div className="mb-6">
             <label className="text-sm font-medium">
               {t("settings.sensitive-data.algorithms.table.masking-type")}
-              <span className="text-red-500 ml-0.5">*</span>
+              <span className="text-error ml-0.5">*</span>
             </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {maskingTypeOptions.map((opt) => (
@@ -708,7 +708,7 @@ function MaskingAlgorithmDrawer({
                   className={`px-3 py-2 text-sm border rounded-sm transition-colors ${
                     maskingType === opt.value
                       ? "border-accent bg-accent/10 text-accent"
-                      : "border-control-border hover:bg-gray-50"
+                      : "border-control-border hover:bg-control-bg"
                   }`}
                   onClick={() => onMaskingTypeChange(opt.value)}
                 >
@@ -725,7 +725,7 @@ function MaskingAlgorithmDrawer({
                   {t(
                     "settings.sensitive-data.algorithms.full-mask.substitution"
                   )}
-                  <span className="text-red-500 ml-0.5">*</span>
+                  <span className="text-error ml-0.5">*</span>
                 </label>
                 <p className="text-sm text-control-placeholder mt-1">
                   {t(
@@ -755,7 +755,7 @@ function MaskingAlgorithmDrawer({
                         {t(
                           "settings.sensitive-data.algorithms.range-mask.slice-start"
                         )}
-                        <span className="text-red-500 ml-0.5">*</span>
+                        <span className="text-error ml-0.5">*</span>
                       </label>
                       <Input
                         type="number"
@@ -777,7 +777,7 @@ function MaskingAlgorithmDrawer({
                         {t(
                           "settings.sensitive-data.algorithms.range-mask.slice-end"
                         )}
-                        <span className="text-red-500 ml-0.5">*</span>
+                        <span className="text-error ml-0.5">*</span>
                       </label>
                       <Input
                         type="number"
@@ -793,7 +793,7 @@ function MaskingAlgorithmDrawer({
                         {t(
                           "settings.sensitive-data.algorithms.range-mask.substitution"
                         )}
-                        <span className="text-red-500 ml-0.5">*</span>
+                        <span className="text-error ml-0.5">*</span>
                       </label>
                       <Input
                         value={slice.substitution}
@@ -803,7 +803,7 @@ function MaskingAlgorithmDrawer({
                       />
                     </div>
                     <button
-                      className="p-1 rounded-xs hover:bg-red-100 text-red-500 mb-0.5"
+                      className="p-1 rounded-xs hover:bg-error/10 text-error mb-0.5"
                       onClick={() =>
                         setRangeMaskSlices((prev) =>
                           prev.filter((_, idx) => idx !== i)
@@ -815,9 +815,7 @@ function MaskingAlgorithmDrawer({
                   </div>
                 ))}
                 {rangeMaskErrorMessage && (
-                  <p className="text-red-600 text-sm">
-                    {rangeMaskErrorMessage}
-                  </p>
+                  <p className="text-error text-sm">{rangeMaskErrorMessage}</p>
                 )}
                 <Button
                   variant="outline"
@@ -845,7 +843,7 @@ function MaskingAlgorithmDrawer({
               <div>
                 <label className="text-sm font-medium">
                   {t("settings.sensitive-data.algorithms.md5-mask.salt")}
-                  <span className="text-red-500 ml-0.5">*</span>
+                  <span className="text-error ml-0.5">*</span>
                 </label>
                 <p className="text-sm text-control-placeholder mt-1">
                   {t("settings.sensitive-data.algorithms.md5-mask.salt-label")}
@@ -868,7 +866,7 @@ function MaskingAlgorithmDrawer({
                     {t(
                       "settings.sensitive-data.algorithms.inner-outer-mask.type"
                     )}
-                    <span className="text-red-500 ml-0.5">*</span>
+                    <span className="text-error ml-0.5">*</span>
                   </label>
                   <p className="text-sm text-control-placeholder mt-1">
                     {innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
@@ -924,7 +922,7 @@ function MaskingAlgorithmDrawer({
                       {t(
                         "settings.sensitive-data.algorithms.inner-outer-mask.prefix-length"
                       )}
-                      <span className="text-red-500 ml-0.5">*</span>
+                      <span className="text-error ml-0.5">*</span>
                     </label>
                     <Input
                       type="number"
@@ -942,7 +940,7 @@ function MaskingAlgorithmDrawer({
                       {t(
                         "settings.sensitive-data.algorithms.inner-outer-mask.suffix-length"
                       )}
-                      <span className="text-red-500 ml-0.5">*</span>
+                      <span className="text-error ml-0.5">*</span>
                     </label>
                     <Input
                       type="number"
@@ -960,7 +958,7 @@ function MaskingAlgorithmDrawer({
                       {t(
                         "settings.sensitive-data.algorithms.range-mask.substitution"
                       )}
-                      <span className="text-red-500 ml-0.5">*</span>
+                      <span className="text-error ml-0.5">*</span>
                     </label>
                     <Input
                       value={innerOuterSubstitution}
@@ -1009,14 +1007,14 @@ function SemanticTemplateDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/40" onClick={onDismiss} />
-      <div className="relative w-2xl max-w-[100vw] bg-white shadow-xl flex flex-col">
+      <div className="absolute inset-0 bg-overlay/40" onClick={onDismiss} />
+      <div className="relative w-2xl max-w-[100vw] bg-background shadow-xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-medium">
             {t("settings.sensitive-data.semantic-types.table.semantic-type")}
           </h2>
           <button
-            className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+            className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
             onClick={onDismiss}
           >
             <X className="w-5 h-5" />
@@ -1029,7 +1027,7 @@ function SemanticTemplateDrawer({
           <div className="border border-control-border rounded-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-control-border">
+                <tr className="bg-control-bg border-b border-control-border">
                   <th className="px-3 py-2 text-left font-medium">ID</th>
                   <th className="px-3 py-2 text-left font-medium">
                     {t(
@@ -1054,7 +1052,7 @@ function SemanticTemplateDrawer({
                   return (
                     <tr
                       key={template.id}
-                      className="border-b border-control-border last:border-b-0 hover:bg-gray-50 cursor-pointer"
+                      className="border-b border-control-border last:border-b-0 hover:bg-control-bg cursor-pointer"
                       onClick={() => onApply(template)}
                     >
                       <td className="px-3 py-2">{template.id}</td>
@@ -1068,7 +1066,7 @@ function SemanticTemplateDrawer({
                             )}
                           </span>
                           <span
-                            className="text-gray-400 cursor-help"
+                            className="text-control-placeholder cursor-help"
                             title={t(
                               `dynamic.settings.sensitive-data.semantic-types.template.${key}.algorithm.description`
                             )}
@@ -1133,7 +1131,7 @@ function SemanticTypeRow({
   const isEditing = row.mode !== "NORMAL";
 
   return (
-    <tr className="border-b border-control-border last:border-b-0 even:bg-gray-50/50">
+    <tr className="border-b border-control-border last:border-b-0 even:bg-control-bg/50">
       <td className="px-3 py-2 text-center">
         {isEditing && !isItemReadonly ? (
           <IconPicker
@@ -1149,7 +1147,7 @@ function SemanticTypeRow({
             />
           </div>
         ) : (
-          <span className="text-gray-400">-</span>
+          <span className="text-control-placeholder">-</span>
         )}
       </td>
       <td className="px-3 py-2 truncate max-w-36" title={row.item.id}>
@@ -1208,7 +1206,7 @@ function SemanticTypeRow({
                   </div>
                 }
               >
-                <span className="text-gray-400 cursor-help">
+                <span className="text-control-placeholder cursor-help">
                   <Info className="w-4 h-4" />
                 </span>
               </Tooltip>
@@ -1224,7 +1222,7 @@ function SemanticTypeRow({
           )}
           {!isItemReadonly && (
             <button
-              className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+              className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
               onClick={() => {
                 const algo = getMaskingType(row.item.algorithm)
                   ? row.item.algorithm
@@ -1253,7 +1251,7 @@ function SemanticTypeRow({
               <>
                 {isEditing && (
                   <button
-                    className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+                    className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onCancel(index)}
                   >
                     <Undo2 className="w-4 h-4" />
@@ -1280,7 +1278,7 @@ function SemanticTypeRow({
                 )}
                 {row.mode === "NORMAL" && (
                   <button
-                    className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+                    className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onStartEdit(index)}
                   >
                     <Pencil className="w-4 h-4" />
@@ -1338,7 +1336,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         <div className="flex items-center gap-1">
           <img src={value} className="w-6 h-6 object-contain" alt="" />
           <button
-            className="p-0.5 rounded-xs hover:bg-gray-200 text-gray-500"
+            className="p-0.5 rounded-xs hover:bg-control-bg-hover text-control-light"
             onClick={handleOpen}
           >
             <Pencil className="w-3 h-3" />
@@ -1346,16 +1344,16 @@ function IconPicker({ value, onChange }: IconPickerProps) {
         </div>
       ) : (
         <button
-          className="p-1 rounded-xs hover:bg-gray-200 text-gray-500"
+          className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
           onClick={handleOpen}
         >
           <Pencil className="w-4 h-4" />
         </button>
       )}
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 bg-white border border-control-border rounded-sm shadow-lg p-3">
+        <div className="absolute left-0 top-full z-20 mt-1 bg-background border border-control-border rounded-sm shadow-lg p-3">
           <div
-            className="w-48 h-48 flex justify-center items-center border border-dashed border-gray-300 rounded-sm relative cursor-pointer"
+            className="w-48 h-48 flex justify-center items-center border border-dashed border-control-border rounded-sm relative cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
             {tempValue ? (
@@ -1364,7 +1362,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
                 style={{ backgroundImage: `url(${tempValue})` }}
               />
             ) : (
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-control-placeholder">
                 {t("common.upload")}
               </span>
             )}
@@ -1426,13 +1424,13 @@ function DeleteConfirmButton({
   return (
     <div className="relative" ref={popoverRef}>
       <button
-        className="p-1 rounded-xs hover:bg-red-100 text-red-500"
+        className="p-1 rounded-xs hover:bg-error/10 text-error"
         onClick={() => onShowChange(!show)}
       >
         <Trash2 className="w-4 h-4" />
       </button>
       {show && (
-        <div className="absolute right-0 top-full z-10 mt-1 bg-white border border-control-border rounded-sm shadow-lg p-3 whitespace-nowrap">
+        <div className="absolute right-0 top-full z-10 mt-1 bg-background border border-control-border rounded-sm shadow-lg p-3 whitespace-nowrap">
           <p className="text-sm mb-2">{message}</p>
           <div className="flex justify-end gap-x-2">
             <Button

@@ -72,7 +72,7 @@ function DroppableTextarea({
       onDragOver={handleDragOver}
       disabled={disabled}
       placeholder={placeholder}
-      className="w-full h-24 whitespace-pre-wrap resize-none rounded-xs border border-control-border bg-white px-3 py-2 text-sm focus:outline-hidden focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full h-24 whitespace-pre-wrap resize-none rounded-xs border border-control-border bg-background px-3 py-2 text-sm focus:outline-hidden focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
     />
   );
 }
@@ -123,7 +123,7 @@ export function SslCertificateForm({
               content={t("data-source.ssl.verify-certificate-tooltip")}
               side="right"
             >
-              <Info className="w-4 h-4 text-yellow-600" />
+              <Info className="size-4 text-warning" />
             </Tooltip>
           )}
         </div>

@@ -79,7 +79,7 @@ function IssueLabelSelect({
         <button
           type="button"
           className={cn(
-            "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-xs h-9 px-3 text-sm bg-white text-left transition-colors",
+            "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs h-9 px-3 text-sm bg-background text-left transition-colors",
             "hover:border-gray-400",
             open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
           )}
@@ -92,15 +92,15 @@ function IssueLabelSelect({
                 return (
                   <span
                     key={val}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-gray-100 text-xs"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-control-bg text-xs"
                   >
                     <span
-                      className="w-2.5 h-2.5 rounded-sm shrink-0"
+                      className="size-2.5 rounded-sm shrink-0"
                       style={{ backgroundColor: label?.color }}
                     />
                     {val}
                     <X
-                      className="w-3 h-3 text-gray-400 hover:text-gray-600"
+                      className="size-3 text-control-placeholder hover:text-control-light"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleLabel(val);
@@ -111,20 +111,22 @@ function IssueLabelSelect({
               })}
             </div>
           ) : (
-            <span className="text-gray-400">{t("common.select")}</span>
+            <span className="text-control-placeholder">
+              {t("common.select")}
+            </span>
           )}
           <ChevronDown
             className={cn(
-              "w-4 h-4 text-gray-400 shrink-0 transition-transform",
+              "size-4 text-control-placeholder shrink-0 transition-transform",
               open && "rotate-180"
             )}
           />
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
+          <div className="absolute z-50 mt-1 w-full bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
             <div className="max-h-60 overflow-y-auto">
               {labels.length === 0 ? (
-                <div className="px-3 py-6 text-sm text-gray-400 text-center">
+                <div className="px-3 py-6 text-sm text-control-placeholder text-center">
                   {t("common.no-data")}
                 </div>
               ) : (
@@ -134,17 +136,17 @@ function IssueLabelSelect({
                     <button
                       key={label.value}
                       type="button"
-                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-control-bg transition-colors"
                       onClick={() => toggleLabel(label.value)}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         readOnly
-                        className="rounded-xs border-gray-300 accent-accent"
+                        className="rounded-xs border-control-border accent-accent"
                       />
                       <span
-                        className="w-4 h-4 rounded-sm shrink-0"
+                        className="size-4 rounded-sm shrink-0"
                         style={{ backgroundColor: label.color }}
                       />
                       <span>{label.value}</span>
@@ -371,8 +373,8 @@ export function CreateDatabaseDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
             {t("quick-action.create-db")}
@@ -381,7 +383,7 @@ export function CreateDatabaseDrawer({
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -551,8 +553,8 @@ export function CreateDatabaseDrawer({
         </div>
 
         {creating && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
-            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+            <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         )}
       </div>
