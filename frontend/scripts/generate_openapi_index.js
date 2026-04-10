@@ -26,34 +26,123 @@ function refName(ref) {
   return parts[parts.length - 1];
 }
 
-// Extract property type and description from a schema property object.
-function extractPropertyTypeAndDesc(prop) {
-  if (!prop) return { type: "object", description: "" };
+function isObjectSchema(schemaDef) {
+  return (
+    !!schemaDef &&
+    typeof schemaDef === "object" &&
+    (schemaDef.type === "object" ||
+      !!schemaDef.properties ||
+      Array.isArray(schemaDef.allOf) ||
+      Array.isArray(schemaDef.oneOf))
+  );
+}
 
-  // If the property itself is a $ref
-  if (prop.$ref) {
-    return { type: refName(prop.$ref), description: prop.description || "" };
+function mergeObjectShape(schemaDef, mergedProperties, mergedRequired, options) {
+  if (!isObjectSchema(schemaDef)) {
+    return;
   }
 
-  let propType = "object";
-  const rawType = Array.isArray(prop.type)
-    ? prop.type.find((t) => t !== "null")
-    : prop.type;
-  if (rawType) propType = rawType;
+  if (schemaDef.properties) {
+    Object.assign(mergedProperties, schemaDef.properties);
+  }
 
-  // For arrays, get the item type
-  if (propType === "array" && prop.items) {
-    if (prop.items.$ref) {
-      propType = `array<${refName(prop.items.$ref)}>`;
-    } else if (prop.items.type) {
-      const itemType = Array.isArray(prop.items.type)
-        ? prop.items.type.find((t) => t !== "null")
-        : prop.items.type;
-      if (itemType) propType = `array<${itemType}>`;
+  if (options.includeRequired && Array.isArray(schemaDef.required)) {
+    for (const requiredName of schemaDef.required) {
+      mergedRequired.add(requiredName);
     }
   }
 
-  return { type: propType, description: prop.description || "" };
+  if (Array.isArray(schemaDef.allOf)) {
+    for (const part of schemaDef.allOf) {
+      mergeObjectShape(part, mergedProperties, mergedRequired, options);
+    }
+  }
+
+  if (Array.isArray(schemaDef.oneOf)) {
+    for (const branch of schemaDef.oneOf) {
+      mergeObjectShape(branch, mergedProperties, mergedRequired, {
+        includeRequired: false,
+      });
+    }
+  }
+}
+
+function collectObjectShape(schemaDef) {
+  const mergedProperties = {};
+  const mergedRequired = new Set();
+
+  mergeObjectShape(schemaDef, mergedProperties, mergedRequired, {
+    includeRequired: true,
+  });
+
+  return {
+    properties: mergedProperties,
+    required: mergedRequired,
+  };
+}
+
+// Extract property metadata from a schema property object.
+function extractPropertyInfo(propName, propDef, requiredSet) {
+  const info = {
+    name: propName,
+    type: "object",
+  };
+
+  if (requiredSet.has(propName)) {
+    info.required = true;
+  }
+
+  if (!propDef) {
+    return info;
+  }
+
+  if (Array.isArray(propDef.oneOf)) {
+    const nonNullBranches = propDef.oneOf.filter(
+      (branch) => branch && branch.type !== "null"
+    );
+    if (nonNullBranches.length === 1) {
+      const unionDef = { ...nonNullBranches[0] };
+      if (propDef.description && !unionDef.description) {
+        unionDef.description = propDef.description;
+      }
+      return extractPropertyInfo(propName, unionDef, requiredSet);
+    }
+  }
+
+  if (propDef.$ref) {
+    info.type = refName(propDef.$ref);
+    if (propDef.description) info.description = propDef.description;
+    return info;
+  }
+
+  const rawType = Array.isArray(propDef.type)
+    ? propDef.type.find((t) => t !== "null")
+    : propDef.type;
+  if (rawType) {
+    info.type = rawType;
+  }
+  if (propDef.format) {
+    info.format = propDef.format;
+  }
+  if (propDef.description) {
+    info.description = propDef.description;
+  }
+  if (info.type === "array" && propDef.items) {
+    info.items = extractPropertyInfo("item", propDef.items, new Set());
+    info.type = `array<${info.items.type}>`;
+  }
+  if (
+    info.type === "object" &&
+    propDef.additionalProperties &&
+    typeof propDef.additionalProperties === "object"
+  ) {
+    info.additionalProperties = extractPropertyInfo(
+      "value",
+      propDef.additionalProperties,
+      new Set()
+    );
+  }
+  return info;
 }
 
 // --- Main ---
@@ -114,13 +203,12 @@ for (const [pathStr, pathItem] of Object.entries(paths)) {
   });
 }
 
-// 2. Extract schemas (only bytebase.v1.* component schemas)
+// 2. Extract schemas
 const schemas = {};
 const componentSchemas =
   (spec.components && spec.components.schemas) || {};
 
 for (const [schemaName, schemaDef] of Object.entries(componentSchemas)) {
-  if (!schemaName.startsWith("bytebase.v1.")) continue;
   if (!schemaDef) continue;
 
   // Handle enum types
@@ -133,33 +221,17 @@ for (const [schemaName, schemaDef] of Object.entries(componentSchemas)) {
     continue;
   }
 
-  // Merge allOf properties into a flat properties object
-  let mergedProperties = schemaDef.properties;
-  let mergedRequired = schemaDef.required || [];
-  if (schemaDef.allOf && Array.isArray(schemaDef.allOf)) {
-    mergedProperties = {};
-    for (const part of schemaDef.allOf) {
-      if (part.properties) {
-        Object.assign(mergedProperties, part.properties);
-      }
-      if (part.required) {
-        mergedRequired = mergedRequired.concat(part.required);
-      }
-    }
-  }
+  const { properties: mergedProperties, required: mergedRequired } =
+    collectObjectShape(schemaDef);
 
   // Handle object types with properties
   if (!mergedProperties || Object.keys(mergedProperties).length === 0) continue;
 
-  const requiredSet = new Set(mergedRequired);
+  const requiredSet = mergedRequired;
   const properties = [];
 
   for (const [propName, propDef] of Object.entries(mergedProperties)) {
-    const { type, description } = extractPropertyTypeAndDesc(propDef);
-    const prop = { name: propName, type };
-    if (description) prop.description = description;
-    if (requiredSet.has(propName)) prop.required = true;
-    properties.push(prop);
+    properties.push(extractPropertyInfo(propName, propDef, requiredSet));
   }
 
   // Sort properties by name for consistent output
@@ -198,13 +270,16 @@ lines.push(
   "  type: string;",
   "  description?: string;",
   "  required?: boolean;",
+  "  format?: string;",
+  "  items?: PropertyInfo;",
+  "  additionalProperties?: PropertyInfo;",
   "}",
   "",
   "export interface SchemaInfo {",
   "  type: \"object\" | \"enum\";",
   "  description: string;",
   "  properties?: PropertyInfo[];",
-  "  values?: string[];",
+  "  values?: Array<string | number>;",
   "}",
   ""
 );

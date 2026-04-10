@@ -197,6 +197,54 @@ describe("agent tools ask_user", () => {
   });
 });
 
+describe("agent tools search_api", () => {
+  test("renders byte fields as bytes with the UTF-8 call_api note", async () => {
+    const { searchApi: actualSearchApi } =
+      await vi.importActual<typeof import("./searchApi")>("./searchApi");
+
+    const result = await actualSearchApi({
+      operationId: "SheetService/CreateSheet",
+    });
+
+    const requestBodyStart = result.indexOf("### Request Body");
+    const responseBodyStart = result.indexOf("### Response Body");
+    const requestBody =
+      requestBodyStart >= 0
+        ? result.slice(
+            requestBodyStart,
+            responseBodyStart >= 0 ? responseBodyStart : undefined
+          )
+        : "";
+    const responseBody =
+      responseBodyStart >= 0 ? result.slice(responseBodyStart) : "";
+    const requestNote =
+      "request body includes protobuf bytes fields; plain strings passed to call_api are UTF-8 encoded automatically.";
+    const requestNoteCount = requestBody.split(requestNote).length - 1;
+
+    expect(requestBody).toContain('"sheet": bytebase.v1.Sheet');
+    expect(requestBody).toContain(requestNote);
+    expect(requestNoteCount).toBe(1);
+    expect(responseBody).toContain('"content": bytes');
+    expect(responseBody).not.toContain(requestNote);
+  });
+
+  test("detects transitive byte fields through external oneof request schemas", async () => {
+    const { searchApi: actualSearchApi } =
+      await vi.importActual<typeof import("./searchApi")>("./searchApi");
+
+    const result = await actualSearchApi({
+      operationId: "CelService/BatchDeparse",
+    });
+
+    expect(result).toContain(
+      '"expressions": array<google.api.expr.v1alpha1.Expr>'
+    );
+    expect(result).toContain(
+      "Note: request body includes protobuf bytes fields; plain strings passed to call_api are UTF-8 encoded automatically."
+    );
+  });
+});
+
 describe("agent tools concurrency guard", () => {
   test("blocks concurrent page-changing tools across threads", async () => {
     let releaseNavigation: (() => void) | undefined;
