@@ -1,7 +1,12 @@
 import { EllipsisVertical } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useInstanceV1Store } from "@/store";
@@ -20,8 +25,6 @@ export function InstanceActionDropdown({
 }: InstanceActionDropdownProps) {
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
   const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
@@ -87,64 +90,34 @@ export function InstanceActionDropdown({
     });
   }, [instance, instanceStore, t, onDeleted]);
 
-  const options: { key: string; label: string; handler: () => void }[] = [];
+  const showArchive = instance.state === State.ACTIVE && canArchive;
+  const showRestore = instance.state === State.DELETED && canRestore;
+  const showDelete = canArchive || canRestore;
 
-  if (instance.state === State.ACTIVE && canArchive) {
-    options.push({
-      key: "archive",
-      label: t("common.archive"),
-      handler: handleArchive,
-    });
-  } else if (instance.state === State.DELETED && canRestore) {
-    options.push({
-      key: "restore",
-      label: t("common.restore"),
-      handler: handleRestore,
-    });
-  }
-
-  if (canArchive || canRestore) {
-    options.push({
-      key: "delete",
-      label: t("common.delete"),
-      handler: handleDelete,
-    });
-  }
-
-  if (options.length === 0) return null;
+  if (!showArchive && !showRestore && !showDelete) return null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        onClick={() => setOpen(!open)}
-      >
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex items-center justify-center size-8 rounded-xs text-control hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
         <EllipsisVertical className="size-4" />
-      </Button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[120px] rounded-sm border bg-background shadow-md py-1">
-            {options.map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg ${
-                  opt.key === "delete" ? "text-error" : ""
-                }`}
-                onClick={() => {
-                  setOpen(false);
-                  opt.handler();
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {showArchive && (
+          <DropdownMenuItem onClick={handleArchive}>
+            {t("common.archive")}
+          </DropdownMenuItem>
+        )}
+        {showRestore && (
+          <DropdownMenuItem onClick={handleRestore}>
+            {t("common.restore")}
+          </DropdownMenuItem>
+        )}
+        {showDelete && (
+          <DropdownMenuItem className="text-error" onClick={handleDelete}>
+            {t("common.delete")}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

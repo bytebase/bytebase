@@ -24,6 +24,12 @@ import {
 } from "@/react/components/ResourceIdField";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -601,28 +607,11 @@ function ProjectActionDropdown({
 }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canDelete = hasProjectPermissionV2(project, "bb.projects.delete");
   const canUndelete = hasProjectPermissionV2(project, "bb.projects.undelete");
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
   const handleArchive = useCallback(async () => {
-    setOpen(false);
     if (
       !window.confirm(
         t("project.settings.confirm-archive-project", {
@@ -642,7 +631,6 @@ function ProjectActionDropdown({
   }, [project, projectStore, t, onAction]);
 
   const handleRestore = useCallback(async () => {
-    setOpen(false);
     await projectStore.restoreProject(project);
     pushNotification({
       module: "bytebase",
@@ -657,44 +645,37 @@ function ProjectActionDropdown({
   const isActive = project.state === State.ACTIVE;
 
   return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        className="p-1 hover:bg-control-bg rounded-xs"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(!open);
-        }}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="p-1 rounded-xs hover:bg-control-bg outline-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
         <EllipsisVertical className="h-4 w-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
-          {isActive && canDelete && (
-            <button
-              className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleArchive();
-              }}
-            >
-              <Archive className="h-4 w-4" />
-              {t("common.archive")}
-            </button>
-          )}
-          {!isActive && canUndelete && (
-            <button
-              className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRestore();
-              }}
-            >
-              {t("common.restore")}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {isActive && canDelete && (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              handleArchive();
+            }}
+          >
+            <Archive className="h-4 w-4" />
+            {t("common.archive")}
+          </DropdownMenuItem>
+        )}
+        {!isActive && canUndelete && (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRestore();
+            }}
+          >
+            {t("common.restore")}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

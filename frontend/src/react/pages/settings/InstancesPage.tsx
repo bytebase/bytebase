@@ -28,6 +28,12 @@ import {
   AlertTitle,
 } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -296,16 +302,12 @@ function InstanceActionDropdown({
 }) {
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
-  const [open, setOpen] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [forceArchive, setForceArchive] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
   const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
-  const closeDropdown = useCallback(() => setOpen(false), []);
-  useClickOutside(dropdownRef, open, closeDropdown);
 
   const handleArchive = useCallback(async () => {
     try {
@@ -331,7 +333,6 @@ function InstanceActionDropdown({
   }, [instance, instanceStore, forceArchive, t, onAction]);
 
   const handleRestore = useCallback(async () => {
-    setOpen(false);
     try {
       await instanceStore.restoreInstance(instance);
       pushNotification({
@@ -378,56 +379,47 @@ function InstanceActionDropdown({
 
   return (
     <>
-      <div ref={dropdownRef} className="relative">
-        <button
-          className="p-1 hover:bg-control-bg rounded-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen(!open);
-          }}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="p-1 rounded-xs hover:bg-control-bg outline-hidden"
+          onClick={(e) => e.stopPropagation()}
         >
           <EllipsisVertical className="h-4 w-4" />
-        </button>
-        {open && (
-          <div className="absolute right-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
-            {isActive && canArchive && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  setShowArchiveConfirm(true);
-                }}
-              >
-                {t("common.archive")}
-              </button>
-            )}
-            {!isActive && canRestore && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRestore();
-                }}
-              >
-                {t("common.restore")}
-              </button>
-            )}
-            {(canArchive || canRestore) && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2 text-error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  setShowDeleteConfirm(true);
-                }}
-              >
-                {t("common.delete")}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {isActive && canArchive && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowArchiveConfirm(true);
+              }}
+            >
+              {t("common.archive")}
+            </DropdownMenuItem>
+          )}
+          {!isActive && canRestore && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRestore();
+              }}
+            >
+              {t("common.restore")}
+            </DropdownMenuItem>
+          )}
+          {(canArchive || canRestore) && (
+            <DropdownMenuItem
+              className="text-error"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
+            >
+              {t("common.delete")}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ConfirmDialog
         open={showArchiveConfirm}

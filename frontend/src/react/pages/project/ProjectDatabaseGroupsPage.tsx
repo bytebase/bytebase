@@ -9,6 +9,12 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -290,39 +296,28 @@ function ActionDropdown({
   onDelete: (group: DatabaseGroup) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative flex justify-end">
-      <button
-        type="button"
-        className="p-1 rounded-xs hover:bg-control-bg"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-      >
-        <EllipsisVertical className="size-4" />
-      </button>
-      {open && (
-        <>
-          {/* backdrop */}
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 bg-background border rounded-sm shadow-md min-w-[100px]">
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg text-error"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpen(false);
-                onDelete(group);
-              }}
-            >
-              {t("common.delete")}
-            </button>
-          </div>
-        </>
-      )}
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="p-1 rounded-xs hover:bg-control-bg outline-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EllipsisVertical className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            className="text-error"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(group);
+            }}
+          >
+            {t("common.delete")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
